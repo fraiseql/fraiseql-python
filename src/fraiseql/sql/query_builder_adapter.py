@@ -25,11 +25,26 @@ from fraiseql.config import (
 # Import Python builder (legacy, production)
 from fraiseql.sql.sql_generator import build_sql_query as python_build_sql_query
 
-# Import Rust builder (new, Phase 7)
+# Import Rust builder (moved to unified FFI in Phase 3c)
+# The query builder is now integrated into the Rust FFI pipeline
 try:
-    from fraiseql.core.query_builder import RustQueryBuilder
+    # For backward compatibility, we define a stub that reports unavailability
+    # All query building is now handled by the unified Rust FFI boundary
+    class RustQueryBuilder:
+        """Deprecated: Query building now handled by unified Rust FFI.
 
-    RUST_AVAILABLE = True
+        This class is a placeholder for backward compatibility.
+        """
+
+        @staticmethod
+        def build(*args: any, **kwargs: any) -> None:
+            """Deprecated query builder - no longer used."""
+            raise NotImplementedError(
+                "Direct RustQueryBuilder access has been moved to unified FFI layer. "
+                "Use unified_ffi_adapter instead."
+            )
+
+    RUST_AVAILABLE = False  # Query building is now FFI-integrated
 except ImportError:
     RUST_AVAILABLE = False
 

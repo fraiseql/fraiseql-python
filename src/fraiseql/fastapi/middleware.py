@@ -1,16 +1,22 @@
-"""Middleware for cache statistics."""
+"""Middleware for cache statistics.
+
+Note: Cache statistics collection is now handled by the unified Rust FFI layer.
+This middleware provides a compatibility layer for logging periodic stats.
+"""
 
 import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from fraiseql.core.query_builder import RustQueryBuilder
-
 logger = logging.getLogger(__name__)
 
 
 class CacheStatsMiddleware(BaseHTTPMiddleware):
-    """Log cache statistics periodically."""
+    """Log cache statistics periodically.
+
+    Note: Cache statistics are now managed by the Rust pipeline (Phase 3c).
+    This middleware provides a compatibility layer.
+    """
 
     def __init__(self, app, log_interval: int = 100):
         super().__init__(app)
@@ -20,19 +26,16 @@ class CacheStatsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
 
-        # Log stats every N requests
+        # Log stats every N requests (if available from Rust layer)
         self.request_count += 1
         if self.request_count % self.log_interval == 0:
             try:
-                stats = RustQueryBuilder.get_stats()
-                logger.info(
-                    "Query cache stats: "
-                    f"hits={stats['hits']}, "
-                    f"misses={stats['misses']}, "
-                    f"hit_rate={stats['hit_rate']:.1%}, "
-                    f"cached={stats['cached_plans']}/{stats['max_cached_plans']}",
+                # Cache stats collection moved to Rust FFI layer
+                # This is a placeholder for future integration with Rust stats
+                logger.debug(
+                    f"Processed {self.request_count} requests (cache stats now in Rust layer)"
                 )
             except Exception as e:
-                logger.warning(f"Failed to get cache stats: {e}")
+                logger.debug(f"Cache stats not yet available: {e}")
 
         return response

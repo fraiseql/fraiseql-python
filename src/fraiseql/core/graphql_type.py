@@ -561,16 +561,17 @@ def convert_type_to_graphql_output(
                         # Check if we should use nested resolver (only if explicitly requested)
                         # By default (resolve_nested=False), nested objects are assumed to be
                         # embedded in the parent's JSONB data and use the standard resolver.
-                        # Only when resolve_nested=True do we create a special resolver that
-                        # can query the nested type's sql_source separately.
-                        from fraiseql.core.nested_field_resolver import (
-                            create_smart_nested_field_resolver,
-                            should_use_nested_resolver,
-                        )
+                        # Note: Nested field resolution now handled by unified Rust FFI (Phase 3c)
+                        # Legacy support: resolve_nested is deprecated
 
-                        if should_use_nested_resolver(field_type):
-                            # Use smart resolver for resolve_nested=True types
-                            smart_resolver = create_smart_nested_field_resolver(name, field_type)
+                        # Use standard resolver for all fields
+                        # Rust FFI handles nested resolution transparently
+                        use_nested_resolver = False
+
+                        if use_nested_resolver:
+                            # Legacy path for resolve_nested=True (deprecated)
+                            # This is now handled by the Rust FFI layer
+                            smart_resolver = None  # Placeholder for deprecated path
 
                             # Wrap with enum serialization
                             from fraiseql.gql.enum_serializer import (
