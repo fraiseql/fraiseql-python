@@ -149,6 +149,14 @@ def build_graphql_response_via_unified(
         "variables": {},
     }
 
+    # Phase 6.1: Add field selections for filtering (NEW)
+    if field_selections is not None:
+        try:
+            request["selections"] = json.loads(field_selections)
+        except (json.JSONDecodeError, TypeError):
+            # Invalid field_selections JSON - ignore and use defaults
+            pass
+
     # Call unified FFI (single boundary, Phase 3c active)
     response_json_str = fraiseql_rs.process_graphql_request(
         json.dumps(request),
