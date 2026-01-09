@@ -307,7 +307,12 @@ impl GraphQLPipeline {
         // Convert JsonValue variables to serde_json::Value for AdvancedSelectionProcessor
         let var_map: HashMap<String, serde_json::Value> = variables
             .iter()
-            .map(|(k, v)| (k.clone(), serde_json::to_value(v).unwrap_or(serde_json::Value::Null)))
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    serde_json::to_value(v).unwrap_or(serde_json::Value::Null),
+                )
+            })
             .collect();
 
         // Process advanced selections (fragments + directives)

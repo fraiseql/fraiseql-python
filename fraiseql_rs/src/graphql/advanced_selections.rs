@@ -138,7 +138,9 @@ impl AdvancedSelectionProcessor {
     }
 
     /// Stage 3: Finalize selection set by deduplicating fields.
-    fn finalize_selections(selections: &[FieldSelection]) -> Result<Vec<FieldSelection>, SelectionError> {
+    fn finalize_selections(
+        selections: &[FieldSelection],
+    ) -> Result<Vec<FieldSelection>, SelectionError> {
         let mut by_key: HashMap<String, FieldSelection> = HashMap::new();
 
         for field in selections {
@@ -246,10 +248,10 @@ mod tests {
 
     #[test]
     fn test_fragment_resolution_basic() {
-        let fragment = make_fragment("UserFields", vec![
-            make_field("id", vec![]),
-            make_field("name", vec![]),
-        ]);
+        let fragment = make_fragment(
+            "UserFields",
+            vec![make_field("id", vec![]), make_field("name", vec![])],
+        );
 
         let query_selections = vec![FieldSelection {
             name: "...UserFields".to_string(),
@@ -271,17 +273,13 @@ mod tests {
 
     #[test]
     fn test_directive_evaluation_skip() {
-        let field = make_field_with_directive(
-            "email",
-            vec![make_directive("skip", "true")],
+        let field =
+            make_field_with_directive("email", vec![make_directive("skip", "true")], vec![]);
+
+        let query = make_parsed_query(
+            vec![make_field("id", vec![]), field, make_field("name", vec![])],
             vec![],
         );
-
-        let query = make_parsed_query(vec![
-            make_field("id", vec![]),
-            field,
-            make_field("name", vec![]),
-        ], vec![]);
         let variables = HashMap::new();
 
         let result = AdvancedSelectionProcessor::process(&query, &variables).unwrap();
@@ -294,17 +292,13 @@ mod tests {
 
     #[test]
     fn test_directive_evaluation_include() {
-        let field = make_field_with_directive(
-            "email",
-            vec![make_directive("include", "false")],
+        let field =
+            make_field_with_directive("email", vec![make_directive("include", "false")], vec![]);
+
+        let query = make_parsed_query(
+            vec![make_field("id", vec![]), field, make_field("name", vec![])],
             vec![],
         );
-
-        let query = make_parsed_query(vec![
-            make_field("id", vec![]),
-            field,
-            make_field("name", vec![]),
-        ], vec![]);
         let variables = HashMap::new();
 
         let result = AdvancedSelectionProcessor::process(&query, &variables).unwrap();
@@ -317,11 +311,14 @@ mod tests {
 
     #[test]
     fn test_fragment_and_directive_combined() {
-        let fragment = make_fragment("UserFields", vec![
-            make_field("id", vec![]),
-            make_field_with_directive("email", vec![make_directive("skip", "true")], vec![]),
-            make_field("name", vec![]),
-        ]);
+        let fragment = make_fragment(
+            "UserFields",
+            vec![
+                make_field("id", vec![]),
+                make_field_with_directive("email", vec![make_directive("skip", "true")], vec![]),
+                make_field("name", vec![]),
+            ],
+        );
 
         let query_selections = vec![FieldSelection {
             name: "...UserFields".to_string(),
@@ -346,16 +343,32 @@ mod tests {
 
     #[test]
     fn test_nested_directive_evaluation() {
-        let query = make_parsed_query(vec![
-            make_field("user", vec![
-                make_field("id", vec![]),
-                make_field_with_directive("email", vec![make_directive("skip", "false")], vec![]),
-                make_field_with_directive("profile", vec![make_directive("include", "true")], vec![
-                    make_field("bio", vec![]),
-                    make_field_with_directive("phone", vec![make_directive("skip", "true")], vec![]),
-                ]),
-            ]),
-        ], vec![]);
+        let query = make_parsed_query(
+            vec![make_field(
+                "user",
+                vec![
+                    make_field("id", vec![]),
+                    make_field_with_directive(
+                        "email",
+                        vec![make_directive("skip", "false")],
+                        vec![],
+                    ),
+                    make_field_with_directive(
+                        "profile",
+                        vec![make_directive("include", "true")],
+                        vec![
+                            make_field("bio", vec![]),
+                            make_field_with_directive(
+                                "phone",
+                                vec![make_directive("skip", "true")],
+                                vec![],
+                            ),
+                        ],
+                    ),
+                ],
+            )],
+            vec![],
+        );
         let variables = HashMap::new();
 
         let result = AdvancedSelectionProcessor::process(&query, &variables).unwrap();
@@ -367,29 +380,36 @@ mod tests {
         // User should have: id, email, profile (with bio only, no phone)
         assert_eq!(user_field.nested_fields.len(), 3);
 
-        let profile = user_field.nested_fields.iter().find(|f| f.name == "profile").unwrap();
+        let profile = user_field
+            .nested_fields
+            .iter()
+            .find(|f| f.name == "profile")
+            .unwrap();
         assert_eq!(profile.nested_fields.len(), 1);
         assert_eq!(profile.nested_fields[0].name, "bio");
     }
 
     #[test]
     fn test_deduplication_with_alias() {
-        let query = make_parsed_query(vec![
-            FieldSelection {
-                name: "user".to_string(),
-                alias: Some("primaryUser".to_string()),
-                arguments: vec![],
-                nested_fields: vec![make_field("id", vec![])],
-                directives: vec![],
-            },
-            FieldSelection {
-                name: "user".to_string(),
-                alias: Some("primaryUser".to_string()),
-                arguments: vec![],
-                nested_fields: vec![make_field("name", vec![])],
-                directives: vec![],
-            },
-        ], vec![]);
+        let query = make_parsed_query(
+            vec![
+                FieldSelection {
+                    name: "user".to_string(),
+                    alias: Some("primaryUser".to_string()),
+                    arguments: vec![],
+                    nested_fields: vec![make_field("id", vec![])],
+                    directives: vec![],
+                },
+                FieldSelection {
+                    name: "user".to_string(),
+                    alias: Some("primaryUser".to_string()),
+                    arguments: vec![],
+                    nested_fields: vec![make_field("name", vec![])],
+                    directives: vec![],
+                },
+            ],
+            vec![],
+        );
         let variables = HashMap::new();
 
         let result = AdvancedSelectionProcessor::process(&query, &variables).unwrap();

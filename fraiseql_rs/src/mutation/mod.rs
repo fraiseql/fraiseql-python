@@ -3,6 +3,7 @@
 //! Transforms `PostgreSQL` `mutation_response` JSON into GraphQL responses.
 
 mod entity_processor;
+mod field_filter;
 mod parser;
 mod postgres_composite;
 mod response_builder;
