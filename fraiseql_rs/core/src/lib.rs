@@ -49,6 +49,9 @@ pub mod error;
 /// Configuration management.
 pub mod config;
 
+/// Core utility modules (Phase 5.1)
+pub mod core;
+
 /// Database connectivity.
 pub mod db;
 
