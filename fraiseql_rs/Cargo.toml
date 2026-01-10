@@ -1,264 +1,67 @@
-[package]
-name = "fraiseql_rs"
-version = "1.9.5"
-edition = "2021"
-authors = ["FraiseQL Contributors"]
-description = "Ultra-fast GraphQL JSON transformation in Rust for FraiseQL"
-readme = "README.md"
-repository = "https://github.com/fraiseql/fraiseql"
-license = "MIT"
-keywords = ["graphql", "json", "performance", "pyo3", "rust"]
-categories = ["web-programming", "api-bindings"]
-publish = false
+[workspace]
+resolver = "2"
+members = [
+    "core",
+    "py",
+    "cli",
+]
 
-# ============================================================================
-# LINTING CONFIGURATION - Phase 0.1: Strict Mode for Production Code
-# ============================================================================
-[lints.clippy]
-# All clippy lints as baseline (lower priority than specific lints)
-all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-
-# Specific strict enforcement
-unwrap_used = "warn"              # Catch unwrap() calls
-expect_used = "warn"              # Catch expect() calls
-panic = "warn"                    # Catch panic!() calls
-unimplemented = "warn"            # Catch unimplemented!()
-todo = "deny"                     # FORCE completion before merge
-dbg_macro = "warn"                # Catch debug macros
-
-# Performance anti-patterns
-inefficient_to_string = "warn"
-manual_str_repeat = "warn"
-redundant_clone = "warn"
-explicit_deref_methods = "warn"
-vec_init_then_push = "warn"
-
-# Code clarity
-cognitive_complexity = "warn"     # Detect overly complex functions
-too_many_arguments = "warn"       # Enforce function argument limits
-type_complexity = "warn"          # Detect overly complex types
-excessive_nesting = "warn"        # Limit nesting depth
-
-[lints.rust]
-unsafe_code = "warn"              # Track all unsafe blocks
-missing_docs = "warn"             # Require docs on public items
-missing_debug_implementations = "warn"  # Require Debug impls
-unsafe_op_in_unsafe_fn = "warn"   # Require docs in unsafe fns
-
-[lib]
-name = "fraiseql_rs"
-crate-type = ["cdylib", "rlib"]
-
-[features]
-default = ["simd"]
-simd = []
-dhat-heap = []
-python = []  # Python bindings feature (for PyO3 error conversions)
-advanced-compression = ["zstd", "async-compression"]  # Enable Zstandard compression
-
-[dependencies]
-pyo3 = { version = "0.25.0", features = ["extension-module", "experimental-async"] }
-
-# JSON parsing and serialization (zero-copy where possible)
+# Workspace-wide dependencies (shared versions)
+[workspace.dependencies]
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# Error handling
 thiserror = "1.0"
 anyhow = "1.0"
 
-# PostgreSQL client and connection pooling (Phase 1)
-tokio-postgres = { version = "0.7", features = ["with-serde_json-1", "with-uuid-1", "with-chrono-0_4"] }
-deadpool-postgres = "0.14"
-deadpool = "0.12"
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
 async-trait = "0.1"
 
-# Phase 3: SQLx for real database backend with connection pooling
-sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "json", "macros"] }
+# HTTP server
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "compression-gzip", "trace"] }
+hyper = { version = "1.0", features = ["full"] }
 
-# SSL/TLS support for PostgreSQL (Phase 1: Production Pool)
-native-tls = "0.2"
-postgres-native-tls = "0.5"
+# Database
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "json", "uuid", "chrono"] }
+deadpool-postgres = "0.14"
+tokio-postgres = { version = "0.7", features = ["with-serde_json-1", "with-uuid-1", "with-chrono-0_4"] }
 
-# Date/time handling
-chrono = { version = "0.4", features = ["serde"] }
+# Logging/Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# UUID support
-uuid = { version = "1.0", features = ["v4", "serde"] }
-
-# Fast string operations
-# Note: Will add for Phase 2 (camelCase optimization)
-# smallvec = "1.13"
-
-# Byte buffer for ToSql implementation
-bytes = "1.0"
-
-# SIMD support (disabled due to compatibility issues)
-# packed_simd = { version = "0.3", optional = true }
-
-# Schema registry dependencies
-arc-swap = "1.6"
-once_cell = "1.0"
-
-# GraphQL parsing (Phase 6)
+# GraphQL parsing
 graphql-parser = "0.4"
-pyo3-async-runtimes = { version = "0.25", features = ["tokio-runtime"] }
 
-# Query building (Phase 7)
-regex = "1.10"              # Field name transformations
-lazy_static = "1.4"         # Static regex
-itertools = "0.12"          # String utilities
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+lazy_static = "1.4"
+parking_lot = "0.12"
+dashmap = "6.0"
 
-# Query caching (Phase 8)
-lru = "0.12"                # LRU cache
-linked-hash-map = "0.5"     # For LRU implementation
-sha2 = "0.10"               # Hashing for signatures
+# Python bindings (only for py crate)
+pyo3 = { version = "0.23", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.23", features = ["tokio-runtime"] }
 
-# Python interop (Phase 7.2)
-# Note: pythonize removed due to pyo3 version conflict - using manual conversion
-
-# Authentication (Phase 10)
-jsonwebtoken = "9.2"        # JWT validation with built-in JWK support
-
-# Security features (Phase 12)
-rand = "0.8"                # Random number generation for CSRF
-hex = "0.4"                 # Hex encoding for tokens
-http = "0.2"                # HTTP header types for CORS
-reqwest = { version = "0.11", features = ["json"] }  # JWKS fetching
-tokio = { version = "1.35", features = ["full"] }  # Async runtime
-# sha2 already included above for signatures
-
-# Phase 12: Security Constraints
-governor = "0.6"            # Rate limiting (token bucket algorithm)
-ipnetwork = "0.20"          # IP parsing for CIDR matching
-
-# Phase 15: Real-time & Caching (GraphQL Subscriptions + APQ)
-tokio-tungstenite = "0.21"  # WebSocket support
-tungstenite = "0.21"        # WebSocket protocol
-futures-util = "0.3"         # Async utilities for WebSocket
-tokio-stream = "0.1"         # Async streams
-async-stream = "0.3"         # Async stream utilities
-dashmap = "5.5"              # Concurrent HashMap for connections
-redis = { version = "1.0", features = ["tokio-comp", "streams"] } # Redis event bus
-prometheus = "0.13"          # Metrics collection
-# pyo3-asyncio for Phase 15b when implementing subscriptions
-
-# Phase 16: Axum HTTP Server
-axum = { version = "0.7", features = ["ws"] } # High-performance async web framework with WebSocket support
-tower = "0.4"               # Modular and reusable components for building services
-tower-http = { version = "0.5", features = ["cors", "compression-br", "trace"] } # HTTP middleware
-hyper = "1.1"               # HTTP client and server library
-
-# Phase 16: Advanced Compression (opt-in)
-zstd = { version = "0.13", optional = true } # Zstandard compression (superior compression ratio)
-async-compression = { version = "0.4", features = ["tokio", "zstd"], optional = true }
-
-# Phase 18: HTTP/2 & Protocol Optimization
-num_cpus = "1.16"              # Detect CPU core count for runtime tuning
-
-[dev-dependencies]
-# Testing framework
-tokio-test = "0.4"                    # Async runtime for tests
-tokio = { version = "1.0", features = ["full"] }
-
-# Test database containers
-testcontainers = "0.15"               # Docker containers for tests
-testcontainers-modules = { version = "0.2", features = ["postgres"] }
-
-# Assertions and matchers
-assert_matches = "1.5"                # Pattern matching in assertions
-pretty_assertions = "1.4"             # Pretty-print assertion failures
-
-# Mocking
-mockall = "0.12"                      # Mock objects for unit tests
-
-# Property testing
-proptest = "1.0"                      # Generate test cases
-
-# Benchmarking infrastructure (Phase 0.3)
-criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }
+# CLI
+clap = { version = "4.0", features = ["derive", "env"] }
 
 # Testing
-pyo3 = { version = "0.25.0", features = ["auto-initialize"] }
+criterion = "0.5"
 
-# PyO3 async support - will add in Phase 1.5 when needed
-# pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
+# Workspace-wide lints
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
 
-# Legacy benchmarking infrastructure
-dhat = "0.3"  # Heap profiling
-
-# Benchmark targets (Phase 0.3)
-[[bench]]
-name = "connection_pool"
-harness = false
-
-[[bench]]
-name = "query_execution"
-harness = false
-
-[[bench]]
-name = "streaming"
-harness = false
-
-# Phase 1: Production pool benchmarks
-[[bench]]
-name = "pool_benchmarks"
-harness = false
-path = "../benches/pool_benchmarks.rs"
-
-# Legacy benchmarks (keep for now)
-[[bench]]
-name = "pipeline"
-harness = false
-
-[[bench]]
-name = "memory"
-harness = false
-
-[[bench]]
-name = "core_benchmark"
-harness = false
-
-# Binary targets removed - use benches/ for performance testing
-
-[profile.release]
-opt-level = 3
-lto = "fat"              # Link-time optimization across all crates
-codegen-units = 1        # Better optimization (slower compile)
-panic = "abort"          # Smaller binary, faster unwinding
-strip = true             # Remove debug symbols
-overflow-checks = false  # Disable overflow checks in release
-incremental = false      # Disable incremental compilation for better optimization
-
-[profile.release.package."*"]
-opt-level = 3
-codegen-units = 1
-overflow-checks = false
-incremental = false
-
-# Profile-guided optimization (PGO) profile
-[profile.release-pgo]
-inherits = "release"
-# PGO will be enabled when we have training data
-
-# Benchmark profile for accurate measurements
-[profile.bench]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-overflow-checks = false
-incremental = false
-
-# Test profile configuration
-[profile.test]
-opt-level = 1                    # Some optimization for faster tests
-incremental = true               # Faster rebuild during test development
-
-# Keep debug info for better error messages
-debug = true
-debug-assertions = true
-overflow-checks = true
-
-[build-dependencies]
-# Detect CPU features at compile time
-target-features = "0.1"
+[workspace.lints.rust]
+unsafe_code = "warn"
+missing_docs = "warn"
