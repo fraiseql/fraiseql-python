@@ -55,6 +55,9 @@ pub mod core;
 /// Query caching layer (Phase 5.2)
 pub mod cache;
 
+/// Automatic Persisted Queries infrastructure (Phase 5.4)
+pub mod apq;
+
 /// Database connectivity.
 pub mod db;
 
