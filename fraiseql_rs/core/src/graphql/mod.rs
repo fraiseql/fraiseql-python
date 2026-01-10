@@ -7,13 +7,24 @@
 //! - Fragment resolution
 //! - Directive evaluation
 
+// ============================================================================
+// Module declarations
+// ============================================================================
+
+/// GraphQL AST types for query representation.
+pub mod types;
+
 // Submodules will be added:
 // mod parser;
-// mod types;
 // mod validation;
 // mod fragments;
 // mod directives;
 
-// Re-exports:
-// pub use parser::parse_query;
-// pub use types::{ParsedQuery, OperationType};
+// ============================================================================
+// Re-exports for convenient access
+// ============================================================================
+
+pub use types::{
+    Directive, FieldSelection, FragmentDefinition, GraphQLArgument, GraphQLType, ParsedQuery,
+    VariableDefinition,
+};
