@@ -1,13 +1,9 @@
-//! Input validation.
+//! Input validation module.
 //!
-//! This module provides:
-//! - ID policy validation (UUID, integer, string)
-//! - Input sanitization
-//! - Type coercion
+//! Provides ID policy validation and GraphQL input processing.
 
-// Submodules will be added:
-// mod id_policy;
-// mod input;
+mod id_policy;
+mod input_processor;
 
-// Re-exports:
-// pub use id_policy::{IDPolicy, validate_id};
+pub use id_policy::{validate_id, IDPolicy, IDValidationError};
+pub use input_processor::{process_variables, InputProcessingConfig, ProcessingError};

@@ -49,9 +49,6 @@ pub mod error;
 /// Configuration management.
 pub mod config;
 
-/// Query caching.
-pub mod cache;
-
 /// Database connectivity.
 pub mod db;
 
