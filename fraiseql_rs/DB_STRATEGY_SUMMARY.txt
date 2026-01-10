@@ -1,0 +1,329 @@
+================================================================================
+DB MODULE MIGRATION STRATEGY - EXECUTIVE SUMMARY
+================================================================================
+
+STATUS: Planning document complete and committed
+LOCATION: DB_MODULE_MIGRATION_STRATEGY.md (826 lines)
+COMPLEXITY: HIGH
+EFFORT: 5-8 hours across 15 files
+
+================================================================================
+THE CHALLENGE
+================================================================================
+
+The database module is the largest and most complex component in Phase 4:
+
+SIZE:
+  - 4,411 total lines of code
+  - 15 files in total
+  - 548 lines in pool.rs alone (heavily PyO3-wrapped)
+
+COMPONENTS:
+  ✓ Connection pooling (deadpool-postgres wrapper)
+  ✓ Transaction management (ACID + savepoints)
+  ✓ Query execution (JSONB result handling)
+  ✓ Health checks & metrics (operational observability)
+  ✓ Error handling (rich error context)
+  ✓ SSL/TLS support (production security)
+
+KEY CHALLENGE:
+  The DatabasePool struct has EXTENSIVE PyO3 wrappers:
+  - Context manager support (__aenter__, __aexit__)
+  - Async method conversions (future_into_py)
+  - Python dictionary returns (PyDict manipulation)
+  - Parameter binding (PyResult error conversion)
+
+================================================================================
+THE SOLUTION: 4-PHASE LEAVES-FIRST STRATEGY
+================================================================================
+
+PHASE 4.1: PURE RUST CORE (6 FILES - TRIVIAL)
+  Step 1: errors.rs (131 lines) - No PyO3, direct copy
+  Step 2: types.rs (189 lines) - No PyO3, direct copy
+  Step 3: health.rs (146 lines) - No PyO3, direct copy
+  Step 4: metrics.rs (216 lines) - No PyO3, direct copy
+  Step 5: mutex_recovery.rs (170 lines) - No PyO3, direct copy
+  Step 6: runtime.rs (256 lines) - No PyO3, direct copy
+
+  Status: Direct copy of existing pure Rust code
+  Effort: ~30 minutes
+  Risk: Very low (no changes needed)
+  Expected Result: 6-8 new passing tests
+
+PHASE 4.2: CONFIGURATION MODULES (4 FILES - LOW-MEDIUM)
+  Step 7: pool_config.rs (371 lines) - Remove PyO3 decorators
+  Step 8: pool/traits.rs (106 lines) - No PyO3, direct copy
+  Step 9: parameter_binding.rs (376 lines) - No PyO3, direct copy
+  Step 10: query.rs (401 lines) - No PyO3, direct copy
+
+  Status: 1 file needs PyO3 removal, 3 are pure Rust
+  Effort: ~1-1.5 hours
+  Risk: Low (straightforward decorator removal)
+  Expected Result: 15-20 new passing tests
+
+PHASE 4.3: CORE POOL IMPLEMENTATION (3 FILES - HIGH-VERY HIGH)
+  Step 11: pool_production.rs (571 lines) - No PyO3, direct copy
+  Step 12: transaction.rs (617 lines) - No PyO3, direct copy
+  Step 13: pool.rs (548 lines) - MAJOR PyO3 refactoring ⚠️
+
+  Status: Biggest transformation happens here
+  Effort: ~3-4 hours (mostly on pool.rs)
+  Risk: High (extensive async/context manager refactoring)
+  Expected Result: 25-30 new passing tests, core pool functional in pure Rust
+
+  CRITICAL FILE: pool.rs
+  - Remove 8+ PyO3 decorators (@pyclass, @pymethods, @new, etc.)
+  - Convert async methods: future_into_py → native async/await
+  - Update error types: PyResult → Result<T, DatabaseError>
+  - Refactor returns: PyDict → structured types
+  - Handle context manager: remove __aenter__/__aexit__
+
+PHASE 4.4: INTEGRATION (1 FINAL STEP)
+  Step 14: Create core/src/db/mod.rs with all re-exports
+  Step 15: Run comprehensive verification
+  Step 16: Document Phase 5 Python bindings plan
+
+  Status: Final assembly and validation
+  Effort: ~30 minutes
+  Risk: Very low (mostly verification)
+  Expected Result: 70-80+ all tests passing, zero PyO3 in core/src/db/
+
+================================================================================
+KEY DESIGN DECISIONS
+================================================================================
+
+1. ERROR HANDLING
+   Use DatabaseError enum (not anyhow::Error)
+   - Explicit error types for Rust layer
+   - Python layer converts to exceptions
+   - All methods return Result<T, DatabaseError>
+
+2. ASYNC/AWAIT WITHOUT PyO3
+   Use native Rust async (not future_into_py)
+   - Core logic is pure Rust async
+   - Python integration in separate py/ crate
+   - Methods are: pub async fn(...) -> Result<T>
+
+3. PYTHON INTEGRATION POINT
+   Move all PyO3 wrappers to py/src/lib.rs (Phase 5)
+   - Core is truly language-agnostic
+   - Python bindings are thin wrapper layer
+   - Enables future TypeScript/WASM bindings
+
+4. RETURN TYPE CONVERSIONS
+   Return pure Rust structs, convert to Python in py/
+   - stats() returns PoolStats (not PyDict)
+   - execute_query() returns Vec<String> (not Python list)
+   - health_check() returns HealthCheckResult
+   - Python layer wraps these via PyO3
+
+================================================================================
+TRANSFORMATION PATTERNS (3 KEY EXAMPLES)
+================================================================================
+
+PATTERN 1: REMOVE PyO3 DECORATORS
+Before:
+  #[pyclass(name = "DatabasePool")]
+  pub struct DatabasePool { ... }
+
+After:
+  pub struct DatabasePool { ... }
+
+PATTERN 2: CONVERT ASYNC METHODS
+Before:
+  #[pyo3(name = "execute_query")]
+  fn execute_query_py<'py>(&self, py: Python<'py>, sql: String)
+      -> PyResult<Bound<'py, PyAny>> {
+      let pool = Arc::clone(&self.inner);
+      future_into_py(py, async move {
+          pool.execute_query(&sql).await.map_err(|e| ...)
+      })
+  }
+
+After:
+  pub async fn execute_query(&self, sql: &str) -> Result<Vec<String>> {
+      self.inner.execute_query(sql).await
+  }
+
+PATTERN 3: CONVERT ERROR TYPES
+Before:
+  .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?
+
+After:
+  .map_err(|e| DatabaseError::QueryExecution(e.to_string()))?
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+After completing db module migration:
+
+✓ Zero PyO3 dependencies in core/src/db/
+  Command: grep -r "pyo3" core/src/db/ | wc -l
+  Result: Should be 0
+
+✓ All tests passing (70-80+)
+  Command: cargo test -p fraiseql_core
+  Result: All green ✓
+
+✓ Clean compilation (no warnings)
+  Command: cargo check -p fraiseql_core
+  Result: No warnings
+
+✓ Async/await works seamlessly
+  - Can call await on execute_query()
+  - Can use tokio::spawn() with pool methods
+  - Error handling chains with ? operator
+
+✓ Python integration ready
+  - DatabasePool struct ready for py/ wrapping
+  - All methods have clear Python equivalents
+  - Error types can convert to PyErr
+
+================================================================================
+EXECUTION TIMELINE
+================================================================================
+
+Session 1 (30-45 min): Phase 4.1 - Pure Rust core
+  - Copy 6 files (errors, types, health, metrics, mutex_recovery, runtime)
+  - Run cargo check and cargo test
+  - Verify no warnings
+
+Session 2 (1-1.5 hours): Phase 4.2 - Configuration modules
+  - Migrate pool_config.rs (remove PyO3)
+  - Copy 3 more files (traits, parameter_binding, query)
+  - Run tests, verify integration
+
+Session 3 (2-3 hours): Phase 4.3a - Core pool & transactions (easy part)
+  - Copy pool_production.rs
+  - Copy transaction.rs
+  - Run tests, verify async methods work
+
+Session 4 (2-3 hours): Phase 4.3b - Pool.rs refactoring (complex part)
+  - Remove all PyO3 decorators
+  - Convert async methods to native async/await
+  - Update error handling throughout
+  - Handle context managers appropriately
+  - Run comprehensive tests
+
+Session 5 (30 min): Phase 4.4 - Integration & verification
+  - Create mod.rs with re-exports
+  - Run full verification checklist
+  - Prepare final commit
+
+TOTAL TIME: 5-8 hours depending on complexity
+
+================================================================================
+WHAT HAPPENS NEXT (PHASE 5)
+================================================================================
+
+After db module is migrated to pure Rust:
+
+1. PYTHON BINDINGS WRAPPER (py/src/lib.rs)
+   - Wrap core::db types with PyO3
+   - Restore context manager support for Python
+   - Restore PyDict returns for stats/metrics
+
+2. QUERY MODULE MIGRATION
+   - Now possible because graphql types are ready ✓
+   - Depends on cache module (will be restored after)
+
+3. CACHE MODULE RESTORATION
+   - Already migrated to core/src/cache
+   - Can now link to graphql and query modules
+   - 49+ tests will pass
+
+4. SECURITY/RBAC MODULES
+   - Depends on db pool (now pure Rust)
+   - Can migrate once pool is stable
+
+5. PIPELINE ORCHESTRATION
+   - Depends on query, cache, security
+   - Brings everything together
+
+6. HTTP SERVER
+   - Final layer on top
+
+================================================================================
+RISKS & MITIGATIONS
+================================================================================
+
+RISK 1: Context manager refactoring complexity
+Mitigation: Document all transformations in advance (✓ done)
+           Break into small steps with tests after each
+           Have fallback: implement simple connect()/close() if needed
+
+RISK 2: Error handling inconsistency
+Mitigation: Use consistent DatabaseError enum throughout
+           Test error paths extensively
+           Verify error messages are clear
+
+RISK 3: Async method signature changes
+Mitigation: Native async/await is simpler than future_into_py
+           All existing tests should still work
+           Add new tests for pure Rust async patterns
+
+RISK 4: Breaking changes in pool.rs
+Mitigation: Work in small increments with cargo check after each change
+           Keep pre-migration version as reference
+           Test frequently to catch regressions early
+
+================================================================================
+COMMON PITFALLS (AVOID THESE!)
+================================================================================
+
+1. Forgetting Arc cloning patterns
+   WRONG: let pool = Arc::clone(&self.inner); in pure async
+   RIGHT: Just use self.inner directly (Arc already Clone)
+
+2. Inconsistent error conversions
+   WRONG: Mix of DatabaseError and anyhow::Error
+   RIGHT: Consistent Result<T, DatabaseError> everywhere
+
+3. Incomplete context manager removal
+   WRONG: Keep __aenter__/__aexit__ but lose functionality
+   RIGHT: Remove them, implement alternatives or document removal
+
+4. Dictionary creation without Python
+   WRONG: Keep PyDict::new(py) code in core/
+   RIGHT: Return PoolStats struct, convert to dict in py/ layer
+
+5. Missing Arc imports after refactoring
+   WRONG: Remove Arc references accidentally
+   RIGHT: Keep Arc<Pool> for thread-safe sharing
+
+================================================================================
+DOCUMENT REFERENCE
+================================================================================
+
+Complete details available in: DB_MODULE_MIGRATION_STRATEGY.md
+
+The full strategy document includes:
+
+- Detailed file-by-file migration steps
+- Code before/after examples for each transformation
+- Step-by-step conversion instructions for pool.rs
+- Python integration point documentation
+- Complete execution checklist with 16 steps
+- Commit message template for final submission
+- Performance complexity analysis table
+- Learning resources and references
+
+================================================================================
+READY TO PROCEED?
+================================================================================
+
+The strategy is complete and documented. Next actions:
+
+IMMEDIATE: Begin Phase 4.1 (copy pure Rust core files)
+           ~ 30-45 minutes for 6 straightforward file copies
+
+RECOMMENDED: Follow the 4-phase approach systematically
+            Verify after each phase with cargo check/test
+            Saves debugging time by catching issues early
+
+ALTERNATIVE: If short on time, focus on Phase 4.1-4.2 first
+             These are low-risk, high-confidence migrations
+             Give momentum for more complex work later
+
+================================================================================
