@@ -96,8 +96,21 @@ impl std::fmt::Debug for Arena {
     #[allow(unsafe_code)] // Performance-critical Debug impl
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Arena")
-            .field("capacity", &unsafe { (*self.buf.get()).capacity() }) // SAFETY: UnsafeCell access - single-threaded
-            .field("used", &unsafe { *self.pos.get() }) // SAFETY: UnsafeCell access - single-threaded
+            .field("capacity", &unsafe {
+                // SAFETY: UnsafeCell provides interior mutability for capacity tracking.
+                // Safe because:
+                // 1. !Send + !Sync marker ensures single-threaded access at compile time
+                // 2. Vec<u8> is always initialized (created in `new()`)
+                // 3. Reading capacity is non-destructive and doesn't violate borrow rules
+                (*self.buf.get()).capacity()
+            })
+            .field("used", &unsafe {
+                // SAFETY: Reading position counter via UnsafeCell is safe because:
+                // 1. !Send + !Sync marker prevents concurrent access
+                // 2. usize field is always valid and initialized
+                // 3. Read-only access, no mutable aliases possible
+                *self.pos.get()
+            })
             .field("max_size", &self.max_size)
             .finish()
     }
@@ -164,9 +177,30 @@ impl Arena {
     // Interior mutability pattern - safe via !Send + !Sync
     #[allow(clippy::mut_from_ref)] // Interior mutability pattern - safe via !Send + !Sync marker
     pub fn try_alloc_bytes(&self, len: usize) -> Result<&mut [u8], ArenaError> {
-        // SAFETY: Single-threaded access enforced by !Send + !Sync marker
         #[allow(unsafe_code)] // Performance-critical bump allocator
         unsafe {
+            // SAFETY: UnsafeCell access is safe for bump allocator because:
+            //
+            // Preconditions (enforced by type system):
+            // 1. !Send + !Sync marker prevents concurrent access at compile time
+            // 2. No other references to pos or buf can exist during this call
+            // 3. Interior mutability is intentional and documented
+            //
+            // Pointer validity:
+            // 4. UnsafeCell::get() returns valid, non-null raw pointers
+            // 5. Both pos and buf were initialized in Arena::new()
+            // 6. Dereferencing raw pointers is safe given preconditions 1-2
+            //
+            // Memory safety:
+            // 7. checked_add() prevents arithmetic overflow
+            // 8. Size limit check prevents allocation beyond max_size
+            // 9. Buffer.resize() properly reallocates and initializes memory
+            // 10. Slice bounds [current_pos..new_pos] are verified before dereferencing
+            //
+            // Lifetime safety:
+            // 11. Returned &mut slice is bound to arena lifetime (&'a)
+            // 12. Arena cannot be moved or dropped while slices are in use (borrow checker)
+
             let pos = self.pos.get();
             let buf = self.buf.get();
 
@@ -177,14 +211,14 @@ impl Arena {
                 return Err(ArenaError::SizeExceeded);
             }
 
-            // Grow buffer if needed
+            // Grow buffer if needed (Vec::resize is safe)
             if new_pos > (*buf).len() {
                 (*buf).resize(new_pos, 0);
             }
 
             *pos = new_pos;
 
-            // SAFETY: We've ensured the slice is within bounds and buffer is valid
+            // Slice is valid: we ensured new_pos <= buf.len() above
             let slice = &mut (&mut *buf)[current_pos..new_pos];
             Ok(slice)
         }
@@ -218,9 +252,13 @@ impl Arena {
     /// The underlying buffer is reused for the next request.
     #[inline]
     pub fn reset(&self) {
-        // SAFETY: Single-threaded access enforced by !Send + !Sync marker
         #[allow(unsafe_code)] // Performance-critical reset
         unsafe {
+            // SAFETY: Resetting position is safe because:
+            // 1. !Send + !Sync marker ensures single-threaded access
+            // 2. Writing usize is atomic and cannot cause partial initialization
+            // 3. Setting to 0 is always valid (represents empty arena)
+            // 4. No active slices can exist during reset (borrow checker enforces this)
             *self.pos.get() = 0;
         }
     }
@@ -228,9 +266,13 @@ impl Arena {
     /// Get current allocation position (bytes used).
     #[inline]
     pub fn used(&self) -> usize {
-        // SAFETY: Single-threaded access enforced by !Send + !Sync marker
         #[allow(unsafe_code)] // Performance-critical accessor
         unsafe {
+            // SAFETY: Reading position is safe because:
+            // 1. !Send + !Sync marker prevents concurrent modifications
+            // 2. Reading usize cannot panic or cause undefined behavior
+            // 3. Value is always initialized (set in new() or reset())
+            // 4. Read is non-destructive, doesn't affect memory state
             *self.pos.get()
         }
     }

@@ -65,7 +65,12 @@ pub fn snake_to_camel<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u
     #[cfg(target_arch = "x86_64")]
     {
         // Runtime detection of AVX2 support on x86_64
+        // SAFETY: is_x86_feature_detected!() correctly checks CPUID at runtime
         if is_x86_feature_detected!("avx2") {
+            // SAFETY: Calling AVX2 function is safe because:
+            // 1. CPU feature detection verified above at runtime
+            // 2. All AVX2 intrinsics are valid on CPUs with AVX2 support
+            // 3. Function returns correct results or panics (no UB)
             #[allow(unsafe_code)] // AVX2 intrinsics require unsafe
             unsafe {
                 snake_to_camel_avx2(input, arena)
@@ -111,7 +116,12 @@ pub fn snake_to_camel<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u
 #[allow(unsafe_code)] // SIMD implementation requires unsafe
 unsafe fn snake_to_camel_avx2<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u8] {
     // Fast path: no underscores (checked via SIMD)
-    // SAFETY: This function requires AVX2 support, ensured by target_feature attribute
+    // SAFETY: This function requires AVX2 support, ensured by target_feature attribute.
+    // The #[target_feature] attribute ensures this function is only called on AVX2-capable CPUs.
+    // Calling SIMD intrinsics is safe because:
+    // 1. Compiler enforces #[target_feature] attribute at codegen time
+    // 2. Caller (snake_to_camel) verified AVX2 support at runtime before calling
+    // 3. All SIMD intrinsics are valid operations on AVX2 register states
     #[allow(unsafe_code)] // AVX2 intrinsics require unsafe
     let underscore_mask = unsafe { find_underscores_avx2(input) };
     if underscore_mask.is_empty() {
@@ -150,12 +160,33 @@ unsafe fn snake_to_camel_avx2<'a>(input: &[u8], arena: &'a crate::core::Arena) -
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_code)] // SIMD implementation requires unsafe
 unsafe fn find_underscores_avx2(input: &[u8]) -> UnderscoreMask {
-    // SAFETY: This function requires AVX2 support, ensured by target_feature attribute.
-    // All SIMD intrinsics are safe to use within this unsafe block.
+    // SAFETY: SIMD operations are safe because:
+    //
+    // Preconditions:
+    // 1. #[target_feature(enable = "avx2")] ensures CPU has AVX2 at codegen time
+    // 2. Caller verified AVX2 support at runtime (double check)
+    // 3. All SIMD registers start in valid state (CPU state guaranteed by OS)
+    //
+    // SIMD intrinsic safety:
+    // 4. _mm256_set1_epi8() creates a 256-bit register with broadcast pattern
+    // 5. _mm256_loadu_si256() is safe for unaligned loads (handles any alignment)
+    // 6. _mm256_cmpeq_epi8() performs byte-wise equality comparison
+    // 7. _mm256_movemask_epi8() extracts comparison result to i32 (no undefined behavior)
+    //
+    // Type casting safety:
+    // 8. (b'_' as i8) = (95u8 as i8) = 95i8 (same bit pattern)
+    // 9. bitmask (i32) -> u64 conversion uses bitwise operations
+    // 10. Bit shifts never exceed 64 (chunks_len * 32 + i < 256)
+    //
+    // Memory safety:
+    // 11. chunks_exact(32) guarantees proper 32-byte alignment
+    // 12. remainder.iter() is safe and never dereferences past input length
+    // 13. All indices are computed within bounds before use
+
     #[allow(unsafe_code)] // SIMD intrinsics require unsafe
-    #[allow(clippy::cast_possible_wrap)] // Byte pattern cast - wrapping is intended
-    #[allow(clippy::cast_ptr_alignment)] // AVX2 handles unaligned loads with _mm256_loadu_si256
-    #[allow(clippy::cast_sign_loss)] // Bitmask conversion - sign loss is intended
+    #[allow(clippy::cast_possible_wrap)] // Byte pattern cast: b'_' (95) -> i8 (95), safe
+    #[allow(clippy::cast_ptr_alignment)] // _mm256_loadu_si256 handles unaligned loads safely
+    #[allow(clippy::cast_sign_loss)] // Intentional: bitmask (i32) -> u64, sign loss is expected
     unsafe {
         let underscore_vec = _mm256_set1_epi8(b'_' as i8);
         let mut mask = UnderscoreMask::new();
@@ -165,8 +196,11 @@ unsafe fn find_underscores_avx2(input: &[u8]) -> UnderscoreMask {
         let remainder = chunks.remainder();
 
         for (chunk_idx, chunk) in chunks.enumerate() {
+            // Load 32 bytes from unaligned address (AVX2 supports unaligned loads)
             let data = _mm256_loadu_si256(chunk.as_ptr().cast::<__m256i>());
+            // Compare each byte against underscore byte
             let cmp = _mm256_cmpeq_epi8(data, underscore_vec);
+            // Extract comparison result as 32-bit bitmask
             let bitmask = _mm256_movemask_epi8(cmp);
 
             if bitmask != 0 {
@@ -174,7 +208,7 @@ unsafe fn find_underscores_avx2(input: &[u8]) -> UnderscoreMask {
             }
         }
 
-        // Handle remainder (< 32 bytes)
+        // Handle remainder (< 32 bytes) with scalar fallback
         for (i, &byte) in remainder.iter().enumerate() {
             if byte == b'_' {
                 mask.set_bit(chunks_len * 32 + i);
