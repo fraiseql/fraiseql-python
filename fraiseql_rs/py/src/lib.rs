@@ -1,4 +1,4 @@
-//! `FraiseQL` Python Bindings (Phase 6.1 + Phase 6.2 + Phase 6.3)
+//! `FraiseQL` Python Bindings (Phase 6.1 + Phase 6.2 + Phase 6.3 + Phase 6.4)
 //!
 //! This crate provides Python bindings for the `FraiseQL` core library.
 //! It wraps pure Rust types with `PyO3` decorators.
@@ -10,6 +10,7 @@
 
 mod ffi;
 
+use ffi::apq::{hash_query, hash_query_with_variables, verify_hash, verify_hash_with_variables};
 use ffi::errors::PySecurityError;
 use ffi::query::{
     build_sql_query, build_sql_query_cached, clear_cache, get_cache_stats, PyCacheStats,
@@ -27,7 +28,7 @@ fn version() -> &'static str {
     VERSION
 }
 
-/// Python module definition (Phase 6.1 + Phase 6.2 + Phase 6.3).
+/// Python module definition (Phase 6.1 + Phase 6.2 + Phase 6.3 + Phase 6.4).
 #[pymodule]
 fn _fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(version, m)?)?;
@@ -44,6 +45,12 @@ fn _fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Phase 6.3: Error handling (from FFI layer)
     m.add_class::<PySecurityError>()?;
 
+    // Phase 6.4: APQ hasher functions (from FFI layer)
+    m.add_function(wrap_pyfunction!(hash_query, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_hash, m)?)?;
+    m.add_function(wrap_pyfunction!(hash_query_with_variables, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_hash_with_variables, m)?)?;
+
     // Backward compatibility functions
     m.add_function(wrap_pyfunction!(build_sql_query, m)?)?;
     m.add_function(wrap_pyfunction!(build_sql_query_cached, m)?)?;
@@ -51,7 +58,6 @@ fn _fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(clear_cache, m)?)?;
 
     // Classes will be added here as we migrate:
-    // Phase 6.4: APQ hasher
     // Phase 6.5: Full FFI bridge
 
     Ok(())
