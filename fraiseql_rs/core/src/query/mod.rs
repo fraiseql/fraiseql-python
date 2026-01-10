@@ -1,11 +1,13 @@
-//! SQL query building and manipulation (Phase 5.5b + Phase 6.1 - Foundation & Schema Extraction)
+//! SQL query building and manipulation (Phase 5.5b + Phase 6.1 + Phase 6.2)
 //!
 //! This module provides core query building and manipulation utilities:
 //! - Case conversion (camelCase ↔ snake_case)
 //! - Operator registry and matching
 //! - SQL prepared statement building with parameter binding
 //! - Schema metadata types (Phase 6.1 - pure Rust, no PyO3)
+//! - Query builder with optional caching (Phase 6.2 - pure Rust, no PyO3)
 
+pub mod builder; // Phase 6.2: Pure Rust query builder (moved from src/query/mod.rs)
 pub mod casing;
 pub mod operators;
 pub mod prepared_statement;
@@ -18,6 +20,10 @@ pub mod schema; // Phase 6.1: Pure Rust schema types (moved from src/query/schem
 //   - where_normalization // Depends on schema.SchemaMetadata (#[pyclass])
 
 // Re-export key types for convenience
+pub use builder::{
+    BuilderError, CacheStats, ComposedQuery, GeneratedQuery, ParameterValue, QueryBuilder,
+    QueryBuilderWithCache,
+};
 pub use casing::{to_camel_case, to_snake_case};
 pub use operators::{
     get_operator_info, get_operators_by_category, is_operator, OperatorCategory, OperatorInfo,
