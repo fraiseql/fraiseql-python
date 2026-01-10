@@ -52,6 +52,9 @@ pub mod config;
 /// Core utility modules (Phase 5.1)
 pub mod core;
 
+/// Query caching layer (Phase 5.2)
+pub mod cache;
+
 /// Database connectivity.
 pub mod db;
 
