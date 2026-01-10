@@ -53,8 +53,10 @@ impl FraiseQLConfig {
     ///
     /// Returns error if required environment variables are missing.
     pub fn from_env() -> Result<Self> {
-        let database_url = std::env::var("DATABASE_URL")
-            .map_err(|_| FraiseQLError::Configuration("DATABASE_URL not set".to_string()))?;
+        let database_url =
+            std::env::var("DATABASE_URL").map_err(|_| FraiseQLError::Configuration {
+                message: "DATABASE_URL not set".to_string(),
+            })?;
 
         let host = std::env::var("FRAISEQL_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
@@ -119,9 +121,9 @@ impl ConfigBuilder {
     /// Returns error if configuration is invalid.
     pub fn build(self) -> Result<FraiseQLConfig> {
         if self.config.database_url.is_empty() {
-            return Err(FraiseQLError::Configuration(
-                "database_url is required".to_string(),
-            ));
+            return Err(FraiseQLError::Configuration {
+                message: "database_url is required".to_string(),
+            });
         }
         Ok(self.config)
     }
