@@ -1,229 +1,193 @@
-[package]
+# Benchmark targets (Phase 0.3)
+[[bench]]
+harness = false
+name = "connection_pool"
+
+# Legacy benchmarks (keep for now)
+
+[[bench]]
+harness = false
+name = "query_execution"
+
+[[bench]]
+harness = false
+name = "streaming"
+[[bench]]
+harness = false
+name = "pipeline"
+
+[[bench]]
+harness = false
+name = "memory"
+
+[[bench]]
+harness = false
+name = "core_benchmark"
+
+[build-dependencies]
+# Detect CPU features at compile time
+target-features = "0.1"
+
+[dependencies]
+anyhow = "1.0"
+# Schema registry dependencies
+arc-swap = "1.6"
+async-trait = "0.1"
+# Byte buffer for ToSql implementation
+bytes = "1.11"  # Updated from 1.0 to fix CVE-2026-25541 (integer overflow)
+# Date/time handling
+chrono = {version = "0.4", features = ["serde"]}
+deadpool = "0.12"
+deadpool-postgres = "0.14"
+# GraphQL parsing (Phase 6)
+graphql-parser = "0.4"
+hex = "0.4"  # Hex encoding for tokens
+http = "0.2"  # HTTP header types for CORS
+itertools = "0.12"  # String utilities
+# Authentication (Phase 10)
+jsonwebtoken = "10.3"  # JWT validation with built-in JWK support. Updated from 9.2 to fix CVE-2026-25537 (type confusion/auth bypass)
+lazy_static = "1.4"  # Static regex
+linked-hash-map = "0.5"  # For LRU implementation
+# Query caching (Phase 8)
+lru = "0.16"  # LRU cache
+once_cell = "1.0"
+pyo3 = {version = "0.25.0", features = ["extension-module", "experimental-async"]}
+pyo3-async-runtimes = {version = "0.25", features = ["tokio-runtime"]}
+# Security features (Phase 12)
+rand = "0.8"  # Random number generation for CSRF
+# Query building (Phase 7)
+regex = "1.10"  # Field name transformations
+reqwest = {version = "0.11", features = ["json"]}  # JWKS fetching
+# JSON parsing and serialization (zero-copy where possible)
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+sha2 = "0.10"  # Hashing for signatures
+thiserror = "1.0"
+tokio = {version = "1.35", features = ["full"]}  # Async runtime
+# PostgreSQL client and connection pooling (Phase 1)
+tokio-postgres = {version = "0.7", features = ["with-serde_json-1", "with-uuid-1", "with-chrono-0_4"]}
+# UUID support
+uuid = {version = "1.0", features = ["v4", "serde"]}
+
+[dev-dependencies]
+# Assertions and matchers
+assert_matches = "1.5"  # Pattern matching in assertions
+# Benchmarking infrastructure (Phase 0.3)
+criterion = {version = "0.5", features = ["async_tokio", "html_reports"]}
+# Legacy benchmarking infrastructure
+dhat = "0.3"  # Heap profiling
+# Mocking
+mockall = "0.12"  # Mock objects for unit tests
+pretty_assertions = "1.4"  # Pretty-print assertion failures
+# Property testing
+proptest = "1.0"  # Generate test cases
+# Testing
+pyo3 = {version = "0.25.0", features = ["auto-initialize"]}
+# Test database containers
+testcontainers = "0.15"  # Docker containers for tests
+testcontainers-modules = {version = "0.2", features = ["postgres"]}
+tokio = {version = "1.0", features = ["full"]}
+# Testing framework
+tokio-test = "0.4"  # Async runtime for tests
+
+[features]
+default = ["simd"]
+dhat-heap = []
+python = []  # Python bindings feature (for PyO3 error conversions)
+simd = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 name = "fraiseql_rs"
-version = "1.9.17"
-edition = "2021"
-authors = ["FraiseQL Contributors"]
-description = "Ultra-fast GraphQL JSON transformation in Rust for FraiseQL"
-readme = "README.md"
-repository = "https://github.com/fraiseql/fraiseql"
-license = "MIT"
-keywords = ["graphql", "json", "performance", "pyo3", "rust"]
-categories = ["web-programming", "api-bindings"]
-publish = false
 
 # ============================================================================
 # LINTING CONFIGURATION - Phase 0.1: Quality Enforcement Foundation
 # ============================================================================
 [lints.clippy]
-# Core quality lints (allow some flexibility initially)
-todo = "deny"                     # FORCE completion before merge
-unwrap_used = "allow"             # Allow unwrap() calls temporarily
-expect_used = "warn"              # Catch expect() calls
-panic = "warn"                    # Catch panic!() calls
-unimplemented = "warn"            # Catch unimplemented!()
-dbg_macro = "warn"                # Catch debug macros
-
+cognitive_complexity = "warn"  # Detect overly complex functions
+dbg_macro = "warn"  # Catch debug macros
+doc_markdown = "allow"  # Allow missing backticks in docs
+empty_line_after_outer_attr = "allow"  # Allow existing formatting
+# Allow existing patterns temporarily (will tighten in future phases)
+excessive_nesting = "allow"  # Allow existing nested code
+expect_used = "warn"  # Catch expect() calls
+explicit_deref_methods = "warn"
+inefficient_to_string = "warn"
+inline_always = "allow"  # Allow inline(always) attributes
+manual_is_multiple_of = "allow"  # Allow existing modulo checks
+manual_let_else = "allow"  # Allow existing match patterns
+manual_str_repeat = "warn"
+missing_errors_doc = "allow"  # Allow missing error docs
+must_use_candidate = "allow"  # Allow missing must_use
+needless_raw_string_hashes = "allow"  # Allow existing raw strings
+panic = "warn"  # Catch panic!() calls
 # Performance basics
 redundant_clone = "warn"
-vec_init_then_push = "warn"
-inefficient_to_string = "warn"
-manual_str_repeat = "warn"
-explicit_deref_methods = "warn"
-
+# Core quality lints (allow some flexibility initially)
+todo = "deny"  # FORCE completion before merge
 # Code clarity basics
-too_many_arguments = "warn"       # Enforce function argument limits
-cognitive_complexity = "warn"     # Detect overly complex functions
-
-# Allow existing patterns temporarily (will tighten in future phases)
-excessive_nesting = "allow"       # Allow existing nested code
-unreadable_literal = "allow"      # Allow existing numeric literals
-needless_raw_string_hashes = "allow"  # Allow existing raw strings
-doc_markdown = "allow"            # Allow missing backticks in docs
-missing_errors_doc = "allow"      # Allow missing error docs
-uninlined_format_args = "allow"   # Allow existing format strings
-manual_let_else = "allow"         # Allow existing match patterns
-unnecessary_wraps = "allow"       # Allow existing Result wrapping
-must_use_candidate = "allow"      # Allow missing must_use
-use_self = "allow"                # Allow explicit type names
-inline_always = "allow"           # Allow inline(always) attributes
-empty_line_after_outer_attr = "allow"  # Allow existing formatting
-type_complexity = "warn"          # Detect overly complex types
-manual_is_multiple_of = "allow"   # Allow existing modulo checks
-unit_arg = "allow"                # Allow existing unit args
+too_many_arguments = "warn"  # Enforce function argument limits
+type_complexity = "warn"  # Detect overly complex types
+unimplemented = "warn"  # Catch unimplemented!()
+uninlined_format_args = "allow"  # Allow existing format strings
+unit_arg = "allow"  # Allow existing unit args
+unnecessary_wraps = "allow"  # Allow existing Result wrapping
+unreadable_literal = "allow"  # Allow existing numeric literals
+unwrap_used = "allow"  # Allow unwrap() calls temporarily
+use_self = "allow"  # Allow explicit type names
+vec_init_then_push = "warn"
 
 [lints.rust]
-unsafe_code = "allow"             # Allow unsafe code (documented and justified)
-missing_docs = "allow"            # Allow missing docs temporarily
 missing_debug_implementations = "allow"  # Allow missing Debug impls temporarily
+missing_docs = "allow"  # Allow missing docs temporarily
+unsafe_code = "allow"  # Allow unsafe code (documented and justified)
 unsafe_op_in_unsafe_fn = "allow"  # Allow unsafe ops in unsafe fns
 
-[lib]
+[package]
+authors = ["FraiseQL Contributors"]
+categories = ["web-programming", "api-bindings"]
+description = "Ultra-fast GraphQL JSON transformation in Rust for FraiseQL"
+edition = "2021"
+keywords = ["graphql", "json", "performance", "pyo3", "rust"]
+license = "MIT"
 name = "fraiseql_rs"
-crate-type = ["cdylib", "rlib"]
+publish = false
+readme = "README.md"
+repository = "https://github.com/fraiseql/fraiseql"
+version = "1.9.17"
 
-[features]
-default = ["simd"]
-simd = []
-dhat-heap = []
-python = []  # Python bindings feature (for PyO3 error conversions)
-
-[dependencies]
-pyo3 = { version = "0.25.0", features = ["extension-module", "experimental-async"] }
-
-# JSON parsing and serialization (zero-copy where possible)
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-anyhow = "1.0"
-
-# PostgreSQL client and connection pooling (Phase 1)
-tokio-postgres = { version = "0.7", features = ["with-serde_json-1", "with-uuid-1", "with-chrono-0_4"] }
-deadpool-postgres = "0.14"
-deadpool = "0.12"
-async-trait = "0.1"
-
-# Date/time handling
-chrono = { version = "0.4", features = ["serde"] }
-
-# UUID support
-uuid = { version = "1.0", features = ["v4", "serde"] }
-
-# Fast string operations
-# Note: Will add for Phase 2 (camelCase optimization)
-# smallvec = "1.13"
-
-# Byte buffer for ToSql implementation
-bytes = "1.11"  # Updated from 1.0 to fix CVE-2026-25541 (integer overflow)
-
-# SIMD support (disabled due to compatibility issues)
-# packed_simd = { version = "0.3", optional = true }
-
-# Schema registry dependencies
-arc-swap = "1.6"
-once_cell = "1.0"
-
-# GraphQL parsing (Phase 6)
-graphql-parser = "0.4"
-pyo3-async-runtimes = { version = "0.25", features = ["tokio-runtime"] }
-
-# Query building (Phase 7)
-regex = "1.10"              # Field name transformations
-lazy_static = "1.4"         # Static regex
-itertools = "0.12"          # String utilities
-
-# Query caching (Phase 8)
-lru = "0.16"                # LRU cache
-linked-hash-map = "0.5"     # For LRU implementation
-sha2 = "0.10"               # Hashing for signatures
-
-# Authentication (Phase 10)
-jsonwebtoken = "10.3"       # JWT validation with built-in JWK support. Updated from 9.2 to fix CVE-2026-25537 (type confusion/auth bypass)
-
-# Security features (Phase 12)
-rand = "0.8"                # Random number generation for CSRF
-hex = "0.4"                 # Hex encoding for tokens
-http = "0.2"                # HTTP header types for CORS
-reqwest = { version = "0.11", features = ["json"] }  # JWKS fetching
-tokio = { version = "1.35", features = ["full"] }  # Async runtime
-# sha2 already included above for signatures
-
-[dev-dependencies]
-# Testing framework
-tokio-test = "0.4"                    # Async runtime for tests
-tokio = { version = "1.0", features = ["full"] }
-
-# Test database containers
-testcontainers = "0.15"               # Docker containers for tests
-testcontainers-modules = { version = "0.2", features = ["postgres"] }
-
-# Assertions and matchers
-assert_matches = "1.5"                # Pattern matching in assertions
-pretty_assertions = "1.4"             # Pretty-print assertion failures
-
-# Mocking
-mockall = "0.12"                      # Mock objects for unit tests
-
-# Property testing
-proptest = "1.0"                      # Generate test cases
-
-# Benchmarking infrastructure (Phase 0.3)
-criterion = { version = "0.5", features = ["async_tokio", "html_reports"] }
-
-# Testing
-pyo3 = { version = "0.25.0", features = ["auto-initialize"] }
-
-# PyO3 async support - will add in Phase 1.5 when needed
-# pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
-
-# Legacy benchmarking infrastructure
-dhat = "0.3"  # Heap profiling
-
-# Benchmark targets (Phase 0.3)
-[[bench]]
-name = "connection_pool"
-harness = false
-
-[[bench]]
-name = "query_execution"
-harness = false
-
-[[bench]]
-name = "streaming"
-harness = false
-
-# Legacy benchmarks (keep for now)
-[[bench]]
-name = "pipeline"
-harness = false
-
-[[bench]]
-name = "memory"
-harness = false
-
-[[bench]]
-name = "core_benchmark"
-harness = false
-
-# Binary targets removed - use benches/ for performance testing
+# Benchmark profile for accurate measurements
+[profile.bench]
+codegen-units = 1
+incremental = false
+lto = "fat"
+opt-level = 3
+overflow-checks = false
 
 [profile.release]
+codegen-units = 1  # Better optimization (slower compile)
+incremental = false  # Disable incremental compilation for better optimization
+lto = "fat"  # Link-time optimization across all crates
 opt-level = 3
-lto = "fat"              # Link-time optimization across all crates
-codegen-units = 1        # Better optimization (slower compile)
-panic = "abort"          # Smaller binary, faster unwinding
-strip = true             # Remove debug symbols
 overflow-checks = false  # Disable overflow checks in release
-incremental = false      # Disable incremental compilation for better optimization
+panic = "abort"  # Smaller binary, faster unwinding
+strip = true  # Remove debug symbols
 
 [profile.release.package."*"]
-opt-level = 3
 codegen-units = 1
-overflow-checks = false
 incremental = false
+opt-level = 3
+overflow-checks = false
 
 # Profile-guided optimization (PGO) profile
 [profile.release-pgo]
 inherits = "release"
-# PGO will be enabled when we have training data
-
-# Benchmark profile for accurate measurements
-[profile.bench]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-overflow-checks = false
-incremental = false
 
 # Test profile configuration
 [profile.test]
-opt-level = 1                    # Some optimization for faster tests
-incremental = true               # Faster rebuild during test development
-
 # Keep debug info for better error messages
 debug = true
 debug-assertions = true
+incremental = true  # Faster rebuild during test development
+opt-level = 1  # Some optimization for faster tests
 overflow-checks = true
-
-[build-dependencies]
-# Detect CPU features at compile time
-target-features = "0.1"
