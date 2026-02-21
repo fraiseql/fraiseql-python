@@ -649,6 +649,7 @@ fn transform_with_aliases(
 ///
 /// Extracted to reduce code duplication between list and single object cases.
 #[inline]
+#[allow(clippy::too_many_arguments)] // Reason: all args are distinct and required by the transform logic
 fn transform_nested_field_with_aliases(
     value: &Value,
     nested_type: Option<&str>,

@@ -111,7 +111,8 @@ jobs:
         run: |
           uv pip install --system maturin
           uv pip install --system -e ".[dev]"
-          maturin develop --manifest-path fraiseql_rs/Cargo.toml
+          maturin build --manifest-path fraiseql_rs/Cargo.toml --release
+          uv pip install --system fraiseql_rs/target/wheels/*.whl --force-reinstall
 
       - name: Run integration tests
         run: uv run pytest tests/integration/ -q --tb=short
