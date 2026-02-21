@@ -12,7 +12,7 @@
 
 ---
 
-## GraphQL for the LLM era. Simple. Powerful. Rust-fast.
+## GraphQL for the LLM era. Simple. Powerful. Rust-fast
 
 PostgreSQL returns JSONB. Rust transforms it. Zero Python overhead.
 
@@ -118,6 +118,7 @@ FraiseQL has two versions with overlapping but complementary strengths:
 ## Is This For You?
 
 **✅ Perfect if you:**
+
 - Build high-performance APIs with PostgreSQL
 - Want 7-10x faster JSON processing
 - Need enterprise security & compliance
@@ -125,6 +126,7 @@ FraiseQL has two versions with overlapping but complementary strengths:
 - Use LLMs for code generation
 
 **❌ Consider alternatives if:**
+
 - You need multi-database support (PostgreSQL-only)
 - Building your first GraphQL API (use simpler frameworks)
 - Don't use JSONB columns in PostgreSQL
@@ -134,12 +136,14 @@ FraiseQL has two versions with overlapping but complementary strengths:
 ## How It Works
 
 **Traditional GraphQL** (slow):
+
 ```
 PostgreSQL → Rows → ORM deserialize → Python objects → GraphQL serialize → JSON → Response
             ╰─── Unnecessary roundtrips (2 conversions) ───╯
 ```
 
 **FraiseQL** (fast):
+
 ```
 PostgreSQL → JSONB → Rust field selection → HTTP Response
            ╰─ Zero Python overhead (1 conversion) ─╯
@@ -167,6 +171,7 @@ fraiseql dev
 **Your GraphQL API is live at `http://localhost:8000/graphql`** 🎉
 
 **Next steps:**
+
 - [5-Minute Quickstart](docs/getting-started/quickstart.md)
 - [First Hour Guide](docs/getting-started/first-hour.md) - Build a complete blog API
 - [Understanding FraiseQL](docs/guides/understanding-fraiseql.md) - Architecture deep-dive
@@ -247,6 +252,7 @@ class User:
 ### Trinity Identifiers
 
 Three ID types for different purposes:
+
 - **pk_user** (int): Internal DB key, not exposed
 - **id** (UUID): Public API, stable, never changes
 - **identifier** (str): Human-readable slug, SEO-friendly
@@ -301,11 +307,13 @@ mutation {
 | **Audit Logging** | ✅ Config | ❌ Pending | ❌ | ❌ Not ready | Middleware implementation needed |
 
 **Legend:**
+
 - ✅ Complete and verified
 - ⚠️ Partial implementation or limited scope
 - ❌ Not implemented or not production ready
 
 **Roadmap:**
+
 - **v1.9.16**: Complete security profile enforcement (Issue #225)
 - **v1.9.16**: Add RBAC enforcement verification tests
 - **v1.9.16**: Unified field filtering for all query types
@@ -325,18 +333,21 @@ mutation {
 | **Total** | **$450-4,000/mo** | **PostgreSQL only ($50/mo)** | **$5,400-48,000/yr** |
 
 ### 📋 Software Bill of Materials (SBOM)
+
 - **Automated generation** via `fraiseql sbom generate`
 - **Global compliance**: US EO 14028, EU NIS2/CRA, PCI-DSS 4.0, ISO 27001
 - **CycloneDX 1.5 format** with cryptographic signing
 - **CI/CD integration** for continuous compliance
 
 ### 🔑 Key Management Service (KMS)
+
 - **HashiCorp Vault**: Production-ready with transit engine
 - **AWS KMS**: Native integration with GenerateDataKey
 - **GCP Cloud KMS**: Envelope encryption support
 - **Local Provider**: Development-only with warnings
 
 ### 🛡️ Security Profiles
+
 - `STANDARD`: Default protections for general applications
 - `REGULATED`: PCI-DSS/HIPAA/SOC 2 compliance
 - `RESTRICTED`: Government, defence, critical infrastructure
@@ -347,11 +358,13 @@ mutation {
   - 🇸🇬 Singapore CII operators
 
 ### 📊 Observability
+
 - OpenTelemetry tracing with sensitive data sanitization
 - Security event logging
 - Audit trail support
 
 ### 🔒 Advanced Security Controls
+
 - **Rate limiting** for API endpoints and GraphQL operations
 - **CSRF protection** for mutations and forms
 - **Security headers** middleware for defense in depth
@@ -852,25 +865,30 @@ query {
 **50+ Specialized Scalar Types:**
 
 **Financial & Trading:**
+
 - CUSIP, ISIN, SEDOL, MIC, LEI - Security identifiers
 - Money, Percentage, ExchangeRate - Financial values
 - CurrencyCode, StockSymbol - Trading symbols
 
 **Network & Infrastructure:**
+
 - IPv4, IPv6, CIDR, MACAddress - Network addresses with subnet operations
 - Hostname, DomainName, Port, EmailAddress - Internet identifiers
 - APIKey, HashSHA256 - Security tokens
 
 **Geospatial & Location:**
+
 - Coordinate, Latitude, Longitude - Geographic coordinates with distance calculations
 - PostalCode, Timezone - Location data
 
 **Business & Logistics:**
+
 - ContainerNumber, FlightNumber, TrackingNumber, VIN - Asset identifiers
 - IBAN, LicensePlate - Financial & vehicle identifiers
 - PhoneNumber, LocaleCode, LanguageCode - Contact & localization
 
 **Technical & Data:**
+
 - UUID, JSON, Date, DateTime, Time, DateRange - Standard types with validation
 - LTree - Hierarchical data with ancestor/descendant queries
 - SemanticVersion, Color, MIMEType, File, Image - Specialized formats
@@ -1108,15 +1126,18 @@ MIT License - see [LICENSE](LICENSE)
 ### Quick Navigation
 
 **New to FraiseQL?**
+
 - Start here: **[First Hour Guide](https://github.com/fraiseql/fraiseql-python/blob/main/docs/getting-started/first-hour.md)** (60 min, hands-on)
 - Architecture overview: **[Understanding FraiseQL](https://github.com/fraiseql/fraiseql-python/blob/main/docs/guides/understanding-fraiseql.md)** (10 min read)
 - Project structure: **[Strategic Overview](https://github.com/fraiseql/fraiseql-python/blob/main/docs/strategic/PROJECT_STRUCTURE.md)**
 
 **Exploring v2?**
+
 - v2 Repository: **[fraiseql/fraiseql](https://github.com/fraiseql/fraiseql)**
 - v2 Documentation: **[fraiseql.readthedocs.io](https://fraiseql.readthedocs.io)**
 
 **Troubleshooting:**
+
 - **[Complete Version Roadmap](https://github.com/fraiseql/fraiseql-python/blob/main/dev/audits/version-status.md)** - Version status and feature matrix
 
 ---
