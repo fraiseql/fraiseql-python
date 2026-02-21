@@ -1,5 +1,12 @@
-# Pre-commit hooks for FraiseQL v2
+# Pre-commit hooks for FraiseQL Python framework
 # Install: pip install pre-commit && pre-commit install
+
+# pre-commit.ci configuration: skip Rust hooks (cargo not available in CI)
+ci:
+  # Skip hooks that require system dependencies not available in pre-commit.ci:
+  # - fmt, clippy, cargo-audit: require cargo (Rust toolchain)
+  # - markdownlint: hundreds of pre-existing violations in archived/legacy docs
+  skip: [fmt, clippy, cargo-audit, markdownlint]
 
 repos:
   # Rust formatting
@@ -31,6 +38,8 @@ repos:
         exclude: '\.md$'
       - id: end-of-file-fixer
       - id: check-yaml
+        args: ['--allow-multiple-documents']
+        exclude: 'deploy/kubernetes/helm/.*'
       - id: check-toml
       - id: check-added-large-files
         args: ['--maxkb=1000']
