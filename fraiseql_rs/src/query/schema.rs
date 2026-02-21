@@ -1,14 +1,15 @@
 //! Schema metadata for query building.
 
+use std::collections::HashMap;
+
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Schema metadata for all tables in FraiseQL.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SchemaMetadata {
     pub tables: HashMap<String, TableSchema>,
-    pub types: HashMap<String, TypeDefinition>,
+    pub types:  HashMap<String, TypeDefinition>,
 }
 
 /// Schema for a single database view/table.
@@ -34,7 +35,7 @@ pub struct TableSchema {
 /// Type definition for GraphQL types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TypeDefinition {
-    pub name: String,
+    pub name:   String,
     pub fields: HashMap<String, FieldType>,
 }
 
@@ -42,9 +43,9 @@ pub struct TypeDefinition {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldType {
     pub graphql_type: String,
-    pub sql_type: String,
-    pub is_scalar: bool,
-    pub is_list: bool,
+    pub sql_type:     String,
+    pub is_scalar:    bool,
+    pub is_list:      bool,
 }
 
 impl SchemaMetadata {
@@ -69,7 +70,6 @@ impl SchemaMetadata {
 
     /// Get foreign key column name.
     pub fn get_fk_column(&self, view_name: &str, field_name: &str) -> Option<String> {
-        self.get_table(view_name)
-            .and_then(|t| t.fk_mappings.get(field_name).cloned())
+        self.get_table(view_name).and_then(|t| t.fk_mappings.get(field_name).cloned())
     }
 }

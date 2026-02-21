@@ -6,28 +6,28 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub struct PoolConfig {
     /// Maximum number of connections in the pool
-    pub max_size: u32,
+    pub max_size:           u32,
     /// Minimum number of idle connections to maintain
-    pub min_idle: u32,
+    pub min_idle:           u32,
     /// Timeout for acquiring a connection from the pool
     pub connection_timeout: Duration,
     /// Timeout for idle connections
-    pub idle_timeout: Duration,
+    pub idle_timeout:       Duration,
     /// Maximum lifetime of a connection
-    pub max_lifetime: Option<Duration>,
+    pub max_lifetime:       Option<Duration>,
     /// How often to check for idle connections
-    pub reap_frequency: Duration,
+    pub reap_frequency:     Duration,
 }
 
 impl Default for PoolConfig {
     fn default() -> Self {
         PoolConfig {
-            max_size: 10,
-            min_idle: 1,
+            max_size:           10,
+            min_idle:           1,
             connection_timeout: Duration::from_secs(30),
-            idle_timeout: Duration::from_secs(300), // 5 minutes
-            max_lifetime: Some(Duration::from_secs(3600)), // 1 hour
-            reap_frequency: Duration::from_secs(60), // 1 minute
+            idle_timeout:       Duration::from_secs(300), // 5 minutes
+            max_lifetime:       Some(Duration::from_secs(3600)), // 1 hour
+            reap_frequency:     Duration::from_secs(60),  // 1 minute
         }
     }
 }
@@ -116,8 +116,8 @@ impl From<uuid::Uuid> for QueryParam {
 #[derive(Debug)]
 pub struct QueryResult {
     pub rows_affected: u64,
-    pub columns: Vec<String>,
-    pub rows: Vec<Vec<QueryParam>>,
+    pub columns:       Vec<String>,
+    pub rows:          Vec<Vec<QueryParam>>,
 }
 
 /// Error types for database operations
@@ -140,10 +140,10 @@ pub type DatabaseResult<T> = Result<T, DatabaseError>;
 /// Connection state information
 #[derive(Debug, Clone)]
 pub struct ConnectionInfo {
-    pub host: String,
-    pub port: u16,
-    pub database: String,
-    pub user: String,
+    pub host:             String,
+    pub port:             u16,
+    pub database:         String,
+    pub user:             String,
     pub connection_count: u32,
-    pub idle_count: u32,
+    pub idle_count:       u32,
 }

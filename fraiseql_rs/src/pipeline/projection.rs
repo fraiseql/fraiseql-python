@@ -30,7 +30,7 @@ impl FieldSet {
     /// * `_arena` - Arena for allocations (not used in bitmap implementation)
     pub fn from_paths(paths: &[Vec<String>], _arena: &crate::core::arena::Arena) -> Self {
         let mut field_set = FieldSet {
-            bitmap: 0,
+            bitmap:     0,
             bitmap_ext: 0,
         };
 

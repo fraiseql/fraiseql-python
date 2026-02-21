@@ -1,5 +1,7 @@
-use fraiseql_rs::core::arena::Arena;
-use fraiseql_rs::core::transform::{ByteBuf, TransformConfig, ZeroCopyTransformer};
+use fraiseql_rs::core::{
+    arena::Arena,
+    transform::{ByteBuf, TransformConfig, ZeroCopyTransformer},
+};
 
 fn main() {
     println!("🧪 Testing Zero-Copy Transformer - Phase 1 Validation");
@@ -16,9 +18,9 @@ fn main() {
 
     // Setup transformer config
     let config = TransformConfig {
-        add_typename: true,
-        camel_case: true,
-        project_fields: false,
+        add_typename:        true,
+        camel_case:          true,
+        project_fields:      false,
         add_graphql_wrapper: false,
     };
 
@@ -36,14 +38,11 @@ fn main() {
             println!("📤 Output: {}", result_str);
             println!("📏 Input size: {} bytes", json_input.len());
             println!("📏 Output size: {} bytes", result.len());
-            println!(
-                "📈 Overhead: {:.1}x",
-                result.len() as f64 / json_input.len() as f64
-            );
-        }
+            println!("📈 Overhead: {:.1}x", result.len() as f64 / json_input.len() as f64);
+        },
         Err(e) => {
             println!("❌ Transformation failed: {:?}", e);
-        }
+        },
     }
 
     println!();

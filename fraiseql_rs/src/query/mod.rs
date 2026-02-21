@@ -4,12 +4,14 @@ pub mod composer;
 pub mod schema;
 pub mod where_builder;
 
-use crate::cache::QueryPlanCache;
-use crate::graphql::types::ParsedQuery;
-use crate::query::composer::SQLComposer;
-use crate::query::schema::SchemaMetadata;
 use lazy_static::lazy_static;
 use pyo3::prelude::*;
+
+use crate::{
+    cache::QueryPlanCache,
+    graphql::types::ParsedQuery,
+    query::{composer::SQLComposer, schema::SchemaMetadata},
+};
 
 lazy_static! {
     static ref QUERY_PLAN_CACHE: QueryPlanCache = QueryPlanCache::new(5000);
@@ -38,7 +40,7 @@ pub fn build_sql_query(
 
     // Return GeneratedQuery
     Ok(GeneratedQuery {
-        sql: composed.sql,
+        sql:        composed.sql,
         parameters: composed
             .parameters
             .into_iter()
@@ -71,7 +73,7 @@ pub fn build_sql_query_cached(
     if let Ok(Some(cached_plan)) = QUERY_PLAN_CACHE.get(&signature) {
         // Cache hit - return cached plan
         return Ok(GeneratedQuery {
-            sql: cached_plan.sql_template,
+            sql:        cached_plan.sql_template,
             parameters: vec![], // Parameters already bound
         });
     }
@@ -90,7 +92,7 @@ pub fn build_sql_query_cached(
     })?;
 
     let result = GeneratedQuery {
-        sql: composed.sql.clone(),
+        sql:        composed.sql.clone(),
         parameters: composed
             .parameters
             .into_iter()

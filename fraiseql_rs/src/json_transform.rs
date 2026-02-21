@@ -26,12 +26,10 @@
 //!
 //! For detailed architecture rationale, see: `docs/json-transformation-guide.md`
 
-use pyo3::exceptions::PyValueError;
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyValueError, prelude::*};
 use serde_json::{Map, Value};
 
-use crate::camel_case::to_camel_case;
-use crate::schema_registry::SchemaRegistry;
+use crate::{camel_case::to_camel_case, schema_registry::SchemaRegistry};
 
 /// Transform a JSON string by converting all keys from snake_case to camelCase
 ///
@@ -98,11 +96,11 @@ fn transform_value(value: Value) -> Value {
                 new_map.insert(camel_key, transformed_val);
             }
             Value::Object(new_map)
-        }
+        },
         Value::Array(arr) => {
             let transformed_arr: Vec<Value> = arr.into_iter().map(transform_value).collect();
             Value::Array(transformed_arr)
-        }
+        },
         // Primitives: return as-is
         other => other,
     }
@@ -136,17 +134,14 @@ fn transform_nested_object(
                     })
                     .collect();
                 Value::Array(transformed_items)
-            }
+            },
             Value::Null => Value::Null,
             // Unexpected type - pass through with warning in debug mode
             _ => {
                 #[cfg(debug_assertions)]
-                eprintln!(
-                    "Warning: Expected array for list type '{}', got {}",
-                    type_name, value
-                );
+                eprintln!("Warning: Expected array for list type '{}', got {}", type_name, value);
                 value.clone()
-            }
+            },
         }
     } else {
         // Single nested object
@@ -200,10 +195,7 @@ pub fn transform_with_schema(
             let mut result = Map::with_capacity(map.len() + 1);
 
             // Inject __typename first (GraphQL convention)
-            result.insert(
-                "__typename".to_string(),
-                Value::String(current_type.to_string()),
-            );
+            result.insert("__typename".to_string(), Value::String(current_type.to_string()));
 
             // OPTIMIZATION: Clone map once, then use .remove() to take ownership of values
             // This trades 1 map clone for N field clones (where N = number of fields)
@@ -226,22 +218,22 @@ pub fn transform_with_schema(
                             field_info.is_list(),
                             registry,
                         )
-                    }
+                    },
                     Some(_) => {
                         // Scalar field - take ownership, no clone needed!
                         owned_map.remove(key).unwrap()
-                    }
+                    },
                     None => {
                         // Field not in schema - take ownership and transform recursively
                         transform_value(owned_map.remove(key).unwrap())
-                    }
+                    },
                 };
 
                 result.insert(camel_key, transformed_val);
             }
 
             Value::Object(result)
-        }
+        },
         Value::Null => Value::Null,
         other => other.clone(),
     }
@@ -478,7 +470,8 @@ fn build_alias_map(
 /// allowed field names for field projection.
 ///
 /// # Algorithm
-/// 1. **Path Construction**: Build materialized path as we traverse (e.g., "user.posts.author_name")
+/// 1. **Path Construction**: Build materialized path as we traverse (e.g.,
+///    "user.posts.author_name")
 /// 2. **Alias Lookup**: Check if current path has an alias in the map
 /// 3. **Field Projection**: Check if field is in allowed set (skip if not)
 /// 4. **Key Selection**: Use alias if present, otherwise camelCase
@@ -519,10 +512,7 @@ fn transform_with_aliases(
 
             // Inject __typename first (GraphQL convention) if type is known
             if let Some(type_name) = current_type {
-                result.insert(
-                    "__typename".to_string(),
-                    Value::String(type_name.to_string()),
-                );
+                result.insert("__typename".to_string(), Value::String(type_name.to_string()));
             }
 
             // OPTIMIZATION: Clone map once, then use .remove() to take ownership of values
@@ -548,7 +538,8 @@ fn transform_with_aliases(
                     // Root level: check if field is in allowed set
                     allowed_fields.contains(key) || allowed_fields.contains(&to_camel_case(key))
                 } else {
-                    // Nested level: check if field_path (or any of its variants) is in selected_paths
+                    // Nested level: check if field_path (or any of its variants) is in
+                    // selected_paths
                     //
                     // **Performance Optimization**: Since we pre-computed all path variants in
                     // `build_alias_map()`, we can now use simple HashSet lookups instead of
@@ -607,11 +598,11 @@ fn transform_with_aliases(
                             selected_paths,
                             registry,
                         )
-                    }
+                    },
                     Some(_) => {
                         // Scalar field - take ownership, no clone needed!
                         owned_map.remove(key).unwrap()
-                    }
+                    },
                     None => {
                         // Field not in schema
                         // Check if we have nested selections for this field in selected_paths
@@ -641,14 +632,14 @@ fn transform_with_aliases(
                             // No nested selections - use generic transformation
                             transform_value(owned_map.remove(key).unwrap())
                         }
-                    }
+                    },
                 };
 
                 result.insert(output_key, transformed_val);
             }
 
             Value::Object(result)
-        }
+        },
         Value::Null => Value::Null,
         other => other.clone(),
     }
@@ -688,7 +679,7 @@ fn transform_nested_field_with_aliases(
                     })
                     .collect();
                 Value::Array(transformed_items)
-            }
+            },
             Value::Null => Value::Null,
             _ => value.clone(), // Unexpected type - pass through
         }
@@ -711,9 +702,10 @@ fn transform_nested_field_with_aliases(
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
     use crate::schema_registry::SchemaRegistry;
-    use serde_json::json;
 
     /// Helper to create a FieldSelection structure for testing
     fn make_selection(path: &str, alias: &str, type_name: &str, is_list: bool) -> Value {
@@ -878,14 +870,8 @@ mod tests {
         assert_eq!(result["userName"], "Alice");
 
         // These fields should NOT be present (field projection)
-        assert!(
-            result.get("email").is_none(),
-            "email should be filtered out"
-        );
-        assert!(
-            result.get("passwordHash").is_none(),
-            "password_hash should be filtered out"
-        );
+        assert!(result.get("email").is_none(), "email should be filtered out");
+        assert!(result.get("passwordHash").is_none(), "password_hash should be filtered out");
     }
 
     /// RED PHASE TEST: Field projection with nested objects
@@ -922,10 +908,7 @@ mod tests {
         assert_eq!(profile["bio"], "Hello world!");
 
         // This field should NOT be present (field projection)
-        assert!(
-            profile.get("avatarUrl").is_none(),
-            "avatar_url should be filtered out"
-        );
+        assert!(profile.get("avatarUrl").is_none(), "avatar_url should be filtered out");
     }
 
     /// RED PHASE TEST: __typename is always included even when not in selections
@@ -950,9 +933,6 @@ mod tests {
         assert_eq!(result["id"], 1);
 
         // user_name should NOT be present (not selected)
-        assert!(
-            result.get("userName").is_none(),
-            "user_name should be filtered out"
-        );
+        assert!(result.get("userName").is_none(), "user_name should be filtered out");
     }
 }

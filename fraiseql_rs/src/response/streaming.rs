@@ -1,13 +1,14 @@
 //! Zero-copy streaming response builder.
 
-use serde_json::Value;
 use std::io::Write;
+
+use serde_json::Value;
 
 /// Stream rows directly to response buffer without full buffering.
 pub struct ResponseStream<W: Write> {
-    writer: W,
+    writer:    W,
     row_count: usize,
-    started: bool,
+    started:   bool,
 }
 
 impl<W: Write> ResponseStream<W> {
@@ -57,8 +58,8 @@ impl<W: Write> ResponseStream<W> {
 
 /// Memory-efficient buffered writer with configurable chunk size.
 pub struct ChunkedWriter {
-    buffer: Vec<u8>,
-    chunk_size: usize,
+    buffer:        Vec<u8>,
+    chunk_size:    usize,
     total_written: usize,
 }
 
@@ -79,10 +80,7 @@ impl ChunkedWriter {
         if self.buffer.is_empty() {
             return None;
         }
-        Some(std::mem::replace(
-            &mut self.buffer,
-            Vec::with_capacity(self.chunk_size),
-        ))
+        Some(std::mem::replace(&mut self.buffer, Vec::with_capacity(self.chunk_size)))
     }
 
     pub fn total_written(&self) -> usize {
@@ -105,8 +103,9 @@ impl Write for ChunkedWriter {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_response_stream_basic() {
@@ -131,10 +130,7 @@ mod tests {
         }
 
         let result = String::from_utf8(buffer).unwrap();
-        assert_eq!(
-            result,
-            r#"{"data":{"items":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]}}"#
-        );
+        assert_eq!(result, r#"{"data":{"items":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}]}}"#);
     }
 
     #[test]

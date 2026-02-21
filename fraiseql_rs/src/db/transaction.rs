@@ -2,8 +2,9 @@
 //!
 //! Provides ACID transaction support for mutations and complex queries.
 
-use crate::db::types::DatabaseError;
 use tokio_postgres::Client;
+
+use crate::db::types::DatabaseError;
 
 /// Represents an active database transaction.
 pub struct Transaction<'a> {
@@ -59,12 +60,9 @@ impl<'a> Transaction<'a> {
 
     /// Rollback to a savepoint.
     pub async fn rollback_to_savepoint(&mut self, name: &str) -> Result<(), DatabaseError> {
-        self.client
-            .execute(&format!("ROLLBACK TO {}", name), &[])
-            .await
-            .map_err(|e| {
-                DatabaseError::Transaction(format!("Rollback to savepoint failed: {}", e))
-            })?;
+        self.client.execute(&format!("ROLLBACK TO {}", name), &[]).await.map_err(|e| {
+            DatabaseError::Transaction(format!("Rollback to savepoint failed: {}", e))
+        })?;
         Ok(())
     }
 

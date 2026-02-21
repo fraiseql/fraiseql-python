@@ -1,11 +1,12 @@
 //! Async audit logging for security events.
 
-use super::errors::Result;
 use chrono::{DateTime, Utc};
 use deadpool_postgres::Pool;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use uuid::Uuid;
+
+use super::errors::Result;
 
 /// Audit event types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +47,7 @@ impl AuditEventType {
 
             AuditEventType::RateLimitExceeded | AuditEventType::SuspiciousActivity => {
                 AuditSeverity::Medium
-            }
+            },
 
             _ => AuditSeverity::Low,
         }
@@ -67,7 +68,7 @@ impl AuditEventType {
 
             AuditEventType::DataRead | AuditEventType::DataWrite | AuditEventType::DataDelete => {
                 "data_access"
-            }
+            },
 
             AuditEventType::RateLimitExceeded
             | AuditEventType::InvalidToken
@@ -88,35 +89,35 @@ pub enum AuditSeverity {
 /// Audit event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
-    pub id: Uuid,
+    pub id:         Uuid,
     pub event_type: AuditEventType,
-    pub user_id: Option<Uuid>,
-    pub tenant_id: Option<Uuid>,
-    pub resource: Option<String>,
-    pub action: Option<String>,
-    pub status: String, // "success" or "failure"
+    pub user_id:    Option<Uuid>,
+    pub tenant_id:  Option<Uuid>,
+    pub resource:   Option<String>,
+    pub action:     Option<String>,
+    pub status:     String, // "success" or "failure"
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
-    pub metadata: Option<serde_json::Value>,
-    pub timestamp: DateTime<Utc>,
-    pub severity: AuditSeverity,
+    pub metadata:   Option<serde_json::Value>,
+    pub timestamp:  DateTime<Utc>,
+    pub severity:   AuditSeverity,
 }
 
 impl AuditEvent {
     pub fn new(event_type: AuditEventType) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id:         Uuid::new_v4(),
             event_type: event_type.clone(),
-            user_id: None,
-            tenant_id: None,
-            resource: None,
-            action: None,
-            status: "success".to_string(),
+            user_id:    None,
+            tenant_id:  None,
+            resource:   None,
+            action:     None,
+            status:     "success".to_string(),
             ip_address: None,
             user_agent: None,
-            metadata: None,
-            timestamp: Utc::now(),
-            severity: event_type.severity(),
+            metadata:   None,
+            timestamp:  Utc::now(),
+            severity:   event_type.severity(),
         }
     }
 
@@ -196,18 +197,18 @@ impl AuditLogger {
             match Self::write_event(&pool, &event).await {
                 Ok(_) => {
                     consecutive_errors = 0; // Reset error counter on success
-                }
+                },
                 Err(e) => {
                     consecutive_errors += 1;
-                    eprintln!(
-                        "Failed to write audit log (attempt {}): {}",
-                        consecutive_errors, e
-                    );
+                    eprintln!("Failed to write audit log (attempt {}): {}", consecutive_errors, e);
 
                     // If too many consecutive errors, log to stderr and continue
                     // In production, this might trigger alerts or fallback logging
                     if consecutive_errors >= MAX_CONSECUTIVE_ERRORS {
-                        eprintln!("WARNING: {} consecutive audit log failures. Check database connectivity.", consecutive_errors);
+                        eprintln!(
+                            "WARNING: {} consecutive audit log failures. Check database connectivity.",
+                            consecutive_errors
+                        );
                         // Could implement circuit breaker pattern here
                     }
 
@@ -216,7 +217,7 @@ impl AuditLogger {
                         consecutive_errors =
                             Self::retry_critical_event(&pool, &event, consecutive_errors).await;
                     }
-                }
+                },
             }
         }
     }
@@ -233,10 +234,8 @@ impl AuditLogger {
         consecutive_errors: u32,
     ) -> u32 {
         // Exponential backoff
-        tokio::time::sleep(tokio::time::Duration::from_millis(
-            100 * consecutive_errors as u64,
-        ))
-        .await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100 * consecutive_errors as u64))
+            .await;
 
         // Retry write
         if (Self::write_event(pool, event).await).is_ok() {
@@ -296,10 +295,7 @@ impl AuditLogger {
                     &event.status,
                     &event.ip_address,
                     &event.user_agent,
-                    &event
-                        .metadata
-                        .as_ref()
-                        .map(|m| serde_json::to_string(m).unwrap_or_default()),
+                    &event.metadata.as_ref().map(|m| serde_json::to_string(m).unwrap_or_default()),
                     &event.timestamp.to_rfc3339(),
                     &severity_json,
                 ],
@@ -320,7 +316,7 @@ impl AuditLogger {
         let recent_events: i64 = client.query_one(sql, &[]).await?.get(0);
 
         Ok(AuditStats {
-            total_events: total_events as usize,
+            total_events:  total_events as usize,
             recent_events: recent_events as usize,
         })
     }
@@ -336,6 +332,6 @@ impl Clone for AuditLogger {
 
 #[derive(Debug)]
 pub struct AuditStats {
-    pub total_events: usize,
+    pub total_events:  usize,
     pub recent_events: usize,
 }

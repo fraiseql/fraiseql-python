@@ -1,32 +1,35 @@
 //! PyO3 bindings for authentication module (Phase 10).
 
-use pyo3::prelude::*;
 use std::sync::Arc;
 
-use crate::auth::provider::{Auth0Provider, AuthProvider, CustomJWTProvider};
-use crate::pipeline::unified::UserContext;
+use pyo3::prelude::*;
+
+use crate::{
+    auth::provider::{Auth0Provider, AuthProvider, CustomJWTProvider},
+    pipeline::unified::UserContext,
+};
 
 /// Python wrapper for UserContext (exposed from Rust to Python)
 #[pyclass]
 #[derive(Clone)]
 pub struct PyUserContext {
     #[pyo3(get)]
-    pub user_id: Option<String>,
+    pub user_id:     Option<String>,
     #[pyo3(get)]
-    pub roles: Vec<String>,
+    pub roles:       Vec<String>,
     #[pyo3(get)]
     pub permissions: Vec<String>,
     #[pyo3(get)]
-    pub exp: u64,
+    pub exp:         u64,
 }
 
 impl From<UserContext> for PyUserContext {
     fn from(ctx: UserContext) -> Self {
         Self {
-            user_id: ctx.user_id,
-            roles: ctx.roles,
+            user_id:     ctx.user_id,
+            roles:       ctx.roles,
             permissions: ctx.permissions,
-            exp: ctx.exp,
+            exp:         ctx.exp,
         }
     }
 }
@@ -38,11 +41,11 @@ impl From<UserContext> for PyUserContext {
 #[allow(dead_code)]
 pub struct PyAuthProvider {
     // The actual auth provider (Auth0 or CustomJWT)
-    provider: Arc<dyn AuthProvider>,
+    provider:         Arc<dyn AuthProvider>,
     // Store for debugging/introspection
-    provider_type: String,
+    provider_type:    String,
     domain_or_issuer: String, // Stored for potential debug features
-    audience: Vec<String>,
+    audience:         Vec<String>,
 }
 
 #[pymethods]

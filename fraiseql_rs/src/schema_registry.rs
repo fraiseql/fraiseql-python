@@ -6,11 +6,11 @@
 //! The registry is initialized once at application startup with schema data from Python
 //! and then used for all subsequent query transformations.
 
+use std::{collections::HashMap, sync::Arc};
+
 use arc_swap::ArcSwap;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
 
 /// Empty registry constant for efficient atomic operations
 /// This avoids allocating new Arc instances during compare_and_swap
@@ -85,9 +85,9 @@ impl SchemaRegistry {
     /// Used internally for initializing the global registry before it's populated.
     pub fn empty() -> Self {
         Self {
-            version: String::new(),
+            version:  String::new(),
             features: Vec::new(),
-            types: HashMap::new(),
+            types:    HashMap::new(),
         }
     }
 
@@ -309,9 +309,9 @@ mod tests {
 
             // Initialize with new schema
             let schema = SchemaRegistry {
-                version: "1.0".to_string(),
+                version:  "1.0".to_string(),
                 features: vec![],
-                types: HashMap::new(),
+                types:    HashMap::new(),
             };
             initialize_registry(schema);
 

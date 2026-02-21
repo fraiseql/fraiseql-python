@@ -105,10 +105,7 @@ fn test_parse_full_with_updated_fields() {
     let result = MutationResult::from_json(json, None).unwrap();
 
     assert!(result.status.is_success());
-    assert_eq!(
-        result.updated_fields,
-        Some(vec!["name".to_string(), "email".to_string()])
-    );
+    assert_eq!(result.updated_fields, Some(vec!["name".to_string(), "email".to_string()]));
 }
 
 // ============================================================================
@@ -223,8 +220,5 @@ fn test_cascade_extraction_from_position_7() {
 
     // CASCADE should come from Position 7, not metadata
     assert!(result.cascade.is_some());
-    assert_eq!(
-        result.cascade.unwrap().get("updated").unwrap()[0]["id"],
-        "1"
-    );
+    assert_eq!(result.cascade.unwrap().get("updated").unwrap()[0]["id"], "1");
 }

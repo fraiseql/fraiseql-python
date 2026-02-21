@@ -1,14 +1,14 @@
 //! WHERE clause building logic.
 
-use crate::graphql::types::GraphQLArgument;
-use crate::query::schema::SchemaMetadata;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde_json::Value as JsonValue;
 
+use crate::{graphql::types::GraphQLArgument, query::schema::SchemaMetadata};
+
 pub struct WhereClauseBuilder {
-    schema: SchemaMetadata,
-    view_name: String,
-    params: Vec<(String, ParameterValue)>,
+    schema:        SchemaMetadata,
+    view_name:     String,
+    params:        Vec<(String, ParameterValue)>,
     param_counter: usize,
 }
 
@@ -66,7 +66,7 @@ impl WhereClauseBuilder {
                     .collect::<Result<Vec<_>>>()?;
 
                 Ok(conditions.join(" AND "))
-            }
+            },
             _ => Err(anyhow!("WHERE clause must be an object")),
         }
     }
@@ -101,14 +101,13 @@ impl WhereClauseBuilder {
                     .map(|(op, val)| self.build_operator_sql(&column_expr, op, val))
                     .collect::<Result<Vec<_>>>()?;
                 Ok(op_conditions.join(" AND "))
-            }
+            },
             JsonValue::String(val) => {
                 // Simple equality
                 let param = self.next_param();
-                self.params
-                    .push((param, ParameterValue::String(val.clone())));
+                self.params.push((param, ParameterValue::String(val.clone())));
                 Ok(format!("{} = ${}", column_expr, self.param_counter))
-            }
+            },
             _ => Err(anyhow!("Invalid field condition for {}", field_name)),
         }
     }
@@ -125,32 +124,32 @@ impl WhereClauseBuilder {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} = ${}", column_expr, self.param_counter))
-            }
+            },
             "neq" | "ne" => {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} != ${}", column_expr, self.param_counter))
-            }
+            },
             "gt" => {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} > ${}", column_expr, self.param_counter))
-            }
+            },
             "gte" | "ge" => {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} >= ${}", column_expr, self.param_counter))
-            }
+            },
             "lt" => {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} < ${}", column_expr, self.param_counter))
-            }
+            },
             "lte" | "le" => {
                 let param = self.next_param();
                 self.add_param(param, value)?;
                 Ok(format!("{} <= ${}", column_expr, self.param_counter))
-            }
+            },
             "in" => {
                 // Handle IN clause with array
                 match value {
@@ -164,10 +163,10 @@ impl WhereClauseBuilder {
                             })
                             .collect::<Result<Vec<_>>>()?;
                         Ok(format!("{} IN ({})", column_expr, placeholders.join(", ")))
-                    }
+                    },
                     _ => Err(anyhow!("IN operator requires array value")),
                 }
-            }
+            },
             "like" | "contains" => {
                 let param = self.next_param();
                 match value {
@@ -175,10 +174,10 @@ impl WhereClauseBuilder {
                         let pattern = format!("%{}%", s);
                         self.params.push((param, ParameterValue::String(pattern)));
                         Ok(format!("{} LIKE ${}", column_expr, self.param_counter))
-                    }
+                    },
                     _ => Err(anyhow!("LIKE requires string value")),
                 }
-            }
+            },
             "startsWith" | "startswith" => {
                 let param = self.next_param();
                 match value {
@@ -186,10 +185,10 @@ impl WhereClauseBuilder {
                         let pattern = format!("{}%", s);
                         self.params.push((param, ParameterValue::String(pattern)));
                         Ok(format!("{} LIKE ${}", column_expr, self.param_counter))
-                    }
+                    },
                     _ => Err(anyhow!("startsWith requires string value")),
                 }
-            }
+            },
             "endsWith" | "endswith" => {
                 let param = self.next_param();
                 match value {
@@ -197,10 +196,10 @@ impl WhereClauseBuilder {
                         let pattern = format!("%{}", s);
                         self.params.push((param, ParameterValue::String(pattern)));
                         Ok(format!("{} LIKE ${}", column_expr, self.param_counter))
-                    }
+                    },
                     _ => Err(anyhow!("endsWith requires string value")),
                 }
-            }
+            },
             _ => Err(anyhow!("Unknown operator: {}", operator)),
         }
     }
@@ -213,7 +212,7 @@ impl WhereClauseBuilder {
                     .map(|item| self.build_where_recursive(item))
                     .collect::<Result<Vec<_>>>()?;
                 Ok(format!("({})", clauses.join(" AND ")))
-            }
+            },
             _ => Err(anyhow!("AND must have array value")),
         }
     }
@@ -226,7 +225,7 @@ impl WhereClauseBuilder {
                     .map(|item| self.build_where_recursive(item))
                     .collect::<Result<Vec<_>>>()?;
                 Ok(format!("({})", clauses.join(" OR ")))
-            }
+            },
             _ => Err(anyhow!("OR must have array value")),
         }
     }
@@ -252,7 +251,7 @@ impl WhereClauseBuilder {
                 } else {
                     return Err(anyhow!("Invalid number"));
                 }
-            }
+            },
             JsonValue::Bool(b) => ParameterValue::Boolean(*b),
             JsonValue::Object(_) => ParameterValue::JsonObject(value.to_string()),
             _ => return Err(anyhow!("Unsupported parameter type")),
@@ -276,7 +275,7 @@ mod tests {
         let mut builder = WhereClauseBuilder::new(schema, "v_users".to_string());
 
         let arg = GraphQLArgument {
-            name: "where".to_string(),
+            name:       "where".to_string(),
             value_type: "object".to_string(),
             value_json: r#"{"status": "active"}"#.to_string(),
         };
@@ -292,10 +291,10 @@ mod tests {
         tables.insert(
             "v_users".to_string(),
             crate::query::schema::TableSchema {
-                view_name: "v_users".to_string(),
-                sql_columns: vec!["id".to_string(), "email".to_string()],
-                jsonb_column: "data".to_string(),
-                fk_mappings: Default::default(),
+                view_name:      "v_users".to_string(),
+                sql_columns:    vec!["id".to_string(), "email".to_string()],
+                jsonb_column:   "data".to_string(),
+                fk_mappings:    Default::default(),
                 has_jsonb_data: true,
             },
         );

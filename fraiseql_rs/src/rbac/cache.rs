@@ -50,12 +50,16 @@
 //! - All public methods are &self (no RefCell issues)
 //! - Safe to share via `Arc<PermissionCache>`
 
-use super::models::Permission;
+use std::{
+    num::NonZeroUsize,
+    sync::Mutex,
+    time::{Duration, Instant},
+};
+
 use lru::LruCache;
-use std::num::NonZeroUsize;
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
 use uuid::Uuid;
+
+use super::models::Permission;
 
 /// Default cache capacity (fallback if capacity is 0)
 const DEFAULT_CACHE_CAPACITY_USIZE: usize = 100;
@@ -117,20 +121,20 @@ const DEFAULT_CACHE_CAPACITY: NonZeroUsize = match NonZeroUsize::new(DEFAULT_CAC
 /// cache.invalidate_user(user_id);
 /// ```
 pub struct PermissionCache {
-    cache: Mutex<LruCache<CacheKey, CacheEntry>>,
+    cache:       Mutex<LruCache<CacheKey, CacheEntry>>,
     default_ttl: Duration,
 }
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 struct CacheKey {
-    user_id: Uuid,
+    user_id:   Uuid,
     tenant_id: Option<Uuid>,
 }
 
 #[derive(Clone)]
 struct CacheEntry {
     permissions: Vec<Permission>,
-    expires_at: Instant,
+    expires_at:  Instant,
 }
 
 impl PermissionCache {
@@ -143,7 +147,7 @@ impl PermissionCache {
             Err(poisoned) => {
                 eprintln!("Warning: Permission cache mutex was poisoned, recovering...");
                 poisoned.into_inner()
-            }
+            },
         }
     }
 
@@ -279,10 +283,7 @@ impl PermissionCache {
         let cache = self.lock_cache();
         let now = Instant::now();
 
-        let expired_count = cache
-            .iter()
-            .filter(|(_, entry)| now >= entry.expires_at)
-            .count();
+        let expired_count = cache.iter().filter(|(_, entry)| now >= entry.expires_at).count();
 
         CacheStats {
             capacity: cache.cap().get(),
@@ -294,8 +295,8 @@ impl PermissionCache {
 
 #[derive(Debug)]
 pub struct CacheStats {
-    pub capacity: usize,
-    pub size: usize,
+    pub capacity:      usize,
+    pub size:          usize,
     pub expired_count: usize,
 }
 

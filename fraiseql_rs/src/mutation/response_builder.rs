@@ -4,9 +4,10 @@
 
 #![allow(clippy::excessive_nesting)] // TODO Phase 4.1: Refactor nested blocks
 
-use super::{filter_entity_fields, MutationResult, MutationStatus};
+use serde_json::{Map, Value, json};
+
+use super::{MutationResult, MutationStatus, filter_entity_fields};
 use crate::camel_case::to_camel_case;
-use serde_json::{json, Map, Value};
 
 /// Build GraphQL response from mutation result
 ///
@@ -469,7 +470,7 @@ pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
             } else {
                 "general_error".to_string()
             }
-        }
+        },
         MutationStatus::Error(reason) => {
             // Extract part after colon: "validation:invalid_input" -> "invalid_input"
             if let Some((_prefix, identifier)) = reason.split_once(':') {
@@ -477,11 +478,11 @@ pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
             } else {
                 "general_error".to_string()
             }
-        }
+        },
         MutationStatus::Success(_) => {
             // Should never reach here (only errors call this function)
             "unexpected_success".to_string()
-        }
+        },
     }
 }
 
@@ -505,11 +506,9 @@ fn transform_entity(entity: &Value, entity_type: &str, auto_camel_case: bool) ->
             }
 
             Value::Object(result)
-        }
+        },
         Value::Array(arr) => Value::Array(
-            arr.iter()
-                .map(|v| transform_entity(v, entity_type, auto_camel_case))
-                .collect(),
+            arr.iter().map(|v| transform_entity(v, entity_type, auto_camel_case)).collect(),
         ),
         other => other.clone(),
     }
@@ -529,12 +528,10 @@ fn transform_value(value: &Value, auto_camel_case: bool) -> Value {
                 result.insert(transformed_key, transform_value(val, auto_camel_case));
             }
             Value::Object(result)
-        }
-        Value::Array(arr) => Value::Array(
-            arr.iter()
-                .map(|v| transform_value(v, auto_camel_case))
-                .collect(),
-        ),
+        },
+        Value::Array(arr) => {
+            Value::Array(arr.iter().map(|v| transform_value(v, auto_camel_case)).collect())
+        },
         other => other.clone(),
     }
 }
@@ -547,14 +544,14 @@ mod tests {
     #[test]
     fn test_build_success_simple() {
         let result = MutationResult {
-            status: MutationStatus::Success("success".to_string()),
-            message: "Success".to_string(),
-            entity_id: Some("123".to_string()),
-            entity_type: Some("User".to_string()),
-            entity: Some(json!({"id": "123", "name": "John"})),
-            updated_fields: None,
-            cascade: None,
-            metadata: None,
+            status:           MutationStatus::Success("success".to_string()),
+            message:          "Success".to_string(),
+            entity_id:        Some("123".to_string()),
+            entity_type:      Some("User".to_string()),
+            entity:           Some(json!({"id": "123", "name": "John"})),
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         None,
             is_simple_format: false,
         };
 
@@ -575,14 +572,14 @@ mod tests {
     #[test]
     fn test_build_success_with_cascade() {
         let result = MutationResult {
-            status: MutationStatus::Success("created".to_string()),
-            message: "User created".to_string(),
-            entity_id: None,
-            entity_type: Some("User".to_string()),
-            entity: Some(json!({"id": "123", "name": "John"})),
-            updated_fields: None,
-            cascade: Some(json!({"updated": []})),
-            metadata: None,
+            status:           MutationStatus::Success("created".to_string()),
+            message:          "User created".to_string(),
+            entity_id:        None,
+            entity_type:      Some("User".to_string()),
+            entity:           Some(json!({"id": "123", "name": "John"})),
+            updated_fields:   None,
+            cascade:          Some(json!({"updated": []})),
+            metadata:         None,
             is_simple_format: false,
         };
 
@@ -603,14 +600,16 @@ mod tests {
     #[test]
     fn test_wrapper_fields_promoted() {
         let result = MutationResult {
-            status: MutationStatus::Success("success".to_string()),
-            message: "Success".to_string(),
-            entity_id: None,
-            entity_type: Some("Post".to_string()),
-            entity: Some(json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"})),
-            updated_fields: None,
-            cascade: None,
-            metadata: None,
+            status:           MutationStatus::Success("success".to_string()),
+            message:          "Success".to_string(),
+            entity_id:        None,
+            entity_type:      Some("Post".to_string()),
+            entity:           Some(
+                json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"}),
+            ),
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         None,
             is_simple_format: false,
         };
 
@@ -631,14 +630,14 @@ mod tests {
     #[test]
     fn test_build_error() {
         let result = MutationResult {
-            status: MutationStatus::Error("validation:invalid_email".to_string()),
-            message: "Validation failed".to_string(),
-            entity_id: None,
-            entity_type: None,
-            entity: None,
-            updated_fields: None,
-            cascade: None,
-            metadata: Some(
+            status:           MutationStatus::Error("validation:invalid_email".to_string()),
+            message:          "Validation failed".to_string(),
+            entity_id:        None,
+            entity_type:      None,
+            entity:           None,
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         Some(
                 json!({"errors": [{"field": "email", "code": "invalid", "message": "Invalid email"}]}),
             ),
             is_simple_format: false,
@@ -662,14 +661,14 @@ mod tests {
     #[test]
     fn test_error_code_extraction() {
         let result = MutationResult {
-            status: MutationStatus::Error("validation:invalid_input".to_string()),
-            message: "Validation failed".to_string(),
-            entity_id: None,
-            entity_type: None,
-            entity: None,
-            updated_fields: None,
-            cascade: None,
-            metadata: None, // No errors in metadata
+            status:           MutationStatus::Error("validation:invalid_input".to_string()),
+            message:          "Validation failed".to_string(),
+            entity_id:        None,
+            entity_type:      None,
+            entity:           None,
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         None, // No errors in metadata
             is_simple_format: false,
         };
 
@@ -699,14 +698,14 @@ mod tests {
 
         for (status_str, expected_code) in test_cases {
             let result = MutationResult {
-                status: MutationStatus::Error(status_str.to_string()),
-                message: "Error".to_string(),
-                entity_id: None,
-                entity_type: None,
-                entity: None,
-                updated_fields: None,
-                cascade: None,
-                metadata: None,
+                status:           MutationStatus::Error(status_str.to_string()),
+                message:          "Error".to_string(),
+                entity_id:        None,
+                entity_type:      None,
+                entity:           None,
+                updated_fields:   None,
+                cascade:          None,
+                metadata:         None,
                 is_simple_format: false,
             };
 
@@ -725,14 +724,14 @@ mod tests {
     fn test_error_response_with_code_field_injection() {
         // Test that code field is correctly injected into error responses
         let result = MutationResult {
-            status: MutationStatus::Error("validation:invalid_input".to_string()),
-            message: "Validation failed".to_string(),
-            entity_id: None,
-            entity_type: None,
-            entity: None,
-            updated_fields: None,
-            cascade: None,
-            metadata: None,
+            status:           MutationStatus::Error("validation:invalid_input".to_string()),
+            message:          "Validation failed".to_string(),
+            entity_id:        None,
+            entity_type:      None,
+            entity:           None,
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         None,
             is_simple_format: false,
         };
 
@@ -749,10 +748,7 @@ mod tests {
         let obj = response.as_object().unwrap();
 
         // Verify code field is present and correct
-        assert!(
-            obj.contains_key("code"),
-            "Error response must have 'code' field"
-        );
+        assert!(obj.contains_key("code"), "Error response must have 'code' field");
         assert_eq!(obj["code"], 422, "Validation error should map to 422");
         assert_eq!(obj["message"], "Validation failed");
         assert_eq!(obj["__typename"], "CreatePostError");
@@ -762,14 +758,14 @@ mod tests {
     fn test_not_found_maps_to_404() {
         // Specific test for not_found: semantic prefix
         let result = MutationResult {
-            status: MutationStatus::Error("not_found:author_missing".to_string()),
-            message: "Author not found".to_string(),
-            entity_id: None,
-            entity_type: None,
-            entity: None,
-            updated_fields: None,
-            cascade: None,
-            metadata: None,
+            status:           MutationStatus::Error("not_found:author_missing".to_string()),
+            message:          "Author not found".to_string(),
+            entity_id:        None,
+            entity_type:      None,
+            entity:           None,
+            updated_fields:   None,
+            cascade:          None,
+            metadata:         None,
             is_simple_format: false,
         };
 

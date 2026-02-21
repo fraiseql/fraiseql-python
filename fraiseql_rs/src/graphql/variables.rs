@@ -3,15 +3,16 @@
 //! This module implements GraphQL variable type validation, coercion,
 //! and default value handling according to the GraphQL specification.
 
-use crate::graphql::types::{GraphQLType, ParsedQuery, VariableDefinition};
 use std::collections::HashMap;
+
+use crate::graphql::types::{GraphQLType, ParsedQuery, VariableDefinition};
 
 /// Variable processing result
 pub struct VariableResult {
     /// Processed variables with coerced values
     pub variables: HashMap<String, serde_json::Value>,
     /// Any validation errors encountered
-    pub errors: Vec<String>,
+    pub errors:    Vec<String>,
 }
 
 /// Variable processor for advanced GraphQL variable handling
@@ -24,11 +25,8 @@ impl VariableProcessor {
     /// Create a new variable processor
     pub fn new(query: &ParsedQuery) -> Self {
         // Extract variable definitions from query
-        let definitions = query
-            .variables
-            .iter()
-            .map(|var| (var.name.clone(), var.clone()))
-            .collect();
+        let definitions =
+            query.variables.iter().map(|var| (var.name.clone(), var.clone())).collect();
 
         Self { definitions }
     }
@@ -45,10 +43,10 @@ impl VariableProcessor {
             match self.process_variable(var_name, definition, input_variables) {
                 Ok(value) => {
                     processed.insert(var_name.clone(), value);
-                }
+                },
                 Err(error) => {
                     errors.push(error);
-                }
+                },
             }
         }
 
@@ -78,7 +76,7 @@ impl VariableProcessor {
             Some(value) => {
                 // Validate and coerce the provided value
                 self.validate_and_coerce_value(value, &definition.var_type)
-            }
+            },
             None => {
                 // Use default value if available
                 if let Some(default_str) = &definition.default_value {
@@ -90,7 +88,7 @@ impl VariableProcessor {
                 } else {
                     Err(format!("Required variable '${}' is not provided", var_name))
                 }
-            }
+            },
         }
     }
 
@@ -115,7 +113,7 @@ impl VariableProcessor {
                     ));
                 }
                 Ok(value.clone())
-            }
+            },
         }
     }
 
@@ -181,27 +179,22 @@ mod tests {
     fn test_string_coercion() {
         let mut query = ParsedQuery::default();
         query.variables = vec![VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "String".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
         }];
         let processor = VariableProcessor::new(&query);
 
-        let result = processor.process_variables(&HashMap::from([(
-            "test".to_string(),
-            serde_json::json!("hello"),
-        )]));
+        let result = processor
+            .process_variables(&HashMap::from([("test".to_string(), serde_json::json!("hello"))]));
 
         assert!(result.errors.is_empty());
-        assert_eq!(
-            result.variables.get("test"),
-            Some(&serde_json::json!("hello"))
-        );
+        assert_eq!(result.variables.get("test"), Some(&serde_json::json!("hello")));
     }
 
     #[test]
@@ -209,11 +202,11 @@ mod tests {
         let processor = VariableProcessor::new(&ParsedQuery::default());
 
         let var_def = VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "Int".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "Int".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
@@ -234,11 +227,11 @@ mod tests {
         let processor = VariableProcessor::new(&ParsedQuery::default());
 
         let var_def = VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "String".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
@@ -259,11 +252,11 @@ mod tests {
         let processor = VariableProcessor::new(&ParsedQuery::default());
 
         let var_def = VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "Float".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "Float".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
@@ -284,11 +277,11 @@ mod tests {
         let processor = VariableProcessor::new(&ParsedQuery::default());
 
         let var_def = VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "Boolean".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "Boolean".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
@@ -308,11 +301,11 @@ mod tests {
     fn test_default_value_usage() {
         let mut query = ParsedQuery::default();
         query.variables = vec![VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "String".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: Some("\"default_value\"".to_string()),
@@ -322,21 +315,18 @@ mod tests {
         // Test with no variable provided - should use default
         let result = processor.process_variables(&HashMap::new());
         assert!(result.errors.is_empty());
-        assert_eq!(
-            result.variables.get("test"),
-            Some(&serde_json::json!("default_value"))
-        );
+        assert_eq!(result.variables.get("test"), Some(&serde_json::json!("default_value")));
     }
 
     #[test]
     fn test_missing_required_variable() {
         let mut query = ParsedQuery::default();
         query.variables = vec![VariableDefinition {
-            name: "required_var".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
+            name:          "required_var".to_string(),
+            var_type:      GraphQLType {
+                name:          "String".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,
@@ -353,11 +343,11 @@ mod tests {
         let processor = VariableProcessor::new(&ParsedQuery::default());
 
         let var_def = VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "Int".to_string(),
-                nullable: false,
-                list: false,
+            name:          "test".to_string(),
+            var_type:      GraphQLType {
+                name:          "Int".to_string(),
+                nullable:      false,
+                list:          false,
                 list_nullable: false,
             },
             default_value: None,

@@ -55,19 +55,19 @@ impl DirectiveExtractor {
             match directive.name.as_str() {
                 "requiresRole" => {
                     Self::parse_requires_role(directive, &mut permissions)?;
-                }
+                },
                 "requiresPermission" => {
                     Self::parse_requires_permission(directive, &mut permissions)?;
-                }
+                },
                 "requiresAllRoles" => {
                     Self::parse_requires_all_roles(directive, &mut permissions)?;
-                }
+                },
                 "requiresAnyPermission" => {
                     Self::parse_requires_any_permission(directive, &mut permissions)?;
-                }
+                },
                 _ => {
                     // Ignore other directives (like @include, @skip, @deprecated)
-                }
+                },
             }
         }
 
@@ -79,11 +79,8 @@ impl DirectiveExtractor {
         directive: &Directive,
         permissions: &mut FieldPermissions,
     ) -> RbacResult<()> {
-        let role_arg = directive
-            .arguments
-            .iter()
-            .find(|arg| arg.name == "role")
-            .ok_or_else(|| {
+        let role_arg =
+            directive.arguments.iter().find(|arg| arg.name == "role").ok_or_else(|| {
                 RbacError::DirectiveError(
                     "@requiresRole directive must have a 'role' argument".to_string(),
                 )
@@ -105,11 +102,8 @@ impl DirectiveExtractor {
         directive: &Directive,
         permissions: &mut FieldPermissions,
     ) -> RbacResult<()> {
-        let perm_arg = directive
-            .arguments
-            .iter()
-            .find(|arg| arg.name == "permission")
-            .ok_or_else(|| {
+        let perm_arg =
+            directive.arguments.iter().find(|arg| arg.name == "permission").ok_or_else(|| {
                 RbacError::DirectiveError(
                     "@requiresPermission directive must have a 'permission' argument".to_string(),
                 )
@@ -133,11 +127,8 @@ impl DirectiveExtractor {
         directive: &Directive,
         permissions: &mut FieldPermissions,
     ) -> RbacResult<()> {
-        let roles_arg = directive
-            .arguments
-            .iter()
-            .find(|arg| arg.name == "roles")
-            .ok_or_else(|| {
+        let roles_arg =
+            directive.arguments.iter().find(|arg| arg.name == "roles").ok_or_else(|| {
                 RbacError::DirectiveError(
                     "@requiresAllRoles directive must have a 'roles' argument".to_string(),
                 )

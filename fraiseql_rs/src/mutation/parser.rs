@@ -1,7 +1,8 @@
 // fraiseql_rs/src/mutation/parser.rs
 
-use crate::mutation::types::*;
 use serde_json::Value;
+
+use crate::mutation::types::*;
 
 /// Parse JSONB string into MutationResponse
 ///
@@ -75,11 +76,7 @@ fn parse_full(
         .ok_or_else(|| MutationError::MissingField("status".to_string()))?
         .to_string();
 
-    let message = value
-        .get("message")
-        .and_then(|m| m.as_str())
-        .unwrap_or("")
-        .to_string();
+    let message = value.get("message").and_then(|m| m.as_str()).unwrap_or("").to_string();
 
     // Optional fields
     let entity_type = value
@@ -93,11 +90,7 @@ fn parse_full(
     let updated_fields = value
         .get("updated_fields")
         .and_then(|f| f.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(String::from))
-                .collect()
-        });
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect());
 
     // CASCADE: support both "cascade" and "_cascade" (backward compat)
     let cascade = value
@@ -145,7 +138,7 @@ mod tests {
         match response {
             MutationResponse::Simple(simple) => {
                 assert_eq!(simple.entity.get("id").unwrap(), "123");
-            }
+            },
             _ => panic!("Expected Simple format"),
         }
     }
@@ -167,7 +160,7 @@ mod tests {
                 assert_eq!(full.status, "created");
                 assert_eq!(full.entity_type, Some("User".to_string()));
                 assert!(full.cascade.is_some());
-            }
+            },
             _ => panic!("Expected Full format"),
         }
     }
@@ -185,7 +178,7 @@ mod tests {
         match response {
             MutationResponse::Full(full) => {
                 assert!(full.cascade.is_some());
-            }
+            },
             _ => panic!("Expected Full format"),
         }
     }

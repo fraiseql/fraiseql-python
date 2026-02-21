@@ -5,7 +5,7 @@
 //!
 //! Related to GitHub issue #525.
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 /// Filter entity fields based on GraphQL selections
 ///
@@ -16,15 +16,8 @@ use serde_json::{json, Map, Value};
 /// # Arguments
 ///
 /// * `entity` - The entity value to filter (can be object, array, primitive, or null)
-/// * `selections` - JSON object describing field selections with structure:
-///   ```json
-///   {
-///     "fields": ["id", "name", "address"],
-///     "address": {
-///       "fields": ["id", "city"]
-///     }
-///   }
-///   ```
+/// * `selections` - JSON object describing field selections with structure: ```json { "fields":
+///   ["id", "name", "address"], "address": { "fields": ["id", "city"] } } ```
 ///
 /// # Returns
 ///
@@ -135,8 +128,9 @@ pub fn filter_entity_fields(entity: &Value, selections: &Value) -> Value {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_filter_simple_fields() {
@@ -349,10 +343,7 @@ mod tests {
 
         // Nested object fields are present
         assert_eq!(result["address"]["id"], "addr-1");
-        assert_eq!(
-            result["address"]["formatted"],
-            "3 quai de la Fosse<br>44000 Nantes"
-        );
+        assert_eq!(result["address"]["formatted"], "3 quai de la Fosse<br>44000 Nantes");
 
         // ✅ FIX: __typename should now be added from __type in selections
         assert_eq!(

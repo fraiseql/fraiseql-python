@@ -1,12 +1,14 @@
 //! Field-level authorization enforcement.
 
+use std::sync::Arc;
+
+use uuid::Uuid;
+
 use super::{
     errors::{RbacError, Result},
     resolver::PermissionResolver,
 };
 use crate::pipeline::unified::UserContext;
-use std::sync::Arc;
-use uuid::Uuid;
 
 /// Field authorization checker
 pub struct FieldAuthChecker {
@@ -32,7 +34,7 @@ impl FieldAuthChecker {
             for required_role in &field_permissions.required_roles {
                 if !user_roles.contains(required_role) {
                     return Err(RbacError::MissingRole {
-                        required_role: required_role.clone(),
+                        required_role:   required_role.clone(),
                         available_roles: user_roles.clone(),
                     });
                 }
@@ -54,15 +56,11 @@ impl FieldAuthChecker {
             for perm in &field_permissions.required_permissions {
                 let (resource, action) = parse_permission(perm)?;
 
-                if !self
-                    .resolver
-                    .has_permission(user_id, &resource, &action, tenant_id)
-                    .await?
-                {
+                if !self.resolver.has_permission(user_id, &resource, &action, tenant_id).await? {
                     return Err(RbacError::PermissionDenied {
                         resource: resource.clone(),
-                        action: action.clone(),
-                        user_id: Some(user_id_str.clone()),
+                        action:   action.clone(),
+                        user_id:  Some(user_id_str.clone()),
                     });
                 }
             }
@@ -91,9 +89,9 @@ impl FieldAuthChecker {
 /// Field permission requirements (from GraphQL directives)
 #[derive(Debug, Default, Clone)]
 pub struct FieldPermissions {
-    pub required_roles: Vec<String>,
+    pub required_roles:       Vec<String>,
     pub required_permissions: Vec<String>,
-    pub custom_checks: Vec<String>, // For Phase 12 advanced constraints
+    pub custom_checks:        Vec<String>, // For Phase 12 advanced constraints
 }
 
 impl FieldPermissions {
@@ -106,12 +104,9 @@ impl FieldPermissions {
 
     /// Merge permissions (for nested field requirements)
     pub fn merge(&mut self, other: &FieldPermissions) {
-        self.required_roles
-            .extend(other.required_roles.iter().cloned());
-        self.required_permissions
-            .extend(other.required_permissions.iter().cloned());
-        self.custom_checks
-            .extend(other.custom_checks.iter().cloned());
+        self.required_roles.extend(other.required_roles.iter().cloned());
+        self.required_permissions.extend(other.required_permissions.iter().cloned());
+        self.custom_checks.extend(other.custom_checks.iter().cloned());
 
         // Remove duplicates
         self.required_roles.sort();

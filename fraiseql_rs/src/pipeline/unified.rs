@@ -1,35 +1,38 @@
 //! Unified GraphQL execution pipeline (Phase 9).
 
-use anyhow::Result;
-use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict};
-use serde_json::Value as JsonValue;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use crate::cache::{CachedQueryPlan, QueryPlanCache};
-use crate::graphql::{
-    complexity::{ComplexityAnalyzer, ComplexityConfig},
-    fragments::FragmentGraph,
-    types::ParsedQuery,
-    variables::VariableProcessor,
+use anyhow::Result;
+use pyo3::{
+    prelude::*,
+    types::{PyBytes, PyDict},
 };
-use crate::query::composer::SQLComposer;
-use crate::query::schema::SchemaMetadata;
+use serde_json::Value as JsonValue;
+
+use crate::{
+    cache::{CachedQueryPlan, QueryPlanCache},
+    graphql::{
+        complexity::{ComplexityAnalyzer, ComplexityConfig},
+        fragments::FragmentGraph,
+        types::ParsedQuery,
+        variables::VariableProcessor,
+    },
+    query::{composer::SQLComposer, schema::SchemaMetadata},
+};
 
 /// User context for authorization and personalization.
 #[derive(Debug, Clone)]
 pub struct UserContext {
-    pub user_id: Option<String>,
+    pub user_id:     Option<String>,
     pub permissions: Vec<String>,
-    pub roles: Vec<String>,
-    pub exp: u64, // Expiration timestamp for cache management
+    pub roles:       Vec<String>,
+    pub exp:         u64, // Expiration timestamp for cache management
 }
 
 /// Complete unified GraphQL pipeline.
 pub struct GraphQLPipeline {
     schema: SchemaMetadata,
-    cache: Arc<QueryPlanCache>,
+    cache:  Arc<QueryPlanCache>,
     // Note: In a real implementation, this would include database pool
     // For Phase 9 demo, we'll mock the database operations
 }
@@ -75,14 +78,14 @@ impl GraphQLPipeline {
 
             // Store in cache
             let cached_plan = CachedQueryPlan {
-                signature: signature.clone(),
+                signature:    signature.clone(),
                 sql_template: composed.sql.clone(),
-                parameters: vec![], // Simplified for Phase 9
-                created_at: std::time::SystemTime::now()
+                parameters:   vec![], // Simplified for Phase 9
+                created_at:   std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs(),
-                hit_count: 0,
+                hit_count:    0,
             };
 
             if let Err(e) = self.cache.put(signature, cached_plan) {
@@ -127,10 +130,10 @@ impl GraphQLPipeline {
 
         // 3. Query complexity analysis
         let complexity_config = ComplexityConfig {
-            max_complexity: 1000, // Configurable limit
-            field_cost: 1,
+            max_complexity:   1000, // Configurable limit
+            field_cost:       1,
             depth_multiplier: 1.5,
-            field_overrides: HashMap::new(),
+            field_overrides:  HashMap::new(),
             type_multipliers: HashMap::new(),
         };
         let analyzer = ComplexityAnalyzer::with_config(complexity_config);

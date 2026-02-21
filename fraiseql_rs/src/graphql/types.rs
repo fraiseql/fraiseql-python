@@ -93,11 +93,11 @@ pub struct GraphQLArgument {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphQLType {
     #[pyo3(get)]
-    pub name: String, // Type name (e.g., "String", "User")
+    pub name:          String, // Type name (e.g., "String", "User")
     #[pyo3(get)]
-    pub nullable: bool, // Whether the type is nullable
+    pub nullable:      bool, // Whether the type is nullable
     #[pyo3(get)]
-    pub list: bool, // Whether it's a list type
+    pub list:          bool, // Whether it's a list type
     #[pyo3(get)]
     pub list_nullable: bool, // Whether list items are nullable
 }
@@ -138,11 +138,11 @@ impl Default for ParsedQuery {
         Self {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "".to_string(),
-            selections: Vec::new(),
-            variables: Vec::new(),
-            fragments: Vec::new(),
-            source: "".to_string(),
+            root_field:     "".to_string(),
+            selections:     Vec::new(),
+            variables:      Vec::new(),
+            fragments:      Vec::new(),
+            source:         "".to_string(),
         }
     }
 }

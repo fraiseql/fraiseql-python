@@ -1,13 +1,18 @@
 //! JWT token validation with JWKS caching.
 
-use jsonwebtoken::jwk::{Jwk, JwkSet};
-use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
+use std::{
+    collections::HashMap,
+    num::NonZeroUsize,
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime},
+};
+
+use jsonwebtoken::{
+    Algorithm, DecodingKey, Validation, decode, decode_header,
+    jwk::{Jwk, JwkSet},
+};
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime};
 
 use crate::auth::errors::AuthError;
 
@@ -16,11 +21,11 @@ type Result<T> = std::result::Result<T, AuthError>;
 /// JWT claims structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,      // Subject (user ID)
-    pub iss: String,      // Issuer
-    pub aud: Vec<String>, // Audience
-    pub exp: u64,         // Expiration time
-    pub iat: u64,         // Issued at
+    pub sub:    String,      // Subject (user ID)
+    pub iss:    String,      // Issuer
+    pub aud:    Vec<String>, // Audience
+    pub exp:    u64,         // Expiration time
+    pub iat:    u64,         // Issued at
     #[serde(flatten)]
     pub custom: HashMap<String, serde_json::Value>, // Custom claims
 }
@@ -28,10 +33,10 @@ pub struct Claims {
 /// JWT validator with JWKS caching.
 #[derive(Debug)]
 pub struct JWTValidator {
-    issuer: String,
-    audience: Vec<String>,
-    jwks_url: String,
-    jwks_cache: JWKSCache,
+    issuer:      String,
+    audience:    Vec<String>,
+    jwks_url:    String,
+    jwks_cache:  JWKSCache,
     http_client: reqwest::Client,
 }
 
@@ -40,10 +45,7 @@ impl JWTValidator {
     pub fn new(issuer: String, audience: Vec<String>, jwks_url: String) -> Result<Self> {
         // Validate HTTPS for JWKS URL
         if !jwks_url.starts_with("https://") {
-            return Err(AuthError::InvalidToken(format!(
-                "JWKS URL must use HTTPS: {}",
-                jwks_url
-            )));
+            return Err(AuthError::InvalidToken(format!("JWKS URL must use HTTPS: {}", jwks_url)));
         }
 
         // Create HTTP client with timeout
@@ -72,10 +74,7 @@ impl JWTValidator {
             .ok_or_else(|| AuthError::InvalidToken("Missing kid in token header".to_string()))?;
 
         // Get JWK from cache or fetch
-        let jwk = self
-            .jwks_cache
-            .get_jwk(&kid, &self.jwks_url, &self.http_client)
-            .await?;
+        let jwk = self.jwks_cache.get_jwk(&kid, &self.jwks_url, &self.http_client).await?;
 
         // Use built-in JWK to DecodingKey conversion
         let decoding_key = DecodingKey::from_jwk(&jwk)
@@ -97,14 +96,14 @@ impl JWTValidator {
 #[derive(Debug)]
 struct JWKSCache {
     cache: Arc<Mutex<LruCache<String, (Jwk, SystemTime)>>>,
-    ttl: Duration,
+    ttl:   Duration,
 }
 
 impl JWKSCache {
     fn new() -> Self {
         Self {
             cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(100).unwrap()))),
-            ttl: Duration::from_secs(3600), // 1 hour
+            ttl:   Duration::from_secs(3600), // 1 hour
         }
     }
 

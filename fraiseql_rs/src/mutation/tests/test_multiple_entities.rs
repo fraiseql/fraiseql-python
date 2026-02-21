@@ -58,10 +58,7 @@ fn test_success_with_multiple_entities() {
     assert_eq!(success["message"], "Machine location updated");
 
     // Primary entity (extracted from wrapper)
-    assert!(
-        success["machine"].is_object(),
-        "machine entity should exist"
-    );
+    assert!(success["machine"].is_object(), "machine entity should exist");
     assert_eq!(success["machine"]["id"], "123");
     assert_eq!(success["machine"]["name"], "Printer-01");
 
@@ -75,10 +72,7 @@ fn test_success_with_multiple_entities() {
     assert_eq!(success["previousLocation"]["id"], "old-loc-456");
     assert_eq!(success["previousLocation"]["name"], "Warehouse A");
 
-    assert!(
-        success["newLocation"].is_object(),
-        "newLocation should be copied from wrapper"
-    );
+    assert!(success["newLocation"].is_object(), "newLocation should be copied from wrapper");
     assert_eq!(success["newLocation"]["id"], "new-loc-789");
     assert_eq!(success["newLocation"]["name"], "Warehouse B");
 }
@@ -125,10 +119,7 @@ fn test_error_with_conflict_entity() {
     // Auto-injected fields at root
     assert_eq!(error["__typename"], "CreateMachineError");
     assert_eq!(error["status"], "failed:conflict");
-    assert_eq!(
-        error["message"],
-        "Machine with this serial number already exists"
-    );
+    assert_eq!(error["message"], "Machine with this serial number already exists");
     assert_eq!(error["code"], 409); // Conflict
 
     // Conflict entity should be extracted from wrapper

@@ -30,9 +30,8 @@
 //! }
 //! ```
 
-use fraiseql_rs::json_transform::transform_with_selections;
-use fraiseql_rs::schema_registry::SchemaRegistry;
-use serde_json::{json, Value};
+use fraiseql_rs::{json_transform::transform_with_selections, schema_registry::SchemaRegistry};
+use serde_json::{Value, json};
 
 /// Helper to create a test schema registry
 fn create_test_schema() -> SchemaRegistry {
@@ -251,24 +250,9 @@ fn test_deep_nesting_with_multiple_aliases() {
         make_selection("user_name", "name", "String", false), // alias at root
         make_selection("posts.id", "posts.postId", "String", false), // alias in array
         make_selection("posts.author_name", "posts.writer", "String", false), // alias in array
-        make_selection(
-            "posts.comments.id",
-            "posts.comments.commentId",
-            "String",
-            false,
-        ),
-        make_selection(
-            "posts.comments.comment_text",
-            "posts.comments.text",
-            "String",
-            false,
-        ), // deep alias
-        make_selection(
-            "posts.comments.commenter_name",
-            "posts.comments.author",
-            "String",
-            false,
-        ),
+        make_selection("posts.comments.id", "posts.comments.commentId", "String", false),
+        make_selection("posts.comments.comment_text", "posts.comments.text", "String", false), /* deep alias */
+        make_selection("posts.comments.commenter_name", "posts.comments.author", "String", false),
     ];
 
     let result = transform_with_selections(&input, "User", &selections, &registry);

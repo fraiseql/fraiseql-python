@@ -22,10 +22,8 @@ impl Default for SecurityHeaders {
         headers.insert("X-Frame-Options".to_string(), "DENY".to_string());
 
         // Referrer policy
-        headers.insert(
-            "Referrer-Policy".to_string(),
-            "strict-origin-when-cross-origin".to_string(),
-        );
+        headers
+            .insert("Referrer-Policy".to_string(), "strict-origin-when-cross-origin".to_string());
 
         // Permissions policy
         headers.insert(
@@ -59,10 +57,7 @@ impl SecurityHeaders {
 
     /// Get headers as Vec for HTTP response
     pub fn to_vec(&self) -> Vec<(String, String)> {
-        self.headers
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
+        self.headers.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
     }
 
     /// Add custom header
@@ -139,10 +134,7 @@ mod tests {
 
         // Add custom header
         headers.add("X-Custom-Header".to_string(), "custom-value".to_string());
-        assert_eq!(
-            headers.get("X-Custom-Header"),
-            Some(&"custom-value".to_string())
-        );
+        assert_eq!(headers.get("X-Custom-Header"), Some(&"custom-value".to_string()));
 
         // Remove header
         headers.remove("X-Custom-Header");

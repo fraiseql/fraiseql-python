@@ -3,9 +3,11 @@
 //! This benchmark tests the zero-copy transformation engine performance
 //! without PyO3 overhead, focusing on the raw transformation speed.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use fraiseql_rs::core::arena::Arena;
-use fraiseql_rs::core::transform::{ByteBuf, TransformConfig, ZeroCopyTransformer};
+use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
+use fraiseql_rs::core::{
+    arena::Arena,
+    transform::{ByteBuf, TransformConfig, ZeroCopyTransformer},
+};
 
 /// Generate small workload: 10 objects, 5 fields each (~1KB total)
 fn generate_small_workload() -> Vec<String> {
@@ -45,22 +47,18 @@ fn benchmark_zero_copy_small(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(8192);
             let config = TransformConfig {
-                add_typename: true,
-                camel_case: true,
-                project_fields: false,
+                add_typename:        true,
+                camel_case:          true,
+                project_fields:      false,
                 add_graphql_wrapper: false,
-                max_depth: 64,
+                max_depth:           64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
-                black_box(
-                    transformer
-                        .transform_bytes(json_str.as_bytes(), &mut output)
-                        .unwrap(),
-                );
+                black_box(transformer.transform_bytes(json_str.as_bytes(), &mut output).unwrap());
             }
         })
     });
@@ -79,22 +77,18 @@ fn benchmark_zero_copy_medium(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(65536);
             let config = TransformConfig {
-                add_typename: true,
-                camel_case: true,
-                project_fields: false,
+                add_typename:        true,
+                camel_case:          true,
+                project_fields:      false,
                 add_graphql_wrapper: false,
-                max_depth: 64,
+                max_depth:           64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
-                black_box(
-                    transformer
-                        .transform_bytes(json_str.as_bytes(), &mut output)
-                        .unwrap(),
-                );
+                black_box(transformer.transform_bytes(json_str.as_bytes(), &mut output).unwrap());
             }
         })
     });
@@ -114,22 +108,18 @@ fn benchmark_zero_copy_large(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(524288); // 512KB arena
             let config = TransformConfig {
-                add_typename: true,
-                camel_case: true,
-                project_fields: false,
+                add_typename:        true,
+                camel_case:          true,
+                project_fields:      false,
                 add_graphql_wrapper: false,
-                max_depth: 64,
+                max_depth:           64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
-                black_box(
-                    transformer
-                        .transform_bytes(json_str.as_bytes(), &mut output)
-                        .unwrap(),
-                );
+                black_box(transformer.transform_bytes(json_str.as_bytes(), &mut output).unwrap());
             }
         })
     });
@@ -153,10 +143,10 @@ fn benchmark_components(c: &mut Criterion) {
         b.iter(|| {
             use fraiseql_rs::core::transform::ByteReader;
             let mut reader = ByteReader::new(json_str.as_bytes());
-            black_box(reader.expect_byte(b'{').unwrap());  // Skip opening brace
-            black_box(reader.read_string().unwrap());       // Read field name "user_id"
-            black_box(reader.expect_byte(b':').unwrap());   // Skip colon
-            black_box(reader.read_number().unwrap());       // Read number value
+            black_box(reader.expect_byte(b'{').unwrap()); // Skip opening brace
+            black_box(reader.read_string().unwrap()); // Read field name "user_id"
+            black_box(reader.expect_byte(b':').unwrap()); // Skip colon
+            black_box(reader.read_number().unwrap()); // Read number value
         })
     });
 

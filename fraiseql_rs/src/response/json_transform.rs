@@ -32,7 +32,7 @@ pub fn transform_row_keys(row: &Value) -> Value {
                 new_map.insert(camel_key, transformed_value);
             }
             Value::Object(new_map)
-        }
+        },
         Value::Array(arr) => Value::Array(arr.iter().map(transform_row_keys).collect()),
         other => other.clone(),
     }
@@ -46,8 +46,9 @@ pub fn transform_jsonb_field(field_str: &str) -> Result<Value, serde_json::Error
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_snake_to_camel() {

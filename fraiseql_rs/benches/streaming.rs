@@ -3,7 +3,7 @@
 //! Note: These benchmarks simulate streaming operations.
 //! Real streaming benchmarks will be added in Phase 3.
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 
 /// Benchmark JSON field name transformation
 fn bench_field_transformation(c: &mut Criterion) {

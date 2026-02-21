@@ -1,23 +1,24 @@
 //! CORS (Cross-Origin Resource Sharing) policy enforcement.
 
-use super::errors::{Result, SecurityError};
 use std::collections::HashSet;
+
+use super::errors::{Result, SecurityError};
 
 /// CORS configuration
 #[derive(Debug, Clone)]
 pub struct CORSConfig {
     /// Allowed origins (exact matches or patterns)
-    pub allowed_origins: HashSet<String>,
+    pub allowed_origins:   HashSet<String>,
     /// Allowed HTTP methods
-    pub allowed_methods: HashSet<String>,
+    pub allowed_methods:   HashSet<String>,
     /// Allowed headers
-    pub allowed_headers: HashSet<String>,
+    pub allowed_headers:   HashSet<String>,
     /// Headers exposed to browser
-    pub exposed_headers: HashSet<String>,
+    pub exposed_headers:   HashSet<String>,
     /// Whether credentials are allowed
     pub allow_credentials: bool,
     /// Max age for preflight cache (seconds)
-    pub max_age: u32,
+    pub max_age:           u32,
 }
 
 impl Default for CORSConfig {
@@ -115,10 +116,7 @@ impl CORSHandler {
             if !self.config.is_origin_allowed(origin) {
                 return Err(SecurityError::OriginNotAllowed(origin.to_string()));
             }
-            response_headers.push((
-                "Access-Control-Allow-Origin".to_string(),
-                origin.to_string(),
-            ));
+            response_headers.push(("Access-Control-Allow-Origin".to_string(), origin.to_string()));
         }
 
         // Validate method
@@ -128,12 +126,7 @@ impl CORSHandler {
             }
             response_headers.push((
                 "Access-Control-Allow-Methods".to_string(),
-                self.config
-                    .allowed_methods
-                    .iter()
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(", "),
+                self.config.allowed_methods.iter().cloned().collect::<Vec<_>>().join(", "),
             ));
         }
 
@@ -146,24 +139,18 @@ impl CORSHandler {
                     return Err(SecurityError::HeaderNotAllowed((*header).to_string()));
                 }
             }
-            response_headers.push((
-                "Access-Control-Allow-Headers".to_string(),
-                request_headers.to_string(),
-            ));
+            response_headers
+                .push(("Access-Control-Allow-Headers".to_string(), request_headers.to_string()));
         }
 
         // Add other CORS headers
         if self.config.allow_credentials {
-            response_headers.push((
-                "Access-Control-Allow-Credentials".to_string(),
-                "true".to_string(),
-            ));
+            response_headers
+                .push(("Access-Control-Allow-Credentials".to_string(), "true".to_string()));
         }
 
-        response_headers.push((
-            "Access-Control-Max-Age".to_string(),
-            self.config.max_age.to_string(),
-        ));
+        response_headers
+            .push(("Access-Control-Max-Age".to_string(), self.config.max_age.to_string()));
 
         Ok(response_headers)
     }
@@ -176,27 +163,17 @@ impl CORSHandler {
     ) -> Vec<(String, String)> {
         if let Some(origin) = origin {
             if self.config.is_origin_allowed(origin) {
-                headers.push((
-                    "Access-Control-Allow-Origin".to_string(),
-                    origin.to_string(),
-                ));
+                headers.push(("Access-Control-Allow-Origin".to_string(), origin.to_string()));
 
                 if self.config.allow_credentials {
-                    headers.push((
-                        "Access-Control-Allow-Credentials".to_string(),
-                        "true".to_string(),
-                    ));
+                    headers
+                        .push(("Access-Control-Allow-Credentials".to_string(), "true".to_string()));
                 }
 
                 if !self.config.exposed_headers.is_empty() {
                     headers.push((
                         "Access-Control-Expose-Headers".to_string(),
-                        self.config
-                            .exposed_headers
-                            .iter()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .join(", "),
+                        self.config.exposed_headers.iter().cloned().collect::<Vec<_>>().join(", "),
                     ));
                 }
             }
@@ -251,15 +228,13 @@ mod tests {
             )
             .unwrap();
 
-        assert!(headers
-            .iter()
-            .any(|(k, v)| k == "Access-Control-Allow-Origin" && v == "http://localhost:3000"));
-        assert!(headers
-            .iter()
-            .any(|(k, _)| k == "Access-Control-Allow-Methods"));
-        assert!(headers
-            .iter()
-            .any(|(k, _)| k == "Access-Control-Allow-Headers"));
+        assert!(
+            headers
+                .iter()
+                .any(|(k, v)| k == "Access-Control-Allow-Origin" && v == "http://localhost:3000")
+        );
+        assert!(headers.iter().any(|(k, _)| k == "Access-Control-Allow-Methods"));
+        assert!(headers.iter().any(|(k, _)| k == "Access-Control-Allow-Headers"));
     }
 
     #[test]
@@ -278,8 +253,10 @@ mod tests {
 
         let new_headers = handler.add_cors_headers(Some("http://localhost:3000"), headers);
 
-        assert!(new_headers
-            .iter()
-            .any(|(k, v)| k == "Access-Control-Allow-Origin" && v == "http://localhost:3000"));
+        assert!(
+            new_headers
+                .iter()
+                .any(|(k, v)| k == "Access-Control-Allow-Origin" && v == "http://localhost:3000")
+        );
     }
 }

@@ -8,23 +8,23 @@ pub enum SecurityError {
     /// Rate limiting errors
     RateLimitExceeded {
         retry_after: u64,
-        limit: usize,
+        limit:       usize,
         window_secs: u64,
     },
 
     /// Query validation errors
     QueryTooDeep {
-        depth: usize,
+        depth:     usize,
         max_depth: usize,
     },
 
     QueryTooComplex {
-        complexity: usize,
+        complexity:     usize,
         max_complexity: usize,
     },
 
     QueryTooLarge {
-        size: usize,
+        size:     usize,
         max_size: usize,
     },
 
@@ -59,44 +59,40 @@ impl fmt::Display for SecurityError {
                     "Rate limit exceeded. Limit: {} per {} seconds. Retry after: {} seconds",
                     limit, window_secs, retry_after
                 )
-            }
+            },
             SecurityError::QueryTooDeep { depth, max_depth } => {
                 write!(f, "Query too deep: {} levels (max: {})", depth, max_depth)
-            }
+            },
             SecurityError::QueryTooComplex {
                 complexity,
                 max_complexity,
             } => {
-                write!(
-                    f,
-                    "Query too complex: {} (max: {})",
-                    complexity, max_complexity
-                )
-            }
+                write!(f, "Query too complex: {} (max: {})", complexity, max_complexity)
+            },
             SecurityError::QueryTooLarge { size, max_size } => {
                 write!(f, "Query too large: {} bytes (max: {})", size, max_size)
-            }
+            },
             SecurityError::OriginNotAllowed(origin) => {
                 write!(f, "CORS origin not allowed: {}", origin)
-            }
+            },
             SecurityError::MethodNotAllowed(method) => {
                 write!(f, "CORS method not allowed: {}", method)
-            }
+            },
             SecurityError::HeaderNotAllowed(header) => {
                 write!(f, "CORS header not allowed: {}", header)
-            }
+            },
             SecurityError::InvalidCSRFToken(reason) => {
                 write!(f, "Invalid CSRF token: {}", reason)
-            }
+            },
             SecurityError::CSRFSessionMismatch => {
                 write!(f, "CSRF token session mismatch")
-            }
+            },
             SecurityError::AuditLogFailure(reason) => {
                 write!(f, "Audit logging failed: {}", reason)
-            }
+            },
             SecurityError::SecurityConfigError(reason) => {
                 write!(f, "Security configuration error: {}", reason)
-            }
+            },
         }
     }
 }

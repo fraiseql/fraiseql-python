@@ -31,19 +31,16 @@ fn main() {
             match serde_json::from_slice::<serde_json::Value>(&bytes) {
                 Ok(parsed) => {
                     println!("✅ Valid JSON structure!");
-                    println!(
-                        "📊 Structure: {}",
-                        serde_json::to_string_pretty(&parsed).unwrap()
-                    );
-                }
+                    println!("📊 Structure: {}", serde_json::to_string_pretty(&parsed).unwrap());
+                },
                 Err(e) => {
                     println!("❌ Invalid JSON: {:?}", e);
-                }
+                },
             }
-        }
+        },
         Err(e) => {
             println!("❌ Pipeline failed: {:?}", e);
-        }
+        },
     }
 
     println!();

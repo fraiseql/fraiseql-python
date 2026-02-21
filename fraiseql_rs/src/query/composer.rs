@@ -1,16 +1,21 @@
 //! SQL composition for complete queries.
 
-use crate::graphql::types::ParsedQuery;
-use crate::query::schema::SchemaMetadata;
-use crate::query::where_builder::{ParameterValue, WhereClauseBuilder};
 use anyhow::{Context, Result};
+
+use crate::{
+    graphql::types::ParsedQuery,
+    query::{
+        schema::SchemaMetadata,
+        where_builder::{ParameterValue, WhereClauseBuilder},
+    },
+};
 
 pub struct SQLComposer {
     schema: SchemaMetadata,
 }
 
 pub struct ComposedSQL {
-    pub sql: String,
+    pub sql:        String,
     pub parameters: Vec<(String, ParameterValue)>,
 }
 

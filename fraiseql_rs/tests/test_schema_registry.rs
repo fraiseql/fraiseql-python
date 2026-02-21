@@ -147,10 +147,6 @@ mod tests {
 
         // Should complete in < 100ms in debug mode (10000 lookups)
         // In release mode this will be much faster (< 1ms)
-        assert!(
-            duration.as_millis() < 100,
-            "Field lookups too slow: {:?}",
-            duration
-        );
+        assert!(duration.as_millis() < 100, "Field lookups too slow: {:?}", duration);
     }
 }

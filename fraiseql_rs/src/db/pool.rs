@@ -1,8 +1,7 @@
 //! Connection pool implementation using deadpool-postgres.
 
 use deadpool_postgres::Pool;
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::{prelude::*, types::PyDict};
 
 use crate::db::types::{ConnectionInfo, DatabaseError, DatabaseResult, PoolConfig};
 
@@ -26,16 +25,12 @@ impl DatabasePool {
 
         // Basic URL validation
         if !database_url.starts_with("postgresql://") {
-            return Err(DatabaseError::Config(
-                "Invalid PostgreSQL URL format".to_string(),
-            ));
+            return Err(DatabaseError::Config("Invalid PostgreSQL URL format".to_string()));
         }
 
         let url_part = &database_url["postgresql://".len()..];
         if !url_part.contains('@') || !url_part.contains('/') {
-            return Err(DatabaseError::Config(
-                "Invalid PostgreSQL URL structure".to_string(),
-            ));
+            return Err(DatabaseError::Config("Invalid PostgreSQL URL structure".to_string()));
         }
 
         // Return mock implementation with real config
@@ -54,16 +49,12 @@ impl DatabasePool {
 
         // Basic URL validation (same as before)
         if !database_url.starts_with("postgresql://") {
-            return Err(DatabaseError::Config(
-                "Invalid PostgreSQL URL format".to_string(),
-            ));
+            return Err(DatabaseError::Config("Invalid PostgreSQL URL format".to_string()));
         }
 
         let url_part = &database_url["postgresql://".len()..];
         if !url_part.contains('@') || !url_part.contains('/') {
-            return Err(DatabaseError::Config(
-                "Invalid PostgreSQL URL structure".to_string(),
-            ));
+            return Err(DatabaseError::Config("Invalid PostgreSQL URL structure".to_string()));
         }
 
         // Return mock implementation for now (real connections require async)
@@ -80,9 +71,7 @@ impl DatabasePool {
                 .get()
                 .await
                 .map_err(|e| DatabaseError::Connection(format!("Failed to get connection: {}", e))),
-            None => Err(DatabaseError::Connection(
-                "Pool not initialized".to_string(),
-            )),
+            None => Err(DatabaseError::Connection("Pool not initialized".to_string())),
         }
     }
 
@@ -103,10 +92,10 @@ impl DatabasePool {
                 })?;
 
                 Ok(())
-            }
-            None => Err(DatabaseError::Connection(
-                "Pool not initialized for health check".to_string(),
-            )),
+            },
+            None => {
+                Err(DatabaseError::Connection("Pool not initialized for health check".to_string()))
+            },
         }
     }
 
@@ -116,21 +105,21 @@ impl DatabasePool {
             Some(pool) => {
                 let status = pool.status();
                 ConnectionInfo {
-                    host: "localhost".to_string(),    // TODO: Extract from actual config
-                    port: 5432,                       // TODO: Extract from actual config
-                    database: "fraiseql".to_string(), // TODO: Extract from actual config
-                    user: "postgres".to_string(),     // TODO: Extract from actual config
+                    host:             "localhost".to_string(), // TODO: Extract from actual config
+                    port:             5432,                    // TODO: Extract from actual config
+                    database:         "fraiseql".to_string(),  // TODO: Extract from actual config
+                    user:             "postgres".to_string(),  // TODO: Extract from actual config
                     connection_count: status.size as u32,
-                    idle_count: status.available as u32,
+                    idle_count:       status.available as u32,
                 }
-            }
+            },
             None => ConnectionInfo {
-                host: "localhost".to_string(),
-                port: 5432,
-                database: "fraiseql".to_string(),
-                user: "postgres".to_string(),
+                host:             "localhost".to_string(),
+                port:             5432,
+                database:         "fraiseql".to_string(),
+                user:             "postgres".to_string(),
                 connection_count: 0,
-                idle_count: 0,
+                idle_count:       0,
             },
         }
     }
@@ -174,10 +163,7 @@ impl DatabasePool {
     /// Get pool statistics as a string
     pub fn get_stats(&self) -> String {
         let info = self.stats();
-        format!(
-            "Pool stats: {} connections, {} idle",
-            info.connection_count, info.idle_count
-        )
+        format!("Pool stats: {} connections, {} idle", info.connection_count, info.idle_count)
     }
 
     /// Get pool configuration summary as a string
@@ -240,8 +226,9 @@ impl DatabasePool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::time::Duration;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_pool_config_default() {

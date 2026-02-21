@@ -1,5 +1,7 @@
 //! Security configuration management.
 
+use std::env;
+
 use super::{
     audit::AuditLogger,
     cors::{CORSConfig, CORSHandler},
@@ -8,88 +10,87 @@ use super::{
     rate_limit::{RateLimit, RateLimitStrategy, RateLimiter},
     validators::{QueryLimits, QueryValidator},
 };
-use std::env;
 
 /// Master security configuration
 #[derive(Debug)]
 pub struct SecurityConfig {
-    pub rate_limiting: RateLimitingConfig,
-    pub headers: SecurityHeadersConfig,
-    pub audit: AuditConfig,
+    pub rate_limiting:    RateLimitingConfig,
+    pub headers:          SecurityHeadersConfig,
+    pub audit:            AuditConfig,
     pub query_validation: QueryValidationConfig,
-    pub csrf: CSRFConfig,
-    pub cors: CORSConfig,
+    pub csrf:             CSRFConfig,
+    pub cors:             CORSConfig,
 }
 
 #[derive(Debug)]
 pub struct RateLimitingConfig {
-    pub enabled: bool,
-    pub default_limit: RateLimit,
+    pub enabled:         bool,
+    pub default_limit:   RateLimit,
     pub endpoint_limits: Vec<(String, RateLimit)>,
 }
 
 #[derive(Debug)]
 pub struct SecurityHeadersConfig {
-    pub enabled: bool,
+    pub enabled:     bool,
     pub environment: String, // "development" | "production"
 }
 
 #[derive(Debug)]
 pub struct AuditConfig {
-    pub enabled: bool,
+    pub enabled:      bool,
     pub database_url: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct QueryValidationConfig {
     pub enabled: bool,
-    pub limits: QueryLimits,
+    pub limits:  QueryLimits,
 }
 
 #[derive(Debug)]
 pub struct CSRFConfig {
     pub enabled: bool,
-    pub secret: Option<String>,
+    pub secret:  Option<String>,
 }
 
 impl Default for SecurityConfig {
     fn default() -> Self {
         Self {
-            rate_limiting: RateLimitingConfig {
-                enabled: true,
-                default_limit: RateLimit {
-                    requests: 100,
+            rate_limiting:    RateLimitingConfig {
+                enabled:         true,
+                default_limit:   RateLimit {
+                    requests:    100,
                     window_secs: 60,
-                    burst: Some(20),
-                    strategy: RateLimitStrategy::TokenBucket,
+                    burst:       Some(20),
+                    strategy:    RateLimitStrategy::TokenBucket,
                 },
                 endpoint_limits: vec![(
                     "/graphql".to_string(),
                     RateLimit {
-                        requests: 1000,
+                        requests:    1000,
                         window_secs: 60,
-                        burst: Some(100),
-                        strategy: RateLimitStrategy::TokenBucket,
+                        burst:       Some(100),
+                        strategy:    RateLimitStrategy::TokenBucket,
                     },
                 )],
             },
-            headers: SecurityHeadersConfig {
-                enabled: true,
+            headers:          SecurityHeadersConfig {
+                enabled:     true,
                 environment: "development".to_string(),
             },
-            audit: AuditConfig {
-                enabled: true,
+            audit:            AuditConfig {
+                enabled:      true,
                 database_url: None,
             },
             query_validation: QueryValidationConfig {
                 enabled: true,
-                limits: QueryLimits::default(),
+                limits:  QueryLimits::default(),
             },
-            csrf: CSRFConfig {
+            csrf:             CSRFConfig {
                 enabled: false, // Disabled by default for API-first apps
-                secret: None,
+                secret:  None,
             },
-            cors: CORSConfig::default(),
+            cors:             CORSConfig::default(),
         }
     }
 }
@@ -196,12 +197,12 @@ impl SecurityConfig {
 
 /// Security components builder
 pub struct SecurityComponents {
-    pub rate_limiter: Option<RateLimiter>,
+    pub rate_limiter:     Option<RateLimiter>,
     pub security_headers: SecurityHeaders,
-    pub audit_logger: Option<AuditLogger>,
-    pub query_validator: QueryValidator,
-    pub csrf_manager: Option<CSRFManager>,
-    pub cors_handler: CORSHandler,
+    pub audit_logger:     Option<AuditLogger>,
+    pub query_validator:  QueryValidator,
+    pub csrf_manager:     Option<CSRFManager>,
+    pub cors_handler:     CORSHandler,
 }
 
 impl SecurityComponents {
@@ -252,11 +253,7 @@ impl SecurityComponents {
 
         // CSRF manager
         let csrf_manager = if config.csrf.enabled {
-            config
-                .csrf
-                .secret
-                .as_ref()
-                .map(|secret| CSRFManager::new(secret.clone()))
+            config.csrf.secret.as_ref().map(|secret| CSRFManager::new(secret.clone()))
         } else {
             None
         };
@@ -280,9 +277,9 @@ impl SecurityComponents {
             limiter.stats().await
         } else {
             super::rate_limit::RateLimitStats {
-                rules_count: 0,
-                buckets_count: 0,
-                windows_count: 0,
+                rules_count:    0,
+                buckets_count:  0,
+                windows_count:  0,
                 requests_count: 0,
             }
         };
@@ -293,19 +290,19 @@ impl SecurityComponents {
             // Note: We can't get audit stats without a pool reference
             // This would need to be passed in or stored
             super::audit::AuditStats {
-                total_events: 0,
+                total_events:  0,
                 recent_events: 0,
             }
         } else {
             super::audit::AuditStats {
-                total_events: 0,
+                total_events:  0,
                 recent_events: 0,
             }
         };
 
         SecurityStats {
             rate_limiting: rate_limit_stats,
-            audit: audit_stats,
+            audit:         audit_stats,
         }
     }
 }
@@ -313,7 +310,7 @@ impl SecurityComponents {
 #[derive(Debug)]
 pub struct SecurityStats {
     pub rate_limiting: super::rate_limit::RateLimitStats,
-    pub audit: super::audit::AuditStats,
+    pub audit:         super::audit::AuditStats,
 }
 
 #[cfg(test)]
@@ -349,9 +346,7 @@ mod tests {
     #[tokio::test]
     async fn test_security_components_from_config() {
         let config = SecurityConfig::default();
-        let components = SecurityComponents::from_config(&config, None)
-            .await
-            .unwrap();
+        let components = SecurityComponents::from_config(&config, None).await.unwrap();
 
         assert!(components.rate_limiter.is_some());
         assert!(components.audit_logger.is_none()); // No pool provided

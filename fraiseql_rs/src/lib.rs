@@ -1,7 +1,7 @@
-use lazy_static::lazy_static;
-use pyo3::prelude::*;
-use pyo3::types::PyDict;
 use std::sync::{Arc, Mutex};
+
+use lazy_static::lazy_static;
+use pyo3::{prelude::*, types::PyDict};
 
 // ============================================================================
 // CLIPPY SUPPRESSION POLICY
@@ -62,7 +62,7 @@ pub fn initialize_graphql_pipeline(schema_json: String) -> PyResult<()> {
             // This is safe because we're replacing the entire Option
             eprintln!("Warning: Pipeline mutex was poisoned, recovering...");
             *poisoned.into_inner() = Some(pipeline);
-        }
+        },
     }
 
     Ok(())
@@ -82,7 +82,7 @@ pub fn execute_graphql_query(
         Err(poisoned) => {
             eprintln!("Warning: Pipeline mutex was poisoned during access, recovering...");
             poisoned.into_inner()
-        }
+        },
     };
 
     match &*pipeline_guard {
@@ -212,14 +212,9 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
     } else if let Ok(i) = value.extract::<i64>() {
         Ok(serde_json::Value::Number(i.into()))
     } else if let Ok(f) = value.extract::<f64>() {
-        serde_json::Number::from_f64(f)
-            .map(serde_json::Value::Number)
-            .ok_or_else(|| {
-                PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
-                    "Invalid float value: {}",
-                    f
-                ))
-            })
+        serde_json::Number::from_f64(f).map(serde_json::Value::Number).ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid float value: {}", f))
+        })
     } else if let Ok(s) = value.extract::<String>() {
         Ok(serde_json::Value::String(s))
     } else if let Ok(dict) = value.downcast::<PyDict>() {
@@ -239,9 +234,7 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
             .map(serde_json::Value::Array)
     } else {
         // Fallback: use string representation for unknown types
-        Ok(serde_json::Value::String(
-            value.str()?.to_str()?.to_string(),
-        ))
+        Ok(serde_json::Value::String(value.str()?.to_str()?.to_string()))
     }
 }
 
@@ -268,9 +261,10 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
 ///     field_name: GraphQL field name (e.g., "users", "user")
 ///     type_name: Optional type name for __typename injection
 ///     field_paths: Optional field projection paths (DEPRECATED - use field_selections)
-///     field_selections: Optional Python list of dicts with selection metadata (materialized_path, alias, type_name)
-///     is_list: True for list responses (always array), False for single object responses
-///     include_graphql_wrapper: True to wrap in {"data":{"field_name":...}} (default), False for field-only mode
+///     field_selections: Optional Python list of dicts with selection metadata (materialized_path,
+/// alias, type_name)     is_list: True for list responses (always array), False for single object
+/// responses     include_graphql_wrapper: True to wrap in {"data":{"field_name":...}} (default),
+/// False for field-only mode
 ///
 /// Returns:
 ///     UTF-8 encoded GraphQL response bytes ready for HTTP
@@ -287,10 +281,7 @@ pub fn build_graphql_response(
 ) -> PyResult<Vec<u8>> {
     // Convert Python list to Vec<Value> if provided using the helper function
     let selections_json = if let Some(py_list) = field_selections {
-        py_list
-            .iter()
-            .map(|item| python_to_json(&item))
-            .collect::<PyResult<Vec<_>>>()?
+        py_list.iter().map(|item| python_to_json(&item)).collect::<PyResult<Vec<_>>>()?
     } else {
         Vec::new()
     };
@@ -341,9 +332,7 @@ pub fn build_graphql_response(
 pub fn initialize_schema_registry(schema_json: String) -> PyResult<()> {
     // Validate input
     if schema_json.is_empty() {
-        return Err(pyo3::exceptions::PyValueError::new_err(
-            "Schema JSON cannot be empty",
-        ));
+        return Err(pyo3::exceptions::PyValueError::new_err("Schema JSON cannot be empty"));
     }
 
     // Parse the schema JSON with detailed error messages
@@ -366,12 +355,7 @@ pub fn initialize_schema_registry(schema_json: String) -> PyResult<()> {
     eprintln!(
         "Initializing schema registry: version={}, features=[{}], types={}",
         registry.version(),
-        registry
-            .features
-            .iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<_>>()
-            .join(", "),
+        registry.features.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", "),
         registry.type_count()
     );
 
@@ -558,15 +542,9 @@ pub fn execute_mutation_async(mutation_def: String) -> PyResult<String> {
 
     let _input = mutation_def.get("input");
     let _filters = mutation_def.get("filters");
-    let _return_fields = mutation_def
-        .get("return_fields")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str())
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
-        });
+    let _return_fields = mutation_def.get("return_fields").and_then(|v| v.as_array()).map(|arr| {
+        arr.iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect::<Vec<_>>()
+    });
 
     // Convert mutation type
     let mutation_type = match mutation_type {
@@ -577,8 +555,8 @@ pub fn execute_mutation_async(mutation_def: String) -> PyResult<String> {
             return Err(pyo3::exceptions::PyValueError::new_err(format!(
                 "Unknown mutation type: {}",
                 mutation_type
-            )))
-        }
+            )));
+        },
     };
 
     // Phase 4: Demonstrate pipeline integration with mock database
@@ -596,7 +574,7 @@ pub fn execute_mutation_async(mutation_def: String) -> PyResult<String> {
             } else {
                 serde_json::json!({"error": "Input required for INSERT"})
             }
-        }
+        },
         crate::mutations::MutationType::Update => {
             if let Some(input_val) = _input {
                 // For demo: return updated record
@@ -608,11 +586,11 @@ pub fn execute_mutation_async(mutation_def: String) -> PyResult<String> {
             } else {
                 serde_json::json!({"error": "Input required for UPDATE"})
             }
-        }
+        },
         crate::mutations::MutationType::Delete => {
             // For demo: return deletion confirmation
             serde_json::json!({"success": true, "affected_rows": 1})
-        }
+        },
     };
 
     serde_json::to_string(&response).map_err(|e| {
@@ -633,7 +611,8 @@ pub fn execute_mutation_async(mutation_def: String) -> PyResult<String> {
 ///     ...     ("gateways", "Gateway", ['{"id": 10}'], '["id"]', True)
 ///     ... ])
 ///     >>> result.decode('utf-8')
-///     '{"data":{"dnsServers":[{"__typename":"DnsServer","id":1},{"__typename":"DnsServer","id":2}],"gateways":[{"__typename":"Gateway","id":10}]}}'
+///     '{"data":{"dnsServers":[{"__typename":"DnsServer","id":1},{"__typename":"DnsServer","id":
+/// 2}],"gateways":[{"__typename":"Gateway","id":10}]}}'
 ///
 /// Args:
 ///     fields: List of tuples, each containing:

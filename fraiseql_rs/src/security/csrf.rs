@@ -1,8 +1,9 @@
 //! CSRF token validation.
 
-use super::errors::{Result, SecurityError};
 use rand::Rng;
 use sha2::{Digest, Sha256};
+
+use super::errors::{Result, SecurityError};
 
 /// CSRF token manager
 pub struct CSRFManager {
@@ -30,9 +31,7 @@ impl CSRFManager {
     pub fn validate_token(&self, session_id: &str, token: &str) -> Result<()> {
         let parts: Vec<&str> = token.split(':').collect();
         if parts.len() != 3 {
-            return Err(SecurityError::InvalidCSRFToken(
-                "Invalid token format".to_string(),
-            ));
+            return Err(SecurityError::InvalidCSRFToken("Invalid token format".to_string()));
         }
 
         let provided_session = parts[0];
@@ -52,9 +51,7 @@ impl CSRFManager {
         let expected_hash = hex::encode(hasher.finalize());
 
         if expected_hash != provided_hash {
-            return Err(SecurityError::InvalidCSRFToken(
-                "Hash verification failed".to_string(),
-            ));
+            return Err(SecurityError::InvalidCSRFToken("Hash verification failed".to_string()));
         }
 
         Ok(())

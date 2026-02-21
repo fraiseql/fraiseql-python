@@ -1,10 +1,14 @@
 //! Token bucket rate limiting with Redis backend.
 
-use super::errors::{Result, SecurityError};
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
 use tokio::sync::Mutex;
+
+use super::errors::{Result, SecurityError};
 
 /// Rate limit strategy
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -17,19 +21,19 @@ pub enum RateLimitStrategy {
 /// Rate limit configuration
 #[derive(Debug, Clone)]
 pub struct RateLimit {
-    pub requests: usize,
+    pub requests:    usize,
     pub window_secs: u64,
-    pub burst: Option<usize>,
-    pub strategy: RateLimitStrategy,
+    pub burst:       Option<usize>,
+    pub strategy:    RateLimitStrategy,
 }
 
 impl Default for RateLimit {
     fn default() -> Self {
         Self {
-            requests: 100,
+            requests:    100,
             window_secs: 60,
-            burst: Some(20),
-            strategy: RateLimitStrategy::TokenBucket,
+            burst:       Some(20),
+            strategy:    RateLimitStrategy::TokenBucket,
         }
     }
 }
@@ -37,7 +41,7 @@ impl Default for RateLimit {
 /// Rate limiter with token bucket algorithm
 pub struct RateLimiter {
     limits: HashMap<String, RateLimit>,
-    store: Arc<Mutex<RateLimitStore>>,
+    store:  Arc<Mutex<RateLimitStore>>,
 }
 
 impl Default for RateLimiter {
@@ -50,7 +54,7 @@ impl RateLimiter {
     pub fn new() -> Self {
         Self {
             limits: HashMap::new(),
-            store: Arc::new(Mutex::new(RateLimitStore::new())),
+            store:  Arc::new(Mutex::new(RateLimitStore::new())),
         }
     }
 
@@ -77,7 +81,7 @@ impl RateLimiter {
             RateLimitStrategy::FixedWindow => self.check_fixed_window(&mut store, key, limit).await,
             RateLimitStrategy::SlidingWindow => {
                 self.check_sliding_window(&mut store, key, limit).await
-            }
+            },
         }
     }
 
@@ -175,9 +179,9 @@ impl RateLimiter {
     pub async fn stats(&self) -> RateLimitStats {
         let store = self.store.lock().await;
         RateLimitStats {
-            rules_count: self.limits.len(),
-            buckets_count: store.buckets.len(),
-            windows_count: store.windows.len(),
+            rules_count:    self.limits.len(),
+            buckets_count:  store.buckets.len(),
+            windows_count:  store.windows.len(),
             requests_count: store.requests.len(),
         }
     }
@@ -185,36 +189,32 @@ impl RateLimiter {
 
 /// In-memory rate limit store (production would use Redis)
 struct RateLimitStore {
-    buckets: HashMap<String, TokenBucket>,
-    windows: HashMap<String, FixedWindow>,
+    buckets:  HashMap<String, TokenBucket>,
+    windows:  HashMap<String, FixedWindow>,
     requests: HashMap<String, Vec<u64>>,
 }
 
 impl RateLimitStore {
     fn new() -> Self {
         Self {
-            buckets: HashMap::new(),
-            windows: HashMap::new(),
+            buckets:  HashMap::new(),
+            windows:  HashMap::new(),
             requests: HashMap::new(),
         }
     }
 
     fn get_bucket(&mut self, key: &str, capacity: usize, _window: u64) -> &mut TokenBucket {
-        self.buckets
-            .entry(key.to_string())
-            .or_insert_with(|| TokenBucket {
-                tokens: capacity,
-                last_refill: current_timestamp(),
-            })
+        self.buckets.entry(key.to_string()).or_insert_with(|| TokenBucket {
+            tokens:      capacity,
+            last_refill: current_timestamp(),
+        })
     }
 
     fn get_window(&mut self, key: &str) -> &mut FixedWindow {
-        self.windows
-            .entry(key.to_string())
-            .or_insert_with(|| FixedWindow {
-                start: current_timestamp(),
-                count: 0,
-            })
+        self.windows.entry(key.to_string()).or_insert_with(|| FixedWindow {
+            start: current_timestamp(),
+            count: 0,
+        })
     }
 
     fn get_requests(&mut self, key: &str) -> &mut Vec<u64> {
@@ -224,15 +224,15 @@ impl RateLimitStore {
 
 #[derive(Debug)]
 pub struct RateLimitStats {
-    pub rules_count: usize,
-    pub buckets_count: usize,
-    pub windows_count: usize,
+    pub rules_count:    usize,
+    pub buckets_count:  usize,
+    pub windows_count:  usize,
     pub requests_count: usize,
 }
 
 #[derive(Debug)]
 struct TokenBucket {
-    tokens: usize,
+    tokens:      usize,
     last_refill: u64,
 }
 

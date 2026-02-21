@@ -3,8 +3,9 @@
 //! This module contains comprehensive tests for mutation parsing, validation,
 //! and response building. Tests are organized by category for easy navigation.
 
+use serde_json::{Value, json};
+
 use super::*;
-use serde_json::{json, Value};
 
 // Test modules - organized by pipeline stage
 mod classification; // Stage 2: Status taxonomy

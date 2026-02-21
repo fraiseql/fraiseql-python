@@ -3,13 +3,18 @@
 //! This module provides the high-level API for building complete GraphQL
 //! responses from PostgreSQL JSON rows using schema-aware transformation.
 
-use crate::core::arena::Arena;
-use crate::core::transform::{ByteBuf, TransformConfig, ZeroCopyTransformer, MAX_JSON_DEPTH};
-use crate::json_transform;
-use crate::pipeline::projection::FieldSet;
-use crate::schema_registry;
 use pyo3::prelude::*;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
+
+use crate::{
+    core::{
+        arena::Arena,
+        transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
+    },
+    json_transform,
+    pipeline::projection::FieldSet,
+    schema_registry,
+};
 
 /// Type alias for multi-field response field definition.
 ///
@@ -65,7 +70,6 @@ type MultiFieldDef = (String, String, Vec<String>, Option<String>, Option<bool>)
 /// │ HTTP Bytes   │ → Return to Python (zero-copy)
 /// │ (Vec<u8>)    │
 /// └──────────────┘
-///
 pub fn build_graphql_response(
     json_rows: Vec<String>,
     field_name: &str,
@@ -92,14 +96,7 @@ pub fn build_graphql_response(
         }
     }
 
-    build_zero_copy(
-        json_rows,
-        field_name,
-        type_name,
-        field_paths,
-        is_list,
-        include_graphql_wrapper,
-    )
+    build_zero_copy(json_rows, field_name, type_name, field_paths, is_list, include_graphql_wrapper)
 }
 
 /// Transform JSON rows using schema registry and build GraphQL response.
@@ -202,11 +199,11 @@ fn build_zero_copy(
     let arena = Arena::with_capacity(estimate_arena_size(&json_rows));
 
     let config = TransformConfig {
-        add_typename: type_name.is_some(),
-        camel_case: true,
-        project_fields: field_paths.is_some(),
+        add_typename:        type_name.is_some(),
+        camel_case:          true,
+        project_fields:      field_paths.is_some(),
         add_graphql_wrapper: false,
-        max_depth: MAX_JSON_DEPTH,
+        max_depth:           MAX_JSON_DEPTH,
     };
 
     let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths, &arena));

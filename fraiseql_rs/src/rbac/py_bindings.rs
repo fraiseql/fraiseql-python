@@ -1,9 +1,11 @@
 //! Python bindings for RBAC components.
 
-use super::resolver::PermissionResolver;
-use pyo3::prelude::*;
 use std::sync::Arc;
+
+use pyo3::prelude::*;
 use uuid::Uuid;
+
+use super::resolver::PermissionResolver;
 
 /// Python wrapper for PermissionResolver
 #[pyclass]

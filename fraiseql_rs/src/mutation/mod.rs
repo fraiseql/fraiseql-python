@@ -9,16 +9,17 @@ mod postgres_composite;
 mod response_builder;
 mod types;
 
-pub use crate::cascade::{filter_cascade_by_selections, CascadeSelections};
 pub use entity_filter::filter_entity_fields;
 pub use entity_processor::{
-    add_typename_to_entity, process_cascade, process_entity, process_entity_with_typename,
-    ProcessedEntity,
+    ProcessedEntity, add_typename_to_entity, process_cascade, process_entity,
+    process_entity_with_typename,
 };
 pub use parser::parse_mutation_response;
 pub use postgres_composite::PostgresMutationResponse;
 pub use response_builder::{build_graphql_response, build_success_response};
 pub use types::{FullResponse, MutationResponse, SimpleResponse, StatusKind};
+
+pub use crate::cascade::{CascadeSelections, filter_cascade_by_selections};
 
 #[cfg(test)]
 mod test_status_only;
@@ -68,12 +69,12 @@ pub fn build_mutation_response(
             // SUCCESS: Valid 8-field composite type
             // CASCADE from Position 7 will be placed at success wrapper level
             pg_response.to_mutation_result(entity_type)
-        }
+        },
         Err(_parse_error) => {
             // FALLBACK: Try simple format (backward compatibility)
             // This handles users with simple entity responses
             MutationResult::from_json(mutation_json, entity_type)?
-        }
+        },
     };
 
     // Step 2: Build GraphQL response using response_builder
@@ -118,10 +119,7 @@ mod integration_tests {
         .unwrap();
 
         let response: serde_json::Value = serde_json::from_slice(&result).unwrap();
-        assert_eq!(
-            response["data"]["createUser"]["__typename"],
-            "CreateUserSuccess"
-        );
+        assert_eq!(response["data"]["createUser"]["__typename"], "CreateUserSuccess");
         assert_eq!(response["data"]["createUser"]["user"]["__typename"], "User");
     }
 
@@ -222,10 +220,7 @@ impl MutationStatus {
             MutationStatus::Noop(status.to_string())
         }
         // SUCCESS KEYWORDS - Return Success with full status string
-        else if matches!(
-            status_lower.as_str(),
-            "success" | "created" | "updated" | "deleted"
-        ) {
+        else if matches!(status_lower.as_str(), "success" | "created" | "updated" | "deleted") {
             MutationStatus::Success(status.to_string())
         }
         // DEFAULT - Unknown statuses become Success (backward compatibility)
@@ -291,7 +286,7 @@ impl MutationStatus {
                 } else {
                     500
                 }
-            }
+            },
         }
     }
 }
@@ -303,14 +298,14 @@ impl MutationStatus {
 /// 2. Full: Complete mutation_response with status, message, entity, etc.
 #[derive(Debug, Clone)]
 pub struct MutationResult {
-    pub status: MutationStatus,
-    pub message: String,
-    pub entity_id: Option<String>,
-    pub entity_type: Option<String>,
-    pub entity: Option<Value>,
-    pub updated_fields: Option<Vec<String>>,
-    pub cascade: Option<Value>,
-    pub metadata: Option<Value>,
+    pub status:           MutationStatus,
+    pub message:          String,
+    pub entity_id:        Option<String>,
+    pub entity_type:      Option<String>,
+    pub entity:           Option<Value>,
+    pub updated_fields:   Option<Vec<String>>,
+    pub cascade:          Option<Value>,
+    pub metadata:         Option<Value>,
     /// True if this was parsed from simple JSONB format (no status field)
     pub is_simple_format: bool,
 }
@@ -400,21 +395,12 @@ impl MutationResult {
         }
 
         // FULL FORMAT: Parse all fields
-        let status_str = v
-            .get("status")
-            .and_then(|s| s.as_str())
-            .ok_or("Missing 'status' field")?;
+        let status_str =
+            v.get("status").and_then(|s| s.as_str()).ok_or("Missing 'status' field")?;
 
-        let message = v
-            .get("message")
-            .and_then(|m| m.as_str())
-            .unwrap_or("")
-            .to_string();
+        let message = v.get("message").and_then(|m| m.as_str()).unwrap_or("").to_string();
 
-        let entity_id = v
-            .get("entity_id")
-            .and_then(|id| id.as_str())
-            .map(String::from);
+        let entity_id = v.get("entity_id").and_then(|id| id.as_str()).map(String::from);
 
         // Use entity_type from JSON, fall back to default
         let entity_type = v
@@ -428,11 +414,7 @@ impl MutationResult {
         let updated_fields = v
             .get("updated_fields")
             .and_then(|f| f.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            });
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect());
 
         let cascade = v.get("cascade").filter(|c| !c.is_null()).cloned();
         let metadata = v.get("metadata").filter(|m| !m.is_null()).cloned();
@@ -452,9 +434,6 @@ impl MutationResult {
 
     /// Get errors array from metadata
     pub fn errors(&self) -> Option<&Vec<Value>> {
-        self.metadata
-            .as_ref()
-            .and_then(|m| m.get("errors"))
-            .and_then(|e| e.as_array())
+        self.metadata.as_ref().and_then(|m| m.get("errors")).and_then(|e| e.as_array())
     }
 }

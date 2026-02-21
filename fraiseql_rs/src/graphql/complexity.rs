@@ -3,30 +3,31 @@
 //! This module implements GraphQL query complexity analysis with configurable
 //! cost limits and field weighting to prevent resource exhaustion attacks.
 
-use crate::graphql::types::ParsedQuery;
 use std::collections::HashMap;
+
+use crate::graphql::types::ParsedQuery;
 
 /// Complexity analysis result
 pub struct ComplexityResult {
     /// Calculated complexity score
-    pub score: u32,
+    pub score:    u32,
     /// Whether the query exceeds configured limits
     pub exceeded: bool,
     /// Maximum allowed complexity
-    pub limit: u32,
+    pub limit:    u32,
 }
 
 /// Complexity analyzer configuration
 #[derive(Clone)]
 pub struct ComplexityConfig {
     /// Maximum allowed complexity score
-    pub max_complexity: u32,
+    pub max_complexity:   u32,
     /// Base cost for each field
-    pub field_cost: u32,
+    pub field_cost:       u32,
     /// Cost multiplier for nested fields
     pub depth_multiplier: f32,
     /// Special field cost overrides
-    pub field_overrides: HashMap<String, u32>,
+    pub field_overrides:  HashMap<String, u32>,
     /// Type-specific cost multipliers
     pub type_multipliers: HashMap<String, f32>,
 }
@@ -34,10 +35,10 @@ pub struct ComplexityConfig {
 impl Default for ComplexityConfig {
     fn default() -> Self {
         Self {
-            max_complexity: 1000,
-            field_cost: 1,
+            max_complexity:   1000,
+            field_cost:       1,
             depth_multiplier: 1.5,
-            field_overrides: HashMap::new(),
+            field_overrides:  HashMap::new(),
             type_multipliers: HashMap::new(),
         }
     }
@@ -119,9 +120,7 @@ impl ComplexityAnalyzer {
         breakdown.insert("fragment_penalty".to_string(), fragment_penalty);
         breakdown.insert(
             "total".to_string(),
-            base_complexity
-                .saturating_add(depth_penalty)
-                .saturating_add(fragment_penalty),
+            base_complexity.saturating_add(depth_penalty).saturating_add(fragment_penalty),
         );
 
         breakdown
@@ -182,9 +181,7 @@ impl ComplexityAnalyzer {
 
         // Depth multiplier (exponential growth for deep queries)
         let depth_multiplier = (self.config.depth_multiplier.powi(depth as i32) * 100.0) as u32;
-        complexity = complexity
-            .saturating_mul(depth_multiplier / 100)
-            .max(field_cost);
+        complexity = complexity.saturating_mul(depth_multiplier / 100).max(field_cost);
 
         // Add complexity for nested fields
         let nested_count = selection.nested_fields.len() as u32;
@@ -239,12 +236,7 @@ impl ComplexityAnalyzer {
     /// Currently, type multipliers are applied at config level.
     #[allow(dead_code)]
     fn calculate_type_complexity(&self, type_name: &str, base_complexity: u32) -> u32 {
-        let multiplier = self
-            .config
-            .type_multipliers
-            .get(type_name)
-            .copied()
-            .unwrap_or(1.0);
+        let multiplier = self.config.type_multipliers.get(type_name).copied().unwrap_or(1.0);
 
         ((base_complexity as f32 * multiplier) as u32).max(1)
     }
@@ -355,38 +347,38 @@ mod tests {
         // Create a query with nested fields
         let mut query = ParsedQuery::default();
         query.selections = vec![FieldSelection {
-            name: "users".to_string(),
-            alias: None,
-            arguments: vec![],
+            name:          "users".to_string(),
+            alias:         None,
+            arguments:     vec![],
             nested_fields: vec![
                 FieldSelection {
-                    name: "posts".to_string(),
-                    alias: None,
-                    arguments: vec![],
+                    name:          "posts".to_string(),
+                    alias:         None,
+                    arguments:     vec![],
                     nested_fields: vec![FieldSelection {
-                        name: "comments".to_string(),
-                        alias: None,
-                        arguments: vec![],
+                        name:          "comments".to_string(),
+                        alias:         None,
+                        arguments:     vec![],
                         nested_fields: vec![FieldSelection {
-                            name: "author".to_string(),
-                            alias: None,
-                            arguments: vec![],
+                            name:          "author".to_string(),
+                            alias:         None,
+                            arguments:     vec![],
                             nested_fields: vec![],
-                            directives: vec![],
+                            directives:    vec![],
                         }],
-                        directives: vec![],
+                        directives:    vec![],
                     }],
-                    directives: vec![],
+                    directives:    vec![],
                 },
                 FieldSelection {
-                    name: "profile".to_string(),
-                    alias: None,
-                    arguments: vec![],
+                    name:          "profile".to_string(),
+                    alias:         None,
+                    arguments:     vec![],
                     nested_fields: vec![],
-                    directives: vec![],
+                    directives:    vec![],
                 },
             ],
-            directives: vec![],
+            directives:    vec![],
         }];
 
         let result = analyzer.analyze(&query);
@@ -397,9 +389,7 @@ mod tests {
     #[test]
     fn test_complexity_config_override() {
         let mut config = ComplexityConfig::default();
-        config
-            .field_overrides
-            .insert("expensive_field".to_string(), 10);
+        config.field_overrides.insert("expensive_field".to_string(), 10);
 
         let analyzer = ComplexityAnalyzer::with_config(config);
 
@@ -419,23 +409,23 @@ mod tests {
         // Create a query that exceeds the limit
         let mut query = ParsedQuery::default();
         query.selections = vec![FieldSelection {
-            name: "users".to_string(),
-            alias: None,
-            arguments: vec![],
+            name:          "users".to_string(),
+            alias:         None,
+            arguments:     vec![],
             nested_fields: vec![FieldSelection {
-                name: "posts".to_string(),
-                alias: None,
-                arguments: vec![],
+                name:          "posts".to_string(),
+                alias:         None,
+                arguments:     vec![],
                 nested_fields: vec![FieldSelection {
-                    name: "comments".to_string(),
-                    alias: None,
-                    arguments: vec![],
+                    name:          "comments".to_string(),
+                    alias:         None,
+                    arguments:     vec![],
                     nested_fields: vec![],
-                    directives: vec![],
+                    directives:    vec![],
                 }],
-                directives: vec![],
+                directives:    vec![],
             }],
-            directives: vec![],
+            directives:    vec![],
         }];
 
         let result = analyzer.validate_complexity(&query);

@@ -17,13 +17,10 @@ fn main() {
             println!("Output length: {} bytes", bytes.len());
             // Print first 200 chars
             let output_str = String::from_utf8_lossy(&bytes);
-            println!(
-                "Output preview: {}...",
-                &output_str[..output_str.len().min(200)]
-            );
-        }
+            println!("Output preview: {}...", &output_str[..output_str.len().min(200)]);
+        },
         Err(e) => {
             println!("✗ Implementation failed: {:?}", e);
-        }
+        },
     }
 }

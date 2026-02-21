@@ -407,9 +407,7 @@ fn test_invalid_selections_json() {
 
     let result = filter_cascade_data(cascade, Some(selections));
     assert!(result.is_err());
-    assert!(result
-        .unwrap_err()
-        .contains("Invalid cascade selections JSON"));
+    assert!(result.unwrap_err().contains("Invalid cascade selections JSON"));
 }
 
 #[test]

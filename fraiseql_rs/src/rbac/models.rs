@@ -36,34 +36,30 @@ use uuid::Uuid;
 /// - viewer (tenant, inherits user)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Role {
-    pub id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
+    pub id:             Uuid,
+    pub name:           String,
+    pub description:    Option<String>,
     pub parent_role_id: Option<Uuid>,
-    pub tenant_id: Option<Uuid>,
-    pub is_system: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub tenant_id:      Option<Uuid>,
+    pub is_system:      bool,
+    pub created_at:     DateTime<Utc>,
+    pub updated_at:     DateTime<Utc>,
 }
 
 impl Role {
     /// Create Role from tokio_postgres Row
     pub fn from_row(row: tokio_postgres::Row) -> Self {
         Self {
-            id: Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
-            name: row.get(1),
-            description: row.get(2),
-            parent_role_id: row
-                .get::<_, Option<String>>(3)
-                .and_then(|s| Uuid::parse_str(&s).ok()),
-            tenant_id: row
-                .get::<_, Option<String>>(4)
-                .and_then(|s| Uuid::parse_str(&s).ok()),
-            is_system: row.get(5),
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(6))
+            id:             Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
+            name:           row.get(1),
+            description:    row.get(2),
+            parent_role_id: row.get::<_, Option<String>>(3).and_then(|s| Uuid::parse_str(&s).ok()),
+            tenant_id:      row.get::<_, Option<String>>(4).and_then(|s| Uuid::parse_str(&s).ok()),
+            is_system:      row.get(5),
+            created_at:     chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(6))
                 .map(|dt| dt.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| chrono::Utc::now()),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7))
+            updated_at:     chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7))
                 .map(|dt| dt.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| chrono::Utc::now()),
         }
@@ -98,12 +94,12 @@ impl Role {
 /// - "document:read" ✗
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Permission {
-    pub id: Uuid,
-    pub resource: String,
-    pub action: String,
+    pub id:          Uuid,
+    pub resource:    String,
+    pub action:      String,
     pub description: Option<String>,
     pub constraints: Option<serde_json::Value>,
-    pub created_at: DateTime<Utc>,
+    pub created_at:  DateTime<Utc>,
 }
 
 impl Permission {
@@ -131,14 +127,14 @@ impl Permission {
     /// Create Permission from tokio_postgres Row
     pub fn from_row(row: tokio_postgres::Row) -> Self {
         Self {
-            id: Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
-            resource: row.get(1),
-            action: row.get(2),
+            id:          Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
+            resource:    row.get(1),
+            action:      row.get(2),
             description: row.get(3),
             constraints: row
                 .get::<_, Option<String>>(4)
                 .and_then(|s| serde_json::from_str(&s).ok()),
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(5))
+            created_at:  chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(5))
                 .map(|dt| dt.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| chrono::Utc::now()),
         }
@@ -182,10 +178,10 @@ impl Permission {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRole {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub role_id: Uuid,
-    pub tenant_id: Option<Uuid>,
+    pub id:         Uuid,
+    pub user_id:    Uuid,
+    pub role_id:    Uuid,
+    pub tenant_id:  Option<Uuid>,
     pub granted_by: Option<Uuid>,
     pub granted_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
@@ -204,15 +200,11 @@ impl UserRole {
     /// Create UserRole from tokio_postgres Row
     pub fn from_row(row: tokio_postgres::Row) -> Self {
         Self {
-            id: Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
-            user_id: Uuid::parse_str(&row.get::<_, String>(1)).unwrap_or_default(),
-            role_id: Uuid::parse_str(&row.get::<_, String>(2)).unwrap_or_default(),
-            tenant_id: row
-                .get::<_, Option<String>>(3)
-                .and_then(|s| Uuid::parse_str(&s).ok()),
-            granted_by: row
-                .get::<_, Option<String>>(4)
-                .and_then(|s| Uuid::parse_str(&s).ok()),
+            id:         Uuid::parse_str(&row.get::<_, String>(0)).unwrap_or_default(),
+            user_id:    Uuid::parse_str(&row.get::<_, String>(1)).unwrap_or_default(),
+            role_id:    Uuid::parse_str(&row.get::<_, String>(2)).unwrap_or_default(),
+            tenant_id:  row.get::<_, Option<String>>(3).and_then(|s| Uuid::parse_str(&s).ok()),
+            granted_by: row.get::<_, Option<String>>(4).and_then(|s| Uuid::parse_str(&s).ok()),
             granted_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(5))
                 .map(|dt| dt.with_timezone(&chrono::Utc))
                 .unwrap_or_else(|_| chrono::Utc::now()),
@@ -248,8 +240,8 @@ impl UserRole {
 /// This is computed efficiently by the `PermissionResolver` with caching.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RolePermission {
-    pub id: Uuid,
-    pub role_id: Uuid,
+    pub id:            Uuid,
+    pub role_id:       Uuid,
     pub permission_id: Uuid,
-    pub granted_at: DateTime<Utc>,
+    pub granted_at:    DateTime<Utc>,
 }

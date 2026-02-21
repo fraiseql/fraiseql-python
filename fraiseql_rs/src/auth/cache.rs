@@ -1,27 +1,28 @@
 //! User context caching with LRU eviction.
 
+use std::{
+    num::NonZeroUsize,
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime},
+};
+
 use lru::LruCache;
 use sha2::{Digest, Sha256};
-use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, SystemTime};
 
 use crate::pipeline::unified::UserContext;
 
 /// User context cache with LRU eviction and TTL validation.
 pub struct UserContextCache {
     cache: Arc<Mutex<LruCache<String, (UserContext, SystemTime)>>>,
-    ttl: Duration,
+    ttl:   Duration,
 }
 
 impl UserContextCache {
     /// Create a new user context cache.
     pub fn new(capacity: usize, ttl_seconds: u64) -> Self {
         Self {
-            cache: Arc::new(Mutex::new(LruCache::new(
-                NonZeroUsize::new(capacity).unwrap(),
-            ))),
-            ttl: Duration::from_secs(ttl_seconds),
+            cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(capacity).unwrap()))),
+            ttl:   Duration::from_secs(ttl_seconds),
         }
     }
 
@@ -39,10 +40,8 @@ impl UserContextCache {
 
             if elapsed < self.ttl {
                 // Also check token expiration
-                let now = SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs();
+                let now =
+                    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
 
                 if context.exp > now {
                     return Some(context.clone());
@@ -94,10 +93,10 @@ mod tests {
         let cache = UserContextCache::new(10, 300);
 
         let context = UserContext {
-            user_id: Some("user123".to_string()),
+            user_id:     Some("user123".to_string()),
             permissions: vec!["read".to_string()],
-            roles: vec!["admin".to_string()],
-            exp: SystemTime::now()
+            roles:       vec!["admin".to_string()],
+            exp:         SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_secs()
@@ -116,10 +115,10 @@ mod tests {
         let cache = UserContextCache::new(10, 1); // 1 second TTL
 
         let context = UserContext {
-            user_id: Some("user123".to_string()),
+            user_id:     Some("user123".to_string()),
             permissions: vec![],
-            roles: vec![],
-            exp: SystemTime::now()
+            roles:       vec![],
+            exp:         SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
                 .as_secs()

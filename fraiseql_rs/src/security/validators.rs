@@ -6,19 +6,19 @@ use crate::graphql::types::ParsedQuery;
 /// Query validation limits
 #[derive(Debug, Clone)]
 pub struct QueryLimits {
-    pub max_depth: usize,
+    pub max_depth:      usize,
     pub max_complexity: usize,
     pub max_query_size: usize,
-    pub max_list_size: usize,
+    pub max_list_size:  usize,
 }
 
 impl Default for QueryLimits {
     fn default() -> Self {
         Self {
-            max_depth: 10,
+            max_depth:      10,
             max_complexity: 1000,
             max_query_size: 100_000, // 100KB
-            max_list_size: 1000,
+            max_list_size:  1000,
         }
     }
 }
@@ -26,19 +26,19 @@ impl Default for QueryLimits {
 impl QueryLimits {
     pub fn production() -> Self {
         Self {
-            max_depth: 7,
+            max_depth:      7,
             max_complexity: 500,
             max_query_size: 50_000,
-            max_list_size: 500,
+            max_list_size:  500,
         }
     }
 
     pub fn strict() -> Self {
         Self {
-            max_depth: 5,
+            max_depth:      5,
             max_complexity: 200,
             max_query_size: 25_000,
-            max_list_size: 100,
+            max_list_size:  100,
         }
     }
 }
@@ -58,7 +58,7 @@ impl QueryValidator {
         // Check query size
         if query.len() > self.limits.max_query_size {
             return Err(SecurityError::QueryTooLarge {
-                size: query.len(),
+                size:     query.len(),
                 max_size: self.limits.max_query_size,
             });
         }
@@ -86,12 +86,7 @@ impl QueryValidator {
 
     /// Calculate query depth (max nesting level)
     pub fn calculate_depth(&self, query: &ParsedQuery) -> usize {
-        query
-            .selections
-            .iter()
-            .map(Self::calculate_selection_depth)
-            .max()
-            .unwrap_or(0)
+        query.selections.iter().map(Self::calculate_selection_depth).max().unwrap_or(0)
     }
 
     /// Calculate depth for a single selection (recursive helper)
@@ -147,9 +142,7 @@ impl QueryValidator {
         let list_indicators = ["list", "all", "many", "items", "edges", "nodes"];
         let field_name = selection.name.to_lowercase();
 
-        list_indicators
-            .iter()
-            .any(|&indicator| field_name.contains(indicator))
+        list_indicators.iter().any(|&indicator| field_name.contains(indicator))
             || field_name.ends_with('s') // Plural names often indicate lists
     }
 
@@ -190,11 +183,11 @@ mod tests {
         let query = ParsedQuery {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "test".to_string(),
-            selections: vec![],
-            variables: vec![],
-            fragments: vec![],
-            source: "query { test }".to_string(),
+            root_field:     "test".to_string(),
+            selections:     vec![],
+            variables:      vec![],
+            fragments:      vec![],
+            source:         "query { test }".to_string(),
         };
 
         // Query is "query { test }" which is 13 chars, over the limit of 10
@@ -214,23 +207,23 @@ mod tests {
         let query = ParsedQuery {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "users".to_string(),
-            selections: vec![FieldSelection {
-                name: "users".to_string(),
-                alias: None,
-                arguments: vec![],
+            root_field:     "users".to_string(),
+            selections:     vec![FieldSelection {
+                name:          "users".to_string(),
+                alias:         None,
+                arguments:     vec![],
                 nested_fields: vec![FieldSelection {
-                    name: "posts".to_string(),
-                    alias: None,
-                    arguments: vec![],
+                    name:          "posts".to_string(),
+                    alias:         None,
+                    arguments:     vec![],
                     nested_fields: vec![],
-                    directives: vec![],
+                    directives:    vec![],
                 }],
-                directives: vec![],
+                directives:    vec![],
             }],
-            variables: vec![],
-            fragments: vec![],
-            source: "query { users { posts } }".to_string(),
+            variables:      vec![],
+            fragments:      vec![],
+            source:         "query { users { posts } }".to_string(),
         };
 
         // Depth is 2 (users -> posts), over the limit of 1
@@ -247,17 +240,17 @@ mod tests {
         let query = ParsedQuery {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "users".to_string(),
-            selections: vec![FieldSelection {
-                name: "users".to_string(),
-                alias: None,
-                arguments: vec![], // No args, base complexity 1
+            root_field:     "users".to_string(),
+            selections:     vec![FieldSelection {
+                name:          "users".to_string(),
+                alias:         None,
+                arguments:     vec![], // No args, base complexity 1
                 nested_fields: vec![],
-                directives: vec![],
+                directives:    vec![],
             }],
-            variables: vec![],
-            fragments: vec![],
-            source: "query { users }".to_string(),
+            variables:      vec![],
+            fragments:      vec![],
+            source:         "query { users }".to_string(),
         };
 
         assert_eq!(validator.calculate_complexity(&query), 1);
@@ -268,19 +261,19 @@ mod tests {
         let validator = QueryValidator::new(QueryLimits::default());
 
         let list_field = FieldSelection {
-            name: "users".to_string(),
-            alias: None,
-            arguments: vec![],
+            name:          "users".to_string(),
+            alias:         None,
+            arguments:     vec![],
             nested_fields: vec![],
-            directives: vec![],
+            directives:    vec![],
         };
 
         let non_list_field = FieldSelection {
-            name: "user".to_string(),
-            alias: None,
-            arguments: vec![],
+            name:          "user".to_string(),
+            alias:         None,
+            arguments:     vec![],
             nested_fields: vec![],
-            directives: vec![],
+            directives:    vec![],
         };
 
         assert!(validator.is_list_field(&list_field)); // ends with 's'

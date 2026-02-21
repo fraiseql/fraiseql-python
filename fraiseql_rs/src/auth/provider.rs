@@ -1,9 +1,11 @@
 //! Authentication provider trait and implementations.
 
-use crate::auth::errors::AuthError;
-use crate::auth::jwt::JWTValidator;
-use crate::pipeline::unified::UserContext;
 use async_trait::async_trait;
+
+use crate::{
+    auth::{errors::AuthError, jwt::JWTValidator},
+    pipeline::unified::UserContext,
+};
 
 type Result<T> = std::result::Result<T, AuthError>;
 
@@ -41,11 +43,7 @@ impl AuthProvider for Auth0Provider {
             .custom
             .get("https://fraiseql.com/roles")
             .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
             .unwrap_or_default();
 
         // Extract permissions from Auth0 custom claims
@@ -53,11 +51,7 @@ impl AuthProvider for Auth0Provider {
             .custom
             .get("https://fraiseql.com/permissions")
             .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
             .unwrap_or_default();
 
         Ok(UserContext {
@@ -71,8 +65,8 @@ impl AuthProvider for Auth0Provider {
 
 /// Custom JWT authentication provider.
 pub struct CustomJWTProvider {
-    validator: JWTValidator,
-    roles_claim: String,
+    validator:         JWTValidator,
+    roles_claim:       String,
     permissions_claim: String,
 }
 
@@ -103,11 +97,7 @@ impl AuthProvider for CustomJWTProvider {
             .custom
             .get(&self.roles_claim)
             .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
             .unwrap_or_default();
 
         // Extract permissions from custom claim
@@ -115,11 +105,7 @@ impl AuthProvider for CustomJWTProvider {
             .custom
             .get(&self.permissions_claim)
             .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            })
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
             .unwrap_or_default();
 
         Ok(UserContext {

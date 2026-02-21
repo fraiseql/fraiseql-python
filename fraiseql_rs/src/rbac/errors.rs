@@ -11,13 +11,13 @@ pub enum RbacError {
     /// Permission denied for specific resource:action
     PermissionDenied {
         resource: String,
-        action: String,
-        user_id: Option<String>,
+        action:   String,
+        user_id:  Option<String>,
     },
 
     /// Missing required role
     MissingRole {
-        required_role: String,
+        required_role:   String,
         available_roles: Vec<String>,
     },
 
@@ -58,15 +58,11 @@ impl fmt::Display for RbacError {
                 user_id,
             } => {
                 if let Some(user) = user_id {
-                    write!(
-                        f,
-                        "Permission denied: {}:{} for user {}",
-                        resource, action, user
-                    )
+                    write!(f, "Permission denied: {}:{} for user {}", resource, action, user)
                 } else {
                     write!(f, "Permission denied: {}:{}", resource, action)
                 }
-            }
+            },
             RbacError::MissingRole {
                 required_role,
                 available_roles,
@@ -76,26 +72,22 @@ impl fmt::Display for RbacError {
                     "Missing required role '{}'. Available roles: {:?}",
                     required_role, available_roles
                 )
-            }
+            },
             RbacError::UserNotFound(user_id) => {
                 write!(f, "User not found in RBAC system: {}", user_id)
-            }
+            },
             RbacError::RoleNotFound(role_name) => {
                 write!(f, "Role not found: {}", role_name)
-            }
+            },
             RbacError::PermissionNotFound(perm) => {
                 write!(f, "Permission not found: {}", perm)
-            }
+            },
             RbacError::InvalidPermissionFormat(perm) => {
-                write!(
-                    f,
-                    "Invalid permission format '{}'. Expected 'resource:action'",
-                    perm
-                )
-            }
+                write!(f, "Invalid permission format '{}'. Expected 'resource:action'", perm)
+            },
             RbacError::HierarchyCycle(roles) => {
                 write!(f, "Role hierarchy cycle detected: {:?}", roles)
-            }
+            },
             RbacError::CacheError(msg) => write!(f, "Cache error: {}", msg),
             RbacError::ConfigError(msg) => write!(f, "Configuration error: {}", msg),
             RbacError::DirectiveError(msg) => write!(f, "Directive parsing error: {}", msg),

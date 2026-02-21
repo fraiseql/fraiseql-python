@@ -1,10 +1,11 @@
 //! GraphQL query parser using graphql-parser crate.
 
-use crate::graphql::types::*;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use graphql_parser::query::{
     self, Definition, Directive as GraphQLDirective, Document, OperationDefinition, Selection,
 };
+
+use crate::graphql::types::*;
 
 /// Parse GraphQL query string into Rust AST.
 pub fn parse_query(source: &str) -> Result<ParsedQuery> {
@@ -78,15 +79,15 @@ fn extract_fragment_spreads(selection_set: &query::SelectionSet<String>) -> Vec<
         match selection {
             Selection::FragmentSpread(spread) => {
                 spreads.push(spread.fragment_name.clone());
-            }
+            },
             Selection::InlineFragment(inline) => {
                 // Inline fragments can also contain spreads
                 spreads.extend(extract_fragment_spreads(&inline.selection_set));
-            }
+            },
             Selection::Field(field) => {
                 // Fields can have nested selections with spreads
                 spreads.extend(extract_fragment_spreads(&field.selection_set));
-            }
+            },
         }
     }
 
@@ -96,13 +97,7 @@ fn extract_fragment_spreads(selection_set: &query::SelectionSet<String>) -> Vec<
 /// Extract operation details from GraphQL operation definition.
 fn extract_operation(
     operation: &OperationDefinition<String>,
-) -> Result<(
-    String,
-    Option<String>,
-    String,
-    Vec<FieldSelection>,
-    Vec<VariableDefinition>,
-)> {
+) -> Result<(String, Option<String>, String, Vec<FieldSelection>, Vec<VariableDefinition>)> {
     let operation_type = match operation {
         OperationDefinition::Query(_) => "query",
         OperationDefinition::Mutation(_) => "mutation",
@@ -116,7 +111,7 @@ fn extract_operation(
         OperationDefinition::Mutation(m) => (&m.name, &m.selection_set, &m.variable_definitions),
         OperationDefinition::Subscription(s) => {
             (&s.name, &s.selection_set, &s.variable_definitions)
-        }
+        },
         OperationDefinition::SelectionSet(sel_set) => (&None, sel_set, &Vec::new()),
     };
 
@@ -133,19 +128,13 @@ fn extract_operation(
     let variables = var_defs
         .iter()
         .map(|var_def| VariableDefinition {
-            name: var_def.name.clone(),
-            var_type: parse_graphql_type(&var_def.var_type),
+            name:          var_def.name.clone(),
+            var_type:      parse_graphql_type(&var_def.var_type),
             default_value: var_def.default_value.as_ref().map(|v| serialize_value(v)),
         })
         .collect();
 
-    Ok((
-        operation_type,
-        name.clone(),
-        root_field,
-        selections,
-        variables,
-    ))
+    Ok((operation_type, name.clone(), root_field, selections, variables))
 }
 
 /// Parse GraphQL selection set recursively.
@@ -160,7 +149,7 @@ fn parse_selection_set(selection_set: &query::SelectionSet<String>) -> Result<Ve
                     .arguments
                     .iter()
                     .map(|(name, value)| GraphQLArgument {
-                        name: name.clone(),
+                        name:       name.clone(),
                         value_type: value_type_string(value),
                         value_json: serialize_value(value),
                     })
@@ -182,7 +171,7 @@ fn parse_selection_set(selection_set: &query::SelectionSet<String>) -> Result<Ve
                     nested_fields,
                     directives,
                 });
-            }
+            },
             Selection::InlineFragment(frag) => {
                 // Inline fragments not yet supported (would need type condition evaluation)
                 // TODO Phase 9: Implement proper inline fragment handling
@@ -191,11 +180,8 @@ fn parse_selection_set(selection_set: &query::SelectionSet<String>) -> Result<Ve
                     .as_ref()
                     .map(|t| format!("{}", t))
                     .unwrap_or_else(|| "(unknown)".to_string());
-                return Err(anyhow!(
-                    "Inline fragments not yet supported: ... on {}",
-                    type_name
-                ));
-            }
+                return Err(anyhow!("Inline fragments not yet supported: ... on {}", type_name));
+            },
             Selection::FragmentSpread(spread) => {
                 // For now, treat fragment spreads as error
                 // (would need fragment definitions support)
@@ -203,7 +189,7 @@ fn parse_selection_set(selection_set: &query::SelectionSet<String>) -> Result<Ve
                     "Fragment spreads not yet supported: {}",
                     spread.fragment_name
                 ));
-            }
+            },
         }
     }
 
@@ -237,7 +223,7 @@ fn serialize_value(value: &query::Value<String>) -> String {
                 let ptr = i as *const query::Number as *const i64;
                 (*ptr).to_string()
             }
-        }
+        },
         query::Value::Float(f) => format!("{}", f),
         query::Value::Boolean(b) => b.to_string(),
         query::Value::Null => "null".to_string(),
@@ -245,14 +231,12 @@ fn serialize_value(value: &query::Value<String>) -> String {
         query::Value::List(items) => {
             let serialized: Vec<_> = items.iter().map(serialize_value).collect();
             format!("[{}]", serialized.join(","))
-        }
+        },
         query::Value::Object(obj) => {
-            let pairs: Vec<_> = obj
-                .iter()
-                .map(|(k, v)| format!("\"{}\":{}", k, serialize_value(v)))
-                .collect();
+            let pairs: Vec<_> =
+                obj.iter().map(|(k, v)| format!("\"{}\":{}", k, serialize_value(v))).collect();
             format!("{{{}}}", pairs.join(","))
-        }
+        },
         query::Value::Variable(v) => format!("\"${}\"", v),
     }
 }
@@ -263,7 +247,7 @@ fn parse_directive(directive: &GraphQLDirective<String>) -> Result<Directive> {
         .arguments
         .iter()
         .map(|(name, value)| GraphQLArgument {
-            name: name.clone(),
+            name:       name.clone(),
             value_type: value_type_string(value),
             value_json: serialize_value(value),
         })
@@ -279,15 +263,15 @@ fn parse_directive(directive: &GraphQLDirective<String>) -> Result<Directive> {
 fn parse_graphql_type(graphql_type: &query::Type<String>) -> GraphQLType {
     match graphql_type {
         query::Type::NamedType(name) => GraphQLType {
-            name: name.clone(),
-            nullable: true, // Named types are nullable by default
-            list: false,
+            name:          name.clone(),
+            nullable:      true, // Named types are nullable by default
+            list:          false,
             list_nullable: false,
         },
         query::Type::ListType(inner) => GraphQLType {
-            name: format!("[{}]", parse_graphql_type(inner).name),
-            nullable: true,
-            list: true,
+            name:          format!("[{}]", parse_graphql_type(inner).name),
+            nullable:      true,
+            list:          true,
             list_nullable: true, // List items are nullable by default
         },
         query::Type::NonNullType(inner) => {
@@ -297,7 +281,7 @@ fn parse_graphql_type(graphql_type: &query::Type<String>) -> GraphQLType {
                 parsed.list_nullable = false;
             }
             parsed
-        }
+        },
     }
 }
 
@@ -398,10 +382,7 @@ mod tests {
         "#;
         let result = parse_query(query);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Inline fragments not yet supported"));
+        assert!(result.unwrap_err().to_string().contains("Inline fragments not yet supported"));
     }
 
     #[test]
@@ -416,9 +397,6 @@ mod tests {
         "#;
         let result = parse_query(query);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Fragment spreads not yet supported"));
+        assert!(result.unwrap_err().to_string().contains("Fragment spreads not yet supported"));
     }
 }

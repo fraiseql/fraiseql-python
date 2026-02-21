@@ -3,19 +3,16 @@
 //! Note: These benchmarks simulate connection pool operations.
 //! Real database benchmarks will be added in Phase 1 when database code exists.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::time::Duration;
+
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 
 /// Benchmark pool configuration overhead
 fn bench_pool_config(c: &mut Criterion) {
     c.bench_function("pool_config_creation", |b| {
         b.iter(|| {
             // Simulate pool configuration setup
-            let config = black_box(vec![
-                ("max_size", "10"),
-                ("min_idle", "2"),
-                ("timeout", "30s"),
-            ]);
+            let config = black_box(vec![("max_size", "10"), ("min_idle", "2"), ("timeout", "30s")]);
             let _config: std::collections::HashMap<_, _> = config.into_iter().collect();
         });
     });

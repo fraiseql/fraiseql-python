@@ -3,10 +3,13 @@
 //! Phase 2.0: Basic query execution infrastructure
 //! Full implementation with parameter binding in Phase 2.5
 
-use crate::db::types::{DatabaseError, DatabaseResult, QueryParam, QueryResult};
-use crate::db::where_builder::WhereBuilder;
 use bytes::BytesMut;
-use tokio_postgres::{types::ToSql, Client, Row};
+use tokio_postgres::{Client, Row, types::ToSql};
+
+use crate::db::{
+    types::{DatabaseError, DatabaseResult, QueryParam, QueryResult},
+    where_builder::WhereBuilder,
+};
 
 /// Query executor for database operations.
 /// Phase 2.0: Full implementation with parameter binding
@@ -211,7 +214,8 @@ impl<'a> QueryExecutor<'a> {
             if !where_sql.is_empty() {
                 // Adjust parameter indices in WHERE clause by offsetting all $N placeholders
                 let mut adjusted_where_sql = where_sql;
-                // Replace in reverse order to avoid conflicts (e.g., $1 becoming $11 if offset is 10)
+                // Replace in reverse order to avoid conflicts (e.g., $1 becoming $11 if offset is
+                // 10)
                 for i in (1..=where_params.len()).rev() {
                     let old_placeholder = format!("${}", i);
                     let new_placeholder = format!("${}", param_offset + i);
@@ -249,23 +253,18 @@ impl<'a> QueryExecutor<'a> {
         if rows.is_empty() {
             return QueryResult {
                 rows_affected: 0,
-                columns: vec![],
-                rows: vec![],
+                columns:       vec![],
+                rows:          vec![],
             };
         }
 
-        let columns: Vec<String> = rows[0]
-            .columns()
-            .iter()
-            .map(|col| col.name().to_string())
-            .collect();
+        let columns: Vec<String> =
+            rows[0].columns().iter().map(|col| col.name().to_string()).collect();
 
         let row_data: Vec<Vec<QueryParam>> = rows
             .into_iter()
             .map(|row| {
-                (0..row.len())
-                    .map(|i| self.postgres_value_to_query_param(&row, i))
-                    .collect()
+                (0..row.len()).map(|i| self.postgres_value_to_query_param(&row, i)).collect()
             })
             .collect();
 
@@ -303,6 +302,8 @@ impl<'a> QueryExecutor<'a> {
 
 // Implement ToSql for QueryParam to enable parameter binding
 impl ToSql for QueryParam {
+    tokio_postgres::types::to_sql_checked!();
+
     fn to_sql(
         &self,
         ty: &tokio_postgres::types::Type,
@@ -328,8 +329,6 @@ impl ToSql for QueryParam {
         // In a full implementation, we'd check type compatibility here
         true
     }
-
-    tokio_postgres::types::to_sql_checked!();
 }
 
 // QueryParam validation utilities
@@ -344,7 +343,7 @@ impl QueryParam {
                         "Text parameter exceeds maximum length of 1MB".to_string(),
                     ));
                 }
-            }
+            },
             QueryParam::Json(val) => {
                 // Basic JSON validation - ensure it's not too large
                 if serde_json::to_string(val)
@@ -356,9 +355,9 @@ impl QueryParam {
                         "JSON parameter exceeds maximum size of 1MB".to_string(),
                     ));
                 }
-            }
+            },
             // Add more validations as needed
-            _ => {} // Other types have reasonable size limits by their nature
+            _ => {}, // Other types have reasonable size limits by their nature
         }
         Ok(())
     }

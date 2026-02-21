@@ -1,7 +1,8 @@
 //! Query signature generation for caching.
 
-use crate::graphql::types::{FieldSelection, ParsedQuery};
 use sha2::{Digest, Sha256};
+
+use crate::graphql::types::{FieldSelection, ParsedQuery};
 
 /// Generate cache key from GraphQL query.
 pub fn generate_signature(parsed_query: &ParsedQuery) -> String {
@@ -94,23 +95,23 @@ mod tests {
         ParsedQuery {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "users".to_string(),
-            selections: vec![FieldSelection {
-                name: "users".to_string(),
-                alias: None,
-                arguments: vec![],
+            root_field:     "users".to_string(),
+            selections:     vec![FieldSelection {
+                name:          "users".to_string(),
+                alias:         None,
+                arguments:     vec![],
                 nested_fields: vec![FieldSelection {
-                    name: "id".to_string(),
-                    alias: None,
-                    arguments: vec![],
+                    name:          "id".to_string(),
+                    alias:         None,
+                    arguments:     vec![],
                     nested_fields: vec![],
-                    directives: vec![],
+                    directives:    vec![],
                 }],
-                directives: vec![],
+                directives:    vec![],
             }],
-            variables: vec![],
-            fragments: vec![],
-            source: query_str.to_string(),
+            variables:      vec![],
+            fragments:      vec![],
+            source:         query_str.to_string(),
         }
     }
 }

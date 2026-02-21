@@ -4,9 +4,10 @@
 //! GraphQL field selections. It operates on raw JSONB from PostgreSQL and
 //! applies filtering before Python serialization.
 
+use std::collections::HashSet;
+
 use serde::Deserialize;
 use serde_json::{Map, Value};
-use std::collections::HashSet;
 
 fn deserialize_fields_as_hashset<'de, D>(deserializer: D) -> Result<HashSet<String>, D::Error>
 where
@@ -23,20 +24,20 @@ mod tests;
 #[derive(Debug, Deserialize)]
 pub struct CascadeSelections {
     #[serde(deserialize_with = "deserialize_fields_as_hashset")]
-    pub fields: HashSet<String>,
+    pub fields:        HashSet<String>,
     #[serde(default)]
-    pub updated: Option<FieldSelections>,
+    pub updated:       Option<FieldSelections>,
     #[serde(default)]
-    pub deleted: Option<FieldSelections>,
+    pub deleted:       Option<FieldSelections>,
     #[serde(default)]
     pub invalidations: Option<FieldSelections>,
     #[serde(default)]
-    pub metadata: Option<FieldSelections>,
+    pub metadata:      Option<FieldSelections>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct FieldSelections {
-    pub fields: Vec<String>,
+    pub fields:            Vec<String>,
     #[serde(default)]
     pub entity_selections: Option<EntitySelections>,
 }

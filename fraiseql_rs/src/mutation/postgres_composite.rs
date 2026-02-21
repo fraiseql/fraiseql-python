@@ -10,8 +10,9 @@
 //! - Position 7: cascade (JSONB) - Contains cascade operation data
 //! - Position 8: metadata (JSONB)
 
-use super::{MutationResult, MutationStatus};
 use serde_json::Value;
+
+use super::{MutationResult, MutationStatus};
 
 /// PostgreSQL app.mutation_response composite type structure (8 fields)
 ///
@@ -85,8 +86,8 @@ impl PostgresMutationResponse {
     /// wrapper level (not nested in the entity).
     ///
     /// # Arguments
-    /// * `_entity_type_fallback` - Unused (kept for API compatibility)
-    ///   In 8-field format, entity_type always comes from Position 4
+    /// * `_entity_type_fallback` - Unused (kept for API compatibility) In 8-field format,
+    ///   entity_type always comes from Position 4
     ///
     /// # Returns
     /// Internal `MutationResult` ready for GraphQL response building

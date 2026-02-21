@@ -2,8 +2,9 @@
 //!
 //! Handles entity extraction, __typename injection, and CASCADE processing.
 
-use crate::camel_case::to_camel_case;
 use serde_json::{Map, Value};
+
+use crate::camel_case::to_camel_case;
 
 /// Process entity: extract from wrapper if needed
 pub fn process_entity(entity: &Value, entity_field_name: Option<&str>) -> ProcessedEntity {
@@ -20,7 +21,7 @@ pub fn process_entity(entity: &Value, entity_field_name: Option<&str>) -> Proces
 #[derive(Debug, Clone)]
 pub struct ProcessedEntity {
     /// Entity data (extracted from wrapper if needed)
-    pub entity: Value,
+    pub entity:         Value,
     /// Fields extracted from wrapper (if any)
     pub wrapper_fields: Map<String, Value>,
 }
@@ -84,7 +85,7 @@ pub fn add_typename_to_entity(entity: &Value, entity_type: &str, auto_camel_case
             }
 
             Value::Object(result)
-        }
+        },
         Value::Array(arr) => {
             // For arrays, add __typename to each element
             let transformed: Vec<Value> = arr
@@ -92,7 +93,7 @@ pub fn add_typename_to_entity(entity: &Value, entity_type: &str, auto_camel_case
                 .map(|v| add_typename_to_entity(v, entity_type, auto_camel_case))
                 .collect();
             Value::Array(transformed)
-        }
+        },
         other => other.clone(),
     }
 }
@@ -111,14 +112,12 @@ fn transform_value(value: &Value, auto_camel_case: bool) -> Value {
                 result.insert(transformed_key, transform_value(val, auto_camel_case));
             }
             Value::Object(result)
-        }
+        },
         Value::Array(arr) => {
-            let transformed: Vec<Value> = arr
-                .iter()
-                .map(|v| transform_value(v, auto_camel_case))
-                .collect();
+            let transformed: Vec<Value> =
+                arr.iter().map(|v| transform_value(v, auto_camel_case)).collect();
             Value::Array(transformed)
-        }
+        },
         other => other.clone(),
     }
 }
@@ -162,15 +161,16 @@ pub fn process_cascade(cascade: &Value, auto_camel_case: bool) -> Value {
             }
 
             Value::Object(result)
-        }
+        },
         other => other.clone(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_detect_wrapper() {

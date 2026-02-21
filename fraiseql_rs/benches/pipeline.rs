@@ -1,5 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-
+use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
 // Import the v0.2 unified API
 use fraiseql_rs::pipeline::builder::build_graphql_response;
 
@@ -60,9 +59,7 @@ fn benchmark_small_response(c: &mut Criterion) {
     let json_rows = generate_small_workload();
 
     let mut group = c.benchmark_group("small_response");
-    group.throughput(Throughput::Bytes(
-        json_rows.iter().map(|s| s.len() as u64).sum(),
-    ));
+    group.throughput(Throughput::Bytes(json_rows.iter().map(|s| s.len() as u64).sum()));
 
     group.bench_function("v0.2_zero_copy", |b| {
         b.iter(|| {
@@ -85,9 +82,7 @@ fn benchmark_medium_response(c: &mut Criterion) {
     let json_rows = generate_medium_workload();
 
     let mut group = c.benchmark_group("medium_response");
-    group.throughput(Throughput::Bytes(
-        json_rows.iter().map(|s| s.len() as u64).sum(),
-    ));
+    group.throughput(Throughput::Bytes(json_rows.iter().map(|s| s.len() as u64).sum()));
 
     group.bench_function("v0.2_zero_copy", |b| {
         b.iter(|| {
@@ -110,9 +105,7 @@ fn benchmark_large_response(c: &mut Criterion) {
     let json_rows = generate_large_workload();
 
     let mut group = c.benchmark_group("large_response");
-    group.throughput(Throughput::Bytes(
-        json_rows.iter().map(|s| s.len() as u64).sum(),
-    ));
+    group.throughput(Throughput::Bytes(json_rows.iter().map(|s| s.len() as u64).sum()));
     group.sample_size(10); // Fewer samples for large benchmark
 
     group.bench_function("v0.2_zero_copy", |b| {
@@ -136,9 +129,7 @@ fn benchmark_nested_response(c: &mut Criterion) {
     let json_rows = generate_nested_workload();
 
     let mut group = c.benchmark_group("nested_response");
-    group.throughput(Throughput::Bytes(
-        json_rows.iter().map(|s| s.len() as u64).sum(),
-    ));
+    group.throughput(Throughput::Bytes(json_rows.iter().map(|s| s.len() as u64).sum()));
 
     group.bench_function("v0.2_zero_copy", |b| {
         b.iter(|| {

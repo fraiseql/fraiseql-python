@@ -25,10 +25,10 @@ fn profile_memory() {
         Ok(bytes) => {
             println!("✓ Response generated successfully");
             println!("  Output size: {} bytes", bytes.len());
-        }
+        },
         Err(e) => {
             println!("✗ Error: {:?}", e);
-        }
+        },
     }
 }
 

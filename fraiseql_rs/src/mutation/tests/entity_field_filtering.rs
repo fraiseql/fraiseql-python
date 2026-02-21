@@ -1,10 +1,10 @@
 // ! Entity Field Filtering Tests
-//!
 //! Tests for filtering nested entity fields based on GraphQL query selections.
 //! Related to GitHub issue #525 - mutations should respect field selection for nested entities.
 
-use super::*;
 use serde_json::json;
+
+use super::*;
 
 #[test]
 fn test_filter_entity_simple_fields() {
@@ -321,11 +321,11 @@ fn test_build_response_with_entity_field_filtering() {
     ///
     /// This is the end-to-end integration test
     let result = MutationResult {
-        status: MutationStatus::Success("created".to_string()),
-        message: "Location created".to_string(),
-        entity_id: Some("loc-123".to_string()),
-        entity_type: Some("Location".to_string()),
-        entity: Some(json!({
+        status:           MutationStatus::Success("created".to_string()),
+        message:          "Location created".to_string(),
+        entity_id:        Some("loc-123".to_string()),
+        entity_type:      Some("Location".to_string()),
+        entity:           Some(json!({
             "id": "loc-123",
             "name": "Warehouse A",
             "level": "floor-1",
@@ -333,9 +333,9 @@ fn test_build_response_with_entity_field_filtering() {
             "lat": 48.8606,
             "lng": 2.3376,
         })),
-        updated_fields: Some(vec!["name".to_string()]),
-        cascade: None,
-        metadata: None,
+        updated_fields:   Some(vec!["name".to_string()]),
+        cascade:          None,
+        metadata:         None,
         is_simple_format: false,
     };
 
@@ -375,18 +375,18 @@ fn test_build_response_with_entity_field_filtering() {
 fn test_build_response_without_entity_filtering_backward_compat() {
     /// Test that None entity_selections preserves all fields (backward compat)
     let result = MutationResult {
-        status: MutationStatus::Success("created".to_string()),
-        message: "Location created".to_string(),
-        entity_id: Some("loc-123".to_string()),
-        entity_type: Some("Location".to_string()),
-        entity: Some(json!({
+        status:           MutationStatus::Success("created".to_string()),
+        message:          "Location created".to_string(),
+        entity_id:        Some("loc-123".to_string()),
+        entity_type:      Some("Location".to_string()),
+        entity:           Some(json!({
             "id": "loc-123",
             "name": "Warehouse A",
             "level": "floor-1",
         })),
-        updated_fields: None,
-        cascade: None,
-        metadata: None,
+        updated_fields:   None,
+        cascade:          None,
+        metadata:         None,
         is_simple_format: false,
     };
 

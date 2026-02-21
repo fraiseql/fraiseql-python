@@ -27,10 +27,12 @@
 //!
 //! For detailed architecture rationale, see: `docs/json-transformation-guide.md`
 
-use crate::core::arena::Arena;
-use crate::core::camel::snake_to_camel;
-use crate::pipeline::projection::FieldSet;
 use pyo3::PyErr;
+
+use crate::{
+    core::{arena::Arena, camel::snake_to_camel},
+    pipeline::projection::FieldSet,
+};
 
 /// Maximum JSON nesting depth to prevent stack overflow
 ///
@@ -59,21 +61,21 @@ pub const MAX_JSON_DEPTH: usize = 64;
 /// Transform configuration (zero-cost at compile time)
 #[derive(Clone, Copy)]
 pub struct TransformConfig {
-    pub add_typename: bool,
-    pub camel_case: bool,
-    pub project_fields: bool,
+    pub add_typename:        bool,
+    pub camel_case:          bool,
+    pub project_fields:      bool,
     pub add_graphql_wrapper: bool,
-    pub max_depth: usize,
+    pub max_depth:           usize,
 }
 
 impl Default for TransformConfig {
     fn default() -> Self {
         Self {
-            add_typename: true,
-            camel_case: true,
-            project_fields: false,
+            add_typename:        true,
+            camel_case:          true,
+            project_fields:      false,
             add_graphql_wrapper: true,
-            max_depth: MAX_JSON_DEPTH,
+            max_depth:           MAX_JSON_DEPTH,
         }
     }
 }
@@ -94,13 +96,12 @@ impl Default for TransformConfig {
 /// ├─────────────────────────────────────────────────┤
 /// │ Output Buffer (write-only, pre-sized)           │ → HTTP response
 /// └─────────────────────────────────────────────────┘
-///
 pub struct ZeroCopyTransformer<'a> {
-    arena: &'a Arena,
-    config: TransformConfig,
-    typename: Option<&'a str>,
+    arena:            &'a Arena,
+    config:           TransformConfig,
+    typename:         Option<&'a str>,
     field_projection: Option<&'a FieldSet>,
-    current_depth: usize,
+    current_depth:    usize,
 }
 
 impl<'a> ZeroCopyTransformer<'a> {
@@ -285,19 +286,19 @@ impl<'a> ZeroCopyTransformer<'a> {
             b'"' => {
                 let string_bytes = reader.read_string()?;
                 writer.write_string(string_bytes)
-            }
+            },
             b't' | b'f' => {
                 let bool_bytes = reader.read_bool()?;
                 writer.write_raw(bool_bytes)
-            }
+            },
             b'n' => {
                 reader.read_null()?;
                 writer.write_null()
-            }
+            },
             b'-' | b'0'..=b'9' => {
                 let number_bytes = reader.read_number()?;
                 writer.write_raw(number_bytes)
-            }
+            },
             other => Err(TransformError::UnexpectedByte(other)),
         }
     }
@@ -357,7 +358,7 @@ impl ByteBuf {
 /// Streaming byte reader (zero-copy)
 pub struct ByteReader<'a> {
     bytes: &'a [u8],
-    pos: usize,
+    pos:   usize,
 }
 
 impl<'a> ByteReader<'a> {
@@ -369,20 +370,13 @@ impl<'a> ByteReader<'a> {
     #[inline(always)]
     pub fn peek_byte(&mut self) -> Result<u8, TransformError> {
         self.skip_whitespace();
-        self.bytes
-            .get(self.pos)
-            .copied()
-            .ok_or(TransformError::UnexpectedEof)
+        self.bytes.get(self.pos).copied().ok_or(TransformError::UnexpectedEof)
     }
 
     #[inline]
     pub fn expect_byte(&mut self, expected: u8) -> Result<(), TransformError> {
         self.skip_whitespace();
-        let byte = self
-            .bytes
-            .get(self.pos)
-            .copied()
-            .ok_or(TransformError::UnexpectedEof)?;
+        let byte = self.bytes.get(self.pos).copied().ok_or(TransformError::UnexpectedEof)?;
 
         if byte == expected {
             self.pos += 1;
@@ -593,7 +587,7 @@ impl<'a> ByteReader<'a> {
 
 /// Streaming JSON writer
 pub struct JsonWriter<'a> {
-    output: &'a mut ByteBuf,
+    output:      &'a mut ByteBuf,
     needs_comma: bool,
 }
 
@@ -704,7 +698,7 @@ fn escape_json_string_scalar(input: &[u8], output: &mut Vec<u8>) {
                 output.push(b"0123456789abcdef"[hex as usize]);
                 let hex = byte % 16;
                 output.push(b"0123456789abcdef"[hex as usize]);
-            }
+            },
             _ => output.push(byte),
         }
     }
@@ -730,14 +724,14 @@ impl std::fmt::Display for TransformError {
             TransformError::UnexpectedByte(b) => write!(f, "Unexpected byte: {}", b),
             TransformError::ExpectedByte(expected, got) => {
                 write!(f, "Expected byte {}, got {}", expected, got)
-            }
+            },
             TransformError::UnterminatedString => write!(f, "Unterminated string"),
             TransformError::InvalidBool => write!(f, "Invalid boolean value"),
             TransformError::InvalidNull => write!(f, "Invalid null value"),
             TransformError::InvalidNumber => write!(f, "Invalid number"),
             TransformError::MaxDepthExceeded(max) => {
                 write!(f, "JSON nesting depth exceeded maximum of {}", max)
-            }
+            },
         }
     }
 }
