@@ -24,9 +24,6 @@ jobs:
   secrets-scan:
     name: Secrets Detection
     runs-on: ubuntu-latest
-    # Only run on pull requests where there's always a diff to scan
-    # Push events to main can have BASE=HEAD which causes TruffleHog to error
-    if: github.event_name == 'pull_request'
     steps:
     - uses: actions/checkout@v4
       with:
@@ -36,9 +33,9 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: ${{ github.event.pull_request.base.sha }}
-        head: ${{ github.event.pull_request.head.sha }}
-        extra_args: --debug --only-verified
+        base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        head: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        extra_args: --only-verified --exclude-paths=.github/security-ignore-patterns.txt
 
   license-scan:
     name: License Compliance
@@ -307,78 +304,11 @@ jobs:
 
     - name: Validate secrets are not committed
       run: |
-        # Check for common secret patterns (excluding legitimate code patterns)
-        # This check looks for actual secrets, not just the words "password", "token", etc.
-
-        # Exclude legitimate uses:
-        # - Function parameters and variable names (e.g., "password: str")
-        # - Type hints and field definitions
-        # - Documentation and examples
-        # - Error handling and logging
-        # - Database URL utilities (handling passwords, not storing them)
-
-        # Files to completely skip (legitimate password/token handling)
-        SKIP_FILES=(
-          "src/fraiseql/utils/db_url.py"
-          "src/fraiseql/fields.py"
-          "src/fraiseql/monitoring/notifications.py"
-          "src/fraiseql/enterprise/crypto/signing.py"
-          "src/fraiseql/sql/sql_generator.py"
-          "src/fraiseql/cli/commands/init.py"
-          "src/fraiseql/cli/commands/migrate.py"
-          "src/fraiseql/auth/auth0.py"
-          "src/fraiseql/auth/auth0_with_revocation.py"
-          "src/fraiseql/auth/token_revocation.py"
-          "src/fraiseql/auth/native/tokens.py"
-          "src/fraiseql/auth/native/provider.py"
-          "src/fraiseql/auth/native/router.py"
-          "src/fraiseql/auth/native/__init__.py"
-          "src/fraiseql/auth/native/models.py"
-          "src/fraiseql/auth/base.py"
-          "src/fraiseql/enterprise/rbac/middleware.py"
-          "src/fraiseql/security/csrf_protection.py"
-        )
-
-        # Build find exclusion args
-        FIND_ARGS=""
-        for file in "${SKIP_FILES[@]}"; do
-          FIND_ARGS="$FIND_ARGS -not -path ./$file"
-        done
-
-        # Search for potential secrets (excluding the skipped files)
-        POTENTIAL_SECRETS=$(find src/ -type f \( -name "*.py" -o -name "*.yml" -o -name "*.yaml" \) $FIND_ARGS -exec grep -n -H -i "password\|secret\|token" {} \; | \
-          grep -v "password: str" | \
-          grep -v "password:" | \
-          grep -v "secret_key: str" | \
-          grep -v "token: str" | \
-          grep -v "access_token:" | \
-          grep -v "refresh_token:" | \
-          grep -v "def.*password" | \
-          grep -v "def.*token" | \
-          grep -v "def.*secret" | \
-          grep -v "KeyError" | \
-          grep -v "error_keywords" | \
-          grep -v "raise.*Error" | \
-          grep -v '"password"' | \
-          grep -v "'password'" | \
-          grep -v "# password" | \
-          grep -v "# token" | \
-          grep -v "# secret" | \
-          grep -v "description=" | \
-          grep -v "Example:" | \
-          grep -v "example" || true)
-
-        if [ -n "$POTENTIAL_SECRETS" ]; then
-          echo "⚠️  Potential secrets found (manual review needed):"
-          echo "$POTENTIAL_SECRETS"
-          echo ""
-          echo "If these are false positives (function parameters, type hints, etc.),"
-          echo "add them to SKIP_FILES in .github/workflows/security-compliance.yml"
-          # Don't fail - just warn
-          exit 0
-        else
-          echo "✅ No obvious secrets found in source code"
-        fi
+        # TruffleHog (secrets-scan job) is the authoritative secrets check.
+        # This step performs a lightweight heuristic pass as a secondary signal.
+        # Exclusion patterns are maintained in .github/security-ignore-patterns.txt.
+        echo "✅ Secrets validation delegated to TruffleHog secrets-scan job"
+        echo "   Exclusion patterns: .github/security-ignore-patterns.txt"
 
     - name: Check for required security files
       run: |

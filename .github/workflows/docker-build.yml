@@ -18,6 +18,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -236,7 +240,7 @@ jobs:
           echo "**Registry**: GitHub Container Registry (ghcr.io)" >> $GITHUB_STEP_SUMMARY
           echo "**Images**:" >> $GITHUB_STEP_SUMMARY
           echo "- \`ghcr.io/${{ github.repository }}/server\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository }}/tutorial\`" >> $GITHUB_STEP_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository }}/tutorial\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`ghcr.io/${{ github.repository }}/dashboard\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Branch**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY

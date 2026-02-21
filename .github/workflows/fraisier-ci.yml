@@ -8,7 +8,7 @@ on:
       - '.github/workflows/fraisier-ci.yml'
     branches:
       - main
-      - develop
+      - dev
       - feature/fraisier/**
       - bugfix/fraisier/**
 
@@ -18,7 +18,7 @@ on:
       - '.github/workflows/fraisier-ci.yml'
     branches:
       - main
-      - develop
+      - dev
 
   # Allow manual trigger
   workflow_dispatch:
@@ -93,9 +93,8 @@ jobs:
         run: ruff check fraisier/
 
   type-check:
-    name: Type Check (mypy)
+    name: Type Check (ty)
     runs-on: ubuntu-latest
-    continue-on-error: true  # Don't fail build if type checking fails
 
     steps:
       - name: Checkout code
@@ -106,15 +105,16 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
       - name: Install dependencies
         working-directory: fraisier
-        run: |
-          pip install -e ".[dev]"
-          pip install mypy
+        run: uv pip install --system -e ".[dev]"
 
       - name: Run type checker
         working-directory: fraisier
-        run: mypy fraisier/ --ignore-missing-imports || true
+        run: uv run ty check fraisier/
 
   build:
     name: Build Package
@@ -152,7 +152,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [test]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     continue-on-error: true  # Don't fail if integration tests fail
 
     services:

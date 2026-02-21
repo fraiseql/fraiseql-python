@@ -114,58 +114,86 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Get release version
+        id: release-version
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+
+      # Poll crates.io until a crate version is indexed (max 60s)
+      # Usage: wait_for_crate <crate-name> <version>
+      - name: Define crates.io poll helper
+        run: |
+          cat > /tmp/wait_for_crate.sh << 'EOF'
+          #!/usr/bin/env bash
+          CRATE=$1
+          VERSION=$2
+          echo "Waiting for $CRATE@$VERSION on crates.io..."
+          for i in $(seq 1 12); do
+            FOUND=$(curl -sf "https://crates.io/api/v1/crates/$CRATE/$VERSION" 2>/dev/null | grep -c '"num"' || true)
+            if [ "$FOUND" -gt 0 ]; then
+              echo "✅ $CRATE@$VERSION indexed"
+              exit 0
+            fi
+            echo "  attempt $i/12 — not yet indexed, retrying in 5s..."
+            sleep 5
+          done
+          echo "⚠️  $CRATE@$VERSION not found after 60s — proceeding anyway"
+          EOF
+          chmod +x /tmp/wait_for_crate.sh
+
       # Publish in dependency order
       # Tier 1: No dependencies
       - name: Publish fraiseql-core
         run: cargo publish --package fraiseql-core --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-core indexing
+        run: /tmp/wait_for_crate.sh fraiseql-core ${{ steps.release-version.outputs.version }}
 
       - name: Publish fraiseql-error
         run: cargo publish --package fraiseql-error --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-error indexing
+        run: /tmp/wait_for_crate.sh fraiseql-error ${{ steps.release-version.outputs.version }}
 
       - name: Publish fraiseql-observers-macros
         run: cargo publish --package fraiseql-observers-macros --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-observers-macros indexing
+        run: /tmp/wait_for_crate.sh fraiseql-observers-macros ${{ steps.release-version.outputs.version }}
 
       # Tier 2: Depends on Tier 1
       - name: Publish fraiseql-arrow
         run: cargo publish --package fraiseql-arrow --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-arrow indexing
+        run: /tmp/wait_for_crate.sh fraiseql-arrow ${{ steps.release-version.outputs.version }}
 
       - name: Publish fraiseql-wire
         run: cargo publish --package fraiseql-wire --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-wire indexing
+        run: /tmp/wait_for_crate.sh fraiseql-wire ${{ steps.release-version.outputs.version }}
 
       # Tier 3: Depends on Tier 1 and Tier 2
       - name: Publish fraiseql-observers
         run: cargo publish --package fraiseql-observers --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-observers indexing
+        run: /tmp/wait_for_crate.sh fraiseql-observers ${{ steps.release-version.outputs.version }}
 
       - name: Publish fraiseql-server
         run: cargo publish --package fraiseql-server --token ${{ secrets.CARGO_TOKEN }} || echo "Already published or publish failed"
         continue-on-error: true
 
-      - name: Wait for crates.io indexing
-        run: sleep 30
+      - name: Wait for fraiseql-server indexing
+        run: /tmp/wait_for_crate.sh fraiseql-server ${{ steps.release-version.outputs.version }}
 
       # Tier 4: Depends on Tier 1
       - name: Publish fraiseql-cli

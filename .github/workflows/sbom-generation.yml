@@ -27,19 +27,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-
-    - name: Install dependencies
-      run: |
-        uv venv
-        uv pip install ".[dev]"
-
     - name: Determine version
       id: version
       run: |
@@ -53,24 +40,11 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Generating SBOM for version: $VERSION"
 
-    - name: Generate SBOM (JSON)
-      run: |
-        uv run fraiseql sbom generate \
-          --output "fraiseql-${{ steps.version.outputs.version }}-sbom.json" \
-          --format json \
-          --component-name "fraiseql" \
-          --component-version "${{ steps.version.outputs.version }}" \
-          --supplier-name "Evolution Digitale" \
-          --supplier-url "https://github.com/fraiseql/fraiseql" \
-          --supplier-contact "lionel.hamayon@evolution-digitale.fr" \
-          --author "Lionel Hamayon" \
-          --verbose
-
-    - name: Validate SBOM
-      run: |
-        uv run fraiseql sbom validate \
-          --input "fraiseql-${{ steps.version.outputs.version }}-sbom.json" \
-          --verbose
+    - name: Generate SBOM with Syft
+      uses: anchore/sbom-action@v0
+      with:
+        format: cyclonedx-json
+        output-file: "fraiseql-${{ steps.version.outputs.version }}-sbom.json"
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3

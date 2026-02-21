@@ -1,1 +1,0 @@
-"""Fraisier test suite."""

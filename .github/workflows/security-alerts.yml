@@ -143,123 +143,63 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check CVE-2025-14104 (util-linux)
-        id: cve-14104
+      - name: Check CVEs via OSV API
+        id: check-cves
         run: |
-          echo "Checking CVE-2025-14104 status..."
+          WATCHLIST='.github/cve-watchlist.json'
+          FIXED_COUNT=0
+          REPORT_LINES=""
 
-          # Check Debian Security Tracker
-          STATUS=$(curl -s https://security-tracker.debian.org/tracker/CVE-2025-14104 | grep -i "fixed\|resolved\|patched" || echo "not_fixed")
+          while IFS= read -r cve_id; do
+            PACKAGE=$(jq -r --arg id "$cve_id" '.monitored_cves[] | select(.id == $id) | .package' "$WATCHLIST")
+            RESPONSE=$(curl -s "https://api.osv.dev/v1/vulns/$cve_id")
+            # OSV returns 404-style empty or error if CVE is not found (fully fixed/rejected)
+            WITHDRAWN=$(echo "$RESPONSE" | jq -r '.withdrawn // empty')
+            ALIASES=$(echo "$RESPONSE" | jq -r '.aliases // [] | length')
 
-          if echo "$STATUS" | grep -qi "fixed\|resolved\|patched"; then
-            echo "status=FIXED" >> $GITHUB_OUTPUT
-            echo "✅ CVE-2025-14104 has been fixed!"
-          else
-            echo "status=UNFIXED" >> $GITHUB_OUTPUT
-            echo "⏳ CVE-2025-14104 still awaiting patch"
-          fi
+            if [ -n "$WITHDRAWN" ] || echo "$RESPONSE" | jq -e '.id == null' > /dev/null 2>&1; then
+              STATUS="FIXED"
+              FIXED_COUNT=$((FIXED_COUNT + 1))
+              echo "✅ $cve_id ($PACKAGE) appears resolved"
+            else
+              STATUS="UNFIXED"
+              echo "⏳ $cve_id ($PACKAGE) still active"
+            fi
 
-      - name: Check CVE-2025-9820 (GnuTLS)
-        id: cve-9820
-        run: |
-          echo "Checking CVE-2025-9820 status..."
+            REPORT_LINES="$REPORT_LINES\n| $cve_id | $PACKAGE | $STATUS |"
+          done < <(jq -r '.monitored_cves[].id' "$WATCHLIST")
 
-          # Check GnuTLS security advisories
-          STATUS=$(curl -s https://www.gnutls.org/security-new.html | grep -i "SA-2025-11-18\|CVE-2025-9820" || echo "not_found")
+          echo "fixed_count=$FIXED_COUNT" >> $GITHUB_ENV
 
-          if echo "$STATUS" | grep -qi "fixed\|resolved\|patched"; then
-            echo "status=FIXED" >> $GITHUB_OUTPUT
-            echo "✅ CVE-2025-9820 has been fixed!"
-          else
-            echo "status=UNFIXED" >> $GITHUB_OUTPUT
-            echo "⏳ CVE-2025-9820 still awaiting details/patch"
-          fi
-
-      - name: Check CVE-2025-6141 (ncurses)
-        id: cve-6141
-        run: |
-          echo "Checking CVE-2025-6141 status..."
-
-          STATUS=$(curl -s https://security-tracker.debian.org/tracker/CVE-2025-6141 | grep -i "fixed\|resolved\|patched" || echo "not_fixed")
-
-          if echo "$STATUS" | grep -qi "fixed\|resolved\|patched"; then
-            echo "status=FIXED" >> $GITHUB_OUTPUT
-            echo "✅ CVE-2025-6141 has been fixed!"
-          else
-            echo "status=UNFIXED" >> $GITHUB_OUTPUT
-            echo "⏳ CVE-2025-6141 still awaiting patch"
-          fi
-
-      - name: Check CVE-2024-56433 (shadow-utils)
-        id: cve-56433
-        run: |
-          echo "Checking CVE-2024-56433 status..."
-
-          STATUS=$(curl -s https://security-tracker.debian.org/tracker/CVE-2024-56433 | grep -i "fixed\|resolved\|patched" || echo "not_fixed")
-
-          if echo "$STATUS" | grep -qi "fixed\|resolved\|patched"; then
-            echo "status=FIXED" >> $GITHUB_OUTPUT
-            echo "✅ CVE-2024-56433 has been fixed!"
-          else
-            echo "status=UNFIXED" >> $GITHUB_OUTPUT
-            echo "⏳ CVE-2024-56433 still awaiting patch"
-          fi
-
-      - name: Generate CVE monitoring report
-        run: |
           cat > /tmp/cve-monitoring-report.md <<EOF
           # CVE Monitoring Report
 
           **Report Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Data Source**: OSV API (https://api.osv.dev)
 
           ## Monitored CVEs Status
 
-          | CVE ID | Component | Status | Notes |
-          |--------|-----------|--------|-------|
-          | CVE-2025-14104 | util-linux | ${{ steps.cve-14104.outputs.status }} | Heap buffer overread |
-          | CVE-2025-9820 | GnuTLS | ${{ steps.cve-9820.outputs.status }} | TLS vulnerability |
-          | CVE-2025-6141 | ncurses | ${{ steps.cve-6141.outputs.status }} | Stack buffer overflow |
-          | CVE-2024-56433 | shadow-utils | ${{ steps.cve-56433.outputs.status }} | Subordinate ID config |
+          | CVE ID | Component | Status |
+          |--------|-----------|--------|
+          $(echo -e "$REPORT_LINES")
 
           ## Actions Required
-
           EOF
-
-          # Check if any CVE was fixed
-          FIXED_COUNT=0
-          if [ "${{ steps.cve-14104.outputs.status }}" = "FIXED" ]; then
-            FIXED_COUNT=$((FIXED_COUNT + 1))
-            echo "- ✅ Update util-linux: CVE-2025-14104 fixed" >> /tmp/cve-monitoring-report.md
-          fi
-          if [ "${{ steps.cve-9820.outputs.status }}" = "FIXED" ]; then
-            FIXED_COUNT=$((FIXED_COUNT + 1))
-            echo "- ✅ Update GnuTLS: CVE-2025-9820 fixed" >> /tmp/cve-monitoring-report.md
-          fi
-          if [ "${{ steps.cve-6141.outputs.status }}" = "FIXED" ]; then
-            FIXED_COUNT=$((FIXED_COUNT + 1))
-            echo "- ✅ Update ncurses: CVE-2025-6141 fixed" >> /tmp/cve-monitoring-report.md
-          fi
-          if [ "${{ steps.cve-56433.outputs.status }}" = "FIXED" ]; then
-            FIXED_COUNT=$((FIXED_COUNT + 1))
-            echo "- ✅ Update shadow-utils: CVE-2024-56433 fixed" >> /tmp/cve-monitoring-report.md
-          fi
 
           if [ "$FIXED_COUNT" -eq 0 ]; then
             echo "- ⏳ All CVEs still awaiting patches - continue monitoring" >> /tmp/cve-monitoring-report.md
           else
-            echo "" >> /tmp/cve-monitoring-report.md
-            echo "**Immediate Actions:**" >> /tmp/cve-monitoring-report.md
-            echo "1. Pull latest base images: \`docker pull python:3.13-slim\`" >> /tmp/cve-monitoring-report.md
-            echo "2. Rebuild FraiseQL images" >> /tmp/cve-monitoring-report.md
-            echo "3. Run Trivy scan to verify fixes" >> /tmp/cve-monitoring-report.md
-            echo "4. Remove fixed CVEs from .trivyignore" >> /tmp/cve-monitoring-report.md
-            echo "5. Deploy updated images within 7 days (SLA)" >> /tmp/cve-monitoring-report.md
+            cat >> /tmp/cve-monitoring-report.md <<'ACTIONS'
+          **Immediate Actions:**
+          1. Pull latest base images: `docker pull python:3.13-slim`
+          2. Rebuild FraiseQL images
+          3. Run Trivy scan to verify fixes
+          4. Remove fixed CVEs from .trivyignore
+          5. Deploy updated images within 7 days (SLA)
+          ACTIONS
           fi
 
           cat /tmp/cve-monitoring-report.md
-
-          # Export for next step
-          echo "fixed_count=$FIXED_COUNT" >> $GITHUB_ENV
 
       - name: Create GitHub Issue if patches available
         if: env.fixed_count > 0
@@ -272,7 +212,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `🎉 CVE Patches Available - ${{ env.fixed_count }} CVE(s) Fixed`,
+              title: `CVE Patches Available - ${{ env.fixed_count }} CVE(s) Fixed`,
               body: report,
               labels: ['security', 'patching', 'good-news'],
             });

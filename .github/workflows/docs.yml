@@ -35,8 +35,13 @@ jobs:
       run: |
         uv pip install --system -e ".[docs]"
 
+    - name: Install D2
+      run: curl -fsSL https://d2lang.com/install.sh | sh -s -- --tala
+
     - name: Build documentation
       run: mkdocs build
+      env:
+        PATH: ${{ env.PATH }}:/home/runner/.local/bin
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
