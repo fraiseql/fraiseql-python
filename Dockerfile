@@ -1,75 +1,87 @@
 # syntax=docker/dockerfile:1.4
 
-# Build arguments for cross-compilation
-ARG TARGETARCH
-ARG TARGETVARIANT
+# Multi-stage Dockerfile for FraiseQL Python Framework
+# Optimized for production with security best practices
 
-# Stage 1: Builder - use rust image for target arch
-FROM --platform=$BUILDPLATFORM rust:1.85-slim AS builder
+# Stage 1: Builder
+FROM python:3.13-slim AS builder
 
-ARG TARGETARCH
-ARG TARGETVARIANT
-
-# Set Rust target based on architecture
-RUN case "$TARGETARCH" in \
-      amd64) TARGET="x86_64-unknown-linux-gnu" ;; \
-      arm64) TARGET="aarch64-unknown-linux-gnu" ;; \
-      arm) TARGET="armv7-unknown-linux-gnueabihf" ;; \
-      ppc64le) TARGET="powerpc64le-unknown-linux-gnu" ;; \
-      *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
-    esac && \
-    echo "$TARGET" > /tmp/rust_target.txt && \
-    rustup target add "$TARGET"
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install build dependencies and security updates
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    gcc \
+    g++ \
     libpq-dev \
+    libssl-dev \
     pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
-COPY Cargo.toml Cargo.lock ./
-COPY crates ./crates
-
-RUN TARGET=$(cat /tmp/rust_target.txt) && \
-    cargo build --release --target "$TARGET" -p fraiseql-server
-
-# Stage 2: Runtime
-FROM debian:bookworm-slim
-
-LABEL org.opencontainers.image.version="2.1.0" \
-      org.opencontainers.image.vendor="FraiseQL" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.description="FraiseQL GraphQL execution engine" \
-      org.opencontainers.image.documentation="https://github.com/fraiseql/fraiseql" \
-      security.compliance="production" \
-      security.hardenings="non-root,readonly-capable,capabilities-dropped"
-
-# Security updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    libpq5 \
-    ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Non-root user (UID 65532 for distroless compatibility)
-RUN groupadd -g 65532 fraiseql && \
-    useradd -r -u 65532 -g fraiseql -s /sbin/nologin -d /app fraiseql
+# Install Rust (required for fraiseql_rs PyO3 extension)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Create app directory with minimal permissions
-RUN mkdir -p /app && chown -R fraiseql:fraiseql /app
+# Set working directory
+WORKDIR /build
+
+# Copy dependency files first for better caching
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY fraiseql_rs ./fraiseql_rs
+
+# Build FraiseQL wheel (includes Rust extension via maturin)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    pip install build maturin && \
+    mkdir -p /build/dist && \
+    python -m build --wheel
+
+# Stage 2: Runtime
+FROM python:3.13-slim AS runtime
+
+LABEL org.opencontainers.image.authors="FraiseQL Team"
+LABEL org.opencontainers.image.version="1.9.19"
+LABEL org.opencontainers.image.description="FraiseQL — Python GraphQL framework with PostgreSQL and Rust acceleration"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/fraiseql/fraiseql-python"
+
+# Install runtime dependencies and security updates
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r fraiseql && useradd -r -g fraiseql fraiseql
 
 WORKDIR /app
 
-# Copy binary from builder (auto-detects target arch from build stage)
-COPY --from=builder --chown=fraiseql:fraiseql /build/target/*/release/fraiseql-server .
+# Copy wheel from builder and install
+COPY --from=builder /build/dist/*.whl /tmp/
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install \
+    /tmp/*.whl \
+    uvicorn[standard] \
+    gunicorn \
+    prometheus-client \
+    && rm -rf /tmp/*.whl
+
+# Copy entrypoint script
+COPY deploy/docker/entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+RUN chown -R fraiseql:fraiseql /app
 
 USER fraiseql
-EXPOSE 8815
 
-ENV RUST_LOG=info
+EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8815/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["./fraiseql-server"]
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FRAISEQL_PRODUCTION=true
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["gunicorn", "app:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
