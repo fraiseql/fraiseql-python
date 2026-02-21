@@ -24,7 +24,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /build
 
 # Copy dependency files first for better caching
-COPY pyproject.toml README.md ./
+COPY pyproject.toml ./
 COPY src ./src
 COPY fraiseql_rs ./fraiseql_rs
 
