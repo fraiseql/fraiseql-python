@@ -1,0 +1,8651 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/core/compilation-pipeline/">
+      
+      
+        <link rel="prev" href="../execution-model/">
+      
+      
+        <link rel="next" href="../compilation-vs-runtime/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Compilation Pipeline - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#compilation-pipeline-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Compilation Pipeline
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-phase-1-schema-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Phase 1: Schema Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Phase 1: Schema Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-input-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Input Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-intermediate-representation-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Intermediate Representation (IR)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-type-definition-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Type Definition IR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-binding-definition-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Binding Definition IR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-subscription-definition-ir-v20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Subscription Definition IR (v2.0+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-phase-2-database-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Phase 2: Database Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Phase 2: Database Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-introspection-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Introspection Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-phase-1-schema-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Phase 1: Schema Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Phase 1: Schema Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-input-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Input Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-intermediate-representation-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Intermediate Representation (IR)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-type-definition-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Type Definition IR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-binding-definition-ir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Binding Definition IR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-subscription-definition-ir-v20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 Subscription Definition IR (v2.0+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-phase-2-database-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Phase 2: Database Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Phase 2: Database Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-introspection-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Introspection Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: Compilation Pipeline Architecture
+description: The <strong>compilation pipeline</strong> transforms an authoring-layer schema (Python, TypeScript, YAML, etc.) into a <strong>CompiledSchema</strong> — a database-agnostic JSON artifact
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="compilation-pipeline-architecture">Compilation Pipeline Architecture<a class="headerlink" href="#compilation-pipeline-architecture" title="Permanent link">&para;</a></h1>
+<p><strong>Version:</strong> 1.0
+<strong>Status:</strong> Draft
+<strong>Audience:</strong> Compiler developers, schema authors, infrastructure teams</p>
+<hr />
+<h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
+<p>The <strong>compilation pipeline</strong> transforms an authoring-layer schema (Python, TypeScript, YAML, etc.) into a <strong>CompiledSchema</strong> — a database-agnostic JSON artifact that the Rust runtime executes.</p>
+<p><strong>Key phases:</strong></p>
+<ol>
+<li><strong>Schema Parsing</strong> — Parse authoring language syntax (queries, mutations, <strong>subscriptions</strong>)</li>
+<li><strong>Database Introspection</strong> — Discover views, columns, procedures, constraints, CDC capabilities</li>
+<li><strong>Type Binding</strong> — Map GraphQL types to database views/JSONB paths</li>
+<li><strong>WHERE Type Generation</strong> — Introspect columns; generate WHERE types based on database capabilities</li>
+<li><strong>Subscription Compilation</strong> — Compile subscription filters, authorization, event type mappings (v2.0+)</li>
+<li><strong>Compilation &amp; Validation</strong> — Validate closure, consistency, authorization, and database capability coverage</li>
+<li><strong>Artifact Emission</strong> — Output CompiledSchema JSON + GraphQL SDL + subscription dispatch table</li>
+</ol>
+<hr />
+<h2 id="2-phase-1-schema-parsing">2. Phase 1: Schema Parsing<a class="headerlink" href="#2-phase-1-schema-parsing" title="Permanent link">&para;</a></h2>
+<h3 id="21-input-formats">2.1 Input Formats<a class="headerlink" href="#21-input-formats" title="Permanent link">&para;</a></h3>
+<p>The compiler accepts schemas in multiple authoring languages:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Language</th>
+<th>Parser</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Python</strong></td>
+<td>Python 3.10+</td>
+<td>AST inspection + type hints</td>
+<td>CompiledSchema</td>
+</tr>
+<tr>
+<td><strong>YAML</strong></td>
+<td>YAML 1.2</td>
+<td>Standard YAML parser</td>
+<td>CompiledSchema</td>
+</tr>
+<tr>
+<td><strong>GraphQL SDL</strong></td>
+<td>GraphQL</td>
+<td>gql-core parser</td>
+<td>CompiledSchema</td>
+</tr>
+<tr>
+<td><strong>TypeScript</strong></td>
+<td>TypeScript</td>
+<td>ts-morph / tsc</td>
+<td>CompiledSchema</td>
+</tr>
+</tbody>
+</table>
+<p>All converge to the same <strong>intermediate representation (IR)</strong> before proceeding to phase 2.</p>
+<h3 id="22-intermediate-representation-ir">2.2 Intermediate Representation (IR)<a class="headerlink" href="#22-intermediate-representation-ir" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class SchemaIR:
+    """Language-agnostic intermediate representation."""
+    name: str
+    description: str
+    database_target: str</p>
+<div class="highlight"><pre><span></span><code>types: dict[str, TypeDef]              # name -&gt; TypeDef
+queries: dict[str, QueryDef]           # name -&gt; QueryDef
+mutations: dict[str, MutationDef]      # name -&gt; MutationDef
+subscriptions: dict[str, SubscriptionDef]  # name -&gt; SubscriptionDef (v2.0+)
+auth_context: AuthContextDef
+bindings: dict[str, BindingDef]        # query/mutation/subscription name -&gt; BindingDef
+auth_rules: list[AuthRule]
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="23-type-definition-ir">2.3 Type Definition IR<a class="headerlink" href="#23-type-definition-ir" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class TypeDef:
+    """Represents a GraphQL type."""
+    name: str                              # PascalCase
+    kind: "OBJECT" | "INPUT" | "ENUM" | "SCALAR"
+    description: str
+    fields: dict[str, FieldDef]           # field_name -&gt; FieldDef
+    directives: list[str]                 # @auth.requires_role, etc.</p>
+<p>class FieldDef:
+    """Represents a field on a GraphQL type."""
+    name: str                              # camelCase
+    graphql_type: str                      # e.g., "String!", "[User!]!"
+    description: str
+    directives: list[str]
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="24-binding-definition-ir">2.4 Binding Definition IR<a class="headerlink" href="#24-binding-definition-ir" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class BindingDef:
+    """Defines how a query/mutation/subscription binds to a database resource."""
+    query_or_mutation_or_subscription_name: str
+    binding_type: "VIEW" | "PROCEDURE" | "FUNCTION"</p>
+<div class="highlight"><pre><span></span><code># For VIEW bindings (queries, mutations, subscriptions)
+view_name: str
+where_column: str | None               # If single-entity query
+data_column: str = &quot;data&quot;
+
+# For PROCEDURE/FUNCTION bindings (mutations)
+procedure_name: str
+input_mapping: dict[str, str]         # GraphQL arg -&gt; param name
+output_mapping: dict[str, str]        # return field -&gt; GraphQL field
+
+# For SUBSCRIPTION bindings (v2.0+)
+subscription_filters: list[WhereClause]  # Compile-time filters
+event_types: list[str]                # &quot;INSERT&quot; | &quot;UPDATE&quot; | &quot;DELETE&quot;
+authorization: AuthRule               # Enforced at event capture time
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="25-subscription-definition-ir-v20">2.5 Subscription Definition IR (v2.0+)<a class="headerlink" href="#25-subscription-definition-ir-v20" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class SubscriptionDef:
+    """Defines a GraphQL subscription."""
+    name: str
+    description: str
+    fields: dict[str, FieldDef]           # field_name -&gt; FieldDef
+    input_type: str                        # Input type for variables
+    return_type: str                       # Return type (payload)</p>
+<p>class SubscriptionBindingDef:
+    """Binds subscription to database event stream."""
+    subscription_name: str
+    event_source: "LISTEN_NOTIFY" | "CDC"  # Database event mechanism
+    entity_types: list[str]               # Which entities trigger events
+    where_filters: list[WhereClause]      # Compile-time filters for events
+    authorization: AuthRule               # Row-level filtering per subscriber
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="3-phase-2-database-introspection">3. Phase 2: Database Introspection<a class="headerlink" href="#3-phase-2-database-introspection" title="Permanent link">&para;</a></h2>
+<h3 id="31-purpose">3.1 Purpose<a class="headerlink" href="#31-purpose" title="Permanent link">&para;</a></h3>
+<p>Introspection discovers what the database provides:</p>
+<ul>
+<li>View columns and JSONB paths</li>
+<li>Stored procedure signatures</li>
+<li>Column indexing and types</li>
+<li>Foreign key constraints</li>
+<li>Database capabilities (operators, functions)</li>
+</ul>
+<h3 id="32-introspection-scope">3.2 Introspection Scope<a class="headerlink" href="#32-introspection-scope" title="Permanent link">&para;</a></h3>
+<p>The compiler <strong>introspects only declared bindings</strong>, not the entire database:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="compiler-will-introspect">Compiler will introspect:<a class="headerlink" href="#compiler-will-introspect" title="Permanent link">&para;</a></h1>
+<h1 id="-v_user-because-binding-references-it">- v_user (because binding references it)<a class="headerlink" href="#-v_user-because-binding-references-it" title="Permanent link">&para;</a></h1>
+<h1 id="-fn_create_user-because-mutation-binding-references-it">- fn_create_user (because mutation binding references it)<a class="headerlink" href="#-fn_create_user-because-mutation-binding-references-it" title="Permanent link">&para;</a></h1>
+<h1 id="compiler-will-not-introspect">Compiler will NOT introspect:<a class="headerlink" href="#compiler-will-not-introspect" title="Permanent link">&para;</a></h1>
+<h1 id="-internal-tables-like-tb_posts_audit">- Internal tables like tb_posts_audit<a class="headerlink" href="#-internal-tables-like-tb_posts_audit" title="Permanent link">&para;</a></h1>
+<h1 id="-unused-views">- Unused views<a class="headerlink" href="#-unused-views" title="Permanent link">&para;</a></h1>
+<h1 id="-helper-functions">- Helper functions<a class="headerlink" href="#-helper-functions" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="33-view-column-discovery">3.3 View Column Discovery<a class="headerlink" href="#33-view-column-discovery" title="Permanent link">&para;</a></h3>
+<p>For each bound view, introspect:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- For v_user, discover:
+SELECT
+    column_name,
+    data_type,
+    is_nullable,
+    column_default,
+    ordinal_position
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'v_user'
+ORDER BY ordinal_position;
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Discovered columns:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>id          → UUID
+email       → TEXT (nullable: false)
+name        → TEXT
+posts       → JSONB (array of posts)
+created_at  → TIMESTAMP
+items__product__category_id  → UUID (nullable: true)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="34-jsonb-path-discovery">3.4 JSONB Path Discovery<a class="headerlink" href="#34-jsonb-path-discovery" title="Permanent link">&para;</a></h3>
+<p>For JSONB columns, introspect paths:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="for-posts-jsonb-array-discover-available-paths">For posts (JSONB array), discover available paths:<a class="headerlink" href="#for-posts-jsonb-array-discover-available-paths" title="Permanent link">&para;</a></h1>
+<h1 id="posts0id">posts[0].id<a class="headerlink" href="#posts0id" title="Permanent link">&para;</a></h1>
+<h1 id="posts0title">posts[0].title<a class="headerlink" href="#posts0title" title="Permanent link">&para;</a></h1>
+<h1 id="posts0authorname">posts[0].author.name<a class="headerlink" href="#posts0authorname" title="Permanent link">&para;</a></h1>
+<h1 id="etc">etc.<a class="headerlink" href="#etc" title="Permanent link">&para;</a></h1>
+<h1 id="these-become-available-for-filtering-in-where-types">These become available for filtering in WHERE types<a class="headerlink" href="#these-become-available-for-filtering-in-where-types" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="35-stored-procedure-discovery">3.5 Stored Procedure Discovery<a class="headerlink" href="#35-stored-procedure-discovery" title="Permanent link">&para;</a></h3>
+<p>For each bound procedure, introspect signature:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- For fn_create_user, discover:
+SELECT
+    proname,
+    pronargs,
+    proargtypes,
+    proargnames,
+    proargmodes,
+    prorettype
+FROM pg_proc
+WHERE proname = 'fn_create_user';
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Discovered signature:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fn_create_user(
+    email_param: TEXT,
+    name_param: TEXT
+) → JSON
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="36-column-indexing-analysis">3.6 Column Indexing Analysis<a class="headerlink" href="#36-column-indexing-analysis" title="Permanent link">&para;</a></h3>
+<p>Analyze indexing for performance warnings:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="introspect-is-column-indexed">Introspect: Is column indexed?<a class="headerlink" href="#introspect-is-column-indexed" title="Permanent link">&para;</a></h1>
+<h1 id="if-not-indexed-and-used-in-where-types-emit-warning">If not indexed and used in WHERE types, emit warning:<a class="headerlink" href="#if-not-indexed-and-used-in-where-types-emit-warning" title="Permanent link">&para;</a></h1>
+<h1 id="column-v_useremail-used-in-where-but-not-indexed">⚠ Column 'v_user.email' used in WHERE but not indexed<a class="headerlink" href="#column-v_useremail-used-in-where-but-not-indexed" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="4-phase-3-type-binding">4. Phase 3: Type Binding<a class="headerlink" href="#4-phase-3-type-binding" title="Permanent link">&para;</a></h2>
+<h3 id="41-mapping-graphql-types-to-database-views">4.1 Mapping GraphQL Types to Database Views<a class="headerlink" href="#41-mapping-graphql-types-to-database-views" title="Permanent link">&para;</a></h3>
+<p>For each GraphQL type, bind to a database view:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="graphql">GraphQL<a class="headerlink" href="#graphql" title="Permanent link">&para;</a></h1>
+<p>@FraiseQL.type
+class User:
+    id: ID
+    email: str
+    posts: list[Post]</p>
+<h1 id="binding">Binding<a class="headerlink" href="#binding" title="Permanent link">&para;</a></h1>
+<p>schema.bind("User", view="v_user", data_column="data")</p>
+<h1 id="compiler-verifies">Compiler verifies:<a class="headerlink" href="#compiler-verifies" title="Permanent link">&para;</a></h1>
+<h1 id="view-v_user-exists">✓ View v_user exists<a class="headerlink" href="#view-v_user-exists" title="Permanent link">&para;</a></h1>
+<h1 id="column-data-jsonb-exists-in-v_user">✓ Column 'data' (JSONB) exists in v_user<a class="headerlink" href="#column-data-jsonb-exists-in-v_user" title="Permanent link">&para;</a></h1>
+<h1 id="all-fields-id-email-posts-discoverable-in-view-or-jsonb">✓ All fields (id, email, posts) discoverable in view or JSONB<a class="headerlink" href="#all-fields-id-email-posts-discoverable-in-view-or-jsonb" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="42-field-to-column-mapping">4.2 Field-to-Column Mapping<a class="headerlink" href="#42-field-to-column-mapping" title="Permanent link">&para;</a></h3>
+<p>Each GraphQL field maps to either a <strong>SQL column</strong> or a <strong>JSONB path</strong>:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>User.id        → v_user.id (SQL column)
+User.email     → v_user.email (SQL column)
+User.posts     → v_user.data-&gt;&gt;'posts' (JSONB path)
+User.createdAt → v_user.created_at (SQL column)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Discovery algorithm:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>for each field in GraphQL type:
+    1. Check if column exists with same name
+    2. If not, check JSONB paths in data column
+    3. If found, record mapping
+    4. If not found, error: field not discoverable
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="43-foreign-key-inference">4.3 Foreign Key Inference<a class="headerlink" href="#43-foreign-key-inference" title="Permanent link">&para;</a></h3>
+<p>The compiler infers foreign key relationships from type references:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.type
+class User:
+    id: ID
+    posts: list[Post]  # Inferred FK: User → Post</p>
+<p>@FraiseQL.type
+class Post:
+    id: ID
+    author: User       # Inferred FK: Post → User
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Verification:</strong></p>
+<ul>
+<li>If view declares <code>user_id</code> column, FK is explicit</li>
+<li>If JSONB nesting available, FK is implicit</li>
+<li>Compiler warns if both explicit and implicit conflict</li>
+</ul>
+<hr />
+<h2 id="5-phase-4-where-type-generation">5. Phase 4: WHERE Type Generation<a class="headerlink" href="#5-phase-4-where-type-generation" title="Permanent link">&para;</a></h2>
+<h3 id="51-purpose">5.1 Purpose<a class="headerlink" href="#51-purpose" title="Permanent link">&para;</a></h3>
+<p>Automatically generate WHERE input types based on:</p>
+<ul>
+<li>Available database columns</li>
+<li>Column types</li>
+<li><strong>Database target</strong> (from compiler configuration)</li>
+<li>Database capability manifest</li>
+</ul>
+<p>This ensures <strong>only filterable columns are exposed</strong> and <strong>operators match the target database's capabilities</strong>.</p>
+<p><strong>This is the core mechanism for multi-database support:</strong> The <code>database_target</code> configuration drives which operators are available in the generated GraphQL schema.</p>
+<p>See <strong><code>docs/architecture/database/database-targeting.md</code></strong> for comprehensive explanation of compile-time schema specialization.</p>
+<h3 id="52-column-introspection-for-where-generation">5.2 Column Introspection for WHERE Generation<a class="headerlink" href="#52-column-introspection-for-where-generation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="for-user-type-bound-to-v_user-introspect-columns">For User type bound to v_user, introspect columns:<a class="headerlink" href="#for-user-type-bound-to-v_user-introspect-columns" title="Permanent link">&para;</a></h1>
+<h1 id="sql-columns-always-filterable">SQL columns (always filterable):<a class="headerlink" href="#sql-columns-always-filterable" title="Permanent link">&para;</a></h1>
+<p>id          → IDFilter
+email       → StringFilter
+name        → StringFilter
+created_at  → DateTimeFilter</p>
+<h1 id="jsonb-paths-if-data-column-exists">JSONB paths (if data column exists):<a class="headerlink" href="#jsonb-paths-if-data-column-exists" title="Permanent link">&para;</a></h1>
+<p>posts[0].id        → IDFilter
+posts[0].title     → StringFilter
+posts[0].author.id → IDFilter</p>
+<h1 id="flattened-foreign-key-columns-if-exist">Flattened foreign key columns (if exist):<a class="headerlink" href="#flattened-foreign-key-columns-if-exist" title="Permanent link">&para;</a></h1>
+<p>items__product__category_id  → IDFilter  # For efficient filtering
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="53-capability-manifest-application">5.3 Capability Manifest Application<a class="headerlink" href="#53-capability-manifest-application" title="Permanent link">&para;</a></h3>
+<p>The database capability manifest defines which operators are available:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "capabilities": {
+    "postgresql": {
+      "String": [
+        { "operator": "_eq", "sql": "=" },
+        { "operator": "_neq", "sql": "!=" },
+        { "operator": "_like", "sql": "LIKE" },
+        { "operator": "_ilike", "sql": "ILIKE" },
+        { "operator": "_regex", "sql": "~" }
+      ],
+      "ID": [
+        { "operator": "_eq", "sql": "=" },
+        { "operator": "_neq", "sql": "!=" },
+        { "operator": "_in", "sql": "IN" }
+      ]
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="54-where-type-generation-algorithm">5.4 WHERE Type Generation Algorithm<a class="headerlink" href="#54-where-type-generation-algorithm" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>def generate_where_type(type_name: str, bound_view: str, capabilities: dict):
+    """Generate WHERE input type for a GraphQL type."""</p>
+<div class="highlight"><pre><span></span><code># Introspect columns
+columns = introspect_view(bound_view)
+
+# Build WHERE fields
+where_fields = {}
+for col_name, col_type in columns.items():
+    # Look up operators for this column type
+    graphql_type = map_sql_to_graphql(col_type)
+    operators = capabilities[database_target][graphql_type]
+
+    # Create filter input type
+    filter_type = create_filter_type(col_name, operators)
+    where_fields[col_name] = filter_type
+
+# Add logical operators
+where_fields[&quot;_and&quot;] = f&quot;[{type_name}WhereInput!]&quot;
+where_fields[&quot;_or&quot;] = f&quot;[{type_name}WhereInput!]&quot;
+where_fields[&quot;_not&quot;] = f&quot;{type_name}WhereInput&quot;
+
+# Create WHERE input type
+return InputType(
+    name=f&quot;{type_name}WhereInput&quot;,
+    fields=where_fields
+)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="55-generated-where-type-example">5.5 Generated WHERE Type Example<a class="headerlink" href="#55-generated-where-type-example" title="Permanent link">&para;</a></h3>
+<p>For <code>User</code> bound to <code>v_user</code> with PostgreSQL capabilities:</p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>input UserWhereInput {
+  id: IDFilter
+  email: StringFilter
+  name: StringFilter
+  createdAt: DateTimeFilter
+  posts: PostsWhereInput              # Nested, from JSONB
+  items__product__categoryId: IDFilter # Flattened FK for performance
+  _and: [UserWhereInput!]
+  _or: [UserWhereInput!]
+  _not: UserWhereInput
+}</p>
+<p>input StringFilter {
+  _eq: String
+  _neq: String
+  _like: String
+  _ilike: String
+  _regex: String
+}</p>
+<p>input IDFilter {
+  _eq: ID
+  _neq: ID
+  _in: [ID!]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="56-capability-driven-operator-inclusion">5.6 Capability-Driven Operator Inclusion<a class="headerlink" href="#56-capability-driven-operator-inclusion" title="Permanent link">&para;</a></h3>
+<p>If targeting SQLite (no regex support):</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "capabilities": {
+    "sqlite": {
+      "String": [
+        { "operator": "_eq", "sql": "=" },
+        { "operator": "_neq", "sql": "!=" },
+        { "operator": "_like", "sql": "LIKE" }
+        // No _regex or _ilike
+      ]
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>The generated <code>StringFilter</code> for SQLite would <strong>omit</strong> <code>_regex</code> and <code>_ilike</code>.</p>
+<h3 id="57-complete-where-operator-reference">5.7 Complete WHERE Operator Reference<a class="headerlink" href="#57-complete-where-operator-reference" title="Permanent link">&para;</a></h3>
+<p>FraiseQL supports <strong>150+ WHERE clause operators</strong> across 15 categories, automatically applied based on column types and database capabilities:</p>
+<p><strong>Operator Categories:</strong></p>
+<ol>
+<li><strong>Basic Comparison</strong> (all types)</li>
+<li>
+<p><code>_eq</code>, <code>_neq</code>, <code>_gt</code>, <code>_gte</code>, <code>_lt</code>, <code>_lte</code>, <code>_in</code>, <code>_nin</code></p>
+</li>
+<li>
+<p><strong>String/Text Operators</strong></p>
+</li>
+<li>
+<p><code>_like</code>, <code>_ilike</code> (case-insensitive), <code>_regex</code>, <code>_iregex</code>, <code>_starts_with</code>, <code>_istarts_with</code>, <code>_ends_with</code>, <code>_iends_with</code>, <code>_contains</code>, <code>_icontains</code></p>
+</li>
+<li>
+<p><strong>Array Operators</strong></p>
+</li>
+<li>
+<p><code>_array_contains</code>, <code>_array_contained_by</code>, <code>_array_overlaps</code>, <code>_array_length</code>, <code>_array_index</code></p>
+</li>
+<li>
+<p><strong>JSONB Operators</strong></p>
+</li>
+<li>
+<p><code>_jsonb_contains</code>, <code>_jsonb_has_key</code>, <code>_jsonb_has_keys</code>, <code>_jsonb_keys</code>, <code>_jsonb_values</code>, <code>_jsonb_extract</code></p>
+</li>
+<li>
+<p><strong>Date/Time Operators</strong></p>
+</li>
+<li>
+<p><code>_before</code>, <code>_after</code>, <code>_between</code>, <code>_year</code>, <code>_month</code>, <code>_day</code>, <code>_quarter</code>, <code>_day_of_week</code>, <code>_hour</code>, <code>_minute</code></p>
+</li>
+<li>
+<p><strong>Network Operators</strong> (IP/CIDR)</p>
+</li>
+<li>
+<p><code>_cidr_contains</code>, <code>_cidr_contained_by</code>, <code>_subnet_of</code>, <code>_overlaps</code>, <code>_netmask</code></p>
+</li>
+<li>
+<p><strong>Geographic/Spatial Operators</strong></p>
+</li>
+<li>
+<p><code>_distance_lt</code>, <code>_distance_lte</code>, <code>_distance_gt</code>, <code>_distance_gte</code>, <code>_within_distance</code>, <code>_overlaps</code>, <code>_contains</code>, <code>_inside</code></p>
+</li>
+<li>
+<p><strong>Vector Distance Operators</strong> (pgvector)</p>
+</li>
+<li>
+<p><code>_cosine_distance_lt</code>, <code>_l2_distance_lt</code>, <code>_l1_distance_lt</code>, <code>_hamming_distance_lt</code>, <code>_jaccard_distance_lt</code>, <code>_inner_product</code></p>
+</li>
+<li>
+<p><strong>LTree (Hierarchical) Operators</strong></p>
+</li>
+<li>
+<p><code>_ancestor</code>, <code>_descendant</code>, <code>_matches</code>, <code>_is_ancestor</code>, <code>_is_descendant</code>, <code>_first</code>, <code>_last</code></p>
+</li>
+<li>
+<p><strong>Full-Text Search Operators</strong></p>
+<ul>
+<li><code>_tsquery</code>, <code>_tsvector_match</code>, <code>_plainto_tsquery</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Type-Specific Numeric</strong></p>
+<ul>
+<li><code>_is_even</code>, <code>_is_odd</code>, <code>_is_prime</code>, <code>_divisible_by</code></li>
+</ul>
+</li>
+<li>
+<p><strong>UUID Operators</strong></p>
+<ul>
+<li><code>_nil</code> (check if nil), <code>_version</code> (match UUID version)</li>
+</ul>
+</li>
+<li>
+<p><strong>Enum Operators</strong></p>
+<ul>
+<li><code>_eq</code>, <code>_neq</code>, <code>_in</code> (plus all logical operators)</li>
+</ul>
+</li>
+<li>
+<p><strong>Boolean Operators</strong></p>
+<ul>
+<li><code>_is_true</code>, <code>_is_false</code>, <code>_is_null</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Logical Operators</strong> (all types)</p>
+<ul>
+<li><code>_and</code>, <code>_or</code>, <code>_not</code></li>
+</ul>
+</li>
+</ol>
+<p><strong>Complete Reference:</strong>
+See <a href="../../../reference/where-operators/"><code>reference/where-operators.md</code></a> for:</p>
+<ul>
+<li>Full operator specifications by category</li>
+<li>SQL equivalents for each operator</li>
+<li>Performance characteristics and indexing recommendations</li>
+<li>Example queries for each operator</li>
+<li>Database compatibility matrix</li>
+</ul>
+<p><strong>Example: Complex WHERE Using Multiple Operators</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>query {
+  users(where: {
+    # String operators
+    email: { _ilike: "%@example.com" }
+    name: { _contains: "John" }</p>
+<div class="highlight"><pre><span></span><code># Date operators
+createdAt: { _gte: &quot;2025-01-01T00:00:00Z&quot; }
+
+# Array operators
+tags: { _array_contains: [&quot;vip&quot;] }
+
+# JSONB operators
+metadata: { _jsonb_has_key: &quot;verified&quot; }
+
+# Vector operators (AI/RAG)
+embedding: { _cosine_distance_lt: 0.1 }
+
+# Logical operators
+_and: [
+  { role: { _eq: ADMIN } }
+  { isActive: { _is_true } }
+]
+</code></pre></div>
+<p>}) {
+    id
+    email
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Capability Detection:</strong>
+At compilation time, the compiler:</p>
+<ol>
+<li>Introspects column types from database view</li>
+<li>Maps column types to available operators (from capability manifest)</li>
+<li>Generates WHERE input types only for supported operators</li>
+<li>Validates at runtime that only supported operators are used</li>
+</ol>
+<p>This ensures <strong>type safety</strong> — you cannot use unsupported operators that the database cannot execute.</p>
+<hr />
+<h2 id="6-phase-5-subscription-compilation">6. Phase 5: Subscription Compilation<a class="headerlink" href="#6-phase-5-subscription-compilation" title="Permanent link">&para;</a></h2>
+<p>Subscriptions compile through the same pipeline as queries and mutations, with identical field resolution, authorization, and type-safety rules.</p>
+<h3 id="61-subscription-parsing">6.1 Subscription Parsing<a class="headerlink" href="#61-subscription-parsing" title="Permanent link">&para;</a></h3>
+<p>Parse <code>@FraiseQL.subscription</code> declarations from all authoring languages:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.subscription
+class OrderCreated:
+    """Event fired when order is created."""
+    id: ID
+    user_id: ID
+    total: float
+    created_at: Timestamp</p>
+<div class="highlight"><pre><span></span><code># Compile-time filter
+where: WhereClause = WhereClause(user_id=current_user_id)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-subscription-binding">7.2 Subscription Binding<a class="headerlink" href="#72-subscription-binding" title="Permanent link">&para;</a></h3>
+<p>Bind each subscription to database event streams:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>schema.bind("OrderCreated",
+    event_source="LISTEN_NOTIFY",  # PostgreSQL
+    entity_types=["Order"],
+    operation_types=["INSERT"]
+)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Binding validates:</strong></p>
+<ul>
+<li>Event source is supported by database target</li>
+<li>Entity types exist in schema</li>
+<li>Operation types are valid (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>)</li>
+<li>Authorization rules are enforceable</li>
+</ul>
+<h3 id="63-filter-compilation">6.3 Filter Compilation<a class="headerlink" href="#63-filter-compilation" title="Permanent link">&para;</a></h3>
+<p>Subscription WHERE clauses compile to SQL predicates evaluated at event capture:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- For: subscription OrderCreated where user_id = current_user_id
+-- Compiles to:
+SELECT * FROM tb_entity_change_log
+WHERE entity_type = 'Order'
+  AND operation = 'INSERT'
+  AND (data-&gt;&gt;'user_id')::UUID = $1  -- Runtime-bound user_id
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="64-authorization-binding">6.4 Authorization Binding<a class="headerlink" href="#64-authorization-binding" title="Permanent link">&para;</a></h3>
+<p>Row-level authorization rules applied at event capture:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="if-schema-defines">If schema defines:<a class="headerlink" href="#if-schema-defines" title="Permanent link">&para;</a></h1>
+<p>@FraiseQL.subscription
+@FraiseQL.auth(requires_role="user")
+class OrderCreated:
+    ...</p>
+<h1 id="compiler-generates">Compiler generates:<a class="headerlink" href="#compiler-generates" title="Permanent link">&para;</a></h1>
+<h1 id="-rls-policy-enforcement-at-event-capture">- RLS policy enforcement at event capture<a class="headerlink" href="#-rls-policy-enforcement-at-event-capture" title="Permanent link">&para;</a></h1>
+<h1 id="-subscription_matchers-per-authenticated-user">- subscription_matchers per authenticated user<a class="headerlink" href="#-subscription_matchers-per-authenticated-user" title="Permanent link">&para;</a></h1>
+<h1 id="-auth-context-binding-for-runtime-variable-resolution">- Auth context binding for runtime variable resolution<a class="headerlink" href="#-auth-context-binding-for-runtime-variable-resolution" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="65-subscription-dispatch-table-generation">6.5 Subscription Dispatch Table Generation<a class="headerlink" href="#65-subscription-dispatch-table-generation" title="Permanent link">&para;</a></h3>
+<p>The compiler generates a dispatch table for runtime:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "subscriptions": {
+    "OrderCreated": {
+      "entity_type": "Order",
+      "operation_types": ["INSERT"],
+      "event_source": "LISTEN_NOTIFY",
+      "fields": ["id", "user_id", "total", "created_at"],
+      "where_filters": [
+        {"field": "user_id", "operator": "_eq", "value_type": "VARIABLE:current_user_id"}
+      ],
+      "authorization": {
+        "requires_role": "user",
+        "entity_acl": []
+      }
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="66-subscription-schema-validation">6.6 Subscription Schema Validation<a class="headerlink" href="#66-subscription-schema-validation" title="Permanent link">&para;</a></h3>
+<p>Validate subscription schema consistency:</p>
+<p><strong>Subscription Return Type Check:</strong></p>
+<ul>
+<li>Subscription fields must be projectable from event data</li>
+<li>Same field resolution as queries (SQL columns + JSONB paths)</li>
+</ul>
+<p><strong>Event Type Coverage:</strong></p>
+<ul>
+<li>Subscription fields must exist in all operation types</li>
+<li>Example: <code>ORDER_CANCELLED</code> event cannot project <code>ORDER_SHIPPED</code> fields</li>
+</ul>
+<p><strong>Authorization Validity:</strong></p>
+<ul>
+<li>Rules must be decidable at compile time</li>
+<li>Dynamic fields disallowed (use only static roles and entity attributes)</li>
+</ul>
+<hr />
+<h2 id="7-phase-6-compilation-validation">7. Phase 6: Compilation &amp; Validation<a class="headerlink" href="#7-phase-6-compilation-validation" title="Permanent link">&para;</a></h2>
+<h3 id="71-validation-rules">7.1 Validation Rules<a class="headerlink" href="#71-validation-rules" title="Permanent link">&para;</a></h3>
+<p>The compiler enforces these invariants:</p>
+<h4 id="711-type-closure">7.1.1 Type Closure<a class="headerlink" href="#711-type-closure" title="Permanent link">&para;</a></h4>
+<p>Every referenced type must be defined:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.query
+def users() -&gt; list[User]:  # User must be @FraiseQL.type
+    pass
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Type closure violation
+  Query 'users' returns 'list[User]'
+  Type 'User' not defined
+  → Define @FraiseQL.type class User
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="712-binding-existence">7.1.2 Binding Existence<a class="headerlink" href="#712-binding-existence" title="Permanent link">&para;</a></h4>
+<p>Every type returned by queries/mutations must have a binding:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.query
+def users() -&gt; list[User]:
+    pass</p>
+<h1 id="must-have">Must have:<a class="headerlink" href="#must-have" title="Permanent link">&para;</a></h1>
+<p>schema.bind("users", view="v_user")
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Missing binding
+  Query 'users' returns 'list[User]'
+  → schema.bind("users", "view", "v_user")
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="713-view-existence">7.1.3 View Existence<a class="headerlink" href="#713-view-existence" title="Permanent link">&para;</a></h4>
+<p>Bound views must exist in database:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>schema.bind("users", view="v_user_missing")  # ❌ Doesn't exist
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: View not found
+  Binding 'users' references 'v_user_missing'
+  → View does not exist in database
+  → Check with: \dv v_user*
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="714-column-existence">7.1.4 Column Existence<a class="headerlink" href="#714-column-existence" title="Permanent link">&para;</a></h4>
+<p>All GraphQL fields must map to discoverable columns:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.type
+class User:
+    id: ID
+    undefined_field: str  # ❌ Not in v_user
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Column not found
+  Type 'User' field 'undefinedField'
+  → Not found in view 'v_user' or JSONB paths
+  → Check view schema: \d v_user
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="715-procedure-signature-match">7.1.5 Procedure Signature Match<a class="headerlink" href="#715-procedure-signature-match" title="Permanent link">&para;</a></h4>
+<p>Mutation input must match procedure parameters:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.mutation
+def create_user(email: str, name: str) -&gt; User:
+    pass</p>
+<p>schema.bind("create_user", procedure="fn_create_user")</p>
+<h1 id="compiler-checks">Compiler checks:<a class="headerlink" href="#compiler-checks" title="Permanent link">&para;</a></h1>
+<h1 id="fn_create_user-exists">✓ fn_create_user exists<a class="headerlink" href="#fn_create_user-exists" title="Permanent link">&para;</a></h1>
+<h1 id="has-parameters-matching-email-name">✓ Has parameters matching: email, name<a class="headerlink" href="#has-parameters-matching-email-name" title="Permanent link">&para;</a></h1>
+<h1 id="returns-json">✓ Returns JSON<a class="headerlink" href="#returns-json" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Procedure signature mismatch
+  Mutation 'createUser' declares inputs: email, name
+  Procedure 'fn_create_user' has params: email_param, name_param
+  → Use input_mapping: {"email": "email_param", ...}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="716-operator-support">7.1.6 Operator Support<a class="headerlink" href="#716-operator-support" title="Permanent link">&para;</a></h4>
+<p>All used filters must be in capability manifest:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="if-query-uses-_regex-filter-on-sqlite">If query uses _regex filter on SQLite:<a class="headerlink" href="#if-query-uses-_regex-filter-on-sqlite" title="Permanent link">&para;</a></h1>
+<p>where: {
+  email: { _regex: "^test" }  # ❌ SQLite doesn't support regex
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Operator not supported
+  Filter uses '_regex' on 'email' field
+  → Database 'sqlite' does not support regex operator
+  → Use '_like' instead or target 'postgresql'
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="717-authorization-validity">7.1.7 Authorization Validity<a class="headerlink" href="#717-authorization-validity" title="Permanent link">&para;</a></h4>
+<p>Auth rules must reference valid auth context fields:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.query
+@auth.requires_claim("invalid_field")  # ❌ Not in AuthContext
+def secure_query() -&gt; User:
+    pass
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error if violated:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Auth context mismatch
+  Rule requires claim 'invalidField'
+  → Field not in AuthContext
+  → Add field to @FraiseQL.auth_context
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-validation-output">7.2 Validation Output<a class="headerlink" href="#72-validation-output" title="Permanent link">&para;</a></h3>
+<p>After validation, compiler emits a <strong>validation report</strong>:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>✓ Compilation successful (2026-01-11T15:35:00Z)</p>
+<p>Schema: acme-api v2.1.0
+Target: postgresql
+Types: 12 | Queries: 8 | Mutations: 5</p>
+<p>Validation Results:
+  ✓ Type closure: 12/12 valid
+  ✓ Bindings: 13/13 found
+  ✓ Views: 8/8 exist
+  ✓ Columns: 64/64 discoverable
+  ✓ Procedures: 5/5 exist
+  ✓ Operators: All supported
+  ✓ Auth rules: 6/6 valid</p>
+<p>Warnings:
+  ⚠ Column 'v_user.email' used in WHERE but not indexed
+  ⚠ View 'v_user_posts' is materialized; may become stale
+  ⚠ Mutation 'deleteUser' performs soft delete; ensure cascades handled</p>
+<p>Generated Artifacts:
+  ✓ CompiledSchema.json (24 KB)
+  ✓ schema.graphql (12 KB)
+  ✓ capability-manifest.json (8 KB)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-phase-7-artifact-emission">8. Phase 7: Artifact Emission<a class="headerlink" href="#8-phase-7-artifact-emission" title="Permanent link">&para;</a></h2>
+<h3 id="71-output-artifacts">7.1 Output Artifacts<a class="headerlink" href="#71-output-artifacts" title="Permanent link">&para;</a></h3>
+<p>The compiler produces three files:</p>
+<h4 id="711-compiledschemajson">7.1.1 CompiledSchema.json<a class="headerlink" href="#711-compiledschemajson" title="Permanent link">&para;</a></h4>
+<p>The executable schema consumed by Rust runtime:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "version": "1.0",
+  "metadata": { ... },
+  "types": [ ... ],
+  "queries": [ ... ],
+  "mutations": [ ... ],
+  "bindings": { ... },
+  "authorization": { ... },
+  "capabilities": { ... }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>See: <code>specs/compiled-schema.md</code> for full structure.</p>
+<h4 id="712-schemagraphql">7.1.2 schema.graphql<a class="headerlink" href="#712-schemagraphql" title="Permanent link">&para;</a></h4>
+<p>Standard GraphQL SDL for client tooling:</p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>type User {
+  id: ID!
+  email: String!
+  name: String!
+  posts: [Post!]!
+}</p>
+<p>type Query {
+  users(where: UserWhereInput, limit: Int = 100): [User!]!
+  userByEmail(email: String!): User!
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="713-capability-manifestjson">7.1.3 capability-manifest.json<a class="headerlink" href="#713-capability-manifestjson" title="Permanent link">&para;</a></h4>
+<p>Database-specific capabilities applied during compilation:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "databaseTarget": "postgresql",
+  "capabilities": {
+    "String": {
+      "operators": ["_eq", "_neq", "_like", "_ilike", "_regex"],
+      "sortable": true,
+      "indexable": true
+    },
+    "ID": {
+      "operators": ["_eq", "_neq", "_in"],
+      "sortable": false,
+      "indexable": true
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-file-organization">7.2 File Organization<a class="headerlink" href="#72-file-organization" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>my-api/
+├── schema.py           # Authoring input
+├── build/
+│   ├── CompiledSchema.json
+│   ├── schema.graphql
+│   ├── capability-manifest.json
+│   └── validation-report.txt
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="9-compilation-commands">9. Compilation Commands<a class="headerlink" href="#9-compilation-commands" title="Permanent link">&para;</a></h2>
+<h3 id="81-python-compiler">8.1 Python Compiler<a class="headerlink" href="#81-python-compiler" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="compile-schema">Compile schema<a class="headerlink" href="#compile-schema" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py \
+  --database-url postgresql://... \
+  --output build/</p>
+<h1 id="or-with-environment-variable">Or with environment variable<a class="headerlink" href="#or-with-environment-variable" title="Permanent link">&para;</a></h1>
+<p>export DATABASE_URL=postgresql://...
+FraiseQL compile schema.py
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="82-validation-only-mode">8.2 Validation-Only Mode<a class="headerlink" href="#82-validation-only-mode" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="validate-without-database-connection-use-cached-schema">Validate without database connection (use cached schema)<a class="headerlink" href="#validate-without-database-connection-use-cached-schema" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py --validate-only
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="83-dry-run-mode">8.3 Dry-Run Mode<a class="headerlink" href="#83-dry-run-mode" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="show-what-would-be-compiled-no-changes">Show what would be compiled, no changes<a class="headerlink" href="#show-what-would-be-compiled-no-changes" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py --dry-run
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="10-compiler-error-handling">10. Compiler Error Handling<a class="headerlink" href="#10-compiler-error-handling" title="Permanent link">&para;</a></h2>
+<h3 id="91-error-categories">9.1 Error Categories<a class="headerlink" href="#91-error-categories" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Severity</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Fatal</strong></td>
+<td>Compilation stops</td>
+<td>Invalid schema, missing binding, broken view</td>
+</tr>
+<tr>
+<td><strong>Error</strong></td>
+<td>Compilation stops</td>
+<td>Type closure violation, operator unsupported</td>
+</tr>
+<tr>
+<td><strong>Warning</strong></td>
+<td>Compilation succeeds</td>
+<td>Unindexed column, stale materialized view</td>
+</tr>
+<tr>
+<td><strong>Info</strong></td>
+<td>Compilation succeeds</td>
+<td>Generated 5 WHERE types, 3 mutations compiled</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-error-messages">9.2 Error Messages<a class="headerlink" href="#92-error-messages" title="Permanent link">&para;</a></h3>
+<p>All errors include:</p>
+<ol>
+<li><strong>Problem</strong> — What went wrong</li>
+<li><strong>Location</strong> — File, line, field involved</li>
+<li><strong>Suggestion</strong> — How to fix</li>
+</ol>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: View not found
+  File: schema.py, line 35
+  Binding 'users' references 'v_user_missing'</p>
+<p>Reason: View does not exist in target database 'postgresql'</p>
+<p>Suggestions:
+    → Check view exists: \dv v_user*
+    → Use correct view name in binding
+    → Or create view in database
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="11-compilation-performance">11. Compilation Performance<a class="headerlink" href="#11-compilation-performance" title="Permanent link">&para;</a></h2>
+<h3 id="101-typical-timings">10.1 Typical Timings<a class="headerlink" href="#101-typical-timings" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parsing</td>
+<td>&lt; 100ms</td>
+<td>Python AST inspection</td>
+</tr>
+<tr>
+<td>Introspection</td>
+<td>500ms - 2s</td>
+<td>Database queries</td>
+</tr>
+<tr>
+<td>Type binding</td>
+<td>&lt; 100ms</td>
+<td>Local mappings</td>
+</tr>
+<tr>
+<td>WHERE generation</td>
+<td>100-500ms</td>
+<td>Per-type capability matching</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>&lt; 200ms</td>
+<td>Graph traversal</td>
+</tr>
+<tr>
+<td>Artifact emission</td>
+<td>&lt; 100ms</td>
+<td>JSON serialization</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~1-3 seconds</strong></td>
+<td>End-to-end with introspection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-optimization-cached-introspection">10.2 Optimization: Cached Introspection<a class="headerlink" href="#102-optimization-cached-introspection" title="Permanent link">&para;</a></h3>
+<p>For fast iteration, cache database introspection:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="first-compile-full-introspection">First compile: full introspection<a class="headerlink" href="#first-compile-full-introspection" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py --database-url postgresql://...</p>
+<h1 id="subsequent-compiles-use-cache">Subsequent compiles: use cache<a class="headerlink" href="#subsequent-compiles-use-cache" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py  # Skips DB queries if schema unchanged
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="12-future-extensions">12. Future Extensions<a class="headerlink" href="#12-future-extensions" title="Permanent link">&para;</a></h2>
+<h3 id="111-multi-database-compilation">11.1 Multi-Database Compilation<a class="headerlink" href="#111-multi-database-compilation" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="compile-for-multiple-targets">Compile for multiple targets<a class="headerlink" href="#compile-for-multiple-targets" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py \
+  --targets postgresql,sqlite,mysql
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>Each target produces:</p>
+<ul>
+<li><code>CompiledSchema-postgresql.json</code></li>
+<li><code>CompiledSchema-sqlite.json</code></li>
+<li><code>CompiledSchema-mysql.json</code></li>
+</ul>
+<h3 id="112-schema-versioning">11.2 Schema Versioning<a class="headerlink" href="#112-schema-versioning" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="generate-migration-metadata">Generate migration metadata<a class="headerlink" href="#generate-migration-metadata" title="Permanent link">&para;</a></h1>
+<p>FraiseQL compile schema.py --version 2.1.0 --prev-version 2.0.0
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>Produces schema diff for documentation and client versioning.</p>
+<hr />
+<p><em>End of Compilation Pipeline Architecture</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

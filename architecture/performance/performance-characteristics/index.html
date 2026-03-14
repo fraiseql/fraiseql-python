@@ -1,0 +1,9730 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/performance/performance-characteristics/">
+      
+      
+        <link rel="prev" href="../../observability/observability-model/">
+      
+      
+        <link rel="next" href="../advanced-optimization/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Performance Characteristics - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fraiseql-performance-characteristics-benchmarks-optimization-strategies-and-tuning-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Performance Characteristics
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-query-performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Query Performance Baseline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Query Performance Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-benchmark-methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Benchmark Methodology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-simple-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Simple Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-complex-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Complex Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-federated-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Federated Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-pagination-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Pagination Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mutation-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Mutation Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mutation Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-simple-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Simple Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-complex-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Complex Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-batch-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Batch Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-subscription-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Subscription Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Subscription Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-subscription-event-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Subscription Event Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-subscription-throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Subscription Throughput
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-subscription-backpressure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Subscription Backpressure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cache-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cache Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Cache Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-cache-hit-rate-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Cache Hit Rate Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-cache-invalidation-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Cache Invalidation Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-cache-size-vs-hit-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Cache Size vs Hit Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-database-level-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Database-Level Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Database-Level Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-query-plan-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Query Plan Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-index-utilization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Index Utilization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-connection-pool-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Connection Pool Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-transaction-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Transaction Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-throughput-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Throughput Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Throughput Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-requests-per-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Requests Per Second
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-throughput-vs-latency-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Throughput vs Latency Trade-off
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-memory-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Memory Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Memory Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-memory-usage-at-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Memory Usage at Rest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-memory-usage-per-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Memory Usage Per Operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-memory-efficiency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Memory Efficiency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-optimization-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Optimization Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Optimization Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Query Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-mutation-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Mutation Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-cache-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cache Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Scaling Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Scaling Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-vertical-scaling-single-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Vertical Scaling (Single Instance)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-horizontal-scaling-multiple-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Horizontal Scaling (Multiple Instances)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-database-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Database Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Performance Monitoring
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Performance Monitoring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-key-metrics-to-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Key Metrics to Track
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-performance-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Performance Alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-performance-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Performance Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-performance-tuning-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Performance Tuning Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Performance Tuning Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-systematic-tuning-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Systematic Tuning Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-common-tuning-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Common Tuning Mistakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-performance-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Performance Targets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Performance Targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-sla-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 SLA Targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-performance-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Performance Budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-case-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Case Studies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Case Studies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-case-study-e-commerce-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Case Study: E-Commerce Platform
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-case-study-multi-tenant-saas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Case Study: Multi-Tenant SaaS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-query-performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Query Performance Baseline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Query Performance Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-benchmark-methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Benchmark Methodology
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-simple-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Simple Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-complex-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Complex Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-federated-query-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Federated Query Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-pagination-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Pagination Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-mutation-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Mutation Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Mutation Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-simple-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Simple Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-complex-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Complex Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-batch-mutation-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Batch Mutation Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-subscription-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Subscription Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Subscription Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-subscription-event-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Subscription Event Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-subscription-throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Subscription Throughput
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-subscription-backpressure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Subscription Backpressure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cache-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cache Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Cache Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-cache-hit-rate-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Cache Hit Rate Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-cache-invalidation-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Cache Invalidation Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-cache-size-vs-hit-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Cache Size vs Hit Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-database-level-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Database-Level Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Database-Level Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-query-plan-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Query Plan Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-index-utilization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Index Utilization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-connection-pool-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Connection Pool Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-transaction-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Transaction Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-throughput-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Throughput Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Throughput Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-requests-per-second" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Requests Per Second
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-throughput-vs-latency-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Throughput vs Latency Trade-off
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-memory-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Memory Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Memory Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-memory-usage-at-rest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Memory Usage at Rest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-memory-usage-per-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Memory Usage Per Operation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-memory-efficiency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Memory Efficiency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-optimization-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Optimization Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Optimization Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Query Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-mutation-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Mutation Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-cache-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cache Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Scaling Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Scaling Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-vertical-scaling-single-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Vertical Scaling (Single Instance)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-horizontal-scaling-multiple-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Horizontal Scaling (Multiple Instances)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-database-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Database Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Performance Monitoring
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Performance Monitoring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-key-metrics-to-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Key Metrics to Track
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-performance-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Performance Alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-performance-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Performance Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-performance-tuning-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Performance Tuning Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Performance Tuning Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-systematic-tuning-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Systematic Tuning Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-common-tuning-mistakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Common Tuning Mistakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-performance-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Performance Targets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Performance Targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-sla-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 SLA Targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-performance-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Performance Budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-case-studies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Case Studies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Case Studies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-case-study-e-commerce-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Case Study: E-Commerce Platform
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-case-study-multi-tenant-saas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Case Study: Multi-Tenant SaaS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: FraiseQL Performance Characteristics: Benchmarks, Optimization Strategies, and Tuning Guide
+description: FraiseQL is designed for <strong>consistent, predictable performance</strong> at scale. Performance characteristics are measurable, deterministic, and tunable.
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="fraiseql-performance-characteristics-benchmarks-optimization-strategies-and-tuning-guide">FraiseQL Performance Characteristics: Benchmarks, Optimization Strategies, and Tuning Guide<a class="headerlink" href="#fraiseql-performance-characteristics-benchmarks-optimization-strategies-and-tuning-guide" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> January 2026
+<strong>Status:</strong> Complete System Specification
+<strong>Audience:</strong> Performance engineers, DevOps engineers, application architects, scaling specialists</p>
+<hr />
+<h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL is designed for <strong>consistent, predictable performance</strong> at scale. Performance characteristics are measurable, deterministic, and tunable.</p>
+<p><strong>Performance objectives:</strong></p>
+<ul>
+<li><strong>Query latency</strong>: p50 &lt; 50ms, p95 &lt; 200ms, p99 &lt; 500ms</li>
+<li><strong>Mutation latency</strong>: p50 &lt; 100ms, p95 &lt; 300ms, p99 &lt; 1000ms</li>
+<li><strong>Throughput</strong>: 10,000+ queries/second per instance</li>
+<li><strong>Subscription latency</strong>: &lt;100ms event delivery (p99)</li>
+<li><strong>Memory overhead</strong>: &lt;100MB per 1000 concurrent users</li>
+<li><strong>Cache efficiency</strong>: 85%+ hit rate (with proper TTL)</li>
+</ul>
+<p><strong>Core principle</strong>: Performance is engineered, not emergent. Compiled execution plans + database-level optimization = predictable results.</p>
+<hr />
+<h2 id="1-query-performance-baseline">1. Query Performance Baseline<a class="headerlink" href="#1-query-performance-baseline" title="Permanent link">&para;</a></h2>
+<h3 id="11-benchmark-methodology">1.1 Benchmark Methodology<a class="headerlink" href="#11-benchmark-methodology" title="Permanent link">&para;</a></h3>
+<p>All benchmarks measure wall-clock time from request arrival to response start:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Request arrives
+  ↓ (measure start)
+Parse &amp; validate
+Authorization check
+Parameter binding
+Database execution
+Response transformation
+  ↓ (measure end)
+Response sent
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Benchmark conditions:</strong></p>
+<ul>
+<li>Single instance (1 CPU)</li>
+<li>PostgreSQL 15.1 (local)</li>
+<li>10,000 row tables</li>
+<li>Warm cache (2nd run onward)</li>
+<li>No network latency</li>
+<li>Single concurrent request</li>
+</ul>
+<h3 id="12-simple-query-latency">1.2 Simple Query Latency<a class="headerlink" href="#12-simple-query-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Query: SELECT id, name FROM users</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Warm cache hit:     5ms ± 1ms   (cached response)
+Cold cache:        12ms ± 2ms   (query + parse + respond)
+Database time:      5ms ± 1ms   (SELECT execution)
+Overhead:           7ms         (parsing, auth, response)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Breakdown:</strong></p>
+<ul>
+<li>Parsing &amp; validation: 0.5ms</li>
+<li>Authorization: 0.5ms</li>
+<li>Parameter binding: 0.5ms</li>
+<li>Database query: 5ms</li>
+<li>Response transformation: 1ms</li>
+</ul>
+<p><strong>Latency percentiles (cold cache, 10K requests):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Percentile</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>p50</td>
+<td>10ms</td>
+</tr>
+<tr>
+<td>p75</td>
+<td>12ms</td>
+</tr>
+<tr>
+<td>p95</td>
+<td>18ms</td>
+</tr>
+<tr>
+<td>p99</td>
+<td>25ms</td>
+</tr>
+<tr>
+<td>p99.9</td>
+<td>35ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-complex-query-latency">1.3 Complex Query Latency<a class="headerlink" href="#13-complex-query-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Query: SELECT posts with author, comments, and nested author (5 fields, 3 joins)</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Warm cache hit:     15ms ± 2ms   (cached response)
+Cold cache:         45ms ± 5ms   (query + joins + respond)
+Database time:      35ms ± 3ms   (JOINs + aggregation)
+Overhead:          10ms         (parsing, auth, response)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Breakdown:</strong></p>
+<ul>
+<li>Parsing &amp; validation: 0.5ms</li>
+<li>Authorization: 1ms</li>
+<li>Parameter binding: 0.5ms</li>
+<li>Database query: 35ms (3 JOINs + 1 subquery)</li>
+<li>Response transformation: 8ms (JSONB construction)</li>
+</ul>
+<p><strong>Latency percentiles (cold cache):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Percentile</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>p50</td>
+<td>42ms</td>
+</tr>
+<tr>
+<td>p75</td>
+<td>48ms</td>
+</tr>
+<tr>
+<td>p95</td>
+<td>65ms</td>
+</tr>
+<tr>
+<td>p99</td>
+<td>100ms</td>
+</tr>
+<tr>
+<td>p99.9</td>
+<td>150ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14-federated-query-latency">1.4 Federated Query Latency<a class="headerlink" href="#14-federated-query-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Query: SELECT posts with external author from federation</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Warm local cache:    5ms     (federated query cached)
+Cold local cache:   100ms ± 10ms (local + federation)
+  ├─ Local query:    12ms
+  ├─ Federation:     80ms (HTTP round-trip to subgraph)
+  └─ Response:        8ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Breakdown:</strong></p>
+<ul>
+<li>Local query: 12ms</li>
+<li>HTTP overhead: 5ms (connection + headers)</li>
+<li>Remote database: 60ms (on remote subgraph)</li>
+<li>HTTP overhead: 5ms (response + parsing)</li>
+<li>Response transformation: 8ms</li>
+</ul>
+<p><strong>Federation strategies impact:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Latency</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP (standard)</td>
+<td>80ms</td>
+<td>Works with any subgraph</td>
+</tr>
+<tr>
+<td>PostgreSQL FDW</td>
+<td>15ms</td>
+<td>Same-database optimization</td>
+</tr>
+<tr>
+<td>SQL Server Linked Servers</td>
+<td>18ms</td>
+<td>Same-database optimization</td>
+</tr>
+<tr>
+<td>MySQL FEDERATED</td>
+<td>20ms</td>
+<td>Same-database optimization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="15-pagination-impact">1.5 Pagination Impact<a class="headerlink" href="#15-pagination-impact" title="Permanent link">&para;</a></h3>
+<p><strong>OFFSET/LIMIT (avoid for scale):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Offset 0, Limit 20:        12ms
+Offset 1000, Limit 20:     45ms   (must scan 1000 rows)
+Offset 100000, Limit 20:  500ms   (must scan 100K rows)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Keyset pagination (recommended):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>First page (no cursor):     12ms
+Middle page (with cursor):  12ms   (same latency)
+Last page (with cursor):    12ms   (same latency)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="2-mutation-performance">2. Mutation Performance<a class="headerlink" href="#2-mutation-performance" title="Permanent link">&para;</a></h2>
+<h3 id="21-simple-mutation-latency">2.1 Simple Mutation Latency<a class="headerlink" href="#21-simple-mutation-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Mutation: INSERT new user</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Transaction start:     1ms
+Validate input:        1ms
+Authorization check:   1ms
+Database INSERT:      10ms
+Event publish:         2ms
+Response transform:    2ms
+────────────────────────
+Total:                17ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Latency percentiles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Percentile</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>p50</td>
+<td>15ms</td>
+</tr>
+<tr>
+<td>p95</td>
+<td>25ms</td>
+</tr>
+<tr>
+<td>p99</td>
+<td>50ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-complex-mutation-latency">2.2 Complex Mutation Latency<a class="headerlink" href="#22-complex-mutation-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Mutation: Create post with 3 comments and notify 100 subscribers</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Transaction start:       1ms
+Validate input:          2ms
+Authorization check:     2ms
+Database operations:    40ms (1 INSERT + 3 INSERTs + 1 SELECT)
+Event publish:         10ms (notify 100 subscribers)
+Cache invalidation:     5ms (4 cache entries)
+Response transform:     5ms
+────────────────────────
+Total:                 65ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Impact of concurrent mutations:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Concurrent Mutations</th>
+<th>Avg Latency</th>
+<th>Deadlock Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>17ms</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>10</td>
+<td>25ms ± 5ms</td>
+<td>&lt;0.1%</td>
+</tr>
+<tr>
+<td>100</td>
+<td>50ms ± 20ms</td>
+<td>0.5%</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>150ms</td>
+<td>2%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deadlock handling:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Deadlock detected:     1ms (detect)
+Rollback transaction:  2ms (abort work)
+Sleep + backoff:      50ms (exponential backoff)
+Retry:               17ms (retry)
+────────────────────────
+Total on deadlock:    70ms (retry succeeds)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="23-batch-mutation-latency">2.3 Batch Mutation Latency<a class="headerlink" href="#23-batch-mutation-latency" title="Permanent link">&para;</a></h3>
+<p><strong>Mutation: Create 1000 users in single transaction</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Timing (1000 INSERT statements):</p>
+<ul>
+<li>Transaction start: 1ms</li>
+<li>Validate all inputs: 50ms</li>
+<li>Database batch INSERT: 100ms</li>
+<li>Events publish: 20ms (1000 events)</li>
+<li>Response: 10ms
+─────────────────────────
+Total: 181ms
+```text</li>
+</ul>
+<!-- Code example in TEXT -->
+
+<p><strong>Rate:</strong> 1000 users / 181ms = <strong>5,500 users/second</strong></p>
+<hr />
+<h2 id="3-subscription-performance">3. Subscription Performance<a class="headerlink" href="#3-subscription-performance" title="Permanent link">&para;</a></h2>
+<h3 id="31-subscription-event-latency">3.1 Subscription Event Latency<a class="headerlink" href="#31-subscription-event-latency" title="Permanent link">&para;</a></h3>
+<p>From database event to client notification:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Database change occurs:
+  ↓
+Trigger fires:              1ms
+Event published:            2ms (NOTIFY)
+Captured by runtime:        1ms
+Entity resolution query:     15ms (fetch updated entity)
+Authorization check:         2ms
+Response transformation:     3ms
+Sent to client:             2ms (WebSocket send)
+─────────────────────────────
+Total latency:             26ms (p50)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Latency percentiles:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Percentile</th>
+<th>Latency</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>p50</td>
+<td>26ms</td>
+<td>Typical</td>
+</tr>
+<tr>
+<td>p95</td>
+<td>50ms</td>
+<td>Includes client network</td>
+</tr>
+<tr>
+<td>p99</td>
+<td>100ms</td>
+<td>Busy server</td>
+</tr>
+<tr>
+<td>p99.9</td>
+<td>500ms</td>
+<td>Buffer overflow, retries</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-subscription-throughput">3.2 Subscription Throughput<a class="headerlink" href="#32-subscription-throughput" title="Permanent link">&para;</a></h3>
+<p><strong>Maximum events per second per instance:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Single subscription:       1000 events/second
+10 subscriptions:         5000 events/second (load distributed)
+100 subscriptions:       10,000 events/second (approaching limit)
+1000 subscriptions:       8,000 events/second (backpressure, buffering)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Resource usage per 1000 events/second:</strong></p>
+<ul>
+<li>CPU: 10% (single core)</li>
+<li>Memory: 50MB (event buffer)</li>
+<li>Network: 1MB/second (outbound)</li>
+</ul>
+<h3 id="33-subscription-backpressure">3.3 Subscription Backpressure<a class="headerlink" href="#33-subscription-backpressure" title="Permanent link">&para;</a></h3>
+<p>When production rate &gt; consumption rate:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Events produced:   1000/sec
+Events consumed:    500/sec (slow client)
+Buffer buildup:    +500/sec</p>
+<p>Buffer capacity: 1000 events per subscription
+Time to overflow: 1000 / 500 = 2 seconds</p>
+<p>At overflow:
+→ Connection terminated (E_SUB_BUFFER_OVERFLOW_601)
+→ Client reconnects
+→ Subscription re-established
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="4-cache-performance">4. Cache Performance<a class="headerlink" href="#4-cache-performance" title="Permanent link">&para;</a></h2>
+<h3 id="41-cache-hit-rate-impact">4.1 Cache Hit Rate Impact<a class="headerlink" href="#41-cache-hit-rate-impact" title="Permanent link">&para;</a></h3>
+<p><strong>Scenario: Query same posts repeatedly (5-minute cache TTL)</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Hit rate vs latency:</p>
+<ul>
+<li>0% hit rate:   50ms average (always query database)</li>
+<li>50% hit rate:  30ms average (half from cache)</li>
+<li>75% hit rate:  18ms average</li>
+<li>90% hit rate:   8ms average (mostly cached)</li>
+<li>95% hit rate:   7ms average</li>
+</ul>
+<p>Cache key: {operation_name}:{variable_hash}:{user_id}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Typical hit rates by query type:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Query Type</th>
+<th>Hit Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frequently accessed data</td>
+<td>85-95%</td>
+</tr>
+<tr>
+<td>User-specific data</td>
+<td>70-80%</td>
+</tr>
+<tr>
+<td>Real-time data</td>
+<td>30-50%</td>
+</tr>
+<tr>
+<td>Rare/complex queries</td>
+<td>5-20%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-cache-invalidation-performance">4.2 Cache Invalidation Performance<a class="headerlink" href="#42-cache-invalidation-performance" title="Permanent link">&para;</a></h3>
+<p>When data changes:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Mutation committed:          1ms
+Cache invalidation triggered:  1ms (add to queue)
+Process invalidation queue:    5ms (batch 100 entries)
+Invalidate entries:           2ms (remove from Redis)
+────────────────────────────
+Total cache latency impact:   9ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Cache backends comparison:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Hit Latency</th>
+<th>Invalidation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>In-memory</td>
+<td>&lt;1ms</td>
+<td>0.1ms</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>2-5ms</td>
+<td>1-2ms</td>
+</tr>
+<tr>
+<td>Memcached</td>
+<td>2-5ms</td>
+<td>1-2ms</td>
+</tr>
+<tr>
+<td>DynamoDB</td>
+<td>10-20ms</td>
+<td>5-10ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-cache-size-vs-hit-rate">4.3 Cache Size vs Hit Rate<a class="headerlink" href="#43-cache-size-vs-hit-rate" title="Permanent link">&para;</a></h3>
+<p><strong>Scenario: 100K unique queries, varying cache size</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Cache size    Hit rate    Miss latency    Memory
+─────────────────────────────────────────────
+100MB         45%         25ms            -
+500MB         65%         20ms            -
+1GB           75%         18ms            -
+2GB           82%         15ms            -
+5GB           88%         12ms            -
+10GB          92%         10ms            -
+20GB+         95%         8ms             -</p>
+<p>Diminishing returns after 10GB (80% of queries cached)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="5-database-level-performance">5. Database-Level Performance<a class="headerlink" href="#5-database-level-performance" title="Permanent link">&para;</a></h2>
+<h3 id="51-query-plan-optimization">5.1 Query Plan Optimization<a class="headerlink" href="#51-query-plan-optimization" title="Permanent link">&para;</a></h3>
+<p><strong>Before optimization (first run):</strong></p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>SELECT p.<em>, u.</em>
+FROM tb_post p
+JOIN tb_user u ON p.author_id = u.pk_user
+WHERE p.published = true
+ORDER BY p.created_at DESC
+LIMIT 20</p>
+<p>Execution: 50ms
+  - Full table scan: 40ms (10K rows)
+  - Sort: 10ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>After query optimization (with index):</strong></p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>CREATE INDEX idx_post_published_created ON tb_post(published, created_at DESC);</p>
+<p>Execution: 15ms
+  - Index scan: 2ms (using index)
+  - Sort: 0ms (already sorted by index)
+  - Join: 10ms (20 rows joining)
+  - Return: 3ms
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Optimization impact: 50ms → 15ms (3.3x faster)</strong></p>
+<h3 id="52-index-utilization">5.2 Index Utilization<a class="headerlink" href="#52-index-utilization" title="Permanent link">&para;</a></h3>
+<p><strong>Query performance with vs without indexes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Query Type</th>
+<th>No Index</th>
+<th>With Index</th>
+<th>Speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Equality filter (WHERE id = ?)</td>
+<td>50ms</td>
+<td>1ms</td>
+<td>50x</td>
+</tr>
+<tr>
+<td>Range filter (WHERE created_at &gt; ?)</td>
+<td>100ms</td>
+<td>5ms</td>
+<td>20x</td>
+</tr>
+<tr>
+<td>Sort (ORDER BY column)</td>
+<td>150ms</td>
+<td>10ms</td>
+<td>15x</td>
+</tr>
+<tr>
+<td>Join on FK</td>
+<td>80ms</td>
+<td>15ms</td>
+<td>5x</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-connection-pool-performance">5.3 Connection Pool Performance<a class="headerlink" href="#53-connection-pool-performance" title="Permanent link">&para;</a></h3>
+<p><strong>Connection pool resource usage:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Pool size: 50
+Active connections: 43
+Idle connections: 5
+Waiting for connection: 0
+Connection wait time: &lt;1ms (p95)</p>
+<p>Under load (100 concurrent requests):
+Active connections: 50 (100% utilized)
+Waiting requests: 10 (10% of requests queueing)
+Connection wait time: 5ms (p95)</p>
+<p>If pool exhausted (101+ concurrent requests):
+Active: 50
+Waiting: 51+
+Connection timeout: 5 seconds
+Requests fail with E_DB_CONNECTION_TIMEOUT_307
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Pool sizing recommendation:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>pool_size = (concurrent_users / 10) + 10
+Example: 1000 concurrent users → pool_size = 110
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="54-transaction-performance">5.4 Transaction Performance<a class="headerlink" href="#54-transaction-performance" title="Permanent link">&para;</a></h3>
+<p><strong>Transaction overhead analysis:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Simple query (SELECT):
+  - No transaction: 10ms
+  - With transaction: 12ms (2ms overhead)</p>
+<p>INSERT operation:
+  - Without transaction: 10ms (auto-committed)
+  - Explicit transaction: 11ms (minimal overhead)</p>
+<p>Complex transaction (5 operations):
+  - Sequential without transaction: 50ms (5 × 10ms)
+  - Atomic transaction: 52ms (minimal overhead)
+  - Deadlock + retry: 70ms (includes backoff)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="6-throughput-benchmarks">6. Throughput Benchmarks<a class="headerlink" href="#6-throughput-benchmarks" title="Permanent link">&para;</a></h2>
+<h3 id="61-requests-per-second">6.1 Requests Per Second<a class="headerlink" href="#61-requests-per-second" title="Permanent link">&para;</a></h3>
+<p><strong>Single instance (1 CPU, 4GB RAM):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Simple query:       5,000 req/sec
+Complex query:      1,000 req/sec
+Mutation:            500 req/sec
+Mixed workload:     2,000 req/sec
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Multi-instance cluster (10 instances):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Simple query:      50,000 req/sec
+Complex query:     10,000 req/sec
+Mutation:           5,000 req/sec
+Mixed workload:    20,000 req/sec
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="62-throughput-vs-latency-trade-off">6.2 Throughput vs Latency Trade-off<a class="headerlink" href="#62-throughput-vs-latency-trade-off" title="Permanent link">&para;</a></h3>
+<p><strong>As load increases:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Load (req/sec)  | Avg Latency | P95 Latency | P99 Latency | Status
+────────────────────────────────────────────────────────────────
+500             | 5ms         | 8ms         | 12ms        | ✅ Healthy
+1000            | 8ms         | 15ms        | 25ms        | ✅ Good
+2000            | 15ms        | 35ms        | 60ms        | ✅ Acceptable
+3000            | 25ms        | 75ms        | 150ms       | ⚠️ Degrading
+4000            | 50ms        | 150ms       | 300ms       | ⚠️ Poor
+5000+           | 100ms+      | 300ms+      | 1000ms+     | ❌ Unacceptable
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Recommendation: Keep p95 latency &lt; 200ms</strong></p>
+<hr />
+<h2 id="7-memory-characteristics">7. Memory Characteristics<a class="headerlink" href="#7-memory-characteristics" title="Permanent link">&para;</a></h2>
+<h3 id="71-memory-usage-at-rest">7.1 Memory Usage at Rest<a class="headerlink" href="#71-memory-usage-at-rest" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Minimum runtime:            50MB
+With compiled schema (1000 types): 150MB
+Query execution buffer:      10MB
+Cache layer (Redis adapter): 20MB
+────────────────────────
+Baseline per instance:      230MB
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-memory-usage-per-operation">7.2 Memory Usage Per Operation<a class="headerlink" href="#72-memory-usage-per-operation" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Simple query:      &lt;1MB
+Complex query:     2-5MB (JSONB construction)
+Mutation:          1-2MB
+Subscription:      0.5MB (event buffer per subscription)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Memory per concurrent user:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Idle subscription (no queries):    50KB
+Active (processing query):         500KB
+Peak (during complex query):       2MB
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Scaling memory for concurrent users:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>1000 concurrent users: 230MB + (1000 × 50KB) = 280MB
+10,000 concurrent users: 230MB + (10000 × 50KB) = 730MB
+100,000 concurrent users: 230MB + (100000 × 50KB) = 5.2GB
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="73-memory-efficiency">7.3 Memory Efficiency<a class="headerlink" href="#73-memory-efficiency" title="Permanent link">&para;</a></h3>
+<p><strong>GC (garbage collection) impact:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Default GC (Rust): &lt;1ms pause (negligible)
+Gen2 collection: &lt;10ms pause (rare)
+Memory leaks: None (Rust memory safety)</p>
+<p>Comparison (Java):
+GC pause: 10-100ms (noticeable)
+Memory leaks possible
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-optimization-strategies">8. Optimization Strategies<a class="headerlink" href="#8-optimization-strategies" title="Permanent link">&para;</a></h2>
+<h3 id="81-query-optimization">8.1 Query Optimization<a class="headerlink" href="#81-query-optimization" title="Permanent link">&para;</a></h3>
+<p><strong>1. Add selective filters:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Before:
+SELECT * FROM users
+→ Scans 10M rows, returns 20
+→ 500ms</p>
+<p>After:
+SELECT * FROM users WHERE created_at &gt; NOW() - INTERVAL '7 days'
+→ Scans 100K rows (index), returns 20
+→ 50ms (10x faster)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>2. Use keyset pagination:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Before:
+SELECT * FROM users OFFSET 1,000,000 LIMIT 20
+→ Scans 1M rows, returns 20
+→ 1000ms</p>
+<p>After:
+SELECT * FROM users WHERE id &gt; 'cursor-value' LIMIT 20
+→ Index seek, returns 20
+→ 10ms (100x faster)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>3. Denormalize frequently joined data:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Before (3 JOINs):
+SELECT p.<em>, a.name, c.</em>, r.rating FROM post p
+  JOIN author a ON p.author_id = a.id
+  JOIN comment c ON p.id = c.post_id
+  JOIN rating r ON p.id = r.post_id
+→ 50ms</p>
+<p>After (materialized view):
+SELECT * FROM v_post_enriched
+→ Pre-joined JSONB
+→ 15ms (3x faster)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="82-mutation-optimization">8.2 Mutation Optimization<a class="headerlink" href="#82-mutation-optimization" title="Permanent link">&para;</a></h3>
+<p><strong>1. Batch operations:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Before (1000 individual mutations):
+for i in 1..1000:
+  createUser(...)
+→ 1000 × 20ms = 20 seconds</p>
+<p>After (batch mutation):
+createUsersBatch([...1000 users...])
+→ 200ms (100x faster)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>2. Defer non-critical operations:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Before (all in transaction):</p>
+<ol>
+<li>Create user (2ms)</li>
+<li>Send welcome email (500ms) ← Slow!</li>
+<li>Log audit event (10ms)
+→ Total: 512ms</li>
+</ol>
+<p>After (async):</p>
+<ol>
+<li>Create user (2ms)</li>
+<li>Commit ✓</li>
+<li>Queue email (async)</li>
+<li>Log audit event (async)
+→ Total: 2ms (256x faster)
+```text</li>
+</ol>
+<!-- Code example in TEXT -->
+
+<h3 id="83-cache-optimization">8.3 Cache Optimization<a class="headerlink" href="#83-cache-optimization" title="Permanent link">&para;</a></h3>
+<p><strong>1. Adjust TTL based on data freshness:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Static data (product catalog):   TTL = 1 hour
+User-specific data:              TTL = 5 minutes
+Real-time data (current user):   TTL = 30 seconds
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>2. Pre-warm cache on startup:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>FraiseQL.cache.preload([
+    "GetPopularProducts",
+    "GetTrendingPosts",
+    "GetRecommendations"
+])</p>
+<p>Result: 95%+ hit rate from moment 1
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>3. Monitor cache efficiency:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>@FraiseQL.metric(name="cache_efficiency")
+def track_cache():
+    hit_rate = cache_hits / (cache_hits + cache_misses)
+    if hit_rate &lt; 0.80:
+        alert("Cache hit rate below 80%")
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="9-scaling-strategies">9. Scaling Strategies<a class="headerlink" href="#9-scaling-strategies" title="Permanent link">&para;</a></h2>
+<h3 id="91-vertical-scaling-single-instance">9.1 Vertical Scaling (Single Instance)<a class="headerlink" href="#91-vertical-scaling-single-instance" title="Permanent link">&para;</a></h3>
+<p><strong>CPU cores impact:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>1 core:   2,000 req/sec
+2 cores:  4,000 req/sec (linear scaling up to 4 cores)
+4 cores:  7,000 req/sec (sublinear due to coordination overhead)
+8 cores: 10,000 req/sec (coordination overhead dominates)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Memory impact:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>4GB:   2,000 concurrent users
+8GB:   5,000 concurrent users
+16GB: 12,000 concurrent users
+32GB: 25,000 concurrent users
+64GB: 50,000 concurrent users
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="92-horizontal-scaling-multiple-instances">9.2 Horizontal Scaling (Multiple Instances)<a class="headerlink" href="#92-horizontal-scaling-multiple-instances" title="Permanent link">&para;</a></h3>
+<p><strong>Cluster with N instances (stateless):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Throughput scales linearly:</p>
+<p>1 instance:  2,000 req/sec
+2 instances: 4,000 req/sec
+10 instances: 20,000 req/sec
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Database becomes bottleneck:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Database can handle:  10,000 req/sec (PostgreSQL)</p>
+<p>Cluster can send:     20,000 req/sec (10 instances)</p>
+<p>Result: Database is bottleneck at 10+ instances
+Solution: Database replication (read replicas)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="93-database-scaling">9.3 Database Scaling<a class="headerlink" href="#93-database-scaling" title="Permanent link">&para;</a></h3>
+<p><strong>Read replicas for queries:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Master database:        Handles mutations
+Read replicas (5 copies): Handle queries</p>
+<p>Distribution:</p>
+<ul>
+<li>Mutations: All to master (10%)</li>
+<li>Queries: Distributed to 5 read replicas (90%)</li>
+</ul>
+<p>Result: Can scale queries 5x beyond master capacity
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Sharding for very large datasets:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Shard by user_id:</p>
+<ul>
+<li>User 1-100K:   Shard A</li>
+<li>User 100K-200K: Shard B</li>
+<li>User 200K-300K: Shard C</li>
+</ul>
+<p>Each shard can independently scale
+Total capacity = sum of all shards
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="10-performance-monitoring">10. Performance Monitoring<a class="headerlink" href="#10-performance-monitoring" title="Permanent link">&para;</a></h2>
+<h3 id="101-key-metrics-to-track">10.1 Key Metrics to Track<a class="headerlink" href="#101-key-metrics-to-track" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Query latency:
+  - p50 (typical): target &lt;50ms
+  - p95 (most users): target &lt;200ms
+  - p99 (outliers): target &lt;500ms</p>
+<p>Error rate:
+  - Queries: target &lt;0.1%
+  - Mutations: target &lt;0.5%
+  - Subscriptions: target &lt;1%</p>
+<p>Cache efficiency:
+  - Hit rate: target &gt;80%
+  - Invalidation rate: track trends</p>
+<p>Database:
+  - Connection pool utilization: target &lt;80%
+  - Query time: track trends
+  - Deadlock rate: target &lt;0.1%</p>
+<p>Infrastructure:
+  - CPU utilization: target 60-80%
+  - Memory utilization: target &lt;80%
+  - Network: track trends
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="102-performance-alerts">10.2 Performance Alerts<a class="headerlink" href="#102-performance-alerts" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Alert: High query latency
+  Condition: p95 latency &gt; 200ms for 5 minutes
+  Action: Investigate slow queries, check database</p>
+<p>Alert: Cache hit rate dropping
+  Condition: Hit rate &lt; 70% for 10 minutes
+  Action: Check cache backend, review TTLs</p>
+<p>Alert: High error rate
+  Condition: Error rate &gt; 1% for 5 minutes
+  Action: Check error logs, database health</p>
+<p>Alert: Connection pool exhausted
+  Condition: Connection utilization &gt; 95% for 2 minutes
+  Action: Increase pool size or add instances
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="103-performance-dashboard">10.3 Performance Dashboard<a class="headerlink" href="#103-performance-dashboard" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>┌────────────────────────────────────────────────┐
+│ FraiseQL Performance Dashboard                  │
+├────────────────────────────────────────────────┤
+│                                                  │
+│ Requests/sec: 3,500    Avg Latency: 45ms      │
+│ Error Rate: 0.05%      Cache Hit: 87%         │
+│                                                  │
+│ Query Latency      Throughput vs Time          │
+│ ├─ p50: 35ms       3500 ▁▂▃▄▅▆▇██              │
+│ ├─ p95: 120ms      3000 ▂▃▄▅▆▇██▁              │
+│ └─ p99: 250ms      2500 ▃▄▅▆▇██▁▂              │
+│                                                  │
+│ Top Slow Queries       Database Connections    │
+│ 1. ComplexSearch: 150ms Connection pool: 43/50 │
+│ 2. JoinedQuery: 100ms   Idle: 5                │
+│ 3. NestedFetch: 85ms    Waiting: 0             │
+│                                                  │
+└────────────────────────────────────────────────┘
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="11-performance-tuning-guide">11. Performance Tuning Guide<a class="headerlink" href="#11-performance-tuning-guide" title="Permanent link">&para;</a></h2>
+<h3 id="111-systematic-tuning-process">11.1 Systematic Tuning Process<a class="headerlink" href="#111-systematic-tuning-process" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<ol>
+<li>Establish baseline</li>
+<li>Measure current p50, p95, p99 latency</li>
+<li>Measure throughput (req/sec)</li>
+<li>
+<p>Measure error rate</p>
+</li>
+<li>
+<p>Identify bottleneck</p>
+</li>
+<li>Is it overhead (parsing, auth)? → Optimize code</li>
+<li>Is it database? → Add indexes, optimize queries</li>
+<li>Is it network? → Reduce payload, enable compression</li>
+<li>
+<p>Is it memory? → Reduce cache size, GC tuning</p>
+</li>
+<li>
+<p>Apply optimization</p>
+</li>
+<li>Test on staging</li>
+<li>Measure impact</li>
+<li>
+<p>Roll out gradually</p>
+</li>
+<li>
+<p>Validate improvement</p>
+</li>
+<li>Confirm p50/p95/p99 improved</li>
+<li>Check error rate unchanged</li>
+<li>
+<p>Monitor for regressions</p>
+</li>
+<li>
+<p>Repeat</p>
+</li>
+<li>New bottleneck emerges</li>
+<li>Go back to step 2
+```text</li>
+</ol>
+<!-- Code example in TEXT -->
+
+<h3 id="112-common-tuning-mistakes">11.2 Common Tuning Mistakes<a class="headerlink" href="#112-common-tuning-mistakes" title="Permanent link">&para;</a></h3>
+<p><strong>❌ DON'T:</strong></p>
+<ul>
+<li>Blindly increase timeouts (hides real problems)</li>
+<li>Disable caching for consistency (affects all users)</li>
+<li>Use OFFSET pagination at scale (exponentially slow)</li>
+<li>Load full objects when you need 1 field (wasteful)</li>
+<li>Ignore slow query logs (find your bottlenecks)</li>
+<li>Set cache TTL too high (stale data)</li>
+<li>Set cache TTL too low (high miss rate)</li>
+</ul>
+<p><strong>✅ DO:</strong></p>
+<ul>
+<li>Profile before optimizing (measure!)</li>
+<li>Optimize database first (usually the bottleneck)</li>
+<li>Add indexes on filter/sort columns</li>
+<li>Use pagination for large result sets</li>
+<li>Monitor cache hit rate</li>
+<li>Test changes on staging first</li>
+<li>Roll out gradually with feature flags</li>
+</ul>
+<hr />
+<h2 id="12-performance-targets">12. Performance Targets<a class="headerlink" href="#12-performance-targets" title="Permanent link">&para;</a></h2>
+<h3 id="121-sla-targets">12.1 SLA Targets<a class="headerlink" href="#121-sla-targets" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Query SLA:
+  p99 latency: &lt;500ms
+  Error rate: &lt;0.1%
+  Availability: 99.99%</p>
+<p>Mutation SLA:
+  p99 latency: &lt;1 second
+  Error rate: &lt;0.5%
+  Availability: 99.95%</p>
+<p>Subscription SLA:
+  Event delivery: &lt;100ms (p99)
+  Reliability: 99.9%
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="122-performance-budget">12.2 Performance Budget<a class="headerlink" href="#122-performance-budget" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Per query, target allocation:</p>
+<p>Simple query (20 ms budget):
+  ├─ Parsing &amp; validation: 0.5ms (2.5%)
+  ├─ Authorization: 1ms (5%)
+  ├─ Database: 15ms (75%)
+  ├─ Response: 3ms (15%)
+  └─ Buffer: 0.5ms</p>
+<p>Complex query (100ms budget):
+  ├─ Parsing &amp; validation: 1ms (1%)
+  ├─ Authorization: 2ms (2%)
+  ├─ Database: 80ms (80%)
+  ├─ Response: 15ms (15%)
+  └─ Buffer: 2ms</p>
+<p>If database takes &gt;80% of budget, optimize queries first
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="13-case-studies">13. Case Studies<a class="headerlink" href="#13-case-studies" title="Permanent link">&para;</a></h2>
+<h3 id="131-case-study-e-commerce-platform">13.1 Case Study: E-Commerce Platform<a class="headerlink" href="#131-case-study-e-commerce-platform" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: 10,000 concurrent users, p95 latency degraded to 800ms</p>
+<p><strong>Investigation:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Traces showed database queries taking 700ms
+Database analysis: Full table scans on product filters
+Root cause: Missing index on product_category column
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Solution:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>CREATE INDEX idx_product_category ON tb_product(category);</p>
+<p>Result:
+  Before: 800ms (p95)
+  After:  120ms (p95)
+  Improvement: 6.7x faster
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="132-case-study-multi-tenant-saas">13.2 Case Study: Multi-Tenant SaaS<a class="headerlink" href="#132-case-study-multi-tenant-saas" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Cache hit rate declining from 85% to 40%</p>
+<p><strong>Investigation:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Problem: Each customer queries different data
+Cache key included user_id
+As customer base grew, each user's queries unique
+Cache hit rate = (repeated_queries / total_queries)
+Declining as customer base grew
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Solution:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Identified most popular queries across all customers
+Pre-warm cache with these queries
+Added customer education on query patterns
+Result: Hit rate improved to 75% (acceptable for use case)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<p><strong>Document Version</strong>: 1.0.0
+<strong>Last Updated</strong>: January 2026
+<strong>Status</strong>: Complete specification for framework v2.x</p>
+<p>FraiseQL's performance is engineered through compile-time optimization, deterministic execution, and strategic caching. Predictable performance at scale is achievable.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

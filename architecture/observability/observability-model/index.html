@@ -1,0 +1,8795 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/observability/observability-model/">
+      
+      
+        <link rel="prev" href="../../integration/extension-points/">
+      
+      
+        <link rel="next" href="../../performance/performance-characteristics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Observability Model - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Observability Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-metrics-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Metrics Framework
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Metrics Framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-metric-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Metric Categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-core-metrics-always-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Core Metrics (Always Available)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-custom-metrics-application-defined" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Custom Metrics (Application-Defined)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-metric-export-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Metric Export Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-metrics-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Metrics Framework
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Metrics Framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-metric-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Metric Categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-core-metrics-always-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Core Metrics (Always Available)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-custom-metrics-application-defined" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Custom Metrics (Application-Defined)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-metric-export-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Metric Export Formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting
+description: FraiseQL provides a <strong>comprehensive observability model</strong> covering three pillars:
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting">FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting<a class="headerlink" href="#fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> January 2026
+<strong>Status:</strong> Complete System Specification
+<strong>Audience:</strong> Operations engineers, SRE teams, platform architects, application developers</p>
+<hr />
+<h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL provides a <strong>comprehensive observability model</strong> covering three pillars:</p>
+<ol>
+<li><strong>Metrics</strong> — Quantitative measurements (queries/second, latency, errors)</li>
+<li><strong>Logs</strong> — Structured event records (per-request, debug, errors)</li>
+<li><strong>Traces</strong> — Distributed request flow (end-to-end execution path)</li>
+</ol>
+<p>All observability data includes <strong>rich context</strong> (user ID, query plan, authorization rules, database engine, cache status) enabling root-cause analysis without excessive debugging.</p>
+<p><strong>Core principle</strong>: Observable by default. Every operation produces telemetry; zero configuration needed for basic observability.</p>
+<hr />
+<h2 id="1-metrics-framework">1. Metrics Framework<a class="headerlink" href="#1-metrics-framework" title="Permanent link">&para;</a></h2>
+<h3 id="11-metric-categories">1.1 Metric Categories<a class="headerlink" href="#11-metric-categories" title="Permanent link">&para;</a></h3>
+<p>FraiseQL produces metrics across five dimensions:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>┌─────────────────────────┐
+│ Operation Metrics       │ Queries/second, mutations/second, subscriptions active
+├─────────────────────────┤
+│ Latency Metrics         │ Query duration, mutation duration, database query time
+├─────────────────────────┤
+│ Error Metrics           │ Error rate by code, error category distribution
+├─────────────────────────┤
+│ Resource Metrics        │ Database connections, query memory, cache size
+├─────────────────────────┤
+│ Business Metrics        │ Custom defined by application (user signups, revenue)
+└─────────────────────────┘
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="12-core-metrics-always-available">1.2 Core Metrics (Always Available)<a class="headerlink" href="#12-core-metrics-always-available" title="Permanent link">&para;</a></h3>
+<p><strong>1.2.1 Query Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_query_requests_total
+  {
+    operation_name="GetUserPosts",
+    status="success",     # success, error, timeout
+    error_code="",        # Empty if success
+    database="postgresql",
+    cache_hit=true
+  }
+  5000  # 5000 queries in this time window</p>
+<p>fraiseql_query_duration_seconds
+  {
+    operation_name="GetUserPosts",
+    quantile="p50"  # p50, p95, p99, p99.9
+  }
+  0.045  # 45ms</p>
+<p>fraiseql_query_duration_seconds
+  {
+    operation_name="GetUserPosts",
+    quantile="p99"
+  }
+  0.250  # 250ms</p>
+<p>fraiseql_query_database_time_seconds
+  {
+    operation_name="GetUserPosts"
+  }
+  0.035  # Database query took 35ms out of 45ms total</p>
+<p>fraiseql_query_rows_returned
+  {
+    operation_name="GetUserPosts"
+  }
+  1500  # Average rows per query
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.2 Mutation Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_mutation_requests_total
+  {
+    operation_name="CreatePost",
+    status="success",
+    database="postgresql"
+  }
+  250  # 250 mutations this window</p>
+<p>fraiseql_mutation_duration_seconds
+  {
+    operation_name="CreatePost",
+    quantile="p95"
+  }
+  0.150  # 150ms</p>
+<p>fraiseql_mutation_rows_affected
+  {
+    operation_name="CreatePost"
+  }
+  1  # Rows modified</p>
+<p>fraiseql_mutation_deadlock_retries
+  {
+    operation_name="UpdatePost"
+  }
+  12  # 12 deadlock retries in this window
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.3 Subscription Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_subscriptions_active
+  {
+    subscription_name="OnPostCreated",
+    database="postgresql"
+  }
+  450  # 450 active subscriptions</p>
+<p>fraiseql_subscription_events_published
+  {
+    subscription_name="OnPostCreated",
+    status="delivered"  # delivered, dropped, failed
+  }
+  15000  # 15K events delivered this window</p>
+<p>fraiseql_subscription_event_delay_seconds
+  {
+    subscription_name="OnPostCreated",
+    quantile="p95"
+  }
+  0.050  # 50ms event delay p95</p>
+<p>fraiseql_subscription_buffer_utilization
+  {
+    subscription_name="OnPostCreated"
+  }
+  0.45  # 45% of buffer used (1000 event capacity)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.4 Authorization Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_authorization_checks_total
+  {
+    result="allowed",    # allowed, denied
+    rule_type="owner_only"
+  }
+  45000  # 45K authorization checks</p>
+<p>fraiseql_authorization_duration_seconds
+  {
+    rule_type="owner_only",
+    quantile="p95"
+  }
+  0.005  # 5ms for authorization check</p>
+<p>fraiseql_authorization_denials
+  {
+    reason="insufficient_role",  # insufficient_role, row_level_denied
+    rule_type="admin_only"
+  }
+  15  # 15 denials this window
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.5 Cache Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_cache_requests_total
+  {
+    result="hit",    # hit, miss, expire
+    operation_name="GetUserPosts"
+  }
+  3500  # 3500 cache hits</p>
+<p>fraiseql_cache_requests_total
+  {
+    result="miss",
+    operation_name="GetUserPosts"
+  }
+  500   # 500 cache misses (87% hit rate)</p>
+<p>fraiseql_cache_size_bytes
+  {
+    cache_backend="redis"
+  }
+  536870912  # 512MB used</p>
+<p>fraiseql_cache_ttl_max_seconds
+  {}
+  300  # Max TTL 5 minutes
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.6 Database Connection Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_db_connections_active
+  {
+    database="postgresql",
+    pool_size=50
+  }
+  43  # 43 connections active</p>
+<p>fraiseql_db_connection_wait_time_seconds
+  {
+    database="postgresql",
+    quantile="p95"
+  }
+  0.001  # 1ms max wait for connection</p>
+<p>fraiseql_db_query_rows_scanned
+  {
+    operation_name="GetUserPosts"
+  }
+  1000  # Scanned 1000 rows to return 20</p>
+<p>fraiseql_db_indexes_used
+  {
+    operation_name="GetUserPosts",
+    index="idx_post_published"
+  }
+  1  # Index was used (1 = yes)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>1.2.7 Error Metrics</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_errors_total
+  {
+    error_code="E_DB_QUERY_TIMEOUT_302",
+    category="DATABASE_ERROR"
+  }
+  25  # 25 timeout errors this window</p>
+<p>fraiseql_errors_total
+  {
+    error_code="E_AUTH_PERMISSION_401",
+    category="AUTHORIZATION_ERROR"
+  }
+  500  # 500 authorization denials</p>
+<p>fraiseql_errors_total
+  {
+    error_code="E_VALIDATION_INVALID_TYPE_103",
+    category="VALIDATION_ERROR"
+  }
+  80   # 80 input validation errors
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="13-custom-metrics-application-defined">1.3 Custom Metrics (Application-Defined)<a class="headerlink" href="#13-custom-metrics-application-defined" title="Permanent link">&para;</a></h3>
+<p>Applications can define custom business metrics:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.type
+class User:
+    id: ID
+    email: str</p>
+<div class="highlight"><pre><span></span><code>@FraiseQL.metric(name=&quot;user_created&quot;, type=&quot;counter&quot;)
+def track_creation(self):
+    &quot;&quot;&quot;Track when users are created&quot;&quot;&quot;
+    # Automatically incremented on mutation
+</code></pre></div>
+<p>@FraiseQL.type
+class Order:
+    id: ID
+    total: float</p>
+<div class="highlight"><pre><span></span><code>@FraiseQL.metric(name=&quot;order_revenue&quot;, type=&quot;gauge&quot;, value_field=&quot;total&quot;)
+def track_revenue(self):
+    &quot;&quot;&quot;Track total order revenue&quot;&quot;&quot;
+    # Value automatically updated
+</code></pre></div>
+<p>@FraiseQL.resolver
+def custom_metric_handler():
+    """Define custom metrics for business logic"""
+    FraiseQL.metrics.gauge(
+        name="active_users",
+        value=count_active_users()
+    )
+    FraiseQL.metrics.gauge(
+        name="pending_orders",
+        value=count_pending_orders()
+    )
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Custom metric example:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>fraiseql_custom_user_created
+  {}
+  1250  # 1250 users created</p>
+<p>fraiseql_custom_order_revenue
+  {
+    currency="USD"
+  }
+  450000.50  # $450K in orders
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="14-metric-export-formats">1.4 Metric Export Formats<a class="headerlink" href="#14-metric-export-formats" title="Permanent link">&para;</a></h3>
+<p><strong>Prometheus format (default):</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<h1 id="help-fraiseql_query_requests_total-total-queries-executed">HELP fraiseql_query_requests_total Total queries executed<a class="headerlink" href="#help-fraiseql_query_requests_total-total-queries-executed" title="Permanent link">&para;</a></h1>
+<h1 id="type-fraiseql_query_requests_total-counter">TYPE fraiseql_query_requests_total counter<a class="headerlink" href="#type-fraiseql_query_requests_total-counter" title="Permanent link">&para;</a></h1>
+<p>fraiseql_query_requests_total{operation_name="GetUserPosts",status="success"} 5000</p>
+<h1 id="help-fraiseql_query_duration_seconds-query-execution-duration">HELP fraiseql_query_duration_seconds Query execution duration<a class="headerlink" href="#help-fraiseql_query_duration_seconds-query-execution-duration" title="Permanent link">&para;</a></h1>
+<h1 id="type-fraiseql_query_duration_seconds-histogram">TYPE fraiseql_query_duration_seconds histogram<a class="headerlink" href="#type-fraiseql_query_duration_seconds-histogram" title="Permanent link">&para;</a></h1>
+<p>fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.01"} 500
+fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.05"} 4500
+fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.1"} 4800
+fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="+Inf"} 5000
+fraiseql_query_duration_seconds_sum{operation_name="GetUserPosts"} 225
+fraiseql_query_duration_seconds_count{operation_name="GetUserPosts"} 5000
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>JSON export:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "metrics": [
+    {
+      "name": "fraiseql_query_requests_total",
+      "value": 5000,
+      "labels": {
+        "operation_name": "GetUserPosts",
+        "status": "success"
+      },
+      "timestamp": "2026-01-15T10:30:45Z"
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>CloudWatch format (AWS):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "MetricData": [
+    {
+      "MetricName": "FraiseQLQueryRequests",
+      "Dimensions": [
+        {"Name": "OperationName", "Value": "GetUserPosts"}
+      ],
+      "Value": 5000,
+      "Unit": "Count"
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="15-metric-aggregation-queries">1.5 Metric Aggregation &amp; Queries<a class="headerlink" href="#15-metric-aggregation-queries" title="Permanent link">&para;</a></h3>
+<p><strong>Prometheus queries:</strong></p>
+<p>```promql</p>
+<!-- Code example in PROMQL -->
+<h1 id="average-query-latency">Average query latency<a class="headerlink" href="#average-query-latency" title="Permanent link">&para;</a></h1>
+<p>rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m])</p>
+<h1 id="query-error-rate">Query error rate<a class="headerlink" href="#query-error-rate" title="Permanent link">&para;</a></h1>
+<p>rate(fraiseql_query_requests_total{status="error"}[5m]) / rate(fraiseql_query_requests_total[5m])</p>
+<h1 id="cache-hit-rate">Cache hit rate<a class="headerlink" href="#cache-hit-rate" title="Permanent link">&para;</a></h1>
+<p>rate(fraiseql_cache_requests_total{result="hit"}[5m]) / rate(fraiseql_cache_requests_total[5m])</p>
+<h1 id="p99-query-latency">P99 query latency<a class="headerlink" href="#p99-query-latency" title="Permanent link">&para;</a></h1>
+<p>histogram_quantile(0.99, rate(fraiseql_query_duration_seconds_bucket[5m]))</p>
+<h1 id="top-queries-by-latency">Top queries by latency<a class="headerlink" href="#top-queries-by-latency" title="Permanent link">&para;</a></h1>
+<p>topk(5, rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m]))
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="2-structured-logging">2. Structured Logging<a class="headerlink" href="#2-structured-logging" title="Permanent link">&para;</a></h2>
+<h3 id="21-log-levels-categories">2.1 Log Levels &amp; Categories<a class="headerlink" href="#21-log-levels-categories" title="Permanent link">&para;</a></h3>
+<p>FraiseQL produces structured logs at multiple levels:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Usage</th>
+<th>Frequency</th>
+<th>Retention</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DEBUG</strong></td>
+<td>Development, detailed flow</td>
+<td>High</td>
+<td>24 hours</td>
+</tr>
+<tr>
+<td><strong>INFO</strong></td>
+<td>Significant events</td>
+<td>Medium</td>
+<td>7 days</td>
+</tr>
+<tr>
+<td><strong>WARN</strong></td>
+<td>Unusual but handled situations</td>
+<td>Low</td>
+<td>30 days</td>
+</tr>
+<tr>
+<td><strong>ERROR</strong></td>
+<td>Failed operations</td>
+<td>Low</td>
+<td>90 days</td>
+</tr>
+<tr>
+<td><strong>FATAL</strong></td>
+<td>System failures</td>
+<td>Very low</td>
+<td>1 year</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-log-entry-format">2.2 Log Entry Format<a class="headerlink" href="#22-log-entry-format" title="Permanent link">&para;</a></h3>
+<p>All logs are structured JSON with consistent schema:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.123Z",
+  "level": "info",
+  "logger": "FraiseQL.query",
+  "message": "Query executed successfully",
+  "context": {
+    "request_id": "req-abc123",
+    "trace_id": "trace-xyz789",
+    "user_id": "user-456",
+    "organization_id": "org-123"
+  },
+  "operation": {
+    "type": "query",
+    "name": "GetUserPosts",
+    "status": "success",
+    "duration_ms": 45
+  },
+  "database": {
+    "engine": "postgresql",
+    "query_time_ms": 35,
+    "rows_affected": 20,
+    "connection_id": "conn-789"
+  },
+  "cache": {
+    "hit": true,
+    "ttl_seconds": 300
+  },
+  "authorization": {
+    "allowed": true,
+    "rules_evaluated": 3,
+    "time_ms": 2
+  },
+  "error": null,
+  "metadata": {
+    "version": "2.0.0",
+    "environment": "production"
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="23-query-execution-logs">2.3 Query Execution Logs<a class="headerlink" href="#23-query-execution-logs" title="Permanent link">&para;</a></h3>
+<p><strong>Query start (DEBUG):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.000Z",
+  "level": "debug",
+  "message": "Query execution started",
+  "operation": {
+    "type": "query",
+    "name": "GetUserPosts"
+  },
+  "parameters": {
+    "userId": "user-456",
+    "limit": 20
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Query completion (INFO):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.045Z",
+  "level": "info",
+  "message": "Query executed successfully",
+  "operation": {
+    "type": "query",
+    "name": "GetUserPosts",
+    "status": "success",
+    "duration_ms": 45
+  },
+  "database": {
+    "query_time_ms": 35,
+    "rows_affected": 20
+  },
+  "cache": {
+    "hit": false,
+    "cached": true,
+    "ttl_seconds": 300
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Query timeout (ERROR):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.000Z",
+  "level": "error",
+  "message": "Query timeout",
+  "operation": {
+    "type": "query",
+    "name": "GetUserPosts",
+    "status": "timeout",
+    "duration_ms": 30000
+  },
+  "error": {
+    "code": "E_DB_QUERY_TIMEOUT_302",
+    "message": "Query execution exceeded 30 second timeout",
+    "retryable": true
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="24-mutation-execution-logs">2.4 Mutation Execution Logs<a class="headerlink" href="#24-mutation-execution-logs" title="Permanent link">&para;</a></h3>
+<p><strong>Mutation start (DEBUG):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.000Z",
+  "level": "debug",
+  "message": "Mutation execution started",
+  "operation": {
+    "type": "mutation",
+    "name": "CreatePost"
+  },
+  "input": {
+    "title": "New Post",
+    "content": "Content preview..."
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Mutation committed (INFO):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.050Z",
+  "level": "info",
+  "message": "Mutation committed",
+  "operation": {
+    "type": "mutation",
+    "name": "CreatePost",
+    "status": "success",
+    "duration_ms": 50
+  },
+  "database": {
+    "rows_affected": 1,
+    "transaction_duration_ms": 48
+  },
+  "events": {
+    "published": ["post_created"],
+    "subscribers": 127
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Mutation rolled back (ERROR):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.050Z",
+  "level": "error",
+  "message": "Mutation rolled back due to constraint violation",
+  "operation": {
+    "type": "mutation",
+    "name": "CreatePost",
+    "status": "rolled_back",
+    "duration_ms": 50
+  },
+  "error": {
+    "code": "E_VALIDATION_DUPLICATE_VALUE_107",
+    "message": "Post with title 'New Post' already exists",
+    "retryable": false
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="25-authorization-logs">2.5 Authorization Logs<a class="headerlink" href="#25-authorization-logs" title="Permanent link">&para;</a></h3>
+<p><strong>Authorization allowed (DEBUG):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.002Z",
+  "level": "debug",
+  "message": "Authorization check passed",
+  "authorization": {
+    "result": "allowed",
+    "rule": "owner_or_admin",
+    "field": "User.email",
+    "user_id": "user-456",
+    "resource_owner": "user-456",
+    "duration_ms": 1
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Authorization denied (WARN):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.002Z",
+  "level": "warn",
+  "message": "Authorization check failed",
+  "authorization": {
+    "result": "denied",
+    "rule": "admin_only",
+    "field": "AdminPanel.api_keys",
+    "user_id": "user-456",
+    "user_roles": ["user"],
+    "required_role": "admin",
+    "duration_ms": 2
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="26-error-logs">2.6 Error Logs<a class="headerlink" href="#26-error-logs" title="Permanent link">&para;</a></h3>
+<p><strong>All errors include:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "error": {
+    "code": "E_DB_QUERY_TIMEOUT_302",
+    "category": "DATABASE_ERROR",
+    "message": "Query exceeded timeout",
+    "severity": "error",
+    "retryable": true,
+    "remediable": false,
+    "trace": [
+      "FraiseQL.runtime.execute_query:123",
+      "FraiseQL.db.query:456",
+      "tokio.timeout:789"
+    ]
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="27-log-filtering-sampling">2.7 Log Filtering &amp; Sampling<a class="headerlink" href="#27-log-filtering-sampling" title="Permanent link">&para;</a></h3>
+<p><strong>Debug log sampling (production):</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="by-default-debug-logs-are-sampled-1-in-100">By default, DEBUG logs are sampled (1 in 100)<a class="headerlink" href="#by-default-debug-logs-are-sampled-1-in-100" title="Permanent link">&para;</a></h1>
+<p>FraiseQL.logging.configure({
+    "debug_sampling": {
+        "enabled": True,
+        "rate": 0.01,  # 1% of debug logs
+        "always_sample_errors": True  # Always log errors
+    }
+})
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Dynamic log levels:</strong></p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="change-log-level-without-restart">Change log level without restart<a class="headerlink" href="#change-log-level-without-restart" title="Permanent link">&para;</a></h1>
+<p>curl -X POST http://localhost:8000/admin/logging \
+  -d '{
+    "logger": "FraiseQL.query",
+    "level": "debug"
+  }'</p>
+<h1 id="result-fraiseqlquery-logs-now-at-debug-level">Result: FraiseQL.query logs now at DEBUG level<a class="headerlink" href="#result-fraiseqlquery-logs-now-at-debug-level" title="Permanent link">&para;</a></h1>
+<h1 id="reverts-after-1-hour-or-on-restart">Reverts after 1 hour or on restart<a class="headerlink" href="#reverts-after-1-hour-or-on-restart" title="Permanent link">&para;</a></h1>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="3-distributed-tracing">3. Distributed Tracing<a class="headerlink" href="#3-distributed-tracing" title="Permanent link">&para;</a></h2>
+<h3 id="31-trace-context-propagation">3.1 Trace Context Propagation<a class="headerlink" href="#31-trace-context-propagation" title="Permanent link">&para;</a></h3>
+<p>Every request includes <strong>trace context</strong> for distributed tracing:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "parent_span_id": "00f067aa0ba902b7",
+  "trace_flags": "01"  // Sampled
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Context propagation:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Client Request
+  ↓ (contains trace_id)
+FraiseQL API
+  ├─ Creates span: "query.execution"
+  │  ├─ Creates span: "authorization.check"
+  │  ├─ Creates span: "database.query"
+  │  │  └─ Includes trace_id in database driver
+  │  └─ Creates span: "response.transform"
+  └─ Returns response with trace_id
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="32-w3c-trace-context-headers">3.2 W3C Trace Context Headers<a class="headerlink" href="#32-w3c-trace-context-headers" title="Permanent link">&para;</a></h3>
+<p>FraiseQL uses W3C standard for trace propagation:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>HTTP Request:
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+tracestate: congo=t61rcWpm35YzTP60
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Header format:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>traceparent: version-trace_id-parent_span_id-trace_flags
+00         = version 0 (W3C spec v1)
+4bf92...   = trace ID (16 bytes hex)
+00f067...  = parent span ID (8 bytes hex)
+01         = trace flags (01 = sampled)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="33-span-hierarchy">3.3 Span Hierarchy<a class="headerlink" href="#33-span-hierarchy" title="Permanent link">&para;</a></h3>
+<p>Every query generates trace spans:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Span: query.execution (root)
+├─ start: 2026-01-15T10:30:45.000Z
+├─ end: 2026-01-15T10:30:45.045Z
+├─ duration: 45ms
+├─ attributes:
+│  ├─ operation_name: "GetUserPosts"
+│  ├─ user_id: "user-456"
+│  └─ status: "success"
+│
+├─ Span: validation (child)
+│  ├─ start: 2026-01-15T10:30:45.000Z
+│  ├─ end: 2026-01-15T10:30:45.002Z
+│  ├─ duration: 2ms
+│  └─ attributes:
+│     └─ valid: true
+│
+├─ Span: authorization (child)
+│  ├─ start: 2026-01-15T10:30:45.002Z
+│  ├─ end: 2026-01-15T10:30:45.005Z
+│  ├─ duration: 3ms
+│  └─ attributes:
+│     ├─ allowed: true
+│     └─ rules_evaluated: 2
+│
+├─ Span: database.query (child)
+│  ├─ start: 2026-01-15T10:30:45.005Z
+│  ├─ end: 2026-01-15T10:30:45.040Z
+│  ├─ duration: 35ms
+│  └─ attributes:
+│     ├─ database: "postgresql"
+│     ├─ statement: "SELECT ... FROM v_post WHERE ..."
+│     ├─ rows: 20
+│     └─ status: "success"
+│
+└─ Span: response.transform (child)
+   ├─ start: 2026-01-15T10:30:45.040Z
+   ├─ end: 2026-01-15T10:30:45.045Z
+   ├─ duration: 5ms
+   └─ attributes:
+      ├─ format: "json"
+      └─ size_bytes: 5120
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="34-span-attributes-events">3.4 Span Attributes (Events)<a class="headerlink" href="#34-span-attributes-events" title="Permanent link">&para;</a></h3>
+<p>Each span records attributes about the operation:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "spans": [
+    {
+      "name": "database.query",
+      "attributes": {
+        "database.system": "postgresql",
+        "database.connection.pool.name": "default",
+        "database.connection.state": "in_use",
+        "db.statement": "SELECT * FROM v_post WHERE ...",
+        "db.rows_returned": 20,
+        "db.rows_scanned": 1000,
+        "db.execution_time_ms": 35,
+        "db.prepared_statement": true,
+        "db.indexes_used": ["idx_post_published"],
+        "db.cache_hit": false
+      }
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="35-sampling-strategy">3.5 Sampling Strategy<a class="headerlink" href="#35-sampling-strategy" title="Permanent link">&para;</a></h3>
+<p><strong>Adaptive sampling based on error rate:</strong></p>
+<p>```rust</p>
+<!-- Code example in RUST -->
+<p>// By default: Sample 1% of traces (cost reduction)
+if error_rate &gt; 0.01 {  // If &gt;1% error rate
+    sampling_rate = 0.10;  // Sample 10% (more visibility)
+}</p>
+<p>if error_rate &gt; 0.05 {  // If &gt;5% error rate
+    sampling_rate = 1.0;   // Sample 100% (full debugging)
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Request context sampling:</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="sample-100-of-requests-with-errors">Sample 100% of requests with errors<a class="headerlink" href="#sample-100-of-requests-with-errors" title="Permanent link">&para;</a></h1>
+<p>if response.status == "error":
+    trace.sample_rate = 1.0</p>
+<h1 id="sample-100-of-slow-requests">Sample 100% of slow requests<a class="headerlink" href="#sample-100-of-slow-requests" title="Permanent link">&para;</a></h1>
+<p>elif response.duration_ms &gt; timeout_threshold:
+    trace.sample_rate = 1.0</p>
+<h1 id="sample-100-if-user-opt-in">Sample 100% if user opt-in<a class="headerlink" href="#sample-100-if-user-opt-in" title="Permanent link">&para;</a></h1>
+<p>elif user.prefer_full_tracing:
+    trace.sample_rate = 1.0</p>
+<h1 id="default-sample-1">Default: Sample 1%<a class="headerlink" href="#default-sample-1" title="Permanent link">&para;</a></h1>
+<p>else:
+    trace.sample_rate = 0.01
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="36-trace-export">3.6 Trace Export<a class="headerlink" href="#36-trace-export" title="Permanent link">&para;</a></h3>
+<p><strong>Jaeger format (default):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "spans": [
+    {
+      "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
+      "spanID": "00f067aa0ba902b7",
+      "operationName": "query.execution",
+      "startTime": 1642252245000000,
+      "duration": 45000,
+      "tags": {
+        "operation_name": "GetUserPosts",
+        "user_id": "user-456"
+      },
+      "logs": [
+        {
+          "timestamp": 1642252245005000,
+          "fields": [
+            {"key": "event", "value": "authorization_passed"}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>OpenTelemetry format:</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {"key": "service.name", "value": {"stringValue": "FraiseQL"}},
+          {"key": "service.version", "value": {"stringValue": "2.0.0"}}
+        ]
+      },
+      "scopeSpans": [
+        {
+          "span": [
+            {
+              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+              "spanId": "00f067aa0ba902b7",
+              "name": "query.execution",
+              "startTimeUnixNano": 1642252245000000000,
+              "endTimeUnixNano": 1642252245045000000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="4-alerting-rules">4. Alerting Rules<a class="headerlink" href="#4-alerting-rules" title="Permanent link">&para;</a></h2>
+<h3 id="41-pre-built-alert-templates">4.1 Pre-Built Alert Templates<a class="headerlink" href="#41-pre-built-alert-templates" title="Permanent link">&para;</a></h3>
+<p>FraiseQL includes pre-built Prometheus alert rules:</p>
+<p>```yaml</p>
+<!-- Code example in YAML -->
+<p>groups:
+  - name: FraiseQL.alerts
+    interval: 30s
+    rules:
+      - alert: QueryLatencyHigh
+        expr: histogram_quantile(0.95, fraiseql_query_duration_seconds_bucket) &gt; 1.0
+        for: 5m
+        annotations:
+          summary: "Query latency high (p95 &gt; 1s)"
+          description: "Queries taking &gt; 1s on average"</p>
+<div class="highlight"><pre><span></span><code>  - alert: QueryErrorRateHigh
+    expr: rate(fraiseql_query_requests_total{status=&quot;error&quot;}[5m]) &gt; 0.01
+    for: 5m
+    annotations:
+      summary: &quot;Query error rate &gt; 1%&quot;
+
+  - alert: MutationDeadlockHigh
+    expr: rate(fraiseql_mutation_deadlock_retries[5m]) &gt; 10
+    for: 5m
+    annotations:
+      summary: &quot;High deadlock rate on mutations&quot;
+
+  - alert: CacheHitRateLow
+    expr: rate(fraiseql_cache_requests_total{result=&quot;hit&quot;}[5m]) / rate(fraiseql_cache_requests_total[5m]) &lt; 0.5
+    for: 10m
+    annotations:
+      summary: &quot;Cache hit rate below 50%&quot;
+      remediation: &quot;Check cache configuration or TTL&quot;
+
+  - alert: DatabaseConnectionPoolExhausted
+    expr: fraiseql_db_connections_active / fraiseql_db_pool_size &gt; 0.9
+    for: 2m
+    annotations:
+      summary: &quot;Database connection pool 90% utilized&quot;
+      remediation: &quot;Increase pool size or check for connection leaks&quot;
+
+  - alert: SubscriptionBufferNearCapacity
+    expr: fraiseql_subscription_buffer_utilization &gt; 0.8
+    for: 5m
+    annotations:
+      summary: &quot;Subscription buffer &gt; 80% utilized&quot;
+      remediation: &quot;Check subscription delivery speed&quot;
+
+  - alert: AuthorizationDenialHigh
+    expr: rate(fraiseql_authorization_denials[5m]) &gt; 100
+    for: 5m
+    annotations:
+      summary: &quot;High authorization denial rate&quot;
+
+  - alert: DatabaseQueryTimeout
+    expr: rate(fraiseql_errors_total{error_code=&quot;E_DB_QUERY_TIMEOUT_302&quot;}[5m]) &gt; 5
+    for: 5m
+    annotations:
+      summary: &quot;Database queries timing out&quot;
+      remediation: &quot;Optimize slow queries or increase timeout&quot;
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="42-custom-alerts">4.2 Custom Alerts<a class="headerlink" href="#42-custom-alerts" title="Permanent link">&para;</a></h3>
+<p>Applications can define custom alerts:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.alert
+def high_order_value(context):
+    """Alert if single order exceeds threshold"""
+    return {
+        "condition": f"order.total &gt; 10000",
+        "for": "immediately",
+        "message": f"High-value order: ${context.order.total}"
+    }</p>
+<p>@FraiseQL.alert
+def slow_query_detection(context):
+    """Alert on slow queries"""
+    return {
+        "condition": f"context.operation.duration_ms &gt; 5000",
+        "for": "5m",
+        "message": f"Query {context.operation.name} taking {context.operation.duration_ms}ms"
+    }
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="43-alert-routing-notification">4.3 Alert Routing &amp; Notification<a class="headerlink" href="#43-alert-routing-notification" title="Permanent link">&para;</a></h3>
+<p>```yaml</p>
+<!-- Code example in YAML -->
+<h1 id="alertmanager-configuration">AlertManager configuration<a class="headerlink" href="#alertmanager-configuration" title="Permanent link">&para;</a></h1>
+<p>route:
+  receiver: default
+  routes:
+    # Critical: Database down → PagerDuty
+    - match:
+        severity: critical
+      receiver: pagerduty</p>
+<div class="highlight"><pre><span></span><code># High: Performance degradation → Slack
+- match:
+    severity: high
+  receiver: slack_eng
+
+# Medium: Warnings → Email
+- match:
+    severity: medium
+  receiver: email
+</code></pre></div>
+<p>receivers:
+  - name: pagerduty
+    pagerduty_configs:
+      - routing_key: secret
+  - name: slack_eng
+    slack_configs:
+      - api_url: "https://hooks.slack.com/..."
+  - name: email
+    email_configs:
+      - to: alerts@company.com
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="5-health-checks-readiness-probes">5. Health Checks &amp; Readiness Probes<a class="headerlink" href="#5-health-checks-readiness-probes" title="Permanent link">&para;</a></h2>
+<h3 id="51-health-check-endpoints">5.1 Health Check Endpoints<a class="headerlink" href="#51-health-check-endpoints" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="liveness-probe-is-runtime-alive">Liveness probe (is runtime alive?)<a class="headerlink" href="#liveness-probe-is-runtime-alive" title="Permanent link">&para;</a></h1>
+<p>GET /health/live
+200 OK {"status": "alive"}</p>
+<h1 id="readiness-probe-can-runtime-serve-traffic">Readiness probe (can runtime serve traffic?)<a class="headerlink" href="#readiness-probe-can-runtime-serve-traffic" title="Permanent link">&para;</a></h1>
+<p>GET /health/ready
+200 OK {
+  "status": "ready",
+  "database": "connected",
+  "cache": "connected",
+  "auth_provider": "connected"
+}</p>
+<h1 id="detailed-health-status">Detailed health status<a class="headerlink" href="#detailed-health-status" title="Permanent link">&para;</a></h1>
+<p>GET /health
+200 OK {
+  "status": "healthy",
+  "components": {
+    "runtime": {"status": "up", "version": "2.0.0"},
+    "database": {"status": "up", "latency_ms": 2},
+    "cache": {"status": "up", "hit_rate": 0.87},
+    "auth_provider": {"status": "up"},
+    "subscription_manager": {"status": "up", "active_subscriptions": 450}
+  },
+  "uptime_seconds": 86400,
+  "start_time": "2026-01-14T10:30:45Z"
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="52-kubernetes-probes">5.2 Kubernetes Probes<a class="headerlink" href="#52-kubernetes-probes" title="Permanent link">&para;</a></h3>
+<p>```yaml</p>
+<!-- Code example in YAML -->
+<p>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: FraiseQL
+spec:
+  template:
+    spec:
+      containers:
+      - name: FraiseQL
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 3</p>
+<div class="highlight"><pre><span></span><code>    readinessProbe:
+      httpGet:
+        path: /health/ready
+        port: 8000
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 2
+      failureThreshold: 2
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="6-performance-profiling">6. Performance Profiling<a class="headerlink" href="#6-performance-profiling" title="Permanent link">&para;</a></h2>
+<h3 id="61-built-in-profiler">6.1 Built-in Profiler<a class="headerlink" href="#61-built-in-profiler" title="Permanent link">&para;</a></h3>
+<p>FraiseQL includes built-in CPU and memory profiling:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="profile-cpu-30-seconds">Profile CPU (30 seconds)<a class="headerlink" href="#profile-cpu-30-seconds" title="Permanent link">&para;</a></h1>
+<p>GET /debug/pprof/profile?seconds=30</p>
+<h1 id="profile-memory">Profile memory<a class="headerlink" href="#profile-memory" title="Permanent link">&para;</a></h1>
+<p>GET /debug/pprof/heap</p>
+<h1 id="profile-goroutines">Profile goroutines<a class="headerlink" href="#profile-goroutines" title="Permanent link">&para;</a></h1>
+<p>GET /debug/pprof/goroutine</p>
+<h1 id="download-as-pprof-format">Download as pprof format<a class="headerlink" href="#download-as-pprof-format" title="Permanent link">&para;</a></h1>
+<p>curl http://localhost:8000/debug/pprof/profile &gt; cpu.prof
+go tool pprof cpu.prof
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="62-query-execution-plan-analysis">6.2 Query Execution Plan Analysis<a class="headerlink" href="#62-query-execution-plan-analysis" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="analyze-query-plan">Analyze query plan<a class="headerlink" href="#analyze-query-plan" title="Permanent link">&para;</a></h1>
+<p>curl -X POST http://localhost:8000/debug/analyze \
+  -d '{
+    "query": "query GetPosts { posts { id title } }"
+  }'</p>
+<p>Response:
+{
+  "query_plan": {
+    "sql": "SELECT ... FROM v_post",
+    "estimated_cost": 100,
+    "estimated_rows": 1000,
+    "indexes": ["idx_post_published"],
+    "joins": 0,
+    "nested_queries": 0
+  },
+  "recommendation": "Query is well-optimized"
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="63-slow-query-log">6.3 Slow Query Log<a class="headerlink" href="#63-slow-query-log" title="Permanent link">&para;</a></h3>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-15T10:30:45.000Z",
+  "level": "warn",
+  "message": "Slow query detected",
+  "operation": {
+    "name": "ComplexUserSearch",
+    "duration_ms": 5234
+  },
+  "database": {
+    "query": "SELECT ... FROM v_user JOIN v_profile ...",
+    "rows_scanned": 50000,
+    "rows_returned": 10,
+    "indexes_not_used": ["idx_user_email"],
+    "suggestion": "Add WHERE clause to filter by email first"
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="7-observability-configuration">7. Observability Configuration<a class="headerlink" href="#7-observability-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="71-configuration-options">7.1 Configuration Options<a class="headerlink" href="#71-configuration-options" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>FraiseQL.observability.configure({
+    # Metrics
+    "metrics": {
+        "enabled": True,
+        "export_interval_seconds": 60,
+        "format": "prometheus",
+        "include_high_cardinality": False,  # Limit label combinations
+    },</p>
+<div class="highlight"><pre><span></span><code># Logging
+&quot;logging&quot;: {
+    &quot;level&quot;: &quot;info&quot;,
+    &quot;format&quot;: &quot;json&quot;,
+    &quot;debug_sampling&quot;: {
+        &quot;enabled&quot;: True,
+        &quot;rate&quot;: 0.01,  # 1% of debug logs
+    },
+    &quot;slow_query_threshold_ms&quot;: 1000,
+},
+
+# Tracing
+&quot;tracing&quot;: {
+    &quot;enabled&quot;: True,
+    &quot;sample_rate&quot;: 0.01,  # 1% of requests
+    &quot;export_interval_seconds&quot;: 60,
+    &quot;exporters&quot;: [&quot;jaeger&quot;, &quot;datadog&quot;],
+},
+
+# Health checks
+&quot;health_checks&quot;: {
+    &quot;enabled&quot;: True,
+    &quot;check_interval_seconds&quot;: 30,
+    &quot;database_timeout_ms&quot;: 2000,
+    &quot;cache_timeout_ms&quot;: 500,
+},
+
+# Profiling
+&quot;profiling&quot;: {
+    &quot;enabled&quot;: True,  # In non-production only
+    &quot;cpu_sample_rate&quot;: 0.01,
+    &quot;memory_sample_rate&quot;: 0.1,
+},
+</code></pre></div>
+<p>})
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-environment-variables">7.2 Environment Variables<a class="headerlink" href="#72-environment-variables" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="enable-debug-logging">Enable debug logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_LOG_LEVEL=debug</p>
+<h1 id="set-trace-sample-rate">Set trace sample rate<a class="headerlink" href="#set-trace-sample-rate" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_TRACE_SAMPLE_RATE=0.1</p>
+<h1 id="disable-metrics-cost-reduction">Disable metrics (cost reduction)<a class="headerlink" href="#disable-metrics-cost-reduction" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_METRICS_ENABLED=false</p>
+<h1 id="set-slow-query-threshold">Set slow query threshold<a class="headerlink" href="#set-slow-query-threshold" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_SLOW_QUERY_THRESHOLD_MS=5000</p>
+<h1 id="export-metrics-to-datadog">Export metrics to Datadog<a class="headerlink" href="#export-metrics-to-datadog" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_METRICS_EXPORTER=datadog
+DD_AGENT_HOST=localhost
+DD_AGENT_PORT=8125</p>
+<h1 id="export-traces-to-jaeger">Export traces to Jaeger<a class="headerlink" href="#export-traces-to-jaeger" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_TRACE_EXPORTER=jaeger
+JAEGER_AGENT_HOST=localhost
+JAEGER_AGENT_PORT=6831
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-dashboard-examples">8. Dashboard Examples<a class="headerlink" href="#8-dashboard-examples" title="Permanent link">&para;</a></h2>
+<h3 id="81-grafana-dashboard-query-performance">8.1 Grafana Dashboard: Query Performance<a class="headerlink" href="#81-grafana-dashboard-query-performance" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>┌──────────────────────────────────────────────────────────┐
+│ FraiseQL Query Performance Dashboard                      │
+├──────────────────────────────────────────────────────────┤
+│                                                            │
+│  Queries/sec ↑ 8500    Errors ↑ 0.2%    Cache Hit ↑ 87%  │
+│                                                            │
+│  ┌─────────────────────┐  ┌──────────────────────────┐   │
+│  │ Query Latency (p95) │  │ Top Slow Queries         │   │
+│  │ ████░░░░░░  245ms   │  │ 1. ComplexSearch: 5.2s   │   │
+│  └─────────────────────┘  │ 2. JoinedQuery: 3.1s     │   │
+│                            │ 3. NestedFetch: 2.8s     │   │
+│  ┌─────────────────────┐  │ 4. TimeSeriesAgg: 2.1s   │   │
+│  │ Cache Hit Rate      │  │ 5. UserAnalytics: 1.9s   │   │
+│  │ ██████████ 87%      │  └──────────────────────────┘   │
+│  └─────────────────────┘                                  │
+│                                                            │
+│  Error Distribution        Database Connection Pool       │
+│  ├─ Validation: 45%        Active:     43/50              │
+│  ├─ Authorization: 30%      Waiting:    2                 │
+│  ├─ Database: 20%           Idle:       5                 │
+│  └─ Other: 5%               Utilization: 86%              │
+│                                                            │
+└──────────────────────────────────────────────────────────┘
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="82-grafana-dashboard-system-health">8.2 Grafana Dashboard: System Health<a class="headerlink" href="#82-grafana-dashboard-system-health" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>┌──────────────────────────────────────────────────────────┐
+│ FraiseQL System Health Dashboard                          │
+├──────────────────────────────────────────────────────────┤
+│                                                            │
+│  Uptime: 28d 15h  Database Latency: 2.1ms  Memory: 512MB │
+│                                                            │
+│  ┌─────────────────────┐  ┌──────────────────────────┐   │
+│  │ Request Rate        │  │ Active Subscriptions     │   │
+│  │ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██   │  │ ▁▁▁▂▂▂▃▃▃▄▄▄▅▅▅▆▆▆▇▇  │   │
+│  │ 10K req/s           │  │ 450 active               │   │
+│  └─────────────────────┘  └──────────────────────────┘   │
+│                                                            │
+│  Authorization Latency      Cache Backend Status         │
+│  │ owner_only: 2.1ms        Redis: ✅ Connected          │
+│  │ role_based: 3.5ms        Size: 512MB / 1GB            │
+│  │ custom_rule: 8.2ms       Hit Rate: 87%                │
+│                                                            │
+└──────────────────────────────────────────────────────────┘
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="9-troubleshooting-guide">9. Troubleshooting Guide<a class="headerlink" href="#9-troubleshooting-guide" title="Permanent link">&para;</a></h2>
+<h3 id="91-using-traces-to-debug-slow-queries">9.1 Using Traces to Debug Slow Queries<a class="headerlink" href="#91-using-traces-to-debug-slow-queries" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Query taking 5 seconds</p>
+<p><strong>Solution:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<ol>
+<li>
+<p>Check trace span: query.execution (5000ms)
+   ├─ validation: 2ms ✓ Fast
+   ├─ authorization: 3ms ✓ Fast
+   ├─ database.query: 4990ms ✗ SLOW
+   └─ response.transform: 5ms ✓ Fast</p>
+</li>
+<li>
+<p>Database query is the culprit. Check database span:</p>
+</li>
+<li>Database: PostgreSQL</li>
+<li>Statement: SELECT ... FROM v_user WHERE ...</li>
+<li>Rows scanned: 500,000</li>
+<li>Rows returned: 100</li>
+<li>
+<p>Indexes used: None</p>
+</li>
+<li>
+<p>Recommendation: Add index on filter column
+   CREATE INDEX idx_user_status ON tb_user(status);</p>
+</li>
+<li>
+<p>After fix: Trace shows 35ms total (100x faster!)
+```text</p>
+</li>
+</ol>
+<!-- Code example in TEXT -->
+
+<h3 id="92-using-logs-to-debug-authorization">9.2 Using Logs to Debug Authorization<a class="headerlink" href="#92-using-logs-to-debug-authorization" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: Some users can't access field</p>
+<p><strong>Solution:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<ol>
+<li>
+<p>Find error log:
+   "Authorization check failed"
+   "rule": "owner_or_admin"
+   "user_id": "user-456"
+   "result": "denied"</p>
+</li>
+<li>
+<p>Check if user is owner or admin:
+   SELECT user_id, roles FROM tb_user WHERE id = 'user-456'
+   → roles = ['user'] (not admin)</p>
+</li>
+<li>
+<p>Check if user is resource owner:
+   SELECT author_id FROM tb_post WHERE id = 'post-789'
+   → author_id = 'user-123' (not user-456)</p>
+</li>
+<li>
+<p>Conclusion: User denied correctly
+   Recommendation: User must be owner or admin
+```text</p>
+</li>
+</ol>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="10-best-practices">10. Best Practices<a class="headerlink" href="#10-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="101-observability-configuration">10.1 Observability Configuration<a class="headerlink" href="#101-observability-configuration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ Enable all metrics in production</li>
+<li>✅ Use sampling for traces (1-10% by default)</li>
+<li>✅ Sample debug logs (1% by default)</li>
+<li>✅ Set appropriate alert thresholds</li>
+<li>✅ Monitor cache hit rates</li>
+<li>✅ Track query latency p95/p99</li>
+<li>✅ Track mutation deadlock rates</li>
+<li>✅ Monitor subscription buffer utilization</li>
+</ul>
+<h3 id="102-using-traces-effectively">10.2 Using Traces Effectively<a class="headerlink" href="#102-using-traces-effectively" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ Use traces to identify bottlenecks (query vs auth vs database)</li>
+<li>✅ Compare traces of slow vs fast queries</li>
+<li>✅ Look for unexpected database calls in response transform</li>
+<li>✅ Check span duration breakdown</li>
+<li>✅ Use custom span attributes for context</li>
+</ul>
+<h3 id="103-interpreting-alerts">10.3 Interpreting Alerts<a class="headerlink" href="#103-interpreting-alerts" title="Permanent link">&para;</a></h3>
+<ul>
+<li>⚠️ High query latency → Check slow query log, optimize queries</li>
+<li>⚠️ High error rate → Check error logs for patterns</li>
+<li>⚠️ Low cache hit rate → Increase cache size or TTL</li>
+<li>⚠️ Connection pool near capacity → Increase pool size or profile for leaks</li>
+<li>⚠️ High deadlock rate → Add indexes or review transaction logic</li>
+</ul>
+<hr />
+<p><strong>Document Version</strong>: 1.0.0
+<strong>Last Updated</strong>: January 2026
+<strong>Status</strong>: Complete specification for framework v2.x</p>
+<p>FraiseQL's observability model provides complete visibility into system behavior through metrics, logs, and traces. Every operation is observable; no special configuration needed.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

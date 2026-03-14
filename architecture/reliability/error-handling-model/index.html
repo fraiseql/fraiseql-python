@@ -1,0 +1,9446 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/reliability/error-handling-model/">
+      
+      
+        <link rel="prev" href="../consistency-model/">
+      
+      
+        <link rel="next" href="../failure-modes-and-recovery/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Error Handling Model - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#error-handling-model" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Error Handling Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-design-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Design Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-error-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Error Categories
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Error Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-compile-time-errors-schema-definition-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Compile-Time Errors (Schema Definition Phase)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 Compile-Time Errors (Schema Definition Phase)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#211-schema-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.1 Schema Validation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#212-database-binding-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 Database Binding Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#213-capability-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 Capability Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#214-authorization-configuration-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.4 Authorization Configuration Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-runtime-errors-querymutationsubscription-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Runtime Errors (Query/Mutation/Subscription Execution)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Runtime Errors (Query/Mutation/Subscription Execution)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#221-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.1 Validation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#222-authorization-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.2 Authorization Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#223-database-execution-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.3 Database Execution Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#224-execution-logic-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.4 Execution Logic Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#225-federation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.5 Federation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#226-subscriptionevent-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.6 Subscription/Event Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#227-internal-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.7 Internal Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-error-response-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Error Response Format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Error Response Format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-standard-graphql-error-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Standard GraphQL Error Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-error-context-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Error Context Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-sensitive-data-redaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Sensitive Data Redaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-error-classification-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Error Classification Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Error Classification Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-remediable-vs-non-remediable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Remediable vs Non-Remediable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-retryable-vs-non-retryable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Retryable vs Non-Retryable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-user-actionable-vs-hidden" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 User-Actionable vs Hidden
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Error Propagation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Error Propagation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-query-execution-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Query Execution Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-mutation-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Mutation Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-subscription-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Subscription Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-error-handling-for-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Error Handling for Clients
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Error Handling for Clients">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-recommended-client-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Recommended Client Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-error-display-to-end-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Error Display to End-Users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-debugging-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Debugging &amp; Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Debugging &amp; Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-using-trace-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Using Trace IDs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-design-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Design Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-error-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Error Categories
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Error Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-compile-time-errors-schema-definition-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Compile-Time Errors (Schema Definition Phase)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 Compile-Time Errors (Schema Definition Phase)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#211-schema-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.1 Schema Validation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#212-database-binding-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 Database Binding Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#213-capability-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 Capability Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#214-authorization-configuration-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.4 Authorization Configuration Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-runtime-errors-querymutationsubscription-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Runtime Errors (Query/Mutation/Subscription Execution)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 Runtime Errors (Query/Mutation/Subscription Execution)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#221-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.1 Validation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#222-authorization-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.2 Authorization Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#223-database-execution-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.3 Database Execution Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#224-execution-logic-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.4 Execution Logic Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#225-federation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.5 Federation Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#226-subscriptionevent-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.6 Subscription/Event Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#227-internal-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2.7 Internal Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-error-response-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Error Response Format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Error Response Format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-standard-graphql-error-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Standard GraphQL Error Response
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-error-context-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Error Context Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-sensitive-data-redaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Sensitive Data Redaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-error-classification-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Error Classification Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Error Classification Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-remediable-vs-non-remediable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Remediable vs Non-Remediable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-retryable-vs-non-retryable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Retryable vs Non-Retryable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-user-actionable-vs-hidden" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 User-Actionable vs Hidden
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Error Propagation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Error Propagation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-query-execution-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Query Execution Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-mutation-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Mutation Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-subscription-error-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Subscription Error Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-error-handling-for-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Error Handling for Clients
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Error Handling for Clients">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-recommended-client-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Recommended Client Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-error-display-to-end-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Error Display to End-Users
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-debugging-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Debugging &amp; Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Debugging &amp; Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-using-trace-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Using Trace IDs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: Error Handling Model
+description: FraiseQL's error handling model is <strong>deterministic, predictable, and classifiable</strong>. Unlike traditional GraphQL servers where error handling varies by resolver
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="error-handling-model">Error Handling Model<a class="headerlink" href="#error-handling-model" title="Permanent link">&para;</a></h1>
+<p><strong>Version:</strong> 1.0
+<strong>Status:</strong> Complete
+<strong>Date:</strong> January 11, 2026
+<strong>Audience:</strong> All developers, integrators, operations engineers, architecture reviewers</p>
+<hr />
+<h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
+<p>FraiseQL's error handling model is <strong>deterministic, predictable, and classifiable</strong>. Unlike traditional GraphQL servers where error handling varies by resolver implementation, FraiseQL has a unified, specification-driven error model.</p>
+<p><strong>Core principle:</strong> All errors are either <strong>preventable</strong> (caught at compile time) or <strong>recoverable</strong> (clear classification at runtime).</p>
+<h3 id="11-design-philosophy">1.1 Design Philosophy<a class="headerlink" href="#11-design-philosophy" title="Permanent link">&para;</a></h3>
+<p><strong>No surprises.</strong> Clients should never encounter unexpected error types or inconsistent error formats.</p>
+<p><strong>Classifiable.</strong> Every error falls into a well-defined category with clear semantics.</p>
+<p><strong>Remediable.</strong> Every error either tells you exactly how to fix it (compile-time) or how to recover from it (runtime).</p>
+<p><strong>Auditable.</strong> Error context includes enough information for debugging without leaking sensitive data.</p>
+<hr />
+<h2 id="2-error-categories">2. Error Categories<a class="headerlink" href="#2-error-categories" title="Permanent link">&para;</a></h2>
+<h3 id="21-compile-time-errors-schema-definition-phase">2.1 Compile-Time Errors (Schema Definition Phase)<a class="headerlink" href="#21-compile-time-errors-schema-definition-phase" title="Permanent link">&para;</a></h3>
+<p><strong>When:</strong> During schema authoring and compilation
+<strong>Who sees them:</strong> Schema authors, build systems
+<strong>Recovery:</strong> Fix schema, recompile
+<strong>Visibility:</strong> Never reaches clients</p>
+<h4 id="211-schema-validation-errors">2.1.1 Schema Validation Errors<a class="headerlink" href="#211-schema-validation-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Category: SCHEMA_INVALID
+Code: E_SCHEMA_<subtype>_<number></p>
+<p>Examples:
+  E_SCHEMA_TYPE_NOT_DEFINED_001
+  E_SCHEMA_FIELD_NOT_FOUND_002
+  E_SCHEMA_BINDING_MISSING_003
+  E_SCHEMA_OPERATOR_UNSUPPORTED_004
+  E_SCHEMA_AUTHORIZATION_INVALID_005
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Causes:</strong></p>
+<ul>
+<li>Type referenced but not declared</li>
+<li>Field referenced but not in database view</li>
+<li>Query/mutation without binding</li>
+<li>WHERE operator not supported by target database</li>
+<li>Authorization rule references non-existent auth context field</li>
+</ul>
+<p><strong>Example:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Schema compilation failed
+  Type: Type closure violation
+  Code: E_SCHEMA_TYPE_NOT_DEFINED_001
+  Query 'users' returns 'list[User]'
+  Type 'User' is not defined
+  Suggestion: Add @FraiseQL.type class User or check spelling
+  File: schema.py, line 42
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="212-database-binding-errors">2.1.2 Database Binding Errors<a class="headerlink" href="#212-database-binding-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Category: BINDING_INVALID
+Code: E_BINDING_<subtype>_<number></p>
+<p>Examples:
+  E_BINDING_VIEW_NOT_FOUND_010
+  E_BINDING_COLUMN_NOT_FOUND_011
+  E_BINDING_TYPE_MISMATCH_012
+  E_BINDING_PROCEDURE_SIGNATURE_MISMATCH_013
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Causes:</strong></p>
+<ul>
+<li>Binding references view that doesn't exist in database</li>
+<li>Field maps to column that doesn't exist</li>
+<li>Field type doesn't match database column type</li>
+<li>Mutation input doesn't match stored procedure parameters</li>
+</ul>
+<p><strong>Example:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Database binding failed
+  Type: View not found
+  Code: E_BINDING_VIEW_NOT_FOUND_010
+  Query 'users' bound to view 'v_user_missing'
+  Database: postgresql (localhost:5432/mydb)
+  Suggestion: Create view v_user or fix binding to existing view
+  Available views: v_user, v_user_archived, v_user_deleted
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="213-capability-errors">2.1.3 Capability Errors<a class="headerlink" href="#213-capability-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Category: DATABASE_CAPABILITY_UNSUPPORTED
+Code: E_CAPABILITY_<database>_<operator></p>
+<p>Examples:
+  E_CAPABILITY_SQLITE_REGEX_001
+  E_CAPABILITY_MYSQL_COSINE_DISTANCE_002
+  E_CAPABILITY_SQLSERVER_JSONB_CONTAINS_003
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Causes:</strong></p>
+<ul>
+<li>Schema uses operator not supported by target database</li>
+<li>Database lacks required extension (pgvector, PostGIS)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Error: Operator not supported by database
+  Type: Database capability mismatch
+  Code: E_CAPABILITY_SQLITE_REGEX_001
+  Operator: _regex (regular expression matching)
+  Target database: sqlite
+  Field: User.email
+  Suggestion: Use _like operator instead, or target postgresql
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="214-authorization-configuration-errors">2.1.4 Authorization Configuration Errors<a class="headerlink" href="#214-authorization-configuration-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Category: AUTHORIZATION_INVALID
+Code: E_AUTH_<subtype>_<number></p>
+<p>Examples:
+  E_AUTH_CONTEXT_FIELD_NOT_FOUND_020
+  E_AUTH_ROLE_UNDEFINED_021
+  E_AUTH_RULE_CIRCULAR_DEPENDENCY_022
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Causes:</strong></p>
+<ul>
+<li>Authorization rule references non-existent auth context field</li>
+<li>Authorization rule references undefined role</li>
+<li>Authorization rules have circular dependencies</li>
+</ul>
+<hr />
+<h3 id="22-runtime-errors-querymutationsubscription-execution">2.2 Runtime Errors (Query/Mutation/Subscription Execution)<a class="headerlink" href="#22-runtime-errors-querymutationsubscription-execution" title="Permanent link">&para;</a></h3>
+<p><strong>When:</strong> During runtime query execution
+<strong>Who sees them:</strong> Client applications
+<strong>Recovery:</strong> Application-specific (retry, notify user, log, etc.)
+<strong>Visibility:</strong> Always returned in GraphQL error list</p>
+<h4 id="221-validation-errors">2.2.1 Validation Errors<a class="headerlink" href="#221-validation-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: VALIDATION_FAILED
+Code: E_VALIDATION_<subtype></p>
+<p>Structure:
+{
+  "errors": [{
+    "message": "Human-readable error message",
+    "extensions": {
+      "code": "E_VALIDATION_QUERY_MALFORMED_100",
+      "category": "VALIDATION_FAILED",
+      "remediable": true,
+      "retryable": false,
+      "user_actionable": true,
+      "timestamp": "2026-01-11T15:35:00Z",
+      "trace_id": "req_550e8400"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QUERY_MALFORMED</td>
+<td>E_VALIDATION_QUERY_MALFORMED_100</td>
+<td>Syntax error in GraphQL query</td>
+<td>No</td>
+<td><code>{ users { invalid_field } }</code></td>
+</tr>
+<tr>
+<td>VARIABLE_TYPE_MISMATCH</td>
+<td>E_VALIDATION_VARIABLE_TYPE_MISMATCH_101</td>
+<td>Variable has wrong type</td>
+<td>No</td>
+<td>Query expects <code>$id: ID!</code>, got string</td>
+</tr>
+<tr>
+<td>ARGUMENT_MISSING</td>
+<td>E_VALIDATION_ARGUMENT_MISSING_102</td>
+<td>Required argument omitted</td>
+<td>No</td>
+<td><code>users(first: 10)</code> missing <code>after</code></td>
+</tr>
+<tr>
+<td>ARGUMENT_TYPE_MISMATCH</td>
+<td>E_VALIDATION_ARGUMENT_TYPE_MISMATCH_103</td>
+<td>Argument has wrong type</td>
+<td>No</td>
+<td>Query expects <code>first: Int!</code>, got string</td>
+</tr>
+<tr>
+<td>ARGUMENT_INVALID_VALUE</td>
+<td>E_VALIDATION_ARGUMENT_INVALID_VALUE_104</td>
+<td>Argument value out of range or invalid</td>
+<td>No</td>
+<td><code>first: -1</code> (must be &gt;= 0)</td>
+</tr>
+<tr>
+<td>DEPRECATED_FIELD</td>
+<td>E_VALIDATION_DEPRECATED_FIELD_105</td>
+<td>Query uses deprecated field</td>
+<td>No</td>
+<td>Field marked <code>@deprecated(reason: "...")</code></td>
+</tr>
+<tr>
+<td>DIRECTIVE_INVALID</td>
+<td>E_VALIDATION_DIRECTIVE_INVALID_106</td>
+<td>Unknown or invalid directive</td>
+<td>No</td>
+<td><code>@unknown_directive</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Field 'invalid_field' not found on type 'User'",
+    "locations": [{"line": 2, "column": 5}],
+    "extensions": {
+      "code": "E_VALIDATION_QUERY_MALFORMED_100",
+      "category": "VALIDATION_FAILED",
+      "remediable": true,
+      "retryable": false,
+      "user_actionable": true,
+      "available_fields": ["id", "name", "email", "posts"],
+      "suggestion": "Did you mean 'name'?"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="222-authorization-errors">2.2.2 Authorization Errors<a class="headerlink" href="#222-authorization-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: AUTHORIZATION_DENIED
+Code: E_AUTH_<subtype></p>
+<p>Structure: Same as validation errors above
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NOT_AUTHENTICATED</td>
+<td>E_AUTH_NOT_AUTHENTICATED_200</td>
+<td>No auth token provided or invalid</td>
+<td>No</td>
+<td>Request lacks Authorization header</td>
+</tr>
+<tr>
+<td>INVALID_TOKEN</td>
+<td>E_AUTH_INVALID_TOKEN_201</td>
+<td>Auth token malformed or expired</td>
+<td>No</td>
+<td>Token signature invalid</td>
+</tr>
+<tr>
+<td>INSUFFICIENT_PERMISSIONS</td>
+<td>E_AUTH_INSUFFICIENT_PERMISSIONS_202</td>
+<td>User lacks required role</td>
+<td>No</td>
+<td>Role is "user", requires "admin"</td>
+</tr>
+<tr>
+<td>INSUFFICIENT_CLAIMS</td>
+<td>E_AUTH_INSUFFICIENT_CLAIMS_203</td>
+<td>Auth token lacks required claims</td>
+<td>No</td>
+<td>Token lacks "org_id" claim</td>
+</tr>
+<tr>
+<td>ROW_LEVEL_SECURITY_DENIED</td>
+<td>E_AUTH_ROW_LEVEL_SECURITY_DENIED_204</td>
+<td>RLS policy prevents access</td>
+<td>No</td>
+<td>User cannot access this organization's data</td>
+</tr>
+<tr>
+<td>FIELD_MASKING_APPLIED</td>
+<td>E_AUTH_FIELD_MASKED_205</td>
+<td>Field returned as null due to auth rule</td>
+<td>No</td>
+<td>Field redacted for security</td>
+</tr>
+<tr>
+<td>TENANT_ISOLATION_VIOLATION</td>
+<td>E_AUTH_TENANT_VIOLATION_206</td>
+<td>Query crosses tenant boundary</td>
+<td>No</td>
+<td>Cannot query another tenant's data</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Insufficient permissions to query 'adminUsers'",
+    "extensions": {
+      "code": "E_AUTH_INSUFFICIENT_PERMISSIONS_202",
+      "category": "AUTHORIZATION_DENIED",
+      "remediable": false,
+      "retryable": false,
+      "user_actionable": false,
+      "required_role": "admin",
+      "user_role": "user"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="223-database-execution-errors">2.2.3 Database Execution Errors<a class="headerlink" href="#223-database-execution-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: DATABASE_ERROR
+Code: E_DB_<database>_<error_class></p>
+<p>Structure: Same as others
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CONNECTION_FAILED</td>
+<td>E_DB_POSTGRES_CONNECTION_FAILED_300</td>
+<td>Cannot connect to database</td>
+<td><strong>Yes</strong></td>
+<td>Connection timeout, network down</td>
+</tr>
+<tr>
+<td>CONNECTION_POOL_EXHAUSTED</td>
+<td>E_DB_MYSQL_POOL_EXHAUSTED_301</td>
+<td>No available connections</td>
+<td><strong>Yes</strong></td>
+<td>All connections in use, retry later</td>
+</tr>
+<tr>
+<td>QUERY_TIMEOUT</td>
+<td>E_DB_SQLSERVER_QUERY_TIMEOUT_302</td>
+<td>Query execution exceeded timeout</td>
+<td><strong>Yes</strong></td>
+<td>Long-running query, retry or optimize</td>
+</tr>
+<tr>
+<td>DEADLOCK</td>
+<td>E_DB_POSTGRES_DEADLOCK_303</td>
+<td>Transaction deadlock detected</td>
+<td><strong>Yes</strong></td>
+<td>Concurrent transaction conflict</td>
+</tr>
+<tr>
+<td>CONSTRAINT_VIOLATION</td>
+<td>E_DB_MYSQL_CONSTRAINT_VIOLATION_304</td>
+<td>Unique/foreign key constraint violated</td>
+<td>No</td>
+<td>Duplicate key, referential integrity</td>
+</tr>
+<tr>
+<td>SYNTAX_ERROR</td>
+<td>E_DB_SQLITE_SYNTAX_ERROR_305</td>
+<td>Generated SQL is malformed</td>
+<td>No</td>
+<td>Compiler bug or unsupported operation</td>
+</tr>
+<tr>
+<td>PERMISSION_DENIED</td>
+<td>E_DB_POSTGRES_PERMISSION_DENIED_306</td>
+<td>Database user lacks permission</td>
+<td>No</td>
+<td>Misconfigured database credentials</td>
+</tr>
+<tr>
+<td>OUT_OF_MEMORY</td>
+<td>E_DB_SQLSERVER_OUT_OF_MEMORY_307</td>
+<td>Database ran out of memory</td>
+<td><strong>Yes</strong></td>
+<td>Query too large, reduce batch size</td>
+</tr>
+<tr>
+<td>DISK_FULL</td>
+<td>E_DB_MYSQL_DISK_FULL_308</td>
+<td>Database disk full</td>
+<td><strong>Yes</strong></td>
+<td>Free up disk space</td>
+</tr>
+<tr>
+<td>UNKNOWN</td>
+<td>E_DB_UNKNOWN_ERROR_309</td>
+<td>Unclassified database error</td>
+<td><strong>Yes</strong></td>
+<td>See error details</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example (Retryable):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Database connection timeout after 5s",
+    "extensions": {
+      "code": "E_DB_POSTGRES_CONNECTION_FAILED_300",
+      "category": "DATABASE_ERROR",
+      "remediable": false,
+      "retryable": true,
+      "retry_after_ms": 1000,
+      "database": "postgresql",
+      "host": "db.example.com",
+      "port": 5432,
+      "attempt": 1,
+      "max_attempts": 3
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Example (Non-Retryable):</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Unique constraint violation on users.email",
+    "extensions": {
+      "code": "E_DB_MYSQL_CONSTRAINT_VIOLATION_304",
+      "category": "DATABASE_ERROR",
+      "remediable": true,
+      "retryable": false,
+      "user_actionable": true,
+      "constraint": "unique_email",
+      "table": "users",
+      "field": "email",
+      "value": "user@example.com",
+      "suggestion": "Email already exists. Use a different email or recover account."
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="224-execution-logic-errors">2.2.4 Execution Logic Errors<a class="headerlink" href="#224-execution-logic-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: EXECUTION_ERROR
+Code: E_EXEC_<subtype></p>
+<p>Structure: Same as others
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FIELD_NOT_FOUND</td>
+<td>E_EXEC_FIELD_NOT_FOUND_400</td>
+<td>Field doesn't exist in result</td>
+<td>No</td>
+<td>Compiler bug</td>
+</tr>
+<tr>
+<td>PROJECTION_FAILED</td>
+<td>E_EXEC_PROJECTION_FAILED_401</td>
+<td>Cannot project field from data</td>
+<td>No</td>
+<td>Type mismatch</td>
+</tr>
+<tr>
+<td>AGGREGATION_FAILED</td>
+<td>E_EXEC_AGGREGATION_FAILED_402</td>
+<td>Cannot aggregate result</td>
+<td>No</td>
+<td>Type mismatch in aggregation</td>
+</tr>
+<tr>
+<td>PAGINATION_INVALID</td>
+<td>E_EXEC_PAGINATION_INVALID_403</td>
+<td>Invalid pagination parameters</td>
+<td>No</td>
+<td>Invalid cursor or offset</td>
+</tr>
+<tr>
+<td>CURSOR_INVALID</td>
+<td>E_EXEC_CURSOR_INVALID_404</td>
+<td>Pagination cursor invalid</td>
+<td>No</td>
+<td>Cursor expired or tampered</td>
+</tr>
+<tr>
+<td>LIMIT_EXCEEDED</td>
+<td>E_EXEC_LIMIT_EXCEEDED_405</td>
+<td>Query result exceeds size limit</td>
+<td>No</td>
+<td>Reduce page size or filter</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Query result would exceed maximum size of 100MB",
+    "extensions": {
+      "code": "E_EXEC_LIMIT_EXCEEDED_405",
+      "category": "EXECUTION_ERROR",
+      "remediable": true,
+      "retryable": false,
+      "user_actionable": true,
+      "limit_bytes": 104857600,
+      "estimated_size_bytes": 250000000,
+      "suggestion": "Use pagination with smaller batch size or add more filters"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="225-federation-errors">2.2.5 Federation Errors<a class="headerlink" href="#225-federation-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: FEDERATION_ERROR
+Code: E_FED_<subtype></p>
+<p>Structure: Same as others
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ENTITY_RESOLUTION_FAILED</td>
+<td>E_FED_ENTITY_RESOLUTION_FAILED_500</td>
+<td>Cannot resolve federated entity</td>
+<td><strong>Yes</strong></td>
+<td>Subgraph unavailable</td>
+</tr>
+<tr>
+<td>ENTITY_NOT_FOUND</td>
+<td>E_FED_ENTITY_NOT_FOUND_501</td>
+<td>Federated entity doesn't exist</td>
+<td>No</td>
+<td>Entity ID invalid or deleted</td>
+</tr>
+<tr>
+<td>SUBGRAPH_UNAVAILABLE</td>
+<td>E_FED_SUBGRAPH_UNAVAILABLE_502</td>
+<td>Federation subgraph unreachable</td>
+<td><strong>Yes</strong></td>
+<td>Network/DNS issue</td>
+</tr>
+<tr>
+<td>SUBGRAPH_TIMEOUT</td>
+<td>E_FED_SUBGRAPH_TIMEOUT_503</td>
+<td>Subgraph response too slow</td>
+<td><strong>Yes</strong></td>
+<td>Slow subgraph, retry</td>
+</tr>
+<tr>
+<td>ENTITY_TYPE_MISMATCH</td>
+<td>E_FED_TYPE_MISMATCH_504</td>
+<td>Entity has unexpected type</td>
+<td>No</td>
+<td>Schema mismatch</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Federation subgraph 'orders' unreachable",
+    "extensions": {
+      "code": "E_FED_SUBGRAPH_UNAVAILABLE_502",
+      "category": "FEDERATION_ERROR",
+      "remediable": false,
+      "retryable": true,
+      "retry_after_ms": 2000,
+      "subgraph": "orders",
+      "subgraph_url": "https://orders.internal/graphql",
+      "attempt": 1,
+      "max_attempts": 3
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="226-subscriptionevent-errors">2.2.6 Subscription/Event Errors<a class="headerlink" href="#226-subscriptionevent-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: SUBSCRIPTION_ERROR
+Code: E_SUB_<subtype></p>
+<p>Structure: Same as others (sent to client over WebSocket)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUBSCRIPTION_NOT_FOUND</td>
+<td>E_SUB_NOT_FOUND_600</td>
+<td>Subscription doesn't exist</td>
+<td>No</td>
+<td>Typo in subscription name</td>
+</tr>
+<tr>
+<td>SUBSCRIPTION_FILTERS_INVALID</td>
+<td>E_SUB_FILTERS_INVALID_601</td>
+<td>WHERE filters are invalid</td>
+<td>No</td>
+<td>Invalid filter expression</td>
+</tr>
+<tr>
+<td>SUBSCRIPTION_AUTHORIZATION_DENIED</td>
+<td>E_SUB_AUTH_DENIED_602</td>
+<td>Insufficient permissions</td>
+<td>No</td>
+<td>Role doesn't allow subscription</td>
+</tr>
+<tr>
+<td>EVENT_BUFFER_OVERFLOW</td>
+<td>E_SUB_BUFFER_OVERFLOW_603</td>
+<td>Event buffer full</td>
+<td><strong>Yes</strong></td>
+<td>Too many pending events</td>
+</tr>
+<tr>
+<td>CONNECTION_CLOSED</td>
+<td>E_SUB_CONNECTION_CLOSED_604</td>
+<td>WebSocket connection lost</td>
+<td><strong>Yes</strong></td>
+<td>Network issue, reconnect</td>
+</tr>
+<tr>
+<td>EVENT_DELIVERY_FAILED</td>
+<td>E_SUB_DELIVERY_FAILED_605</td>
+<td>Cannot deliver event</td>
+<td><strong>Yes</strong></td>
+<td>Transport issue</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "type": "error",
+  "id": "1",
+  "payload": {
+    "errors": [{
+      "message": "WebSocket connection closed unexpectedly",
+      "extensions": {
+        "code": "E_SUB_CONNECTION_CLOSED_604",
+        "category": "SUBSCRIPTION_ERROR",
+        "remediable": false,
+        "retryable": true,
+        "close_code": 1006,
+        "reason": "connection lost",
+        "reconnect_after_ms": 1000
+      }
+    }]
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="227-internal-errors">2.2.7 Internal Errors<a class="headerlink" href="#227-internal-errors" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>GraphQL error
+Category: INTERNAL_ERROR
+Code: E_INTERNAL_<subtype></p>
+<p>Structure: Same as others
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Error Types:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Subtype</th>
+<th>Code</th>
+<th>Cause</th>
+<th>Retryable</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>COMPILED_SCHEMA_INVALID</td>
+<td>E_INTERNAL_SCHEMA_INVALID_700</td>
+<td>Compiled schema corrupted or invalid</td>
+<td>No</td>
+<td>Deployment/upgrade bug</td>
+</tr>
+<tr>
+<td>RUNTIME_PANIC</td>
+<td>E_INTERNAL_PANIC_701</td>
+<td>Runtime encountered unexpected condition</td>
+<td>No</td>
+<td>Compiler/runtime bug</td>
+</tr>
+<tr>
+<td>CACHE_CORRUPTED</td>
+<td>E_INTERNAL_CACHE_CORRUPTED_702</td>
+<td>Cache backend returned invalid data</td>
+<td><strong>Yes</strong></td>
+<td>Cache corruption, retry</td>
+</tr>
+<tr>
+<td>UNKNOWN_ERROR</td>
+<td>E_INTERNAL_UNKNOWN_ERROR_703</td>
+<td>Unclassified internal error</td>
+<td><strong>Yes</strong></td>
+<td>Unknown issue, retry</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "Internal server error: unexpected panic",
+    "extensions": {
+      "code": "E_INTERNAL_PANIC_701",
+      "category": "INTERNAL_ERROR",
+      "remediable": false,
+      "retryable": false,
+      "timestamp": "2026-01-11T15:35:00Z",
+      "trace_id": "req_550e8400",
+      "stack_trace": "Available only in debug mode",
+      "support_link": "https://github.com/FraiseQL/FraiseQL/issues"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="3-error-response-format">3. Error Response Format<a class="headerlink" href="#3-error-response-format" title="Permanent link">&para;</a></h2>
+<h3 id="31-standard-graphql-error-response">3.1 Standard GraphQL Error Response<a class="headerlink" href="#31-standard-graphql-error-response" title="Permanent link">&para;</a></h3>
+<p>All runtime errors follow the GraphQL spec with FraiseQL extensions:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [
+    {
+      "message": "Human-readable error message",
+      "locations": [
+        {"line": 1, "column": 1}
+      ],
+      "path": ["users", 0, "name"],
+      "extensions": {
+        "code": "E_VALIDATION_QUERY_MALFORMED_100",
+        "category": "VALIDATION_FAILED",
+        "remediable": true,
+        "retryable": false,
+        "user_actionable": true,
+        "timestamp": "2026-01-11T15:35:00Z",
+        "trace_id": "req_550e8400",</p>
+<div class="highlight"><pre><span></span><code>    // Context-specific fields (optional)
+    &quot;suggestion&quot;: &quot;Did you mean field &#39;email&#39;?&quot;,
+    &quot;available_options&quot;: [&quot;id&quot;, &quot;name&quot;, &quot;email&quot;],
+    &quot;retry_after_ms&quot;: null,
+    &quot;attempt&quot;: 1,
+    &quot;max_attempts&quot;: 3
+  }
+}
+</code></pre></div>
+<p>],
+  "data": null
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="32-error-context-fields">3.2 Error Context Fields<a class="headerlink" href="#32-error-context-fields" title="Permanent link">&para;</a></h3>
+<p><strong>Always included:</strong></p>
+<ul>
+<li><code>code</code> — Unique error identifier (E_XXX_NNN)</li>
+<li><code>category</code> — Error classification (VALIDATION_FAILED, DATABASE_ERROR, etc.)</li>
+<li><code>message</code> — Human-readable message</li>
+<li><code>timestamp</code> — ISO 8601 timestamp</li>
+<li><code>trace_id</code> — Request trace ID for logging</li>
+</ul>
+<p><strong>Conditional fields:</strong></p>
+<ul>
+<li><code>remediable</code> — Can client fix this? (schema/query fixes)</li>
+<li><code>retryable</code> — Should client retry? (transient errors)</li>
+<li><code>user_actionable</code> — Should client show to user? (not security details)</li>
+<li><code>suggestion</code> — How to fix it</li>
+<li><code>retry_after_ms</code> — Milliseconds to wait before retry</li>
+</ul>
+<p><strong>Context-specific:</strong></p>
+<ul>
+<li><code>database</code> — Which database (E_DB_* errors)</li>
+<li><code>constraint</code> — Which constraint violated (database errors)</li>
+<li><code>field</code> — Which field caused the error</li>
+<li><code>available_options</code> — Valid choices for this field</li>
+</ul>
+<h3 id="33-sensitive-data-redaction">3.3 Sensitive Data Redaction<a class="headerlink" href="#33-sensitive-data-redaction" title="Permanent link">&para;</a></h3>
+<p><strong>Never expose:</strong></p>
+<ul>
+<li>SQL queries (even if query is client-safe)</li>
+<li>Internal file paths</li>
+<li>Stack traces (unless debug mode)</li>
+<li>Database credentials</li>
+<li>Auth tokens or claims</li>
+<li>Unencrypted user data</li>
+</ul>
+<p><strong>Safe to expose:</strong></p>
+<ul>
+<li>Field names (part of schema)</li>
+<li>Constraint names (helps debugging)</li>
+<li>Error codes (for client classification)</li>
+<li>Database type (postgresql, mysql, etc.)</li>
+<li>Operation type (query, mutation, subscription)</li>
+</ul>
+<hr />
+<h2 id="4-error-classification-rules">4. Error Classification Rules<a class="headerlink" href="#4-error-classification-rules" title="Permanent link">&para;</a></h2>
+<h3 id="41-remediable-vs-non-remediable">4.1 Remediable vs Non-Remediable<a class="headerlink" href="#41-remediable-vs-non-remediable" title="Permanent link">&para;</a></h3>
+<p><strong>Remediable:</strong> Error indicates client code/schema is wrong. Client can fix it.</p>
+<p>Examples:</p>
+<ul>
+<li>Invalid query syntax</li>
+<li>Missing required field</li>
+<li>Constraint violation</li>
+<li>Deprecated field usage</li>
+</ul>
+<p><strong>Non-Remediable:</strong> Error indicates system state issue. Client cannot fix it.</p>
+<p>Examples:</p>
+<ul>
+<li>Database connection failure</li>
+<li>Authorization denial</li>
+<li>Authentication failure</li>
+<li>Internal server error</li>
+</ul>
+<h3 id="42-retryable-vs-non-retryable">4.2 Retryable vs Non-Retryable<a class="headerlink" href="#42-retryable-vs-non-retryable" title="Permanent link">&para;</a></h3>
+<p><strong>Retryable:</strong> Error is transient. Retrying may succeed.</p>
+<p>Examples:</p>
+<ul>
+<li>Database connection timeout</li>
+<li>Connection pool exhausted</li>
+<li>Query timeout (retry with better query)</li>
+<li>Subgraph unavailable</li>
+<li>Event buffer overflow</li>
+</ul>
+<p><strong>Non-Retryable:</strong> Error is deterministic. Retrying will fail identically.</p>
+<p>Examples:</p>
+<ul>
+<li>Schema validation error</li>
+<li>Authorization denial</li>
+<li>Constraint violation</li>
+<li>Invalid query syntax</li>
+</ul>
+<h3 id="43-user-actionable-vs-hidden">4.3 User-Actionable vs Hidden<a class="headerlink" href="#43-user-actionable-vs-hidden" title="Permanent link">&para;</a></h3>
+<p><strong>User-Actionable:</strong> Error message safe to show end-users.</p>
+<p>Examples:</p>
+<ul>
+<li>"Email already exists"</li>
+<li>"You don't have permission to access this"</li>
+<li>"Invalid input format"</li>
+</ul>
+<p><strong>Hidden:</strong> Error message for developers only, not end-users.</p>
+<p>Examples:</p>
+<ul>
+<li>"Database connection lost" (not user's problem)</li>
+<li>"Query timeout after 30s" (implementation detail)</li>
+<li>"Insufficient permissions" (doesn't explain why)</li>
+</ul>
+<hr />
+<h2 id="5-error-propagation">5. Error Propagation<a class="headerlink" href="#5-error-propagation" title="Permanent link">&para;</a></h2>
+<h3 id="51-query-execution-error-propagation">5.1 Query Execution Error Propagation<a class="headerlink" href="#51-query-execution-error-propagation" title="Permanent link">&para;</a></h3>
+<p>When an error occurs during query execution, FraiseQL follows this strategy:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Query: { user { id name } posts { id title } }</p>
+<p>Execution:
+  1. Fetch user (succeeds)
+  2. Fetch posts (fails with DATABASE_ERROR)</p>
+<p>Result:
+{
+  "errors": [{
+    "message": "Database connection lost",
+    "path": ["user", "posts"],
+    "extensions": { ... }
+  }],
+  "data": {
+    "user": {
+      "id": "123",
+      "name": "Alice",
+      "posts": null  // Field set to null due to error
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Rule:</strong> Field with error is set to <code>null</code> in partial response. Parent queries continue executing. This allows clients to use partial data.</p>
+<h3 id="52-mutation-error-propagation">5.2 Mutation Error Propagation<a class="headerlink" href="#52-mutation-error-propagation" title="Permanent link">&para;</a></h3>
+<p>Mutations are <strong>atomic</strong>: if ANY part fails, the entire mutation fails with no partial data.</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Mutation: mutation {
+  createUser(name: "Bob", email: "bob@example.com") { id }
+  createPost(title: "Hello", userId: "123") { id }
+}</p>
+<p>Execution:
+  1. Create user (succeeds, userId = 999)
+  2. Create post (fails with CONSTRAINT_VIOLATION - userId invalid)</p>
+<p>Result:
+{
+  "errors": [{
+    "message": "Foreign key constraint violated: userId not found",
+    "path": ["createPost"],
+    "extensions": { ... }
+  }],
+  "data": null  // ENTIRE mutation fails, no partial data
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Rule:</strong> Mutations provide all-or-nothing semantics. If any part fails, all changes roll back (database transaction semantics).</p>
+<h3 id="53-subscription-error-propagation">5.3 Subscription Error Propagation<a class="headerlink" href="#53-subscription-error-propagation" title="Permanent link">&para;</a></h3>
+<p>Subscription errors are <strong>per-event</strong>. One event's error doesn't stop subscription.</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Subscription: subscription {
+  orderCreated { id amount }
+}</p>
+<p>Event 1: Success
+{
+  "type": "next",
+  "id": "1",
+  "payload": {
+    "data": {
+      "orderCreated": {"id": "ord_1", "amount": 100}
+    }
+  }
+}</p>
+<p>Event 2: Authorization error
+{
+  "type": "error",
+  "id": "2",
+  "payload": {
+    "errors": [{
+      "message": "Insufficient permissions for this order",
+      "extensions": { "code": "E_AUTH_ROW_LEVEL_SECURITY_DENIED_204", ... }
+    }]
+  }
+}</p>
+<p>Event 3: Success (continues after error)
+{
+  "type": "next",
+  "id": "3",
+  "payload": {
+    "data": {
+      "orderCreated": {"id": "ord_3", "amount": 250}
+    }
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Rule:</strong> Subscription continues after error. One error event doesn't close subscription (unless close_code indicates connection close).</p>
+<hr />
+<h2 id="6-error-handling-for-clients">6. Error Handling for Clients<a class="headerlink" href="#6-error-handling-for-clients" title="Permanent link">&para;</a></h2>
+<h3 id="61-recommended-client-error-handling">6.1 Recommended Client Error Handling<a class="headerlink" href="#61-recommended-client-error-handling" title="Permanent link">&para;</a></h3>
+<p><strong>Step 1: Check for errors in response</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>response = await client.execute(query)
+if response.get("errors"):
+    # Handle errors
+    pass
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Step 2: Classify errors by category</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>for error in response["errors"]:
+    code = error["extensions"]["code"]
+    category = error["extensions"]["category"]</p>
+<div class="highlight"><pre><span></span><code>if category == &quot;VALIDATION_FAILED&quot;:
+    # Fix query and retry immediately
+    pass
+elif category == &quot;AUTHORIZATION_DENIED&quot;:
+    # Request authentication, then retry
+    pass
+elif category == &quot;DATABASE_ERROR&quot; and error[&quot;extensions&quot;][&quot;retryable&quot;]:
+    # Exponential backoff retry
+    pass
+elif category == &quot;INTERNAL_ERROR&quot;:
+    # Log and notify support
+    pass
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Step 3: Implement retry logic</strong></p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>async def retry_query(query, max_attempts=3, backoff_base=1000):
+    for attempt in range(1, max_attempts + 1):
+        response = await client.execute(query)</p>
+<div class="highlight"><pre><span></span><code>    if not response.get(&quot;errors&quot;):
+        return response  # Success
+
+    retryable_errors = [
+        e for e in response[&quot;errors&quot;]
+        if e[&quot;extensions&quot;].get(&quot;retryable&quot;)
+    ]
+
+    if not retryable_errors:
+        return response  # Non-retryable, give up
+
+    if attempt &lt; max_attempts:
+        wait_ms = response[&quot;errors&quot;][0][&quot;extensions&quot;].get(
+            &quot;retry_after_ms&quot;,
+            backoff_base * (2 ** (attempt - 1))
+        )
+        await asyncio.sleep(wait_ms / 1000)
+    else:
+        return response  # Max attempts reached
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="62-error-display-to-end-users">6.2 Error Display to End-Users<a class="headerlink" href="#62-error-display-to-end-users" title="Permanent link">&para;</a></h3>
+<p><strong>Show these errors to users:</strong></p>
+<ul>
+<li>Validation errors with suggestions (query/input fixes)</li>
+<li>Constraint violations ("Email already exists")</li>
+<li>Authorization denials (general message, not details)</li>
+<li>Timeouts (with retry option)</li>
+</ul>
+<p><strong>Hide these errors from users:</strong></p>
+<ul>
+<li>Database connection details</li>
+<li>Internal stack traces</li>
+<li>SQL queries</li>
+<li>Auth token issues</li>
+<li>Internal server errors (show support contact instead)</li>
+</ul>
+<hr />
+<h2 id="7-debugging-troubleshooting">7. Debugging &amp; Troubleshooting<a class="headerlink" href="#7-debugging-troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="71-using-trace-ids">7.1 Using Trace IDs<a class="headerlink" href="#71-using-trace-ids" title="Permanent link">&para;</a></h3>
+<p>Every error includes a <code>trace_id</code> for correlation:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Client sees:
+{
+  "errors": [{
+    "message": "Database connection failed",
+    "extensions": {
+      "trace_id": "req_550e8400"
+    }
+  }]
+}</p>
+<p>Server logs:
+[2026-01-11 15:35:00] TRACE req_550e8400: query { users { id } }
+[2026-01-11 15:35:01] ERROR req_550e8400: connection timeout after 5s
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Use trace_id to:</strong></p>
+<ul>
+<li>Correlate client-side errors with server logs</li>
+<li>Track error through entire system (across services in federation)</li>
+<li>Debug transient errors that are hard to reproduce</li>
+</ul>
+<h3 id="72-debug-mode">7.2 Debug Mode<a class="headerlink" href="#72-debug-mode" title="Permanent link">&para;</a></h3>
+<p>FraiseQL can enable debug mode to include additional error context:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<h1 id="enable-debug-mode-dev-environments-only">Enable debug mode (dev environments only!)<a class="headerlink" href="#enable-debug-mode-dev-environments-only" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_DEBUG=true</p>
+<p>Response with debug mode:
+{
+  "errors": [{
+    "message": "Query timeout",
+    "extensions": {
+      "code": "E_DB_POSTGRES_QUERY_TIMEOUT_302",
+      "stack_trace": [
+        "FraiseQL::runtime::execute_query (src/runtime.rs:312)",
+        "FraiseQL::db::execute (src/db.rs:45)",
+        "postgres::client::query (src/db/postgres.rs:128)"
+      ],
+      "query": "SELECT ... FROM users WHERE id = $1",
+      "bindings": ["12345"],
+      "duration_ms": 30001
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="73-error-context-logging">7.3 Error Context Logging<a class="headerlink" href="#73-error-context-logging" title="Permanent link">&para;</a></h3>
+<p>Enable structured logging to capture error context:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "timestamp": "2026-01-11T15:35:00Z",
+  "level": "ERROR",
+  "trace_id": "req_550e8400",
+  "category": "DATABASE_ERROR",
+  "code": "E_DB_POSTGRES_DEADLOCK_303",
+  "operation": "mutation",
+  "query_hash": "5f5a3c2b1e0d9f8c",
+  "database": "postgresql",
+  "user_id": "user_123",
+  "tenant_id": "org_456",
+  "attempt": 2,
+  "duration_ms": 5234,
+  "retryable": true
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-error-codes-reference">8. Error Codes Reference<a class="headerlink" href="#8-error-codes-reference" title="Permanent link">&para;</a></h2>
+<h3 id="81-complete-error-code-catalog">8.1 Complete Error Code Catalog<a class="headerlink" href="#81-complete-error-code-catalog" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Range</th>
+<th>Category</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E_SCHEMA_* (001-009)</td>
+<td>Schema validation</td>
+<td>9</td>
+</tr>
+<tr>
+<td>E_BINDING_* (010-019)</td>
+<td>Database binding</td>
+<td>10</td>
+</tr>
+<tr>
+<td>E_CAPABILITY_* (020-099)</td>
+<td>Database capability</td>
+<td>80</td>
+</tr>
+<tr>
+<td>E_AUTH_* (200-209)</td>
+<td>Authorization</td>
+<td>10</td>
+</tr>
+<tr>
+<td>E_VALIDATION_* (100-109)</td>
+<td>Query validation</td>
+<td>10</td>
+</tr>
+<tr>
+<td>E_DB_* (300-309)</td>
+<td>Database execution</td>
+<td>10</td>
+</tr>
+<tr>
+<td>E_EXEC_* (400-405)</td>
+<td>Execution logic</td>
+<td>6</td>
+</tr>
+<tr>
+<td>E_FED_* (500-504)</td>
+<td>Federation</td>
+<td>5</td>
+</tr>
+<tr>
+<td>E_SUB_* (600-605)</td>
+<td>Subscriptions</td>
+<td>6</td>
+</tr>
+<tr>
+<td>E_INTERNAL_* (700-703)</td>
+<td>Internal errors</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total:</strong> 150+ distinct error codes</p>
+<hr />
+<h2 id="9-error-evolution-stability">9. Error Evolution &amp; Stability<a class="headerlink" href="#9-error-evolution-stability" title="Permanent link">&para;</a></h2>
+<h3 id="91-error-code-stability-guarantee">9.1 Error Code Stability Guarantee<a class="headerlink" href="#91-error-code-stability-guarantee" title="Permanent link">&para;</a></h3>
+<p><strong>Error codes are stable:</strong> Once assigned, error codes will never change.</p>
+<p><strong>Adding errors:</strong> New error codes may be added in minor releases (X.Y.Z → X.Y+1.Z).</p>
+<p><strong>Removing errors:</strong> Error codes are never removed, only deprecated.</p>
+<p><strong>Example:</strong> If E_DB_POSTGRES_CONNECTION_FAILED_300 is used today, it will have the same meaning in v2.1, v3.0, v10.0, etc.</p>
+<h3 id="92-deprecation-of-error-types">9.2 Deprecation of Error Types<a class="headerlink" href="#92-deprecation-of-error-types" title="Permanent link">&para;</a></h3>
+<p>When an error becomes obsolete, it's marked deprecated:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "errors": [{
+    "message": "...",
+    "extensions": {
+      "code": "E_OLD_ERROR_123",
+      "deprecated": true,
+      "deprecated_since": "v2.3.0",
+      "use_instead": "E_NEW_ERROR_456",
+      "removal_date": "2027-01-11"
+    }
+  }]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="10-non-goals">10. Non-Goals<a class="headerlink" href="#10-non-goals" title="Permanent link">&para;</a></h2>
+<p><strong>Error handling explicitly does NOT:</strong></p>
+<ul>
+<li>Attempt automatic recovery (clients must handle retries)</li>
+<li>Hide all error details (debugging requires transparency)</li>
+<li>Support custom error codes (standard codes only)</li>
+<li>Provide error translation per locale (use standard codes)</li>
+<li>Guarantee error message format changes (messages evolve)</li>
+</ul>
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL's error handling is <strong>deterministic and classifiable</strong>:</p>
+<ul>
+<li>✅ All errors fall into well-defined categories</li>
+<li>✅ Each error code is stable and never changes</li>
+<li>✅ Errors include actionable context (retry, remediable, user-actionable)</li>
+<li>✅ Partial results possible (queries), atomic results (mutations)</li>
+<li>✅ Clients can implement robust error handling</li>
+<li>✅ Operations can debug using trace IDs and structured logs</li>
+</ul>
+<p><strong>Golden rule:</strong> If the error code is the same, the error is the same. Clients can build deterministic error handling logic.</p>
+<hr />
+<p><em>End of Error Handling Model</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

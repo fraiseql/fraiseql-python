@@ -1,0 +1,8939 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/performance/advanced-optimization/">
+      
+      
+        <link rel="prev" href="../performance-characteristics/">
+      
+      
+        <link rel="next" href="../../reliability/consistency-model/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Advanced Optimization - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fraiseql-advanced-optimization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Advanced Optimization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Query Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Query Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-execution-plan-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Execution Plan Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-predicate-pushdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Predicate Pushdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-join-order-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Join Order Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-adaptive-query-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Adaptive Query Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-database-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Database Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Database Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-index-design-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Index Design Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Query Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Query Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-execution-plan-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Execution Plan Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-predicate-pushdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Predicate Pushdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-join-order-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Join Order Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-adaptive-query-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Adaptive Query Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-database-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Database Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Database Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-index-design-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Index Design Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: FraiseQL Advanced Optimization
+description: This specification covers advanced optimization techniques for FraiseQL deployments, beyond baseline performance characteristics. It addresses:
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="fraiseql-advanced-optimization">FraiseQL Advanced Optimization<a class="headerlink" href="#fraiseql-advanced-optimization" title="Permanent link">&para;</a></h1>
+<p><strong>Version</strong>: 2.0.0
+<strong>Status</strong>: Specification
+<strong>Last Updated</strong>: January 2026</p>
+<hr />
+<h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>This specification covers advanced optimization techniques for FraiseQL deployments, beyond baseline performance characteristics. It addresses:</p>
+<ul>
+<li><strong>Query Optimization</strong>: Execution plans, predicate pushdown, adaptive strategies</li>
+<li><strong>Database Tuning</strong>: Index design, partitioning, materialized views, statistics</li>
+<li><strong>Caching Edge Cases</strong>: Hot keys, thundering herd, cache eviction policies</li>
+<li><strong>Multi-Instance Scaling</strong>: Consistency across replicas, session affinity, load balancing</li>
+<li><strong>Resource Optimization</strong>: Memory management, connection pooling, GC tuning</li>
+<li><strong>Monitoring &amp; Profiling</strong>: Identifying bottlenecks, distributed tracing</li>
+<li><strong>Emergency Procedures</strong>: Circuit breakers, graceful degradation, backpressure</li>
+</ul>
+<hr />
+<h2 id="1-query-optimization">1. Query Optimization<a class="headerlink" href="#1-query-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="11-execution-plan-analysis">1.1 Execution Plan Analysis<a class="headerlink" href="#11-execution-plan-analysis" title="Permanent link">&para;</a></h3>
+<p>FraiseQL generates deterministic execution plans at compile time, enabling offline optimization.</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class ExecutionPlan:
+    """Internal representation of query execution strategy"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self):
+    # Compile-time optimization information
+    self.steps: list[ExecutionStep] = []
+    self.cost_estimate: float = 0.0
+    self.io_estimate: int = 0  # Estimated rows
+    self.memory_estimate: int = 0  # In bytes
+    self.parallelizable: bool = True
+    self.joins: list[JoinStrategy] = []
+    self.filters: list[FilterPushdown] = []
+    self.projections: list[ProjectionStep] = []
+    self.caching_opportunities: list[CachePoint] = []
+</code></pre></div>
+<p>class JoinStrategy(Enum):
+    """Different join algorithms"""
+    NESTED_LOOP = "nested_loop"      # O(n*m) - for small tables
+    HASH_JOIN = "hash_join"           # O(n+m) - for equality predicates
+    SORT_MERGE = "sort_merge"         # O(n log n + m log m) - for ordered data
+    BROADCAST = "broadcast"           # For skewed distributions
+    INDEXED_LOOKUP = "indexed_lookup" # For index scans</p>
+<p>class FilterPushdown:
+    """Push filters down to database for early elimination"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    predicate: str,
+    can_use_index: bool = False,
+    selectivity: float = 1.0  # Fraction of rows matching filter
+):
+    self.predicate = predicate
+    self.can_use_index = can_use_index
+    self.selectivity = selectivity
+    self.estimated_reduction = 1.0 - selectivity  # 1.0 = 100% of rows filtered
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="12-predicate-pushdown">1.2 Predicate Pushdown<a class="headerlink" href="#12-predicate-pushdown" title="Permanent link">&para;</a></h3>
+<p>Push filters to database where they can use indexes:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class QueryOptimizer:
+    """Optimize execution plans with predicate pushdown"""</p>
+<div class="highlight"><pre><span></span><code>def optimize_query(
+    self,
+    plan: ExecutionPlan,
+    database_stats: DatabaseStatistics
+) -&gt; OptimizedExecutionPlan:
+    &quot;&quot;&quot;Apply optimization techniques to execution plan&quot;&quot;&quot;
+
+    optimized = OptimizedExecutionPlan(plan)
+
+    # 1. Push predicates to earliest possible step
+    for filter_step in plan.filters:
+        if self._can_push_predicate(filter_step, plan):
+            self._push_predicate_to_scan(optimized, filter_step)
+
+    # 2. Reorder joins for optimal cardinality
+    optimized.joins = self._optimize_join_order(
+        plan.joins,
+        database_stats
+    )
+
+    # 3. Identify cached subqueries
+    optimized.cached_subqueries = self._identify_cached_subqueries(plan)
+
+    # 4. Estimate updated costs
+    optimized.cost_estimate = self._estimate_cost(optimized, database_stats)
+
+    return optimized
+
+def _can_push_predicate(
+    self,
+    filter_step: FilterPushdown,
+    plan: ExecutionPlan
+) -&gt; bool:
+    &quot;&quot;&quot;Check if predicate can be pushed to table scan
+
+    Can push if:
+    - All columns in predicate come from same table
+    - Index exists on filter column
+    - Selectivity is good (filters significant rows)
+    &quot;&quot;&quot;
+    return (
+        filter_step.can_use_index and
+        filter_step.selectivity &lt; 0.5  # Filter at least 50%
+    )
+
+def _push_predicate_to_scan(
+    self,
+    plan: OptimizedExecutionPlan,
+    filter_step: FilterPushdown
+) -&gt; None:
+    &quot;&quot;&quot;Move filter predicate to table scan operation&quot;&quot;&quot;
+    # Find scan step that this predicate applies to
+    for step in plan.steps:
+        if isinstance(step, ScanStep):
+            if self._predicate_applies_to_table(filter_step, step):
+                step.additional_filters.append(filter_step.predicate)
+                plan.steps.remove(filter_step)  # Remove later filter
+                break
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="13-join-order-optimization">1.3 Join Order Optimization<a class="headerlink" href="#13-join-order-optimization" title="Permanent link">&para;</a></h3>
+<p>Reorder joins to minimize intermediate result sizes:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class JoinOrderOptimizer:
+    """Optimize join order to minimize cost"""</p>
+<div class="highlight"><pre><span></span><code>def optimize_join_order(
+    self,
+    joins: list[Join],
+    statistics: DatabaseStatistics
+) -&gt; list[Join]:
+    &quot;&quot;&quot;Reorder joins using dynamic programming
+
+    Goal: Minimize number of rows in intermediate results
+
+    Example:
+    Original:  A ⊲⊳ B ⊲⊳ C ⊲⊳ D
+    Cost: A(1M) × B(10K) × C(100K) × D(50K) = 5×10^14 rows intermediate
+
+    Optimized: A ⊲⊳ B ⊲⊳ C (selective) ⊲⊳ D
+    Cost: A(1M) × B(10K) × C(1K) × D(50K) = 5×10^10 rows intermediate
+    (500,000x reduction!)
+    &quot;&quot;&quot;
+    n = len(joins)
+    if n &lt;= 1:
+        return joins
+
+    # dp[mask] = minimum cost to join tables in mask
+    dp = {}
+    parent = {}  # Track which join order was optimal
+
+    def get_cost(table_mask: int) -&gt; float:
+        &quot;&quot;&quot;Recursively compute minimum cost for subset of tables&quot;&quot;&quot;
+        if table_mask in dp:
+            return dp[table_mask]
+
+        # Base case: single table
+        if bin(table_mask).count(&quot;1&quot;) == 1:
+            table_id = self._find_table_id(table_mask)
+            return float(statistics.get_table_rows(table_id))
+
+        # Try all possible left/right splits
+        min_cost = float(&quot;inf&quot;)
+        best_split = None
+
+        for left_mask in self._generate_subsets(table_mask):
+            right_mask = table_mask ^ left_mask
+            if right_mask == 0:
+                continue
+
+            left_cost = get_cost(left_mask)
+            right_cost = get_cost(right_mask)
+
+            # Find join predicates between left and right
+            selectivity = self._get_join_selectivity(left_mask, right_mask, joins)
+
+            # Cost of this join order: output rows
+            join_cost = left_cost * right_cost * selectivity
+
+            if join_cost &lt; min_cost:
+                min_cost = join_cost
+                best_split = (left_mask, right_mask)
+
+        dp[table_mask] = min_cost
+        parent[table_mask] = best_split
+
+        return min_cost
+
+    # Compute optimal order for all tables
+    all_tables_mask = (1 &lt;&lt; n) - 1
+    get_cost(all_tables_mask)
+
+    # Reconstruct optimal join order
+    return self._reconstruct_join_order(all_tables_mask, parent)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="14-adaptive-query-execution">1.4 Adaptive Query Execution<a class="headerlink" href="#14-adaptive-query-execution" title="Permanent link">&para;</a></h3>
+<p>Adjust execution plans based on runtime statistics:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class AdaptiveQueryExecutor:
+    """Modify execution plan based on runtime feedback"""</p>
+<div class="highlight"><pre><span></span><code>async def execute_with_adaptation(
+    self,
+    plan: ExecutionPlan,
+    context: ExecutionContext
+) -&gt; QueryResult:
+    &quot;&quot;&quot;Execute query with runtime adaptations&quot;&quot;&quot;
+
+    # 1. Execute first step (scan)
+    scan_result = await self._execute_step(plan.steps[0])
+    actual_rows = scan_result.row_count
+
+    # 2. Compare to estimate
+    plan_rows = plan.steps[0].row_estimate
+    variance = abs(actual_rows - plan_rows) / max(plan_rows, 1)
+
+    # 3. If actual rows significantly different, adapt
+    if variance &gt; 0.3:  # &gt;30% difference
+        adapted_plan = self._adapt_plan(plan, actual_rows)
+        return await self._execute_adapted_plan(adapted_plan, scan_result)
+
+    # 4. Otherwise continue with original plan
+    return await self._execute_remaining_steps(plan, scan_result)
+
+def _adapt_plan(
+    self,
+    original_plan: ExecutionPlan,
+    actual_rows: int
+) -&gt; ExecutionPlan:
+    &quot;&quot;&quot;Create adapted plan based on actual cardinality&quot;&quot;&quot;
+    adapted = ExecutionPlan()
+
+    for i, step in enumerate(original_plan.steps):
+        if i == 0:
+            # Keep first step (already executed)
+            adapted.steps.append(step)
+        else:
+            # Re-estimate cost of subsequent steps with actual rows
+            new_step = copy.deepcopy(step)
+            new_step.input_rows = actual_rows
+            new_step.recompute_estimates()
+            adapted.steps.append(new_step)
+
+    # Re-optimize join order if needed
+    if isinstance(adapted.steps[-1], JoinStep):
+        adapted.joins = self._optimize_join_order_runtime(
+            adapted.joins,
+            actual_rows
+        )
+
+    return adapted
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="2-database-tuning">2. Database Tuning<a class="headerlink" href="#2-database-tuning" title="Permanent link">&para;</a></h2>
+<h3 id="21-index-design-strategy">2.1 Index Design Strategy<a class="headerlink" href="#21-index-design-strategy" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class IndexDesignGuide:
+    """Guidelines for optimal index design"""</p>
+<div class="highlight"><pre><span></span><code># Choose index type based on query pattern
+INDEX_SELECTION = {
+    &quot;high_selectivity_equality&quot;: &quot;B-tree&quot;,      # WHERE id = 123
+    &quot;range_queries&quot;: &quot;B-tree&quot;,                   # WHERE created_at &gt; now() - interval
+    &quot;full_text_search&quot;: &quot;GiST or GIN&quot;,         # WHERE content LIKE &#39;%search%&#39;
+    &quot;spatial_data&quot;: &quot;GIST or BRIN&quot;,            # WHERE location &lt;-&gt; point &lt; distance
+    &quot;json_contains&quot;: &quot;GIN&quot;,                      # WHERE data @&gt; &#39;{&quot;key&quot;: &quot;value&quot;}&#39;
+    &quot;ordered_results&quot;: &quot;B-tree DESC&quot;,           # ORDER BY created_at DESC
+    &quot;filtering_many_values&quot;: &quot;Hash Index&quot;,      # WHERE status IN (...)
+}
+
+# Index design principles
+PRINCIPLES = {
+    &quot;selectivity&quot;: &quot;Choose columns that filter most rows&quot;,
+    &quot;cardinality&quot;: &quot;Prefer high-cardinality columns&quot;,
+    &quot;ordering&quot;: &quot;Order matters for range queries&quot;,
+    &quot;covering&quot;: &quot;Include all query columns to avoid table scan&quot;,
+    &quot;partial&quot;: &quot;Exclude NULL or soft-deleted rows&quot;,
+    &quot;statistics&quot;: &quot;ANALYZE regularly for query planning&quot;,
+}
+
+# Anti-patterns
+ANTI_PATTERNS = {
+    &quot;over_indexing&quot;: &quot;Too many indexes = slow writes&quot;,
+    &quot;low_selectivity&quot;: &quot;Index on status (only 3 values)&quot;,
+    &quot;unused_indexes&quot;: &quot;Bloat without benefit&quot;,
+    &quot;foreign_key_missing&quot;: &quot;No index on FK = slow joins&quot;,
+    &quot;wrong_direction&quot;: &quot;Index on created_at ASC but query needs DESC&quot;,
+}
+</code></pre></div>
+<h1 id="example-comprehensive-index-strategy-for-users-table">Example: Comprehensive index strategy for users table<a class="headerlink" href="#example-comprehensive-index-strategy-for-users-table" title="Permanent link">&para;</a></h1>
+<p>@FraiseQL.type
+class User:
+    id: ID
+    email: str
+    created_at: datetime
+    updated_at: datetime
+    tenant_id: ID
+    status: str  # Only 3 values: active, inactive, suspended
+    metadata: dict[str, Any]</p>
+<h1 id="define-indexes">Define indexes<a class="headerlink" href="#define-indexes" title="Permanent link">&para;</a></h1>
+<p>INDEX_STRATEGY = {
+    # Primary key
+    "pk_user": {
+        "columns": ["id"],
+        "type": "primary",
+        "reason": "Primary key"
+    },
+    # Foreign key lookup
+    "idx_user_tenant_id": {
+        "columns": ["tenant_id"],
+        "type": "b-tree",
+        "where": "deleted_at IS NULL",
+        "reason": "Fast tenant filtering"
+    },
+    # Email uniqueness and lookup
+    "idx_user_email_unique": {
+        "columns": ["email"],
+        "type": "b-tree",
+        "unique": True,
+        "where": "deleted_at IS NULL",
+        "reason": "Email uniqueness + fast login lookup"
+    },
+    # Time-range queries
+    "idx_user_created_at": {
+        "columns": ["created_at"],
+        "type": "b-tree",
+        "reason": "Range queries like 'users created in last 30 days'"
+    },
+    # Composite: tenant + status (common filter combination)
+    "idx_user_tenant_status": {
+        "columns": ["tenant_id", "status"],
+        "type": "b-tree",
+        "where": "deleted_at IS NULL",
+        "reason": "Most common filter pattern"
+    },
+    # JSON search on metadata
+    "idx_user_metadata_gin": {
+        "columns": ["metadata"],
+        "type": "gin",
+        "reason": "Search within JSONB metadata"
+    },
+    # Covering index: includes all columns needed by common query
+    "idx_user_tenant_email_covering": {
+        "columns": ["tenant_id", "email"],
+        "includes": ["id", "status"],  # PostgreSQL 11+ INCLUDE
+        "type": "b-tree",
+        "where": "deleted_at IS NULL",
+        "reason": "Covering index for 'get active users by email' query"
+    }
+}</p>
+<h1 id="sql-generation">SQL generation<a class="headerlink" href="#sql-generation" title="Permanent link">&para;</a></h1>
+<p>CREATE_INDEXES_SQL = """
+-- Primary key
+CREATE INDEX idx_user_id ON tb_user (id);</p>
+<p>-- Foreign key
+CREATE INDEX idx_user_tenant_id ON tb_user (tenant_id)
+WHERE deleted_at IS NULL;</p>
+<p>-- Unique constraint
+CREATE UNIQUE INDEX idx_user_email_unique ON tb_user (email)
+WHERE deleted_at IS NULL;</p>
+<p>-- Range queries
+CREATE INDEX idx_user_created_at ON tb_user (created_at);</p>
+<p>-- Composite: common filter combination
+CREATE INDEX idx_user_tenant_status ON tb_user (tenant_id, status)
+WHERE deleted_at IS NULL;</p>
+<p>-- JSON search
+CREATE INDEX idx_user_metadata_gin ON tb_user USING GIN (metadata);</p>
+<p>-- Covering index for common query pattern
+CREATE INDEX idx_user_tenant_email_covering ON tb_user (tenant_id, email)
+INCLUDE (id, status)
+WHERE deleted_at IS NULL;
+"""
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="22-materialized-views-for-complex-queries">2.2 Materialized Views for Complex Queries<a class="headerlink" href="#22-materialized-views-for-complex-queries" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class MaterializedViewStrategy:
+    """Use materialized views to pre-compute expensive aggregations"""</p>
+<div class="highlight"><pre><span></span><code># Example: Slow query that becomes fast with MV
+SLOW_QUERY = &quot;&quot;&quot;
+SELECT
+    user_id,
+    COUNT(*) as total_posts,
+    AVG(view_count) as avg_views,
+    MAX(created_at) as latest_post_date
+FROM tb_post
+WHERE tenant_id = $1
+GROUP BY user_id
+&quot;&quot;&quot;
+
+MATERIALIZED_VIEW = &quot;&quot;&quot;
+CREATE MATERIALIZED VIEW mv_user_post_stats AS
+SELECT
+    user_id,
+    COUNT(*) as total_posts,
+    AVG(view_count) as avg_views,
+    MAX(created_at) as latest_post_date
+FROM tb_post
+WHERE deleted_at IS NULL
+GROUP BY user_id;
+
+CREATE INDEX idx_mv_user_post_stats_user_id
+ON mv_user_post_stats (user_id);
+&quot;&quot;&quot;
+
+# Refresh strategy: incremental vs full
+REFRESH_STRATEGY = {
+    &quot;full_refresh&quot;: {
+        &quot;frequency&quot;: &quot;daily&quot;,
+        &quot;cost&quot;: &quot;high&quot;,
+        &quot;latency&quot;: &quot;minutes&quot;,
+        &quot;use_for&quot;: &quot;low-cardinality aggregations&quot;
+    },
+    &quot;incremental_refresh&quot;: {
+        &quot;frequency&quot;: &quot;5 minutes&quot;,
+        &quot;cost&quot;: &quot;low&quot;,
+        &quot;latency&quot;: &quot;&lt; 1 minute&quot;,
+        &quot;use_for&quot;: &quot;frequently-changing data&quot;
+    },
+    &quot;event_driven_refresh&quot;: {
+        &quot;frequency&quot;: &quot;on insert/update&quot;,
+        &quot;cost&quot;: &quot;medium&quot;,
+        &quot;latency&quot;: &quot;&lt; 100ms&quot;,
+        &quot;use_for&quot;: &quot;critical aggregations&quot;
+    }
+}
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="23-partitioning-strategy">2.3 Partitioning Strategy<a class="headerlink" href="#23-partitioning-strategy" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class PartitioningStrategy:
+    """Partition large tables for performance and maintenance"""</p>
+<div class="highlight"><pre><span></span><code>PARTITIONING_OPTIONS = {
+    &quot;range&quot;: {
+        &quot;use_for&quot;: &quot;Time-series data&quot;,
+        &quot;example&quot;: &quot;PARTITION BY RANGE (YEAR(created_at))&quot;,
+        &quot;benefits&quot;: &quot;Efficient time-range queries, easier archival&quot;,
+        &quot;cost&quot;: &quot;Moderate&quot;
+    },
+    &quot;hash&quot;: {
+        &quot;use_for&quot;: &quot;Even distribution across nodes&quot;,
+        &quot;example&quot;: &quot;PARTITION BY HASH (user_id)&quot;,
+        &quot;benefits&quot;: &quot;Load balancing, parallel queries&quot;,
+        &quot;cost&quot;: &quot;Low&quot;
+    },
+    &quot;list&quot;: {
+        &quot;use_for&quot;: &quot;Categorical data&quot;,
+        &quot;example&quot;: &quot;PARTITION BY LIST (country)&quot;,
+        &quot;benefits&quot;: &quot;Logical grouping, country-specific access&quot;,
+        &quot;cost&quot;: &quot;Low&quot;
+    }
+}
+
+# Example: Time-series partitioning
+POSTS_PARTITIONING = &quot;&quot;&quot;
+CREATE TABLE tb_post_base (
+    id UUID,
+    user_id UUID,
+    content TEXT,
+    created_at TIMESTAMP,
+    deleted_at TIMESTAMP
+) PARTITION BY RANGE (EXTRACT(YEAR FROM created_at));
+
+-- Quarterly partitions for current year
+CREATE TABLE tb_post_2025_q1 PARTITION OF tb_post_base
+FOR VALUES FROM (2025) TO (2026);
+
+CREATE TABLE tb_post_2025_q2 PARTITION OF tb_post_base
+FOR VALUES FROM (2026) TO (2027);
+
+-- Archive older data
+CREATE TABLE tb_post_2024 PARTITION OF tb_post_base
+FOR VALUES FROM (2024) TO (2025);
+
+-- Benefits:
+-- - Queries on 2025 data skip 2024 partitions
+-- - Can archive 2024 partition to slower storage
+-- - Faster VACUUM (partition-level)
+-- - Parallel sequential scans across partitions
+&quot;&quot;&quot;
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="24-query-statistics">2.4 Query Statistics<a class="headerlink" href="#24-query-statistics" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class QueryStatisticsManager:
+    """Maintain statistics for query optimization"""</p>
+<div class="highlight"><pre><span></span><code>async def analyze_tables(self, tables: list[str]) -&gt; None:
+    &quot;&quot;&quot;Update table statistics for query planner
+
+    Without stats, planner guesses row counts (inefficient)
+    With stats, planner makes optimal decisions
+    &quot;&quot;&quot;
+    for table in tables:
+        await self.db.execute(f&quot;ANALYZE {table}&quot;)
+
+async def analyze_column(self, table: str, column: str) -&gt; None:
+    &quot;&quot;&quot;Analyze specific column (e.g., after data update)&quot;&quot;&quot;
+    await self.db.execute(f&quot;ANALYZE {table} ({column})&quot;)
+
+async def view_column_statistics(
+    self,
+    table: str,
+    column: str
+) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Inspect column statistics for debugging&quot;&quot;&quot;
+    result = await self.db.query(&quot;&quot;&quot;
+        SELECT
+            attname,
+            n_distinct,
+            n_distinct_inherited,
+            avg_width,
+            correlation
+        FROM pg_stats
+        WHERE tablename = $1 AND attname = $2
+    &quot;&quot;&quot;, table, column)
+
+    return {
+        &quot;column&quot;: column,
+        &quot;n_distinct&quot;: result[&quot;n_distinct&quot;],  # Cardinality
+        &quot;avg_width&quot;: result[&quot;avg_width&quot;],    # Bytes per value
+        &quot;correlation&quot;: result[&quot;correlation&quot;],  # Index effectiveness
+    }
+
+# Update statistics regularly
+MAINTENANCE_SCHEDULE = {
+    &quot;analyze_all&quot;: &quot;Daily during off-peak hours&quot;,
+    &quot;vacuum_full&quot;: &quot;Weekly for heavily-updated tables&quot;,
+    &quot;reindex&quot;: &quot;Monthly for index fragmentation&quot;,
+}
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="3-caching-edge-cases">3. Caching Edge Cases<a class="headerlink" href="#3-caching-edge-cases" title="Permanent link">&para;</a></h2>
+<h3 id="31-hot-key-problem">3.1 Hot Key Problem<a class="headerlink" href="#31-hot-key-problem" title="Permanent link">&para;</a></h3>
+<p>When a single cache key receives massive traffic:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class HotKeyDetector:
+    """Detect and handle hot keys (single keys with extreme traffic)"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, redis_client, threshold: int = 100):
+    &quot;&quot;&quot;Initialize detector
+
+    Args:
+        threshold: Operations/second for key to be considered &quot;hot&quot;
+    &quot;&quot;&quot;
+    self.redis = redis_client
+    self.threshold = threshold
+    self.hot_keys = {}
+
+async def detect_hot_keys(self) -&gt; list[str]:
+    &quot;&quot;&quot;Identify keys exceeding traffic threshold
+
+    Hot key examples:
+    - Popular user profile (celebrity)
+    - High-traffic API endpoint config
+    - System-wide counter (concurrent users)
+    &quot;&quot;&quot;
+    # Use Redis keyspace notifications to track access patterns
+    hot_keys = []
+
+    for key_pattern in self._get_monitored_keys():
+        ops_per_second = await self._estimate_ops_per_second(key_pattern)
+        if ops_per_second &gt; self.threshold:
+            hot_keys.append((key_pattern, ops_per_second))
+
+    return sorted(hot_keys, key=lambda x: x[1], reverse=True)
+
+async def _estimate_ops_per_second(self, key: str) -&gt; float:
+    &quot;&quot;&quot;Estimate operations/second for key&quot;&quot;&quot;
+    # Track operations in sliding window
+    counter_key = f&quot;ops_count:{key}&quot;
+    count = await self.redis.incr(counter_key)
+    await self.redis.expire(counter_key, 1)  # Reset every second
+
+    return float(count)
+
+async def mitigate_hot_key(self, key: str) -&gt; None:
+    &quot;&quot;&quot;Apply hot key mitigation strategies&quot;&quot;&quot;
+
+    strategy = self._select_strategy(key)
+
+    if strategy == &quot;local_cache&quot;:
+        # Keep value in local memory cache
+        await self._enable_local_caching(key)
+
+    elif strategy == &quot;read_through&quot;:
+        # Serve stale value while refreshing in background
+        await self._enable_stale_cache(key)
+
+    elif strategy == &quot;probabilistic&quot;:
+        # Cache only for random subset of requests
+        await self._enable_probabilistic_caching(key)
+
+    elif strategy == &quot;replication&quot;:
+        # Replicate across multiple cache nodes
+        await self._enable_cache_replication(key)
+</code></pre></div>
+<p>class LocalCacheForHotKeys:
+    """Local in-memory cache for hot keys"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, max_keys: int = 100):
+    self.cache = {}
+    self.max_keys = max_keys
+
+async def get(self, key: str, redis_client) -&gt; Any:
+    &quot;&quot;&quot;Try local cache first, fall back to Redis&quot;&quot;&quot;
+    # Local cache: ~1 microsecond
+    if key in self.cache:
+        value, ttl = self.cache[key]
+        if datetime.utcnow() &lt; ttl:
+            return value
+
+    # Redis: ~5 milliseconds
+    value = await redis_client.get(key)
+    if value:
+        # Store in local cache with TTL
+        self.cache[key] = (value, datetime.utcnow() + timedelta(seconds=5))
+        if len(self.cache) &gt; self.max_keys:
+            self._evict_lru()
+    return value
+
+def _evict_lru(self) -&gt; None:
+    &quot;&quot;&quot;Evict least recently used entry&quot;&quot;&quot;
+    oldest_key = min(
+        self.cache.keys(),
+        key=lambda k: self.cache[k][1]
+    )
+    del self.cache[oldest_key]
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="32-thundering-herd-problem">3.2 Thundering Herd Problem<a class="headerlink" href="#32-thundering-herd-problem" title="Permanent link">&para;</a></h3>
+<p>When cache expires and many requests try to refresh simultaneously:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class ThunderingHerdMitigation:
+    """Prevent cache stampede when popular key expires"""</p>
+<div class="highlight"><pre><span></span><code>async def get_with_mitigation(
+    self,
+    key: str,
+    fetch_fn,
+    cache_ttl: int = 300
+) -&gt; Any:
+    &quot;&quot;&quot;Get value with thundering herd prevention
+
+    Standard cache miss: All 1000 requests compute value (1000x work!)
+
+    With mitigation: First request computes, others wait
+    &quot;&quot;&quot;
+    # Use Redis SET with NX (only if not exists)
+    lock_key = f&quot;lock:{key}&quot;
+    compute_sem = f&quot;computing:{key}&quot;
+
+    # Try to acquire compute lock
+    acquired = await self.redis.set(
+        compute_sem,
+        &quot;true&quot;,
+        nx=True,
+        ex=1  # Lock expires in 1 second (recompute)
+    )
+
+    if acquired:
+        # We won the race - compute value
+        try:
+            value = await fetch_fn()
+            await self.redis.set(key, value, ex=cache_ttl)
+            return value
+        finally:
+            await self.redis.delete(compute_sem)
+    else:
+        # Another request is computing - wait for result
+        for attempt in range(100):  # Wait up to 5 seconds
+            value = await self.redis.get(key)
+            if value:
+                return value
+            await asyncio.sleep(0.05)  # Poll every 50ms
+
+        # Timeout - fall back to computing
+        return await fetch_fn()
+</code></pre></div>
+<h1 id="alternative-probabilistic-early-refresh">Alternative: Probabilistic early refresh<a class="headerlink" href="#alternative-probabilistic-early-refresh" title="Permanent link">&para;</a></h1>
+<p>class ProbabilisticEarlyRefresh:
+    """Refresh cache before expiry for popular keys"""</p>
+<div class="highlight"><pre><span></span><code>async def get_with_early_refresh(
+    self,
+    key: str,
+    fetch_fn,
+    cache_ttl: int = 300,
+    early_refresh_probability: float = 0.1
+) -&gt; Any:
+    &quot;&quot;&quot;Cache with probabilistic refresh before expiry
+
+    Idea: On access, randomly refresh cache early (10% of time)
+    Result: Cache always fresh, no thundering herd on expiry
+    &quot;&quot;&quot;
+    value = await self.redis.get(key)
+
+    if value:
+        # Cache hit - maybe refresh early?
+        if random.random() &lt; early_refresh_probability:
+            # Refresh in background (don&#39;t block current request)
+            asyncio.create_task(self._refresh_in_background(
+                key, fetch_fn, cache_ttl
+            ))
+        return value
+
+    # Cache miss - compute and cache
+    value = await fetch_fn()
+    await self.redis.set(key, value, ex=cache_ttl)
+    return value
+
+async def _refresh_in_background(self, key, fetch_fn, ttl):
+    &quot;&quot;&quot;Refresh cache value without blocking client&quot;&quot;&quot;
+    try:
+        value = await fetch_fn()
+        await self.redis.set(key, value, ex=ttl)
+    except Exception as e:
+        logger.exception(f&quot;Background refresh failed for {key}: {e}&quot;)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="33-cache-eviction-policies">3.3 Cache Eviction Policies<a class="headerlink" href="#33-cache-eviction-policies" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class CacheEvictionPolicy(Enum):
+    """Cache eviction strategies when full"""</p>
+<div class="highlight"><pre><span></span><code># LRU: Evict least recently used
+LRU = &quot;lru&quot;
+# Cost: Low CPU, good for working sets
+# Benefit: Recently accessed data stays
+
+# LFU: Evict least frequently used
+LFU = &quot;lfu&quot;
+# Cost: Medium CPU (track frequency)
+# Benefit: Popular data stays
+
+# FIFO: Evict oldest entry
+FIFO = &quot;fifo&quot;
+# Cost: Very low CPU
+# Benefit: Predictable order
+
+# Random: Evict random entry
+RANDOM = &quot;random&quot;
+# Cost: Minimal CPU
+# Benefit: Simple, works surprisingly well
+
+# TTL: Evict expired entries
+TTL = &quot;ttl&quot;
+# Cost: Medium (cleanup)
+# Benefit: Respects time boundaries
+</code></pre></div>
+<p>class EvictionPolicySelector:
+    """Choose optimal eviction policy for workload"""</p>
+<div class="highlight"><pre><span></span><code>@staticmethod
+def recommend_policy(workload_type: str) -&gt; CacheEvictionPolicy:
+    &quot;&quot;&quot;Recommend policy based on workload&quot;&quot;&quot;
+
+    if workload_type == &quot;user_profiles&quot;:
+        # Popular users accessed repeatedly
+        return CacheEvictionPolicy.LFU
+
+    elif workload_type == &quot;session_cache&quot;:
+        # Newer sessions matter more
+        return CacheEvictionPolicy.FIFO
+
+    elif workload_type == &quot;api_responses&quot;:
+        # Working set of recent responses
+        return CacheEvictionPolicy.LRU
+
+    elif workload_type == &quot;feature_flags&quot;:
+        # Rarely accessed, just don&#39;t expire
+        return CacheEvictionPolicy.TTL
+
+    else:
+        # Default: Simple and effective
+        return CacheEvictionPolicy.LRU
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="4-multi-instance-scaling">4. Multi-Instance Scaling<a class="headerlink" href="#4-multi-instance-scaling" title="Permanent link">&para;</a></h2>
+<h3 id="41-consistency-across-replicas">4.1 Consistency Across Replicas<a class="headerlink" href="#41-consistency-across-replicas" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class MultiInstanceConsistencyManager:
+    """Ensure consistency when running multiple instances"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, primary_db: Database, replica_db: Database):
+    self.primary = primary_db
+    self.replica = replica_db
+
+# Challenge: Replica lag
+# ┌─────────────────┐
+# │ Primary writes  │ T0
+# │ X = 10          │
+# └─────────────────┘
+#         │
+#         │ Replication lag (5-100ms)
+#         ↓
+# ┌─────────────────┐
+# │ Replica reads   │ T0
+# │ X = ??? (old)   │
+# └─────────────────┘
+
+async def write_and_verify(
+    self,
+    query: str,
+    params: list,
+    verification_key: str,
+    expected_value: Any
+) -&gt; None:
+    &quot;&quot;&quot;Write to primary, verify on replica&quot;&quot;&quot;
+
+    # Write to primary
+    result = await self.primary.execute(query, params)
+
+    # Verify it reached replica
+    verified = await self._wait_for_replica_consistency(
+        verification_key,
+        expected_value,
+        timeout_ms=1000
+    )
+
+    if not verified:
+        logger.warning(
+            f&quot;Replica lag detected: {verification_key} not yet updated&quot;
+        )
+
+async def _wait_for_replica_consistency(
+    self,
+    key: str,
+    expected_value: Any,
+    timeout_ms: int = 1000
+) -&gt; bool:
+    &quot;&quot;&quot;Poll replica until it catches up&quot;&quot;&quot;
+
+    end_time = time.time() + (timeout_ms / 1000.0)
+
+    while time.time() &lt; end_time:
+        replica_value = await self.replica.query_one(
+            f&quot;SELECT * FROM table WHERE id = $1&quot;,
+            [key]
+        )
+
+        if replica_value == expected_value:
+            return True
+
+        await asyncio.sleep(0.01)  # Poll every 10ms
+
+    return False
+</code></pre></div>
+<p>class ReadConsistencyLevel(Enum):
+    """Choose read consistency vs performance trade-off"""</p>
+<div class="highlight"><pre><span></span><code># Read from primary (always consistent, slower)
+STRONG = &quot;strong&quot;
+
+# Read from replica after write (eventual, faster)
+# Use: If you can tolerate 100ms stale data
+EVENTUAL = &quot;eventual&quot;
+
+# Read from replica, fall back to primary on miss
+# Use: Hybrid approach, best for most cases
+HYBRID = &quot;hybrid&quot;
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="42-session-affinity">4.2 Session Affinity<a class="headerlink" href="#42-session-affinity" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class SessionAffinityManager:
+    """Route requests to same instance for connection locality"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, instances: list[str]):
+    self.instances = instances
+    self.session_to_instance = {}
+
+def get_instance_for_session(self, session_id: str) -&gt; str:
+    &quot;&quot;&quot;Get instance for session (consistent routing)
+
+    Benefits:
+    - Connection pooling is effective
+    - Local caches stay warm
+    - Database connections reused
+    &quot;&quot;&quot;
+    if session_id not in self.session_to_instance:
+        # Hash session to instance (consistent)
+        instance_index = hash(session_id) % len(self.instances)
+        self.session_to_instance[session_id] = self.instances[instance_index]
+
+    return self.session_to_instance[session_id]
+
+def hash_consistent(self, key: str, replicas: int) -&gt; int:
+    &quot;&quot;&quot;Consistent hashing for load balancing
+
+    Without consistent hashing:
+    - Add instance → 2/3 requests rehash (cache thrash)
+
+    With consistent hashing:
+    - Add instance → only 1/n requests rehash
+    &quot;&quot;&quot;
+    # Ketama algorithm
+    hash_value = self._compute_hash(key)
+    return hash_value % replicas
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="43-load-balancing-strategies">4.3 Load Balancing Strategies<a class="headerlink" href="#43-load-balancing-strategies" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class LoadBalancingStrategy(Enum):
+    """Different load balancing approaches"""</p>
+<div class="highlight"><pre><span></span><code># Round-robin: cycle through instances
+ROUND_ROBIN = &quot;round_robin&quot;
+
+# Least connections: send to instance with fewest active connections
+LEAST_CONNECTIONS = &quot;least_connections&quot;
+
+# Weighted round-robin: allocate based on capacity
+WEIGHTED = &quot;weighted&quot;
+
+# Consistent hash: same key always routes to same instance
+CONSISTENT_HASH = &quot;consistent_hash&quot;
+
+# IP hash: route based on client IP
+IP_HASH = &quot;ip_hash&quot;
+</code></pre></div>
+<p>class LoadBalancer:
+    """Route requests across multiple instances"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, strategy: LoadBalancingStrategy):
+    self.strategy = strategy
+    self.instances = []
+    self.round_robin_index = 0
+
+async def get_next_instance(
+    self,
+    request_context: dict[str, Any] | None = None
+) -&gt; str:
+    &quot;&quot;&quot;Get next instance for request&quot;&quot;&quot;
+
+    if self.strategy == LoadBalancingStrategy.ROUND_ROBIN:
+        instance = self.instances[self.round_robin_index]
+        self.round_robin_index = (self.round_robin_index + 1) % len(self.instances)
+        return instance
+
+    elif self.strategy == LoadBalancingStrategy.LEAST_CONNECTIONS:
+        return min(
+            self.instances,
+            key=lambda i: self._get_connection_count(i)
+        )
+
+    elif self.strategy == LoadBalancingStrategy.CONSISTENT_HASH:
+        session_id = request_context.get(&quot;session_id&quot;, &quot;&quot;)
+        return self._consistent_hash(session_id)
+
+    elif self.strategy == LoadBalancingStrategy.IP_HASH:
+        client_ip = request_context.get(&quot;client_ip&quot;, &quot;&quot;)
+        return self._ip_hash(client_ip)
+
+    else:
+        return self.instances[0]  # Default
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="5-resource-optimization">5. Resource Optimization<a class="headerlink" href="#5-resource-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="51-memory-management">5.1 Memory Management<a class="headerlink" href="#51-memory-management" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class MemoryOptimizer:
+    """Optimize memory usage in FraiseQL runtime"""</p>
+<div class="highlight"><pre><span></span><code># Memory profiling
+@staticmethod
+async def profile_memory_usage() -&gt; dict[str, int]:
+    &quot;&quot;&quot;Measure memory usage by component
+
+    Returns:
+        Dict mapping component -&gt; bytes used
+    &quot;&quot;&quot;
+    import psutil
+    process = psutil.Process()
+    memory_info = process.memory_info()
+
+    return {
+        &quot;rss&quot;: memory_info.rss,        # Resident set size (physical RAM)
+        &quot;vms&quot;: memory_info.vms,        # Virtual memory size
+        &quot;percent&quot;: process.memory_percent(),
+    }
+
+# Garbage collection tuning
+GC_TUNING = {
+    &quot;low_traffic&quot;: {
+        &quot;threshold0&quot;: 700,   # Collect at 700 new objects
+        &quot;threshold1&quot;: 10,    # Collect gen1 at 10:1 ratio
+        &quot;threshold2&quot;: 10,
+    },
+    &quot;high_traffic&quot;: {
+        &quot;threshold0&quot;: 3000,  # More objects before collection
+        &quot;threshold1&quot;: 5,     # Collect more often
+        &quot;threshold2&quot;: 5,
+    },
+}
+
+@staticmethod
+def tune_garbage_collection(workload: str) -&gt; None:
+    &quot;&quot;&quot;Tune GC for workload characteristics&quot;&quot;&quot;
+    import gc
+
+    thresholds = MemoryOptimizer.GC_TUNING[workload]
+    gc.set_threshold(
+        thresholds[&quot;threshold0&quot;],
+        thresholds[&quot;threshold1&quot;],
+        thresholds[&quot;threshold2&quot;]
+    )
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="52-connection-pooling">5.2 Connection Pooling<a class="headerlink" href="#52-connection-pooling" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class ConnectionPoolOptimizer:
+    """Configure optimal connection pool parameters"""</p>
+<div class="highlight"><pre><span></span><code># Pool size calculation
+POOL_SIZING_FORMULA = &quot;&quot;&quot;
+min_size = (cpu_cores * 2) + spare_connections
+max_size = (cpu_cores * 4) + spare_connections
+
+Example: 8-core server
+min_size = (8 * 2) + 2 = 18
+max_size = (8 * 4) + 2 = 34
+
+Why:
+- min_size: Keep connections warm for frequent use
+- max_size: Handle traffic spikes without exhaustion
+&quot;&quot;&quot;
+
+class PoolConfig:
+    def __init__(
+        self,
+        cpu_cores: int,
+        min_size: int | None = None,
+        max_size: int | None = None,
+        connection_timeout_ms: int = 5000,
+        idle_timeout_ms: int = 60000,
+    ):
+        self.min_size = min_size or (cpu_cores * 2) + 2
+        self.max_size = max_size or (cpu_cores * 4) + 2
+        self.connection_timeout_ms = connection_timeout_ms
+        self.idle_timeout_ms = idle_timeout_ms
+
+# Monitor pool health
+@staticmethod
+async def monitor_pool_health(pool) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Check connection pool metrics&quot;&quot;&quot;
+
+    return {
+        &quot;connections_open&quot;: pool.size,
+        &quot;connections_idle&quot;: pool.idle_size,
+        &quot;connections_busy&quot;: pool.size - pool.idle_size,
+        &quot;wait_queue_depth&quot;: pool.waiting_requests,
+        &quot;avg_wait_time_ms&quot;: pool.avg_checkout_time_ms,
+        &quot;pool_exhaustion_events&quot;: pool.exhaustion_count,
+    }
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="6-monitoring-profiling">6. Monitoring &amp; Profiling<a class="headerlink" href="#6-monitoring-profiling" title="Permanent link">&para;</a></h2>
+<h3 id="61-query-profiling">6.1 Query Profiling<a class="headerlink" href="#61-query-profiling" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class QueryProfiler:
+    """Profile query execution for optimization"""</p>
+<div class="highlight"><pre><span></span><code>async def profile_query(
+    self,
+    query: str,
+    params: list | None = None
+) -&gt; QueryProfile:
+    &quot;&quot;&quot;Profile query execution
+
+    Collects:
+    - Execution time breakdown
+    - Row count at each step
+    - Index usage
+    - Memory allocated
+    &quot;&quot;&quot;
+    # Get execution plan
+    plan = await self.db.query_one(
+        f&quot;EXPLAIN (ANALYZE, BUFFERS, TIMING) {query}&quot;,
+        params or []
+    )
+
+    # Parse plan into profile
+    profile = self._parse_plan(plan)
+
+    return profile
+
+def _parse_plan(self, plan: dict) -&gt; QueryProfile:
+    &quot;&quot;&quot;Parse database execution plan into profile&quot;&quot;&quot;
+
+    profile = QueryProfile()
+
+    for step in plan[&quot;Plan&quot;]:
+        profile.add_step(
+            name=step[&quot;Node Type&quot;],
+            rows_output=step[&quot;Actual Rows&quot;],
+            execution_time_ms=step[&quot;Actual Time&quot;][1] - step[&quot;Actual Time&quot;][0],
+            buffers_hit=step[&quot;Shared Hit Blocks&quot;],
+            buffers_read=step[&quot;Shared Read Blocks&quot;],
+        )
+
+    return profile
+</code></pre></div>
+<p>class QueryProfile:
+    """Results of query profiling"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self):
+    self.steps: list[ExecutionStep] = []
+    self.total_time_ms: float = 0
+
+def add_step(self, **kwargs):
+    self.steps.append(ExecutionStep(**kwargs))
+    self.total_time_ms += kwargs.get(&quot;execution_time_ms&quot;, 0)
+
+def get_bottleneck(self) -&gt; ExecutionStep | None:
+    &quot;&quot;&quot;Find slowest step&quot;&quot;&quot;
+    if not self.steps:
+        return None
+    return max(self.steps, key=lambda s: s.execution_time_ms)
+
+def get_index_usage(self) -&gt; dict[str, bool]:
+    &quot;&quot;&quot;Check which indexes are actually used&quot;&quot;&quot;
+    return {
+        step.name: &quot;Index&quot; in step.name
+        for step in self.steps
+    }
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="62-distributed-tracing-for-performance">6.2 Distributed Tracing for Performance<a class="headerlink" href="#62-distributed-tracing-for-performance" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class QueryTracer:
+    """Trace query execution across services"""</p>
+<div class="highlight"><pre><span></span><code>async def trace_query(
+    self,
+    query_name: str,
+    variables: dict,
+    user_context
+) -&gt; Trace:
+    &quot;&quot;&quot;Execute query with full tracing&quot;&quot;&quot;
+
+    with self._create_span(f&quot;query:{query_name}&quot;) as root_span:
+        root_span.set_attribute(&quot;user_id&quot;, user_context.user_id)
+        root_span.set_attribute(&quot;variables&quot;, json.dumps(variables))
+
+        with self._create_span(&quot;authorization&quot;):
+            # Authorization checks
+            pass
+
+        with self._create_span(&quot;database.prepare&quot;):
+            # Query compilation
+            pass
+
+        with self._create_span(&quot;database.execute&quot;):
+            # Execute database query
+            pass
+
+        with self._create_span(&quot;response.build&quot;):
+            # Build response object
+            pass
+
+        return self._collect_trace(root_span)
+
+def _create_span(self, name: str):
+    &quot;&quot;&quot;Create tracing span&quot;&quot;&quot;
+    # Implementation: OpenTelemetry or similar
+    pass
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="7-emergency-procedures">7. Emergency Procedures<a class="headerlink" href="#7-emergency-procedures" title="Permanent link">&para;</a></h2>
+<h3 id="71-circuit-breaker-pattern">7.1 Circuit Breaker Pattern<a class="headerlink" href="#71-circuit-breaker-pattern" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class CircuitBreaker:
+    """Prevent cascading failures with circuit breaker"""</p>
+<div class="highlight"><pre><span></span><code>class State(Enum):
+    CLOSED = &quot;closed&quot;      # Normal operation
+    OPEN = &quot;open&quot;          # Failing - reject requests
+    HALF_OPEN = &quot;half_open&quot;  # Testing recovery
+
+def __init__(
+    self,
+    failure_threshold: int = 5,
+    recovery_timeout_seconds: int = 60
+):
+    self.failure_threshold = failure_threshold
+    self.recovery_timeout = recovery_timeout_seconds
+    self.state = CircuitBreaker.State.CLOSED
+    self.failure_count = 0
+    self.last_failure_time = None
+
+async def call(self, fn, *args, **kwargs) -&gt; Any:
+    &quot;&quot;&quot;Execute function with circuit breaker protection&quot;&quot;&quot;
+
+    if self.state == CircuitBreaker.State.OPEN:
+        # Check if recovery period elapsed
+        if self._recovery_timeout_elapsed():
+            self.state = CircuitBreaker.State.HALF_OPEN
+            self.failure_count = 0
+        else:
+            raise CircuitBreakerOpenError(
+                f&quot;Circuit breaker open, retry in &quot;
+                f&quot;{self._time_to_retry_seconds()}s&quot;
+            )
+
+    try:
+        result = await fn(*args, **kwargs)
+
+        # Success - reset state
+        if self.state == CircuitBreaker.State.HALF_OPEN:
+            self.state = CircuitBreaker.State.CLOSED
+        self.failure_count = 0
+
+        return result
+
+    except Exception as e:
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+
+        if self.failure_count &gt;= self.failure_threshold:
+            self.state = CircuitBreaker.State.OPEN
+
+        raise
+
+def _recovery_timeout_elapsed(self) -&gt; bool:
+    return (
+        self.last_failure_time and
+        time.time() - self.last_failure_time &gt; self.recovery_timeout
+    )
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-graceful-degradation">7.2 Graceful Degradation<a class="headerlink" href="#72-graceful-degradation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class GracefulDegradation:
+    """Degrade service gracefully under load"""</p>
+<div class="highlight"><pre><span></span><code>async def execute_with_degradation(
+    self,
+    query: str,
+    user_context,
+    system_load: float
+) -&gt; QueryResult:
+    &quot;&quot;&quot;Execute query with degradation based on system load
+
+    Load levels:
+    - &lt; 50%: Full quality (all features)
+    - 50-75%: Reduced features (skip non-critical optimization)
+    - 75-90%: Basic service (minimal features)
+    - &gt; 90%: Emergency (cached responses only)
+    &quot;&quot;&quot;
+
+    if system_load &gt; 0.90:
+        # Emergency mode: serve cached response
+        return await self._get_cached_response(query, user_context)
+
+    elif system_load &gt; 0.75:
+        # Degraded: skip expensive operations
+        return await self._execute_degraded(query, user_context)
+
+    elif system_load &gt; 0.50:
+        # Reduced: some optimizations disabled
+        return await self._execute_reduced(query, user_context)
+
+    else:
+        # Normal: full execution
+        return await self._execute_full(query, user_context)
+
+async def _get_cached_response(self, query, context):
+    &quot;&quot;&quot;Serve last known good response&quot;&quot;&quot;
+    # Cache policy: Keep responses for 30 seconds
+    key = f&quot;cached_response:{query}:{context.user_id}&quot;
+    return await self.cache.get(key)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="73-backpressure-handling">7.3 Backpressure Handling<a class="headerlink" href="#73-backpressure-handling" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class BackpressureManager:
+    """Handle traffic surge with graceful backpressure"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, max_queue_depth: int = 1000):
+    self.request_queue = asyncio.Queue(maxsize=max_queue_depth)
+    self.processing_workers = []
+
+async def handle_request(self, request) -&gt; Response:
+    &quot;&quot;&quot;Queue request with backpressure&quot;&quot;&quot;
+
+    try:
+        # Try to queue request (fail fast if full)
+        self.request_queue.put_nowait(request)
+    except asyncio.QueueFull:
+        # Queue is full - return backpressure response
+        return Response(
+            status=503,  # Service Unavailable
+            error=&quot;E_BACKPRESSURE&quot;,
+            message=&quot;Server is overloaded, please retry in a few seconds&quot;,
+            retry_after_seconds=random.uniform(1, 5)  # Exponential backoff
+        )
+
+    # Process request
+    return await self._process_request(request)
+
+async def _process_request(self, request):
+    &quot;&quot;&quot;Process single request&quot;&quot;&quot;
+    # Implementation
+    pass
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-performance-optimization-checklist">8. Performance Optimization Checklist<a class="headerlink" href="#8-performance-optimization-checklist" title="Permanent link">&para;</a></h2>
+<h3 id="database-layer">Database Layer<a class="headerlink" href="#database-layer" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Indexes on all WHERE/JOIN/ORDER BY columns</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Composite indexes for common filter combinations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Partial indexes for soft-deleted rows (WHERE deleted_at IS NULL)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Covering indexes for common queries</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Table statistics up to date (ANALYZE)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Partitioning for large tables (time-series)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Materialized views for complex aggregations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Connection pooling configured</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Slow query log enabled and monitored</li>
+</ul>
+<h3 id="query-layer">Query Layer<a class="headerlink" href="#query-layer" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query execution plans analyzed</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Predicates pushed to database</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Join order optimized</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> N+1 queries eliminated</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query result caching</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache TTL tuning</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pagination for large result sets</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Parallel query execution where possible</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query timeout configured</li>
+</ul>
+<h3 id="caching-layer">Caching Layer<a class="headerlink" href="#caching-layer" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> L1 in-memory cache for hot data</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> L2 Redis cache for distributed caching</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache invalidation strategy defined</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> TTL values tuned for workload</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Hot key detection and mitigation</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Thundering herd prevention</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache hit rate monitored (&gt; 80% target)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Eviction policy appropriate for workload</li>
+</ul>
+<h3 id="infrastructure">Infrastructure<a class="headerlink" href="#infrastructure" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Connection pool sized for CPU cores</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Garbage collection tuned</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Memory usage monitored</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Multi-instance load balancing</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Read replica configuration</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Circuit breakers for external services</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Backpressure handling</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Graceful degradation implemented</li>
+</ul>
+<h3 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query latency percentiles (p50, p95, p99)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache hit/miss rates</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database connection pool status</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Error rates by type</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> System load trending</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Slow queries identified and optimized</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Distributed traces for complex operations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Alerting thresholds defined</li>
+</ul>
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL advanced optimization covers:</p>
+<p>✅ <strong>Query Optimization</strong></p>
+<ul>
+<li>Execution plan analysis and adaptation</li>
+<li>Predicate pushdown to database</li>
+<li>Join order optimization</li>
+<li>Index effectiveness</li>
+</ul>
+<p>✅ <strong>Database Tuning</strong></p>
+<ul>
+<li>Index design strategy (B-tree, GIN, GIST)</li>
+<li>Materialized views for aggregations</li>
+<li>Partitioning for large tables</li>
+<li>Statistics and query planning</li>
+</ul>
+<p>✅ <strong>Caching Edge Cases</strong></p>
+<ul>
+<li>Hot key detection and mitigation</li>
+<li>Thundering herd prevention</li>
+<li>Eviction policy selection</li>
+<li>Cache consistency</li>
+</ul>
+<p>✅ <strong>Multi-Instance Scaling</strong></p>
+<ul>
+<li>Replica consistency management</li>
+<li>Session affinity routing</li>
+<li>Load balancing strategies</li>
+<li>Connection locality</li>
+</ul>
+<p>✅ <strong>Resource Optimization</strong></p>
+<ul>
+<li>Memory profiling and GC tuning</li>
+<li>Connection pool configuration</li>
+<li>Query profiling</li>
+<li>Distributed tracing</li>
+</ul>
+<p>✅ <strong>Emergency Procedures</strong></p>
+<ul>
+<li>Circuit breaker pattern</li>
+<li>Graceful degradation under load</li>
+<li>Backpressure handling</li>
+<li>Cache fallback strategies</li>
+</ul>
+<hr />
+<p><strong>Complete</strong>: All 17 Priority 3 architecture documents now available for comprehensive system design and implementation planning.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

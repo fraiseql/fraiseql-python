@@ -1,0 +1,9355 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/tutorials/typescript-blog-api/">
+      
+      
+        <link rel="prev" href="../python-blog-api/">
+      
+      
+        <link rel="next" href="../go-blog-api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>TypeScript Blog API - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#building-a-blog-api-with-fraiseql-typescript-schema-authoring-tutorial" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TypeScript Blog API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/security/security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/security/authentication-detailed/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/performance/performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/performance/advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-database-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1: Database Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1: Database Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-postgresql-schema-ddl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 PostgreSQL Schema (DDL)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-database-views-for-graphql-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Database Views (for GraphQL Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-database-procedures-for-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Database Procedures (for Mutations)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-typescript-project-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2: TypeScript Project Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2: TypeScript Project Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-project-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Project Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-database-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1: Database Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1: Database Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-postgresql-schema-ddl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 PostgreSQL Schema (DDL)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-database-views-for-graphql-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Database Views (for GraphQL Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-database-procedures-for-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Database Procedures (for Mutations)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-typescript-project-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2: TypeScript Project Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2: TypeScript Project Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-project-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Project Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: Building a Blog API with FraiseQL: TypeScript Schema Authoring Tutorial
+description: In this tutorial, we'll build a production-ready Blog API using FraiseQL's TypeScript schema authoring layer. You'll learn:
+keywords: ["project", "hands-on", "schema", "learning", "example", "step-by-step"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="building-a-blog-api-with-fraiseql-typescript-schema-authoring-tutorial">Building a Blog API with FraiseQL: TypeScript Schema Authoring Tutorial<a class="headerlink" href="#building-a-blog-api-with-fraiseql-typescript-schema-authoring-tutorial" title="Permanent link">&para;</a></h1>
+<p><strong>Audience:</strong> TypeScript developers, schema designers, API builders
+<strong>Prerequisite:</strong> Node.js 18+, TypeScript 5.0+, PostgreSQL 14+
+<strong>Reading Time:</strong> 30-40 minutes
+<strong>Hands-On Time:</strong> 45-60 minutes</p>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>In this tutorial, we'll build a production-ready Blog API using FraiseQL's TypeScript schema authoring layer. You'll learn:</p>
+<ol>
+<li><strong>Schema design principles</strong> - How to structure GraphQL types for a blog</li>
+<li><strong>TypeScript decorators</strong> - Using <code>@Type</code>, <code>@Query</code>, <code>@Mutation</code> to define your API</li>
+<li><strong>Type system</strong> - Modeling relationships, optionals, arrays, and scalars</li>
+<li><strong>Schema export</strong> - Generating <code>schema.json</code> from TypeScript</li>
+<li><strong>Compilation</strong> - Converting to <code>schema.compiled.json</code> with the FraiseQL CLI</li>
+<li><strong>Deployment</strong> - Running a GraphQL server from your compiled schema</li>
+<li><strong>Testing</strong> - Executing queries against your API</li>
+</ol>
+<p><strong>What we're building:</strong> A blog platform with users, posts, and comments.</p>
+<p><strong>Architecture:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>TypeScript Schema        → schema.json        → schema.compiled.json → FraiseQL Server
+(@Type, @Query, @Mutation)  (decorators)      (FraiseQL-cli)        (GraphQL API)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-1-database-schema">Part 1: Database Schema<a class="headerlink" href="#part-1-database-schema" title="Permanent link">&para;</a></h2>
+<p>Before writing GraphQL types, we need the underlying database schema. FraiseQL compiles to SQL, so understanding your data structure is essential.</p>
+<h3 id="11-postgresql-schema-ddl">1.1 PostgreSQL Schema (DDL)<a class="headerlink" href="#11-postgresql-schema-ddl" title="Permanent link">&para;</a></h3>
+<p>Create the following tables in PostgreSQL:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- Users table: Core user accounts
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    bio TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>-- Posts table: Blog posts created by users
+CREATE TABLE posts (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    content TEXT NOT NULL,
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>-- Comments table: Comments on posts
+CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    text TEXT NOT NULL,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>-- Create indexes for common queries
+CREATE INDEX idx_posts_author_id ON posts(author_id);
+CREATE INDEX idx_posts_published ON posts(published_at DESC);
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_comments_author_id ON comments(author_id);
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="12-database-views-for-graphql-queries">1.2 Database Views (for GraphQL Queries)<a class="headerlink" href="#12-database-views-for-graphql-queries" title="Permanent link">&para;</a></h3>
+<p>FraiseQL queries typically execute against views, which provide data access boundaries and can include business logic:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- View: Get all users with post count
+CREATE VIEW v_user AS
+SELECT
+    u.id,
+    u.email,
+    u.name,
+    u.bio,
+    u.created_at,
+    u.updated_at,
+    COUNT(DISTINCT p.id) AS post_count
+FROM users u
+LEFT JOIN posts p ON u.id = p.author_id
+GROUP BY u.id;</p>
+<p>-- View: Get all published posts with author info
+CREATE VIEW v_post AS
+SELECT
+    p.id,
+    p.title,
+    p.content,
+    p.author_id,
+    p.published_at,
+    p.created_at,
+    p.updated_at,
+    u.email AS author_email,
+    u.name AS author_name,
+    COUNT(DISTINCT c.id) AS comment_count
+FROM posts p
+JOIN users u ON p.author_id = u.id
+LEFT JOIN comments c ON p.id = c.post_id
+WHERE p.published_at IS NOT NULL
+GROUP BY p.id, u.id;</p>
+<p>-- View: Get all comments with author info
+CREATE VIEW v_comment AS
+SELECT
+    c.id,
+    c.text,
+    c.post_id,
+    c.author_id,
+    c.created_at,
+    u.email AS author_email,
+    u.name AS author_name
+FROM comments c
+JOIN users u ON c.author_id = u.id;
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="13-database-procedures-for-mutations">1.3 Database Procedures (for Mutations)<a class="headerlink" href="#13-database-procedures-for-mutations" title="Permanent link">&para;</a></h3>
+<p>FraiseQL mutations execute stored procedures that handle CREATE, UPDATE, DELETE operations:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- Function: Create a new user
+CREATE OR REPLACE FUNCTION fn_create_user(
+    p_email VARCHAR,
+    p_name VARCHAR,
+    p_bio TEXT DEFAULT NULL
+)
+RETURNS SETOF users AS $$
+INSERT INTO users (email, name, bio)
+VALUES (p_email, p_name, p_bio)
+ON CONFLICT (email) DO NOTHING
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>-- Function: Create a new post
+CREATE OR REPLACE FUNCTION fn_create_post(
+    p_title VARCHAR,
+    p_content TEXT,
+    p_author_id BIGINT,
+    p_published BOOLEAN DEFAULT FALSE
+)
+RETURNS SETOF posts AS $$
+INSERT INTO posts (title, content, author_id, published_at)
+VALUES (
+    p_title,
+    p_content,
+    p_author_id,
+    CASE WHEN p_published THEN CURRENT_TIMESTAMP ELSE NULL END
+)
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>-- Function: Create a new comment
+CREATE OR REPLACE FUNCTION fn_create_comment(
+    p_text TEXT,
+    p_post_id BIGINT,
+    p_author_id BIGINT
+)
+RETURNS SETOF comments AS $$
+INSERT INTO comments (text, post_id, author_id)
+VALUES (p_text, p_post_id, p_author_id)
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>-- Function: Update a user
+CREATE OR REPLACE FUNCTION fn_update_user(
+    p_id BIGINT,
+    p_name VARCHAR DEFAULT NULL,
+    p_bio TEXT DEFAULT NULL
+)
+RETURNS SETOF users AS $$
+UPDATE users
+SET
+    name = COALESCE(p_name, name),
+    bio = COALESCE(p_bio, bio),
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = p_id
+RETURNING *;
+$$ LANGUAGE SQL;
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-2-typescript-project-setup">Part 2: TypeScript Project Setup<a class="headerlink" href="#part-2-typescript-project-setup" title="Permanent link">&para;</a></h2>
+<h3 id="21-project-structure">2.1 Project Structure<a class="headerlink" href="#21-project-structure" title="Permanent link">&para;</a></h3>
+<p>Create a new TypeScript project:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>mkdir blog-api &amp;&amp; cd blog-api
+npm init -y
+npm install --save-dev typescript ts-node @types/node
+npm install FraiseQL</p>
+<h1 id="create-src-directory">Create src directory<a class="headerlink" href="#create-src-directory" title="Permanent link">&para;</a></h1>
+<p>mkdir src
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="22-typescript-configuration">2.2 TypeScript Configuration<a class="headerlink" href="#22-typescript-configuration" title="Permanent link">&para;</a></h3>
+<p>Create <code>tsconfig.json</code>:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Key settings:</strong></p>
+<ul>
+<li><code>experimentalDecorators: true</code> - Required for <code>@Type</code>, <code>@Query</code>, <code>@Mutation</code> decorators</li>
+<li><code>emitDecoratorMetadata: true</code> - Preserves metadata for reflection</li>
+<li><code>target: ES2020</code> - Modern JavaScript features</li>
+<li><code>strict: true</code> - Full type checking (recommended)</li>
+</ul>
+<h3 id="23-package-configuration">2.3 Package Configuration<a class="headerlink" href="#23-package-configuration" title="Permanent link">&para;</a></h3>
+<p>Create <code>package.json</code> scripts:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "name": "blog-api",
+  "version": "1.0.0",
+  "scripts": {
+    "export": "ts-node src/schema.ts",
+    "compile": "FraiseQL compile FraiseQL.toml",
+    "build": "npm run export &amp;&amp; npm run compile",
+    "dev": "FraiseQL serve schema.compiled.json --port 4000",
+    "test": "ts-node src/tests.ts"
+  },
+  "dependencies": {
+    "FraiseQL": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-3-fraiseql-schema-definition">Part 3: FraiseQL Schema Definition<a class="headerlink" href="#part-3-fraiseql-schema-definition" title="Permanent link">&para;</a></h2>
+<h3 id="31-creating-the-schema-file">3.1 Creating the Schema File<a class="headerlink" href="#31-creating-the-schema-file" title="Permanent link">&para;</a></h3>
+<p>Create <code>src/schema.ts</code>:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>/**
+ * Blog API Schema - TypeScript Authoring
+ *
+ * This file defines the GraphQL schema using FraiseQL decorators.
+ * It generates schema.json which is then compiled by FraiseQL-cli.
+ */</p>
+<p>import * as FraiseQL from "FraiseQL";</p>
+<p>// ============================================================================
+// TYPES: Define the shape of data returned by queries
+// ============================================================================</p>
+<p>/**
+ * User type: Represents a user account
+ *
+ * Fields:
+ * - id: Unique identifier (primary key from database)
+ * - email: User's email address (unique)
+ * - name: User's display name
+ * - bio: Optional biography
+ * - postCount: Computed count of user's posts
+ * - createdAt: Account creation timestamp
+ * - updatedAt: Last update timestamp
+ */
+@FraiseQL.Type({
+  description: "A user account in the blog system"
+})
+class User {
+  id: number;
+  email: string;
+  name: string;
+  bio?: string;  // Optional field (nullable in GraphQL)
+  postCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}</p>
+<p>/**
+ * Post type: Represents a blog post
+ *
+ * Fields:
+ * - id: Unique identifier
+ * - title: Post title
+ * - content: Post content (markdown)
+ * - authorId: Foreign key to User
+ * - publishedAt: Publication timestamp (null if draft)
+ * - commentCount: Computed count of comments
+ * - createdAt: Creation timestamp
+ * - updatedAt: Last update timestamp
+ */
+@FraiseQL.Type({
+  description: "A blog post"
+})
+class Post {
+  id: number;
+  title: string;
+  content: string;
+  authorId: number;
+  publishedAt?: Date;  // Null for draft posts
+  commentCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}</p>
+<p>/**
+ * Comment type: Represents a comment on a post
+ *
+ * Fields:
+ * - id: Unique identifier
+ * - text: Comment content
+ * - postId: Foreign key to Post
+ * - authorId: Foreign key to User
+ * - authorEmail: Author's email (denormalized from User)
+ * - authorName: Author's name (denormalized from User)
+ * - createdAt: Creation timestamp
+ */
+@FraiseQL.Type({
+  description: "A comment on a blog post"
+})
+class Comment {
+  id: number;
+  text: string;
+  postId: number;
+  authorId: number;
+  authorEmail: string;
+  authorName: string;
+  createdAt: Date;
+}</p>
+<p>// ============================================================================
+// REGISTER TYPE FIELDS: Map TypeScript properties to GraphQL types
+// ============================================================================</p>
+<p>/**
+ * Register User fields.
+ *
+ * Maps TypeScript property names to GraphQL types:
+ * - Scalar types: String, Int, Float, Boolean, ID, DateTime, Decimal, JSON
+ * - nullable: true means field can be null (marked with ? in TypeScript)
+ * - Database column: Maps to database field name
+ */
+FraiseQL.registerTypeFields("User", [
+  { name: "id", type: "ID", nullable: false, description: "Primary key" },
+  { name: "email", type: "String", nullable: false, description: "User email" },
+  { name: "name", type: "String", nullable: false, description: "User name" },
+  { name: "bio", type: "String", nullable: true, description: "User biography" },
+  { name: "postCount", type: "Int", nullable: false, description: "Number of posts by this user" },
+  { name: "createdAt", type: "DateTime", nullable: false, description: "Account created" },
+  { name: "updatedAt", type: "DateTime", nullable: false, description: "Account last updated" }
+]);</p>
+<p>/**
+ * Register Post fields.
+ *
+ * Note: publishedAt is nullable (representing draft posts)
+ */
+FraiseQL.registerTypeFields("Post", [
+  { name: "id", type: "ID", nullable: false, description: "Primary key" },
+  { name: "title", type: "String", nullable: false, description: "Post title" },
+  { name: "content", type: "String", nullable: false, description: "Post content" },
+  { name: "authorId", type: "ID", nullable: false, description: "Author user ID" },
+  { name: "publishedAt", type: "DateTime", nullable: true, description: "Publication date" },
+  { name: "commentCount", type: "Int", nullable: false, description: "Number of comments" },
+  { name: "createdAt", type: "DateTime", nullable: false, description: "Post created" },
+  { name: "updatedAt", type: "DateTime", nullable: false, description: "Post last updated" }
+]);</p>
+<p>/**
+ * Register Comment fields.
+ */
+FraiseQL.registerTypeFields("Comment", [
+  { name: "id", type: "ID", nullable: false, description: "Primary key" },
+  { name: "text", type: "String", nullable: false, description: "Comment text" },
+  { name: "postId", type: "ID", nullable: false, description: "Post this comments on" },
+  { name: "authorId", type: "ID", nullable: false, description: "Author user ID" },
+  { name: "authorEmail", type: "String", nullable: false, description: "Author email" },
+  { name: "authorName", type: "String", nullable: false, description: "Author name" },
+  { name: "createdAt", type: "DateTime", nullable: false, description: "Comment created" }
+]);</p>
+<p>// ============================================================================
+// QUERIES: Read operations
+// ============================================================================</p>
+<p>/**
+ * Query: Get all users
+ *
+ * Executes against v_user view.
+ * Supports optional filtering:
+ * - limit: Max number of results (default 100)
+ * - offset: Skip first N results (default 0)
+ *
+ * Returns: Array of User objects
+ */
+FraiseQL.registerQuery(
+  "users",           // Query name
+  "User",            // Return type
+  true,              // Returns list (array)
+  false,             // Not nullable (always returns array, may be empty)
+  [
+    {
+      name: "limit",
+      type: "Int",
+      nullable: false,
+      default: 100,
+      description: "Maximum number of results"
+    },
+    {
+      name: "offset",
+      type: "Int",
+      nullable: false,
+      default: 0,
+      description: "Skip first N results"
+    }
+  ],
+  "Get all users with pagination",
+  { sqlSource: "v_user" }
+);</p>
+<p>/**
+ * Query: Get user by ID
+ *
+ * Executes against v_user view with ID filter.
+ * Returns: Single User object or null
+ */
+FraiseQL.registerQuery(
+  "userById",
+  "User",
+  false,             // Single result, not a list
+  true,              // Can be null (user may not exist)
+  [
+    {
+      name: "id",
+      type: "ID",
+      nullable: false,
+      description: "User ID to fetch"
+    }
+  ],
+  "Get a user by ID",
+  { sqlSource: "v_user" }
+);</p>
+<p>/**
+ * Query: Get user by email
+ *
+ * Executes against v_user view with email filter.
+ * Returns: Single User object or null
+ */
+FraiseQL.registerQuery(
+  "userByEmail",
+  "User",
+  false,
+  true,
+  [
+    {
+      name: "email",
+      type: "String",
+      nullable: false,
+      description: "User email to fetch"
+    }
+  ],
+  "Get a user by email address",
+  { sqlSource: "v_user" }
+);</p>
+<p>/**
+ * Query: Get all published posts
+ *
+ * Executes against v_post view (which filters for published_at IS NOT NULL).
+ * Supports pagination and sorting.
+ *
+ * Returns: Array of Post objects
+ */
+FraiseQL.registerQuery(
+  "posts",
+  "Post",
+  true,
+  false,
+  [
+    {
+      name: "limit",
+      type: "Int",
+      nullable: false,
+      default: 50,
+      description: "Maximum number of posts"
+    },
+    {
+      name: "offset",
+      type: "Int",
+      nullable: false,
+      default: 0,
+      description: "Skip first N posts"
+    }
+  ],
+  "Get all published posts with pagination",
+  { sqlSource: "v_post" }
+);</p>
+<p>/**
+ * Query: Get post by ID
+ *
+ * Returns: Single Post object or null
+ */
+FraiseQL.registerQuery(
+  "postById",
+  "Post",
+  false,
+  true,
+  [
+    {
+      name: "id",
+      type: "ID",
+      nullable: false,
+      description: "Post ID"
+    }
+  ],
+  "Get a post by ID",
+  { sqlSource: "v_post" }
+);</p>
+<p>/**
+ * Query: Get posts by author
+ *
+ * Filters posts by author ID.
+ * Returns: Array of Post objects from that author
+ */
+FraiseQL.registerQuery(
+  "postsByAuthor",
+  "Post",
+  true,
+  false,
+  [
+    {
+      name: "authorId",
+      type: "ID",
+      nullable: false,
+      description: "Author user ID"
+    },
+    {
+      name: "limit",
+      type: "Int",
+      nullable: false,
+      default: 50,
+      description: "Maximum number of posts"
+    }
+  ],
+  "Get all posts by a specific author",
+  { sqlSource: "v_post" }
+);</p>
+<p>/**
+ * Query: Get comments on a post
+ *
+ * Returns: Array of Comment objects for a specific post
+ */
+FraiseQL.registerQuery(
+  "postComments",
+  "Comment",
+  true,
+  false,
+  [
+    {
+      name: "postId",
+      type: "ID",
+      nullable: false,
+      description: "Post ID"
+    }
+  ],
+  "Get all comments on a specific post",
+  { sqlSource: "v_comment" }
+);</p>
+<p>// ============================================================================
+// MUTATIONS: Write operations
+// ============================================================================</p>
+<p>/**
+ * Mutation: Create user
+ *
+ * Calls fn_create_user stored procedure.
+ * Returns: Newly created User object
+ */
+FraiseQL.registerMutation(
+  "createUser",
+  "User",
+  false,             // Single result
+  false,             // Not nullable
+  [
+    {
+      name: "email",
+      type: "String",
+      nullable: false,
+      description: "User email"
+    },
+    {
+      name: "name",
+      type: "String",
+      nullable: false,
+      description: "User name"
+    },
+    {
+      name: "bio",
+      type: "String",
+      nullable: true,
+      description: "User biography"
+    }
+  ],
+  "Create a new user",
+  { sqlSource: "fn_create_user", operation: "CREATE" }
+);</p>
+<p>/**
+ * Mutation: Create post
+ *
+ * Calls fn_create_post stored procedure.
+ * Returns: Newly created Post object
+ */
+FraiseQL.registerMutation(
+  "createPost",
+  "Post",
+  false,
+  false,
+  [
+    {
+      name: "title",
+      type: "String",
+      nullable: false,
+      description: "Post title"
+    },
+    {
+      name: "content",
+      type: "String",
+      nullable: false,
+      description: "Post content"
+    },
+    {
+      name: "authorId",
+      type: "ID",
+      nullable: false,
+      description: "Author user ID"
+    },
+    {
+      name: "published",
+      type: "Boolean",
+      nullable: false,
+      default: false,
+      description: "Publish immediately?"
+    }
+  ],
+  "Create a new blog post",
+  { sqlSource: "fn_create_post", operation: "CREATE" }
+);</p>
+<p>/**
+ * Mutation: Create comment
+ *
+ * Calls fn_create_comment stored procedure.
+ * Returns: Newly created Comment object
+ */
+FraiseQL.registerMutation(
+  "createComment",
+  "Comment",
+  false,
+  false,
+  [
+    {
+      name: "text",
+      type: "String",
+      nullable: false,
+      description: "Comment text"
+    },
+    {
+      name: "postId",
+      type: "ID",
+      nullable: false,
+      description: "Post to comment on"
+    },
+    {
+      name: "authorId",
+      type: "ID",
+      nullable: false,
+      description: "Author user ID"
+    }
+  ],
+  "Add a comment to a post",
+  { sqlSource: "fn_create_comment", operation: "CREATE" }
+);</p>
+<p>/**
+ * Mutation: Update user
+ *
+ * Calls fn_update_user stored procedure.
+ * Returns: Updated User object
+ */
+FraiseQL.registerMutation(
+  "updateUser",
+  "User",
+  false,
+  true,              // Can be null if user doesn't exist
+  [
+    {
+      name: "id",
+      type: "ID",
+      nullable: false,
+      description: "User ID to update"
+    },
+    {
+      name: "name",
+      type: "String",
+      nullable: true,
+      description: "New name (optional)"
+    },
+    {
+      name: "bio",
+      type: "String",
+      nullable: true,
+      description: "New biography (optional)"
+    }
+  ],
+  "Update user profile",
+  { sqlSource: "fn_update_user", operation: "UPDATE" }
+);</p>
+<p>// ============================================================================
+// EXPORT: Generate schema.json
+// ============================================================================</p>
+<p>/**
+ * Export the schema to schema.json for compilation.
+ *
+ * This generates a JSON file containing all type definitions,
+ * queries, and mutations. The FraiseQL CLI will compile this
+ * into schema.compiled.json.
+ */
+async function exportSchema() {
+  try {
+    FraiseQL.exportTypes("schema.json", { pretty: true });
+    console.log("✅ Schema exported successfully!");
+    console.log("   Output: schema.json");
+    console.log("   Types: 3 (User, Post, Comment)");
+    console.log("   Queries: 6");
+    console.log("   Mutations: 4");
+    console.log("\n📝 Next steps:");
+    console.log("   1. Create FraiseQL.toml with database configuration");
+    console.log("   2. Run: npm run compile");
+    console.log("   3. Run: npm run dev");
+  } catch (error) {
+    console.error("❌ Export failed:", error);
+    process.exit(1);
+  }
+}</p>
+<p>// Run if executed directly
+if (require.main === module) {
+  exportSchema();
+}</p>
+<p>export { User, Post, Comment };
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="32-understanding-the-decorators">3.2 Understanding the Decorators<a class="headerlink" href="#32-understanding-the-decorators" title="Permanent link">&para;</a></h3>
+<h4 id="fraiseqltype"><code>@FraiseQL.Type()</code><a class="headerlink" href="#fraiseqltype" title="Permanent link">&para;</a></h4>
+<p>Marks a class as a GraphQL type:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>@FraiseQL.Type({
+  description: "A user account"
+})
+class User {
+  id: number;
+  name: string;
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>What it does:</strong></p>
+<ul>
+<li>Registers the class name as a GraphQL type</li>
+<li>Metadata is collected at decoration time</li>
+<li>No runtime behavior</li>
+</ul>
+<h4 id="registertypefields"><code>registerTypeFields()</code><a class="headerlink" href="#registertypefields" title="Permanent link">&para;</a></h4>
+<p>Maps TypeScript properties to GraphQL fields:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerTypeFields("User", [
+  {
+    name: "id",
+    type: "ID",           // GraphQL scalar type
+    nullable: false,      // Non-null field (!)
+    description: "..."
+  },
+  {
+    name: "email",
+    type: "String",
+    nullable: false
+  }
+]);
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Scalar types:</strong></p>
+<ul>
+<li><code>ID</code> - Unique identifier</li>
+<li><code>String</code> - Text</li>
+<li><code>Int</code> - 32-bit integer</li>
+<li><code>Float</code> - Floating point number</li>
+<li><code>Boolean</code> - True/false</li>
+<li><code>DateTime</code> - ISO 8601 timestamp</li>
+<li><code>Decimal</code> - Arbitrary precision number (for currency)</li>
+<li><code>JSON</code> - Arbitrary JSON object</li>
+</ul>
+<p><strong>Nullable rules:</strong></p>
+<ul>
+<li><code>nullable: false</code> → <code>ID!</code> in GraphQL (required)</li>
+<li><code>nullable: true</code> → <code>ID</code> in GraphQL (optional)</li>
+<li>Lists never represent individual array elements, only return types</li>
+</ul>
+<h4 id="registerquery"><code>registerQuery()</code><a class="headerlink" href="#registerquery" title="Permanent link">&para;</a></h4>
+<p>Defines a read operation:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerQuery(
+  "users",              // Query name in GraphQL
+  "User",               // Return type (must be a registered @Type)
+  true,                 // Returns list (array)
+  false,                // Result not nullable
+  [
+    {
+      name: "limit",
+      type: "Int",
+      nullable: false,
+      default: 100        // Optional default value
+    }
+  ],
+  "Get all users with pagination",
+  { sqlSource: "v_user" }  // View or table name
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Parameters:</strong></p>
+<ol>
+<li><code>name</code> - Query name in GraphQL schema</li>
+<li><code>returnType</code> - Type name (must exist)</li>
+<li><code>returnsList</code> - Does this query return an array?</li>
+<li><code>nullable</code> - Can the result be null?</li>
+<li><code>args</code> - Array of argument definitions</li>
+<li><code>description</code> - Documentation string</li>
+<li><code>config</code> - Additional configuration:</li>
+<li><code>sqlSource</code> - Table/view name to query</li>
+<li><code>whereColumn</code> - Column to filter by (for single-record lookups)</li>
+</ol>
+<h4 id="registermutation"><code>registerMutation()</code><a class="headerlink" href="#registermutation" title="Permanent link">&para;</a></h4>
+<p>Defines a write operation:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerMutation(
+  "createUser",
+  "User",
+  false,                // Single result (not list)
+  false,                // Not nullable
+  [
+    { name: "email", type: "String", nullable: false },
+    { name: "name", type: "String", nullable: false }
+  ],
+  "Create a new user",
+  {
+    sqlSource: "fn_create_user",    // Stored procedure name
+    operation: "CREATE"              // CREATE, UPDATE, DELETE, or CUSTOM
+  }
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="33-typescript-type-system">3.3 TypeScript Type System<a class="headerlink" href="#33-typescript-type-system" title="Permanent link">&para;</a></h3>
+<p><strong>Nullable vs Non-Nullable:</strong></p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>// TypeScript          → GraphQL
+name: string          // String!      (required)
+name?: string         // String       (optional)
+name: string | null   // String       (optional)</p>
+<p>// Arrays
+posts: Post[]         // [Post!]!     (non-null array of non-null items)
+posts?: Post[]        // [Post!]      (non-null array, but field optional)
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Relationships:</strong></p>
+<p>In FraiseQL, relationships are typically denormalized into views:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>// Instead of nested relationships...
+@FraiseQL.Type()
+class User {
+  id: number;
+  name: string;
+  posts: Post[];        // ❌ Not supported at schema level
+}</p>
+<p>// ...use fields from the view:
+@FraiseQL.Type()
+class User {
+  id: number;
+  name: string;
+  postCount: number;    // ✅ Computed in the view
+}</p>
+<p>// Then provide separate queries:
+FraiseQL.registerQuery(
+  "userById",
+  "User",
+  false,
+  true,
+  [{ name: "id", type: "ID", nullable: false }],
+  "Get user by ID",
+  { sqlSource: "v_user" }
+);</p>
+<p>FraiseQL.registerQuery(
+  "postsByAuthor",
+  "Post",
+  true,
+  false,
+  [{ name: "authorId", type: "ID", nullable: false }],
+  "Get posts by author",
+  { sqlSource: "v_post" }
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-4-exporting-the-schema">Part 4: Exporting the Schema<a class="headerlink" href="#part-4-exporting-the-schema" title="Permanent link">&para;</a></h2>
+<h3 id="41-running-the-export">4.1 Running the Export<a class="headerlink" href="#41-running-the-export" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>npm run export
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Output:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>✅ Schema exported successfully!
+   Output: schema.json
+   Types: 3 (User, Post, Comment)
+   Queries: 6
+   Mutations: 4
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>This generates <code>schema.json</code>:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "version": "1.0",
+  "types": [
+    {
+      "name": "User",
+      "description": "A user account in the blog system",
+      "kind": "OBJECT",
+      "fields": [
+        {
+          "name": "id",
+          "type": "ID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "nullable": false,
+          "description": "User email"
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "name": "users",
+      "return_type": "User",
+      "returns_list": true,
+      "nullable": false,
+      "description": "Get all users with pagination",
+      "arguments": [
+        {
+          "name": "limit",
+          "type": "Int",
+          "nullable": false,
+          "default": 100
+        }
+      ],
+      "sql_source": "v_user"
+    }
+  ],
+  "mutations": [
+    {
+      "name": "createUser",
+      "return_type": "User",
+      "returns_list": false,
+      "nullable": false,
+      "arguments": [
+        {
+          "name": "email",
+          "type": "String",
+          "nullable": false
+        }
+      ],
+      "sql_source": "fn_create_user",
+      "operation": "CREATE"
+    }
+  ]
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="42-understanding-the-generated-json">4.2 Understanding the Generated JSON<a class="headerlink" href="#42-understanding-the-generated-json" title="Permanent link">&para;</a></h3>
+<p><strong>Type Definition:</strong></p>
+<ul>
+<li><code>name</code> - Type name</li>
+<li><code>kind</code> - OBJECT, ENUM, INTERFACE, UNION, INPUT, SCALAR</li>
+<li><code>fields</code> - Array of field definitions</li>
+<li><code>description</code> - Type documentation</li>
+</ul>
+<p><strong>Query Definition:</strong></p>
+<ul>
+<li><code>name</code> - Query name</li>
+<li><code>return_type</code> - Type returned</li>
+<li><code>returns_list</code> - Is it an array?</li>
+<li><code>arguments</code> - Input parameters</li>
+<li><code>sql_source</code> - View to query</li>
+</ul>
+<p><strong>Mutation Definition:</strong></p>
+<ul>
+<li><code>name</code> - Mutation name</li>
+<li><code>operation</code> - CREATE, UPDATE, DELETE, CUSTOM</li>
+<li><code>sql_source</code> - Stored procedure to call</li>
+</ul>
+<h3 id="43-troubleshooting-export-errors">4.3 Troubleshooting Export Errors<a class="headerlink" href="#43-troubleshooting-export-errors" title="Permanent link">&para;</a></h3>
+<p><strong>Error: "Type 'User' not found"</strong></p>
+<ul>
+<li>Ensure <code>registerTypeFields()</code> is called for every type before export</li>
+<li>Check spelling matches between <code>registerTypeFields("User")</code> and type usage</li>
+</ul>
+<p><strong>Error: "Query 'users' references unknown return type 'User'"</strong></p>
+<ul>
+<li>Call <code>registerTypeFields()</code> for User before <code>registerQuery()</code> for users</li>
+</ul>
+<p><strong>Error: "Field 'name' has type 'String' but no nullable option"</strong></p>
+<ul>
+<li>Always specify <code>nullable: true</code> or <code>nullable: false</code> for each field</li>
+</ul>
+<p><strong>Solution: Check for TypeScript errors</strong></p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>npx tsc --noEmit
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-5-creating-the-fraiseql-configuration">Part 5: Creating the FraiseQL Configuration<a class="headerlink" href="#part-5-creating-the-fraiseql-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="51-fraiseqltoml">5.1 FraiseQL.toml<a class="headerlink" href="#51-fraiseqltoml" title="Permanent link">&para;</a></h3>
+<p>Create <code>FraiseQL.toml</code> at the project root:</p>
+<p>```toml</p>
+<!-- Code example in TOML -->
+<h1 id="blog-api-configuration">Blog API Configuration<a class="headerlink" href="#blog-api-configuration" title="Permanent link">&para;</a></h1>
+<p>[FraiseQL]
+name = "blog-api"
+version = "1.0.0"
+database_target = "postgresql"
+description = "Blog API with users, posts, and comments"</p>
+<h1 id="database-connection-can-be-overridden-by-environment-variables">Database connection (can be overridden by environment variables)<a class="headerlink" href="#database-connection-can-be-overridden-by-environment-variables" title="Permanent link">&para;</a></h1>
+<p>[FraiseQL.database]
+host = "localhost"
+port = 5432
+name = "blog_db"
+username = "blog_user"
+password = "blog_password"</p>
+<h1 id="security-configuration-optional-for-future-authvalidation">Security configuration (optional, for future auth/validation)<a class="headerlink" href="#security-configuration-optional-for-future-authvalidation" title="Permanent link">&para;</a></h1>
+<p>[FraiseQL.security]
+enable_introspection = true
+enable_mutations = true</p>
+<h1 id="development-server-configuration">Development server configuration<a class="headerlink" href="#development-server-configuration" title="Permanent link">&para;</a></h1>
+<p>[FraiseQL.server]
+bind = "0.0.0.0"
+port = 4000
+cors_origins = ["*"]
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="52-environment-variable-overrides">5.2 Environment Variable Overrides<a class="headerlink" href="#52-environment-variable-overrides" title="Permanent link">&para;</a></h3>
+<p>For production, override sensitive values:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>export FRAISEQL_DB_HOST=prod-db.example.com
+export FRAISEQL_DB_NAME=blog_prod
+export FRAISEQL_DB_USERNAME=blog_prod_user
+export FRAISEQL_DB_PASSWORD=<secure-password>
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-6-compiling-the-schema">Part 6: Compiling the Schema<a class="headerlink" href="#part-6-compiling-the-schema" title="Permanent link">&para;</a></h2>
+<h3 id="61-using-fraiseql-cli">6.1 Using FraiseQL-cli<a class="headerlink" href="#61-using-fraiseql-cli" title="Permanent link">&para;</a></h3>
+<p>Once you have <code>schema.json</code> and <code>FraiseQL.toml</code>, compile:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>FraiseQL compile FraiseQL.toml --types schema.json
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>What it does:</strong></p>
+<ol>
+<li>Validates all types exist and are properly defined</li>
+<li>Validates all queries/mutations reference existing types</li>
+<li>Validates all views/procedures exist in the database</li>
+<li>Generates optimized SQL templates</li>
+<li>Produces <code>schema.compiled.json</code></li>
+</ol>
+<p><strong>Output:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Compiling Blog API v1.0.0...
+✅ Database connection successful
+✅ Validated 3 types (User, Post, Comment)
+✅ Validated 6 queries
+✅ Validated 4 mutations
+✅ Generated SQL templates
+✅ Compiled schema saved: schema.compiled.json
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="62-understanding-schemacompiledjson">6.2 Understanding schema.compiled.json<a class="headerlink" href="#62-understanding-schemacompiledjson" title="Permanent link">&para;</a></h3>
+<p>The compiled schema includes:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "version": "1.0",
+  "name": "blog-api",
+  "types": [...],           // All type definitions
+  "queries": [...],         // All query definitions with SQL
+  "mutations": [...],       // All mutation definitions with SQL
+  "sql_templates": {
+    "users_list": "SELECT id, email, name, ... FROM v_user LIMIT $1 OFFSET $2",
+    "user_by_id": "SELECT id, email, name, ... FROM v_user WHERE id = <span class="arithmatex">\(1",
+    "create_user": "SELECT * FROM fn_create_user(\)</span>1, $2, $3)"
+  },
+  "database": {
+    "target": "postgresql",
+    "views": ["v_user", "v_post", "v_comment"],
+    "procedures": ["fn_create_user", "fn_create_post", "fn_create_comment", "fn_update_user"]
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="63-troubleshooting-compilation-errors">6.3 Troubleshooting Compilation Errors<a class="headerlink" href="#63-troubleshooting-compilation-errors" title="Permanent link">&para;</a></h3>
+<p><strong>Error: "View 'v_user' not found in database"</strong></p>
+<ul>
+<li>Ensure the PostgreSQL view exists</li>
+<li>Check database connection settings</li>
+<li>Verify you're connected to the correct database</li>
+</ul>
+<p><strong>Error: "Column 'postCount' not found in view 'v_user'"</strong></p>
+<ul>
+<li>Check the view definition (created in Part 1)</li>
+<li>Verify view SELECT includes all required columns</li>
+</ul>
+<p><strong>Error: "Procedure 'fn_create_user' expects 2 arguments but got 3"</strong></p>
+<ul>
+<li>Check the function signature in the database</li>
+<li>Update <code>registerMutation()</code> to match parameter count</li>
+</ul>
+<p><strong>Solution: Debug with psql</strong></p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="connect-to-database">Connect to database<a class="headerlink" href="#connect-to-database" title="Permanent link">&para;</a></h1>
+<p>psql -h localhost -U blog_user -d blog_db</p>
+<h1 id="check-view-exists">Check view exists<a class="headerlink" href="#check-view-exists" title="Permanent link">&para;</a></h1>
+<p>\dv v_user;</p>
+<h1 id="check-view-structure">Check view structure<a class="headerlink" href="#check-view-structure" title="Permanent link">&para;</a></h1>
+<p>SELECT * FROM v_user LIMIT 1;</p>
+<h1 id="check-function-signature">Check function signature<a class="headerlink" href="#check-function-signature" title="Permanent link">&para;</a></h1>
+<p>\df fn_create_user;
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-7-running-the-graphql-server">Part 7: Running the GraphQL Server<a class="headerlink" href="#part-7-running-the-graphql-server" title="Permanent link">&para;</a></h2>
+<h3 id="71-starting-the-server">7.1 Starting the Server<a class="headerlink" href="#71-starting-the-server" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>npm run dev
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Output:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Starting FraiseQL server...
+✅ Loaded schema.compiled.json
+✅ Connected to PostgreSQL (localhost:5432)
+✅ Server running at http://localhost:4000/graphql
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-testing-with-graphql-ide">7.2 Testing with GraphQL IDE<a class="headerlink" href="#72-testing-with-graphql-ide" title="Permanent link">&para;</a></h3>
+<p>Visit <a href="http://localhost:4000/graphql">http://localhost:4000/graphql</a> in your browser to open the GraphQL IDE (Apollo Sandbox or similar).</p>
+<p><strong>Example Query:</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>query GetAllUsers {
+  users(limit: 10) {
+    id
+    email
+    name
+    postCount
+    createdAt
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Expected Response:</strong></p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "data": {
+    "users": [
+      {
+        "id": "1",
+        "email": "alice@example.com",
+        "name": "Alice",
+        "postCount": 5,
+        "createdAt": "2024-01-15T10:30:00Z"
+      },
+      {
+        "id": "2",
+        "email": "bob@example.com",
+        "name": "Bob",
+        "postCount": 3,
+        "createdAt": "2024-01-16T14:20:00Z"
+      }
+    ]
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="73-example-mutations">7.3 Example Mutations<a class="headerlink" href="#73-example-mutations" title="Permanent link">&para;</a></h3>
+<p><strong>Create User:</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>mutation {
+  createUser(
+    email: "charlie@example.com"
+    name: "Charlie"
+    bio: "Software engineer"
+  ) {
+    id
+    email
+    name
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Create Post:</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>mutation {
+  createPost(
+    title: "My First Post"
+    content: "# Hello World\n\nThis is my first blog post!"
+    authorId: "1"
+    published: true
+  ) {
+    id
+    title
+    createdAt
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Create Comment:</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>mutation {
+  createComment(
+    text: "Great post!"
+    postId: "1"
+    authorId: "2"
+  ) {
+    id
+    text
+    createdAt
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-8-testing-your-schema">Part 8: Testing Your Schema<a class="headerlink" href="#part-8-testing-your-schema" title="Permanent link">&para;</a></h2>
+<h3 id="81-using-curl">8.1 Using curl<a class="headerlink" href="#81-using-curl" title="Permanent link">&para;</a></h3>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="query-all-users">Query all users<a class="headerlink" href="#query-all-users" title="Permanent link">&para;</a></h1>
+<p>curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "{ users(limit: 10) { id email name } }"
+  }'</p>
+<h1 id="create-a-user">Create a user<a class="headerlink" href="#create-a-user" title="Permanent link">&para;</a></h1>
+<p>curl -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "mutation { createUser(email: \"test@example.com\" name: \"Test\") { id } }"
+  }'
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="82-using-postman">8.2 Using Postman<a class="headerlink" href="#82-using-postman" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create new POST request to <a href="http://localhost:4000/graphql">http://localhost:4000/graphql</a></li>
+<li>Set header: <code>Content-Type: application/json</code></li>
+<li>Body (raw):</li>
+</ol>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "query": "{ users(limit: 10) { id email name } }"
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="83-typescript-integration-tests">8.3 TypeScript Integration Tests<a class="headerlink" href="#83-typescript-integration-tests" title="Permanent link">&para;</a></h3>
+<p>Create <code>src/tests.ts</code>:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>/**
+ * Integration tests for Blog API
+ */</p>
+<p>import fetch from "node-fetch";</p>
+<p>const BASE_URL = "http://localhost:4000/graphql";</p>
+<p>interface GraphQLResponse {
+  data?: Record<string, unknown>;
+  errors?: Array&lt;{ message: string }&gt;;
+}</p>
+<p>async function query(gql: string): Promise<GraphQLResponse> {
+  const response = await fetch(BASE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: gql })
+  });
+  return response.json() as Promise<GraphQLResponse>;
+}</p>
+<p>async function runTests() {
+  console.log("Running Blog API tests...\n");</p>
+<p>// Test 1: Get all users
+  console.log("Test 1: Get all users");
+  const usersResult = await query(<code>{
+    users(limit: 10) {
+      id
+      email
+      name
+    }
+  }</code>);</p>
+<p>if (usersResult.errors) {
+    console.log("❌ Failed:", usersResult.errors[0].message);
+  } else {
+    console.log("✅ Passed:", usersResult.data?.users ? "Got users" : "Empty list");
+  }</p>
+<p>// Test 2: Create user
+  console.log("\nTest 2: Create user");
+  const createResult = await query(<code>mutation {
+      createUser(
+        email: "test${Date.now()}@example.com"
+        name: "Test User"
+      ) {
+        id
+        email
+      }
+    }</code>);</p>
+<p>if (createResult.errors) {
+    console.log("❌ Failed:", createResult.errors[0].message);
+  } else {
+    console.log("✅ Passed: User created");
+  }</p>
+<p>console.log("\nTests complete!");
+}</p>
+<p>if (require.main === module) {
+  runTests().catch(console.error);
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-9-common-patterns">Part 9: Common Patterns<a class="headerlink" href="#part-9-common-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="91-pagination">9.1 Pagination<a class="headerlink" href="#91-pagination" title="Permanent link">&para;</a></h3>
+<p><strong>Query Definition:</strong></p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerQuery(
+  "posts",
+  "Post",
+  true,
+  false,
+  [
+    { name: "limit", type: "Int", nullable: false, default: 50 },
+    { name: "offset", type: "Int", nullable: false, default: 0 }
+  ],
+  "Get posts with pagination",
+  { sqlSource: "v_post" }
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Usage:</strong></p>
+<p>```graphql</p>
+<!-- Code example in GraphQL -->
+<p>query {
+  posts(limit: 20, offset: 0) {
+    id
+    title
+    createdAt
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="92-filtering">9.2 Filtering<a class="headerlink" href="#92-filtering" title="Permanent link">&para;</a></h3>
+<p>Create separate queries for common filters:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>// Query: Posts by author
+FraiseQL.registerQuery(
+  "postsByAuthor",
+  "Post",
+  true,
+  false,
+  [
+    { name: "authorId", type: "ID", nullable: false },
+    { name: "limit", type: "Int", nullable: false, default: 50 }
+  ],
+  "Get posts by a specific author",
+  { sqlSource: "v_post" }
+);</p>
+<p>// Query: Comments on a post
+FraiseQL.registerQuery(
+  "postComments",
+  "Comment",
+  true,
+  false,
+  [{ name: "postId", type: "ID", nullable: false }],
+  "Get comments on a post",
+  { sqlSource: "v_comment" }
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="93-sorting">9.3 Sorting<a class="headerlink" href="#93-sorting" title="Permanent link">&para;</a></h3>
+<p>Include sort parameter as enum:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>// In FraiseQL.toml config (future feature):
+// [queries.posts]
+// sortBy = ["created_at", "title"]
+// sortOrder = ["ASC", "DESC"]
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="94-optional-fields">9.4 Optional Fields<a class="headerlink" href="#94-optional-fields" title="Permanent link">&para;</a></h3>
+<p>Use <code>nullable: true</code> for optional parameters:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerMutation(
+  "updateUser",
+  "User",
+  false,
+  true,
+  [
+    { name: "id", type: "ID", nullable: false },
+    { name: "name", type: "String", nullable: true },    // Optional
+    { name: "bio", type: "String", nullable: true }      // Optional
+  ],
+  "Update user profile",
+  { sqlSource: "fn_update_user" }
+);
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="95-computed-fields">9.5 Computed Fields<a class="headerlink" href="#95-computed-fields" title="Permanent link">&para;</a></h3>
+<p>Add fields that are computed in the view:</p>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- v_user includes computed fields
+CREATE VIEW v_user AS
+SELECT
+    u.id,
+    u.email,
+    u.name,
+    COUNT(DISTINCT p.id) AS post_count,      -- Computed
+    COUNT(DISTINCT c.id) AS comment_count,   -- Computed
+    u.created_at
+FROM users u
+LEFT JOIN posts p ON u.id = p.author_id
+LEFT JOIN comments c ON u.id = c.author_id
+GROUP BY u.id;
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>Then register these fields:</p>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>FraiseQL.registerTypeFields("User", [
+  { name: "id", type: "ID", nullable: false },
+  { name: "postCount", type: "Int", nullable: false },       // Computed in view
+  { name: "commentCount", type: "Int", nullable: false }     // Computed in view
+]);
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-10-deployment">Part 10: Deployment<a class="headerlink" href="#part-10-deployment" title="Permanent link">&para;</a></h2>
+<h3 id="101-docker-deployment">10.1 Docker Deployment<a class="headerlink" href="#101-docker-deployment" title="Permanent link">&para;</a></h3>
+<p>Create <code>Dockerfile</code>:</p>
+<p>```dockerfile</p>
+<!-- Code example in DOCKERFILE -->
+<p>FROM node:18-alpine</p>
+<p>WORKDIR /app</p>
+<h1 id="copy-schema-files">Copy schema files<a class="headerlink" href="#copy-schema-files" title="Permanent link">&para;</a></h1>
+<p>COPY schema.compiled.json .
+COPY FraiseQL.toml .</p>
+<h1 id="install-fraiseql-server-pre-compiled-binary">Install FraiseQL server (pre-compiled binary)<a class="headerlink" href="#install-fraiseql-server-pre-compiled-binary" title="Permanent link">&para;</a></h1>
+<p>RUN apk add --no-cache curl &amp;&amp; \
+    curl -fsSL https://releases.FraiseQL.io/FraiseQL-server-latest-linux-x64.tar.gz | \
+    tar -xz -C /usr/local/bin</p>
+<p>EXPOSE 4000</p>
+<h1 id="start-server">Start server<a class="headerlink" href="#start-server" title="Permanent link">&para;</a></h1>
+<p>CMD ["FraiseQL-server", \
+     "--config", "FraiseQL.toml", \
+     "--schema", "schema.compiled.json", \
+     "--port", "4000"]
+```text</p>
+<!-- Code example in TEXT -->
+
+<p>Create <code>docker-compose.yml</code>:</p>
+<p>```yaml</p>
+<!-- Code example in YAML -->
+<p>version: '3.8'</p>
+<p>services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: blog_db
+      POSTGRES_USER: blog_user
+      POSTGRES_PASSWORD: blog_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql</p>
+<p>FraiseQL:
+    build: .
+    environment:
+      FRAISEQL_DB_HOST: postgres
+      FRAISEQL_DB_NAME: blog_db
+      FRAISEQL_DB_USERNAME: blog_user
+      FRAISEQL_DB_PASSWORD: blog_password
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres</p>
+<p>volumes:
+  postgres_data:
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Deploy:</strong></p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="build-and-start">Build and start<a class="headerlink" href="#build-and-start" title="Permanent link">&para;</a></h1>
+<p>docker-compose up -d</p>
+<h1 id="check-logs">Check logs<a class="headerlink" href="#check-logs" title="Permanent link">&para;</a></h1>
+<p>docker-compose logs -f FraiseQL</p>
+<h1 id="test">Test<a class="headerlink" href="#test" title="Permanent link">&para;</a></h1>
+<p>curl http://localhost:4000/graphql -H "Content-Type: application/json" \
+  -d '{"query": "{ users(limit: 1) { id } }"}'
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="102-health-checks">10.2 Health Checks<a class="headerlink" href="#102-health-checks" title="Permanent link">&para;</a></h3>
+<p>FraiseQL provides health check endpoints:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="health-check">Health check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h1>
+<p>curl http://localhost:4000/health</p>
+<h1 id="response">Response<a class="headerlink" href="#response" title="Permanent link">&para;</a></h1>
+<p>{
+  "status": "ok",
+  "version": "2.0.0",
+  "database": "connected",
+  "uptime_seconds": 125
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="103-environment-configuration">10.3 Environment Configuration<a class="headerlink" href="#103-environment-configuration" title="Permanent link">&para;</a></h3>
+<p><strong>Production setup:</strong></p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="envproduction">.env.production<a class="headerlink" href="#envproduction" title="Permanent link">&para;</a></h1>
+<p>FRAISEQL_DB_HOST=prod-db.internal
+FRAISEQL_DB_NAME=blog_prod
+FRAISEQL_DB_USERNAME=blog_prod_user
+FRAISEQL_DB_PASSWORD=<from-vault>
+FRAISEQL_ENABLE_INTROSPECTION=false
+FRAISEQL_LOG_LEVEL=info
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-11-troubleshooting">Part 11: Troubleshooting<a class="headerlink" href="#part-11-troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Issue: "Cannot find module 'FraiseQL'"</strong></p>
+<p>Solution:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<p>npm install FraiseQL --save
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Issue: "Experimental decorators must be set to true"</strong></p>
+<p>Solution: Verify <code>tsconfig.json</code> has:</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Issue: "Query executes but returns empty results"</strong></p>
+<p>Check:</p>
+<ol>
+<li>View exists in database: <code>\dv v_post</code></li>
+<li>View has data: <code>SELECT COUNT(*) FROM v_post</code></li>
+<li>Column names match schema definition</li>
+<li>Indexes are present for performance</li>
+</ol>
+<p><strong>Issue: "Mutation returns error: function doesn't exist"</strong></p>
+<p>Check:</p>
+<ol>
+<li>Function exists: <code>\df fn_create_user</code></li>
+<li>Function signature matches mutation args</li>
+<li>Function returns the correct type</li>
+</ol>
+<p><strong>Issue: "GraphQL IDE shows introspection error"</strong></p>
+<p>Check:</p>
+<ol>
+<li>Server is running: <code>curl http://localhost:4000/health</code></li>
+<li><code>enable_introspection = true</code> in FraiseQL.toml</li>
+<li>Browser console for CORS errors</li>
+</ol>
+<h3 id="debug-mode">Debug Mode<a class="headerlink" href="#debug-mode" title="Permanent link">&para;</a></h3>
+<p>Enable verbose logging:</p>
+<p>```bash</p>
+<!-- Code example in BASH -->
+<h1 id="set-environment-variable">Set environment variable<a class="headerlink" href="#set-environment-variable" title="Permanent link">&para;</a></h1>
+<p>export RUST_LOG=debug</p>
+<h1 id="then-start-server">Then start server<a class="headerlink" href="#then-start-server" title="Permanent link">&para;</a></h1>
+<p>npm run dev</p>
+<h1 id="check-logs_1">Check logs<a class="headerlink" href="#check-logs_1" title="Permanent link">&para;</a></h1>
+<p>docker-compose logs -f FraiseQL
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-12-complete-working-example">Part 12: Complete Working Example<a class="headerlink" href="#part-12-complete-working-example" title="Permanent link">&para;</a></h2>
+<h3 id="schemasql-all-ddl">schema.sql (All DDL)<a class="headerlink" href="#schemasql-all-ddl" title="Permanent link">&para;</a></h3>
+<p>```sql</p>
+<!-- Code example in SQL -->
+<p>-- PostgreSQL schema for blog API</p>
+<p>CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    bio TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>CREATE TABLE posts (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    content TEXT NOT NULL,
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    text TEXT NOT NULL,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</p>
+<p>CREATE INDEX idx_posts_author_id ON posts(author_id);
+CREATE INDEX idx_posts_published ON posts(published_at DESC);
+CREATE INDEX idx_comments_post_id ON comments(post_id);
+CREATE INDEX idx_comments_author_id ON comments(author_id);</p>
+<p>-- Views</p>
+<p>CREATE VIEW v_user AS
+SELECT
+    u.id,
+    u.email,
+    u.name,
+    u.bio,
+    u.created_at,
+    u.updated_at,
+    COUNT(DISTINCT p.id) AS post_count
+FROM users u
+LEFT JOIN posts p ON u.id = p.author_id
+GROUP BY u.id;</p>
+<p>CREATE VIEW v_post AS
+SELECT
+    p.id,
+    p.title,
+    p.content,
+    p.author_id,
+    p.published_at,
+    p.created_at,
+    p.updated_at,
+    u.email AS author_email,
+    u.name AS author_name,
+    COUNT(DISTINCT c.id) AS comment_count
+FROM posts p
+JOIN users u ON p.author_id = u.id
+LEFT JOIN comments c ON p.id = c.post_id
+WHERE p.published_at IS NOT NULL
+GROUP BY p.id, u.id;</p>
+<p>CREATE VIEW v_comment AS
+SELECT
+    c.id,
+    c.text,
+    c.post_id,
+    c.author_id,
+    c.created_at,
+    u.email AS author_email,
+    u.name AS author_name
+FROM comments c
+JOIN users u ON c.author_id = u.id;</p>
+<p>-- Functions</p>
+<p>CREATE OR REPLACE FUNCTION fn_create_user(
+    p_email VARCHAR,
+    p_name VARCHAR,
+    p_bio TEXT DEFAULT NULL
+)
+RETURNS SETOF users AS $$
+INSERT INTO users (email, name, bio)
+VALUES (p_email, p_name, p_bio)
+ON CONFLICT (email) DO NOTHING
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>CREATE OR REPLACE FUNCTION fn_create_post(
+    p_title VARCHAR,
+    p_content TEXT,
+    p_author_id BIGINT,
+    p_published BOOLEAN DEFAULT FALSE
+)
+RETURNS SETOF posts AS $$
+INSERT INTO posts (title, content, author_id, published_at)
+VALUES (
+    p_title,
+    p_content,
+    p_author_id,
+    CASE WHEN p_published THEN CURRENT_TIMESTAMP ELSE NULL END
+)
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>CREATE OR REPLACE FUNCTION fn_create_comment(
+    p_text TEXT,
+    p_post_id BIGINT,
+    p_author_id BIGINT
+)
+RETURNS SETOF comments AS $$
+INSERT INTO comments (text, post_id, author_id)
+VALUES (p_text, p_post_id, p_author_id)
+RETURNING *;
+$$ LANGUAGE SQL;</p>
+<p>CREATE OR REPLACE FUNCTION fn_update_user(
+    p_id BIGINT,
+    p_name VARCHAR DEFAULT NULL,
+    p_bio TEXT DEFAULT NULL
+)
+RETURNS SETOF users AS $$
+UPDATE users
+SET
+    name = COALESCE(p_name, name),
+    bio = COALESCE(p_bio, bio),
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = p_id
+RETURNING *;
+$$ LANGUAGE SQL;
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="packagejson">package.json<a class="headerlink" href="#packagejson" title="Permanent link">&para;</a></h3>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "name": "blog-api",
+  "version": "1.0.0",
+  "description": "Blog API using FraiseQL and TypeScript",
+  "main": "dist/schema.js",
+  "scripts": {
+    "export": "ts-node src/schema.ts",
+    "compile": "FraiseQL compile FraiseQL.toml --types schema.json",
+    "build": "npm run export &amp;&amp; npm run compile",
+    "dev": "FraiseQL serve schema.compiled.json --port 4000",
+    "test": "ts-node src/tests.ts",
+    "clean": "rm -f schema.json schema.compiled.json &amp;&amp; rm -rf dist"
+  },
+  "dependencies": {
+    "FraiseQL": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "node-fetch": "^2.6.0"
+  }
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="fraiseqltoml">FraiseQL.toml<a class="headerlink" href="#fraiseqltoml" title="Permanent link">&para;</a></h3>
+<p>```toml</p>
+<!-- Code example in TOML -->
+<p>[FraiseQL]
+name = "blog-api"
+version = "1.0.0"
+database_target = "postgresql"
+description = "Blog API with users, posts, and comments"</p>
+<p>[FraiseQL.database]
+host = "localhost"
+port = 5432
+name = "blog_db"
+username = "blog_user"
+password = "blog_password"</p>
+<p>[FraiseQL.server]
+bind = "0.0.0.0"
+port = 4000
+cors_origins = ["*"]</p>
+<p>[FraiseQL.security]
+enable_introspection = true
+enable_mutations = true
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="part-13-next-steps">Part 13: Next Steps<a class="headerlink" href="#part-13-next-steps" title="Permanent link">&para;</a></h2>
+<h3 id="learning-more">Learning More<a class="headerlink" href="#learning-more" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Authentication:</strong> See <a href="../../integrations/authentication/api-reference/">Authentication Integration Guide</a></li>
+<li><strong>Advanced Queries:</strong> See <a href="../../specs/pagination-keyset/">Pagination &amp; Keyset Cursors</a></li>
+<li><strong>Performance:</strong> See <a href="../../performance/projection-optimization/">Performance Optimization Guide</a></li>
+<li><strong>Federation:</strong> See <a href="../../integrations/federation/">Apollo Federation Integration</a></li>
+</ol>
+<h3 id="building-the-react-client">Building the React Client<a class="headerlink" href="#building-the-react-client" title="Permanent link">&para;</a></h3>
+<p>```typescript</p>
+<!-- Code example in TypeScript -->
+<p>// Example: React hook to fetch posts
+import { useQuery, gql } from "@apollo/client";</p>
+<p>const GET_POSTS = gql<code>query GetPosts($limit: Int!, $offset: Int!) {
+    posts(limit: $limit, offset: $offset) {
+      id
+      title
+      content
+      authorName
+      createdAt
+    }
+  }</code>;</p>
+<p>export function PostList() {
+  const { loading, data, error } = useQuery(GET_POSTS, {
+    variables: { limit: 20, offset: 0 }
+  });</p>
+<p>if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;</p>
+<p>return (
+    <div>
+      {data.posts.map((post) =&gt; (
+        <article key={post.id}>
+          <h2>{post.title}</h2>
+          <p>{post.content}</p>
+          <small>By {post.authorName}</small>
+        </article>
+      ))}
+    </div>
+  );
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>You've learned:</p>
+<ol>
+<li>✅ Database schema design for GraphQL</li>
+<li>✅ TypeScript decorators for schema authoring</li>
+<li>✅ Type system modeling (scalars, nullability, relationships)</li>
+<li>✅ Query and mutation definition</li>
+<li>✅ Schema export to JSON</li>
+<li>✅ Compilation with FraiseQL CLI</li>
+<li>✅ Running a GraphQL server</li>
+<li>✅ Testing queries and mutations</li>
+<li>✅ Deployment patterns</li>
+<li>✅ Troubleshooting common issues</li>
+</ol>
+<p><strong>Key Takeaway:</strong> TypeScript decorators make schema authoring ergonomic and type-safe. The FraiseQL compiler handles the hard work of optimization and SQL generation.</p>
+<hr />
+<p><strong>Questions?</strong> See <a href="../../faq/">FAQ</a> or <a href="../../troubleshooting/">Troubleshooting Guide</a>.</p>
+<p><strong>Ready to deploy?</strong> See <a href="../../deployment-security/">Deployment Security Guide</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

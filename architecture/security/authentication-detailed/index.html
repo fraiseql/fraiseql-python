@@ -1,0 +1,9791 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/security/authentication-detailed/">
+      
+      
+        <link rel="prev" href="../security-model/">
+      
+      
+        <link rel="next" href="../../realtime/subscriptions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Authentication - FraiseQL Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fraiseql-authentication-details" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="FraiseQL Documentation" class="md-header__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FraiseQL Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Authentication
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reading-order/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reading Order
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../foundation/01-what-is-fraiseql/" class="md-tabs__link">
+          
+  
+  
+  Foundation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/sdk/" class="md-tabs__link">
+          
+  
+  
+  SDK References
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../guides/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../patterns/" class="md-tabs__link">
+          
+  
+  
+  Patterns
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../reference/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../integrations/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../operations/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../enterprise/" class="md-tabs__link">
+          
+  
+  
+  Enterprise
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../specs/" class="md-tabs__link">
+          
+  
+  
+  Specifications
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../glossary/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Glossary
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../alpha-testing-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Alpha Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../archive/PHASES_ARCHIVE/" class="md-tabs__link">
+          
+  
+  
+  Archive
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="FraiseQL Documentation" class="md-nav__button md-logo" aria-label="FraiseQL Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FraiseQL Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fraiseql/fraiseql-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fraiseql/fraiseql-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reading-order/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reading Order
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Foundation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Foundation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/01-what-is-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What is FraiseQL?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/02-core-concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/03-database-centric-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database-Centric Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/04-design-principles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Principles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/05-comparisons/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparisons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/06-compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/07-query-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/08-data-planes-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Planes Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/09-type-system/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/10-error-handling-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling & Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/11-compiled-schema-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../foundation/12-performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/compilation-vs-runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compilation vs Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/execution-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Execution Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/authoring-languages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authoring Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Database
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/view-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/tv-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TV-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ta-table-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TA-Table Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/database-targeting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Targeting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/arrow-plane/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Plane
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-authentication-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Authentication Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Authentication Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Core Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-authentication-flow-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Authentication Flow Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-supported-authentication-schemes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Supported Authentication Schemes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-oauth2-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. OAuth2 Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. OAuth2 Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-oauth2-authorization-code-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 OAuth2 Authorization Code Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 OAuth2 Authorization Code Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow Sequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-oauth2-client-credentials-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 OAuth2 Client Credentials Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-oauth2-refresh-token-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 OAuth2 Refresh Token Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-saml-20-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. SAML 2.0 Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. SAML 2.0 Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-saml-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 SAML Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-saml-assertion-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 SAML Assertion Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-saml-attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 SAML Attribute Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-jwt-token-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. JWT Token Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. JWT Token Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-jwt-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 JWT Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-jwt-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 JWT Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-jwt-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 JWT Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-custom-authentication-provider-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Custom Authentication Provider Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realtime
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Realtime
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../realtime/subscriptions-corrected-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subscriptions Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/anti-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti-Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/state-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/integration-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/multiplane-interactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multiplane Interactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integration/extension-points/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extension Points
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Observability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/observability-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Performance
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/performance-characteristics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Characteristics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/advanced-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reliability
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/error-handling-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Error Handling Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/failure-modes-and-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Failure Modes & Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reliability/versioning-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Analytics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/fact-dimension-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fact-Dimension Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/calendar-dimensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calendar Dimensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/aggregation-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/window-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK References
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK References
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Languages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/go-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/java-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/kotlin-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/scala-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scala
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/clojure-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clojure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/groovy-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Groovy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/rust-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/csharp-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C#
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/php-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PHP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/ruby-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ruby
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/swift-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Swift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/dart-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/elixir-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Elixir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/sdk/nodejs-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-sdk-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language & SDK Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/role-specific-quick-starts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Role-Specific Quick Starts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/choosing-fraiseql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing FraiseQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/development/developer-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/schema-design-best-practices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Design Best Practices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Selection Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/language-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Language Generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_4" id="__nav_7_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Client Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/vue-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vue Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/flutter-graphql-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Flutter GraphQL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/react-native-apollo-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    React Native Apollo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/nodejs-runtime-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/clients/cli-query-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Query
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5" id="__nav_7_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/production-security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/performance-optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_6" id="__nav_7_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/federation-vs-monolith-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation vs Monolith
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/analytics-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authorization-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observer-implementation-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observer Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/database-migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-flight-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/arrow-vs-json-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow vs JSON Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/consistency-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consistency Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/view-selection-quick-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/common-gotchas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common Gotchas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/troubleshooting-decision-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting Decision Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saas-multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SaaS & Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/analytics-olap-platform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics OLAP Platform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/realtime-collaboration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Real-Time Collaboration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/ecommerce-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-Commerce Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/federation-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/iot-timeseries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IoT & Time-Series
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_8" id="__nav_8_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga Pattern
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Saga Pattern
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../patterns/saga/patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Full-Stack Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Full-Stack Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-typescript-vue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript + Vue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-go-flutter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go + Flutter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/fullstack-java-nextjs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java + Next.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/python-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/typescript-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/go-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/java-blog-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Blog API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/naming-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Naming Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/scalars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scalar Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/where-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Where Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli-schema-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/saga-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saga API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/graphql-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GraphQL API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/api/http-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/view-selection-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    View Selection API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/provider-selection-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-auth0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Auth0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-google-oauth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Google OAuth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/setup-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/authentication/security-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Federation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Federation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/sagas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sagas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/federation/readiness-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Readiness Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Arrow Flight
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Arrow Flight
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/arrow-flight/migration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/performance-tuning-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/audit-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/kms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Management System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../enterprise/rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifications
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Specifications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/schema-conventions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/compiled-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../specs/aggregation-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../alpha-testing-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alpha Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Archive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../archive/PHASES_ARCHIVE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-authentication-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Authentication Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Authentication Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Core Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-authentication-flow-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Authentication Flow Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-supported-authentication-schemes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Supported Authentication Schemes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-oauth2-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. OAuth2 Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. OAuth2 Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-oauth2-authorization-code-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 OAuth2 Authorization Code Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.1 OAuth2 Authorization Code Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-sequence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow Sequence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-oauth2-client-credentials-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 OAuth2 Client Credentials Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-oauth2-refresh-token-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 OAuth2 Refresh Token Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-saml-20-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. SAML 2.0 Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. SAML 2.0 Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-saml-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 SAML Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-saml-assertion-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 SAML Assertion Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-saml-attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 SAML Attribute Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-jwt-token-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. JWT Token Specification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. JWT Token Specification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-jwt-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 JWT Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-jwt-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 JWT Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-jwt-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 JWT Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-custom-authentication-provider-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Custom Authentication Provider Pattern
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Skip to main content -->
+<hr />
+<p>title: FraiseQL Authentication Details
+description: 1. <a href="#executive-summary">Executive Summary</a>
+keywords: ["design", "scalability", "performance", "patterns", "security"]
+tags: ["documentation", "reference"]</p>
+<hr />
+<h1 id="fraiseql-authentication-details">FraiseQL Authentication Details<a class="headerlink" href="#fraiseql-authentication-details" title="Permanent link">&para;</a></h1>
+<p><strong>Version</strong>: 2.0.0-alpha.1
+<strong>Status</strong>: ✅ Implemented
+<strong>Last Updated</strong>: February 5, 2026</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#executive-summary">Executive Summary</a></li>
+<li><a href="#1-authentication-architecture">Authentication Architecture</a></li>
+<li><a href="#2-oauth2-implementation">OAuth2 Implementation</a></li>
+<li><a href="#3-saml-20-integration">SAML 2.0 Integration</a></li>
+<li><a href="#4-jwt-token-specification">JWT Token Specification</a></li>
+<li><a href="#5-custom-authentication-provider-pattern">Custom Authentication Provider Pattern</a></li>
+<li><a href="#6-session-management">Session Management</a></li>
+<li><a href="#7-token-revocation">Token Revocation</a></li>
+<li><a href="#8-multi-tenant-authentication">Multi-Tenant Authentication</a></li>
+<li><a href="#9-security-best-practices">Security Best Practices</a></li>
+<li><a href="#10-audit--compliance">Audit &amp; Compliance</a></li>
+<li><a href="#11-performance-optimization">Performance Optimization</a></li>
+<li><a href="#12-error-handling">Error Handling</a></li>
+</ol>
+<hr />
+<h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL provides enterprise-grade authentication with support for multiple authentication schemes, token lifecycle management, and seamless integration with database-enforced authorization. This specification covers:</p>
+<ul>
+<li><strong>OAuth2 Implementation</strong>: Authorization Code, Client Credentials, Refresh Token flows</li>
+<li><strong>SAML Integration</strong>: Assertion parsing, attribute mapping, multi-tenant federation</li>
+<li><strong>JWT Validation</strong>: Token structure, signature verification, claims validation</li>
+<li><strong>Custom Providers</strong>: Extensible authentication plugin architecture</li>
+<li><strong>Token Management</strong>: Generation, refresh, revocation, and expiration</li>
+<li><strong>Session Handling</strong>: Stateful and stateless authentication models</li>
+<li><strong>Multi-Tenant Support</strong>: Tenant isolation and context propagation</li>
+<li><strong>Security Best Practices</strong>: Token storage, CSRF protection, secure headers</li>
+</ul>
+<hr />
+<h2 id="1-authentication-architecture">1. Authentication Architecture<a class="headerlink" href="#1-authentication-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="11-core-principles">1.1 Core Principles<a class="headerlink" href="#11-core-principles" title="Permanent link">&para;</a></h3>
+<p>FraiseQL authentication follows these principles:</p>
+<ol>
+<li><strong>Authentication ≠ Authorization</strong></li>
+<li>Authentication: Who are you?</li>
+<li>Authorization: What can you do?</li>
+<li>
+<p>Separate concerns with clear boundaries</p>
+</li>
+<li>
+<p><strong>Tokens Are Credentials</strong></p>
+</li>
+<li>Treat tokens like passwords</li>
+<li>Never log them</li>
+<li>Rotate regularly</li>
+<li>
+<p>Revoke when compromised</p>
+</li>
+<li>
+<p><strong>Database Is Source of Truth</strong></p>
+</li>
+<li>User identities stored in database</li>
+<li>Sessions linked to database records</li>
+<li>
+<p>Audit trails immutable and append-only</p>
+</li>
+<li>
+<p><strong>Stateless Preferred, Stateful Supported</strong></p>
+</li>
+<li>JWT tokens for stateless (scalable, distributed)</li>
+<li>Session cookies for stateful (traditional, browser-friendly)</li>
+<li>
+<p>Can mix strategies per client type</p>
+</li>
+<li>
+<p><strong>Multi-Tenant by Default</strong></p>
+</li>
+<li>Every user belongs to one or more tenants</li>
+<li>Context propagated through all layers</li>
+<li>Tenant isolation enforced at query level</li>
+</ol>
+<h3 id="12-authentication-flow-overview">1.2 Authentication Flow Overview<a class="headerlink" href="#12-authentication-flow-overview" title="Permanent link">&para;</a></h3>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Client Request
+    ↓
+┌─────────────────────────────────────────┐
+│ 1. Extract Credentials                  │
+│    - Authorization header (Bearer token)│
+│    - Cookie (session)                   │
+│    - Custom (API key, etc.)             │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ 2. Validate Credentials                 │
+│    - Signature verification (JWT)       │
+│    - Session lookup (cookies)           │
+│    - Custom validation logic            │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ 3. Extract Principal                    │
+│    - User ID                            │
+│    - Tenant ID(s)                       │
+│    - Roles/Permissions                  │
+│    - Custom attributes                  │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ 4. Attach to Request Context            │
+│    - Available to authorization rules   │
+│    - Available to queries/mutations     │
+│    - Available to hooks/extensions      │
+└─────────────────────────────────────────┘
+    ↓
+Authorize Request
+    ↓
+Execute Query/Mutation
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="13-supported-authentication-schemes">1.3 Supported Authentication Schemes<a class="headerlink" href="#13-supported-authentication-schemes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scheme</th>
+<th>Use Case</th>
+<th>Stateless</th>
+<th>Token Type</th>
+<th>Setup Complexity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OAuth2 Authorization Code</strong></td>
+<td>Web applications</td>
+<td>Yes</td>
+<td>JWT</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><strong>OAuth2 Client Credentials</strong></td>
+<td>Service-to-service</td>
+<td>Yes</td>
+<td>JWT</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>OAuth2 Refresh Token</strong></td>
+<td>Token renewal</td>
+<td>Yes</td>
+<td>JWT (with refresh)</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>SAML 2.0</strong></td>
+<td>Enterprise SSO</td>
+<td>Stateful</td>
+<td>Assertion</td>
+<td>High</td>
+</tr>
+<tr>
+<td><strong>JWT Direct</strong></td>
+<td>Mobile/SPA backends</td>
+<td>Yes</td>
+<td>JWT</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>Session Cookies</strong></td>
+<td>Traditional web apps</td>
+<td>Stateful</td>
+<td>Session ID</td>
+<td>Low</td>
+</tr>
+<tr>
+<td><strong>API Keys</strong></td>
+<td>Service integration</td>
+<td>Yes</td>
+<td>API Key</td>
+<td>Very Low</td>
+</tr>
+<tr>
+<td><strong>Custom Provider</strong></td>
+<td>Special requirements</td>
+<td>Configurable</td>
+<td>Varies</td>
+<td>Varies</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-oauth2-implementation">2. OAuth2 Implementation<a class="headerlink" href="#2-oauth2-implementation" title="Permanent link">&para;</a></h2>
+<h3 id="21-oauth2-authorization-code-flow">2.1 OAuth2 Authorization Code Flow<a class="headerlink" href="#21-oauth2-authorization-code-flow" title="Permanent link">&para;</a></h3>
+<p>Used for web applications where users log in through a browser.</p>
+<h4 id="flow-sequence">Flow Sequence<a class="headerlink" href="#flow-sequence" title="Permanent link">&para;</a></h4>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>User's Browser               FraiseQL App              OAuth2 Provider
+      │                           │                           │
+      │ (1) Click "Login"         │                           │
+      ├──────────────────────────►│                           │
+      │                           │                           │
+      │                           │ (2) Redirect to provider  │
+      │◄────────────────────────────────────────────────────────┤
+      │                           │       with client_id,      │
+      │                           │       redirect_uri,        │
+      │                           │       state                │
+      │                           │                           │
+      │ (3) User grants access    │                           │
+      │ (in provider's UI)        │                           │
+      │                           │                           │
+      │ (4) Redirect to app       │                           │
+      ├──────────────────────────────────────────────────────────┤
+      │       with auth_code,     │                           │
+      │       state               │                           │
+      │                           │                           │
+      │                           │ (5) Exchange code for token│
+      │                           ├──────────────────────────►│
+      │                           │ (POST to token endpoint)  │
+      │                           │                           │
+      │                           │ (6) Return token          │
+      │                           │◄──────────────────────────┤
+      │                           │                           │
+      │ (7) Logged in             │                           │
+      │◄──────────────────────────┤                           │
+      │   (set session/token)     │                           │
+```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="implementation-details">Implementation Details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h4>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>from FraiseQL.auth import OAuth2Provider, TokenRequest</p>
+<p>class OAuth2AuthorizationCodeFlow:
+    """OAuth2 Authorization Code flow implementation"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    client_id: str,
+    client_secret: str,
+    authorize_url: str,
+    token_url: str,
+    redirect_uri: str,
+    scope: list[str] = [&quot;openid&quot;, &quot;profile&quot;, &quot;email&quot;]
+):
+    self.client_id = client_id
+    self.client_secret = client_secret
+    self.authorize_url = authorize_url
+    self.token_url = token_url
+    self.redirect_uri = redirect_uri
+    self.scope = scope
+
+def get_authorization_url(self, state: str, nonce: str | None = None) -&gt; str:
+    &quot;&quot;&quot;Generate authorization URL for user redirect
+
+    Args:
+        state: Random string to prevent CSRF (must be validated on callback)
+        nonce: Optional OpenID Connect nonce for ID token validation
+
+    Returns:
+        URL to redirect user to for authorization
+    &quot;&quot;&quot;
+    params = {
+        &quot;client_id&quot;: self.client_id,
+        &quot;redirect_uri&quot;: self.redirect_uri,
+        &quot;response_type&quot;: &quot;code&quot;,
+        &quot;scope&quot;: &quot; &quot;.join(self.scope),
+        &quot;state&quot;: state,
+    }
+    if nonce:
+        params[&quot;nonce&quot;] = nonce
+
+    query_string = &quot;&amp;&quot;.join(f&quot;{k}={v}&quot; for k, v in params.items())
+    return f&quot;{self.authorize_url}?{query_string}&quot;
+
+async def exchange_code_for_token(
+    self,
+    code: str,
+    state: str,
+    stored_state: str
+) -&gt; TokenResponse:
+    &quot;&quot;&quot;Exchange authorization code for tokens
+
+    Args:
+        code: Authorization code from OAuth2 provider
+        state: State returned by provider
+        stored_state: Original state sent to provider (for CSRF validation)
+
+    Returns:
+        TokenResponse with access_token, refresh_token, expires_in
+
+    Raises:
+        CSRFError: If state doesn&#39;t match
+        TokenExchangeError: If code exchange fails
+    &quot;&quot;&quot;
+    # Validate CSRF protection
+    if state != stored_state:
+        raise CSRFError(&quot;State mismatch - possible CSRF attack&quot;)
+
+    # Exchange code for token
+    token_request = {
+        &quot;grant_type&quot;: &quot;authorization_code&quot;,
+        &quot;code&quot;: code,
+        &quot;client_id&quot;: self.client_id,
+        &quot;client_secret&quot;: self.client_secret,
+        &quot;redirect_uri&quot;: self.redirect_uri,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(self.token_url, json=token_request)
+        if response.status_code != 200:
+            raise TokenExchangeError(f&quot;Token exchange failed: {response.text}&quot;)
+
+        data = response.json()
+        return TokenResponse(
+            access_token=data[&quot;access_token&quot;],
+            refresh_token=data.get(&quot;refresh_token&quot;),
+            expires_in=data.get(&quot;expires_in&quot;, 3600),
+            token_type=data.get(&quot;token_type&quot;, &quot;Bearer&quot;),
+            id_token=data.get(&quot;id_token&quot;),  # OpenID Connect
+        )
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h4 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h4>
+<ol>
+<li><strong>CSRF Protection</strong></li>
+<li>Always validate <code>state</code> parameter</li>
+<li>Store state server-side before redirect</li>
+<li>
+<p>State must be random and unique per session</p>
+</li>
+<li>
+<p><strong>PKCE (Proof Key for Code Exchange)</strong></p>
+</li>
+<li>Required for public clients (SPAs, mobile apps)</li>
+<li>Optional but recommended for confidential clients</li>
+<li>Prevents authorization code interception</li>
+</ol>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>import secrets
+   import hashlib
+   import base64</p>
+<p>def generate_pkce_pair() -&gt; tuple[str, str]:
+       """Generate PKCE code_verifier and code_challenge</p>
+<div class="highlight"><pre><span></span><code>   Returns:
+       (code_verifier, code_challenge) tuple
+   &quot;&quot;&quot;
+   code_verifier = base64.urlsafe_b64encode(
+       secrets.token_bytes(32)
+   ).decode().rstrip(&quot;=&quot;)
+
+   challenge = base64.urlsafe_b64encode(
+       hashlib.sha256(code_verifier.encode()).digest()
+   ).decode().rstrip(&quot;=&quot;)
+
+   return code_verifier, challenge
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<ol>
+<li><strong>Token Storage</strong></li>
+<li>Never store tokens in localStorage (XSS vulnerability)</li>
+<li>Store in memory or secure httpOnly cookie</li>
+<li>
+<p>For SPAs: Backend-for-Frontend (BFF) pattern recommended</p>
+</li>
+<li>
+<p><strong>Scope Limitation</strong></p>
+</li>
+<li>Request minimal necessary scopes</li>
+<li>Document why each scope is needed</li>
+<li>Validate returned scopes match requested</li>
+</ol>
+<h3 id="22-oauth2-client-credentials-flow">2.2 OAuth2 Client Credentials Flow<a class="headerlink" href="#22-oauth2-client-credentials-flow" title="Permanent link">&para;</a></h3>
+<p>Used for service-to-service authentication without user involvement.</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class OAuth2ClientCredentialsFlow:
+    """OAuth2 Client Credentials flow for machine-to-machine auth"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    client_id: str,
+    client_secret: str,
+    token_url: str,
+    scope: list[str] | None = None
+):
+    self.client_id = client_id
+    self.client_secret = client_secret
+    self.token_url = token_url
+    self.scope = scope or []
+
+async def get_token(self) -&gt; TokenResponse:
+    &quot;&quot;&quot;Request access token using client credentials
+
+    Returns:
+        TokenResponse with access_token and expires_in
+
+    Raises:
+        TokenAcquisitionError: If token request fails
+    &quot;&quot;&quot;
+    token_request = {
+        &quot;grant_type&quot;: &quot;client_credentials&quot;,
+        &quot;client_id&quot;: self.client_id,
+        &quot;client_secret&quot;: self.client_secret,
+    }
+    if self.scope:
+        token_request[&quot;scope&quot;] = &quot; &quot;.join(self.scope)
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(self.token_url, json=token_request)
+        if response.status_code != 200:
+            raise TokenAcquisitionError(f&quot;Token request failed: {response.text}&quot;)
+
+        data = response.json()
+        return TokenResponse(
+            access_token=data[&quot;access_token&quot;],
+            expires_in=data.get(&quot;expires_in&quot;, 3600),
+            token_type=data.get(&quot;token_type&quot;, &quot;Bearer&quot;),
+        )
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Use Cases:</strong></p>
+<ul>
+<li>Service-to-service API calls</li>
+<li>Microservices authentication</li>
+<li>Scheduled batch jobs</li>
+<li>Integration with external systems</li>
+</ul>
+<p><strong>Security Considerations:</strong></p>
+<ul>
+<li>Store client_secret securely (environment variables, secret management)</li>
+<li>Rotate client_secret regularly</li>
+<li>Use in backend only (never expose to frontend)</li>
+<li>Implement rate limiting on token endpoint</li>
+</ul>
+<h3 id="23-oauth2-refresh-token-flow">2.3 OAuth2 Refresh Token Flow<a class="headerlink" href="#23-oauth2-refresh-token-flow" title="Permanent link">&para;</a></h3>
+<p>Refresh tokens extend session lifetime without requiring re-authentication.</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class OAuth2RefreshTokenFlow:
+    """OAuth2 Refresh Token flow for token renewal"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    client_id: str,
+    client_secret: str,
+    token_url: str
+):
+    self.client_id = client_id
+    self.client_secret = client_secret
+    self.token_url = token_url
+
+async def refresh_token(self, refresh_token: str) -&gt; TokenResponse:
+    &quot;&quot;&quot;Use refresh token to get new access token
+
+    Args:
+        refresh_token: Long-lived refresh token from previous authentication
+
+    Returns:
+        TokenResponse with new access_token and potentially new refresh_token
+
+    Raises:
+        TokenRefreshError: If refresh fails (token expired/revoked)
+    &quot;&quot;&quot;
+    token_request = {
+        &quot;grant_type&quot;: &quot;refresh_token&quot;,
+        &quot;refresh_token&quot;: refresh_token,
+        &quot;client_id&quot;: self.client_id,
+        &quot;client_secret&quot;: self.client_secret,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(self.token_url, json=token_request)
+        if response.status_code != 200:
+            if response.status_code == 400:
+                # Refresh token invalid or expired - require re-authentication
+                raise TokenRefreshError(&quot;Refresh token invalid or expired&quot;)
+            raise TokenRefreshError(f&quot;Token refresh failed: {response.text}&quot;)
+
+        data = response.json()
+        return TokenResponse(
+            access_token=data[&quot;access_token&quot;],
+            refresh_token=data.get(&quot;refresh_token&quot;, refresh_token),
+            expires_in=data.get(&quot;expires_in&quot;, 3600),
+            token_type=data.get(&quot;token_type&quot;, &quot;Bearer&quot;),
+        )
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Token Rotation Strategy:</strong></p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>Initial Login:
+  access_token (short-lived, 15min) → Set cookie httpOnly, Secure, SameSite=Strict
+  refresh_token (long-lived, 7 days) → Set cookie httpOnly, Secure, SameSite=Strict</p>
+<p>After 14 minutes (before expiry):
+  Client calls /refresh endpoint
+  Server: exchange refresh_token for new access_token + new refresh_token
+  Rotate refresh_token (invalidate old one) - prevents replay attacks
+  Return new tokens in httpOnly cookies</p>
+<p>If refresh_token expires:
+  Require full re-authentication (redirect to login)
+  Display grace period message (optional)
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="3-saml-20-integration">3. SAML 2.0 Integration<a class="headerlink" href="#3-saml-20-integration" title="Permanent link">&para;</a></h2>
+<h3 id="31-saml-architecture">3.1 SAML Architecture<a class="headerlink" href="#31-saml-architecture" title="Permanent link">&para;</a></h3>
+<p>SAML (Security Assertion Markup Language) is XML-based protocol for enterprise SSO.</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>User's Browser          FraiseQL App           Identity Provider (IdP)
+      │                      │                       │
+      │ (1) Click "Login"    │                       │
+      ├─────────────────────►│                       │
+      │                      │                       │
+      │                      │ (2) Generate SAML     │
+      │                      │     AuthnRequest      │
+      │                      │                       │
+      │ (3) Redirect with    │                       │
+      │     SAML request     │                       │
+      ├──────────────────────────────────────────────┤
+      │                      │                       │
+      │ (4) User login/      │                       │
+      │     grant consent    │                       │
+      │ (in IdP UI)          │                       │
+      │                      │                       │
+      │ (5) Redirect with    │                       │
+      │     SAML assertion   │                       │
+      ├──────────────────────────────────────────────┤
+      │                      │                       │
+      │                      │ (6) Verify assertion  │
+      │                      │     - Signature       │
+      │                      │     - Timestamp       │
+      │                      │     - Issuer          │
+      │                      │                       │
+      │ (7) Create session   │                       │
+      │◄─────────────────────┤                       │
+      │   (set auth cookie)  │                       │
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="32-saml-assertion-validation">3.2 SAML Assertion Validation<a class="headerlink" href="#32-saml-assertion-validation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>from lxml import etree
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
+from cryptography.x509 import load_pem_x509_certificate
+from cryptography.hazmat.backends import default_backend</p>
+<p>class SAMLAssertionValidator:
+    """Validate SAML 2.0 assertions from IdP"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    idp_cert_path: str,
+    entity_id: str,
+    acs_url: str,
+    sso_url: str
+):
+    &quot;&quot;&quot;Initialize SAML validator
+
+    Args:
+        idp_cert_path: Path to IdP&#39;s X.509 certificate (PEM format)
+        entity_id: Service Provider entity ID (e.g., &quot;https://app.example.com/saml&quot;)
+        acs_url: Assertion Consumer Service URL where IdP redirects after auth
+        sso_url: IdP&#39;s Single Sign-On URL
+    &quot;&quot;&quot;
+    self.idp_cert_path = idp_cert_path
+    self.entity_id = entity_id
+    self.acs_url = acs_url
+    self.sso_url = sso_url
+
+    # Load IdP certificate for signature verification
+    with open(idp_cert_path, &quot;rb&quot;) as f:
+        cert_data = f.read()
+    self.idp_cert = load_pem_x509_certificate(
+        cert_data,
+        default_backend()
+    )
+
+def validate_assertion(
+    self,
+    saml_response_b64: str,
+    relay_state: str | None = None
+) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Validate SAML assertion from IdP
+
+    Args:
+        saml_response_b64: Base64-encoded SAML response from IdP
+        relay_state: Optional state parameter for CSRF protection
+
+    Returns:
+        Dict with user_id, email, name, attributes from assertion
+
+    Raises:
+        SAMLValidationError: If assertion invalid or signature verification fails
+    &quot;&quot;&quot;
+    # Decode SAML response
+    try:
+        saml_response_xml = base64.b64decode(saml_response_b64).decode(&quot;utf-8&quot;)
+    except Exception as e:
+        raise SAMLValidationError(f&quot;Failed to decode SAML response: {e}&quot;)
+
+    root = etree.fromstring(saml_response_xml.encode(&quot;utf-8&quot;))
+
+    # 1. Verify signature
+    self._verify_signature(root)
+
+    # 2. Extract assertion element
+    assertion = self._extract_assertion(root)
+
+    # 3. Validate assertion structure and attributes
+    self._validate_assertion_structure(assertion)
+
+    # 4. Extract user identity
+    user_data = self._extract_user_data(assertion)
+
+    return user_data
+
+def _verify_signature(self, root: etree._Element) -&gt; None:
+    &quot;&quot;&quot;Verify SAML response signature using IdP&#39;s certificate
+
+    Args:
+        root: Root XML element of SAML response
+
+    Raises:
+        SAMLValidationError: If signature verification fails
+    &quot;&quot;&quot;
+    # Find Signature element
+    signature_elem = root.find(
+        &quot;.//{http://www.w3.org/2000/09/xmldsig#}Signature&quot;
+    )
+    if signature_elem is None:
+        raise SAMLValidationError(&quot;No signature found in SAML response&quot;)
+
+    # Extract signed data and signature value
+    try:
+        signature_value = signature_elem.find(
+            &quot;.//{http://www.w3.org/2000/09/xmldsig#}SignatureValue&quot;
+        ).text
+        signed_info = signature_elem.find(
+            &quot;.//{http://www.w3.org/2000/09/xmldsig#}SignedInfo&quot;
+        )
+
+        # This is simplified - full implementation uses xmlsec1 or similar
+        # In production, use proper SAML library (onelogin, python3-saml)
+        if not self._verify_rsa_signature(
+            etree.tostring(signed_info),
+            base64.b64decode(signature_value),
+            self.idp_cert.public_key()
+        ):
+            raise SAMLValidationError(&quot;Signature verification failed&quot;)
+    except Exception as e:
+        raise SAMLValidationError(f&quot;Signature verification failed: {e}&quot;)
+
+def _extract_assertion(self, root: etree._Element) -&gt; etree._Element:
+    &quot;&quot;&quot;Extract Assertion element from SAML response
+
+    Handles both direct assertions and encrypted assertions.
+    &quot;&quot;&quot;
+    # Direct assertion (unencrypted)
+    assertion = root.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Assertion&quot;
+    )
+    if assertion is not None:
+        return assertion
+
+    # Encrypted assertion
+    encrypted = root.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}EncryptedAssertion&quot;
+    )
+    if encrypted is not None:
+        # Would need SP&#39;s private key to decrypt
+        raise SAMLValidationError(&quot;Encrypted assertions not yet supported&quot;)
+
+    raise SAMLValidationError(&quot;No assertion found in SAML response&quot;)
+
+def _validate_assertion_structure(self, assertion: etree._Element) -&gt; None:
+    &quot;&quot;&quot;Validate assertion structure and timestamps
+
+    Checks:
+    - NotBefore and NotOnOrAfter timestamps
+    - Issuer matches IdP
+    - Audience matches this service provider
+    &quot;&quot;&quot;
+    import datetime
+
+    # Check timestamp validity
+    conditions = assertion.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Conditions&quot;
+    )
+    if conditions is not None:
+        not_before = conditions.get(&quot;NotBefore&quot;)
+        not_on_or_after = conditions.get(&quot;NotOnOrAfter&quot;)
+
+        now = datetime.datetime.utcnow()
+
+        if not_before:
+            nb_time = datetime.datetime.fromisoformat(
+                not_before.replace(&quot;Z&quot;, &quot;+00:00&quot;)
+            )
+            if now &lt; nb_time:
+                raise SAMLValidationError(&quot;Assertion not yet valid (NotBefore)&quot;)
+
+        if not_on_or_after:
+            noa_time = datetime.datetime.fromisoformat(
+                not_on_or_after.replace(&quot;Z&quot;, &quot;+00:00&quot;)
+            )
+            if now &gt;= noa_time:
+                raise SAMLValidationError(&quot;Assertion expired (NotOnOrAfter)&quot;)
+
+    # Check issuer
+    issuer = assertion.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Issuer&quot;
+    )
+    if issuer is None:
+        raise SAMLValidationError(&quot;No issuer found in assertion&quot;)
+
+    # Issuer should match known IdP URL
+    # (configure IdP URL during setup)
+
+    # Check audience
+    audience_restriction = assertion.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}AudienceRestriction&quot;
+    )
+    if audience_restriction is not None:
+        audience = audience_restriction.find(
+            &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Audience&quot;
+        )
+        if audience is None or audience.text != self.entity_id:
+            raise SAMLValidationError(
+                f&quot;Audience mismatch: expected {self.entity_id}&quot;
+            )
+
+def _extract_user_data(self, assertion: etree._Element) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Extract user identity and attributes from assertion
+
+    Standard SAML attributes:
+    - urn:oid:0.9.2342.19200300.100.1.3 (email)
+    - urn:oid:2.5.4.3 (commonName)
+    - urn:oid:2.5.4.4 (surname)
+    - urn:oid:2.5.4.42 (givenName)
+    &quot;&quot;&quot;
+    subject = assertion.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Subject&quot;
+    )
+    if subject is None:
+        raise SAMLValidationError(&quot;No subject found in assertion&quot;)
+
+    # Extract NameID (principal identifier)
+    name_id = subject.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}NameID&quot;
+    )
+    if name_id is None:
+        raise SAMLValidationError(&quot;No NameID found in subject&quot;)
+
+    user_id = name_id.text
+
+    # Extract attributes
+    attributes = {}
+    attr_statement = assertion.find(
+        &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}AttributeStatement&quot;
+    )
+
+    if attr_statement is not None:
+        for attr in attr_statement.findall(
+            &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}Attribute&quot;
+        ):
+            attr_name = attr.get(&quot;Name&quot;)
+            attr_value = attr.find(
+                &quot;.//{urn:oasis:names:tc:SAML:2.0:assertion}AttributeValue&quot;
+            )
+            if attr_value is not None and attr_value.text:
+                attributes[attr_name] = attr_value.text
+
+    return {
+        &quot;user_id&quot;: user_id,
+        &quot;email&quot;: attributes.get(&quot;urn:oid:0.9.2342.19200300.100.1.3&quot;, user_id),
+        &quot;name&quot;: attributes.get(&quot;urn:oid:2.5.4.3&quot;, user_id),
+        &quot;attributes&quot;: attributes,
+    }
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="33-saml-attribute-mapping">3.3 SAML Attribute Mapping<a class="headerlink" href="#33-saml-attribute-mapping" title="Permanent link">&para;</a></h3>
+<p>Map SAML attributes to FraiseQL user model:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class SAMLAttributeMapper:
+    """Map SAML attributes to FraiseQL user properties"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, mapping: dict[str, str]):
+    &quot;&quot;&quot;Initialize mapper
+
+    Args:
+        mapping: Dict mapping FraiseQL fields to SAML attribute names
+
+    Example:
+        {
+            &quot;email&quot;: &quot;urn:oid:0.9.2342.19200300.100.1.3&quot;,
+            &quot;display_name&quot;: &quot;urn:oid:2.5.4.3&quot;,
+            &quot;department&quot;: &quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/department&quot;,
+            &quot;roles&quot;: &quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role&quot;,
+        }
+    &quot;&quot;&quot;
+    self.mapping = mapping
+
+def map_attributes(
+    self,
+    saml_attributes: dict[str, str],
+    user_id: UUID  # UUID v4 for GraphQL ID
+) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Map SAML attributes to user object
+
+    Args:
+        saml_attributes: Raw SAML attribute dict from assertion
+        user_id: SAML NameID (principal identifier)
+
+    Returns:
+        Dict of FraiseQL user properties
+    &quot;&quot;&quot;
+    mapped = {&quot;id&quot;: user_id}
+
+    for fraiseql_field, saml_attr_name in self.mapping.items():
+        if saml_attr_name in saml_attributes:
+            value = saml_attributes[saml_attr_name]
+            # Special handling for roles (comma-separated or array)
+            if fraiseql_field == &quot;roles&quot; and isinstance(value, str):
+                mapped[fraiseql_field] = [r.strip() for r in value.split(&quot;,&quot;)]
+            else:
+                mapped[fraiseql_field] = value
+
+    return mapped
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="4-jwt-token-specification">4. JWT Token Specification<a class="headerlink" href="#4-jwt-token-specification" title="Permanent link">&para;</a></h2>
+<h3 id="41-jwt-structure">4.1 JWT Structure<a class="headerlink" href="#41-jwt-structure" title="Permanent link">&para;</a></h3>
+<p>JWT consists of three base64url-encoded parts separated by dots:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.
+SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Header</strong> (JWT metadata):</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "alg": "RS256",     // Signing algorithm
+  "typ": "JWT",       // Token type
+  "kid": "key-id-123" // Key ID (for key rotation)
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Payload</strong> (Claims):</p>
+<p>```json</p>
+<!-- Code example in JSON -->
+<p>{
+  "sub": "user:12345",           // Subject (user ID)
+  "aud": "api.example.com",       // Audience (intended recipient)
+  "iss": "https://auth.example.com",  // Issuer
+  "iat": 1516239022,             // Issued at (timestamp)
+  "exp": 1516242622,             // Expiration (timestamp)
+  "nbf": 1516239022,             // Not before (timestamp)
+  "tenant_id": "tenant:789",     // Custom claim: tenant
+  "roles": ["admin", "user"],    // Custom claim: roles
+  "permissions": ["read:posts", "write:posts"]  // Custom claim: permissions
+}
+```text</p>
+<!-- Code example in TEXT -->
+
+<p><strong>Signature</strong>:</p>
+<p>```text</p>
+<!-- Code example in TEXT -->
+<p>HMAC-SHA256 or RSA-SHA256 of (header + payload) using secret key
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="42-jwt-generation">4.2 JWT Generation<a class="headerlink" href="#42-jwt-generation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>from datetime import datetime, timedelta
+import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend</p>
+<p>class JWTTokenGenerator:
+    """Generate signed JWT tokens"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    private_key_path: str,
+    algorithm: str = &quot;RS256&quot;,
+    issuer: str = &quot;https://auth.example.com&quot;,
+    audience: str = &quot;api.example.com&quot;
+):
+    &quot;&quot;&quot;Initialize token generator
+
+    Args:
+        private_key_path: Path to private key (PEM format)
+        algorithm: Signing algorithm (RS256, HS256, etc.)
+        issuer: Token issuer claim
+        audience: Token audience claim
+    &quot;&quot;&quot;
+    with open(private_key_path, &quot;rb&quot;) as f:
+        self.private_key = serialization.load_pem_private_key(
+            f.read(),
+            password=None,
+            backend=default_backend()
+        )
+    self.algorithm = algorithm
+    self.issuer = issuer
+    self.audience = audience
+
+def generate_token(
+    self,
+    user_id: str,
+    tenant_id: str,
+    roles: list[str] | None = None,
+    permissions: list[str] | None = None,
+    expires_in_seconds: int = 3600,
+    custom_claims: dict[str, Any] | None = None
+) -&gt; str:
+    &quot;&quot;&quot;Generate access token
+
+    Args:
+        user_id: User identifier
+        tenant_id: Tenant identifier
+        roles: User roles
+        permissions: User permissions
+        expires_in_seconds: Token lifetime in seconds
+        custom_claims: Additional custom claims
+
+    Returns:
+        Signed JWT token
+    &quot;&quot;&quot;
+    now = datetime.utcnow()
+    expires = now + timedelta(seconds=expires_in_seconds)
+
+    payload = {
+        &quot;sub&quot;: user_id,
+        &quot;tenant_id&quot;: tenant_id,
+        &quot;iss&quot;: self.issuer,
+        &quot;aud&quot;: self.audience,
+        &quot;iat&quot;: int(now.timestamp()),
+        &quot;exp&quot;: int(expires.timestamp()),
+        &quot;nbf&quot;: int(now.timestamp()),
+    }
+
+    if roles:
+        payload[&quot;roles&quot;] = roles
+
+    if permissions:
+        payload[&quot;permissions&quot;] = permissions
+
+    if custom_claims:
+        payload.update(custom_claims)
+
+    # Sign token
+    token = jwt.encode(
+        payload,
+        self.private_key,
+        algorithm=self.algorithm
+    )
+
+    return token
+
+def generate_refresh_token(
+    self,
+    user_id: str,
+    tenant_id: str,
+    expires_in_seconds: int = 604800  # 7 days
+) -&gt; str:
+    &quot;&quot;&quot;Generate long-lived refresh token
+
+    Refresh tokens:
+    - Have longer expiration (days vs minutes)
+    - Are stored in database (can be revoked)
+    - Are rotated on use (old token invalidated)
+    - Are tracked for audit/security analysis
+    &quot;&quot;&quot;
+    now = datetime.utcnow()
+    expires = now + timedelta(seconds=expires_in_seconds)
+
+    payload = {
+        &quot;sub&quot;: user_id,
+        &quot;tenant_id&quot;: tenant_id,
+        &quot;type&quot;: &quot;refresh&quot;,  // Token type
+        &quot;iss&quot;: self.issuer,
+        &quot;aud&quot;: self.audience,
+        &quot;iat&quot;: int(now.timestamp()),
+        &quot;exp&quot;: int(expires.timestamp()),
+        &quot;nbf&quot;: int(now.timestamp()),
+    }
+
+    token = jwt.encode(
+        payload,
+        self.private_key,
+        algorithm=self.algorithm
+    )
+
+    return token
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="43-jwt-validation">4.3 JWT Validation<a class="headerlink" href="#43-jwt-validation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class JWTTokenValidator:
+    """Validate and extract claims from JWT tokens"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    public_key_path: str,
+    algorithm: str = &quot;RS256&quot;,
+    issuer: str = &quot;https://auth.example.com&quot;,
+    audience: str = &quot;api.example.com&quot;
+):
+    &quot;&quot;&quot;Initialize token validator
+
+    Args:
+        public_key_path: Path to public key (PEM format)
+        algorithm: Expected signing algorithm
+        issuer: Expected issuer claim
+        audience: Expected audience claim
+    &quot;&quot;&quot;
+    with open(public_key_path, &quot;rb&quot;) as f:
+        self.public_key = serialization.load_pem_public_key(
+            f.read(),
+            backend=default_backend()
+        )
+    self.algorithm = algorithm
+    self.issuer = issuer
+    self.audience = audience
+
+def validate_token(
+    self,
+    token: str,
+    token_type: str = &quot;access&quot;
+) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Validate token signature and claims
+
+    Validation steps:
+    1. Verify signature using public key
+    2. Check expiration (exp claim)
+    3. Check not-before (nbf claim)
+    4. Verify issuer
+    5. Verify audience
+    6. Verify token type (if refresh token)
+
+    Args:
+        token: JWT token string
+        token_type: Expected token type (&quot;access&quot; or &quot;refresh&quot;)
+
+    Returns:
+        Decoded token claims
+
+    Raises:
+        TokenExpiredError: If token has expired
+        InvalidSignatureError: If signature verification fails
+        InvalidTokenError: If token format or claims invalid
+    &quot;&quot;&quot;
+    try:
+        # Decode and verify signature
+        payload = jwt.decode(
+            token,
+            self.public_key,
+            algorithms=[self.algorithm],
+            issuer=self.issuer,
+            audience=self.audience,
+            options={
+                &quot;verify_signature&quot;: True,
+                &quot;verify_exp&quot;: True,
+                &quot;verify_nbf&quot;: True,
+                &quot;verify_iat&quot;: True,
+            }
+        )
+
+        # Verify token type for refresh tokens
+        if token_type == &quot;refresh&quot;:
+            if payload.get(&quot;type&quot;) != &quot;refresh&quot;:
+                raise InvalidTokenError(&quot;Expected refresh token, got access token&quot;)
+
+        return payload
+
+    except jwt.ExpiredSignatureError as e:
+        raise TokenExpiredError(&quot;Token has expired&quot;) from e
+    except jwt.InvalidSignatureError as e:
+        raise InvalidSignatureError(&quot;Signature verification failed&quot;) from e
+    except jwt.DecodeError as e:
+        raise InvalidTokenError(&quot;Failed to decode token&quot;) from e
+    except jwt.InvalidClaimsError as e:
+        raise InvalidTokenError(f&quot;Invalid claims: {e}&quot;) from e
+
+def extract_tenant_id(self, token: str) -&gt; str | None:
+    &quot;&quot;&quot;Extract tenant_id claim without full validation
+
+    Used during request processing to route to tenant database.
+    Still validates signature but skips expiration check.
+    &quot;&quot;&quot;
+    try:
+        payload = jwt.decode(
+            token,
+            self.public_key,
+            algorithms=[self.algorithm],
+            options={&quot;verify_exp&quot;: False}  # Skip expiration for routing
+        )
+        return payload.get(&quot;tenant_id&quot;)
+    except (jwt.DecodeError, jwt.InvalidSignatureError):
+        return None
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="5-custom-authentication-provider-pattern">5. Custom Authentication Provider Pattern<a class="headerlink" href="#5-custom-authentication-provider-pattern" title="Permanent link">&para;</a></h2>
+<p>FraiseQL supports pluggable authentication providers for custom requirements.</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>from abc import ABC, abstractmethod
+from typing import Any</p>
+<p>class AuthenticationProvider(ABC):
+    """Base class for custom authentication providers"""</p>
+<div class="highlight"><pre><span></span><code>@abstractmethod
+async def authenticate(
+    self,
+    credentials: dict[str, Any]
+) -&gt; AuthenticationResult:
+    &quot;&quot;&quot;Authenticate user and return principal
+
+    Args:
+        credentials: Raw credentials from client (varies by provider)
+
+    Returns:
+        AuthenticationResult with user_id, tenant_id, roles, etc.
+
+    Raises:
+        AuthenticationError: If authentication fails
+    &quot;&quot;&quot;
+    pass
+
+@abstractmethod
+async def validate(
+    self,
+    token: str
+) -&gt; AuthenticationResult:
+    &quot;&quot;&quot;Validate existing token/session
+
+    Args:
+        token: Token or session ID to validate
+
+    Returns:
+        AuthenticationResult if valid
+
+    Raises:
+        AuthenticationError: If token invalid or expired
+    &quot;&quot;&quot;
+    pass
+
+@abstractmethod
+async def revoke(
+    self,
+    token: str
+) -&gt; None:
+    &quot;&quot;&quot;Revoke token/session (logout)
+
+    Args:
+        token: Token or session ID to revoke
+    &quot;&quot;&quot;
+    pass
+</code></pre></div>
+<p>class LDAPAuthenticationProvider(AuthenticationProvider):
+    """Custom provider: LDAP directory authentication"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    ldap_server: str,
+    base_dn: str,
+    user_search_attr: str = &quot;uid&quot;
+):
+    self.ldap_server = ldap_server
+    self.base_dn = base_dn
+    self.user_search_attr = user_search_attr
+
+async def authenticate(
+    self,
+    credentials: dict[str, Any]
+) -&gt; AuthenticationResult:
+    &quot;&quot;&quot;Authenticate via LDAP
+
+    Args:
+        credentials: {&quot;username&quot;: &quot;...&quot;, &quot;password&quot;: &quot;...&quot;}
+    &quot;&quot;&quot;
+    username = credentials.get(&quot;username&quot;)
+    password = credentials.get(&quot;password&quot;)
+
+    if not username or not password:
+        raise AuthenticationError(&quot;Username and password required&quot;)
+
+    # Connect to LDAP server
+    ldap_conn = ldap.initialize(self.ldap_server)
+
+    # Search for user
+    search_filter = f&quot;({self.user_search_attr}={username})&quot;
+    result = ldap_conn.search_s(
+        self.base_dn,
+        ldap.SCOPE_SUBTREE,
+        search_filter
+    )
+
+    if not result:
+        raise AuthenticationError(&quot;User not found&quot;)
+
+    user_dn = result[0][0]
+    user_attrs = result[0][1]
+
+    # Attempt bind with user&#39;s password
+    try:
+        ldap_conn.simple_bind_s(user_dn, password)
+    except ldap.INVALID_CREDENTIALS:
+        raise AuthenticationError(&quot;Invalid password&quot;)
+
+    # Extract tenant from LDAP attributes
+    tenant_id = user_attrs.get(&quot;ou&quot;, [b&quot;default&quot;])[0].decode()
+
+    return AuthenticationResult(
+        user_id=username,
+        tenant_id=tenant_id,
+        roles=self._extract_roles(user_attrs),
+        metadata={&quot;ldap_dn&quot;: user_dn}
+    )
+
+async def validate(self, token: str) -&gt; AuthenticationResult:
+    # For LDAP, tokens are session IDs stored in database
+    session = await self._get_session(token)
+    if not session or session.expired():
+        raise AuthenticationError(&quot;Session invalid or expired&quot;)
+    return AuthenticationResult(**session.data)
+
+async def revoke(self, token: str) -&gt; None:
+    await self._delete_session(token)
+
+def _extract_roles(self, ldap_attrs: dict) -&gt; list[str]:
+    &quot;&quot;&quot;Extract roles from LDAP attributes&quot;&quot;&quot;
+    # Implementation specific to your LDAP schema
+    pass
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<p>Register custom provider:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<h1 id="in-app-initialization">In app initialization<a class="headerlink" href="#in-app-initialization" title="Permanent link">&para;</a></h1>
+<p>from FraiseQL.auth import register_authentication_provider</p>
+<p>ldap_provider = LDAPAuthenticationProvider(
+    ldap_server="ldap://directory.example.com",
+    base_dn="ou=users,dc=example,dc=com"
+)</p>
+<p>register_authentication_provider("ldap", ldap_provider)</p>
+<h1 id="in-schema">In schema<a class="headerlink" href="#in-schema" title="Permanent link">&para;</a></h1>
+<p>@FraiseQL.type
+@FraiseQL.authenticate(provider="ldap")
+class User:
+    id: ID
+    email: str
+    roles: list[str]
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="6-session-management">6. Session Management<a class="headerlink" href="#6-session-management" title="Permanent link">&para;</a></h2>
+<h3 id="61-stateless-sessions-jwt">6.1 Stateless Sessions (JWT)<a class="headerlink" href="#61-stateless-sessions-jwt" title="Permanent link">&para;</a></h3>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Scalable (no server-side storage)</li>
+<li>Distributed-friendly (each server can validate)</li>
+<li>Mobile-friendly</li>
+<li>CDN/edge-cacheable</li>
+</ul>
+<p><strong>Disadvantages:</strong></p>
+<ul>
+<li>Cannot revoke immediately (token stays valid until expiry)</li>
+<li>Token contains claims (privacy consideration)</li>
+<li>Size overhead (increases request/response size)</li>
+</ul>
+<h3 id="62-stateful-sessions-cookies">6.2 Stateful Sessions (Cookies)<a class="headerlink" href="#62-stateful-sessions-cookies" title="Permanent link">&para;</a></h3>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Can revoke immediately</li>
+<li>Smaller tokens (just session ID)</li>
+<li>Traditional web browser support</li>
+<li>CSRF protection easier</li>
+</ul>
+<p><strong>Disadvantages:</strong></p>
+<ul>
+<li>Requires server-side state (session store)</li>
+<li>Not as scalable</li>
+<li>Requires sticky sessions or shared store</li>
+</ul>
+<h3 id="63-hybrid-approach-recommended">6.3 Hybrid Approach (Recommended)<a class="headerlink" href="#63-hybrid-approach-recommended" title="Permanent link">&para;</a></h3>
+<p>Combine stateless and stateful for best of both:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class HybridSessionManager:
+    """Combine JWT (stateless) and session store (stateful)"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    jwt_validator: JWTTokenValidator,
+    session_store: SessionStore,
+    access_token_expires: int = 900,  # 15 minutes
+    refresh_token_expires: int = 604800  # 7 days
+):
+    self.jwt_validator = jwt_validator
+    self.session_store = session_store
+    self.access_token_expires = access_token_expires
+    self.refresh_token_expires = refresh_token_expires
+
+async def create_session(
+    self,
+    user_id: str,
+    tenant_id: str,
+    roles: list[str]
+) -&gt; SessionPair:
+    &quot;&quot;&quot;Create new session with access + refresh tokens
+
+    Access token:
+    - JWT (stateless)
+    - Short-lived (15 min)
+    - Sent with each request
+    - Can&#39;t be revoked (expires quickly)
+
+    Refresh token:
+    - Stored in session store (stateful)
+    - Long-lived (7 days)
+    - Used only to get new access token
+    - Can be revoked
+
+    Returns:
+        SessionPair with access_token and refresh_token
+    &quot;&quot;&quot;
+    # Create access token (stateless JWT)
+    access_token = self.jwt_generator.generate_token(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        roles=roles,
+        expires_in_seconds=self.access_token_expires
+    )
+
+    # Create refresh token (stateful)
+    refresh_token_value = secrets.token_urlsafe(32)
+    session_record = SessionRecord(
+        session_id=refresh_token_value,
+        user_id=user_id,
+        tenant_id=tenant_id,
+        roles=roles,
+        created_at=datetime.utcnow(),
+        expires_at=datetime.utcnow() + timedelta(seconds=self.refresh_token_expires),
+        user_agent=request.headers.get(&quot;User-Agent&quot;),
+        ip_address=request.remote_addr,
+        revoked=False
+    )
+    await self.session_store.save(session_record)
+
+    return SessionPair(
+        access_token=access_token,
+        refresh_token=refresh_token_value,
+        expires_in=self.access_token_expires
+    )
+
+async def refresh_access_token(
+    self,
+    refresh_token: str
+) -&gt; str:
+    &quot;&quot;&quot;Exchange refresh token for new access token
+
+    Process:
+    1. Validate refresh token (check session store)
+    2. Verify not revoked or expired
+    3. Generate new access token
+    4. Optionally rotate refresh token
+    &quot;&quot;&quot;
+    session_record = await self.session_store.get(refresh_token)
+    if not session_record:
+        raise SessionError(&quot;Refresh token not found&quot;)
+
+    if session_record.revoked:
+        raise SessionError(&quot;Refresh token has been revoked&quot;)
+
+    if session_record.expires_at &lt; datetime.utcnow():
+        raise SessionError(&quot;Refresh token has expired&quot;)
+
+    # Generate new access token
+    new_access_token = self.jwt_generator.generate_token(
+        user_id=session_record.user_id,
+        tenant_id=session_record.tenant_id,
+        roles=session_record.roles,
+        expires_in_seconds=self.access_token_expires
+    )
+
+    # Optional: Rotate refresh token (invalidate old, create new)
+    if should_rotate_refresh_token():
+        await self.session_store.delete(refresh_token)
+        new_refresh_token = await self.create_session(
+            user_id=session_record.user_id,
+            tenant_id=session_record.tenant_id,
+            roles=session_record.roles
+        )
+        return new_access_token, new_refresh_token.refresh_token
+
+    return new_access_token
+
+async def revoke_session(self, refresh_token: str) -&gt; None:
+    &quot;&quot;&quot;Revoke refresh token (logout)
+
+    Marking refresh_token as revoked prevents:
+    - Getting new access tokens
+    - Continuing session
+    - Re-authenticating with same token
+    &quot;&quot;&quot;
+    session_record = await self.session_store.get(refresh_token)
+    if session_record:
+        session_record.revoked = True
+        await self.session_store.save(session_record)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="7-token-revocation">7. Token Revocation<a class="headerlink" href="#7-token-revocation" title="Permanent link">&para;</a></h2>
+<h3 id="71-immediate-revocation-stateful">7.1 Immediate Revocation (Stateful)<a class="headerlink" href="#71-immediate-revocation-stateful" title="Permanent link">&para;</a></h3>
+<p>For tokens that need immediate revocation (password change, logout, compromise):</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class TokenRevocationStore:
+    """Store revoked tokens for immediate invalidation"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, redis_client):
+    self.redis = redis_client
+
+async def revoke_token(
+    self,
+    token: str,
+    jwt_payload: dict[str, Any],
+    reason: str = &quot;user_logout&quot;
+) -&gt; None:
+    &quot;&quot;&quot;Revoke token immediately
+
+    Args:
+        token: JWT token string
+        jwt_payload: Decoded JWT payload (contains exp)
+        reason: Revocation reason for audit
+    &quot;&quot;&quot;
+    # Calculate TTL = token expiration - now
+    now = datetime.utcnow()
+    exp = datetime.fromtimestamp(jwt_payload[&quot;exp&quot;])
+    ttl_seconds = int((exp - now).total_seconds())
+
+    if ttl_seconds &gt; 0:
+        # Store token hash in Redis with TTL
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        key = f&quot;revoked_token:{token_hash}&quot;
+
+        await self.redis.setex(
+            key,
+            ttl_seconds,
+            json.dumps({
+                &quot;user_id&quot;: jwt_payload[&quot;sub&quot;],
+                &quot;tenant_id&quot;: jwt_payload[&quot;tenant_id&quot;],
+                &quot;reason&quot;: reason,
+                &quot;revoked_at&quot;: now.isoformat()
+            })
+        )
+
+async def is_revoked(self, token: str) -&gt; bool:
+    &quot;&quot;&quot;Check if token has been revoked&quot;&quot;&quot;
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    key = f&quot;revoked_token:{token_hash}&quot;
+    return await self.redis.exists(key)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="72-revocation-reasons">7.2 Revocation Reasons<a class="headerlink" href="#72-revocation-reasons" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class RevocationReason(Enum):
+    """Reasons for token revocation"""</p>
+<div class="highlight"><pre><span></span><code># User-initiated
+USER_LOGOUT = &quot;user_logout&quot;                    # Normal logout
+PASSWORD_CHANGED = &quot;password_changed&quot;          # User changed password
+PERMISSION_CHANGED = &quot;permission_changed&quot;      # User&#39;s permissions modified
+ROLE_CHANGED = &quot;role_changed&quot;                  # User&#39;s role changed
+ACCOUNT_DISABLED = &quot;account_disabled&quot;          # Account suspended
+
+# Security
+TOKEN_COMPROMISED = &quot;token_compromised&quot;        # Suspected token leak
+SUSPICIOUS_ACTIVITY = &quot;suspicious_activity&quot;    # Anomalous activity detected
+BREACH_DETECTED = &quot;breach_detected&quot;            # Security breach identified
+RATE_LIMIT_EXCEEDED = &quot;rate_limit_exceeded&quot;    # Abusive token use
+
+# Administrative
+POLICY_CHANGE = &quot;policy_change&quot;                # Security policy changed
+TENANT_DEACTIVATED = &quot;tenant_deactivated&quot;      # Tenant shut down
+FORCE_REAUTHENTICATE = &quot;force_reauthenticate&quot;  # Admin force re-auth
+
+# Technical
+SESSION_TIMEOUT = &quot;session_timeout&quot;            # Inactivity timeout
+DEVICE_LOST = &quot;device_lost&quot;                    # Device marked as lost
+LOGOUT_ALL_DEVICES = &quot;logout_all_devices&quot;      # Log out all sessions
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="8-multi-tenant-authentication">8. Multi-Tenant Authentication<a class="headerlink" href="#8-multi-tenant-authentication" title="Permanent link">&para;</a></h2>
+<h3 id="81-tenant-context-propagation">8.1 Tenant Context Propagation<a class="headerlink" href="#81-tenant-context-propagation" title="Permanent link">&para;</a></h3>
+<p>Every request includes tenant context for isolation:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class TenantContext:
+    """User's tenant context for authorization and data isolation"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    tenant_id: str,
+    user_id: str,
+    roles: list[str],
+    is_tenant_admin: bool = False
+):
+    self.tenant_id = tenant_id
+    self.user_id = user_id
+    self.roles = roles
+    self.is_tenant_admin = is_tenant_admin
+
+def can_access_tenant(self, target_tenant_id: str) -&gt; bool:
+    &quot;&quot;&quot;Check if user can access another tenant
+
+    Users typically can only access their own tenant.
+    Exception: Platform admins (system administrators).
+    &quot;&quot;&quot;
+    return self.tenant_id == target_tenant_id or &quot;platform_admin&quot; in self.roles
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="82-tenant-scoped-authorization">8.2 Tenant-Scoped Authorization<a class="headerlink" href="#82-tenant-scoped-authorization" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.type
+@FraiseQL.authorize(rule="owned_by_tenant")
+class Post:
+    """Posts are scoped to owning tenant"""
+    id: ID
+    title: str
+    content: str
+    tenant_id: ID</p>
+<h1 id="authorization-rule-user-can-only-access-posts-from-their-tenant">Authorization rule: User can only access posts from their tenant<a class="headerlink" href="#authorization-rule-user-can-only-access-posts-from-their-tenant" title="Permanent link">&para;</a></h1>
+<p>@FraiseQL.authorization_rule(name="owned_by_tenant")
+def rule_owned_by_tenant(resource, user_context):
+    return resource.tenant_id == user_context.tenant_id
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="83-multi-tenant-database-strategy">8.3 Multi-Tenant Database Strategy<a class="headerlink" href="#83-multi-tenant-database-strategy" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class MultiTenantDatabaseManager:
+    """Manage database connections per tenant"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, default_pool: DatabasePool, tenant_pools: dict[str, DatabasePool]):
+    self.default_pool = default_pool
+    self.tenant_pools = tenant_pools
+
+def get_pool_for_tenant(self, tenant_id: str) -&gt; DatabasePool:
+    &quot;&quot;&quot;Get database connection pool for tenant
+
+    Strategy options:
+    1. Shared database, separate schema per tenant
+    2. Separate database per tenant
+    3. Separate server per tenant
+    &quot;&quot;&quot;
+    return self.tenant_pools.get(tenant_id, self.default_pool)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="9-security-best-practices">9. Security Best Practices<a class="headerlink" href="#9-security-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="91-token-storage">9.1 Token Storage<a class="headerlink" href="#91-token-storage" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Storage Method</th>
+<th>XSS Risk</th>
+<th>CSRF Risk</th>
+<th>Use Case</th>
+<th>Security</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>localStorage</strong></td>
+<td>⚠️ High</td>
+<td>✅ Low</td>
+<td>SPA</td>
+<td>❌ Not recommended</td>
+</tr>
+<tr>
+<td><strong>sessionStorage</strong></td>
+<td>⚠️ High</td>
+<td>✅ Low</td>
+<td>SPA</td>
+<td>❌ Not recommended</td>
+</tr>
+<tr>
+<td><strong>Cookie (httpOnly)</strong></td>
+<td>✅ Low</td>
+<td>⚠️ Medium</td>
+<td>Web</td>
+<td>✅ Recommended</td>
+</tr>
+<tr>
+<td><strong>Memory variable</strong></td>
+<td>✅ Low</td>
+<td>✅ Low</td>
+<td>SPA</td>
+<td>✅ Recommended (but lost on refresh)</td>
+</tr>
+<tr>
+<td><strong>Secure httpOnly cookie</strong></td>
+<td>✅ Low</td>
+<td>✅ Low (with SameSite)</td>
+<td>All</td>
+<td>✅ Best practice</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommended:</strong> Secure httpOnly cookie with SameSite=Strict</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>response.set_cookie(
+    key="access_token",
+    value=token,
+    httponly=True,        # Prevent JavaScript access (XSS protection)
+    secure=True,          # Only send over HTTPS
+    samesite="Strict",    # Prevent CSRF attacks
+    max_age=900,          # 15 minutes
+    domain="api.example.com",
+    path="/graphql"
+)
+```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="92-csrf-protection">9.2 CSRF Protection<a class="headerlink" href="#92-csrf-protection" title="Permanent link">&para;</a></h3>
+<p>Protect against Cross-Site Request Forgery:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>@FraiseQL.hook(event="request.before_authorization")
+async def validate_csrf(request):
+    """Validate CSRF token for state-changing operations"""</p>
+<div class="highlight"><pre><span></span><code>if request.method in [&quot;GET&quot;, &quot;HEAD&quot;, &quot;OPTIONS&quot;]:
+    return  # CSRF only applies to state-changing requests
+
+# Get CSRF token from request
+csrf_token = request.headers.get(&quot;X-CSRF-Token&quot;)
+
+# Verify against session
+session_csrf = request.session.get(&quot;csrf_token&quot;)
+if csrf_token != session_csrf:
+    raise FraiseSQLError(&quot;CSRF_VALIDATION_FAILED&quot;, &quot;CSRF token mismatch&quot;)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="93-rate-limiting-brute-force-protection">9.3 Rate Limiting &amp; Brute Force Protection<a class="headerlink" href="#93-rate-limiting-brute-force-protection" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class AuthenticationRateLimiter:
+    """Prevent brute force attacks on authentication endpoints"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(self, redis_client, max_attempts: int = 5, window_seconds: int = 300):
+    self.redis = redis_client
+    self.max_attempts = max_attempts
+    self.window_seconds = window_seconds
+
+async def check_rate_limit(self, identifier: str) -&gt; bool:
+    &quot;&quot;&quot;Check if authentication attempt should be allowed
+
+    Args:
+        identifier: User identifier or IP address
+
+    Returns:
+        True if attempt allowed, False if rate limited
+    &quot;&quot;&quot;
+    key = f&quot;auth_attempts:{identifier}&quot;
+    attempts = await self.redis.incr(key)
+
+    if attempts == 1:
+        await self.redis.expire(key, self.window_seconds)
+
+    if attempts &gt; self.max_attempts:
+        return False
+
+    return True
+
+async def get_lockout_time(self, identifier: str) -&gt; int:
+    &quot;&quot;&quot;Get remaining lockout time in seconds&quot;&quot;&quot;
+    key = f&quot;auth_attempts:{identifier}&quot;
+    return await self.redis.ttl(key)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="94-credential-validation">9.4 Credential Validation<a class="headerlink" href="#94-credential-validation" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class CredentialValidator:
+    """Validate credentials before authentication attempt"""</p>
+<div class="highlight"><pre><span></span><code>@staticmethod
+def validate_password(password: str) -&gt; None:
+    &quot;&quot;&quot;Enforce strong password requirements
+
+    Requirements:
+    - Minimum 12 characters
+    - At least one uppercase letter
+    - At least one number
+    - At least one special character
+    &quot;&quot;&quot;
+    if len(password) &lt; 12:
+        raise ValidationError(&quot;Password must be at least 12 characters&quot;)
+
+    if not any(c.isupper() for c in password):
+        raise ValidationError(&quot;Password must contain uppercase letter&quot;)
+
+    if not any(c.isdigit() for c in password):
+        raise ValidationError(&quot;Password must contain digit&quot;)
+
+    if not any(c in &quot;!@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?&quot; for c in password):
+        raise ValidationError(&quot;Password must contain special character&quot;)
+
+@staticmethod
+def validate_email(email: str) -&gt; None:
+    &quot;&quot;&quot;Validate email format and deliverability&quot;&quot;&quot;
+    import re
+    pattern = r&quot;^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$&quot;
+    if not re.match(pattern, email):
+        raise ValidationError(&quot;Invalid email format&quot;)
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="10-audit-compliance">10. Audit &amp; Compliance<a class="headerlink" href="#10-audit-compliance" title="Permanent link">&para;</a></h2>
+<h3 id="101-authentication-event-logging">10.1 Authentication Event Logging<a class="headerlink" href="#101-authentication-event-logging" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class AuthenticationAuditLog:
+    """Log authentication events for compliance and investigation"""</p>
+<div class="highlight"><pre><span></span><code>async def log_event(
+    self,
+    event_type: str,
+    user_id: str | None,
+    tenant_id: str,
+    status: str,
+    ip_address: str,
+    user_agent: str,
+    details: dict[str, Any] | None = None
+) -&gt; None:
+    &quot;&quot;&quot;Log authentication event
+
+    Events logged:
+    - LOGIN_SUCCESS
+    - LOGIN_FAILED (with reason)
+    - LOGOUT
+    - TOKEN_REFRESH
+    - PASSWORD_RESET
+    - PERMISSION_CHANGED
+    - TOKEN_REVOKED
+    - SUSPICIOUS_ACTIVITY
+    &quot;&quot;&quot;
+    event = {
+        &quot;timestamp&quot;: datetime.utcnow().isoformat(),
+        &quot;event_type&quot;: event_type,
+        &quot;user_id&quot;: user_id,
+        &quot;tenant_id&quot;: tenant_id,
+        &quot;status&quot;: status,
+        &quot;ip_address&quot;: ip_address,
+        &quot;user_agent&quot;: user_agent,
+        &quot;details&quot;: details or {}
+    }
+
+    # Store in immutable audit table
+    await self.db.execute(&quot;&quot;&quot;
+        INSERT INTO audit_log_authentication (
+            timestamp, event_type, user_id, tenant_id,
+            status, ip_address, user_agent, details
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    &quot;&quot;&quot;, event.values())
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="102-compliance-requirements">10.2 Compliance Requirements<a class="headerlink" href="#102-compliance-requirements" title="Permanent link">&para;</a></h3>
+<p><strong>SOC 2 Type II:</strong></p>
+<ul>
+<li>Audit trail for all authentication events</li>
+<li>Secure token storage and transmission</li>
+<li>Rate limiting on authentication endpoints</li>
+<li>Monitoring for suspicious patterns</li>
+</ul>
+<p><strong>GDPR:</strong></p>
+<ul>
+<li>User consent for data processing</li>
+<li>Right to deletion (archive authentication logs)</li>
+<li>Audit trail retention policies</li>
+<li>Data minimization (collect only necessary claims)</li>
+</ul>
+<p><strong>HIPAA:</strong></p>
+<ul>
+<li>Secure token transmission (HTTPS only)</li>
+<li>Encryption at rest and in transit</li>
+<li>Access control and audit logging</li>
+<li>Session timeout requirements</li>
+</ul>
+<hr />
+<h2 id="11-performance-optimization">11. Performance Optimization<a class="headerlink" href="#11-performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="111-jwt-caching">11.1 JWT Caching<a class="headerlink" href="#111-jwt-caching" title="Permanent link">&para;</a></h3>
+<p>Cache JWT validation results to avoid repeated cryptographic operations:</p>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class CachedJWTValidator:
+    """Cache JWT validation for performance"""</p>
+<div class="highlight"><pre><span></span><code>def __init__(
+    self,
+    jwt_validator: JWTTokenValidator,
+    cache_ttl: int = 60  # Cache valid tokens for 60 seconds
+):
+    self.jwt_validator = jwt_validator
+    self.cache_ttl = cache_ttl
+    self.cache = {}
+
+async def validate_token(self, token: str) -&gt; dict[str, Any]:
+    &quot;&quot;&quot;Validate token with caching
+
+    Cache hit: 1-2 microseconds
+    Cache miss: 5-10 milliseconds (signature verification)
+    &quot;&quot;&quot;
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+    if token_hash in self.cache:
+        cached = self.cache[token_hash]
+        if cached[&quot;expires_at&quot;] &gt; datetime.utcnow():
+            return cached[&quot;payload&quot;]
+
+    # Validate token
+    payload = self.jwt_validator.validate_token(token)
+
+    # Cache result
+    self.cache[token_hash] = {
+        &quot;payload&quot;: payload,
+        &quot;expires_at&quot;: datetime.utcnow() + timedelta(seconds=self.cache_ttl)
+    }
+
+    return payload
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<h3 id="112-parallel-authentication">11.2 Parallel Authentication<a class="headerlink" href="#112-parallel-authentication" title="Permanent link">&para;</a></h3>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>async def authenticate_with_fallback(
+    credentials: dict[str, Any],
+    primary_provider: AuthenticationProvider,
+    secondary_provider: AuthenticationProvider | None = None
+) -&gt; AuthenticationResult:
+    """Try primary provider, fall back to secondary if needed</p>
+<div class="highlight"><pre><span></span><code>Allows migration between providers without downtime.
+&quot;&quot;&quot;
+try:
+    return await primary_provider.authenticate(credentials)
+except AuthenticationError as e:
+    if secondary_provider:
+        try:
+            return await secondary_provider.authenticate(credentials)
+        except AuthenticationError:
+            raise e  # Raise original error
+    raise
+</code></pre></div>
+<p>```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="12-error-handling">12. Error Handling<a class="headerlink" href="#12-error-handling" title="Permanent link">&para;</a></h2>
+<p>```python</p>
+<!-- Code example in Python -->
+<p>class AuthenticationError(FraiseSQLError):
+    """Base authentication error"""
+    code = "E_AUTH_FAILED"
+    http_status = 401</p>
+<p>class InvalidCredentialsError(AuthenticationError):
+    """Invalid username/password"""
+    code = "E_AUTH_INVALID_CREDENTIALS"</p>
+<p>class TokenExpiredError(AuthenticationError):
+    """JWT or session token has expired"""
+    code = "E_AUTH_TOKEN_EXPIRED"</p>
+<p>class TokenRevokedError(AuthenticationError):
+    """Token has been revoked (logout/password change)"""
+    code = "E_AUTH_TOKEN_REVOKED"</p>
+<p>class CSRFError(AuthenticationError):
+    """CSRF token validation failed"""
+    code = "E_AUTH_CSRF_VALIDATION_FAILED"
+    http_status = 403</p>
+<p>class RateLimitExceededError(AuthenticationError):
+    """Too many authentication attempts"""
+    code = "E_AUTH_RATE_LIMIT_EXCEEDED"
+    http_status = 429</p>
+<p>class UnauthorizedError(FraiseSQLError):
+    """User not authenticated"""
+    code = "E_AUTH_UNAUTHORIZED"
+    http_status = 401
+```text</p>
+<!-- Code example in TEXT -->
+
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>FraiseQL authentication specification provides:</p>
+<p>✅ <strong>Multiple Authentication Schemes</strong></p>
+<ul>
+<li>OAuth2 (Authorization Code, Client Credentials, Refresh Token)</li>
+<li>SAML 2.0 (Enterprise SSO)</li>
+<li>JWT (Stateless tokens)</li>
+<li>Session cookies (Stateful)</li>
+<li>Custom providers (Extensible)</li>
+</ul>
+<p>✅ <strong>Complete Token Lifecycle</strong></p>
+<ul>
+<li>Generation and signing</li>
+<li>Validation and claims extraction</li>
+<li>Refresh and rotation</li>
+<li>Revocation and expiration</li>
+</ul>
+<p>✅ <strong>Enterprise Security</strong></p>
+<ul>
+<li>Multi-tenant isolation</li>
+<li>CSRF protection</li>
+<li>Rate limiting</li>
+<li>Audit logging</li>
+<li>Compliance support (SOC 2, GDPR, HIPAA)</li>
+</ul>
+<p>✅ <strong>Performance</strong></p>
+<ul>
+<li>Token caching</li>
+<li>Parallel authentication</li>
+<li>Efficient key rotation</li>
+<li>Minimal crypto overhead</li>
+</ul>
+<p>✅ <strong>User Experience</strong></p>
+<ul>
+<li>Seamless token refresh</li>
+<li>Cross-domain SSO support</li>
+<li>Mobile and SPA support</li>
+<li>Traditional web app support</li>
+</ul>
+<hr />
+<p><strong>Next</strong>: advanced-optimization.md covers query optimization, database tuning, and scaling strategies.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025-2026 FraiseQL Contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/fraiseql/fraiseql-python" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
