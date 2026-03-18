@@ -168,3 +168,101 @@ class TestSessionVariablesInMutationPath:
         assert call_order.index("set_session_variables") < call_order.index(
             "execute_mutation_rust"
         ), "Session variables must be set BEFORE mutation execution"
+
+
+class TestCustomSessionVariables:
+    """Tests for configurable session variable forwarding (issue #310)."""
+
+    @pytest.mark.asyncio
+    async def test_custom_session_variable_forwarded(self) -> None:
+        """Custom session variables from config are SET LOCAL on the cursor."""
+        from psycopg.sql import SQL, Literal
+
+        config = Mock()
+        config.session_variables = {"locale": "app.locale"}
+
+        repo = _make_repo({"config": config, "locale": "fr-FR"})
+        cursor = AsyncMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock()
+
+        await repo._set_session_variables(cursor)
+
+        # Find the SET LOCAL call for app.locale
+        set_locale_call = call(SQL("SET LOCAL {} = {}").format(SQL("app.locale"), Literal("fr-FR")))
+        assert set_locale_call in cursor.execute.call_args_list
+
+    @pytest.mark.asyncio
+    async def test_custom_variable_before_started_at(self) -> None:
+        """Custom session variables are set before fraiseql.started_at."""
+        config = Mock()
+        config.session_variables = {"locale": "app.locale"}
+
+        repo = _make_repo({"config": config, "locale": "fr-FR"})
+        cursor = AsyncMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock()
+
+        await repo._set_session_variables(cursor)
+
+        # started_at must be the last call
+        last_call = cursor.execute.call_args_list[-1]
+        assert last_call == call(STARTED_AT_QUERY)
+
+    @pytest.mark.asyncio
+    async def test_custom_variable_skipped_if_not_in_context(self) -> None:
+        """Custom session variables are skipped if the context key is absent."""
+        config = Mock()
+        config.session_variables = {"locale": "app.locale"}
+
+        repo = _make_repo({"config": config})  # no "locale" in context
+        cursor = AsyncMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock()
+
+        await repo._set_session_variables(cursor)
+
+        # Only started_at should be called
+        assert cursor.execute.call_count == 1
+        cursor.execute.assert_called_once_with(STARTED_AT_QUERY)
+
+    @pytest.mark.asyncio
+    async def test_no_custom_variables_when_config_has_empty_dict(self) -> None:
+        """Empty session_variables config does not add any extra SET LOCAL calls."""
+        config = Mock()
+        config.session_variables = {}
+
+        repo = _make_repo({"config": config})
+        cursor = AsyncMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock()
+
+        await repo._set_session_variables(cursor)
+
+        assert cursor.execute.call_count == 1
+        cursor.execute.assert_called_once_with(STARTED_AT_QUERY)
+
+    @pytest.mark.asyncio
+    async def test_multiple_custom_variables(self) -> None:
+        """Multiple custom session variables are all forwarded."""
+        config = Mock()
+        config.session_variables = {
+            "locale": "app.locale",
+            "timezone": "app.timezone",
+        }
+
+        repo = _make_repo(
+            {
+                "config": config,
+                "locale": "fr-FR",
+                "timezone": "Europe/Paris",
+            }
+        )
+        cursor = AsyncMock()
+        cursor.execute = AsyncMock()
+        cursor.fetchone = AsyncMock()
+
+        await repo._set_session_variables(cursor)
+
+        # 2 custom variables + 1 started_at = 3 calls
+        assert cursor.execute.call_count == 3

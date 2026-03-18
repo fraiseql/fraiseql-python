@@ -40,7 +40,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 FROM python:3.13-slim AS runtime
 
 LABEL org.opencontainers.image.authors="FraiseQL Team"
-LABEL org.opencontainers.image.version="1.10.0"
+LABEL org.opencontainers.image.version="1.10.1"
 LABEL org.opencontainers.image.description="FraiseQL — Python GraphQL framework with PostgreSQL and Rust acceleration"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/fraiseql/fraiseql-python"

@@ -317,30 +317,22 @@ class TurboRouter:
         for param_name in sql_params:
             sql_template = sql_template.replace(f":{param_name}", f"%({param_name})s")
 
+        # Sync relevant context keys into db.context for _set_session_variables
+        _session_var_keys = {"tenant_id", "contact_id", "user", "user_id", "roles"}
+        # Also sync any custom session variable keys from config
+        config = db.context.get("config")
+        if config and hasattr(config, "session_variables"):
+            _session_var_keys.update(config.session_variables.keys())
+        for key in _session_var_keys:
+            if key in context and key not in db.context:
+                db.context[key] = context[key]
+
         # Define transaction function to set session variables and execute query
         async def execute_with_session_vars(conn: AsyncConnection) -> list[dict[str, Any]]:
             """Execute turbo query with session variables set."""
             async with conn.cursor() as cursor:
-                # Set session variables from context if available
-                from psycopg.sql import SQL, Literal
-
-                if "tenant_id" in context:
-                    await cursor.execute(
-                        SQL("SET LOCAL app.tenant_id = {}").format(
-                            Literal(str(context["tenant_id"]))
-                        )
-                    )
-                if "contact_id" in context:
-                    await cursor.execute(
-                        SQL("SET LOCAL app.contact_id = {}").format(
-                            Literal(str(context["contact_id"]))
-                        )
-                    )
-                elif "user" in context:
-                    # Fallback to 'user' if 'contact_id' not set
-                    await cursor.execute(
-                        SQL("SET LOCAL app.contact_id = {}").format(Literal(str(context["user"])))
-                    )
+                # Set all session variables via repository (built-in + custom)
+                await db._set_session_variables(cursor)
 
                 # Execute the actual query
                 from psycopg.rows import dict_row

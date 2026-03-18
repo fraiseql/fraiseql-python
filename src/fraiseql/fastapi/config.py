@@ -328,6 +328,25 @@ class FraiseQLConfig(BaseSettings):
     See: docs/features/order-by-collate.md
     """
 
+    # Custom session variables forwarded to PostgreSQL via SET LOCAL
+    session_variables: dict[str, str] = {}
+    """Map context keys to PostgreSQL session variable names.
+
+    Custom session variables forwarded from request context to PostgreSQL
+    via SET LOCAL before each query and mutation execution. These are set
+    after the built-in variables (tenant_id, contact_id, user_id,
+    is_super_admin) and before fraiseql.started_at.
+
+    Example:
+        session_variables={"locale": "app.locale", "timezone": "app.timezone"}
+
+        When context["locale"] = "fr-FR", the connection executes:
+            SET LOCAL app.locale = 'fr-FR'
+
+        This enables locale-aware PostgreSQL views:
+            WHERE code = COALESCE(current_setting('app.locale', true), 'fr-FR')
+    """
+
     # Entity routing settings
     entity_routing: Any = None
     """Configuration for entity-aware query routing (optional)."""
@@ -368,6 +387,25 @@ class FraiseQLConfig(BaseSettings):
                     f"Collation names must be alphanumeric with dots, hyphens, or underscores."
                 )
 
+        return v
+
+    @field_validator("session_variables")
+    @classmethod
+    def validate_session_variable_names(cls, v: dict[str, str]) -> dict[str, str]:
+        """Validate session variable names for SQL injection protection."""
+        # PostgreSQL session variable names: alphanumeric, dots, underscores
+        dangerous_chars = ['"', "'", ";", "--", "/*", "*/", "\\", " "]
+        for context_key, pg_name in v.items():
+            if not pg_name.strip():
+                msg = f"Session variable name for '{context_key}' cannot be empty"
+                raise ValueError(msg)
+            for char in dangerous_chars:
+                if char in pg_name:
+                    msg = (
+                        f"Invalid characters in session variable name '{pg_name}'. "
+                        f"Variable names must use alphanumeric characters, dots, or underscores."
+                    )
+                    raise ValueError(msg)
         return v
 
     @property

@@ -336,6 +336,19 @@ class FraiseQLRepository:
                 else:
                     await cursor_or_conn.execute("SET LOCAL app.is_super_admin = $1", False)
 
+        # Forward custom session variables from config (issue #310)
+        config = self.context.get("config")
+        if config and hasattr(config, "session_variables"):
+            for context_key, pg_variable in config.session_variables.items():
+                if context_key in self.context:
+                    value = str(self.context[context_key])
+                    if is_cursor:
+                        await cursor_or_conn.execute(
+                            SQL("SET LOCAL {} = {}").format(SQL(pg_variable), Literal(value))
+                        )
+                    else:
+                        await cursor_or_conn.execute(f"SET LOCAL {pg_variable} = $1", value)
+
         # Inject wall-clock timestamp for DB-side execution duration measurement.
         # SQL functions can compute elapsed time via:
         #   clock_timestamp() - current_setting('fraiseql.started_at', true)::timestamptz

@@ -5,6 +5,45 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-03-18
+
+### Added
+
+- **Configurable session variable forwarding** (#310): New `session_variables` config field
+  on `FraiseQLConfig` maps request context keys to PostgreSQL session variables via `SET LOCAL`.
+  Enables locale-aware views (`current_setting('app.locale', true)`) and any custom per-request
+  PostgreSQL session state without code changes. Variable names are validated against SQL injection.
+
+  ```python
+  config = FraiseQLConfig(
+      session_variables={"locale": "app.locale", "timezone": "app.timezone"},
+  )
+  ```
+
+### Fixed
+
+- **Rust mutation executor missing session variables** (#309): The Rust-accelerated mutation
+  path (`execute_mutation_rust`) bypassed `_set_session_variables()`, causing `fraiseql.started_at`,
+  `app.tenant_id`, `app.user_id`, `app.contact_id`, and `app.is_super_admin` to all be `NULL`
+  for mutations. This broke `duration_ms` computation in `core.tb_entity_change_log` and silently
+  disabled Row-Level Security policies on the mutation path. Session variables are now injected
+  on the connection before the Rust executor is invoked.
+
+- **TurboRouter missing session variables**: TurboRouter queries reimplemented session variable
+  injection inline and only set `tenant_id` and `contact_id`, missing `user_id`, `roles`,
+  `is_super_admin`, `fraiseql.started_at`, and all custom variables. Now delegates to the
+  canonical `_set_session_variables()` method.
+
+- **`set_config()` for `fraiseql.started_at`**: Use `set_config()` via `SELECT` instead of
+  `SET LOCAL` to avoid psycopg extended query protocol issues with function calls in SET
+  statements.
+
+### Changed
+
+- **Repository cleanup**: Removed v2 artifacts from v1 repository.
+
+---
+
 ## [1.10.0] - 2026-03-14
 
 ### Added
