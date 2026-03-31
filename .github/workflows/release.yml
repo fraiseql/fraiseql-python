@@ -42,11 +42,27 @@ jobs:
               $PRERELEASE
           fi
 
-  # Build and publish Python package
-  publish-python:
-    name: Publish Python Package to PyPI
+  # Build wheels for each platform
+  build-wheels:
+    name: Build wheels (${{ matrix.os }})
     needs: create-release
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            maturin-args: --manylinux 2_28
+          - os: macos-13
+            target: x86_64-apple-darwin
+            maturin-args: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            maturin-args: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            maturin-args: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -58,24 +74,73 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install maturin twine patchelf
+      - name: Install patchelf (Linux only)
+        if: runner.os == 'Linux'
+        run: pip install patchelf
 
-      - name: Build distributions with maturin
+      - name: Build wheel
         run: |
-          rm -rf dist/
+          pip install maturin
+          maturin build --release --target ${{ matrix.target }} ${{ matrix.maturin-args }}
           mkdir -p dist/
-          maturin build --release
-          cp fraiseql_rs/target/wheels/*.whl dist/ 2>/dev/null || true
+          cp fraiseql_rs/target/wheels/*.whl dist/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.target }}
+          path: dist/*.whl
+
+  # Build source distribution
+  build-sdist:
+    name: Build sdist
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Build sdist
+        run: |
+          pip install maturin
           maturin sdist
-          cp fraiseql_rs/target/wheels/*.tar.gz dist/ 2>/dev/null || true
-          ls -lh dist/
+          mkdir -p dist/
+          cp fraiseql_rs/target/wheels/*.tar.gz dist/
+
+      - name: Upload sdist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  # Publish all artifacts to PyPI
+  publish:
+    name: Publish to PyPI
+    needs: [build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List distributions
+        run: ls -lh dist/
 
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: twine upload dist/* --skip-existing
+        run: |
+          pip install twine
+          twine upload dist/* --skip-existing
