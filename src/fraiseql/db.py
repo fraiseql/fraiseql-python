@@ -1826,84 +1826,46 @@ class FraiseQLRepository:
 
         # Build SELECT clause — different when GROUP BY + aggregations are used
         if group_by:
-            # GROUP BY mode: build json_build_object() with dimensions + aggregations
-            json_obj_args: list[SQL | Composed] = []
-
-            if jsonb_column is not None:
-                target_jsonb_column = jsonb_column or "data"
-                # JSONB table: use data->>'field' accessors
-                for field_path in group_by:
-                    field_expr = _build_jsonb_field_expr(field_path, target_jsonb_column)
-                    json_obj_args.extend([Literal(field_path), SQL(", "), field_expr])
-
-                if aggregations:
-                    for alias, expr in aggregations.items():
-                        func, field = _parse_aggregation_expr(expr)
-                        if field == "*":
-                            agg_expr = SQL("{}(*)").format(SQL(func))
-                        else:
-                            field_expr = _build_jsonb_field_expr(field, target_jsonb_column)
-                            if func in _NUMERIC_AGGREGATION_FUNCS:
-                                agg_expr = SQL("{}(({})::{})").format(
-                                    SQL(func),
-                                    field_expr,
-                                    SQL("numeric"),
-                                )
-                            else:
-                                agg_expr = SQL("{}({})").format(SQL(func), field_expr)
-                        json_obj_args.extend([Literal(alias), SQL(", "), agg_expr])
+            # Choose the field expression builder based on table type
+            is_jsonb = jsonb_column is not None
+            if is_jsonb:
+                jsonb_col = jsonb_column or "data"
+                build_field = lambda fp: _build_jsonb_field_expr(fp, jsonb_col)  # noqa: E731
             else:
-                # Non-JSONB table: use t."field" accessors
-                for field_path in group_by:
-                    field_expr = _build_non_jsonb_field_expr(field_path, "t")
-                    json_obj_args.extend([Literal(field_path), SQL(", "), field_expr])
+                build_field = lambda fp: _build_non_jsonb_field_expr(fp, "t")  # noqa: E731
 
-                if aggregations:
-                    for alias, expr in aggregations.items():
-                        func, field = _parse_aggregation_expr(expr)
-                        if field == "*":
-                            agg_expr = SQL("{}(*)").format(SQL(func))
+            # Build dimension expressions (reused in both SELECT and GROUP BY)
+            group_by_exprs: list[SQL | Composed] = [build_field(fp) for fp in group_by]
+
+            # Build json_build_object() arguments: 'key', value pairs
+            json_pairs: list[SQL | Composed] = []
+            for field_path, dim_expr in zip(group_by, group_by_exprs, strict=True):
+                if json_pairs:
+                    json_pairs.append(SQL(", "))
+                json_pairs.extend([Literal(field_path), SQL(", "), dim_expr])
+
+            if aggregations:
+                for alias, expr in aggregations.items():
+                    func, field = _parse_aggregation_expr(expr)
+                    if field == "*":
+                        agg_expr = SQL("{}(*)").format(SQL(func))
+                    else:
+                        field_expr = build_field(field)
+                        if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS:
+                            agg_expr = SQL("{}(({})::{})").format(
+                                SQL(func), field_expr, SQL("numeric")
+                            )
                         else:
-                            field_expr = _build_non_jsonb_field_expr(field, "t")
                             agg_expr = SQL("{}({})").format(SQL(func), field_expr)
-                        json_obj_args.extend([Literal(alias), SQL(", "), agg_expr])
+                    json_pairs.extend([SQL(", "), Literal(alias), SQL(", "), agg_expr])
 
-            # Build: json_build_object('key1', val1, 'key2', val2, ...)
-            # json_obj_args has [Literal, COMMA, expr, Literal, COMMA, expr, ...]
-            # We need to join them with commas between pairs, not within pairs
-            # Restructure: build pairs as [Literal, expr] separated by commas
-            pair_parts: list[SQL | Composed] = []
-            i = 0
-            while i < len(json_obj_args):
-                if pair_parts:
-                    pair_parts.append(SQL(", "))
-                # key literal
-                pair_parts.append(json_obj_args[i])
-                # skip comma separator (index i+1)
-                # value expression
-                pair_parts.append(SQL(", "))
-                pair_parts.append(json_obj_args[i + 2])
-                i += 3
-
-            if jsonb_column is None:
-                query_parts = [SQL("SELECT json_build_object(")]
-                query_parts.extend(pair_parts)
-                query_parts.extend(
-                    [
-                        SQL(")::text FROM "),
-                        table_identifier,
-                        SQL(" AS t"),
-                    ]
-                )
+            # Assemble SELECT ... FROM
+            query_parts = [SQL("SELECT json_build_object(")]
+            query_parts.extend(json_pairs)
+            if is_jsonb:
+                query_parts.extend([SQL(")::text FROM "), table_identifier])
             else:
-                query_parts = [SQL("SELECT json_build_object(")]
-                query_parts.extend(pair_parts)
-                query_parts.extend(
-                    [
-                        SQL(")::text FROM "),
-                        table_identifier,
-                    ]
-                )
+                query_parts.extend([SQL(")::text FROM "), table_identifier, SQL(" AS t")])
         elif jsonb_column is None:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields
@@ -1935,14 +1897,6 @@ class FraiseQLRepository:
 
         # Add GROUP BY clause (between WHERE and ORDER BY)
         if group_by:
-            group_by_exprs: list[SQL | Composed] = []
-            if jsonb_column is not None:
-                target_jsonb_column = jsonb_column or "data"
-                for field_path in group_by:
-                    group_by_exprs.append(_build_jsonb_field_expr(field_path, target_jsonb_column))
-            else:
-                for field_path in group_by:
-                    group_by_exprs.append(_build_non_jsonb_field_expr(field_path, "t"))
             query_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
         # Determine table reference for ORDER BY
