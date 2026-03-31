@@ -1,6 +1,7 @@
 """Database utilities and repository layer for FraiseQL using psycopg and connection pooling."""
 
 import logging
+import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin
@@ -119,6 +120,87 @@ class DatabaseQuery:
     statement: Composed | SQL
     params: Mapping[str, object]
     fetch_result: bool = True
+
+
+# Allowed SQL aggregation functions for group_by queries (Issue #315)
+_ALLOWED_AGGREGATION_FUNCS = frozenset({
+    "SUM", "AVG", "COUNT", "MIN", "MAX",
+    "ARRAY_AGG", "STRING_AGG", "BOOL_AND", "BOOL_OR",
+    "JSON_AGG", "JSONB_AGG",
+})
+
+# Aggregation functions that require numeric cast on JSONB text values
+_NUMERIC_AGGREGATION_FUNCS = frozenset({"SUM", "AVG"})
+
+
+_AGGREGATION_RE = re.compile(r"^(\w+)\((.+)\)$")
+
+
+def _parse_aggregation_expr(expr: str) -> tuple[str, str]:
+    """Parse an aggregation expression like 'SUM(cost)' into (func, field_path).
+
+    Validates the function name against an allowlist to prevent SQL injection.
+
+    Returns:
+        Tuple of (function_name, field_path) e.g. ("SUM", "cost")
+
+    Raises:
+        ValueError: If expression format is invalid or function not allowed.
+    """
+    match = _AGGREGATION_RE.match(expr.strip())
+    if not match:
+        msg = (
+            f"Invalid aggregation expression: {expr!r}. "
+            "Expected format: FUNC(field), e.g. SUM(cost)"
+        )
+        raise ValueError(msg)
+    func = match.group(1).upper()
+    field = match.group(2).strip()
+    if func not in _ALLOWED_AGGREGATION_FUNCS:
+        msg = (
+            f"Aggregation function {func!r} not allowed. "
+            f"Allowed: {sorted(_ALLOWED_AGGREGATION_FUNCS)}"
+        )
+        raise ValueError(msg)
+    return func, field
+
+
+def _build_jsonb_field_expr(field_path: str, jsonb_ref: str = "data") -> Composed:
+    """Build a JSONB accessor expression for a field path.
+
+    Args:
+        field_path: Dot-separated field path, e.g. "date" or "date_info.date"
+        jsonb_ref: The JSONB column name, e.g. "data"
+
+    Returns:
+        psycopg Composed expression like: data->>'date' or data->'date_info'->>'date'
+    """
+    from psycopg import sql
+    from psycopg.sql import SQL
+
+    parts = field_path.split(".")
+    if len(parts) == 1:
+        return SQL("{}->>{}").format(sql.Identifier(jsonb_ref), sql.Literal(parts[0]))
+    # Nested: data->'a'->'b'->>'leaf'
+    expr: SQL | Composed = sql.Identifier(jsonb_ref)
+    for part in parts[:-1]:
+        expr = SQL("{}->{}").format(expr, sql.Literal(part))
+    return SQL("{}->>{}").format(expr, sql.Literal(parts[-1]))
+
+
+def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Composed:
+    """Build a column reference for non-JSONB tables.
+
+    Args:
+        field_path: Field name (nested paths not supported for non-JSONB)
+        table_alias: Table alias, e.g. "t"
+
+    Returns:
+        psycopg Composed expression like: t."date"
+    """
+    from psycopg.sql import SQL, Identifier
+
+    return SQL("{}.{}").format(Identifier(table_alias), Identifier(field_path))
 
 
 def register_type_for_view(
@@ -639,7 +721,7 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info for field selection
-            **kwargs: Query parameters (where, limit, offset, order_by)
+            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations)
 
         Returns:
             RustResponseBytes ready for HTTP response
@@ -1706,7 +1788,7 @@ class FraiseQLRepository:
             field_paths: Optional field paths for projection (passed to Rust)
             info: Optional GraphQL resolve info
             jsonb_column: JSONB column name to use
-            **kwargs: Query parameters (where, limit, offset, order_by)
+            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations)
         """
         from psycopg.sql import SQL, Composed, Identifier, Literal
 
@@ -1714,6 +1796,12 @@ class FraiseQLRepository:
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
         order_by = kwargs.pop("order_by", None)
+        group_by: list[str] | None = kwargs.pop("group_by", None)
+        aggregations: dict[str, str] | None = kwargs.pop("aggregations", None)
+
+        if aggregations and not group_by:
+            msg = "aggregations requires group_by"
+            raise ValueError(msg)
 
         # Use unified WHERE clause building (includes Issue #124 fix for hybrid tables)
         # This ensures WhereInput nested filters work correctly in all code paths
@@ -1726,7 +1814,81 @@ class FraiseQLRepository:
         else:
             table_identifier = Identifier(view_name)
 
-        if jsonb_column is None:
+        # Build SELECT clause — different when GROUP BY + aggregations are used
+        if group_by:
+            # GROUP BY mode: build json_build_object() with dimensions + aggregations
+            json_obj_args: list[SQL | Composed] = []
+
+            if jsonb_column is not None:
+                target_jsonb_column = jsonb_column or "data"
+                # JSONB table: use data->>'field' accessors
+                for field_path in group_by:
+                    field_expr = _build_jsonb_field_expr(field_path, target_jsonb_column)
+                    json_obj_args.extend([Literal(field_path), SQL(", "), field_expr])
+
+                if aggregations:
+                    for alias, expr in aggregations.items():
+                        func, field = _parse_aggregation_expr(expr)
+                        if field == "*":
+                            agg_expr = SQL("{}(*)").format(SQL(func))
+                        else:
+                            field_expr = _build_jsonb_field_expr(field, target_jsonb_column)
+                            if func in _NUMERIC_AGGREGATION_FUNCS:
+                                agg_expr = SQL("{}(({})::{})").format(
+                                    SQL(func), field_expr, SQL("numeric"),
+                                )
+                            else:
+                                agg_expr = SQL("{}({})").format(SQL(func), field_expr)
+                        json_obj_args.extend([Literal(alias), SQL(", "), agg_expr])
+            else:
+                # Non-JSONB table: use t."field" accessors
+                for field_path in group_by:
+                    field_expr = _build_non_jsonb_field_expr(field_path, "t")
+                    json_obj_args.extend([Literal(field_path), SQL(", "), field_expr])
+
+                if aggregations:
+                    for alias, expr in aggregations.items():
+                        func, field = _parse_aggregation_expr(expr)
+                        if field == "*":
+                            agg_expr = SQL("{}(*)").format(SQL(func))
+                        else:
+                            field_expr = _build_non_jsonb_field_expr(field, "t")
+                            agg_expr = SQL("{}({})").format(SQL(func), field_expr)
+                        json_obj_args.extend([Literal(alias), SQL(", "), agg_expr])
+
+            # Build: json_build_object('key1', val1, 'key2', val2, ...)
+            # json_obj_args has [Literal, COMMA, expr, Literal, COMMA, expr, ...]
+            # We need to join them with commas between pairs, not within pairs
+            # Restructure: build pairs as [Literal, expr] separated by commas
+            pair_parts: list[SQL | Composed] = []
+            i = 0
+            while i < len(json_obj_args):
+                if pair_parts:
+                    pair_parts.append(SQL(", "))
+                # key literal
+                pair_parts.append(json_obj_args[i])
+                # skip comma separator (index i+1)
+                # value expression
+                pair_parts.append(SQL(", "))
+                pair_parts.append(json_obj_args[i + 2])
+                i += 3
+
+            if jsonb_column is None:
+                query_parts = [SQL("SELECT json_build_object(")]
+                query_parts.extend(pair_parts)
+                query_parts.extend([
+                    SQL(")::text FROM "),
+                    table_identifier,
+                    SQL(" AS t"),
+                ])
+            else:
+                query_parts = [SQL("SELECT json_build_object(")]
+                query_parts.extend(pair_parts)
+                query_parts.extend([
+                    SQL(")::text FROM "),
+                    table_identifier,
+                ])
+        elif jsonb_column is None:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields
             query_parts = [
@@ -1754,6 +1916,22 @@ class FraiseQLRepository:
                     where_sql_parts.append(SQL(part))
             if where_sql_parts:
                 query_parts.extend([SQL(" WHERE "), SQL(" AND ").join(where_sql_parts)])
+
+        # Add GROUP BY clause (between WHERE and ORDER BY)
+        if group_by:
+            group_by_exprs: list[SQL | Composed] = []
+            if jsonb_column is not None:
+                target_jsonb_column = jsonb_column or "data"
+                for field_path in group_by:
+                    group_by_exprs.append(
+                        _build_jsonb_field_expr(field_path, target_jsonb_column)
+                    )
+            else:
+                for field_path in group_by:
+                    group_by_exprs.append(
+                        _build_non_jsonb_field_expr(field_path, "t")
+                    )
+            query_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
         # Determine table reference for ORDER BY
         # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
