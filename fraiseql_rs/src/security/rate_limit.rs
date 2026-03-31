@@ -249,11 +249,11 @@ fn current_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
-        .unwrap_or_else(|e| {
+        .unwrap_or_else(|_e| {
             // System clock is before Unix epoch - should never happen in production
             // Log and return 0 to avoid panic
             #[cfg(debug_assertions)]
-            eprintln!("ERROR: System clock before Unix epoch: {}", e);
+            eprintln!("ERROR: System clock before Unix epoch: {}", _e);
             0
         })
 }
