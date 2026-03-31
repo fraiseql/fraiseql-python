@@ -257,6 +257,57 @@ def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Comp
     return SQL("{}.{}").format(Identifier(table_alias), Identifier(field_path))
 
 
+def _derive_auto_aggregation(
+    field_paths: list[list[str]],
+    aggregation_meta: dict[str, Any],
+) -> tuple[list[str], dict[str, str]] | None:
+    """Derive group_by and aggregations from field selection + metadata.
+
+    Returns (group_by, aggregations) if auto-aggregation should be applied,
+    or None if the query should not be aggregated (e.g. 'id' is selected).
+
+    Args:
+        field_paths: Field paths from GraphQL AST, e.g. [["dimensions","date"],["measures","cost"]]
+        aggregation_meta: The "aggregation" dict from register_type_for_view.
+    """
+    measures_meta: dict[str, str] = aggregation_meta.get("measures", {})
+    dimensions_prefix: str = aggregation_meta.get("dimensions", "dimensions")
+
+    # Check if any top-level identity field is selected — if so, skip aggregation
+    skip_fields = aggregation_meta.get("skip_when", {"id", "tenant_id"})
+    for fp in field_paths:
+        if len(fp) == 1 and fp[0] in skip_fields:
+            return None
+
+    group_by: list[str] = []
+    aggregations: dict[str, str] = {}
+
+    for fp in field_paths:
+        dot_path = ".".join(fp)
+
+        # Check if this is a dimension field
+        if fp[0] == dimensions_prefix:
+            group_by.append(dot_path)
+            continue
+
+        # Check if this is a measure field (match by dot-path)
+        if dot_path in measures_meta:
+            func = measures_meta[dot_path]
+            aggregations[dot_path] = f"{func}({dot_path})"
+            continue
+
+        # Check prefix match for measures (e.g. "measures" container)
+        for measure_path, func in measures_meta.items():
+            if dot_path == measure_path or measure_path.startswith(dot_path + "."):
+                # Selecting a parent of a measure — include all child measures
+                aggregations[measure_path] = f"{func}({measure_path})"
+
+    if not group_by:
+        return None
+
+    return group_by, aggregations
+
+
 def register_type_for_view(
     view_name: str,
     type_class: type,
@@ -265,6 +316,7 @@ def register_type_for_view(
     jsonb_column: str | None = None,
     fk_relationships: dict[str, str] | None = None,
     validate_fk_strict: bool = True,
+    aggregation: dict[str, Any] | None = None,
 ) -> None:
     """Register a type class for a specific view name with optional metadata.
 
@@ -282,6 +334,11 @@ def register_type_for_view(
             If not specified, uses convention: field + "_id"
         validate_fk_strict: If True, raise error on FK validation failures.
             If False, only warn (useful for legacy code migration).
+        aggregation: Optional aggregation metadata for auto-aggregation.
+            Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
+                      "dimensions": "dimensions"}
+            When present, db.find() will auto-aggregate when the field selection
+            contains only dimensions and measures (no identity fields like 'id').
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -307,6 +364,7 @@ def register_type_for_view(
         or has_jsonb_data is not None
         or jsonb_column is not None
         or fk_relationships
+        or aggregation
     ):
         metadata = {
             "columns": table_columns or set(),
@@ -314,6 +372,7 @@ def register_type_for_view(
             "jsonb_column": jsonb_column,  # Always store the jsonb_column value
             "fk_relationships": fk_relationships,
             "validate_fk_strict": validate_fk_strict,
+            "aggregation": aggregation,
         }
         _table_metadata[view_name] = metadata
         logger.debug(
@@ -846,6 +905,18 @@ class FraiseQLRepository:
                 jsonb_column = metadata.get("jsonb_column") or "data"
             elif "jsonb_column" in metadata:
                 jsonb_column = metadata["jsonb_column"]
+
+        # 2b. Auto-aggregation: derive group_by/aggregations from metadata (#322)
+        if (
+            not kwargs.get("group_by")
+            and field_paths
+            and view_name in _table_metadata
+        ):
+            agg_meta = _table_metadata[view_name].get("aggregation")
+            if agg_meta:
+                result = _derive_auto_aggregation(field_paths, agg_meta)
+                if result is not None:
+                    kwargs["group_by"], kwargs["aggregations"] = result
 
         # 3. Build SQL query
         # When group_by is used, the output structure differs from the view,

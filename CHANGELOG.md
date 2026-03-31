@@ -5,7 +5,32 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.12.1] - 2026-03-31
+## [1.13.0] - 2026-03-31
+
+### Added
+
+- **Auto-aggregation from type metadata** (#322): `register_type_for_view()` now
+  accepts an `aggregation` parameter that declares which fields are measures
+  (with aggregation function) and which are dimensions. When `db.find()` detects
+  that the GraphQL field selection contains only dimensions and measures (no
+  identity fields like `id`), it auto-generates `group_by` and `aggregations` —
+  no manual AST walking in resolvers needed.
+
+  ```python
+  register_type_for_view(
+      "v_statistics_day", DataPoint,
+      has_jsonb_data=True,
+      aggregation={
+          "measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
+          "dimensions": "dimensions",
+      },
+  )
+
+  # Resolver stays clean — auto-aggregates when appropriate
+  @fraiseql.query
+  async def datapoints(info, where=None) -> list[DataPoint]:
+      return await db.find("v_statistics_day", where=where, info=info)
+  ```
 
 ### Fixed
 
