@@ -150,6 +150,9 @@ class MockDatabase:
     def get_pool(self):
         return self._pool
 
+    async def _set_session_variables(self, cursor_or_conn: Any) -> None:
+        pass
+
     async def execute_function(
         self, function_name: str, input_data: dict[str, Any]
     ) -> dict[str, Any]:
@@ -196,7 +199,7 @@ def clear_schema_registry():
 
 
 @pytest.mark.asyncio
-async def test_dns_1_id_field_not_transformed() -> None:
+async def test_dns_1_id_field_not_transformed(clear_registry) -> None:
     """Test that dns_1_id is not incorrectly transformed to dns_1.
 
     This is the RED test - it should fail initially due to the bug.
@@ -253,7 +256,7 @@ async def test_dns_1_id_field_not_transformed() -> None:
 
 
 @pytest.mark.asyncio
-async def test_various_underscore_number_id_patterns() -> None:
+async def test_various_underscore_number_id_patterns(clear_registry) -> None:
     """Test various patterns of underscore+number+_id fields."""
     mock_db = MockDatabase()
     mock_info = MockInfo(mock_db)

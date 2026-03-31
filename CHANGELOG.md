@@ -5,6 +5,35 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-03-31
+
+### Added
+
+- **Nested `json_build_object` for `group_by` dot-separated paths** (#318): When `group_by`
+  uses dot-separated field paths (e.g. `dimensions.date_info.date`), the SQL now generates
+  nested `json_build_object()` calls matching the GraphQL type structure. Previously, flat
+  keys like `"dimensions.date_info.date"` were produced, which the Rust pipeline couldn't
+  project.
+
+### Fixed
+
+- **`is_type_of` rejects plain dicts from resolvers** (#317): Resolvers returning plain
+  dicts (e.g. from `db.run()`) are now accepted by `is_type_of` and correctly resolved.
+  Previously, `graphql-core` rejected them with "Expected value of type 'MyType' but got:
+  dict". Both `is_type_of` (type gating) and `resolve_field` (field value access) now
+  handle dicts alongside typed instances.
+
+- **`group_by` results stripped by Rust field projection** (#319): When `db.find()` is
+  called with `group_by`/`aggregations`, the Rust pipeline's field projection is now
+  skipped. The SQL's `json_build_object()` already returns exactly the requested fields,
+  so additional projection was incorrectly stripping all data.
+
+- **Regression test ordering failures**: Added missing `clear_registry` fixtures to
+  multiple regression tests that were failing when run as part of the full suite due
+  to stale type registrations from prior tests.
+
+---
+
 ## [1.11.0] - 2026-03-31
 
 ### Added

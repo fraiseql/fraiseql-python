@@ -93,7 +93,7 @@ class ExecutionTracer:
 class TestEnumDebugTrace:
     """Debug trace tests for enum variables."""
 
-    async def test_enum_inline_with_trace(self) -> None:
+    async def test_enum_inline_with_trace(self, clear_registry) -> None:
         """Trace inline enum execution."""
         # Create simple schema with resolver
         async def user_by_status(info, status: Status) -> User:
@@ -119,7 +119,7 @@ class TestEnumDebugTrace:
         print("\n=== INLINE ENUM LITERAL ===")
         print(f"Data: {result.data}")
 
-    async def test_enum_variable_with_trace(self) -> None:
+    async def test_enum_variable_with_trace(self, clear_registry) -> None:
         """Trace enum variable execution."""
         # Create simple schema with resolver
         async def user_by_status(info, status: Status) -> User:

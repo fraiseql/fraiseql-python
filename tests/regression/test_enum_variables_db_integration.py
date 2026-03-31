@@ -54,7 +54,7 @@ class MockDatabase:
     async def find(self, table: str, **kwargs) -> list[dict]:
         """Simulate db.find() with filtering."""
         # Extract filters from kwargs
-        filters = {k: v for k, v in kwargs.items() if k not in ["info", "where", "limit", "offset", "order_by"]}
+        filters = {k: v for k, v in kwargs.items() if k not in ["info", "where", "limit", "offset", "order_by", "tenant_id"]}
 
         # Simulate database query results based on filters
         all_allocations = [
@@ -113,7 +113,7 @@ class TestEnumVariablesWithDatabase:
     """Test enum variables with simulated database integration."""
 
     @pytest.mark.asyncio
-    async def test_enum_variable_with_db_find(self) -> None:
+    async def test_enum_variable_with_db_find(self, clear_registry) -> None:
         """Test enum variable parameter filtering with db.find()."""
         debug_info = []
 
@@ -235,7 +235,7 @@ class TestEnumVariablesWithDatabase:
         print("✅ Both inline and variable correctly filter and return nested fields!")
 
     @pytest.mark.asyncio
-    async def test_multiple_enum_variables_in_nested_query(self) -> None:
+    async def test_multiple_enum_variables_in_nested_query(self, clear_registry) -> None:
         """Test multiple enum parameters with nested field selection."""
 
         @fraiseql.enum

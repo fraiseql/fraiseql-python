@@ -198,6 +198,50 @@ def _build_jsonb_field_expr(field_path: str, jsonb_ref: str = "data") -> Compose
     return SQL("{}->>{}").format(expr, sql.Literal(parts[-1]))
 
 
+def _build_nested_json_object(
+    entries: list[tuple[str, SQL | Composed]],
+) -> SQL | Composed:
+    """Build nested json_build_object() from dot-separated paths.
+
+    Groups paths into a tree and generates nested json_build_object() calls.
+    For example, entries [("a.b.x", expr1), ("a.b.y", expr2), ("a.c", expr3)]
+    produce: json_build_object('a', json_build_object('b', json_build_object(
+        'x', expr1, 'y', expr2), 'c', expr3))
+
+    Args:
+        entries: List of (dot_separated_path, sql_expression) pairs.
+
+    Returns:
+        A psycopg SQL/Composed expression for the nested json_build_object.
+    """
+    from psycopg.sql import Literal as Lit
+
+    # Build tree: each node is {key: subtree_or_leaf}
+    # Leaves are SQL expressions, branches are dicts
+    tree: dict[str, Any] = {}
+    for path, expr in entries:
+        parts = path.split(".")
+        node = tree
+        for part in parts[:-1]:
+            if part not in node or not isinstance(node[part], dict):
+                node[part] = {}
+            node = node[part]
+        node[parts[-1]] = expr
+
+    def _render(node: dict[str, Any]) -> SQL | Composed:
+        pairs: list[SQL | Composed] = []
+        for key, value in node.items():
+            if pairs:
+                pairs.append(SQL(", "))
+            if isinstance(value, dict):
+                pairs.extend([Lit(key), SQL(", "), _render(value)])
+            else:
+                pairs.extend([Lit(key), SQL(", "), value])
+        return SQL("json_build_object({})").format(SQL("").join(pairs))
+
+    return _render(tree)
+
+
 def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Composed:
     """Build a column reference for non-JSONB tables.
 
@@ -804,6 +848,12 @@ class FraiseQLRepository:
                 jsonb_column = metadata["jsonb_column"]
 
         # 3. Build SQL query
+        # When group_by is used, the output structure differs from the view,
+        # so Rust-side field projection must be skipped (#319)
+        if kwargs.get("group_by"):
+            field_paths = None
+            field_selections_json = None
+
         query = self._build_find_query(
             view_name,
             field_paths=field_paths,
@@ -1837,12 +1887,10 @@ class FraiseQLRepository:
             # Build dimension expressions (reused in both SELECT and GROUP BY)
             group_by_exprs: list[SQL | Composed] = [build_field(fp) for fp in group_by]
 
-            # Build json_build_object() arguments: 'key', value pairs
-            json_pairs: list[SQL | Composed] = []
+            # Build entries for nested json_build_object
+            entries: list[tuple[str, SQL | Composed]] = []
             for field_path, dim_expr in zip(group_by, group_by_exprs, strict=True):
-                if json_pairs:
-                    json_pairs.append(SQL(", "))
-                json_pairs.extend([Literal(field_path), SQL(", "), dim_expr])
+                entries.append((field_path, dim_expr))
 
             if aggregations:
                 for alias, expr in aggregations.items():
@@ -1857,15 +1905,17 @@ class FraiseQLRepository:
                             )
                         else:
                             agg_expr = SQL("{}({})").format(SQL(func), field_expr)
-                    json_pairs.extend([SQL(", "), Literal(alias), SQL(", "), agg_expr])
+                    entries.append((alias, agg_expr))
+
+            # Build nested json_build_object from dot-separated paths
+            nested_obj = _build_nested_json_object(entries)
 
             # Assemble SELECT ... FROM
-            query_parts = [SQL("SELECT json_build_object(")]
-            query_parts.extend(json_pairs)
+            select_prefix = [SQL("SELECT "), nested_obj, SQL("::text FROM ")]
             if is_jsonb:
-                query_parts.extend([SQL(")::text FROM "), table_identifier])
+                query_parts = [*select_prefix, table_identifier]
             else:
-                query_parts.extend([SQL(")::text FROM "), table_identifier, SQL(" AS t")])
+                query_parts = [*select_prefix, table_identifier, SQL(" AS t")]
         elif jsonb_column is None:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields

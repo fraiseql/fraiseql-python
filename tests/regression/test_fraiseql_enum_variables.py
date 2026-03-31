@@ -49,7 +49,7 @@ class TestFraiseQLEnumVariables:
     """Test enum variables with FraiseQL schema."""
 
     @pytest.mark.asyncio
-    async def test_enum_inline_literal(self) -> None:
+    async def test_enum_inline_literal(self, clear_registry) -> None:
         """Test enum as inline literal (should work)."""
         schema = fraiseql.build_fraiseql_schema(query_types=[user_by_status])
 
@@ -75,7 +75,7 @@ class TestFraiseQLEnumVariables:
         assert user["status"] == "ACTIVE"
 
     @pytest.mark.asyncio
-    async def test_enum_variable(self) -> None:
+    async def test_enum_variable(self, clear_registry) -> None:
         """Test enum as variable (currently fails with empty nested fields).
 
         This is the bug: nested fields are empty when enum is a variable.
@@ -112,7 +112,7 @@ class TestFraiseQLEnumVariables:
         assert user["status"] == "ACTIVE"
 
     @pytest.mark.asyncio
-    async def test_enum_variable_multiple_fields(self) -> None:
+    async def test_enum_variable_multiple_fields(self, clear_registry) -> None:
         """Test enum variable with multiple enum arguments."""
         # This is a more complex scenario
 

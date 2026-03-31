@@ -496,6 +496,8 @@ def convert_type_to_graphql_output(
                 # Add is_type_of function to help with interface resolution
                 def is_type_of(obj: Any, info: GraphQLResolveInfo) -> bool:
                     """Check if an object is of this type."""
+                    if isinstance(obj, dict):
+                        return True
                     return (
                         obj.__class__.__name__ == typ.__name__
                         if hasattr(obj, "__class__")
@@ -631,9 +633,11 @@ def convert_type_to_graphql_output(
                             # Create resolver for enum serialization and nested object conversion
                             def make_field_resolver(field_name: str, field_type: Any) -> Callable:
                                 def resolve_field(obj: Any, info: Any) -> Any:
-                                    # Rust-first: Objects are plain dicts (Rust-transformed)
-                                    # No JSONPassthrough wrapper needed
-                                    value = getattr(obj, field_name, None)
+                                    # Support typed objects and plain dicts (from db.run())
+                                    if isinstance(obj, dict):
+                                        value = obj.get(field_name)
+                                    else:
+                                        value = getattr(obj, field_name, None)
 
                                     # Handle None values
                                     if value is None:

@@ -46,7 +46,7 @@ class TestEnumVariableBugRealWorld:
     """Real-world test reproducing the bug from printoptim_backend."""
 
     @pytest.mark.asyncio
-    async def test_enum_variable_passed_as_string_bug(self) -> None:
+    async def test_enum_variable_passed_as_string_bug(self, clear_registry) -> None:
         """Reproduce the bug: enum variables come as strings, not Enum instances.
 
         In printoptim_backend, resolvers receive period as a string when passed as
@@ -134,7 +134,7 @@ class TestEnumVariableBugRealWorld:
             print("\n✅ BUG FIXED: Both inline and variables correctly pass as Period enum!")
 
     @pytest.mark.asyncio
-    async def test_enum_variable_with_complex_logic(self) -> None:
+    async def test_enum_variable_with_complex_logic(self, clear_registry) -> None:
         """Test enum variable with the exact logic pattern from printoptim_backend."""
 
         async def allocations_with_filtering(
