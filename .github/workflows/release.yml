@@ -134,6 +134,43 @@ jobs:
       - name: List distributions
         run: ls -lh dist/
 
+      - name: Fix wheel metadata (remove license-file)
+        run: |
+          python << 'SCRIPT'
+          import zipfile
+          import os
+          import tempfile
+          import shutil
+          from pathlib import Path
+
+          for wheel_path in Path("dist").glob("*.whl"):
+              temp_dir = tempfile.mkdtemp()
+              try:
+                  # Extract wheel
+                  with zipfile.ZipFile(wheel_path, 'r') as z:
+                      z.extractall(temp_dir)
+
+                  # Find and fix METADATA file
+                  for metadata_path in Path(temp_dir).glob("*/METADATA"):
+                      with open(metadata_path, 'r') as f:
+                          lines = f.readlines()
+                      # Remove License-File lines
+                      fixed = [l for l in lines if not l.startswith('License-File:')]
+                      with open(metadata_path, 'w') as f:
+                          f.writelines(fixed)
+
+                  # Recreate wheel
+                  wheel_path.unlink()
+                  with zipfile.ZipFile(wheel_path, 'w', zipfile.ZIP_DEFLATED) as z:
+                      for root, dirs, files in os.walk(temp_dir):
+                          for file in files:
+                              file_path = os.path.join(root, file)
+                              arcname = os.path.relpath(file_path, temp_dir)
+                              z.write(file_path, arcname)
+              finally:
+                  shutil.rmtree(temp_dir)
+          SCRIPT
+
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
