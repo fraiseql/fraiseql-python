@@ -223,17 +223,16 @@ jobs:
            security-report.md
 
      - name: Generate SBOM (Software Bill of Materials)
-       run: |
-         # Generate SBOM in CycloneDX format for government compliance
-         docker run --rm \
-           -v /var/run/docker.sock:/var/run/docker.sock \
-           aquasec/trivy image \
-           --format cyclonedx \
-           --output sbom-${{ matrix.dockerfile.label }}.json \
-           ${{ matrix.dockerfile.tag }}
+       uses: aquasecurity/trivy-action@master
+       with:
+         scan-type: 'image'
+         scan-ref: ${{ matrix.dockerfile.tag }}
+         format: 'cyclonedx'
+         output: 'sbom-${{ matrix.dockerfile.label }}.json'
 
      - name: Upload SBOM
        uses: actions/upload-artifact@v6
+       if: always()
        with:
          name: sbom-${{ matrix.dockerfile.label }}
          path: sbom-${{ matrix.dockerfile.label }}.json
