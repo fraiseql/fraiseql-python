@@ -123,11 +123,21 @@ class DatabaseQuery:
 
 
 # Allowed SQL aggregation functions for group_by queries (Issue #315)
-_ALLOWED_AGGREGATION_FUNCS = frozenset({
-    "SUM", "AVG", "COUNT", "MIN", "MAX",
-    "ARRAY_AGG", "STRING_AGG", "BOOL_AND", "BOOL_OR",
-    "JSON_AGG", "JSONB_AGG",
-})
+_ALLOWED_AGGREGATION_FUNCS = frozenset(
+    {
+        "SUM",
+        "AVG",
+        "COUNT",
+        "MIN",
+        "MAX",
+        "ARRAY_AGG",
+        "STRING_AGG",
+        "BOOL_AND",
+        "BOOL_OR",
+        "JSON_AGG",
+        "JSONB_AGG",
+    }
+)
 
 # Aggregation functions that require numeric cast on JSONB text values
 _NUMERIC_AGGREGATION_FUNCS = frozenset({"SUM", "AVG"})
@@ -1835,7 +1845,9 @@ class FraiseQLRepository:
                             field_expr = _build_jsonb_field_expr(field, target_jsonb_column)
                             if func in _NUMERIC_AGGREGATION_FUNCS:
                                 agg_expr = SQL("{}(({})::{})").format(
-                                    SQL(func), field_expr, SQL("numeric"),
+                                    SQL(func),
+                                    field_expr,
+                                    SQL("numeric"),
                                 )
                             else:
                                 agg_expr = SQL("{}({})").format(SQL(func), field_expr)
@@ -1876,18 +1888,22 @@ class FraiseQLRepository:
             if jsonb_column is None:
                 query_parts = [SQL("SELECT json_build_object(")]
                 query_parts.extend(pair_parts)
-                query_parts.extend([
-                    SQL(")::text FROM "),
-                    table_identifier,
-                    SQL(" AS t"),
-                ])
+                query_parts.extend(
+                    [
+                        SQL(")::text FROM "),
+                        table_identifier,
+                        SQL(" AS t"),
+                    ]
+                )
             else:
                 query_parts = [SQL("SELECT json_build_object(")]
                 query_parts.extend(pair_parts)
-                query_parts.extend([
-                    SQL(")::text FROM "),
-                    table_identifier,
-                ])
+                query_parts.extend(
+                    [
+                        SQL(")::text FROM "),
+                        table_identifier,
+                    ]
+                )
         elif jsonb_column is None:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields
@@ -1923,14 +1939,10 @@ class FraiseQLRepository:
             if jsonb_column is not None:
                 target_jsonb_column = jsonb_column or "data"
                 for field_path in group_by:
-                    group_by_exprs.append(
-                        _build_jsonb_field_expr(field_path, target_jsonb_column)
-                    )
+                    group_by_exprs.append(_build_jsonb_field_expr(field_path, target_jsonb_column))
             else:
                 for field_path in group_by:
-                    group_by_exprs.append(
-                        _build_non_jsonb_field_expr(field_path, "t")
-                    )
+                    group_by_exprs.append(_build_non_jsonb_field_expr(field_path, "t"))
             query_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
         # Determine table reference for ORDER BY
