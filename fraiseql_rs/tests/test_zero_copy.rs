@@ -18,11 +18,11 @@ fn main() {
 
     // Setup transformer config
     let config = TransformConfig {
-        add_typename:        true,
-        camel_case:          true,
-        project_fields:      false,
+        add_typename: true,
+        camel_case: true,
+        project_fields: false,
         add_graphql_wrapper: false,
-        max_depth:           64,
+        max_depth: 64,
     };
 
     // Create transformer

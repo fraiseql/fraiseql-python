@@ -8,23 +8,23 @@ pub enum SecurityError {
     /// Rate limiting errors
     RateLimitExceeded {
         retry_after: u64,
-        limit:       usize,
+        limit: usize,
         window_secs: u64,
     },
 
     /// Query validation errors
     QueryTooDeep {
-        depth:     usize,
+        depth: usize,
         max_depth: usize,
     },
 
     QueryTooComplex {
-        complexity:     usize,
+        complexity: usize,
         max_complexity: usize,
     },
 
     QueryTooLarge {
-        size:     usize,
+        size: usize,
         max_size: usize,
     },
 

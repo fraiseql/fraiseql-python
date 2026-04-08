@@ -533,14 +533,14 @@ mod tests {
     #[test]
     fn test_build_success_simple() {
         let result = MutationResult {
-            status:           MutationStatus::Success("success".to_string()),
-            message:          "Success".to_string(),
-            entity_id:        Some("123".to_string()),
-            entity_type:      Some("User".to_string()),
-            entity:           Some(json!({"id": "123", "name": "John"})),
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         None,
+            status: MutationStatus::Success("success".to_string()),
+            message: "Success".to_string(),
+            entity_id: Some("123".to_string()),
+            entity_type: Some("User".to_string()),
+            entity: Some(json!({"id": "123", "name": "John"})),
+            updated_fields: None,
+            cascade: None,
+            metadata: None,
             is_simple_format: false,
         };
 
@@ -568,14 +568,14 @@ mod tests {
     #[test]
     fn test_build_success_with_cascade() {
         let result = MutationResult {
-            status:           MutationStatus::Success("created".to_string()),
-            message:          "User created".to_string(),
-            entity_id:        None,
-            entity_type:      Some("User".to_string()),
-            entity:           Some(json!({"id": "123", "name": "John"})),
-            updated_fields:   None,
-            cascade:          Some(json!({"updated": []})),
-            metadata:         None,
+            status: MutationStatus::Success("created".to_string()),
+            message: "User created".to_string(),
+            entity_id: None,
+            entity_type: Some("User".to_string()),
+            entity: Some(json!({"id": "123", "name": "John"})),
+            updated_fields: None,
+            cascade: Some(json!({"updated": []})),
+            metadata: None,
             is_simple_format: false,
         };
 
@@ -603,16 +603,14 @@ mod tests {
     #[test]
     fn test_wrapper_fields_promoted() {
         let result = MutationResult {
-            status:           MutationStatus::Success("success".to_string()),
-            message:          "Success".to_string(),
-            entity_id:        None,
-            entity_type:      Some("Post".to_string()),
-            entity:           Some(
-                json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"}),
-            ),
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         None,
+            status: MutationStatus::Success("success".to_string()),
+            message: "Success".to_string(),
+            entity_id: None,
+            entity_type: Some("Post".to_string()),
+            entity: Some(json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"})),
+            updated_fields: None,
+            cascade: None,
+            metadata: None,
             is_simple_format: false,
         };
 
@@ -640,14 +638,14 @@ mod tests {
     #[test]
     fn test_build_error() {
         let result = MutationResult {
-            status:           MutationStatus::Error("validation:invalid_email".to_string()),
-            message:          "Validation failed".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         Some(
+            status: MutationStatus::Error("validation:invalid_email".to_string()),
+            message: "Validation failed".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: Some(
                 json!({"errors": [{"field": "email", "code": "invalid", "message": "Invalid email"}]}),
             ),
             is_simple_format: false,
@@ -672,14 +670,14 @@ mod tests {
     #[test]
     fn test_error_code_extraction() {
         let result = MutationResult {
-            status:           MutationStatus::Error("validation:invalid_input".to_string()),
-            message:          "Validation failed".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         None, // No errors in metadata
+            status: MutationStatus::Error("validation:invalid_input".to_string()),
+            message: "Validation failed".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: None, // No errors in metadata
             is_simple_format: false,
         };
 
@@ -710,14 +708,14 @@ mod tests {
 
         for (status_str, expected_code) in test_cases {
             let result = MutationResult {
-                status:           MutationStatus::Error(status_str.to_string()),
-                message:          "Error".to_string(),
-                entity_id:        None,
-                entity_type:      None,
-                entity:           None,
-                updated_fields:   None,
-                cascade:          None,
-                metadata:         None,
+                status: MutationStatus::Error(status_str.to_string()),
+                message: "Error".to_string(),
+                entity_id: None,
+                entity_type: None,
+                entity: None,
+                updated_fields: None,
+                cascade: None,
+                metadata: None,
                 is_simple_format: false,
             };
 
@@ -737,14 +735,14 @@ mod tests {
     fn test_error_response_with_code_field_injection() {
         // Test that code field is correctly injected into error responses
         let result = MutationResult {
-            status:           MutationStatus::Error("validation:invalid_input".to_string()),
-            message:          "Validation failed".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         None,
+            status: MutationStatus::Error("validation:invalid_input".to_string()),
+            message: "Validation failed".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: None,
             is_simple_format: false,
         };
 
@@ -772,14 +770,14 @@ mod tests {
     fn test_not_found_maps_to_404() {
         // Specific test for not_found: semantic prefix
         let result = MutationResult {
-            status:           MutationStatus::Error("not_found:author_missing".to_string()),
-            message:          "Author not found".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         None,
+            status: MutationStatus::Error("not_found:author_missing".to_string()),
+            message: "Author not found".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: None,
             is_simple_format: false,
         };
 
@@ -803,14 +801,14 @@ mod tests {
         // GitHub issue #294: scalar fields on @fraiseql.error types (datetime, str, int, UUID)
         // must be populated from mutation metadata, not silently resolved to None.
         let result = MutationResult {
-            status:           MutationStatus::Noop("noop:future_usage_exists".to_string()),
-            message:          "Cannot decommission: active readings exist".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         Some(json!({
+            status: MutationStatus::Noop("noop:future_usage_exists".to_string()),
+            message: "Cannot decommission: active readings exist".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: Some(json!({
                 "has_readings_after": true,
                 "last_activity_date": "2024-11-15T10:23:00Z",
                 "reading_count": 42
@@ -849,14 +847,14 @@ mod tests {
         // Reserved metadata keys (errors, entity_type, entity, _cascade) must not appear
         // as top-level fields in the error response.
         let result = MutationResult {
-            status:           MutationStatus::Error("validation:invalid_input".to_string()),
-            message:          "Validation failed".to_string(),
-            entity_id:        None,
-            entity_type:      None,
-            entity:           None,
-            updated_fields:   None,
-            cascade:          None,
-            metadata:         Some(json!({
+            status: MutationStatus::Error("validation:invalid_input".to_string()),
+            message: "Validation failed".to_string(),
+            entity_id: None,
+            entity_type: None,
+            entity: None,
+            updated_fields: None,
+            cascade: None,
+            metadata: Some(json!({
                 "errors": [{"code": "invalid", "message": "Bad input"}],
                 "entity_type": "Machine",
                 "entity": {"id": "1"},

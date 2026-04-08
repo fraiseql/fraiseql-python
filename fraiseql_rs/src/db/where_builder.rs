@@ -38,8 +38,8 @@ pub enum WhereCondition {
 /// WHERE clause builder for constructing SQL WHERE statements.
 #[derive(Debug, Default, Clone)]
 pub struct WhereBuilder {
-    conditions:  Vec<WhereCondition>,
-    params:      Vec<QueryParam>,
+    conditions: Vec<WhereCondition>,
+    params: Vec<QueryParam>,
     param_index: usize,
 }
 
@@ -47,8 +47,8 @@ impl WhereBuilder {
     /// Create a new WHERE clause builder.
     pub fn new() -> Self {
         WhereBuilder {
-            conditions:  Vec::new(),
-            params:      Vec::new(),
+            conditions: Vec::new(),
+            params: Vec::new(),
             param_index: 1, // PostgreSQL parameters start at $1
         }
     }

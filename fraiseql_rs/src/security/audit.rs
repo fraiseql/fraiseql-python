@@ -89,35 +89,35 @@ pub enum AuditSeverity {
 /// Audit event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEvent {
-    pub id:         Uuid,
+    pub id: Uuid,
     pub event_type: AuditEventType,
-    pub user_id:    Option<Uuid>,
-    pub tenant_id:  Option<Uuid>,
-    pub resource:   Option<String>,
-    pub action:     Option<String>,
-    pub status:     String, // "success" or "failure"
+    pub user_id: Option<Uuid>,
+    pub tenant_id: Option<Uuid>,
+    pub resource: Option<String>,
+    pub action: Option<String>,
+    pub status: String, // "success" or "failure"
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
-    pub metadata:   Option<serde_json::Value>,
-    pub timestamp:  DateTime<Utc>,
-    pub severity:   AuditSeverity,
+    pub metadata: Option<serde_json::Value>,
+    pub timestamp: DateTime<Utc>,
+    pub severity: AuditSeverity,
 }
 
 impl AuditEvent {
     pub fn new(event_type: AuditEventType) -> Self {
         Self {
-            id:         Uuid::new_v4(),
+            id: Uuid::new_v4(),
             event_type: event_type.clone(),
-            user_id:    None,
-            tenant_id:  None,
-            resource:   None,
-            action:     None,
-            status:     "success".to_string(),
+            user_id: None,
+            tenant_id: None,
+            resource: None,
+            action: None,
+            status: "success".to_string(),
             ip_address: None,
             user_agent: None,
-            metadata:   None,
-            timestamp:  Utc::now(),
-            severity:   event_type.severity(),
+            metadata: None,
+            timestamp: Utc::now(),
+            severity: event_type.severity(),
         }
     }
 
@@ -316,7 +316,7 @@ impl AuditLogger {
         let recent_events: i64 = client.query_one(sql, &[]).await?.get(0);
 
         Ok(AuditStats {
-            total_events:  total_events as usize,
+            total_events: total_events as usize,
             recent_events: recent_events as usize,
         })
     }
@@ -332,6 +332,6 @@ impl Clone for AuditLogger {
 
 #[derive(Debug)]
 pub struct AuditStats {
-    pub total_events:  usize,
+    pub total_events: usize,
     pub recent_events: usize,
 }

@@ -21,11 +21,11 @@ type Result<T> = std::result::Result<T, AuthError>;
 /// JWT claims structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub:    String,      // Subject (user ID)
-    pub iss:    String,      // Issuer
-    pub aud:    Vec<String>, // Audience
-    pub exp:    u64,         // Expiration time
-    pub iat:    u64,         // Issued at
+    pub sub: String,      // Subject (user ID)
+    pub iss: String,      // Issuer
+    pub aud: Vec<String>, // Audience
+    pub exp: u64,         // Expiration time
+    pub iat: u64,         // Issued at
     #[serde(flatten)]
     pub custom: HashMap<String, serde_json::Value>, // Custom claims
 }
@@ -33,10 +33,10 @@ pub struct Claims {
 /// JWT validator with JWKS caching.
 #[derive(Debug)]
 pub struct JWTValidator {
-    issuer:      String,
-    audience:    Vec<String>,
-    jwks_url:    String,
-    jwks_cache:  JWKSCache,
+    issuer: String,
+    audience: Vec<String>,
+    jwks_url: String,
+    jwks_cache: JWKSCache,
     http_client: reqwest::Client,
 }
 
@@ -96,14 +96,14 @@ impl JWTValidator {
 #[derive(Debug)]
 struct JWKSCache {
     cache: Arc<Mutex<LruCache<String, (Jwk, SystemTime)>>>,
-    ttl:   Duration,
+    ttl: Duration,
 }
 
 impl JWKSCache {
     fn new() -> Self {
         Self {
             cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(100).unwrap()))),
-            ttl:   Duration::from_secs(3600), // 1 hour
+            ttl: Duration::from_secs(3600), // 1 hour
         }
     }
 
