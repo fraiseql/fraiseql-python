@@ -199,11 +199,11 @@ fn build_zero_copy(
     let arena = Arena::with_capacity(estimate_arena_size(&json_rows));
 
     let config = TransformConfig {
-        add_typename:        type_name.is_some(),
-        camel_case:          true,
-        project_fields:      field_paths.is_some(),
+        add_typename: type_name.is_some(),
+        camel_case: true,
+        project_fields: field_paths.is_some(),
         add_graphql_wrapper: false,
-        max_depth:           MAX_JSON_DEPTH,
+        max_depth: MAX_JSON_DEPTH,
     };
 
     let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths, &arena));

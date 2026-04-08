@@ -8,17 +8,17 @@ use super::errors::{Result, SecurityError};
 #[derive(Debug, Clone)]
 pub struct CORSConfig {
     /// Allowed origins (exact matches or patterns)
-    pub allowed_origins:   HashSet<String>,
+    pub allowed_origins: HashSet<String>,
     /// Allowed HTTP methods
-    pub allowed_methods:   HashSet<String>,
+    pub allowed_methods: HashSet<String>,
     /// Allowed headers
-    pub allowed_headers:   HashSet<String>,
+    pub allowed_headers: HashSet<String>,
     /// Headers exposed to browser
-    pub exposed_headers:   HashSet<String>,
+    pub exposed_headers: HashSet<String>,
     /// Whether credentials are allowed
     pub allow_credentials: bool,
     /// Max age for preflight cache (seconds)
-    pub max_age:           u32,
+    pub max_age: u32,
 }
 
 impl Default for CORSConfig {

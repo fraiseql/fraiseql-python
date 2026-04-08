@@ -254,14 +254,14 @@ fn test_timeout_error() {
 #[test]
 fn test_generate_errors_array_auto_generation() {
     let result = MutationResult {
-        status:           MutationStatus::Error("failed:validation".to_string()),
-        message:          "Email format invalid".to_string(),
-        entity_id:        None,
-        entity_type:      None,
-        entity:           None,
-        updated_fields:   None,
-        cascade:          None,
-        metadata:         None,
+        status: MutationStatus::Error("failed:validation".to_string()),
+        message: "Email format invalid".to_string(),
+        entity_id: None,
+        entity_type: None,
+        entity: None,
+        updated_fields: None,
+        cascade: None,
+        metadata: None,
         is_simple_format: false,
     };
 
@@ -284,14 +284,14 @@ fn test_generate_errors_array_explicit_errors() {
     ]);
 
     let result = MutationResult {
-        status:           MutationStatus::Error("failed:validation".to_string()),
-        message:          "Multiple validation errors".to_string(),
-        entity_id:        None,
-        entity_type:      None,
-        entity:           None,
-        updated_fields:   None,
-        cascade:          None,
-        metadata:         Some(json!({"errors": explicit_errors})),
+        status: MutationStatus::Error("failed:validation".to_string()),
+        message: "Multiple validation errors".to_string(),
+        entity_id: None,
+        entity_type: None,
+        entity: None,
+        updated_fields: None,
+        cascade: None,
+        metadata: Some(json!({"errors": explicit_errors})),
         is_simple_format: false,
     };
 

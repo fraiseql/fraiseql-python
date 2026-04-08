@@ -78,7 +78,9 @@ except ImportError:
     Auth0Config = None
     Auth0Provider = None
 
-__version__ = "1.13.0"
+from importlib.metadata import version as _metadata_version
+
+__version__ = _metadata_version("fraiseql")
 
 
 # Lazy Rust extension loading for performance optimization

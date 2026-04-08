@@ -121,20 +121,20 @@ const DEFAULT_CACHE_CAPACITY: NonZeroUsize = match NonZeroUsize::new(DEFAULT_CAC
 /// cache.invalidate_user(user_id);
 /// ```
 pub struct PermissionCache {
-    cache:       Mutex<LruCache<CacheKey, CacheEntry>>,
+    cache: Mutex<LruCache<CacheKey, CacheEntry>>,
     default_ttl: Duration,
 }
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 struct CacheKey {
-    user_id:   Uuid,
+    user_id: Uuid,
     tenant_id: Option<Uuid>,
 }
 
 #[derive(Clone)]
 struct CacheEntry {
     permissions: Vec<Permission>,
-    expires_at:  Instant,
+    expires_at: Instant,
 }
 
 impl PermissionCache {
@@ -295,8 +295,8 @@ impl PermissionCache {
 
 #[derive(Debug)]
 pub struct CacheStats {
-    pub capacity:      usize,
-    pub size:          usize,
+    pub capacity: usize,
+    pub size: usize,
     pub expired_count: usize,
 }
 

@@ -359,13 +359,13 @@ release-check:
 	@git diff --quiet && git diff --cached --quiet || { echo "Working tree is dirty. Commit or stash changes first."; exit 1; }
 	@echo "Working tree is clean"
 	@echo ""
-	@echo "-- Checking version consistency --"
-	@INIT_VERSION=$$(grep '__version__' src/fraiseql/__init__.py | sed 's/.*"\(.*\)"/\1/') && \
-		if [ "$(VERSION)" != "$$INIT_VERSION" ]; then \
-			echo "Version mismatch: pyproject.toml=$(VERSION) vs __init__.py=$$INIT_VERSION"; \
+	@echo "-- Checking version consistency (pyproject.toml vs fraiseql_rs/Cargo.toml) --"
+	@CARGO_VERSION=$$(grep '^version' fraiseql_rs/Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/') && \
+		if [ "$(VERSION)" != "$$CARGO_VERSION" ]; then \
+			echo "Version mismatch: pyproject.toml=$(VERSION) vs fraiseql_rs/Cargo.toml=$$CARGO_VERSION"; \
 			exit 1; \
 		fi
-	@echo "Version $(VERSION) consistent across pyproject.toml and __init__.py"
+	@echo "Version $(VERSION) consistent"
 	@echo ""
 	@echo "-- Running ruff checks --"
 	@uv run ruff check src/fraiseql/ || { echo "Ruff check failed"; exit 1; }

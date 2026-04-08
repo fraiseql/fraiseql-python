@@ -6,9 +6,9 @@ use serde_json::Value as JsonValue;
 use crate::{graphql::types::GraphQLArgument, query::schema::SchemaMetadata};
 
 pub struct WhereClauseBuilder {
-    schema:        SchemaMetadata,
-    view_name:     String,
-    params:        Vec<(String, ParameterValue)>,
+    schema: SchemaMetadata,
+    view_name: String,
+    params: Vec<(String, ParameterValue)>,
     param_counter: usize,
 }
 
@@ -275,7 +275,7 @@ mod tests {
         let mut builder = WhereClauseBuilder::new(schema, "v_users".to_string());
 
         let arg = GraphQLArgument {
-            name:       "where".to_string(),
+            name: "where".to_string(),
             value_type: "object".to_string(),
             value_json: r#"{"status": "active"}"#.to_string(),
         };
@@ -291,10 +291,10 @@ mod tests {
         tables.insert(
             "v_users".to_string(),
             crate::query::schema::TableSchema {
-                view_name:      "v_users".to_string(),
-                sql_columns:    vec!["id".to_string(), "email".to_string()],
-                jsonb_column:   "data".to_string(),
-                fk_mappings:    Default::default(),
+                view_name: "v_users".to_string(),
+                sql_columns: vec!["id".to_string(), "email".to_string()],
+                jsonb_column: "data".to_string(),
+                fk_mappings: Default::default(),
                 has_jsonb_data: true,
             },
         );

@@ -40,7 +40,7 @@ pub fn build_sql_query(
 
     // Return GeneratedQuery
     Ok(GeneratedQuery {
-        sql:        composed.sql,
+        sql: composed.sql,
         parameters: composed
             .parameters
             .into_iter()
@@ -73,7 +73,7 @@ pub fn build_sql_query_cached(
     if let Ok(Some(cached_plan)) = QUERY_PLAN_CACHE.get(&signature) {
         // Cache hit - return cached plan
         return Ok(GeneratedQuery {
-            sql:        cached_plan.sql_template,
+            sql: cached_plan.sql_template,
             parameters: vec![], // Parameters already bound
         });
     }
@@ -92,7 +92,7 @@ pub fn build_sql_query_cached(
     })?;
 
     let result = GeneratedQuery {
-        sql:        composed.sql.clone(),
+        sql: composed.sql.clone(),
         parameters: composed
             .parameters
             .into_iter()

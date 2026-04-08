@@ -253,8 +253,8 @@ impl<'a> QueryExecutor<'a> {
         if rows.is_empty() {
             return QueryResult {
                 rows_affected: 0,
-                columns:       vec![],
-                rows:          vec![],
+                columns: vec![],
+                rows: vec![],
             };
         }
 

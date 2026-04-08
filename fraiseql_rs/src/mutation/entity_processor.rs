@@ -21,7 +21,7 @@ pub fn process_entity(entity: &Value, entity_field_name: Option<&str>) -> Proces
 #[derive(Debug, Clone)]
 pub struct ProcessedEntity {
     /// Entity data (extracted from wrapper if needed)
-    pub entity:         Value,
+    pub entity: Value,
     /// Fields extracted from wrapper (if any)
     pub wrapper_fields: Map<String, Value>,
 }

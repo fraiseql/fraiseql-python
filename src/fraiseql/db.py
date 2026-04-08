@@ -907,11 +907,7 @@ class FraiseQLRepository:
                 jsonb_column = metadata["jsonb_column"]
 
         # 2b. Auto-aggregation: derive group_by/aggregations from metadata (#322)
-        if (
-            not kwargs.get("group_by")
-            and field_paths
-            and view_name in _table_metadata
-        ):
+        if not kwargs.get("group_by") and field_paths and view_name in _table_metadata:
             agg_meta = _table_metadata[view_name].get("aggregation")
             if agg_meta:
                 result = _derive_auto_aggregation(field_paths, agg_meta)

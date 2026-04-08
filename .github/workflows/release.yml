@@ -53,10 +53,7 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            maturin-args: --manylinux 2_28
-          - os: macos-13
-            target: x86_64-apple-darwin
-            maturin-args: ""
+            maturin-args: --manylinux 2_38
           - os: macos-latest
             target: aarch64-apple-darwin
             maturin-args: ""
@@ -136,6 +133,61 @@ jobs:
 
       - name: List distributions
         run: ls -lh dist/
+
+      - name: Fix distribution metadata (remove license-file)
+        run: |
+          python << 'SCRIPT'
+          import zipfile
+          import tarfile
+          import os
+          import tempfile
+          import shutil
+          from pathlib import Path
+
+          # Fix wheels
+          for wheel_path in Path("dist").glob("*.whl"):
+              temp_dir = tempfile.mkdtemp()
+              try:
+                  with zipfile.ZipFile(wheel_path, 'r') as z:
+                      z.extractall(temp_dir)
+                  for metadata_path in Path(temp_dir).glob("*/METADATA"):
+                      with open(metadata_path, 'r') as f:
+                          lines = f.readlines()
+                      fixed = [l for l in lines if not l.startswith('License-File:')]
+                      with open(metadata_path, 'w') as f:
+                          f.writelines(fixed)
+                  wheel_path.unlink()
+                  with zipfile.ZipFile(wheel_path, 'w', zipfile.ZIP_DEFLATED) as z:
+                      for root, dirs, files in os.walk(temp_dir):
+                          for file in files:
+                              file_path = os.path.join(root, file)
+                              arcname = os.path.relpath(file_path, temp_dir)
+                              z.write(file_path, arcname)
+              finally:
+                  shutil.rmtree(temp_dir)
+
+          # Fix sdist
+          for sdist_path in Path("dist").glob("*.tar.gz"):
+              temp_dir = tempfile.mkdtemp()
+              try:
+                  with tarfile.open(sdist_path, 'r:gz') as t:
+                      t.extractall(temp_dir)
+                  for metadata_path in Path(temp_dir).glob("*/PKG-INFO"):
+                      with open(metadata_path, 'r') as f:
+                          lines = f.readlines()
+                      fixed = [l for l in lines if not l.startswith('License-File:')]
+                      with open(metadata_path, 'w') as f:
+                          f.writelines(fixed)
+                  sdist_path.unlink()
+                  with tarfile.open(sdist_path, 'w:gz') as t:
+                      for root, dirs, files in os.walk(temp_dir):
+                          for file in files:
+                              file_path = os.path.join(root, file)
+                              arcname = os.path.relpath(file_path, temp_dir)
+                              t.add(file_path, arcname)
+              finally:
+                  shutil.rmtree(temp_dir)
+          SCRIPT
 
       - name: Publish to PyPI
         env:
