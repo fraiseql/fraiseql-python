@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from psycopg_pool import AsyncConnectionPool
 
-from fraiseql.auth.base import AuthProvider, UserContext
+from fraiseql.auth.base import AuthenticationError, AuthProvider, UserContext
 from fraiseql.db import FraiseQLRepository
 from fraiseql.fastapi.config import FraiseQLConfig
 from fraiseql.optimization.registry import LoaderRegistry
@@ -103,7 +103,7 @@ async def get_current_user_optional(
 
     try:
         return await auth_provider.get_user_from_token(token)
-    except Exception:
+    except AuthenticationError:
         return None
 
 
