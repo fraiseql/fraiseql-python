@@ -65,8 +65,8 @@ impl AuthProvider for Auth0Provider {
 
 /// Custom JWT authentication provider.
 pub struct CustomJWTProvider {
-    validator:         JWTValidator,
-    roles_claim:       String,
+    validator: JWTValidator,
+    roles_claim: String,
     permissions_claim: String,
 }
 

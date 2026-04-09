@@ -11,13 +11,13 @@ pub enum RbacError {
     /// Permission denied for specific resource:action
     PermissionDenied {
         resource: String,
-        action:   String,
-        user_id:  Option<String>,
+        action: String,
+        user_id: Option<String>,
     },
 
     /// Missing required role
     MissingRole {
-        required_role:   String,
+        required_role: String,
         available_roles: Vec<String>,
     },
 

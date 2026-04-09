@@ -298,14 +298,14 @@ impl MutationStatus {
 /// 2. Full: Complete mutation_response with status, message, entity, etc.
 #[derive(Debug, Clone)]
 pub struct MutationResult {
-    pub status:           MutationStatus,
-    pub message:          String,
-    pub entity_id:        Option<String>,
-    pub entity_type:      Option<String>,
-    pub entity:           Option<Value>,
-    pub updated_fields:   Option<Vec<String>>,
-    pub cascade:          Option<Value>,
-    pub metadata:         Option<Value>,
+    pub status: MutationStatus,
+    pub message: String,
+    pub entity_id: Option<String>,
+    pub entity_type: Option<String>,
+    pub entity: Option<Value>,
+    pub updated_fields: Option<Vec<String>>,
+    pub cascade: Option<Value>,
+    pub metadata: Option<Value>,
     /// True if this was parsed from simple JSONB format (no status field)
     pub is_simple_format: bool,
 }

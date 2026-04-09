@@ -14,7 +14,7 @@ use crate::pipeline::unified::UserContext;
 /// User context cache with LRU eviction and TTL validation.
 pub struct UserContextCache {
     cache: Arc<Mutex<LruCache<String, (UserContext, SystemTime)>>>,
-    ttl:   Duration,
+    ttl: Duration,
 }
 
 impl UserContextCache {
@@ -22,7 +22,7 @@ impl UserContextCache {
     pub fn new(capacity: usize, ttl_seconds: u64) -> Self {
         Self {
             cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(capacity).unwrap()))),
-            ttl:   Duration::from_secs(ttl_seconds),
+            ttl: Duration::from_secs(ttl_seconds),
         }
     }
 
@@ -93,14 +93,10 @@ mod tests {
         let cache = UserContextCache::new(10, 300);
 
         let context = UserContext {
-            user_id:     Some("user123".to_string()),
+            user_id: Some("user123".to_string()),
             permissions: vec!["read".to_string()],
-            roles:       vec!["admin".to_string()],
-            exp:         SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
-                + 3600,
+            roles: vec!["admin".to_string()],
+            exp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() + 3600,
         };
 
         cache.put("token123", context.clone());
@@ -115,14 +111,10 @@ mod tests {
         let cache = UserContextCache::new(10, 1); // 1 second TTL
 
         let context = UserContext {
-            user_id:     Some("user123".to_string()),
+            user_id: Some("user123".to_string()),
             permissions: vec![],
-            roles:       vec![],
-            exp:         SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
-                + 3600,
+            roles: vec![],
+            exp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() + 3600,
         };
 
         cache.put("token123", context);

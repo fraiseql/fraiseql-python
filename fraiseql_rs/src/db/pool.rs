@@ -105,21 +105,21 @@ impl DatabasePool {
             Some(pool) => {
                 let status = pool.status();
                 ConnectionInfo {
-                    host:             "localhost".to_string(), // TODO: Extract from actual config
-                    port:             5432,                    // TODO: Extract from actual config
-                    database:         "fraiseql".to_string(),  // TODO: Extract from actual config
-                    user:             "postgres".to_string(),  // TODO: Extract from actual config
+                    host: "localhost".to_string(),    // TODO: Extract from actual config
+                    port: 5432,                       // TODO: Extract from actual config
+                    database: "fraiseql".to_string(), // TODO: Extract from actual config
+                    user: "postgres".to_string(),     // TODO: Extract from actual config
                     connection_count: status.size as u32,
-                    idle_count:       status.available as u32,
+                    idle_count: status.available as u32,
                 }
             },
             None => ConnectionInfo {
-                host:             "localhost".to_string(),
-                port:             5432,
-                database:         "fraiseql".to_string(),
-                user:             "postgres".to_string(),
+                host: "localhost".to_string(),
+                port: 5432,
+                database: "fraiseql".to_string(),
+                user: "postgres".to_string(),
                 connection_count: 0,
-                idle_count:       0,
+                idle_count: 0,
             },
         }
     }

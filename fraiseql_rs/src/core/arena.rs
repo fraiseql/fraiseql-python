@@ -82,14 +82,14 @@ impl std::error::Error for ArenaError {}
 ///
 /// **Stack usage:** Negligible (struct itself is ~48 bytes on 64-bit systems)
 pub struct Arena {
-    buf:      UnsafeCell<Vec<u8>>,
-    pos:      UnsafeCell<usize>,
+    buf: UnsafeCell<Vec<u8>>,
+    pos: UnsafeCell<usize>,
     max_size: usize,
     /// Marker to make Arena `!Send` and `!Sync`
     ///
     /// `*const ()` is neither Send nor Sync, so this field ensures
     /// Arena cannot be shared across threads.
-    _marker:  PhantomData<*const ()>,
+    _marker: PhantomData<*const ()>,
 }
 
 impl Arena {
@@ -103,10 +103,10 @@ impl Arena {
     /// - 64KB for large requests (> 500 fields)
     pub fn with_capacity(capacity: usize) -> Self {
         Arena {
-            buf:      UnsafeCell::new(Vec::with_capacity(capacity.min(MAX_ARENA_SIZE))),
-            pos:      UnsafeCell::new(0),
+            buf: UnsafeCell::new(Vec::with_capacity(capacity.min(MAX_ARENA_SIZE))),
+            pos: UnsafeCell::new(0),
             max_size: MAX_ARENA_SIZE,
-            _marker:  PhantomData,
+            _marker: PhantomData,
         }
     }
 
@@ -118,10 +118,10 @@ impl Arena {
     pub fn with_capacity_and_max(capacity: usize, max_size: usize) -> Self {
         let effective_max = max_size.min(MAX_ARENA_SIZE);
         Arena {
-            buf:      UnsafeCell::new(Vec::with_capacity(capacity.min(effective_max))),
-            pos:      UnsafeCell::new(0),
+            buf: UnsafeCell::new(Vec::with_capacity(capacity.min(effective_max))),
+            pos: UnsafeCell::new(0),
             max_size: effective_max,
-            _marker:  PhantomData,
+            _marker: PhantomData,
         }
     }
 

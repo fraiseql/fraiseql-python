@@ -77,9 +77,9 @@ use super::{
 /// resolver.invalidate_user(user_id);
 /// ```
 pub struct PermissionResolver {
-    pool:      Pool,
+    pool: Pool,
     hierarchy: RoleHierarchy,
-    cache:     Arc<PermissionCache>,
+    cache: Arc<PermissionCache>,
 }
 
 impl PermissionResolver {
