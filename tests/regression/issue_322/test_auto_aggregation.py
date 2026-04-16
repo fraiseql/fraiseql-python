@@ -45,11 +45,12 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, aggregations = result
+        group_by, aggregations, native_set = result
         assert "dimensions.date_info.date" in group_by
         assert "dimensions.cost_category" in group_by
         assert aggregations["measures.cost"] == "SUM(measures.cost)"
         assert aggregations["measures.volume"] == "SUM(measures.volume)"
+        assert native_set == set()
 
     def test_id_selected_skips_aggregation(self) -> None:
         """When 'id' is in the selection, returns None (no aggregation)."""
@@ -108,7 +109,7 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        _, aggregations = result
+        _, aggregations, _ = result
         assert "measures.cost" in aggregations
         assert "measures.volume" in aggregations
 
@@ -119,9 +120,10 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, aggregations = result
+        group_by, aggregations, native_set = result
         assert group_by == ["dimensions.date"]
         assert aggregations == {}
+        assert native_set == set()
 
 
 # ── register_type_for_view aggregation metadata ──────────────────────

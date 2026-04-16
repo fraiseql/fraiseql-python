@@ -5,6 +5,50 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-04-16
+
+### Added
+
+- **Native SQL column grouping in auto-aggregation** (#337):
+  `register_type_for_view()` now accepts a `native_dimensions` key in the
+  `aggregation` metadata. Listed columns are grouped via `t."col"` instead of
+  JSONB extraction (`data->>'col'`), enabling btree index usage and fixing
+  `ORDER BY` errors when the ordered field is a real SQL column on the view.
+
+  ```python
+  register_type_for_view(
+      "v_orders_by_period", OrderPeriodType,
+      has_jsonb_data=True,
+      aggregation={
+          "native_dimensions": ["period_date", "category_id"],
+          "dimensions": "dimensions",
+          "measures": {"measures.total": "SUM", "measures.count": "SUM"},
+      },
+  )
+  ```
+
+  Generated SQL changes from:
+
+  ```sql
+  -- Before: no index, ORDER BY error-prone
+  GROUP BY "data"->>'period_date'
+  ORDER BY "data" -> 'period_date'
+  ```
+
+  to:
+
+  ```sql
+  -- After: index-friendly, correct
+  GROUP BY t."period_date"
+  ORDER BY t."period_date"
+  ```
+
+  Mixed grouping is fully supported — native and JSONB dimensions coexist in
+  the same query. Backward compatible: existing metadata without
+  `native_dimensions` behaves identically to before.
+
+---
+
 ## [1.13.1] - 2026-04-08
 
 ### Fixed

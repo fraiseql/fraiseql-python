@@ -260,18 +260,25 @@ def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Comp
 def _derive_auto_aggregation(
     field_paths: list[list[str]],
     aggregation_meta: dict[str, Any],
-) -> tuple[list[str], dict[str, str]] | None:
+) -> tuple[list[str], dict[str, str], set[str]] | None:
     """Derive group_by and aggregations from field selection + metadata.
 
-    Returns (group_by, aggregations) if auto-aggregation should be applied,
-    or None if the query should not be aggregated (e.g. 'id' is selected).
+    Returns (group_by, aggregations, native_dimensions) if auto-aggregation
+    should be applied, or None if the query should not be aggregated (e.g.
+    'id' is selected).
 
     Args:
         field_paths: Field paths from GraphQL AST, e.g. [["dimensions","date"],["measures","cost"]]
         aggregation_meta: The "aggregation" dict from register_type_for_view.
+
+    Returns:
+        A 3-tuple of (group_by, aggregations, native_dimensions) where
+        native_dimensions is the set of group_by entries that correspond to
+        native SQL columns (not JSONB-extracted), or None to skip aggregation.
     """
     measures_meta: dict[str, str] = aggregation_meta.get("measures", {})
     dimensions_prefix: str = aggregation_meta.get("dimensions", "dimensions")
+    native_dims: set[str] = set(aggregation_meta.get("native_dimensions", []))
 
     # Check if any top-level identity field is selected — if so, skip aggregation
     skip_fields = aggregation_meta.get("skip_when", {"id", "tenant_id"})
@@ -281,9 +288,16 @@ def _derive_auto_aggregation(
 
     group_by: list[str] = []
     aggregations: dict[str, str] = {}
+    native_found: set[str] = set()
 
     for fp in field_paths:
         dot_path = ".".join(fp)
+
+        # Check if this is a native dimension (top-level column, not JSONB)
+        if len(fp) == 1 and fp[0] in native_dims:
+            group_by.append(fp[0])
+            native_found.add(fp[0])
+            continue
 
         # Check if this is a dimension field
         if fp[0] == dimensions_prefix:
@@ -305,7 +319,7 @@ def _derive_auto_aggregation(
     if not group_by:
         return None
 
-    return group_by, aggregations
+    return group_by, aggregations, native_found
 
 
 def register_type_for_view(
@@ -336,9 +350,13 @@ def register_type_for_view(
             If False, only warn (useful for legacy code migration).
         aggregation: Optional aggregation metadata for auto-aggregation.
             Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
-                      "dimensions": "dimensions"}
+                      "dimensions": "dimensions",
+                      "native_dimensions": ["period_date", "category_id"]}
             When present, db.find() will auto-aggregate when the field selection
             contains only dimensions and measures (no identity fields like 'id').
+            The ``native_dimensions`` key lists SQL columns that should be grouped
+            via ``t."col"`` instead of JSONB extraction, enabling btree index
+            usage and correct ORDER BY behavior (#337).
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -912,7 +930,9 @@ class FraiseQLRepository:
             if agg_meta:
                 result = _derive_auto_aggregation(field_paths, agg_meta)
                 if result is not None:
-                    kwargs["group_by"], kwargs["aggregations"] = result
+                    kwargs["group_by"], kwargs["aggregations"], native_dims = result
+                    if native_dims:
+                        kwargs["native_dimensions"] = native_dims
 
         # 3. Build SQL query
         # When group_by is used, the output structure differs from the view,
@@ -1925,6 +1945,7 @@ class FraiseQLRepository:
         order_by = kwargs.pop("order_by", None)
         group_by: list[str] | None = kwargs.pop("group_by", None)
         aggregations: dict[str, str] | None = kwargs.pop("aggregations", None)
+        native_dimensions: set[str] = kwargs.pop("native_dimensions", None) or set()
 
         if aggregations and not group_by:
             msg = "aggregations requires group_by"
@@ -1945,11 +1966,16 @@ class FraiseQLRepository:
         if group_by:
             # Choose the field expression builder based on table type
             is_jsonb = jsonb_column is not None
-            if is_jsonb:
-                jsonb_col = jsonb_column or "data"
-                build_field = lambda fp: _build_jsonb_field_expr(fp, jsonb_col)  # noqa: E731
-            else:
-                build_field = lambda fp: _build_non_jsonb_field_expr(fp, "t")  # noqa: E731
+            has_native = bool(native_dimensions)
+            jsonb_col = jsonb_column or "data"
+
+            def build_field(fp: str) -> SQL | Composed:
+                """Build field expression, dispatching native vs JSONB."""
+                if fp in native_dimensions:
+                    return _build_non_jsonb_field_expr(fp, "t")
+                if is_jsonb:
+                    return _build_jsonb_field_expr(fp, jsonb_col)
+                return _build_non_jsonb_field_expr(fp, "t")
 
             # Build dimension expressions (reused in both SELECT and GROUP BY)
             group_by_exprs: list[SQL | Composed] = [build_field(fp) for fp in group_by]
@@ -1978,8 +2004,9 @@ class FraiseQLRepository:
             nested_obj = _build_nested_json_object(entries)
 
             # Assemble SELECT ... FROM
+            # Add AS t alias for non-JSONB tables, or JSONB tables with native dims
             select_prefix = [SQL("SELECT "), nested_obj, SQL("::text FROM ")]
-            if is_jsonb:
+            if is_jsonb and not has_native:
                 query_parts = [*select_prefix, table_identifier]
             else:
                 query_parts = [*select_prefix, table_identifier, SQL(" AS t")]
@@ -2019,11 +2046,13 @@ class FraiseQLRepository:
         # Determine table reference for ORDER BY
         # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
         table_ref = jsonb_column if jsonb_column is not None else "t"
+        # Pass native_dimensions to ORDER BY so native columns use t."col" (#337)
+        order_native = native_dimensions if native_dimensions else None
 
         # Add ORDER BY
         if order_by:
             if hasattr(order_by, "to_sql"):
-                order_sql = order_by.to_sql(table_ref)
+                order_sql = order_by.to_sql(table_ref, native_columns=order_native)
                 if order_sql:
                     # OrderBySet.to_sql() already includes "ORDER BY " prefix
                     query_parts.append(SQL(" "))
@@ -2033,7 +2062,7 @@ class FraiseQLRepository:
                 config = self.context.get("config")
                 sql_order_by_obj = order_by._to_sql_order_by(config=config)
                 if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref)
+                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
                     if order_sql:
                         # OrderBySet.to_sql() already includes "ORDER BY " prefix
                         query_parts.append(SQL(" "))
@@ -2047,7 +2076,7 @@ class FraiseQLRepository:
                 config = self.context.get("config")
                 sql_order_by_obj = _convert_order_by_input_to_sql(order_by, config=config)
                 if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref)
+                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
                     if order_sql:
                         # OrderBySet.to_sql() already includes "ORDER BY " prefix
                         query_parts.append(SQL(" "))

@@ -76,11 +76,18 @@ class OrderBy:
     value: list[float] | None = None
     collation: str | None = None
 
-    def to_sql(self, table_ref: str = "t") -> sql.Composed:
+    def to_sql(
+        self,
+        table_ref: str = "t",
+        native_columns: set[str] | None = None,
+    ) -> sql.Composed:
         """Generate ORDER BY clause using JSONB numeric extraction or vector distance.
 
         Args:
             table_ref: Table alias or column name to use for JSONB access (default: "t")
+            native_columns: Set of column names that are native SQL columns on the
+                view (not inside JSONB). These use ``t."col"`` instead of JSONB
+                extraction for correct index usage (#337).
 
         Uses data -> 'field' instead of data ->> 'field' to preserve proper
         numeric ordering. JSONB extraction (data->'field') maintains the
@@ -93,6 +100,16 @@ class OrderBy:
         For vector distance operations like 'embedding.cosine_distance', uses:
         ({table_ref} -> 'embedding') <=> '[0.1,0.2,...]'::vector
         """
+        # Native column short-circuit: use t."col" instead of JSONB extraction (#337)
+        if native_columns and self.field in native_columns:
+            direction_str = (
+                self.direction.value.upper()
+                if isinstance(self.direction, OrderDirection)
+                else str(self.direction).upper()
+            )
+            col_expr = sql.SQL("{}.{}").format(sql.Identifier("t"), sql.Identifier(self.field))
+            return col_expr + sql.SQL(" ") + sql.SQL(direction_str)
+
         # Check if this is a vector distance operation
         if "." in self.field and self.value is not None:
             parts = self.field.split(".")
@@ -229,11 +246,17 @@ class OrderBySet:
 
     instructions: Sequence[OrderBy]
 
-    def to_sql(self, table_ref: str = "t") -> sql.Composed:
+    def to_sql(
+        self,
+        table_ref: str = "t",
+        native_columns: set[str] | None = None,
+    ) -> sql.Composed:
         """Compile the ORDER BY instructions into a psycopg SQL Composed object.
 
         Args:
             table_ref: Table alias or column name to use for field access (default: "t")
+            native_columns: Set of native SQL column names to use column refs
+                instead of JSONB extraction (#337).
 
         Returns:
             A `psycopg.sql.Composed` instance representing the full ORDER BY
@@ -241,5 +264,7 @@ class OrderBySet:
         """
         if not self.instructions:
             return sql.Composed([])  # Return empty Composed to satisfy Pyright
-        clauses = sql.SQL(", ").join(instr.to_sql(table_ref) for instr in self.instructions)
+        clauses = sql.SQL(", ").join(
+            instr.to_sql(table_ref, native_columns=native_columns) for instr in self.instructions
+        )
         return sql.SQL("ORDER BY ") + clauses
