@@ -30,24 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Generated SQL changes from:
 
   ```sql
-  -- Before: no index, ORDER BY error-prone
+  -- Before (slow, no index, error-prone)
+  SELECT ... FROM v_orders_by_period
   GROUP BY "data"->>'period_date'
-  ORDER BY "data" -> 'period_date'
+  ORDER BY "data" -> 'period_date'  -- ERROR: data not in GROUP BY
   ```
 
   to:
 
   ```sql
-  -- After: index-friendly, correct
+  -- After (index-friendly, correct)
+  SELECT ... FROM v_orders_by_period AS t
   GROUP BY t."period_date"
   ORDER BY t."period_date"
   ```
 
-  Mixed grouping is fully supported — native and JSONB dimensions coexist in
-  the same query. Backward compatible: existing metadata without
-  `native_dimensions` behaves identically to before.
-
----
+  Mixed grouping (native + JSONB dimensions in the same query) is fully
+  supported. Backward compatible: existing metadata without `native_dimensions`
+  behaves identically to before.
 
 ## [1.13.1] - 2026-04-08
 
