@@ -6,6 +6,7 @@ events, configurable outputs, and integration with monitoring systems.
 
 import json
 import logging
+import os
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Optional
@@ -114,12 +115,21 @@ class SecurityLogger:
 
         # Configure file handler if needed
         if self.log_to_file:
-            file_path = log_file_path or "security_events.log"
-            file_handler = logging.FileHandler(file_path)
-            file_handler.setFormatter(
-                logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+            file_path = log_file_path or os.environ.get(
+                "FRAISEQL_SECURITY_LOG_PATH", "security_events.log"
             )
-            logger.addHandler(file_handler)
+            try:
+                file_handler = logging.FileHandler(file_path)
+                file_handler.setFormatter(
+                    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+                )
+                logger.addHandler(file_handler)
+            except (PermissionError, OSError) as e:
+                logger.warning(
+                    "Cannot write security log to %s: %s. Using stderr only.",
+                    file_path,
+                    e,
+                )
 
         # Configure stdout handler if needed
         if self.log_to_stdout:

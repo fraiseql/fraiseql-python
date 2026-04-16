@@ -400,6 +400,68 @@ CREATE INDEX idx_sales_data_gin ON tf_sales USING GIN(data);
 
 ---
 
+## Native Dimensions
+
+When a view mixes native SQL columns (e.g. `period_date DATE`, `category_id UUID`) with a JSONB `data` column, native columns can be declared as **native dimensions** to avoid JSONB extraction overhead.
+
+### Problem
+
+By default, all dimension columns in auto-aggregation are extracted from JSONB:
+
+```sql
+-- Default: extracts from JSONB even though period_date is a real column
+SELECT json_build_object('period_date', "data"->>'period_date', ...)
+FROM v_orders_by_period
+GROUP BY "data"->>'period_date'
+ORDER BY "data" -> 'period_date'
+```
+
+This has two issues:
+
+1. **Performance**: btree indexes on native columns cannot be used
+2. **Correctness**: `ORDER BY "data" -> 'period_date'` references the raw `data` column, which is not in `GROUP BY` — PostgreSQL rejects the query
+
+### Solution
+
+Declare native columns in the `native_dimensions` key of the aggregation metadata:
+
+```python
+register_type_for_view(
+    "v_orders_by_period", OrderPeriodType,
+    has_jsonb_data=True,
+    aggregation={
+        "native_dimensions": ["period_date", "category_id"],
+        "dimensions": "dimensions",
+        "measures": {"measures.total": "SUM", "measures.count": "SUM"},
+    },
+)
+```
+
+FraiseQL generates correct SQL using column references instead of JSONB extraction:
+
+```sql
+-- Native dimensions: uses column refs and table alias
+SELECT json_build_object(
+    'period_date', t."period_date",
+    'category_id', t."category_id",
+    'dimensions', json_build_object('subcategory', "data"->'dimensions'->>'subcategory'),
+    'measures', json_build_object('total', SUM(("data"->'measures'->>'total')::numeric))
+)::text
+FROM v_orders_by_period AS t
+GROUP BY t."period_date", t."category_id", "data"->'dimensions'->>'subcategory'
+ORDER BY t."period_date"
+```
+
+### Mixed Grouping
+
+Native and JSONB dimensions coexist in the same query. Native dimensions use `t."col"`, JSONB dimensions use `"data"->>'field'`. The table automatically receives an `AS t` alias when native dimensions are present.
+
+### Backward Compatibility
+
+Existing metadata without `native_dimensions` behaves identically. The key is optional and defaults to an empty list.
+
+---
+
 ## No Joins Principle
 
 **Critical**: FraiseQL does not support joins. All dimensional data must be denormalized into the `data` JSONB column at ETL time.

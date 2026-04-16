@@ -61,21 +61,21 @@ pub const MAX_JSON_DEPTH: usize = 64;
 /// Transform configuration (zero-cost at compile time)
 #[derive(Clone, Copy)]
 pub struct TransformConfig {
-    pub add_typename:        bool,
-    pub camel_case:          bool,
-    pub project_fields:      bool,
+    pub add_typename: bool,
+    pub camel_case: bool,
+    pub project_fields: bool,
     pub add_graphql_wrapper: bool,
-    pub max_depth:           usize,
+    pub max_depth: usize,
 }
 
 impl Default for TransformConfig {
     fn default() -> Self {
         Self {
-            add_typename:        true,
-            camel_case:          true,
-            project_fields:      false,
+            add_typename: true,
+            camel_case: true,
+            project_fields: false,
             add_graphql_wrapper: true,
-            max_depth:           MAX_JSON_DEPTH,
+            max_depth: MAX_JSON_DEPTH,
         }
     }
 }
@@ -97,11 +97,11 @@ impl Default for TransformConfig {
 /// │ Output Buffer (write-only, pre-sized)           │ → HTTP response
 /// └─────────────────────────────────────────────────┘
 pub struct ZeroCopyTransformer<'a> {
-    arena:            &'a Arena,
-    config:           TransformConfig,
-    typename:         Option<&'a str>,
+    arena: &'a Arena,
+    config: TransformConfig,
+    typename: Option<&'a str>,
     field_projection: Option<&'a FieldSet>,
-    current_depth:    usize,
+    current_depth: usize,
 }
 
 impl<'a> ZeroCopyTransformer<'a> {
@@ -358,7 +358,7 @@ impl ByteBuf {
 /// Streaming byte reader (zero-copy)
 pub struct ByteReader<'a> {
     bytes: &'a [u8],
-    pos:   usize,
+    pos: usize,
 }
 
 impl<'a> ByteReader<'a> {
@@ -587,7 +587,7 @@ impl<'a> ByteReader<'a> {
 
 /// Streaming JSON writer
 pub struct JsonWriter<'a> {
-    output:      &'a mut ByteBuf,
+    output: &'a mut ByteBuf,
     needs_comma: bool,
 }
 

@@ -47,11 +47,11 @@ fn benchmark_zero_copy_small(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(8192);
             let config = TransformConfig {
-                add_typename:        true,
-                camel_case:          true,
-                project_fields:      false,
+                add_typename: true,
+                camel_case: true,
+                project_fields: false,
                 add_graphql_wrapper: false,
-                max_depth:           64,
+                max_depth: 64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
@@ -77,11 +77,11 @@ fn benchmark_zero_copy_medium(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(65536);
             let config = TransformConfig {
-                add_typename:        true,
-                camel_case:          true,
-                project_fields:      false,
+                add_typename: true,
+                camel_case: true,
+                project_fields: false,
                 add_graphql_wrapper: false,
-                max_depth:           64,
+                max_depth: 64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
@@ -108,11 +108,11 @@ fn benchmark_zero_copy_large(c: &mut Criterion) {
         b.iter(|| {
             let arena = Arena::with_capacity(524288); // 512KB arena
             let config = TransformConfig {
-                add_typename:        true,
-                camel_case:          true,
-                project_fields:      false,
+                add_typename: true,
+                camel_case: true,
+                project_fields: false,
                 add_graphql_wrapper: false,
-                max_depth:           64,
+                max_depth: 64,
             };
 
             let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);

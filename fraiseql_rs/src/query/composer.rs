@@ -15,7 +15,7 @@ pub struct SQLComposer {
 }
 
 pub struct ComposedSQL {
-    pub sql:        String,
+    pub sql: String,
     pub parameters: Vec<(String, ParameterValue)>,
 }
 

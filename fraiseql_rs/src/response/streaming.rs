@@ -6,9 +6,9 @@ use serde_json::Value;
 
 /// Stream rows directly to response buffer without full buffering.
 pub struct ResponseStream<W: Write> {
-    writer:    W,
+    writer: W,
     row_count: usize,
-    started:   bool,
+    started: bool,
 }
 
 impl<W: Write> ResponseStream<W> {
@@ -58,8 +58,8 @@ impl<W: Write> ResponseStream<W> {
 
 /// Memory-efficient buffered writer with configurable chunk size.
 pub struct ChunkedWriter {
-    buffer:        Vec<u8>,
-    chunk_size:    usize,
+    buffer: Vec<u8>,
+    chunk_size: usize,
     total_written: usize,
 }
 

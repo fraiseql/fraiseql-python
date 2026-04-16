@@ -5,6 +5,74 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-04-16
+
+### Added
+
+- **Native SQL column grouping in auto-aggregation** (#337):
+  `register_type_for_view()` now accepts a `native_dimensions` key in the
+  `aggregation` metadata. Listed columns are grouped via `t."col"` instead of
+  JSONB extraction (`data->>'col'`), enabling btree index usage and fixing
+  `ORDER BY` errors when the ordered field is a real SQL column on the view.
+
+  ```python
+  register_type_for_view(
+      "v_orders_by_period", OrderPeriodType,
+      has_jsonb_data=True,
+      aggregation={
+          "native_dimensions": ["period_date", "category_id"],
+          "dimensions": "dimensions",
+          "measures": {"measures.total": "SUM", "measures.count": "SUM"},
+      },
+  )
+  ```
+
+  Generated SQL changes from:
+
+  ```sql
+  -- Before (slow, no index, error-prone)
+  SELECT ... FROM v_orders_by_period
+  GROUP BY "data"->>'period_date'
+  ORDER BY "data" -> 'period_date'  -- ERROR: data not in GROUP BY
+  ```
+
+  to:
+
+  ```sql
+  -- After (index-friendly, correct)
+  SELECT ... FROM v_orders_by_period AS t
+  GROUP BY t."period_date"
+  ORDER BY t."period_date"
+  ```
+
+  Mixed grouping (native + JSONB dimensions in the same query) is fully
+  supported. Backward compatible: existing metadata without `native_dimensions`
+  behaves identically to before.
+
+## [1.13.1] - 2026-04-08
+
+### Fixed
+
+- **auth: `get_current_user_optional` silently swallows non-auth exceptions** (#325):
+  Narrowed the bare `except Exception` to `except AuthenticationError` so that
+  non-auth errors (`PermissionError`, `ConnectionError`, `RuntimeError`, etc.)
+  propagate instead of being silently treated as "unauthenticated".
+
+- **audit: `SecurityLogger` crashes on `PermissionError`** (#326):
+  Wrapped `FileHandler` creation in a `try/except` so the logger falls back to
+  stderr-only logging when the log file is not writable. Added
+  `FRAISEQL_SECURITY_LOG_PATH` environment variable support for configuring the
+  log path without code changes.
+
+### Changed
+
+- **Version is now derived from package metadata at runtime** via
+  `importlib.metadata.version()` instead of a hardcoded string in `__init__.py`.
+  Removed orphaned `__version__.py` and standalone version management scripts
+  (`version_manager.py`, `check_version_consistency.py`, `check_versions.py`).
+  The only version check retained is pyproject.toml ↔ fraiseql_rs/Cargo.toml
+  consistency (required by maturin), run as part of `make release-check`.
+
 ## [1.13.0] - 2026-03-31
 
 ### Added

@@ -34,7 +34,7 @@ impl FieldAuthChecker {
             for required_role in &field_permissions.required_roles {
                 if !user_roles.contains(required_role) {
                     return Err(RbacError::MissingRole {
-                        required_role:   required_role.clone(),
+                        required_role: required_role.clone(),
                         available_roles: user_roles.clone(),
                     });
                 }
@@ -59,8 +59,8 @@ impl FieldAuthChecker {
                 if !self.resolver.has_permission(user_id, &resource, &action, tenant_id).await? {
                     return Err(RbacError::PermissionDenied {
                         resource: resource.clone(),
-                        action:   action.clone(),
-                        user_id:  Some(user_id_str.clone()),
+                        action: action.clone(),
+                        user_id: Some(user_id_str.clone()),
                     });
                 }
             }
@@ -89,9 +89,9 @@ impl FieldAuthChecker {
 /// Field permission requirements (from GraphQL directives)
 #[derive(Debug, Default, Clone)]
 pub struct FieldPermissions {
-    pub required_roles:       Vec<String>,
+    pub required_roles: Vec<String>,
     pub required_permissions: Vec<String>,
-    pub custom_checks:        Vec<String>, // For Phase 12 advanced constraints
+    pub custom_checks: Vec<String>, // For Phase 12 advanced constraints
 }
 
 impl FieldPermissions {

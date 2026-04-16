@@ -21,19 +21,19 @@ pub enum RateLimitStrategy {
 /// Rate limit configuration
 #[derive(Debug, Clone)]
 pub struct RateLimit {
-    pub requests:    usize,
+    pub requests: usize,
     pub window_secs: u64,
-    pub burst:       Option<usize>,
-    pub strategy:    RateLimitStrategy,
+    pub burst: Option<usize>,
+    pub strategy: RateLimitStrategy,
 }
 
 impl Default for RateLimit {
     fn default() -> Self {
         Self {
-            requests:    100,
+            requests: 100,
             window_secs: 60,
-            burst:       Some(20),
-            strategy:    RateLimitStrategy::TokenBucket,
+            burst: Some(20),
+            strategy: RateLimitStrategy::TokenBucket,
         }
     }
 }
@@ -41,7 +41,7 @@ impl Default for RateLimit {
 /// Rate limiter with token bucket algorithm
 pub struct RateLimiter {
     limits: HashMap<String, RateLimit>,
-    store:  Arc<Mutex<RateLimitStore>>,
+    store: Arc<Mutex<RateLimitStore>>,
 }
 
 impl Default for RateLimiter {
@@ -54,7 +54,7 @@ impl RateLimiter {
     pub fn new() -> Self {
         Self {
             limits: HashMap::new(),
-            store:  Arc::new(Mutex::new(RateLimitStore::new())),
+            store: Arc::new(Mutex::new(RateLimitStore::new())),
         }
     }
 
@@ -179,9 +179,9 @@ impl RateLimiter {
     pub async fn stats(&self) -> RateLimitStats {
         let store = self.store.lock().await;
         RateLimitStats {
-            rules_count:    self.limits.len(),
-            buckets_count:  store.buckets.len(),
-            windows_count:  store.windows.len(),
+            rules_count: self.limits.len(),
+            buckets_count: store.buckets.len(),
+            windows_count: store.windows.len(),
             requests_count: store.requests.len(),
         }
     }
@@ -189,23 +189,23 @@ impl RateLimiter {
 
 /// In-memory rate limit store (production would use Redis)
 struct RateLimitStore {
-    buckets:  HashMap<String, TokenBucket>,
-    windows:  HashMap<String, FixedWindow>,
+    buckets: HashMap<String, TokenBucket>,
+    windows: HashMap<String, FixedWindow>,
     requests: HashMap<String, Vec<u64>>,
 }
 
 impl RateLimitStore {
     fn new() -> Self {
         Self {
-            buckets:  HashMap::new(),
-            windows:  HashMap::new(),
+            buckets: HashMap::new(),
+            windows: HashMap::new(),
             requests: HashMap::new(),
         }
     }
 
     fn get_bucket(&mut self, key: &str, capacity: usize, _window: u64) -> &mut TokenBucket {
         self.buckets.entry(key.to_string()).or_insert_with(|| TokenBucket {
-            tokens:      capacity,
+            tokens: capacity,
             last_refill: current_timestamp(),
         })
     }
@@ -224,15 +224,15 @@ impl RateLimitStore {
 
 #[derive(Debug)]
 pub struct RateLimitStats {
-    pub rules_count:    usize,
-    pub buckets_count:  usize,
-    pub windows_count:  usize,
+    pub rules_count: usize,
+    pub buckets_count: usize,
+    pub windows_count: usize,
     pub requests_count: usize,
 }
 
 #[derive(Debug)]
 struct TokenBucket {
-    tokens:      usize,
+    tokens: usize,
     last_refill: u64,
 }
 
@@ -249,11 +249,11 @@ fn current_timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
-        .unwrap_or_else(|e| {
+        .unwrap_or_else(|_e| {
             // System clock is before Unix epoch - should never happen in production
             // Log and return 0 to avoid panic
             #[cfg(debug_assertions)]
-            eprintln!("ERROR: System clock before Unix epoch: {}", e);
+            eprintln!("ERROR: System clock before Unix epoch: {}", _e);
             0
         })
 }

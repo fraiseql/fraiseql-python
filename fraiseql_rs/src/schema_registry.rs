@@ -85,9 +85,9 @@ impl SchemaRegistry {
     /// Used internally for initializing the global registry before it's populated.
     pub fn empty() -> Self {
         Self {
-            version:  String::new(),
+            version: String::new(),
             features: Vec::new(),
-            types:    HashMap::new(),
+            types: HashMap::new(),
         }
     }
 
@@ -309,9 +309,9 @@ mod tests {
 
             // Initialize with new schema
             let schema = SchemaRegistry {
-                version:  "1.0".to_string(),
+                version: "1.0".to_string(),
                 features: vec![],
-                types:    HashMap::new(),
+                types: HashMap::new(),
             };
             initialize_registry(schema);
 
