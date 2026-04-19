@@ -5,6 +5,19 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-04-19
+
+### Fixed
+
+- **`native_dimensions` always injected into GROUP BY** — previously, native
+  dimensions were only added to `GROUP BY` when the client explicitly selected
+  them as top-level GraphQL fields. Queries that accessed the same column
+  through a nested path (e.g. `dimensions.dateInfo.date`) received no `GROUP BY`
+  entry for the native column, making `ORDER BY` on it a PostgreSQL error
+  ("column must appear in the GROUP BY clause"). Native dimensions are now
+  pre-seeded into `GROUP BY` unconditionally, so `ORDER BY {"date": "asc"}` is
+  always safe regardless of selection shape.
+
 ## [1.14.0] - 2026-04-16
 
 ### Added
