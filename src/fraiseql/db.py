@@ -286,17 +286,20 @@ def _derive_auto_aggregation(
         if len(fp) == 1 and fp[0] in skip_fields:
             return None
 
-    group_by: list[str] = []
+    # Native dimensions always land in GROUP BY regardless of field selection.
+    # Without this, a query selecting dimensions.dateInfo.date but not the
+    # top-level date field would omit date from GROUP BY, making ORDER BY date
+    # illegal (PostgreSQL rejects columns in ORDER BY that are absent from
+    # GROUP BY and not functionally determined by it).
+    group_by: list[str] = list(native_dims)
     aggregations: dict[str, str] = {}
-    native_found: set[str] = set()
+    native_found: set[str] = set(native_dims)
 
     for fp in field_paths:
         dot_path = ".".join(fp)
 
-        # Check if this is a native dimension (top-level column, not JSONB)
+        # Skip native dimensions — already added above
         if len(fp) == 1 and fp[0] in native_dims:
-            group_by.append(fp[0])
-            native_found.add(fp[0])
             continue
 
         # Check if this is a dimension field

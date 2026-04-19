@@ -36,7 +36,11 @@ class TestDeriveAutoAggregationNativeDimensions:
         }
 
     def test_native_dimensions_returned_in_result(self) -> None:
-        """Result 3-tuple element [2] contains native dimension set."""
+        """Result 3-tuple element [2] contains ALL native dimensions, not just selected ones.
+
+        native_dimensions are always injected into GROUP BY so ORDER BY on a
+        native column is always safe, regardless of what the client selected.
+        """
         field_paths = [
             ["period_date"],
             ["dimensions", "subcategory"],
@@ -46,7 +50,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         assert result is not None
         assert len(result) == 3
         _, _, native_set = result
-        assert native_set == {"period_date"}
+        assert native_set == {"period_date", "category_id"}
 
     def test_native_dimensions_in_group_by(self) -> None:
         """Native dimensions appear in group_by as plain column names."""
@@ -73,8 +77,9 @@ class TestDeriveAutoAggregationNativeDimensions:
         assert result is not None
         group_by, aggregations, native_set = result
         assert "period_date" in group_by
+        assert "category_id" in group_by  # always included, even though not selected
         assert "dimensions.subcategory" in group_by
-        assert native_set == {"period_date"}
+        assert native_set == {"period_date", "category_id"}
         assert aggregations == {"measures.total": "SUM(measures.total)"}
 
     def test_no_native_dimensions_returns_empty_set(self) -> None:
@@ -93,8 +98,13 @@ class TestDeriveAutoAggregationNativeDimensions:
         _, _, native_set = result
         assert native_set == set()
 
-    def test_native_dim_not_selected_not_in_result(self) -> None:
-        """Only selected native dimensions appear in group_by and native set."""
+    def test_native_dims_always_in_group_by_even_when_not_selected(self) -> None:
+        """All native_dimensions land in GROUP BY regardless of field selection.
+
+        Previously only selected native dims were included, which meant ORDER BY
+        on an unselected native column caused a PostgreSQL error (column must
+        appear in GROUP BY). Now all native_dimensions are pre-seeded.
+        """
         field_paths = [
             ["period_date"],
             ["measures", "total"],
@@ -103,8 +113,8 @@ class TestDeriveAutoAggregationNativeDimensions:
         assert result is not None
         group_by, _, native_set = result
         assert "period_date" in group_by
-        assert "category_id" not in group_by
-        assert native_set == {"period_date"}
+        assert "category_id" in group_by   # not selected, but always included
+        assert native_set == {"period_date", "category_id"}
 
     def test_skip_when_still_works_with_native_dims(self) -> None:
         """Identity fields in skip_when still skip aggregation."""
@@ -125,8 +135,8 @@ class TestDeriveAutoAggregationNativeDimensions:
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
         group_by, _, native_set = result
-        assert group_by == ["period_date"]
-        assert native_set == {"period_date"}
+        assert set(group_by) == {"period_date", "category_id"}
+        assert native_set == {"period_date", "category_id"}
 
 
 # ── Phase 2: _build_find_query with native_dimensions ────────────────
