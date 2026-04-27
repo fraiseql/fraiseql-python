@@ -5,6 +5,19 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-04-27
+
+### Fixed
+
+- **`descendant_of_id` / `ancestor_of_id` on native SQL columns** — when a UUID
+  field is registered in `table_columns` (i.e. a real column, not inside the JSONB
+  `data` blob), fraiseql uses the `sql_column` lookup strategy for WHERE clauses.
+  The hierarchy-operator interception was only wired into the `jsonb_path` branch,
+  so native-column fields silently fell through to the standard operator dispatch and
+  raised `KeyError`. Fixed by adding the same interception in the `sql_column` branch,
+  generating `"field_name"::uuid IN (SELECT id FROM ...)` instead of
+  `(data->>'field_name')::uuid IN (SELECT id FROM ...)`.
+
 ## [1.16.0] - 2026-04-27
 
 ### Added

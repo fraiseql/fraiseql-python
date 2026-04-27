@@ -313,3 +313,84 @@ class TestFraiseQLConfigEntitySchema:
             database_url="postgresql://user:pass@localhost/mydb",
         )
         assert config.default_entity_schema is None
+
+
+# ============================================================================
+# Cycle 9: sql_column branch — native UUID column support
+# ============================================================================
+
+
+class TestDescendantOfIdNativeColumn:
+    """descendant_of_id on a table_columns (native UUID) field."""
+
+    def test_descendant_of_id_uses_native_column(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from fraiseql.where_clause import FieldCondition
+
+        condition = FieldCondition(
+            field_path=["location_id"],
+            operator="descendant_of_id",
+            value="floor-uuid",
+            lookup_strategy="sql_column",
+            target_column="location_id",
+        )
+        mock_registry = MagicMock()
+        mock_registry.config.default_entity_schema = "myschema"
+        with patch(
+            "fraiseql.gql.builders.registry.SchemaRegistry.get_instance",
+            return_value=mock_registry,
+        ):
+            sql, _params = condition.to_sql()
+
+        rendered = sql.as_string(None)
+        assert '"location_id"' in rendered
+        assert "data->>" not in rendered
+        assert "tb_location" in rendered
+        assert "<@" in rendered
+        assert "floor-uuid" in rendered
+
+    def test_ancestor_of_id_uses_native_column(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from fraiseql.where_clause import FieldCondition
+
+        condition = FieldCondition(
+            field_path=["location_id"],
+            operator="ancestor_of_id",
+            value="room-uuid",
+            lookup_strategy="sql_column",
+            target_column="location_id",
+        )
+        mock_registry = MagicMock()
+        mock_registry.config.default_entity_schema = "myschema"
+        with patch(
+            "fraiseql.gql.builders.registry.SchemaRegistry.get_instance",
+            return_value=mock_registry,
+        ):
+            sql, _params = condition.to_sql()
+
+        rendered = sql.as_string(None)
+        assert '"location_id"' in rendered
+        assert "data->>" not in rendered
+        assert "@>" in rendered
+
+    def test_missing_entity_schema_raises(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from fraiseql.where_clause import FieldCondition
+
+        condition = FieldCondition(
+            field_path=["location_id"],
+            operator="descendant_of_id",
+            value="some-uuid",
+            lookup_strategy="sql_column",
+            target_column="location_id",
+        )
+        mock_registry = MagicMock()
+        mock_registry.config.default_entity_schema = None
+        with patch(
+            "fraiseql.gql.builders.registry.SchemaRegistry.get_instance",
+            return_value=mock_registry,
+        ), pytest.raises(ValueError, match="default_entity_schema"):
+            condition.to_sql()

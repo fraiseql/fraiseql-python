@@ -453,6 +453,37 @@ class FieldCondition:
 
         elif self.lookup_strategy == "sql_column":
             # Direct SQL column: status = %s
+
+            # ID-based ltree hierarchy operators — native UUID column variant
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires "
+                        "FraiseQLConfig.default_entity_schema to be set (e.g. 'tenant')."
+                    )
+                entity_name = _resolve_entity_name(self.target_column)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+                sql = _build_hierarchy_subquery(
+                    entity_schema,
+                    entity_name,
+                    str(self.value),
+                    ltree_op,
+                    Identifier(self.target_column),
+                )
+                return sql, params
+
             sql_op = ALL_OPERATORS[self.operator]
 
             # Special case: 'contains' can be both string LIKE or array @>
