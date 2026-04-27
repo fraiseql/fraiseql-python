@@ -6,7 +6,7 @@ from GraphQL filter inputs.
 
 from typing import Any
 
-from psycopg.sql import SQL, Composed, Literal
+from psycopg.sql import SQL, Composable, Composed, Identifier, Literal
 
 from fraiseql.sql.operators import get_default_registry as get_operator_registry
 
@@ -48,6 +48,10 @@ def is_operator_dict(d: dict) -> bool:
         # LTree operators
         "ancestor_of",
         "descendant_of",
+        "descendant_of_id",
+        "ancestor_of_id",
+        "descendantOfId",
+        "ancestorOfId",
         "matches_lquery",
         "matches_ltxtquery",
         "nlevel",
@@ -75,6 +79,84 @@ def is_operator_dict(d: dict) -> bool:
         "not_right",
     }
     return any(k in operators for k in d)
+
+
+def _resolve_entity_name(db_field_name: str) -> str:
+    """Derive entity name from UUID column name.
+
+    Convention: {entity}_id → entity name (e.g., "location")
+
+    Args:
+        db_field_name: Database column name (e.g., "location_id")
+
+    Returns:
+        Entity name (e.g., "location")
+
+    Raises:
+        ValueError: If field name doesn't end with '_id' or entity name is empty
+    """
+    if not db_field_name.endswith("_id"):
+        raise ValueError(
+            f"Cannot derive entity table from '{db_field_name}': "
+            f"field must end with '_id' (e.g., 'location_id')"
+        )
+    entity = db_field_name.removesuffix("_id")
+    if not entity:
+        raise ValueError(
+            f"Cannot derive entity table from '{db_field_name}': "
+            f"entity name is empty (field is just 'id')"
+        )
+    return entity
+
+
+def _build_hierarchy_subquery(
+    entity_schema: str,
+    entity_name: str,
+    uuid_value: str,
+    ltree_op: str,
+    jsonb_path: Composed,
+) -> Composable:
+    """Build nested IN subquery for UUID-based ltree hierarchy filtering.
+
+    Generates:
+      ({field})::uuid IN (
+        SELECT id FROM "schema"."tb_entity"
+        WHERE path {op} (SELECT path FROM "schema"."tb_entity" WHERE id = '{uuid}'::uuid)::ltree
+      )
+
+    The JSONB ->> operator returns text, so we cast it to uuid for a proper UUID comparison.
+    This lets PostgreSQL use the UUID index on the id column instead of a text scan.
+
+    Uses Identifier() for schema and table names to prevent SQL injection.
+
+    Args:
+        entity_schema: Schema name (e.g., "tenant")
+        entity_name: Entity name (e.g., "location")
+        uuid_value: UUID string to resolve
+        ltree_op: "<@" for descendant_of_id, "@>" for ancestor_of_id
+        jsonb_path: Composed SQL for the JSONB field access
+
+    Returns:
+        SQL composable for the full IN subquery condition
+    """
+    schema_id = Identifier(entity_schema)
+    table_id = Identifier(f"tb_{entity_name}")
+    uuid_lit = Literal(str(uuid_value))
+    op_sql = SQL(ltree_op)
+    return SQL(
+        "({field})::uuid IN ("
+        "SELECT id FROM {schema}.{table} "
+        "WHERE path {op} ("
+        "SELECT path FROM {schema}.{table} WHERE id = {uuid}::uuid"
+        ")::ltree"
+        ")"
+    ).format(
+        field=jsonb_path,
+        schema=schema_id,
+        table=table_id,
+        op=op_sql,
+        uuid=uuid_lit,
+    )
 
 
 def build_jsonb_path(fields: list[str]) -> Composed:
@@ -114,12 +196,18 @@ def build_jsonb_path(fields: list[str]) -> Composed:
     return Composed(parts)
 
 
-def build_where_clause_recursive(where_dict: dict, path: list[str] | None = None) -> list[Composed]:
+def build_where_clause_recursive(
+    where_dict: dict,
+    path: list[str] | None = None,
+    entity_schema: str | None = None,
+) -> list[Composed]:
     """Recursively build WHERE clause with nested object support.
 
     Args:
         where_dict: WHERE clause dictionary
         path: Current field path in JSONB tree
+        entity_schema: Schema for tb_* entity tables (required for descendant_of_id /
+            ancestor_of_id)
 
     Returns:
         List of SQL conditions
@@ -136,7 +224,9 @@ def build_where_clause_recursive(where_dict: dict, path: list[str] | None = None
         if isinstance(value, dict) and not is_operator_dict(value):
             # Nested object - recurse deeper
             nested_path = [*path, db_field_name]
-            nested_conditions = build_where_clause_recursive(value, nested_path)
+            nested_conditions = build_where_clause_recursive(
+                value, nested_path, entity_schema=entity_schema
+            )
             conditions.extend(nested_conditions)
         else:
             # Leaf node with operators
@@ -148,6 +238,24 @@ def build_where_clause_recursive(where_dict: dict, path: list[str] | None = None
                 for operator, op_value in value.items():
                     if op_value is None:
                         continue  # Skip None values
+
+                    # Intercept ID-based ltree hierarchy operators before registry dispatch
+                    # Accept both snake_case (descendant_of_id) and camelCase (descendantOfId)
+                    operator_snake = _camel_to_snake(operator)
+                    if operator_snake in ("descendant_of_id", "ancestor_of_id"):
+                        if entity_schema is None:
+                            raise ValueError(
+                                f"Operator '{operator}' requires entity_schema. "
+                                f"Set FraiseQLConfig.default_entity_schema or pass "
+                                f"entity_schema= to build_where_clause()."
+                            )
+                        entity_name = _resolve_entity_name(db_field_name)
+                        ltree_op = "<@" if operator_snake == "descendant_of_id" else "@>"
+                        condition = _build_hierarchy_subquery(
+                            entity_schema, entity_name, op_value, ltree_op, jsonb_path
+                        )
+                        conditions.append(condition)
+                        continue
 
                     # Detect field type from field name and value
                     detected_field_type = detect_field_type(
@@ -171,11 +279,16 @@ def build_where_clause_recursive(where_dict: dict, path: list[str] | None = None
     return conditions
 
 
-def build_where_clause(where_dict: dict) -> Composed:
+def build_where_clause(
+    where_dict: dict,
+    entity_schema: str | None = None,
+) -> Composed:
     """Build WHERE clause with nested object support.
 
     Args:
         where_dict: WHERE clause dictionary
+        entity_schema: Schema for tb_* entity tables (required for descendant_of_id /
+            ancestor_of_id)
 
     Returns:
         Composed SQL WHERE clause
@@ -188,11 +301,15 @@ def build_where_clause(where_dict: dict) -> Composed:
         # Nested filter
         where = {"machine": {"name": {"eq": "Machine 1"}}}
         → data->'machine'->>'name' = %(param_0)s
+
+        # Hierarchy filter (requires entity_schema)
+        where = {"locationId": {"descendantOfId": "floor-uuid"}}
+        build_where_clause(where, entity_schema="tenant")
     """
     if not where_dict:
         return Composed([SQL("TRUE")])
 
-    conditions = build_where_clause_recursive(where_dict)
+    conditions = build_where_clause_recursive(where_dict, entity_schema=entity_schema)
 
     if not conditions:
         return Composed([SQL("TRUE")])
@@ -208,11 +325,16 @@ def build_where_clause(where_dict: dict) -> Composed:
     return Composed(parts)
 
 
-def build_where_clause_graphql(graphql_where: dict[str, Any]) -> Composed | None:
+def build_where_clause_graphql(
+    graphql_where: dict[str, Any],
+    entity_schema: str | None = None,
+) -> Composed | None:
     """Build a SQL WHERE clause from GraphQL where input.
 
     Args:
         graphql_where: Dictionary representing GraphQL where input
+        entity_schema: Schema for tb_* entity tables (required for descendant_of_id /
+            ancestor_of_id)
 
     Returns:
         Composed SQL WHERE clause or None if no conditions
@@ -222,7 +344,7 @@ def build_where_clause_graphql(graphql_where: dict[str, Any]) -> Composed | None
 
     # Use recursive builder for nested object support
     # The recursive function will handle camelCase to snake_case conversion for all field names
-    conditions = build_where_clause_recursive(graphql_where)
+    conditions = build_where_clause_recursive(graphql_where, entity_schema=entity_schema)
 
     if not conditions:
         return None

@@ -286,6 +286,8 @@ class FraiseQLConfig(BaseSettings):
     # Default schema settings
     default_mutation_schema: str = "public"  # Default schema for mutations when not specified
     default_query_schema: str = "public"  # Default schema for queries when not specified
+    # Schema for tb_* entity tables (needed by descendant_of_id / ancestor_of_id operators)
+    default_entity_schema: str | None = None
 
     # NEW FIELD - Add after default_query_schema
     default_error_config: MutationErrorConfig | None = Field(

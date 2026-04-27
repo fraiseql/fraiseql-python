@@ -159,6 +159,8 @@ DATERANGE_OPERATORS = {
 LTREE_OPERATORS = {
     "ancestor_of": "@>",
     "descendant_of": "<@",
+    "descendant_of_id": "<@",  # descendant_of with UUID resolution
+    "ancestor_of_id": "@>",  # ancestor_of with UUID resolution
     "matches_lquery": "~",
     "matches_ltxtquery": "@",
     "matches_any_lquery": "?",
@@ -384,6 +386,33 @@ class FieldCondition:
             path_parts.extend([SQL(" ->> "), SQLLiteral(str(self.jsonb_path[-1]))])
 
             jsonb_expr = Composed(path_parts)
+
+            # ID-based ltree hierarchy operators — generate nested IN subquery
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires FraiseQLConfig.default_entity_schema "
+                        f"to be set (e.g., 'tenant')."
+                    )
+                db_field_name = self.jsonb_path[-1]
+                entity_name = _resolve_entity_name(db_field_name)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+                sql = _build_hierarchy_subquery(
+                    entity_schema, entity_name, str(self.value), ltree_op, jsonb_expr
+                )
+                return sql, params
 
             if self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders

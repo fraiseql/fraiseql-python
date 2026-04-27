@@ -209,6 +209,8 @@ class UUIDFilter:
     in_: list[UUID] | None = fraise_field(default=None, graphql_name="in")
     nin: list[UUID] | None = None
     isnull: bool | None = None
+    descendant_of_id: str | None = None  # IN (SELECT id FROM tb_entity WHERE path <@ subquery)
+    ancestor_of_id: str | None = None  # IN (SELECT id FROM tb_entity WHERE path @> subquery)
 
 
 # Import ID type for IDFilter
