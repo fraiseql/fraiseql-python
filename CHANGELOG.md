@@ -5,6 +5,39 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-04-27
+
+### Added
+
+- **`descendant_of_id` and `ancestor_of_id` ltree hierarchy operators** — filter by
+  hierarchy using a UUID instead of an ltree path string. The operator lives on the
+  UUID/ID field (e.g. `locationId`), matching what the frontend already has:
+
+  ```graphql
+  allocations(where: { locationId: { descendantOfId: $locationId } })
+  ```
+
+  FraiseQL resolves the UUID to its ltree path via a nested subquery and generates:
+
+  ```sql
+  (data->>'location_id')::uuid IN (
+    SELECT id FROM "tenant"."tb_location"
+    WHERE path <@ (
+      SELECT path FROM "tenant"."tb_location" WHERE id = 'uuid'::uuid
+    )::ltree
+  )
+  ```
+
+  The JSONB value is cast to `::uuid` (not `id::text`) so PostgreSQL can use the UUID
+  index on the `id` column.
+
+  **Convention**: column `{entity}_id` resolves to `{schema}.tb_{entity}`. Configure
+  the schema via `FraiseQLConfig.default_entity_schema = "tenant"`.
+
+  Both `descendantOfId` (GraphQL camelCase) and `descendant_of_id` (snake_case) are
+  accepted as operator names. `UUIDFilter` exposes both fields for GraphQL schema
+  introspection.
+
 ## [1.15.0] - 2026-04-19
 
 ### Fixed
