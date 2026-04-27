@@ -11,19 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`descendant_of_id` and `ancestor_of_id` ltree hierarchy operators** — filter by
   hierarchy using a UUID instead of an ltree path string. The operator lives on the
-  UUID/ID field (e.g. `locationId`), matching what the frontend already has:
+  UUID/ID field (e.g. `categoryId`), so callers never need to know the underlying
+  ltree path:
 
   ```graphql
-  allocations(where: { locationId: { descendantOfId: $locationId } })
+  items(where: { categoryId: { descendantOfId: $categoryId } })
   ```
 
   FraiseQL resolves the UUID to its ltree path via a nested subquery and generates:
 
   ```sql
-  (data->>'location_id')::uuid IN (
-    SELECT id FROM "tenant"."tb_location"
+  (data->>'category_id')::uuid IN (
+    SELECT id FROM "myschema"."tb_category"
     WHERE path <@ (
-      SELECT path FROM "tenant"."tb_location" WHERE id = 'uuid'::uuid
+      SELECT path FROM "myschema"."tb_category" WHERE id = 'uuid'::uuid
     )::ltree
   )
   ```
@@ -32,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   index on the `id` column.
 
   **Convention**: column `{entity}_id` resolves to `{schema}.tb_{entity}`. Configure
-  the schema via `FraiseQLConfig.default_entity_schema = "tenant"`.
+  the schema via `FraiseQLConfig.default_entity_schema = "myschema"`.
 
   Both `descendantOfId` (GraphQL camelCase) and `descendant_of_id` (snake_case) are
   accepted as operator names. `UUIDFilter` exposes both fields for GraphQL schema
