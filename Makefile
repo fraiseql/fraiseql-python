@@ -383,6 +383,8 @@ release-build: release-check
 	@echo "Building fraiseql v$(VERSION)..."
 	@rm -rf dist/
 	@uv run maturin build --release
+	@mkdir -p dist/
+	@cp fraiseql_rs/target/wheels/*.whl dist/
 	@echo ""
 	@echo "Build artifacts:"
 	@ls -lh dist/
