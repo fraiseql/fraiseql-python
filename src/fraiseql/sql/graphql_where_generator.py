@@ -231,6 +231,8 @@ class IDFilter:
     in_: list[ID] | None = fraise_field(default=None, graphql_name="in")
     nin: list[ID] | None = None
     isnull: bool | None = None
+    descendant_of_id: str | None = fraise_field(default=None, graphql_name="descendantOfId")
+    ancestor_of_id: str | None = fraise_field(default=None, graphql_name="ancestorOfId")
 
 
 @fraise_input

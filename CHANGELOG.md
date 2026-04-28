@@ -5,6 +5,15 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.2] - 2026-04-28
+
+### Fixed
+
+- **`descendantOfId` / `ancestorOfId` not available on `IDFilter`** — fields typed
+  as GraphQL `ID` (rather than `UUID`) use `IDFilter`, which was missing the two
+  hierarchy operators. Added `descendantOfId` and `ancestorOfId` to `IDFilter` so
+  they work regardless of whether the field is declared as `ID` or `UUID`.
+
 ## [1.16.1] - 2026-04-27
 
 ### Fixed
