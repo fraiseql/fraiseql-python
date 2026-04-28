@@ -349,6 +349,38 @@ class FieldCondition:
 
         if self.lookup_strategy == "fk_column":
             # FK column lookup: machine_id = %s
+
+            # ID-based ltree hierarchy operators — generate nested IN subquery for FK references
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires FraiseQLConfig.default_entity_schema "
+                        f"to be set (e.g., 'tenant')."
+                    )
+
+                # Resolve entity name from FK column (e.g., location_id -> location)
+                entity_name = _resolve_entity_name(self.target_column)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+
+                # For FK columns, wrap the column reference in a Composed object
+                fk_column_ref = Identifier(self.target_column)
+                sql = _build_hierarchy_subquery(
+                    entity_schema, entity_name, str(self.value), ltree_op, fk_column_ref
+                )
+                return sql, params
+
             sql_op = ALL_OPERATORS[self.operator]
 
             if self.operator in CONTAINMENT_OPERATORS:
