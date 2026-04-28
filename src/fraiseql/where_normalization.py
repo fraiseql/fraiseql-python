@@ -9,9 +9,39 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fraiseql.where_clause import VECTOR_OPERATORS, FieldCondition, WhereClause
+from fraiseql.where_clause import ALL_OPERATORS, VECTOR_OPERATORS, FieldCondition, WhereClause
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_operator(op: str) -> str:
+    """Convert operator name intelligently.
+
+    Converts camelCase operators to snake_case ONLY if:
+    1. The operator doesn't already have underscores
+    2. The operator is not already registered in ALL_OPERATORS
+    3. The converted snake_case version IS registered in ALL_OPERATORS
+
+    This preserves camelCase operators like 'inSubnet' that are registered as-is,
+    while converting hierarchy operators like 'descendantOfId' to 'descendant_of_id'.
+
+    Args:
+        op: Operator name from GraphQL input (may be camelCase)
+
+    Returns:
+        Normalized operator name ready for FieldCondition validation
+    """
+    from fraiseql.utils.casing import to_snake_case
+
+    # If operator already has underscores or is already registered, use as-is
+    if "_" in op or op in ALL_OPERATORS:
+        return op
+
+    # Try converting to snake_case
+    snake_op = to_snake_case(op)
+
+    # Use snake_case version if it's registered, otherwise fall back to original
+    return snake_op if snake_op in ALL_OPERATORS else op
 
 
 def normalize_dict_where(
@@ -160,7 +190,7 @@ def normalize_dict_where(
 
                         # Convert operator name from camelCase to snake_case
                         # (e.g., descendantOfId → descendant_of_id)
-                        operator = to_snake_case(op) if "_" not in op else op
+                        operator = _normalize_operator(op)
 
                         condition = FieldCondition(
                             field_path=[field_name, "id"],
@@ -183,7 +213,7 @@ def normalize_dict_where(
 
                         # Convert operator name from camelCase to snake_case
                         # (e.g., descendantOfId → descendant_of_id)
-                        operator = to_snake_case(op) if "_" not in op else op
+                        operator = _normalize_operator(op)
 
                         condition = FieldCondition(
                             field_path=[field_name, nested_field],
@@ -253,7 +283,7 @@ def normalize_dict_where(
 
                             # Convert operator name from camelCase to snake_case
                             # (e.g., descendantOfId → descendant_of_id)
-                            operator = to_snake_case(op) if "_" not in op else op
+                            operator = _normalize_operator(op)
 
                             condition = FieldCondition(
                                 field_path=[field_name, nested_field],
@@ -301,7 +331,7 @@ def normalize_dict_where(
 
                 # Convert operator name from camelCase to snake_case
                 # (e.g., descendantOfId → descendant_of_id)
-                operator = to_snake_case(op) if "_" not in op else op
+                operator = _normalize_operator(op)
 
                 if lookup_strategy == "jsonb_path":
                     condition = FieldCondition(
