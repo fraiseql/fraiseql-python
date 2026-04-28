@@ -158,9 +158,13 @@ def normalize_dict_where(
                         if val is None:
                             continue
 
+                        # Convert operator name from camelCase to snake_case
+                        # (e.g., descendantOfId → descendant_of_id)
+                        operator = to_snake_case(op) if "_" not in op else op
+
                         condition = FieldCondition(
                             field_path=[field_name, "id"],
-                            operator=op,
+                            operator=operator,
                             value=val,
                             lookup_strategy="fk_column",
                             target_column=fk_column,
@@ -177,9 +181,13 @@ def normalize_dict_where(
                         if val is None:
                             continue
 
+                        # Convert operator name from camelCase to snake_case
+                        # (e.g., descendantOfId → descendant_of_id)
+                        operator = to_snake_case(op) if "_" not in op else op
+
                         condition = FieldCondition(
                             field_path=[field_name, nested_field],
-                            operator=op,
+                            operator=operator,
                             value=val,
                             lookup_strategy="jsonb_path",
                             target_column=jsonb_column,
@@ -243,9 +251,13 @@ def normalize_dict_where(
                             if val is None:
                                 continue
 
+                            # Convert operator name from camelCase to snake_case
+                            # (e.g., descendantOfId → descendant_of_id)
+                            operator = to_snake_case(op) if "_" not in op else op
+
                             condition = FieldCondition(
                                 field_path=[field_name, nested_field],
-                                operator=op,
+                                operator=operator,
                                 value=val,
                                 lookup_strategy="jsonb_path",
                                 target_column=jsonb_column,
@@ -287,10 +299,14 @@ def normalize_dict_where(
                 if val is None:
                     continue
 
+                # Convert operator name from camelCase to snake_case
+                # (e.g., descendantOfId → descendant_of_id)
+                operator = to_snake_case(op) if "_" not in op else op
+
                 if lookup_strategy == "jsonb_path":
                     condition = FieldCondition(
                         field_path=[field_name],
-                        operator=op,
+                        operator=operator,
                         value=val,
                         lookup_strategy="jsonb_path",
                         target_column=jsonb_column,
@@ -299,7 +315,7 @@ def normalize_dict_where(
                 else:
                     condition = FieldCondition(
                         field_path=[field_name],
-                        operator=op,
+                        operator=operator,
                         value=val,
                         lookup_strategy="sql_column",
                         target_column=target_column,
