@@ -8,8 +8,26 @@ Issue: IDFilter descendantOfId/ancestorOfId should be ID type, not str
 Related commit: fix(where): add descendantOfId/ancestorOfId to IDFilter
 """
 
+import types
+from typing import Union, get_args, get_origin
+
 from fraiseql.sql.graphql_where_generator import IDFilter
 from fraiseql.types import ID
+
+
+def _is_optional_id(annotation: object) -> bool:
+    """Return True if annotation is semantically equivalent to ID | None.
+
+    Accepts both forms produced by Python's type system:
+    - types.UnionType  (X | None syntax, Python 3.10+)
+    - typing.Union[X, None]  (Optional[X], returned by get_type_hints())
+    """
+    args = get_args(annotation)
+    if not args:
+        return False
+    origin = get_origin(annotation)
+    is_union = origin is Union or isinstance(annotation, types.UnionType)
+    return is_union and ID in args and type(None) in args
 
 
 class TestIDFilterTypeAnnotations:
@@ -17,30 +35,24 @@ class TestIDFilterTypeAnnotations:
 
     def test_id_filter_descendant_of_id_is_id_type(self) -> None:
         """DescendantOfId field should be typed as ID | None, not str | None."""
-        # Get IDFilter class definition
         hints = IDFilter.__annotations__
 
-        # Verify descendant_of_id is ID type
         assert "descendant_of_id" in hints, "descendant_of_id field should exist"
 
-        # The annotation should be ID | None
         annotation = hints["descendant_of_id"]
-        # Extract the actual type from Optional/Union
-        assert annotation is (ID | None), (
-            f"descendant_of_id should be ID | None, got {annotation}"
+        assert _is_optional_id(annotation), (
+            f"descendant_of_id should be ID | None (or Optional[ID]), got {annotation}"
         )
 
     def test_id_filter_ancestor_of_id_is_id_type(self) -> None:
         """AncestorOfId field should be typed as ID | None, not str | None."""
         hints = IDFilter.__annotations__
 
-        # Verify ancestor_of_id is ID type
         assert "ancestor_of_id" in hints, "ancestor_of_id field should exist"
 
-        # The annotation should be ID | None
         annotation = hints["ancestor_of_id"]
-        assert annotation is (ID | None), (
-            f"ancestor_of_id should be ID | None, got {annotation}"
+        assert _is_optional_id(annotation), (
+            f"ancestor_of_id should be ID | None (or Optional[ID]), got {annotation}"
         )
 
     def test_id_filter_all_fields_use_id_type(self) -> None:
