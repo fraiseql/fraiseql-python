@@ -45,6 +45,11 @@ def is_operator_dict(d: dict) -> bool:
         "isMulticast",
         "isDocumentation",
         "isCarrierGrade",
+        "isBroadcast",
+        "isReserved",
+        "isSiteLocal",
+        "isUniqueLocal",
+        "isGlobalUnicast",
         # LTree operators
         "ancestor_of",
         "descendant_of",

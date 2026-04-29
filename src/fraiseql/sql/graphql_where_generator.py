@@ -323,6 +323,18 @@ class NetworkAddressFilter:
     isUniqueLocal: bool | None = None  # Unique local IPv6 (fc00::/7)  # noqa: N815
     isGlobalUnicast: bool | None = None  # Global unicast address  # noqa: N815
 
+    # Lowercase aliases for advanced network classification
+    isloopback: bool | None = None
+    ismulticast: bool | None = None
+    isbroadcast: bool | None = None
+    islinklocal: bool | None = None
+    isdocumentation: bool | None = None
+    isreserved: bool | None = None
+    iscarriergrade: bool | None = None
+    issitelocal: bool | None = None
+    isuniquelocal: bool | None = None
+    isglobalunicast: bool | None = None
+
     # Intentionally excludes: contains, startswith, endswith
 
 

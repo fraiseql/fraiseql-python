@@ -137,6 +137,28 @@ NETWORK_OPERATORS = {
     "inrange": "{} <<= {}",
     "isipv4": "family({}) = 4",
     "isipv6": "family({}) = 6",
+    # Advanced network classification (v1.17.0+)
+    "isLoopback": "LOOPBACK_CIDR_CHECK",
+    "isMulticast": "MULTICAST_CIDR_CHECK",
+    "isBroadcast": "BROADCAST_CIDR_CHECK",
+    "isLinkLocal": "LINK_LOCAL_CIDR_CHECK",
+    "isDocumentation": "DOCUMENTATION_CIDR_CHECK",
+    "isReserved": "RESERVED_CIDR_CHECK",
+    "isCarrierGrade": "CARRIER_GRADE_CIDR_CHECK",
+    "isSiteLocal": "SITE_LOCAL_CIDR_CHECK",
+    "isUniqueLocal": "UNIQUE_LOCAL_CIDR_CHECK",
+    "isGlobalUnicast": "NOT_SPECIAL_PURPOSE_CHECK",
+    # Lowercase aliases for advanced operators
+    "isloopback": "LOOPBACK_CIDR_CHECK",
+    "ismulticast": "MULTICAST_CIDR_CHECK",
+    "isbroadcast": "BROADCAST_CIDR_CHECK",
+    "islinklocal": "LINK_LOCAL_CIDR_CHECK",
+    "isdocumentation": "DOCUMENTATION_CIDR_CHECK",
+    "isreserved": "RESERVED_CIDR_CHECK",
+    "iscarriergrade": "CARRIER_GRADE_CIDR_CHECK",
+    "issitelocal": "SITE_LOCAL_CIDR_CHECK",
+    "isuniquelocal": "UNIQUE_LOCAL_CIDR_CHECK",
+    "isglobalunicast": "NOT_SPECIAL_PURPOSE_CHECK",
 }
 
 # MAC Address operators
