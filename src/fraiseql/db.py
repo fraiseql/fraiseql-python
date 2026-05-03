@@ -450,8 +450,11 @@ def _build_coarse_branch(
         return _build_jsonb_field_expr(fp, jsonb_col)
 
     entries: list[tuple[str, SQL | Composed]] = []
+    group_by_exprs: list[SQL | Composed] = []
     for fp in group_by:
-        entries.append((fp, build_field(fp)))
+        expr = build_field(fp)
+        entries.append((fp, expr))
+        group_by_exprs.append(expr)
 
     if aggregations:
         for alias, agg_expr_str in aggregations.items():
@@ -485,6 +488,9 @@ def _build_coarse_branch(
         SQL(" AS t WHERE "),
         SQL(" AND ").join(where_parts),
     ]
+
+    if group_by_exprs:
+        branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
     return Composed(branch_parts), []
 

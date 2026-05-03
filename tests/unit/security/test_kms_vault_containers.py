@@ -24,14 +24,20 @@ def vault_container():
     - Listens on port 8200
     - Transit engine enabled at /transit by default
     """
-    with (
+    ctx = (
         DockerContainer("hashicorp/vault:latest")
         .with_env("VAULT_DEV_ROOT_TOKEN_ID", "root")
         .with_env("VAULT_DEV_LISTEN_ADDRESS", "0.0.0.0:8200")
         .with_command("server -dev -dev-root-token-id=root")
         .with_bind_ports(8200, 8200)
         .with_exposed_ports(8200)
-    ) as container:
+    )
+    try:
+        container = ctx.__enter__()
+    except Exception as exc:
+        pytest.skip(f"Docker container failed to start: {exc}")
+
+    try:
         # Wait for Vault to be ready by checking logs
         max_wait = 30
         start_time = time.time()
@@ -55,6 +61,8 @@ def vault_container():
             "token": "root",
             "container": container,
         }
+    finally:
+        ctx.__exit__(None, None, None)
 
 
 @pytest.fixture

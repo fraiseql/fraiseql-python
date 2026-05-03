@@ -72,7 +72,10 @@ def postgres_container() -> Generator[Any]:
         driver="psycopg",  # psycopg3
     )
 
-    container.start()
+    try:
+        container.start()
+    except Exception as exc:
+        pytest.skip(f"Docker container failed to start: {exc}")
 
     # Wait for database to be ready before proceeding
     url = container.get_connection_url().replace("postgresql+psycopg://", "postgresql://")
