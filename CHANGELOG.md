@@ -5,6 +5,49 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-05-03
+
+### Added
+
+- **`native_measures` and `native_dimension_mapping` in aggregation metadata** — two
+  new optional keys in the `aggregation` dict passed to `register_type_for_view`, enabling
+  fully native SQL aggregation on JSONB views that also expose flat columns:
+
+  - **`native_measures`**: maps JSONB measure paths to flat column names, so
+    `SUM` uses `SUM(t."volume")` instead of `SUM((data->'measures'->>'volume')::numeric)`.
+    Eliminates JSONB extraction and the `::numeric` cast for aggregated metrics.
+
+  - **`native_dimension_mapping`**: maps deep JSONB dimension paths to flat column names,
+    so `GROUP BY` on a path like `dimensions.category.id` resolves to `GROUP BY t."category_id"`
+    via a native btree index instead of JSONB extraction.
+
+  Example:
+
+  ```python
+  register_type_for_view(
+      "v_statistics_day",
+      StatisticsDay,
+      has_jsonb_data=True,
+      aggregation={
+          "native_dimensions": ["date"],
+          "dimensions": "dimensions",
+          "measures": {
+              "measures.volume": "SUM",
+              "measures.cost": "SUM",
+          },
+          "native_measures": {
+              "measures.volume": "volume",
+              "measures.cost": "cost",
+          },
+          "native_dimension_mapping": {
+              "dimensions.category.id": "category_id",
+          },
+      },
+  )
+  ```
+
+  Views without these keys are unaffected — fully backwards-compatible (#340).
+
 ## [1.16.2] - 2026-04-28
 
 ### Fixed
