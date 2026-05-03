@@ -5,6 +5,49 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-05-03
+
+### Added
+
+- **Partial-period awareness for pre-aggregated time-series views** (#341) — when a
+  `date >=` filter falls in the middle of a coarse-grain period (e.g. a monthly aggregate
+  view queried from Jan 15), FraiseQL now automatically generates a three-branch
+  `UNION ALL` query that returns correct data instead of silently dropping the partial
+  leading period:
+
+  - **Branch 1** (partial first period): fine-grain rows from the lower bound to the end
+    of its period — only emitted when the lower bound is not period-aligned.
+  - **Branch 2** (complete periods): coarse-grain rows for all full periods between the
+    partial period and the current one — fast, uses pre-aggregated data.
+  - **Branch 3** (current in-progress period): always fine-grain rows for the current
+    period up to today, so live data is never stale.
+
+  Opt in by adding three new optional keys to the `aggregation` dict in
+  `register_type_for_view`:
+
+  ```python
+  register_type_for_view(
+      "v_events_month",
+      EventDataPoint,
+      has_jsonb_data=True,
+      aggregation={
+          "dimensions": "data",
+          "measures": {"data.volume": "SUM"},
+          "native_dimensions": ["date"],
+          "fine_grain_view":   "v_events_day",   # NEW
+          "time_grain_column": "date",            # NEW
+          "time_grain_trunc":  "month",           # NEW
+      },
+  )
+  ```
+
+  Supported granularities: `"day"`, `"week"`, `"month"`, `"quarter"`, `"year"`.
+  An invalid `time_grain_trunc` raises `ValueError` at registration time (fast fail).
+  Omitting the three new keys leaves existing behaviour completely unchanged.
+
+  The UNION path is only triggered when a `date >=` or `date >` filter is present;
+  queries without a date lower bound continue to use the single-query path.
+
 ## [1.18.0] - 2026-05-03
 
 ### Added

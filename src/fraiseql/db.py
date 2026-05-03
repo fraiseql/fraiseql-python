@@ -4,6 +4,7 @@ import logging
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from datetime import UTC
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin
 
 from psycopg.rows import dict_row
@@ -328,6 +329,325 @@ def _derive_auto_aggregation(
     return group_by, aggregations, native_found, native_dim_mapping
 
 
+def _build_fine_grain_branch(
+    *,
+    fine_grain_view: str,
+    time_grain_column: str,
+    time_grain_trunc: str,
+    date_gte: Any,
+    date_lt: Any,
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where_sql: Any | None,
+) -> tuple[Any, list[Any]]:
+    """Build one fine-grain branch of the UNION ALL query.
+
+    Returns (branch_sql, branch_params).  Date bounds are embedded as Literals.
+    ``extra_where_sql`` is a Composed fragment produced by WhereClause.to_sql()
+    (may be None when no extra conditions).
+    """
+    from psycopg.sql import SQL, Composed, Identifier, Literal
+
+    table_id = Identifier(fine_grain_view)
+    trunc_lit = Literal(time_grain_trunc)
+    col_id = Identifier(time_grain_column)
+
+    def build_field(fp: str) -> SQL | Composed:
+        if fp == time_grain_column:
+            # Use date_trunc for the time grain column
+            return SQL("date_trunc({}, t.{})::date").format(trunc_lit, col_id)
+        if fp in native_dimensions:
+            return _build_non_jsonb_field_expr(fp, "t")
+        if native_dimension_mapping and fp in native_dimension_mapping:
+            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+        if native_measures and fp in native_measures:
+            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        return _build_jsonb_field_expr(fp, jsonb_col)
+
+    # Build entries for json_build_object
+    entries: list[tuple[str, SQL | Composed]] = []
+    group_by_exprs: list[SQL | Composed] = []
+
+    for fp in group_by:
+        expr = build_field(fp)
+        entries.append((fp, expr))
+        group_by_exprs.append(expr)
+
+    if aggregations:
+        for alias, agg_expr_str in aggregations.items():
+            func, field = _parse_aggregation_expr(agg_expr_str)
+            field_expr = build_field(field) if field != "*" else SQL("*")
+            is_native = (
+                field in native_dimensions
+                or (native_measures and field in native_measures)
+                or (native_dimension_mapping and field in native_dimension_mapping)
+            )
+            if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
+                agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
+            else:
+                agg_sql = SQL("{}({})").format(SQL(func), field_expr)
+            entries.append((alias, agg_sql))
+
+    nested_obj = _build_nested_json_object(entries)
+
+    # WHERE clause parts
+    where_parts: list[SQL | Composed] = [
+        SQL("{} >= {}").format(SQL("t.") + col_id, Literal(date_gte)),
+        SQL("{} < {}").format(SQL("t.") + col_id, Literal(date_lt)),
+    ]
+    if extra_where_sql is not None:
+        where_parts.append(extra_where_sql)
+
+    branch_parts: list[SQL | Composed] = [
+        SQL("SELECT "),
+        nested_obj,
+        SQL("::text FROM "),
+        table_id,
+        SQL(" AS t WHERE "),
+        SQL(" AND ").join(where_parts),
+    ]
+
+    if group_by_exprs:
+        branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
+
+    return Composed(branch_parts), []
+
+
+def _build_coarse_branch(
+    *,
+    coarse_view: str,
+    time_grain_column: str,
+    date_gte: Any,
+    date_lt: Any,
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where_sql: Any | None,
+) -> tuple[Any, list[Any]]:
+    """Build the coarse-grain branch of the UNION ALL query.
+
+    Returns (branch_sql, branch_params).
+    """
+    from psycopg.sql import SQL, Composed, Identifier, Literal
+
+    table_id = Identifier(coarse_view)
+    col_id = Identifier(time_grain_column)
+
+    def build_field(fp: str) -> SQL | Composed:
+        if fp in native_dimensions:
+            return _build_non_jsonb_field_expr(fp, "t")
+        if native_dimension_mapping and fp in native_dimension_mapping:
+            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+        if native_measures and fp in native_measures:
+            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        return _build_jsonb_field_expr(fp, jsonb_col)
+
+    entries: list[tuple[str, SQL | Composed]] = []
+    for fp in group_by:
+        entries.append((fp, build_field(fp)))
+
+    if aggregations:
+        for alias, agg_expr_str in aggregations.items():
+            func, field = _parse_aggregation_expr(agg_expr_str)
+            field_expr = build_field(field) if field != "*" else SQL("*")
+            is_native = (
+                field in native_dimensions
+                or (native_measures and field in native_measures)
+                or (native_dimension_mapping and field in native_dimension_mapping)
+            )
+            if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
+                agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
+            else:
+                agg_sql = SQL("{}({})").format(SQL(func), field_expr)
+            entries.append((alias, agg_sql))
+
+    nested_obj = _build_nested_json_object(entries)
+
+    where_parts: list[SQL | Composed] = [
+        SQL("{} >= {}").format(SQL("t.") + col_id, Literal(date_gte)),
+        SQL("{} < {}").format(SQL("t.") + col_id, Literal(date_lt)),
+    ]
+    if extra_where_sql is not None:
+        where_parts.append(extra_where_sql)
+
+    branch_parts: list[SQL | Composed] = [
+        SQL("SELECT "),
+        nested_obj,
+        SQL("::text FROM "),
+        table_id,
+        SQL(" AS t WHERE "),
+        SQL(" AND ").join(where_parts),
+    ]
+
+    return Composed(branch_parts), []
+
+
+def _build_partial_period_union_query(
+    *,
+    coarse_view: str,
+    fine_grain_view: str,
+    time_grain_column: str,
+    time_grain_trunc: str,
+    lower_bound: Any,  # date
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where: Any | None,  # WhereClause | None
+    today: Any | None = None,  # date | None
+) -> "DatabaseQuery":
+    """Build a three-branch UNION ALL query for partial-period awareness.
+
+    When a date filter on a coarse-grain (pre-aggregated) view falls in the
+    middle of a period, this builder generates up to three branches:
+
+      - Branch 1 (partial first period): fine-grain rows from lower_bound to
+        the end of its period (omitted when lower_bound is period-aligned).
+      - Branch 2 (complete periods): coarse-grain rows for full periods between
+        the partial period and the current period.
+      - Branch 3 (current in-progress period): always fine-grain rows for the
+        current period up to today.
+
+    All date values are embedded as SQL Literals, so the returned statement
+    can be rendered via ``as_string(None)`` in tests without a connection.
+
+    Args:
+        coarse_view:             Name of the pre-aggregated view.
+        fine_grain_view:         Name of the fine-grain view.
+        time_grain_column:       SQL column holding the period date (e.g. "date").
+        time_grain_trunc:        One of "day", "week", "month", "quarter", "year".
+        lower_bound:             Effective lower-bound date extracted from the query.
+        group_by:                Dimension field paths for GROUP BY.
+        aggregations:            Map of measure alias → aggregation expression.
+        native_dimensions:       Set of group_by fields that are native SQL columns.
+        native_measures:         Map of measure path → SQL column name (or None).
+        native_dimension_mapping: Map of JSONB path → SQL column name (or None).
+        jsonb_col:               JSONB column name for JSONB extraction.
+        extra_where:             Additional WhereClause conditions (no date filter).
+                                 Pass None when there are no extra conditions.
+        today:                   Override today's date (for deterministic testing).
+                                 Defaults to ``date.today()``.
+
+    Returns:
+        DatabaseQuery with a UNION ALL Composed statement and params list.
+    """
+    from datetime import datetime, timedelta
+
+    from psycopg.sql import SQL, Composed
+
+    from fraiseql.partial_period import (
+        _is_period_aligned,
+        _next_period_start,
+        _period_start,
+    )
+
+    if today is None:
+        today = datetime.now(tz=UTC).date()
+
+    aligned = _is_period_aligned(lower_bound, time_grain_trunc)
+    next_ps = _next_period_start(lower_bound, time_grain_trunc)
+    current_ps = _period_start(today, time_grain_trunc)
+
+    # Branch 2 starts at lower_bound when aligned, else at next_ps
+    b2_start = lower_bound if aligned else next_ps
+    # Branch 2 is only useful when there are complete periods before the current period
+    include_b2 = b2_start < current_ps
+
+    # Branch 3 upper bound: exclusive tomorrow makes "date < tomorrow" equivalent to "date <= today"
+    today_exclusive = today + timedelta(days=1)
+
+    # Build extra_where SQL once (used in all branches)
+    extra_where_sql = None
+    extra_where_params: list[Any] = []
+    if extra_where is not None:
+        ew_sql, ew_params = extra_where.to_sql()
+        if ew_sql is not None:
+            extra_where_sql = ew_sql
+            extra_where_params = list(ew_params)
+
+    common = {
+        "time_grain_column": time_grain_column,
+        "group_by": group_by,
+        "aggregations": aggregations,
+        "native_dimensions": native_dimensions,
+        "native_measures": native_measures,
+        "native_dimension_mapping": native_dimension_mapping,
+        "jsonb_col": jsonb_col,
+        "extra_where_sql": extra_where_sql,
+    }
+
+    branches: list[Any] = []
+    all_params: list[Any] = []
+
+    # Branch 1: partial first period (only when not aligned)
+    if not aligned:
+        b1_sql, b1_params = _build_fine_grain_branch(
+            fine_grain_view=fine_grain_view,
+            time_grain_trunc=time_grain_trunc,
+            date_gte=lower_bound,
+            date_lt=next_ps,
+            **common,
+        )
+        branches.append(b1_sql)
+        all_params.extend(b1_params)
+        all_params.extend(extra_where_params)
+
+    # Branch 2: complete coarse-grain periods
+    if include_b2:
+        b2_sql, b2_params = _build_coarse_branch(
+            coarse_view=coarse_view,
+            date_gte=b2_start,
+            date_lt=current_ps,
+            **common,
+        )
+        branches.append(b2_sql)
+        all_params.extend(b2_params)
+        all_params.extend(extra_where_params)
+
+    # Branch 3: current in-progress period (always fine-grain)
+    # Use today_exclusive (= today + 1 day) so "date < today_exclusive" ≡ "date <= today"
+    b3_sql, b3_params = _build_fine_grain_branch(
+        fine_grain_view=fine_grain_view,
+        time_grain_trunc=time_grain_trunc,
+        date_gte=current_ps,
+        date_lt=today_exclusive,
+        time_grain_column=time_grain_column,
+        group_by=group_by,
+        aggregations=aggregations,
+        native_dimensions=native_dimensions,
+        native_measures=native_measures,
+        native_dimension_mapping=native_dimension_mapping,
+        jsonb_col=jsonb_col,
+        extra_where_sql=extra_where_sql,
+    )
+    branches.append(b3_sql)
+    all_params.extend(b3_params)
+    all_params.extend(extra_where_params)
+
+    # Join branches with UNION ALL and add ORDER BY 1
+    if len(branches) == 1:
+        statement = Composed([branches[0], SQL(" ORDER BY 1")])
+    else:
+        union_parts: list[Any] = []
+        for i, branch in enumerate(branches):
+            if i > 0:
+                union_parts.append(SQL(" UNION ALL "))
+            union_parts.append(branch)
+        union_parts.append(SQL(" ORDER BY 1"))
+        statement = Composed(union_parts)
+
+    return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
+
+
 def register_type_for_view(
     view_name: str,
     type_class: type,
@@ -374,6 +694,12 @@ def register_type_for_view(
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
+
+    # Validate time_grain_trunc early (fast-fail before any query is built)
+    if aggregation and "time_grain_trunc" in aggregation:
+        from fraiseql.partial_period import _validate_grain_trunc
+
+        _validate_grain_trunc(aggregation["time_grain_trunc"])
 
     # Initialize FK relationships
     fk_relationships = fk_relationships or {}
@@ -965,13 +1291,79 @@ class FraiseQLRepository:
             field_paths = None
             field_selections_json = None
 
-        query = self._build_find_query(
-            view_name,
-            field_paths=field_paths,
-            info=info,
-            jsonb_column=jsonb_column,
-            **kwargs,
-        )
+        # 2c. Partial-period UNION ALL dispatch (#341)
+        # When a coarse view has fine_grain_view metadata AND the query has a date
+        # lower bound, route through _build_partial_period_union_query instead of
+        # the standard _build_find_query.
+        use_union_all = False
+        if kwargs.get("group_by") and view_name in _table_metadata:
+            agg_meta = _table_metadata[view_name].get("aggregation") or {}
+            fine_grain_view = agg_meta.get("fine_grain_view")
+            time_grain_column = agg_meta.get("time_grain_column")
+            time_grain_trunc = agg_meta.get("time_grain_trunc")
+            if fine_grain_view and time_grain_column and time_grain_trunc:
+                where_obj = kwargs.get("where")
+                if where_obj is not None:
+                    table_columns = (
+                        _table_metadata[view_name].get("columns")
+                        if view_name in _table_metadata
+                        else None
+                    )
+                    try:
+                        where_clause_for_pp = self._normalize_where(
+                            where_obj, view_name, table_columns
+                        )
+                        from fraiseql.partial_period import _extract_lower_date_bound
+
+                        lower_bound = _extract_lower_date_bound(
+                            where_clause_for_pp, time_grain_column
+                        )
+                        if lower_bound is not None:
+                            use_union_all = True
+                    except Exception:
+                        pass
+
+        if use_union_all:
+            # Strip the date condition from the where clause for extra_where
+            # (date bounds are encoded per-branch in the UNION builder)
+
+            remaining_conditions = [
+                c for c in where_clause_for_pp.conditions if c.target_column != time_grain_column
+            ]
+            extra_where = (
+                WhereClause(conditions=remaining_conditions) if remaining_conditions else None
+            )
+
+            # Collect kwargs that affect the query structure
+            union_group_by = kwargs.get("group_by") or []
+            union_aggregations = kwargs.get("aggregations") or {}
+            union_native_dims = kwargs.get("native_dimensions") or set()
+            union_native_measures = kwargs.get("native_measures")
+            union_native_dim_mapping = kwargs.get("native_dimension_mapping")
+            union_jsonb_col = jsonb_column or "data"
+
+            query = _build_partial_period_union_query(
+                coarse_view=view_name,
+                fine_grain_view=fine_grain_view,
+                time_grain_column=time_grain_column,
+                time_grain_trunc=time_grain_trunc,
+                lower_bound=lower_bound,
+                group_by=union_group_by,
+                aggregations=union_aggregations,
+                native_dimensions=union_native_dims,
+                native_measures=union_native_measures,
+                native_dimension_mapping=union_native_dim_mapping,
+                jsonb_col=union_jsonb_col,
+                extra_where=extra_where,
+            )
+        else:
+            query = self._build_find_query(
+                view_name,
+                field_paths=field_paths,
+                info=info,
+                jsonb_column=jsonb_column,
+                **kwargs,
+            )
 
         # 4. Get type name for Rust transformation
         type_name = self._get_cached_type_name(view_name)
