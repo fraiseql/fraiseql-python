@@ -260,10 +260,11 @@ def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Comp
 def _derive_auto_aggregation(
     field_paths: list[list[str]],
     aggregation_meta: dict[str, Any],
-) -> tuple[list[str], dict[str, str], set[str]] | None:
+) -> tuple[list[str], dict[str, str], set[str], dict[str, str]] | None:
     """Derive group_by and aggregations from field selection + metadata.
 
-    Returns (group_by, aggregations, native_dimensions) if auto-aggregation
+    Returns (group_by, aggregations, native_dimensions, native_dimension_mapping)
+    if auto-aggregation
     should be applied, or None if the query should not be aggregated (e.g.
     'id' is selected).
 
@@ -272,13 +273,15 @@ def _derive_auto_aggregation(
         aggregation_meta: The "aggregation" dict from register_type_for_view.
 
     Returns:
-        A 3-tuple of (group_by, aggregations, native_dimensions) where
+        A 4-tuple of (group_by, aggregations, native_dimensions, native_dimension_mapping) where
         native_dimensions is the set of group_by entries that correspond to
-        native SQL columns (not JSONB-extracted), or None to skip aggregation.
+        native SQL columns (not JSONB-extracted), and native_dimension_mapping is
+        a dict mapping JSONB dimension paths to native column names, or None to skip aggregation.
     """
     measures_meta: dict[str, str] = aggregation_meta.get("measures", {})
     dimensions_prefix: str = aggregation_meta.get("dimensions", "dimensions")
     native_dims: set[str] = set(aggregation_meta.get("native_dimensions", []))
+    native_dim_mapping: dict[str, str] = aggregation_meta.get("native_dimension_mapping", {})
 
     # Check if any top-level identity field is selected — if so, skip aggregation
     skip_fields = aggregation_meta.get("skip_when", {"id", "tenant_id"})
@@ -322,7 +325,7 @@ def _derive_auto_aggregation(
     if not group_by:
         return None
 
-    return group_by, aggregations, native_found
+    return group_by, aggregations, native_found, native_dim_mapping
 
 
 def register_type_for_view(
@@ -354,12 +357,20 @@ def register_type_for_view(
         aggregation: Optional aggregation metadata for auto-aggregation.
             Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
                       "dimensions": "dimensions",
-                      "native_dimensions": ["period_date", "category_id"]}
+                      "native_dimensions": ["period_date", "category_id"],
+                      "native_measures": {"measures.volume": "volume"},
+                      "native_dimension_mapping": {"dimensions.category.id": "category_id"}}
             When present, db.find() will auto-aggregate when the field selection
             contains only dimensions and measures (no identity fields like 'id').
             The ``native_dimensions`` key lists SQL columns that should be grouped
             via ``t."col"`` instead of JSONB extraction, enabling btree index
             usage and correct ORDER BY behavior (#337).
+            The ``native_measures`` key maps JSONB measure paths to flat SQL column
+            names, allowing SUM operations on native numeric columns instead of
+            JSONB-extracted values, avoiding ::numeric casts and improving performance.
+            The ``native_dimension_mapping`` key maps deep JSONB dimension paths
+            to flat SQL column names, enabling GROUP BY on native columns for
+            complex nested dimension paths.
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -933,9 +944,19 @@ class FraiseQLRepository:
             if agg_meta:
                 result = _derive_auto_aggregation(field_paths, agg_meta)
                 if result is not None:
-                    kwargs["group_by"], kwargs["aggregations"], native_dims = result
+                    (
+                        kwargs["group_by"],
+                        kwargs["aggregations"],
+                        native_dims,
+                        native_dim_mapping,
+                    ) = result
                     if native_dims:
                         kwargs["native_dimensions"] = native_dims
+                    if native_dim_mapping:
+                        kwargs["native_dimension_mapping"] = native_dim_mapping
+                    native_meas = agg_meta.get("native_measures")
+                    if native_meas:
+                        kwargs["native_measures"] = native_meas
 
         # 3. Build SQL query
         # When group_by is used, the output structure differs from the view,
@@ -1949,6 +1970,10 @@ class FraiseQLRepository:
         group_by: list[str] | None = kwargs.pop("group_by", None)
         aggregations: dict[str, str] | None = kwargs.pop("aggregations", None)
         native_dimensions: set[str] = kwargs.pop("native_dimensions", None) or set()
+        native_measures: dict[str, str] | None = kwargs.pop("native_measures", None)
+        native_dimension_mapping: dict[str, str] | None = kwargs.pop(
+            "native_dimension_mapping", None
+        )
 
         if aggregations and not group_by:
             msg = "aggregations requires group_by"
@@ -1969,13 +1994,19 @@ class FraiseQLRepository:
         if group_by:
             # Choose the field expression builder based on table type
             is_jsonb = jsonb_column is not None
-            has_native = bool(native_dimensions)
+            has_native = (
+                bool(native_dimensions) or bool(native_measures) or bool(native_dimension_mapping)
+            )
             jsonb_col = jsonb_column or "data"
 
             def build_field(fp: str) -> SQL | Composed:
                 """Build field expression, dispatching native vs JSONB."""
                 if fp in native_dimensions:
                     return _build_non_jsonb_field_expr(fp, "t")
+                if native_dimension_mapping and fp in native_dimension_mapping:
+                    return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+                if native_measures and fp in native_measures:
+                    return _build_non_jsonb_field_expr(native_measures[fp], "t")
                 if is_jsonb:
                     return _build_jsonb_field_expr(fp, jsonb_col)
                 return _build_non_jsonb_field_expr(fp, "t")
@@ -1995,7 +2026,12 @@ class FraiseQLRepository:
                         agg_expr = SQL("{}(*)").format(SQL(func))
                     else:
                         field_expr = build_field(field)
-                        if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS:
+                        is_native_field = (
+                            field in native_dimensions
+                            or (native_measures and field in native_measures)
+                            or (native_dimension_mapping and field in native_dimension_mapping)
+                        )
+                        if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS and not is_native_field:
                             agg_expr = SQL("{}(({})::{})").format(
                                 SQL(func), field_expr, SQL("numeric")
                             )

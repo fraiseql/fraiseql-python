@@ -48,20 +48,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        assert len(result) == 3
-        _, _, native_set = result
-        assert native_set == {"period_date", "category_id"}
-
-    def test_native_dimensions_in_group_by(self) -> None:
-        """Native dimensions appear in group_by as plain column names."""
-        field_paths = [
-            ["period_date"],
-            ["category_id"],
-            ["measures", "total"],
-        ]
-        result = _derive_auto_aggregation(field_paths, self.meta)
-        assert result is not None
-        group_by, _, native_set = result
+        group_by, _, native_set, _ = result
         assert "period_date" in group_by
         assert "category_id" in group_by
         assert native_set == {"period_date", "category_id"}
@@ -75,7 +62,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, aggregations, native_set = result
+        group_by, aggregations, native_set, _ = result
         assert "period_date" in group_by
         assert "category_id" in group_by  # always included, even though not selected
         assert "dimensions.subcategory" in group_by
@@ -94,8 +81,8 @@ class TestDeriveAutoAggregationNativeDimensions:
         ]
         result = _derive_auto_aggregation(field_paths, meta)
         assert result is not None
-        assert len(result) == 3
-        _, _, native_set = result
+        assert len(result) == 4
+        _, _, native_set, _ = result
         assert native_set == set()
 
     def test_native_dims_always_in_group_by_even_when_not_selected(self) -> None:
@@ -111,7 +98,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, _, native_set = result
+        group_by, _, native_set, _ = result
         assert "period_date" in group_by
         assert "category_id" in group_by   # not selected, but always included
         assert native_set == {"period_date", "category_id"}
@@ -134,7 +121,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, _, native_set = result
+        group_by, _, native_set, _ = result
         assert set(group_by) == {"period_date", "category_id"}
         assert native_set == {"period_date", "category_id"}
 

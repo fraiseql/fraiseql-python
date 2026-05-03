@@ -45,7 +45,7 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, aggregations, native_set = result
+        group_by, aggregations, native_set, _ = result
         assert "dimensions.date_info.date" in group_by
         assert "dimensions.cost_category" in group_by
         assert aggregations["measures.cost"] == "SUM(measures.cost)"
@@ -109,7 +109,7 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        _, aggregations, _ = result
+        _, aggregations, _, _ = result
         assert "measures.cost" in aggregations
         assert "measures.volume" in aggregations
 
@@ -120,7 +120,7 @@ class TestDeriveAutoAggregation:
         ]
         result = _derive_auto_aggregation(field_paths, self.meta)
         assert result is not None
-        group_by, aggregations, native_set = result
+        group_by, aggregations, native_set, _ = result
         assert group_by == ["dimensions.date"]
         assert aggregations == {}
         assert native_set == set()
