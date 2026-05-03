@@ -5,6 +5,26 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.1] - 2026-05-03
+
+### Fixed
+
+- **`_build_coarse_branch` missing `GROUP BY` clause** (#342) — when the
+  UNION ALL partial-period path was triggered, the coarse-grain branch omitted
+  `GROUP BY` for native dimension columns, causing PostgreSQL to raise:
+
+  > column "t.date" must appear in the GROUP BY clause or be used in an aggregate function
+
+  The fix tracks `group_by_exprs` separately in `_build_coarse_branch` and
+  appends `GROUP BY` exactly as `_build_fine_grain_branch` does. Regression
+  tests added in `tests/regression/issue_342/`.
+
+- **Testcontainer Docker skip** — `postgres_container` and Vault container
+  fixtures now catch Docker networking failures (veth bridge creation error)
+  and call `pytest.skip()` instead of raising an unhandled exception, so the
+  test suite reports skips rather than errors when Docker networking is
+  unavailable.
+
 ## [1.19.0] - 2026-05-03
 
 ### Added
