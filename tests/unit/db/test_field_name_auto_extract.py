@@ -132,7 +132,7 @@ async def test_find_one_auto_extracts_info_from_context() -> None:
         mock_execute.return_value = RustResponseBytes(mock_response)
 
         # Call find_one WITHOUT passing info
-        result = await repo.find_one("tv_location", id="123")
+        result = await repo.find_one("tv_location", mandatory_filters={"id": "123"})
 
         # Verify field_name is "location" from context, not "tv_location" from view_name
         call_args = mock_execute.call_args

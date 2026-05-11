@@ -86,7 +86,7 @@ class TestFraiseQLRepositoryCount:
         cursor.fetchone.return_value = (15,)
 
         db = FraiseQLRepository(pool, context={"tenant_id": "tenant-123"})
-        result = await db.count("v_orders", tenant_id="tenant-123")
+        result = await db.count("v_orders", mandatory_filters={"tenant_id": "tenant-123"})
 
         assert result == 15
 
@@ -152,7 +152,9 @@ class TestFraiseQLRepositoryCount:
 
         # Should accept same kwargs as find()
         result = await db.count(
-            "v_users", where={"status": {"eq": "active"}}, tenant_id="tenant-123"
+            "v_users",
+            where={"status": {"eq": "active"}},
+            mandatory_filters={"tenant_id": "tenant-123"},
         )
 
         assert result == 10

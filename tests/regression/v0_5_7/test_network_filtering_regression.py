@@ -72,7 +72,7 @@ async def dns_server(info, *, id: UUID) -> DnsServer | None:
     """Get single DNS server by ID."""
     db = info.context["db"]
     tenant_id = info.context["tenant_id"]
-    return await db.find_one("v_dns_server", id=id, tenant_id=tenant_id)
+    return await db.find_one("v_dns_server", mandatory_filters={"id": id, "tenant_id": tenant_id})
 
 
 class TestJSONBNetworkFilteringBug:

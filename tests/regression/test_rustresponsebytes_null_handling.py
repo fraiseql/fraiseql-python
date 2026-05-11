@@ -76,7 +76,7 @@ class TestRustResponseBytesNullHandling:
             # This will return RustResponseBytes containing {"data":{"testUserNullable":[]}}
             result = await db.find_one(
                 "test_users",
-                id="00000000-0000-0000-0000-000000000000",  # Non-existent ID
+                mandatory_filters={"id": "00000000-0000-0000-0000-000000000000"},
             )
             return result
 
@@ -200,7 +200,7 @@ async def test_rustresponsebytes_non_null_still_works(postgres_url) -> None:
         # Call find_one() directly (bypassing GraphQL)
         result = await db.find_one(
             "test_users",
-            id="550e8400-e29b-41d4-a716-446655440000",
+            mandatory_filters={"id": "550e8400-e29b-41d4-a716-446655440000"},
         )
 
         # Should return RustResponseBytes (not None)

@@ -131,17 +131,17 @@ class TestBuildFindQueryUsesUnifiedWhere:
             assert "offset" not in received_kwargs
 
     def test_build_find_query_no_duplicate_kwargs_processing(self) -> None:
-        """Verify kwargs are not processed twice (once in find_query, once in where_clause)."""
+        """Verify mandatory_filters are converted to _mandatory_parts and processed once."""
         mock_conn = MagicMock()
         repo = FraiseQLRepository(mock_conn)
 
-        # Track how many times _build_where_clause processes tenant_id
+        # Track how many times _build_where_clause processes _mandatory_parts
         call_count = 0
         original_bwc = repo._build_where_clause
 
         def count_calls(view_name, **kwargs):
             nonlocal call_count
-            if "tenant_id" in kwargs:
+            if "_mandatory_parts" in kwargs:
                 call_count += 1
             return original_bwc(view_name, **kwargs)
 
@@ -149,11 +149,11 @@ class TestBuildFindQueryUsesUnifiedWhere:
             tenant_id = uuid.uuid4()
             repo._build_find_query(
                 "tv_allocation",
-                tenant_id=tenant_id,
+                mandatory_filters={"tenant_id": tenant_id},
                 jsonb_column="data",
             )
 
-            # _build_where_clause should be called once with tenant_id
+            # _build_where_clause should be called once with _mandatory_parts
             assert call_count == 1
 
 

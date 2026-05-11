@@ -5,6 +5,33 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-05-11
+
+### Security
+
+- **Fix tenant isolation in aggregated queries** (#344) — filters passed as bare
+  keyword arguments to `db.find()` (e.g. `tenant_id=...`) were silently dropped
+  when auto-aggregation triggered the UNION ALL code path, causing cross-tenant
+  data exposure. Introduced `mandatory_filters` — an explicit, identifier-validated
+  dict parameter applied in **all** query modes (normal, aggregated, union-all,
+  find_one, count, exists, and all utility methods). Credit: @evoludigit.
+
+### Breaking Changes
+
+- `db.find()`, `db.find_one()`, `db.count()`, `db.exists()`, and all utility
+  methods no longer accept arbitrary keyword arguments as equality filters.
+  Passing unrecognised kwargs now raises `TypeError`. Migrate from:
+
+  ```python
+  db.find("v_foo", tenant_id=tid, ...)
+  ```
+
+  To:
+
+  ```python
+  db.find("v_foo", mandatory_filters={"tenant_id": tid}, ...)
+  ```
+
 ## [1.19.1] - 2026-05-03
 
 ### Fixed

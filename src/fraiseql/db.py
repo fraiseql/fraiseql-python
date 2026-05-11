@@ -49,6 +49,37 @@ _NULL_RESPONSE_CACHE: set[bytes] = {
 }
 
 
+# Valid SQL column name pattern for mandatory_filters validation
+_SAFE_COLUMN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$", re.IGNORECASE)
+
+
+def _make_mandatory_conditions(
+    filters: dict[str, Any],
+) -> tuple[list[Composed], list[Any]]:
+    """Convert {column: value} dict into raw SQL equality conditions.
+
+    Each column name is validated as a safe SQL identifier. Values are always
+    parameterised — never interpolated into the SQL string.
+
+    Returns:
+        (where_parts, params) in the same format as _build_where_clause output.
+
+    Raises:
+        ValueError: If a column name contains unsafe characters.
+    """
+    from psycopg.sql import Identifier
+
+    parts: list[Composed] = []
+    params: list[Any] = []
+    for col, val in filters.items():
+        if not _SAFE_COLUMN.fullmatch(col):
+            msg = f"mandatory_filters key is not a valid column name: {col!r}"
+            raise ValueError(msg)
+        parts.append(Composed([Identifier(col), SQL(" = "), SQL("%s")]))
+        params.append(val)
+    return parts, params
+
+
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
     """Check if RustResponseBytes contains empty array (null result).
 
@@ -1207,6 +1238,12 @@ class FraiseQLRepository:
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
 
+        # Extract mandatory_filters before any dispatch path (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_parts, mandatory_params = (
+            _make_mandatory_conditions(mandatory_filters) if mandatory_filters else ([], [])
+        )
+
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
@@ -1340,6 +1377,29 @@ class FraiseQLRepository:
                 WhereClause(conditions=remaining_conditions) if remaining_conditions else None
             )
 
+            # Inject mandatory_filters into extra_where as FieldConditions (#344)
+            if mandatory_filters:
+                from fraiseql.where_clause import FieldCondition
+
+                mandatory_fc = [
+                    FieldCondition(
+                        field_path=[col],
+                        operator="eq",
+                        value=val,
+                        lookup_strategy="sql_column",
+                        target_column=col,
+                    )
+                    for col, val in mandatory_filters.items()
+                ]
+                if extra_where:
+                    extra_where = WhereClause(
+                        conditions=[*mandatory_fc, *extra_where.conditions],
+                        nested_clauses=extra_where.nested_clauses,
+                        not_clause=extra_where.not_clause,
+                    )
+                else:
+                    extra_where = WhereClause(conditions=mandatory_fc)
+
             # Collect kwargs that affect the query structure
             union_group_by = kwargs.get("group_by") or []
             union_aggregations = kwargs.get("aggregations") or {}
@@ -1363,6 +1423,9 @@ class FraiseQLRepository:
                 extra_where=extra_where,
             )
         else:
+            # Inject mandatory conditions for _build_where_clause consumption (#344)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
             query = self._build_find_query(
                 view_name,
                 field_paths=field_paths,
@@ -1414,7 +1477,7 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info
-            **kwargs: Query parameters (id, where, etc.)
+            **kwargs: Query parameters (id, where, mandatory_filters, etc.)
 
         Returns:
             RustResponseBytes for non-null results, None for null results (no record found)
@@ -1426,6 +1489,13 @@ class FraiseQLRepository:
         # Auto-extract info from context if not explicitly provided
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
+
+        # Extract mandatory_filters before it reaches kwargs (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
@@ -1547,9 +1617,16 @@ class FraiseQLRepository:
         Example:
             count = await db.count("v_users", where={"status": {"eq": "active"}})
             total = await db.count("v_products")
-            tenant_count = await db.count("v_orders", tenant_id="tenant-123")
+            tenant_count = await db.count("v_orders", mandatory_filters={"tenant_id": "tenant-123"})
         """
         from psycopg.sql import SQL, Composed, Identifier
+
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # Build WHERE clause (extracted to helper method for reuse)
         where_parts, params = self._build_where_clause(view_name, **kwargs)
@@ -1604,7 +1681,9 @@ class FraiseQLRepository:
             exists = await db.exists("v_users", where={"email": {"eq": "test@example.com"}})
 
             # Check if tenant has orders
-            has_orders = await db.exists("v_orders", tenant_id=tenant_id)
+            has_orders = await db.exists(
+                "v_orders", mandatory_filters={"tenant_id": tenant_id}
+            )
 
             # Check with multiple filters
             exists = await db.exists(
@@ -1613,6 +1692,13 @@ class FraiseQLRepository:
             )
         """
         from psycopg.sql import SQL, Composed, Identifier
+
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # Build WHERE clause using existing helper
         where_parts, params = self._build_where_clause(view_name, **kwargs)
@@ -1671,14 +1757,21 @@ class FraiseQLRepository:
             )
 
             # Total for tenant
-            total = await db.sum("v_orders", "amount", tenant_id=tenant_id)
+            total = await db.sum(
+                "v_orders", "amount", mandatory_filters={"tenant_id": tenant_id}
+            )
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
-        # Handle schema-qualified table names
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
@@ -1734,10 +1827,14 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
 
-        # Handle schema-qualified table names
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
@@ -1789,8 +1886,13 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1839,8 +1941,13 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1886,13 +1993,20 @@ class FraiseQLRepository:
             # Returns: ["books", "clothing", "electronics"]
 
             # Get statuses for tenant
-            statuses = await db.distinct("v_orders", "status", tenant_id=tenant_id)
+            statuses = await db.distinct(
+                "v_orders", "status", mandatory_filters={"tenant_id": tenant_id}
+            )
             # Returns: ["cancelled", "completed", "pending"]
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1954,32 +2068,36 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
 
-        # Handle schema-qualified table names
+        limit = kwargs.pop("limit", None)
+        offset = kwargs.pop("offset", None)
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
         else:
             table_identifier = Identifier(view_name)
 
-        # Build query with optional LIMIT and OFFSET
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
 
         if where_parts:
             query_parts.append(SQL(" WHERE "))
             query_parts.append(SQL(" AND ").join(where_parts))
 
-        # Add LIMIT if provided
-        if "limit" in kwargs:
+        if limit is not None:
             query_parts.append(SQL(" LIMIT "))
-            query_parts.append(SQL(str(kwargs["limit"])))
+            query_parts.append(SQL(str(limit)))
 
-        # Add OFFSET if provided
-        if "offset" in kwargs:
+        if offset is not None:
             query_parts.append(SQL(" OFFSET "))
-            query_parts.append(SQL(str(kwargs["offset"])))
+            query_parts.append(SQL(str(offset)))
 
         query = Composed(query_parts)
 
@@ -2029,7 +2147,12 @@ class FraiseQLRepository:
         if not aggregations:
             return {}
 
-        # Build WHERE clause using existing helper
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
@@ -2098,7 +2221,12 @@ class FraiseQLRepository:
         if not ids:
             return {}
 
-        # Build WHERE clause using existing helper
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
@@ -2247,10 +2375,12 @@ class FraiseQLRepository:
         Returns:
             Tuple of (where_parts, params)
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        # Extract mandatory conditions (injected by find/find_one/count/exists)
+        mandatory_parts = kwargs.pop("_mandatory_parts", [])
+        mandatory_params = kwargs.pop("_mandatory_params", [])
 
-        where_parts = []
-        all_params = []
+        where_parts = list(mandatory_parts)
+        all_params = list(mandatory_params)
 
         # Extract where parameter
         where_obj = kwargs.pop("where", None)
@@ -2301,11 +2431,13 @@ class FraiseQLRepository:
                 logger.exception(f"WHERE normalization failed for {view_name}")
                 raise
 
-        # Process remaining kwargs as simple equality filters
-        for key, value in kwargs.items():
-            where_condition = Composed([Identifier(key), SQL(" = "), SQL("%s")])
-            where_parts.append(where_condition)
-            all_params.append(value)
+        # Guard against unrecognised kwargs (#344)
+        if kwargs:
+            msg = (
+                f"_build_where_clause received unexpected keyword arguments: "
+                f"{set(kwargs)}. Use mandatory_filters={{col: val}} for equality filters."
+            )
+            raise TypeError(msg)
 
         return where_parts, all_params
 
@@ -2360,6 +2492,13 @@ class FraiseQLRepository:
             **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations)
         """
         from psycopg.sql import SQL, Composed, Identifier, Literal
+
+        # Convert mandatory_filters to internal parts if passed directly (#344)
+        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
 
         # Extract special parameters BEFORE passing to _build_where_clause
         limit = kwargs.pop("limit", None)
