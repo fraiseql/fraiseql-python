@@ -5,6 +5,35 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.1] - 2026-05-12
+
+### Security
+
+- **Bump urllib3** to >=2.7.0 — fix headers forwarded across origins and
+  decompression-bomb bypass (Dependabot alerts #77, #78)
+- **Bump langchain-core** to >=1.3.3 — fix unsafe deserialization via overly
+  broad `load()` allowlists (alert #76)
+- **Add banks >=2.4.2 constraint** — fix critical RCE via Jinja2 SSTI in
+  llama-index transitive dependency (alert #75)
+- **Bump cryptography** to >=47.0.0
+- **Update .trivyignore** with documented risk assessments for all 30 open
+  Trivy container CVEs (GnuTLS, libssh2, krb5, curl — none used by FraiseQL)
+
+### Changed
+
+- **Bump GitHub Actions** — docker/login-action v4, docker/metadata-action v6,
+  docker/build-push-action v7, actions/upload-artifact v7
+- **Bump dev dependencies** — llama-index >=0.14.21, ruff >=0.15.12,
+  opentelemetry-sdk >=1.41.1, aioboto3 >=15.5.0, mkdocs-material >=9.7.6
+- **Improve Dependabot config** — group patch+minor updates, group Actions
+  updates, reduce PR limits, ignore boto3 major bumps (aiobotocore coupling)
+
+### Housekeeping
+
+- Closed 9 stale automated CVE monitoring issues
+- Closed 16 superseded Dependabot PRs
+- Merged pre-commit hook updates (pre-commit-hooks v6.0.0, markdownlint v0.48.0)
+
 ## [1.20.0] - 2026-05-11
 
 ### Security
