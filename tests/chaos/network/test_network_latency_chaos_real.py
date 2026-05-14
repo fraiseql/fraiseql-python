@@ -1,17 +1,15 @@
-"""
-Phase 1.2: Network Latency Chaos Tests (Real PostgreSQL Backend)
+"""Phase 1.2: Network Latency Chaos Tests (Real PostgreSQL Backend)
 
 Tests for network latency scenarios and FraiseQL's adaptation to increased latency.
 Uses real PostgreSQL connections to validate actual performance degradation and timeout behavior.
 """
 
-import pytest
-import time
-import statistics
 import asyncio
+import statistics
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -19,8 +17,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_gradual_latency_increase(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test gradual network latency increase with real database.
+    """Test gradual network latency increase with real database.
 
     Scenario: Network latency increases progressively from 0ms to 2000ms.
     Expected: FraiseQL adapts gracefully to increasing latency,
@@ -52,7 +49,7 @@ async def test_gradual_latency_increase(chaos_db_client, chaos_test_schema, base
                 execution_time = result.get("_execution_time_ms", 10.0)
                 query_times.append(execution_time)
                 metrics.record_query_time(execution_time)
-            except Exception as e:
+            except Exception:
                 metrics.record_error()
 
         if query_times:
@@ -85,8 +82,7 @@ async def test_gradual_latency_increase(chaos_db_client, chaos_test_schema, base
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_consistent_high_latency(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test consistent high network latency with real database.
+    """Test consistent high network latency with real database.
 
     Scenario: Stable 500ms network latency for extended period.
     Expected: FraiseQL maintains functionality under consistent latency
@@ -137,8 +133,7 @@ async def test_consistent_high_latency(chaos_db_client, chaos_test_schema, basel
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_jittery_latency(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test jittery (variable) network latency with real database.
+    """Test jittery (variable) network latency with real database.
 
     Scenario: Base 200ms latency with variable jitter.
     Expected: FraiseQL handles variable network conditions with acceptable variance.
@@ -197,8 +192,7 @@ async def test_jittery_latency(chaos_db_client, chaos_test_schema, baseline_metr
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_asymmetric_latency(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test asymmetric network latency (different request/response delays).
+    """Test asymmetric network latency (different request/response delays).
 
     Scenario: Simulate fast requests, slow responses.
     Expected: FraiseQL handles asymmetric network conditions.
@@ -251,8 +245,7 @@ async def test_asymmetric_latency(chaos_db_client, chaos_test_schema, baseline_m
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_latency_timeout_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test timeout handling under extreme latency.
+    """Test timeout handling under extreme latency.
 
     Scenario: 2-second network latency exceeds query timeouts.
     Expected: FraiseQL handles timeouts gracefully with proper error responses.
@@ -281,7 +274,7 @@ async def test_latency_timeout_handling(chaos_db_client, chaos_test_schema, base
             result = await asyncio.wait_for(chaos_db_client.execute_query(operation), timeout=1.5)
             success_count += 1
             metrics.record_query_time(result.get("_execution_time_ms", 2000))
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timeout_count += 1
             metrics.record_error()
         except Exception:
@@ -304,8 +297,7 @@ async def test_latency_timeout_handling(chaos_db_client, chaos_test_schema, base
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_latency_recovery_time(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test recovery time after latency chaos injection is removed.
+    """Test recovery time after latency chaos injection is removed.
 
     Scenario: High latency followed by immediate removal.
     Expected: Performance returns to baseline within acceptable time.

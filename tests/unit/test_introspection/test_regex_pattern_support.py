@@ -1,6 +1,5 @@
 """Tests for regex pattern support in PostgresIntrospector (Issue #149)."""
 
-import re
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

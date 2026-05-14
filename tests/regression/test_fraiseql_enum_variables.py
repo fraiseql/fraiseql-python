@@ -4,7 +4,6 @@ This test uses FraiseQL's actual decorator-based API to reproduce the bug
 where nested fields are empty when enum arguments are passed as variables.
 """
 
-import asyncio
 from enum import Enum
 
 import pytest
@@ -39,10 +38,9 @@ async def user_by_status(info, status: Status) -> User:
     # Simulate database lookup
     if status == Status.ACTIVE:
         return User(id="1", name="Alice", email="alice@example.com", status=Status.ACTIVE)
-    elif status == Status.INACTIVE:
+    if status == Status.INACTIVE:
         return User(id="2", name="Bob", email="bob@example.com", status=Status.INACTIVE)
-    else:
-        return User(id="3", name="Charlie", email="charlie@example.com", status=Status.PENDING)
+    return User(id="3", name="Charlie", email="charlie@example.com", status=Status.PENDING)
 
 
 class TestFraiseQLEnumVariables:

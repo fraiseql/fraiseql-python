@@ -360,6 +360,37 @@ def _derive_auto_aggregation(
     return group_by, aggregations, native_found, native_dim_mapping
 
 
+def _build_trunc_expr(trunc: str, col_id: Any) -> Any:
+    """Return a SQL expression that truncates a date column to the given granularity.
+
+    For standard PostgreSQL intervals, uses date_trunc().
+    For non-standard intervals (semester, half_month), generates equivalent expressions.
+    """
+    from psycopg.sql import SQL, Literal
+
+    if trunc in ("day", "week", "month", "quarter", "year"):
+        return SQL("date_trunc({}, t.{})::date").format(Literal(trunc), col_id)
+
+    if trunc == "semester":
+        return SQL(
+            "MAKE_DATE("
+            "EXTRACT(YEAR FROM t.{col})::int, "
+            "CASE WHEN EXTRACT(MONTH FROM t.{col}) <= 6 THEN 1 ELSE 7 END, "
+            "1)"
+        ).format(col=col_id)
+
+    if trunc == "half_month":
+        return SQL(
+            "CASE WHEN EXTRACT(DAY FROM t.{col}) <= 15 "
+            "THEN date_trunc('month', t.{col})::date "
+            "ELSE date_trunc('month', t.{col})::date + 15 "
+            "END"
+        ).format(col=col_id)
+
+    msg = f"Unsupported time_grain_trunc: {trunc!r}"
+    raise ValueError(msg)
+
+
 def _build_fine_grain_branch(
     *,
     fine_grain_view: str,
@@ -384,13 +415,11 @@ def _build_fine_grain_branch(
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
     table_id = Identifier(fine_grain_view)
-    trunc_lit = Literal(time_grain_trunc)
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
         if fp == time_grain_column:
-            # Use date_trunc for the time grain column
-            return SQL("date_trunc({}, t.{})::date").format(trunc_lit, col_id)
+            return _build_trunc_expr(time_grain_trunc, col_id)
         if fp in native_dimensions:
             return _build_non_jsonb_field_expr(fp, "t")
         if native_dimension_mapping and fp in native_dimension_mapping:
@@ -561,7 +590,8 @@ def _build_partial_period_union_query(
         coarse_view:             Name of the pre-aggregated view.
         fine_grain_view:         Name of the fine-grain view.
         time_grain_column:       SQL column holding the period date (e.g. "date").
-        time_grain_trunc:        One of "day", "week", "month", "quarter", "year".
+        time_grain_trunc:        One of "day", "week", "half_month", "month",
+                                 "quarter", "semester", "year".
         lower_bound:             Effective lower-bound date extracted from the query.
         group_by:                Dimension field paths for GROUP BY.
         aggregations:            Map of measure alias → aggregation expression.

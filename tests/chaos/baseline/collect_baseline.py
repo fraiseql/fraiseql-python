@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Chaos Engineering Baseline Metrics Collector
+"""Chaos Engineering Baseline Metrics Collector
 
 This script collects baseline performance metrics for FraiseQL operations
 to establish statistical baselines for chaos engineering tests.
@@ -8,11 +7,11 @@ to establish statistical baselines for chaos engineering tests.
 Run this script to generate baseline_metrics.json with confidence intervals.
 """
 
-import time
-import statistics
 import json
-from typing import Dict, List, Any
+import statistics
+import time
 from pathlib import Path
+from typing import Any, Dict, List
 
 
 class BaselineCollector:
@@ -117,8 +116,7 @@ class BaselineCollector:
 
         if f + 1 < len(data_sorted):
             return data_sorted[f] + c * (data_sorted[f + 1] - data_sorted[f])
-        else:
-            return data_sorted[f]
+        return data_sorted[f]
 
     def _measure_simple_query(self) -> float:
         """Measure a simple GraphQL query."""
@@ -204,9 +202,8 @@ def main():
         if collector.validate_baselines(baselines):
             print("\n🎉 Baselines ready for chaos engineering!")
             return 0
-        else:
-            print("\n⚠️  Baselines collected but quality issues detected")
-            return 1
+        print("\n⚠️  Baselines collected but quality issues detected")
+        return 1
 
     except Exception as e:
         print(f"\n❌ Baseline collection failed: {e}")

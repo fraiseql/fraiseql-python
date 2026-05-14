@@ -1,9 +1,9 @@
 """Integration tests for complete GraphQL mutations via Rust backend."""
 
-import pytest
 import json
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from src.fraiseql.core.graphql_pipeline import RustGraphQLPipeline
 
 
@@ -306,8 +306,7 @@ class TestBulkOperations:
             call_count += 1
             if call_count == 1:
                 return '{"id": 1}'
-            else:
-                raise Exception("Duplicate email constraint")
+            raise Exception("Duplicate email constraint")
 
         with patch.object(pipeline._rust, "execute_mutation_async", side_effect=mock_execute):
             results = await pipeline.execute_bulk_operation(operations)

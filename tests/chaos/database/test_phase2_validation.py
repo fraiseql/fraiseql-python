@@ -1,12 +1,12 @@
-"""
-Phase 2 Chaos Engineering Success Criteria
+"""Phase 2 Chaos Engineering Success Criteria
 
 This module implements validation logic for Phase 2 database chaos test success criteria.
 Tests validate that FraiseQL maintains data consistency and handles database failures gracefully.
 """
 
 import statistics
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
+
 from chaos.base import ChaosTestCase
 
 
@@ -29,8 +29,7 @@ class Phase2SuccessCriteria:
     def validate_query_execution_chaos_test(
         cls, test_case: ChaosTestCase, query_type: str
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate query execution chaos test results.
+        """Validate query execution chaos test results.
 
         Success Criteria:
         - System handles slow queries and timeouts appropriately
@@ -89,8 +88,7 @@ class Phase2SuccessCriteria:
     def validate_data_consistency_chaos_test(
         cls, test_case: ChaosTestCase, consistency_type: str
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate data consistency chaos test results.
+        """Validate data consistency chaos test results.
 
         Success Criteria:
         - Transaction rollbacks are handled gracefully
@@ -162,8 +160,7 @@ class Phase2SuccessCriteria:
     def validate_phase2_overall_success(
         cls, test_results: List[Tuple[bool, str, Dict[str, Any]]]
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate overall Phase 2 success based on all database chaos test results.
+        """Validate overall Phase 2 success based on all database chaos test results.
 
         Success Criteria:
         - 70% of database chaos tests must pass
@@ -295,8 +292,7 @@ class Phase2SuccessCriteria:
 def validate_database_chaos_test_success(
     test_case: ChaosTestCase, test_type: str, **kwargs
 ) -> Tuple[bool, str, Dict[str, Any]]:
-    """
-    Validate a database chaos test based on its type and success criteria.
+    """Validate a database chaos test based on its type and success criteria.
 
     Args:
         test_case: The ChaosTestCase that was executed
@@ -310,15 +306,14 @@ def validate_database_chaos_test_success(
     if test_type.startswith("query_execution"):
         query_subtype = test_type.split("_")[-1]  # Extract subtype (timeout, deadlock, etc.)
         return Phase2SuccessCriteria.validate_query_execution_chaos_test(test_case, query_subtype)
-    elif test_type.startswith("data_consistency"):
+    if test_type.startswith("data_consistency"):
         consistency_subtype = test_type.split("_")[
             -1
         ]  # Extract subtype (transaction, constraint, etc.)
         return Phase2SuccessCriteria.validate_data_consistency_chaos_test(
             test_case, consistency_subtype
         )
-    else:
-        return False, "FAIL", {"issues": [f"Unknown database test type: {test_type}"]}
+    return False, "FAIL", {"issues": [f"Unknown database test type: {test_type}"]}
 
 
 def generate_phase2_report(test_results: List[Tuple[bool, str, Dict[str, Any]]]) -> Dict[str, Any]:

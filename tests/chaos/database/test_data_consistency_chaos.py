@@ -1,17 +1,13 @@
-"""
-Phase 2.2: Data Consistency Chaos Tests
+"""Phase 2.2: Data Consistency Chaos Tests
 
 Tests for data consistency issues and transactional integrity under chaos.
 Validates FraiseQL's handling of transaction rollbacks, partial updates, and constraint violations.
 """
 
+
 import pytest
-import time
-import statistics
 from chaos.base import ChaosTestCase
-from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestDataConsistencyChaos(ChaosTestCase):
@@ -20,8 +16,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_transaction_rollback_recovery(self):
-        """
-        Test recovery from transaction rollbacks.
+        """Test recovery from transaction rollbacks.
 
         Scenario: Transactions are rolled back due to conflicts or errors.
         Expected: FraiseQL handles rollbacks gracefully and maintains consistency.
@@ -83,8 +78,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_partial_update_failure_recovery(self):
-        """
-        Test recovery from partial update failures.
+        """Test recovery from partial update failures.
 
         Scenario: Multi-field updates fail partway through execution.
         Expected: FraiseQL handles partial failures and maintains data consistency.
@@ -140,8 +134,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_constraint_violation_handling(self):
-        """
-        Test handling of database constraint violations.
+        """Test handling of database constraint violations.
 
         Scenario: Operations violate database constraints (unique, foreign key, check constraints).
         Expected: FraiseQL handles constraint violations with appropriate error responses.
@@ -166,8 +159,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
                 if i % 3 == 1:  # Every 3rd operation violates constraints
                     if i % 2 == 1:
                         raise Exception("Constraint violation: unique key constraint")
-                    else:
-                        raise Exception("Constraint violation: foreign key constraint")
+                    raise Exception("Constraint violation: foreign key constraint")
 
                 result = client.execute_query(operation)
                 execution_time = result.get("_execution_time_ms", 25.0)
@@ -196,14 +188,13 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_transaction_isolation_anomaly_simulation(self):
-        """
-        Test handling of transaction isolation anomalies.
+        """Test handling of transaction isolation anomalies.
 
         Scenario: Concurrent transactions create isolation anomalies (dirty reads, non-repeatable reads, phantom reads).
         Expected: FraiseQL maintains transactional consistency under concurrent load.
         """
-        import threading
         import queue
+        import threading
 
         client = MockFraiseQLClient()
         read_operation = FraiseQLTestScenarios.simple_user_query()
@@ -294,8 +285,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_data_corruption_detection(self):
-        """
-        Test detection of data corruption scenarios.
+        """Test detection of data corruption scenarios.
 
         Scenario: Database returns corrupted or inconsistent data.
         Expected: FraiseQL detects corruption and handles appropriately.
@@ -351,8 +341,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_cascading_failure_prevention(self):
-        """
-        Test prevention of cascading failures in data operations.
+        """Test prevention of cascading failures in data operations.
 
         Scenario: One failed operation shouldn't cause cascading failures in dependent operations.
         Expected: FraiseQL contains failures and maintains system stability.

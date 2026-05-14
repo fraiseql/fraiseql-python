@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""
-Toxiproxy Setup for Chaos Engineering
+"""Toxiproxy Setup for Chaos Engineering
 
 This script sets up Toxiproxy proxies for FraiseQL database connections
 to enable network chaos testing scenarios.
 """
 
-import requests
-import json
-import time
 import sys
-from typing import Dict, Any, Optional
+import time
+from typing import Any, Dict, Optional
+
+import requests
 
 
 class FraiseQLToxiproxySetup:
@@ -23,8 +22,7 @@ class FraiseQLToxiproxySetup:
     def setup_postgres_proxy(
         self, postgres_host: str = "postgres", postgres_port: int = 5432
     ) -> bool:
-        """
-        Set up Toxiproxy proxy for PostgreSQL connections.
+        """Set up Toxiproxy proxy for PostgreSQL connections.
 
         Args:
             postgres_host: PostgreSQL server hostname

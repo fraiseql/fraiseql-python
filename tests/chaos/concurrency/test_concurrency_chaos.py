@@ -1,20 +1,18 @@
-"""
-Phase 4.2: Concurrency Chaos Tests
+"""Phase 4.2: Concurrency Chaos Tests
 
 Tests for concurrent execution scenarios and thread safety.
 Validates FraiseQL's concurrent operation handling and deadlock prevention.
 """
 
-import pytest
-import time
 import random
 import statistics
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import pytest
 from chaos.base import ChaosTestCase
-from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestConcurrencyChaos(ChaosTestCase):
@@ -23,8 +21,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_thread_pool_exhaustion(self):
-        """
-        Test thread pool exhaustion and concurrent request handling.
+        """Test thread pool exhaustion and concurrent request handling.
 
         Scenario: Concurrent requests exhaust available thread pools.
         Expected: FraiseQL handles thread exhaustion gracefully with queuing.
@@ -95,8 +92,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_lock_contention_simulation(self):
-        """
-        Test lock contention and synchronization overhead.
+        """Test lock contention and synchronization overhead.
 
         Scenario: Multiple threads contend for shared resources with locking.
         Expected: FraiseQL handles lock contention gracefully.
@@ -221,8 +217,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_race_condition_prevention(self):
-        """
-        Test race condition prevention in concurrent operations.
+        """Test race condition prevention in concurrent operations.
 
         Scenario: Multiple threads perform operations that could cause race conditions.
         Expected: FraiseQL prevents race conditions and maintains data consistency.
@@ -341,8 +336,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_deadlock_prevention_comprehensive(self):
-        """
-        Test comprehensive deadlock prevention across different operation types.
+        """Test comprehensive deadlock prevention across different operation types.
 
         Scenario: Complex concurrent operations that could create deadlocks.
         Expected: FraiseQL prevents deadlocks through proper resource ordering.
@@ -467,8 +461,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_concurrent_connection_pooling(self):
-        """
-        Test concurrent access to connection pools.
+        """Test concurrent access to connection pools.
 
         Scenario: Multiple threads compete for database connections.
         Expected: FraiseQL manages connection pooling correctly under concurrency.
@@ -508,17 +501,16 @@ class TestConcurrencyChaos(ChaosTestCase):
                         "wait_time": wait_time,
                         "success": True,
                     }
-                else:
-                    # Connection pool exhausted
-                    pool_exhaustion_events += 1
-                    wait_time = time.time() - wait_start
+                # Connection pool exhausted
+                pool_exhaustion_events += 1
+                wait_time = time.time() - wait_start
 
-                    return {
-                        "thread_id": thread_id,
-                        "error": "Connection pool exhausted",
-                        "wait_time": wait_time,
-                        "success": False,
-                    }
+                return {
+                    "thread_id": thread_id,
+                    "error": "Connection pool exhausted",
+                    "wait_time": wait_time,
+                    "success": False,
+                }
 
             finally:
                 if connection_acquired:
@@ -584,8 +576,7 @@ class TestConcurrencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_concurrency
     def test_atomic_operation_isolation(self):
-        """
-        Test atomic operation isolation under concurrent execution.
+        """Test atomic operation isolation under concurrent execution.
 
         Scenario: Multiple atomic operations execute concurrently.
         Expected: FraiseQL maintains operation isolation and consistency.

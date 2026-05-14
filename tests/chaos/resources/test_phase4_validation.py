@@ -1,12 +1,12 @@
-"""
-Phase 4 Chaos Engineering Success Criteria
+"""Phase 4 Chaos Engineering Success Criteria
 
 This module implements validation logic for Phase 4 resource and concurrency chaos test success criteria.
 Tests validate that FraiseQL maintains stability and performance under resource constraints and concurrent load.
 """
 
 import statistics
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
+
 from chaos.base import ChaosTestCase
 
 
@@ -29,8 +29,7 @@ class Phase4SuccessCriteria:
     def validate_resource_chaos_test(
         cls, test_case: ChaosTestCase, resource_type: str
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate resource chaos test results.
+        """Validate resource chaos test results.
 
         Success Criteria:
         - System handles resource pressure gracefully
@@ -103,8 +102,7 @@ class Phase4SuccessCriteria:
     def validate_concurrency_chaos_test(
         cls, test_case: ChaosTestCase, concurrency_type: str
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate concurrency chaos test results.
+        """Validate concurrency chaos test results.
 
         Success Criteria:
         - Concurrent operations execute successfully
@@ -187,8 +185,7 @@ class Phase4SuccessCriteria:
     def validate_phase4_overall_success(
         cls, test_results: List[Tuple[bool, str, Dict[str, Any]]]
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate overall Phase 4 success based on all resource and concurrency chaos test results.
+        """Validate overall Phase 4 success based on all resource and concurrency chaos test results.
 
         Success Criteria:
         - 70% of resource and concurrency tests must pass
@@ -366,8 +363,7 @@ class Phase4SuccessCriteria:
 def validate_resource_concurrency_chaos_test_success(
     test_case: ChaosTestCase, test_type: str, **kwargs
 ) -> Tuple[bool, str, Dict[str, Any]]:
-    """
-    Validate a resource or concurrency chaos test based on its type and success criteria.
+    """Validate a resource or concurrency chaos test based on its type and success criteria.
 
     Args:
         test_case: The ChaosTestCase that was executed
@@ -381,11 +377,10 @@ def validate_resource_concurrency_chaos_test_success(
     if test_type.startswith("resource"):
         resource_subtype = test_type.split("_", 1)[1] if "_" in test_type else "general"
         return Phase4SuccessCriteria.validate_resource_chaos_test(test_case, resource_subtype)
-    elif test_type.startswith("concurrency"):
+    if test_type.startswith("concurrency"):
         concurrency_subtype = test_type.split("_", 1)[1] if "_" in test_type else "general"
         return Phase4SuccessCriteria.validate_concurrency_chaos_test(test_case, concurrency_subtype)
-    else:
-        return False, "FAIL", {"issues": [f"Unknown resource/concurrency test type: {test_type}"]}
+    return False, "FAIL", {"issues": [f"Unknown resource/concurrency test type: {test_type}"]}
 
 
 def generate_phase4_report(test_results: List[Tuple[bool, str, Dict[str, Any]]]) -> Dict[str, Any]:

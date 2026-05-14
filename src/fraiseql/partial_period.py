@@ -18,14 +18,17 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fraiseql.where_clause import WhereClause
 
-_VALID_GRAIN_TRUNCS = frozenset({"day", "week", "month", "quarter", "year"})
+_VALID_GRAIN_TRUNCS = frozenset(
+    {"day", "week", "half_month", "month", "quarter", "semester", "year"}
+)
 
 
 def _validate_grain_trunc(value: str) -> str:
     """Validate and return the time_grain_trunc value.
 
     Args:
-        value: One of "day", "week", "month", "quarter", "year".
+        value: One of "day", "week", "half_month", "month", "quarter",
+               "semester", "year".
 
     Returns:
         The validated value (unchanged).
@@ -44,15 +47,18 @@ def _is_period_aligned(dt: date, trunc: str) -> bool:
     """Return True when *dt* is exactly at the start of a period boundary.
 
     Period boundaries:
-      - day:     always aligned (every date is a day start)
-      - week:    Monday only (dt.weekday() == 0)
-      - month:   first day of month (dt.day == 1)
-      - quarter: first day of a quarter month (dt.day == 1 and dt.month in {1,4,7,10})
-      - year:    January 1st (dt.day == 1 and dt.month == 1)
+      - day:        always aligned (every date is a day start)
+      - week:       Monday only (dt.weekday() == 0)
+      - half_month: 1st and 16th of month (dt.day in {1, 16})
+      - month:      first day of month (dt.day == 1)
+      - quarter:    first day of a quarter month (dt.day == 1 and dt.month in {1,4,7,10})
+      - semester:   January 1st and July 1st (dt.day == 1 and dt.month in {1,7})
+      - year:       January 1st (dt.day == 1 and dt.month == 1)
 
     Args:
         dt:    The date to test.
-        trunc: One of "day", "week", "month", "quarter", "year".
+        trunc: One of "day", "week", "half_month", "month", "quarter",
+               "semester", "year".
 
     Returns:
         True when dt is at a period boundary.
@@ -60,15 +66,20 @@ def _is_period_aligned(dt: date, trunc: str) -> bool:
     Raises:
         ValueError: If trunc is not a recognised granularity.
     """
+    # Ordering: finest to coarsest (day → week → half_month → month → quarter → semester → year)
     _validate_grain_trunc(trunc)
     if trunc == "day":
         return True
     if trunc == "week":
         return dt.weekday() == 0
+    if trunc == "half_month":
+        return dt.day in {1, 16}
     if trunc == "month":
         return dt.day == 1
     if trunc == "quarter":
         return dt.day == 1 and dt.month in {1, 4, 7, 10}
+    if trunc == "semester":
+        return dt.day == 1 and dt.month in {1, 7}
     # trunc == "year"
     return dt.day == 1 and dt.month == 1
 
@@ -78,21 +89,30 @@ def _period_start(dt: date, trunc: str) -> date:
 
     Args:
         dt:    The date to find the period start for.
-        trunc: One of "day", "week", "month", "quarter", "year".
+        trunc: One of "day", "week", "half_month", "month", "quarter",
+               "semester", "year".
 
     Returns:
         The start date of the period containing *dt*.
     """
+    # Ordering: finest to coarsest (day → week → half_month → month → quarter → semester → year)
     _validate_grain_trunc(trunc)
     if trunc == "day":
         return dt
     if trunc == "week":
         return dt - timedelta(days=dt.weekday())
+    if trunc == "half_month":
+        if dt.day <= 15:
+            return date(dt.year, dt.month, 1)
+        return date(dt.year, dt.month, 16)
     if trunc == "month":
         return date(dt.year, dt.month, 1)
     if trunc == "quarter":
         quarter_month = ((dt.month - 1) // 3) * 3 + 1
         return date(dt.year, quarter_month, 1)
+    if trunc == "semester":
+        semester_month = 1 if dt.month <= 6 else 7
+        return date(dt.year, semester_month, 1)
     # year
     return date(dt.year, 1, 1)
 
@@ -102,16 +122,25 @@ def _next_period_start(dt: date, trunc: str) -> date:
 
     Args:
         dt:    Any date within the period.
-        trunc: One of "day", "week", "month", "quarter", "year".
+        trunc: One of "day", "week", "half_month", "month", "quarter",
+               "semester", "year".
 
     Returns:
         The start date of the next period.
     """
+    # Ordering: finest to coarsest (day → week → half_month → month → quarter → semester → year)
     start = _period_start(dt, trunc)
     if trunc == "day":
         return start + timedelta(days=1)
     if trunc == "week":
         return start + timedelta(weeks=1)
+    if trunc == "half_month":
+        if start.day == 1:
+            return date(start.year, start.month, 16)
+        # start.day == 16 → first of next month
+        if start.month == 12:
+            return date(start.year + 1, 1, 1)
+        return date(start.year, start.month + 1, 1)
     if trunc == "month":
         if start.month == 12:
             return date(start.year + 1, 1, 1)
@@ -120,6 +149,10 @@ def _next_period_start(dt: date, trunc: str) -> date:
         if start.month == 10:
             return date(start.year + 1, 1, 1)
         return date(start.year, start.month + 3, 1)
+    if trunc == "semester":
+        if start.month == 7:
+            return date(start.year + 1, 1, 1)
+        return date(start.year, 7, 1)
     # year
     return date(start.year + 1, 1, 1)
 

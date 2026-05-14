@@ -1,17 +1,16 @@
-"""
-Phase 1.1: Database Connection Chaos Tests
+"""Phase 1.1: Database Connection Chaos Tests
 
 Tests for database connection failures and recovery scenarios.
 Validates FraiseQL's resilience to PostgreSQL connectivity issues.
 """
 
-import pytest
-import time
 import statistics
+import time
+
+import pytest
 from chaos.base import ChaosTestCase
 from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestDatabaseConnectionChaos(ChaosTestCase):
@@ -20,8 +19,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_connection_refused_recovery(self):
-        """
-        Test recovery from database connection refused errors.
+        """Test recovery from database connection refused errors.
 
         Scenario: Database proxy rejects connections, then recovers.
         Expected: FraiseQL handles connection failures gracefully.
@@ -73,7 +71,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
                 if "errors" in result:
                     errors_during_chaos += 1
                     self.metrics.record_error()
-            except Exception as e:
+            except Exception:
                 errors_during_chaos += 1
                 self.metrics.record_error()
 
@@ -113,8 +111,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_pool_exhaustion_recovery(self):
-        """
-        Test recovery from database connection pool exhaustion.
+        """Test recovery from database connection pool exhaustion.
 
         Scenario: All database connections become slow/unavailable, then recover.
         Expected: FraiseQL handles pool exhaustion gracefully with queuing/recovery.
@@ -205,8 +202,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_slow_connection_establishment(self):
-        """
-        Test handling of slow database connection establishment.
+        """Test handling of slow database connection establishment.
 
         Scenario: Database connections take progressively longer to establish.
         Expected: FraiseQL adapts to slow connection times.
@@ -277,8 +273,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_mid_query_connection_drop(self):
-        """
-        Test recovery from mid-query connection drops.
+        """Test recovery from mid-query connection drops.
 
         Scenario: Connection drops partway through a query execution.
         Expected: FraiseQL handles partial query failures gracefully.
@@ -320,9 +315,8 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
                     # We simulate this by raising an exception
                     if drop_after_ms <= 500:  # Drops at 100ms and 500ms cause failures
                         raise ConnectionError("Connection dropped mid-query")
-                    else:
-                        time.sleep(0.010)  # Complete the query (only for 1000ms)
-                        chaos_queries += 1
+                    time.sleep(0.010)  # Complete the query (only for 1000ms)
+                    chaos_queries += 1
                 except ConnectionError:
                     interrupted_queries += 1
                     self.metrics.record_error()

@@ -1,5 +1,4 @@
-"""
-Environment detection for chaos tests.
+"""Environment detection for chaos tests.
 
 This module detects hardware capabilities and runtime environment
 to provide adaptive configuration for chaos engineering tests.
@@ -26,10 +25,9 @@ class HardwareProfile:
         """Get a human-readable profile name."""
         if self.cpu_count <= 2 or self.memory_gb <= 4:
             return "low"
-        elif self.cpu_count <= 4 or self.memory_gb <= 8:
+        if self.cpu_count <= 4 or self.memory_gb <= 8:
             return "medium"
-        else:
-            return "high"
+        return "high"
 
     def __str__(self) -> str:
         """String representation."""
@@ -55,10 +53,9 @@ class EnvironmentInfo:
         """Get environment type label."""
         if self.is_ci:
             return "ci"
-        elif self.is_containerized:
+        if self.is_containerized:
             return "container"
-        else:
-            return "local"
+        return "local"
 
     def __str__(self) -> str:
         """String representation."""
@@ -69,8 +66,7 @@ class EnvironmentInfo:
 
 
 def detect_hardware_profile() -> HardwareProfile:
-    """
-    Detect hardware capabilities for test tuning.
+    """Detect hardware capabilities for test tuning.
 
     Returns:
         HardwareProfile with CPU, memory, and frequency info
@@ -95,8 +91,7 @@ def detect_hardware_profile() -> HardwareProfile:
 
 
 def is_ci_environment() -> bool:
-    """
-    Detect if running in CI/CD environment.
+    """Detect if running in CI/CD environment.
 
     Returns:
         True if running in CI/CD, False otherwise
@@ -115,8 +110,7 @@ def is_ci_environment() -> bool:
 
 
 def is_containerized() -> bool:
-    """
-    Detect if running in a container (Docker, Podman, etc.).
+    """Detect if running in a container (Docker, Podman, etc.).
 
     Returns:
         True if running in container, False otherwise
@@ -127,7 +121,7 @@ def is_containerized() -> bool:
 
     # Check cgroup for docker/podman
     try:
-        with open("/proc/1/cgroup", "r") as f:
+        with open("/proc/1/cgroup") as f:
             content = f.read()
             if "docker" in content or "podman" in content:
                 return True
@@ -142,8 +136,7 @@ def is_containerized() -> bool:
 
 
 def get_platform() -> str:
-    """
-    Get platform name.
+    """Get platform name.
 
     Returns:
         Platform string (linux, darwin, windows, etc.)
@@ -154,8 +147,7 @@ def get_platform() -> str:
 
 
 def detect_environment() -> EnvironmentInfo:
-    """
-    Detect complete environment information.
+    """Detect complete environment information.
 
     Returns:
         EnvironmentInfo with all detected information
@@ -176,8 +168,7 @@ def detect_environment() -> EnvironmentInfo:
 def get_load_multiplier(
     hardware: Optional[HardwareProfile] = None,
 ) -> float:
-    """
-    Calculate load multiplier based on hardware.
+    """Calculate load multiplier based on hardware.
 
     The multiplier scales concurrent operations based on available resources.
     Baseline is 4 CPUs with 8GB RAM.

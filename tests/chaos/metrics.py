@@ -1,5 +1,4 @@
-"""
-Chaos Engineering Metrics
+"""Chaos Engineering Metrics
 
 This module provides metrics collection and analysis for chaos engineering tests.
 """
@@ -12,7 +11,6 @@ This module provides metrics collection and analysis for chaos engineering tests
 class ChaosMetrics:
     """Placeholder ChaosMetrics class."""
 
-    pass
 
 
 # Re-export for convenience

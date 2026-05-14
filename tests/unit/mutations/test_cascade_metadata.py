@@ -1,6 +1,7 @@
 """Tests for CascadeMetadata type - graphql-cascade spec compliance."""
 
 import pytest
+
 from fraiseql.mutations.types import CascadeMetadata
 
 

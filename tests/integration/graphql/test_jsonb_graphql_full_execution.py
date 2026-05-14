@@ -11,7 +11,6 @@ Related: /tmp/JSONB_ISSUE_ANALYSIS_PRINTOPTIM_VS_FRAISEQL.md
 """
 
 import json
-from uuid import UUID
 
 import pytest
 import pytest_asyncio

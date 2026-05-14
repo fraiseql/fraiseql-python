@@ -72,8 +72,8 @@ class TestRegisterFineGrainMetadata:
             )
 
     def test_all_valid_truncs_accepted(self) -> None:
-        """All five valid granularities must be accepted."""
-        for trunc in ("day", "week", "month", "quarter", "year"):
+        """All seven valid granularities must be accepted."""
+        for trunc in ("day", "week", "half_month", "month", "quarter", "semester", "year"):
             register_type_for_view(
                 f"v_test_{trunc}",
                 EventDataPoint,
@@ -98,4 +98,6 @@ class TestRegisterFineGrainMetadata:
                 "time_grain_trunc": "week",
             },
         )
-        assert _table_metadata["v_coarse"]["aggregation"]["fine_grain_view"] == "v_not_yet_registered"
+        assert (
+            _table_metadata["v_coarse"]["aggregation"]["fine_grain_view"] == "v_not_yet_registered"
+        )

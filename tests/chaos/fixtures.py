@@ -1,13 +1,12 @@
-"""
-Chaos Engineering Fixtures
+"""Chaos Engineering Fixtures
 
 This module provides fixtures for chaos engineering tests, particularly
 for network chaos injection using Toxiproxy.
 """
 
-import time
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Any, Optional
 
 
 class ToxiproxyManager:
@@ -36,8 +35,7 @@ class ToxiproxyManager:
             return False
 
     def create_proxy(self, name: str, listen_addr: str, upstream_addr: str) -> Dict[str, Any]:
-        """
-        Create a new Toxiproxy proxy.
+        """Create a new Toxiproxy proxy.
 
         Args:
             name: Proxy name
@@ -64,7 +62,7 @@ class ToxiproxyManager:
             response = requests.post(f"{self.base_url}/proxies", json=payload, timeout=2)
             response.raise_for_status()
             proxy = response.json()
-        except Exception as e:
+        except Exception:
             # Fallback to mock mode
             proxy = {
                 "name": name,
@@ -159,8 +157,7 @@ class ToxiproxyManager:
     def add_latency_toxic(
         self, proxy_name: str, latency_ms: int, jitter_ms: int = 0
     ) -> Dict[str, Any]:
-        """
-        Add latency toxic to a proxy.
+        """Add latency toxic to a proxy.
 
         Args:
             proxy_name: Name of the proxy
@@ -200,8 +197,7 @@ class ToxiproxyManager:
             return toxic
 
     def add_packet_loss_toxic(self, proxy_name: str, loss_percent: float) -> Dict[str, Any]:
-        """
-        Add packet loss toxic to a proxy.
+        """Add packet loss toxic to a proxy.
 
         Args:
             proxy_name: Name of the proxy
@@ -242,8 +238,7 @@ class ToxiproxyManager:
             return toxic
 
     def add_bandwidth_limit_toxic(self, proxy_name: str, rate_kbps: int) -> Dict[str, Any]:
-        """
-        Add bandwidth limit toxic to a proxy.
+        """Add bandwidth limit toxic to a proxy.
 
         Args:
             proxy_name: Name of the proxy

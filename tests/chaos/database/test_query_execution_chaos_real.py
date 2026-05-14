@@ -1,18 +1,16 @@
-"""
-Phase 2.1: Query Execution Chaos Tests (Real PostgreSQL Backend)
+"""Phase 2.1: Query Execution Chaos Tests (Real PostgreSQL Backend)
 
 Tests for database query execution failures and performance degradation.
 Uses real PostgreSQL to validate FraiseQL's handling of slow queries, deadlocks,
 and serialization failures.
 """
 
-import pytest
-import time
-import statistics
 import asyncio
+import statistics
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -20,8 +18,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of slow queries that exceed timeout limits.
+    """Test handling of slow queries that exceed timeout limits.
 
     Scenario: Queries take progressively longer to execute via latency injection.
     Expected: FraiseQL handles timeouts gracefully with proper error responses.
@@ -58,7 +55,7 @@ async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, b
                 # Query completed within timeout
                 metrics.record_query_time(execution_time)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Expected timeout behavior
             metrics.record_error()
             # This is expected for the longer timeout durations
@@ -80,8 +77,7 @@ async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, b
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_deadlock_detection_and_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test detection and recovery from database deadlocks.
+    """Test detection and recovery from database deadlocks.
 
     Scenario: Concurrent operations create deadlock conditions.
     Expected: FraiseQL detects deadlocks and retries appropriately.
@@ -140,8 +136,7 @@ async def test_deadlock_detection_and_recovery(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of serialization failures in concurrent environments.
+    """Test handling of serialization failures in concurrent environments.
 
     Scenario: Multiple transactions conflict due to concurrent modifications.
     Expected: FraiseQL handles serialization failures with appropriate retry logic.
@@ -201,8 +196,7 @@ async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_query_execution_pool_exhaustion(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of database connection pool exhaustion during query execution.
+    """Test handling of database connection pool exhaustion during query execution.
 
     Scenario: All database connections become occupied, new queries queue or fail.
     Expected: FraiseQL handles pool exhaustion gracefully.
@@ -262,8 +256,7 @@ async def test_query_execution_pool_exhaustion(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of resource exhaustion from highly complex queries.
+    """Test handling of resource exhaustion from highly complex queries.
 
     Scenario: Very complex queries consume excessive database resources.
     Expected: FraiseQL handles resource exhaustion gracefully.
@@ -297,7 +290,7 @@ async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_
             metrics.record_query_time(execution_time)
             successful_complex_queries += 1
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             resource_exhaustion_errors += 1
             metrics.record_error()
         except Exception as e:
@@ -324,8 +317,7 @@ async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_concurrent_query_deadlock_simulation(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test deadlock detection in concurrent query scenarios.
+    """Test deadlock detection in concurrent query scenarios.
 
     Scenario: Multiple queries execute concurrently, creating deadlock potential.
     Expected: FraiseQL detects and resolves deadlocks appropriately.

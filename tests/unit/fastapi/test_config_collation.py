@@ -2,6 +2,7 @@
 
 import pytest
 from pydantic import ValidationError
+
 from fraiseql.fastapi.config import FraiseQLConfig
 
 

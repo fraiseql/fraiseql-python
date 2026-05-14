@@ -1,9 +1,9 @@
 """Parity tests: Verify Rust backend matches psycopg backend exactly."""
 
-import pytest
 import json
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from src.fraiseql.core.graphql_pipeline import RustGraphQLPipeline
 
 

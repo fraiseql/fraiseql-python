@@ -4,16 +4,13 @@ This test traces the execution path of enum variables vs inline literals
 to identify where nested fields are lost.
 """
 
-import asyncio
 from enum import Enum
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from graphql import graphql
 
 import fraiseql
-
 
 pytestmark = pytest.mark.regression
 

@@ -1,5 +1,4 @@
-"""
-Tests for multi-field GraphQL field arguments support.
+"""Tests for multi-field GraphQL field arguments support.
 
 Tests that root fields can accept arguments for filtering, pagination, and other parameters.
 """

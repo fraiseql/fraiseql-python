@@ -18,7 +18,6 @@ from datetime import date
 
 from fraiseql.db import _build_coarse_branch, _build_partial_period_union_query
 
-
 # ── _build_coarse_branch unit tests ──────────────────────────────────────────
 
 

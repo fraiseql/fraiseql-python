@@ -1,16 +1,15 @@
-"""
-Phase 4 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
+"""Phase 4 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
 
 Tests to validate Phase 4 resource and concurrency chaos test success criteria.
 Validates FraiseQL's resource management and concurrent execution reliability.
 """
 
-import pytest
-import statistics
 import asyncio
+import statistics
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -20,8 +19,7 @@ from chaos.base import ChaosMetrics
 async def test_resource_exhaustion_recovery_time(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):
-    """
-    Validate resource exhaustion recovery time.
+    """Validate resource exhaustion recovery time.
 
     Success Criteria: System should recover within reasonable timeframe
     """
@@ -87,8 +85,7 @@ async def test_resource_exhaustion_recovery_time(
 async def test_concurrent_throughput_under_load(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):
-    """
-    Validate concurrent throughput under resource load.
+    """Validate concurrent throughput under resource load.
 
     Success Criteria: System should maintain reasonable throughput under load
     """
@@ -144,8 +141,7 @@ async def test_concurrent_throughput_under_load(
 async def test_deadlock_detection_and_recovery(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):
-    """
-    Validate deadlock detection and recovery.
+    """Validate deadlock detection and recovery.
 
     Success Criteria: Deadlocks should be detected and recovered automatically
     """
@@ -195,8 +191,7 @@ async def test_deadlock_detection_and_recovery(
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_connection_pool_utilization(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate connection pool utilization under concurrent load.
+    """Validate connection pool utilization under concurrent load.
 
     Success Criteria: Connection pool should handle concurrent requests efficiently
     """
@@ -240,8 +235,7 @@ async def test_connection_pool_utilization(chaos_db_client, chaos_test_schema, b
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_extreme_concurrency_handling(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate system behavior under extreme concurrent load.
+    """Validate system behavior under extreme concurrent load.
 
     Success Criteria: System should degrade gracefully, not crash
     """
@@ -297,8 +291,7 @@ async def test_extreme_concurrency_handling(chaos_db_client, chaos_test_schema, 
 async def test_graceful_degradation_under_stress(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):
-    """
-    Validate graceful degradation under stress.
+    """Validate graceful degradation under stress.
 
     Success Criteria: Performance should degrade gracefully, not collapse
     """

@@ -1,12 +1,11 @@
-"""
-Adaptive configuration for chaos tests.
+"""Adaptive configuration for chaos tests.
 
 This module provides environment-specific configuration that adapts
 to hardware capabilities and runtime environment.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .environment import (
     EnvironmentInfo,
@@ -58,8 +57,7 @@ class ChaosConfig:
 
 
 def create_ci_config(env: EnvironmentInfo, multiplier: float) -> ChaosConfig:
-    """
-    Create configuration for CI/CD environment.
+    """Create configuration for CI/CD environment.
 
     CI environments are typically resource-constrained, so we use
     more conservative settings with longer timeouts.
@@ -96,8 +94,7 @@ def create_ci_config(env: EnvironmentInfo, multiplier: float) -> ChaosConfig:
 
 
 def create_local_config(env: EnvironmentInfo, multiplier: float) -> ChaosConfig:
-    """
-    Create configuration for local development.
+    """Create configuration for local development.
 
     Local environments typically have more resources and we want
     to stress the system to find issues.
@@ -134,8 +131,7 @@ def create_local_config(env: EnvironmentInfo, multiplier: float) -> ChaosConfig:
 
 
 def create_container_config(env: EnvironmentInfo, multiplier: float) -> ChaosConfig:
-    """
-    Create configuration for containerized environment.
+    """Create configuration for containerized environment.
 
     Containers have varying resources but typically good networking.
 
@@ -171,8 +167,7 @@ def create_container_config(env: EnvironmentInfo, multiplier: float) -> ChaosCon
 
 
 def get_chaos_config(env: EnvironmentInfo | None = None) -> ChaosConfig:
-    """
-    Get adaptive chaos configuration based on environment.
+    """Get adaptive chaos configuration based on environment.
 
     This is the main entry point for getting configuration.
     It detects the environment and returns appropriate settings.
@@ -198,15 +193,13 @@ def get_chaos_config(env: EnvironmentInfo | None = None) -> ChaosConfig:
     # Select config based on environment type
     if env.is_ci:
         return create_ci_config(env, multiplier)
-    elif env.is_containerized:
+    if env.is_containerized:
         return create_container_config(env, multiplier)
-    else:
-        return create_local_config(env, multiplier)
+    return create_local_config(env, multiplier)
 
 
 def get_config_for_profile(profile: str) -> ChaosConfig:
-    """
-    Get configuration for a specific hardware profile.
+    """Get configuration for a specific hardware profile.
 
     Useful for testing or when you want to override auto-detection.
 

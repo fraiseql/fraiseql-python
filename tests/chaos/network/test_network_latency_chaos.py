@@ -1,17 +1,17 @@
-"""
-Phase 1.2: Network Latency Chaos Tests
+"""Phase 1.2: Network Latency Chaos Tests
 
 Tests for network latency scenarios and FraiseQL's adaptation to increased latency.
 Validates performance degradation handling and timeout behavior.
 """
 
-import pytest
-import time
 import statistics
+import time
+
+import pytest
 from chaos.base import ChaosTestCase
 from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
+from chaos.plugin import FailureType, chaos_inject
 
 
 class TestNetworkLatencyChaos(ChaosTestCase):
@@ -20,8 +20,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_gradual_latency_increase(self):
-        """
-        Test gradual network latency increase.
+        """Test gradual network latency increase.
 
         Scenario: Network latency increases progressively from 0ms to 2000ms.
         Expected: FraiseQL adapts gracefully to increasing latency.
@@ -79,8 +78,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_consistent_high_latency(self):
-        """
-        Test consistent high network latency.
+        """Test consistent high network latency.
 
         Scenario: Stable 500ms network latency for extended period.
         Expected: FraiseQL maintains functionality under consistent latency.
@@ -131,8 +129,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_jittery_latency(self):
-        """
-        Test jittery (variable) network latency.
+        """Test jittery (variable) network latency.
 
         Scenario: Base 200ms latency with ±100ms jitter.
         Expected: FraiseQL handles variable network conditions.
@@ -178,8 +175,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_asymmetric_latency(self):
-        """
-        Test asymmetric network latency (different up/down streams).
+        """Test asymmetric network latency (different up/down streams).
 
         Scenario: Fast requests, slow responses (simulated asymmetric routing).
         Expected: FraiseQL handles asymmetric network conditions.
@@ -224,8 +220,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos_network
     @chaos_inject(FailureType.NETWORK_LATENCY, duration_ms=10000)
     def test_latency_timeout_handling(self):
-        """
-        Test timeout handling under extreme latency.
+        """Test timeout handling under extreme latency.
 
         Scenario: 2-second network latency exceeds query timeouts.
         Expected: FraiseQL handles timeouts gracefully with proper error responses.
@@ -262,8 +257,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_latency_recovery_time(self):
-        """
-        Test recovery time after latency chaos injection is removed.
+        """Test recovery time after latency chaos injection is removed.
 
         Scenario: High latency followed by immediate recovery.
         Expected: Performance returns to baseline within acceptable time.

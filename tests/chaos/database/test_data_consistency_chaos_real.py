@@ -1,18 +1,15 @@
-"""
-Phase 2.2: Data Consistency Chaos Tests (Real PostgreSQL Backend)
+"""Phase 2.2: Data Consistency Chaos Tests (Real PostgreSQL Backend)
 
 Tests for data consistency issues and transactional integrity under chaos.
 Uses real PostgreSQL to validate FraiseQL's handling of transaction rollbacks,
 partial updates, and constraint violations.
 """
 
-import pytest
-import time
-import statistics
 import asyncio
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -20,8 +17,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_transaction_rollback_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test recovery from transaction rollbacks.
+    """Test recovery from transaction rollbacks.
 
     Scenario: Transactions are rolled back due to conflicts or errors.
     Expected: FraiseQL handles rollbacks gracefully and maintains consistency.
@@ -84,8 +80,7 @@ async def test_transaction_rollback_recovery(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_partial_update_failure_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test recovery from partial update failures.
+    """Test recovery from partial update failures.
 
     Scenario: Multi-field updates fail partway through execution.
     Expected: FraiseQL handles partial failures and maintains data consistency.
@@ -142,8 +137,7 @@ async def test_partial_update_failure_recovery(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of database constraint violations.
+    """Test handling of database constraint violations.
 
     Scenario: Operations violate database constraints (unique, foreign key, check).
     Expected: FraiseQL handles constraint violations with appropriate error responses.
@@ -168,8 +162,7 @@ async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema,
             if i % 3 == 1:  # Every 3rd operation violates constraints
                 if i % 2 == 1:
                     raise Exception("Constraint violation: unique key constraint")
-                else:
-                    raise Exception("Constraint violation: foreign key constraint")
+                raise Exception("Constraint violation: foreign key constraint")
 
             result = await chaos_db_client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 25.0)
@@ -201,8 +194,7 @@ async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_transaction_isolation_anomaly_simulation(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of transaction isolation anomalies.
+    """Test handling of transaction isolation anomalies.
 
     Scenario: Concurrent transactions create isolation anomalies (dirty reads, etc).
     Expected: FraiseQL maintains transactional consistency under concurrent load.
@@ -244,7 +236,7 @@ async def test_transaction_isolation_anomaly_simulation(chaos_db_client, chaos_t
 
             return (thread_id, anomalies_detected, successful_reads)
 
-        except Exception as e:
+        except Exception:
             metrics.record_error()
             return (thread_id, anomalies_detected, successful_reads)
 
@@ -276,8 +268,7 @@ async def test_transaction_isolation_anomaly_simulation(chaos_db_client, chaos_t
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_data_corruption_detection(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test detection of data corruption scenarios.
+    """Test detection of data corruption scenarios.
 
     Scenario: Database returns corrupted or inconsistent data.
     Expected: FraiseQL detects corruption and handles appropriately.
@@ -335,8 +326,7 @@ async def test_data_corruption_detection(chaos_db_client, chaos_test_schema, bas
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cascading_failure_prevention(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test prevention of cascading failures in data operations.
+    """Test prevention of cascading failures in data operations.
 
     Scenario: One failed operation shouldn't cause cascading failures.
     Expected: FraiseQL contains failures and maintains system stability.

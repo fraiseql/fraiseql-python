@@ -1,6 +1,7 @@
 """Tests for query plan caching."""
 
 import pytest
+
 from fraiseql.core.graphql_parser import RustGraphQLParser
 from fraiseql.core.query_builder import RustQueryBuilder
 

@@ -109,10 +109,11 @@ class AllocationWithNesting:
 @pytest_asyncio.fixture
 async def graphql_app(
     clear_registry: None,
-) -> AsyncGenerator["FastAPI", None]:
+) -> AsyncGenerator["FastAPI"]:
     """Create FastAPI app with GraphQL endpoint."""
     from typing import Any
-    from unittest.mock import AsyncMock, MagicMock
+    from unittest.mock import MagicMock
+
     import psycopg_pool
 
     # Mock database query function

@@ -11,7 +11,6 @@ from graphql import graphql
 
 import fraiseql
 
-
 pytestmark = pytest.mark.regression
 
 
@@ -150,7 +149,7 @@ class TestDecoratedQueriesWithEnums:
         elif inline_is_enum and not variable_is_enum:
             print(f"\n🐛 BUG CONFIRMED: inline={inline_type} (enum), variable={variable_type} (not enum)")
         elif not inline_is_enum and not variable_is_enum:
-            print(f"\n⚠️  Both are strings - coercion not happening in either case")
+            print("\n⚠️  Both are strings - coercion not happening in either case")
 
     @pytest.mark.asyncio
     async def test_decorated_query_with_multiple_enums(self) -> None:

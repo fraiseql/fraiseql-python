@@ -401,7 +401,7 @@ class TestEntityFieldSelectionIntegration:
         assert "latitude" not in address, "address.latitude should be filtered out"
         assert "longitude" not in address, "address.longitude should be filtered out"
 
-        print(f"✅ Nested entity filtering works!")
+        print("✅ Nested entity filtering works!")
         print(f"   Location fields: {list(location.keys())}")
         print(f"   Address fields: {list(address.keys())}")
 
@@ -486,4 +486,4 @@ class TestEntityFieldSelectionIntegration:
         assert "name" in location
         assert "city" in location
 
-        print(f"✅ Empty selection returns all fields (GraphQL spec)")
+        print("✅ Empty selection returns all fields (GraphQL spec)")

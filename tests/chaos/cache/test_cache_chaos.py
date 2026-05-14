@@ -1,18 +1,16 @@
-"""
-Phase 3.1: Cache Chaos Tests
+"""Phase 3.1: Cache Chaos Tests
 
 Tests for cache invalidation, corruption, and backend failures.
 Validates FraiseQL's cache resilience and performance under adverse cache conditions.
 """
 
-import pytest
-import time
 import random
 import statistics
+import time
+
+import pytest
 from chaos.base import ChaosTestCase
-from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestCacheChaos(ChaosTestCase):
@@ -21,8 +19,7 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_invalidation_storm(self):
-        """
-        Test cache invalidation storm resilience.
+        """Test cache invalidation storm resilience.
 
         Scenario: Massive cache invalidation causes cache thrashing.
         Expected: FraiseQL handles cache misses gracefully with database fallback.
@@ -78,8 +75,7 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_corruption_handling(self):
-        """
-        Test cache corruption detection and recovery.
+        """Test cache corruption detection and recovery.
 
         Scenario: Cache contains corrupted data.
         Expected: FraiseQL detects corruption and falls back to database.
@@ -141,8 +137,7 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_backend_failure(self):
-        """
-        Test cache backend failure and recovery.
+        """Test cache backend failure and recovery.
 
         Scenario: Cache backend becomes unavailable.
         Expected: FraiseQL degrades gracefully to database-only operation.
@@ -234,14 +229,13 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_stampede_prevention(self):
-        """
-        Test cache stampede prevention under concurrent load.
+        """Test cache stampede prevention under concurrent load.
 
         Scenario: Multiple concurrent requests try to populate same cache entry.
         Expected: FraiseQL prevents cache stampede with proper synchronization.
         """
-        import threading
         import queue
+        import threading
 
         client = MockFraiseQLClient()
         operation = FraiseQLTestScenarios.simple_user_query()
@@ -334,8 +328,7 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_memory_pressure(self):
-        """
-        Test cache behavior under memory pressure.
+        """Test cache behavior under memory pressure.
 
         Scenario: Cache eviction due to memory constraints.
         Expected: FraiseQL maintains performance with intelligent cache management.
@@ -401,8 +394,7 @@ class TestCacheChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
     def test_cache_warmup_after_failure(self):
-        """
-        Test cache warmup behavior after cache failure recovery.
+        """Test cache warmup behavior after cache failure recovery.
 
         Scenario: Cache fails and recovers, requiring warmup.
         Expected: FraiseQL handles cache warmup gracefully without overwhelming database.

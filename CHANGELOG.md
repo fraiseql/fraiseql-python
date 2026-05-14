@@ -5,6 +5,16 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-05-13
+
+### Added
+
+- **Time grain truncation: `semester` and `half_month`** (#1516, #1517)
+  - Extend partial-period awareness to support 6-month and ~15-day granularities
+  - Custom SQL expressions (`MAKE_DATE` for semester, `CASE` for half_month)
+    for non-native PostgreSQL intervals
+  - Unblocks `printoptim_backend` v_statistics_semester and v_statistics_half_month views
+
 ## [1.20.1] - 2026-05-12
 
 ### Security

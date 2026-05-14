@@ -1,5 +1,4 @@
-"""
-Tests for multi-field GraphQL error location reporting.
+"""Tests for multi-field GraphQL error location reporting.
 
 Tests that errors include line and column numbers for better debugging.
 """
@@ -83,7 +82,6 @@ async def test_multiple_errors_with_locations(init_schema_registry_fixture):
         GraphQLList,
         GraphQLObjectType,
         GraphQLSchema,
-        GraphQLString,
     )
 
     user_type = GraphQLObjectType(
@@ -142,7 +140,6 @@ async def test_success_no_error_locations(init_schema_registry_fixture):
         GraphQLList,
         GraphQLObjectType,
         GraphQLSchema,
-        GraphQLString,
     )
 
     user_type = GraphQLObjectType(

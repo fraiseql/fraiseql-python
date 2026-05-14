@@ -5,6 +5,7 @@ Phase 1: Basic validation and configuration tests.
 """
 
 import pytest
+
 from fraiseql.core.database import DatabasePool
 
 

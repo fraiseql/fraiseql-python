@@ -1,5 +1,4 @@
-"""
-Tests for fragment spreads and inline fragments in multi-field GraphQL queries.
+"""Tests for fragment spreads and inline fragments in multi-field GraphQL queries.
 
 Tests that fragment spreads (...FragmentName) and inline fragments (... on Type)
 are properly expanded at the root level of multi-field queries.
@@ -136,7 +135,6 @@ async def test_fragment_with_directive(init_schema_registry_fixture):
         GraphQLList,
         GraphQLObjectType,
         GraphQLSchema,
-        GraphQLString,
     )
 
     user_type = GraphQLObjectType(
@@ -384,7 +382,7 @@ async def test_nested_fragment_with_alias(init_schema_registry_fixture):
 @pytest.mark.asyncio
 async def test_fragment_cycle_detection(init_schema_registry_fixture):
     """Test that circular fragment references are detected and rejected."""
-    from graphql import GraphQLObjectType, GraphQLField, GraphQLList, GraphQLSchema, GraphQLString
+    from graphql import GraphQLField, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString
 
     user_type = GraphQLObjectType(
         "User",
@@ -428,7 +426,7 @@ async def test_fragment_cycle_detection(init_schema_registry_fixture):
 @pytest.mark.asyncio
 async def test_fragment_self_reference_cycle(init_schema_registry_fixture):
     """Test that self-referencing fragments are detected."""
-    from graphql import GraphQLObjectType, GraphQLField, GraphQLList, GraphQLSchema, GraphQLString
+    from graphql import GraphQLField, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString
 
     user_type = GraphQLObjectType(
         "User",
@@ -468,7 +466,7 @@ async def test_fragment_self_reference_cycle(init_schema_registry_fixture):
 @pytest.mark.asyncio
 async def test_deep_fragment_cycle(init_schema_registry_fixture):
     """Test cycle detection in deeply nested fragment chains."""
-    from graphql import GraphQLObjectType, GraphQLField, GraphQLList, GraphQLSchema, GraphQLString
+    from graphql import GraphQLField, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString
 
     user_type = GraphQLObjectType(
         "User",
@@ -516,7 +514,7 @@ async def test_deep_fragment_cycle(init_schema_registry_fixture):
 @pytest.mark.asyncio
 async def test_valid_fragment_no_cycle(init_schema_registry_fixture):
     """Test that valid fragments without cycles work correctly."""
-    from graphql import GraphQLObjectType, GraphQLField, GraphQLList, GraphQLSchema, GraphQLString
+    from graphql import GraphQLField, GraphQLList, GraphQLObjectType, GraphQLSchema, GraphQLString
 
     user_type = GraphQLObjectType(
         "User",

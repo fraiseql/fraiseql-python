@@ -1,19 +1,17 @@
-"""
-Phase 3.1: Cache Chaos Tests (Real PostgreSQL Backend)
+"""Phase 3.1: Cache Chaos Tests (Real PostgreSQL Backend)
 
 Tests for cache invalidation, corruption, and backend failures.
 Uses real PostgreSQL connections to validate FraiseQL's cache resilience
 and performance under adverse cache conditions.
 """
 
-import pytest
-import time
+import asyncio
 import random
 import statistics
-import asyncio
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -21,8 +19,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_invalidation_storm(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test cache invalidation storm resilience.
+    """Test cache invalidation storm resilience.
 
     Scenario: Massive cache invalidation causes cache thrashing.
     Expected: FraiseQL handles cache misses gracefully with database fallback.
@@ -83,8 +80,7 @@ async def test_cache_invalidation_storm(chaos_db_client, chaos_test_schema, base
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_corruption_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test cache corruption detection and recovery.
+    """Test cache corruption detection and recovery.
 
     Scenario: Cache contains corrupted data.
     Expected: FraiseQL detects corruption and falls back to database.
@@ -149,8 +145,7 @@ async def test_cache_corruption_handling(chaos_db_client, chaos_test_schema, bas
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_backend_failure(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test cache backend failure and recovery.
+    """Test cache backend failure and recovery.
 
     Scenario: Cache backend becomes unavailable.
     Expected: FraiseQL degrades gracefully to database-only operation.
@@ -249,8 +244,7 @@ async def test_cache_backend_failure(chaos_db_client, chaos_test_schema, baselin
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_stampede_prevention(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test cache stampede prevention under concurrent load.
+    """Test cache stampede prevention under concurrent load.
 
     Scenario: Multiple concurrent requests try to populate same cache entry.
     Expected: FraiseQL prevents cache stampede with proper synchronization.

@@ -7,7 +7,6 @@ Tests cover queries, mutations, and error handling through the full FastAPI HTTP
 """
 
 import json
-from uuid import UUID
 
 import pytest
 import pytest_asyncio

@@ -1,19 +1,17 @@
-"""
-Phase 3.2: Authentication Chaos Tests (Real PostgreSQL Backend)
+"""Phase 3.2: Authentication Chaos Tests (Real PostgreSQL Backend)
 
 Tests for authentication and authorization failures.
 Uses real PostgreSQL connections to validate FraiseQL's security resilience
 under adverse auth conditions.
 """
 
-import pytest
-import time
+import asyncio
 import random
 import statistics
-import asyncio
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -23,8 +21,7 @@ from chaos.base import ChaosMetrics
 async def test_jwt_expiration_during_request(
     chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
 ):
-    """
-    Test JWT token expiration during active request processing.
+    """Test JWT token expiration during active request processing.
 
     Scenario: JWT expires while request is being processed.
     Expected: FraiseQL handles token expiration gracefully with proper error responses.
@@ -50,16 +47,15 @@ async def test_jwt_expiration_during_request(
             # Simulate JWT validation
             if random.random() < 0.15:  # 15% chance of token expiration during processing
                 raise Exception("Token expired during request processing")
-            elif random.random() < 0.05:  # 5% chance of other auth failures
+            if random.random() < 0.05:  # 5% chance of other auth failures
                 raise Exception("JWT validation failed")
-            else:
-                # Successful authentication
-                auth_successes += 1
+            # Successful authentication
+            auth_successes += 1
 
-                # Process the request
-                result = await chaos_db_client.execute_query(operation)
-                execution_time = result.get("_execution_time_ms", 15.0)
-                metrics.record_query_time(execution_time)
+            # Process the request
+            result = await chaos_db_client.execute_query(operation)
+            execution_time = result.get("_execution_time_ms", 15.0)
+            metrics.record_query_time(execution_time)
 
         except Exception as e:
             # Catch authentication failures (token/JWT related)
@@ -93,8 +89,7 @@ async def test_jwt_expiration_during_request(
 async def test_rbac_policy_failure(
     chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
 ):
-    """
-    Test RBAC policy evaluation failures.
+    """Test RBAC policy evaluation failures.
 
     Scenario: Authorization policy evaluation fails unexpectedly.
     Expected: FraiseQL handles RBAC failures securely (fail-closed).
@@ -120,7 +115,7 @@ async def test_rbac_policy_failure(
             # Simulate RBAC policy check
             if random.random() < 0.2:  # 20% chance of policy evaluation failure
                 raise Exception("RBAC policy evaluation failed")
-            elif random.random() < 0.3:  # 30% chance of authorization denial
+            if random.random() < 0.3:  # 30% chance of authorization denial
                 raise Exception("Access denied by RBAC policy")
 
             # Policy check passed - proceed with operation
@@ -160,8 +155,7 @@ async def test_rbac_policy_failure(
 async def test_authentication_service_outage(
     chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
 ):
-    """
-    Test authentication service unavailability.
+    """Test authentication service unavailability.
 
     Scenario: Authentication service becomes temporarily unavailable.
     Expected: FraiseQL handles auth service outages gracefully.
@@ -257,8 +251,7 @@ async def test_authentication_service_outage(
 async def test_concurrent_authentication_load(
     chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
 ):
-    """
-    Test authentication under concurrent load.
+    """Test authentication under concurrent load.
 
     Scenario: Multiple concurrent requests require authentication.
     Expected: FraiseQL handles concurrent auth load without degradation.

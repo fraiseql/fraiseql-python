@@ -19,7 +19,7 @@ Issue: https://github.com/fraiseql/fraiseql/issues/199
 
 import uuid
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -91,7 +91,6 @@ async def test_db_find_extracts_info_from_context():
 
     # We'll verify this with integration tests instead of unit tests
     # to avoid complex async mock setup
-    pass
 
 
 async def test_db_find_one_extracts_info_from_context():
@@ -103,7 +102,6 @@ async def test_db_find_one_extracts_info_from_context():
 
     # We'll verify this with integration tests instead of unit tests
     # to avoid complex async mock setup
-    pass
 
 
 async def test_field_selection_works_without_explicit_info_parameter():
@@ -119,7 +117,6 @@ async def test_field_selection_works_without_explicit_info_parameter():
 
     # We'll verify this with end-to-end integration tests
     # that use a real database and GraphQL schema
-    pass
 
 
 # ============================================================================
@@ -141,7 +138,6 @@ async def test_explicit_info_parameter_takes_precedence():
     # If info is provided explicitly, it's used directly
 
     # We'll verify this with integration tests
-    pass
 
 
 async def test_existing_resolvers_unchanged():
@@ -191,7 +187,6 @@ async def test_nested_resolver_field_selection():
     """
     # This test will be expanded in REFACTOR phase
     # For now, just verify the structure
-    pass
 
 
 async def test_multiple_queries_in_single_request():
@@ -204,7 +199,6 @@ async def test_multiple_queries_in_single_request():
         }
     """
     # This test will be expanded in REFACTOR phase
-    pass
 
 
 async def test_opt_out_with_explicit_none():
@@ -218,7 +212,6 @@ async def test_opt_out_with_explicit_none():
     # Passing info=None explicitly will skip the extraction
 
     # We'll verify this with integration tests
-    pass
 
 
 # ============================================================================
@@ -236,7 +229,6 @@ async def test_rust_pipeline_activated_with_auto_inject():
     # 1. Field selection metadata is extracted from auto-injected info
     # 2. Rust pipeline is invoked (not Python serialization)
     # 3. Only selected fields are included in response
-    pass
 
 
 async def test_no_performance_regression():
@@ -246,7 +238,6 @@ async def test_no_performance_regression():
     """
     # Benchmark test - will be expanded in QA phase
     # Should verify that decorator overhead is < 0.1ms
-    pass
 
 
 # ============================================================================

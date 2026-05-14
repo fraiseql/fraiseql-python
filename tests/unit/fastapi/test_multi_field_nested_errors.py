@@ -1,5 +1,4 @@
-"""
-Tests for nested field error handling in multi-field GraphQL queries.
+"""Tests for nested field error handling in multi-field GraphQL queries.
 
 Note: This phase documents the current limitation rather than implementing
 full nested field error recovery, which is complex and requires both Python
