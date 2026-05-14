@@ -24,6 +24,7 @@ from fraiseql.monitoring.health import CheckResult, HealthStatus
 __all__ = [
     "check_database",
     "check_pool_stats",
+    "check_query_stats",
 ]
 
 
@@ -164,3 +165,50 @@ async def check_pool_stats() -> CheckResult:
             status=HealthStatus.UNHEALTHY,
             message=f"Failed to retrieve pool stats: {e!s}",
         )
+
+
+async def check_query_stats() -> CheckResult:
+    """Check if pg_stat_statements extension is available.
+
+    This is an **optional** (non-critical) check. A missing
+    pg_stat_statements extension should not make the overall health
+    endpoint report unhealthy — it simply means query-level performance
+    data is not collected.
+
+    Returns:
+        CheckResult with:
+        - status: HEALTHY if pg_stat_statements is available
+        - status: UNHEALTHY if collector is not initialized or extension missing
+        - message: Description of current state
+    """
+    from fraiseql.monitoring.query_stats import get_query_stats_collector
+
+    collector = get_query_stats_collector()
+    if collector is None:
+        return CheckResult(
+            name="query_stats",
+            status=HealthStatus.UNHEALTHY,
+            message="QueryStatsCollector not initialized",
+        )
+
+    try:
+        available = await collector.is_available()
+    except Exception as e:
+        return CheckResult(
+            name="query_stats",
+            status=HealthStatus.UNHEALTHY,
+            message=f"Failed to check pg_stat_statements: {e!s}",
+        )
+
+    if available:
+        return CheckResult(
+            name="query_stats",
+            status=HealthStatus.HEALTHY,
+            message="pg_stat_statements available",
+        )
+
+    return CheckResult(
+        name="query_stats",
+        status=HealthStatus.UNHEALTHY,
+        message="pg_stat_statements extension not loaded",
+    )

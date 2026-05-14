@@ -49,6 +49,7 @@ from .health import (
 from .health_checks import (
     check_database,
     check_pool_stats,
+    check_query_stats,
 )
 from .metrics import (
     FraiseQLMetrics,
@@ -69,33 +70,39 @@ from .postgres_error_tracker import (
     get_error_tracker,
     init_error_tracker,
 )
+from .query_stats import (
+    QueryStatsCollector,
+    QueryStatsSnapshot,
+    get_query_stats_collector,
+    init_query_stats,
+)
 
 __all__ = [
-    # APQ Metrics (Phase 3)
     "APQMetrics",
     "APQMetricsSnapshot",
-    # Health checks
     "CheckFunction",
     "CheckResult",
-    # Notifications
     "EmailChannel",
-    # Metrics
     "FraiseQLMetrics",
     "HealthCheck",
     "HealthStatus",
     "MetricsConfig",
     "MetricsMiddleware",
     "NotificationManager",
-    # Error tracking
     "PostgreSQLErrorTracker",
+    "QueryStatsCollector",
+    "QueryStatsSnapshot",
     "SlackChannel",
     "WebhookChannel",
     "check_database",
     "check_pool_stats",
+    "check_query_stats",
     "get_error_tracker",
     "get_global_metrics",
     "get_metrics",
+    "get_query_stats_collector",
     "init_error_tracker",
+    "init_query_stats",
     "reset_global_metrics",
     "setup_metrics",
     "with_metrics",
