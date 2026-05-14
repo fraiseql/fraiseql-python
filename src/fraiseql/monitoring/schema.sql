@@ -509,3 +509,134 @@ END;
 $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION get_partition_stats IS 'Get statistics for all partitioned tables';
+
+-- ============================================================================
+-- QUERY STATISTICS (pg_stat_statements integration)
+-- ============================================================================
+-- Surfaces pg_stat_statements data in a monitoring-friendly format.
+-- Requires PostgreSQL 14+ (uses toplevel column).
+-- Gracefully returns empty results when the extension is not installed.
+
+-- Schema version for query stats module
+INSERT INTO fraiseql_schema_version (module, version, description)
+VALUES ('query_stats', 1, 'pg_stat_statements integration — v_query_stats view and get_query_stats function')
+ON CONFLICT (module) DO NOTHING;
+
+-- Helper: check if pg_stat_statements is installed and available
+CREATE OR REPLACE FUNCTION pg_stat_statements_available()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM pg_available_extensions
+        WHERE name = 'pg_stat_statements'
+          AND installed_version IS NOT NULL
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+COMMENT ON FUNCTION pg_stat_statements_available IS 'Check if pg_stat_statements extension is installed';
+
+-- View and function: only created when pg_stat_statements is installed.
+-- The view definition references the pg_stat_statements table directly,
+-- so it cannot be created without the extension. At runtime, the
+-- pg_stat_statements_available() guard in the WHERE clause ensures
+-- empty results if the extension is later removed.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_available_extensions
+        WHERE name = 'pg_stat_statements'
+          AND installed_version IS NOT NULL
+    ) THEN
+        -- View: surfaces key metrics with computed cache hit ratio
+        -- NOTE: No ORDER BY — callers apply their own ordering.
+        EXECUTE $view$
+            CREATE OR REPLACE VIEW v_query_stats AS
+            SELECT
+                s.queryid,
+                LEFT(s.query, 200) AS query_preview,
+                s.calls,
+                round(s.total_exec_time::numeric, 2) AS total_exec_time_ms,
+                round(s.mean_exec_time::numeric, 2) AS mean_exec_time_ms,
+                round(s.min_exec_time::numeric, 2) AS min_exec_time_ms,
+                round(s.max_exec_time::numeric, 2) AS max_exec_time_ms,
+                s.rows AS rows_returned,
+                s.shared_blks_hit,
+                s.shared_blks_read,
+                CASE
+                    WHEN (s.shared_blks_hit + s.shared_blks_read) > 0
+                    THEN round(s.shared_blks_hit::numeric / (s.shared_blks_hit + s.shared_blks_read) * 100, 2)
+                    ELSE 100.0
+                END AS cache_hit_ratio,
+                s.toplevel
+            FROM public.pg_stat_statements s
+            WHERE s.dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+              AND pg_stat_statements_available()
+              AND s.query NOT LIKE 'SET %'
+              AND s.query NOT LIKE 'RESET %'
+              AND s.query NOT LIKE 'DEALLOCATE %'
+              AND s.query NOT LIKE 'BEGIN%'
+              AND s.query NOT LIKE 'COMMIT%'
+              AND s.query NOT LIKE 'ROLLBACK%'
+        $view$;
+
+        -- Function: parameterized access to query stats with ordering and limit
+        EXECUTE $func$
+            CREATE OR REPLACE FUNCTION get_query_stats(
+                top_n INT DEFAULT 20,
+                order_by TEXT DEFAULT 'total_exec_time'
+            ) RETURNS TABLE (
+                queryid BIGINT,
+                query_preview TEXT,
+                calls BIGINT,
+                total_exec_time_ms NUMERIC,
+                mean_exec_time_ms NUMERIC,
+                min_exec_time_ms NUMERIC,
+                max_exec_time_ms NUMERIC,
+                rows_returned BIGINT,
+                shared_blks_hit BIGINT,
+                shared_blks_read BIGINT,
+                cache_hit_ratio NUMERIC,
+                toplevel BOOLEAN
+            ) AS $inner$
+            BEGIN
+                -- Validate order_by parameter (whitelist)
+                IF order_by NOT IN ('total_exec_time', 'mean_exec_time', 'calls', 'cache_hit_ratio') THEN
+                    RAISE EXCEPTION 'Invalid order_by value: %. Allowed: total_exec_time, mean_exec_time, calls, cache_hit_ratio', order_by;
+                END IF;
+
+                -- Return empty if extension not available
+                IF NOT pg_stat_statements_available() THEN
+                    RETURN;
+                END IF;
+
+                RETURN QUERY EXECUTE format(
+                    'SELECT queryid, query_preview, calls, total_exec_time_ms, mean_exec_time_ms,
+                            min_exec_time_ms, max_exec_time_ms, rows_returned,
+                            shared_blks_hit, shared_blks_read, cache_hit_ratio, toplevel
+                     FROM v_query_stats
+                     ORDER BY %I DESC
+                     LIMIT $1',
+                    CASE order_by
+                        WHEN 'total_exec_time' THEN 'total_exec_time_ms'
+                        WHEN 'mean_exec_time' THEN 'mean_exec_time_ms'
+                        WHEN 'calls' THEN 'calls'
+                        WHEN 'cache_hit_ratio' THEN 'cache_hit_ratio'
+                    END
+                ) USING top_n;
+            END;
+            $inner$ LANGUAGE plpgsql
+        $func$;
+
+        -- Grant access to prometheus role (if it exists)
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'prometheus') THEN
+            EXECUTE 'GRANT EXECUTE ON FUNCTION get_query_stats(INT, TEXT) TO prometheus';
+            EXECUTE 'GRANT EXECUTE ON FUNCTION pg_stat_statements_available() TO prometheus';
+            EXECUTE 'GRANT SELECT ON v_query_stats TO prometheus';
+        END IF;
+
+        RAISE NOTICE 'pg_stat_statements integration: v_query_stats view and get_query_stats function created';
+    ELSE
+        RAISE NOTICE 'pg_stat_statements not installed — skipping v_query_stats view and get_query_stats function';
+    END IF;
+END $$;
