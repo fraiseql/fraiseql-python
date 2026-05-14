@@ -51,7 +51,7 @@ async def test_graphql_simple_query_returns_data(db_connection) -> None:
     @query
     async def user(info, id: str) -> User | None:
         db = info.context["db"]
-        return await db.find_one("v_user", info=info, id=id)
+        return await db.find_one("v_user", info=info, mandatory_filters={"id": id})
 
     # Build schema and execute directly
     from fraiseql.gql.schema_builder import build_fraiseql_schema
@@ -210,7 +210,7 @@ async def test_graphql_field_selection(db_connection) -> None:
     @query
     async def user(info, id: str) -> User | None:
         db = info.context["db"]
-        return await db.find_one("v_user", info=info, id=id)
+        return await db.find_one("v_user", info=info, mandatory_filters={"id": id})
 
     # Create a repository instance like the FastAPI app does
     from contextlib import asynccontextmanager

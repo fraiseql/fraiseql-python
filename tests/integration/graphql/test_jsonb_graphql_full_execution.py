@@ -68,7 +68,7 @@ async def product_with_jsonb(info, id: ID) -> ProductWithJSONB | None:
     pool = info.context.get("pool")
     test_schema = info.context.get("test_schema")
     repo = FraiseQLRepository(pool, context={"mode": "development"})
-    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", id=id)
+    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id})
 
 
 @fraiseql.mutation
@@ -103,7 +103,7 @@ async def create_product_with_jsonb(
     # This will return RustResponseBytes which should be passed through by execute_graphql()
     repo = FraiseQLRepository(pool, context={"mode": "development"})
 
-    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", id=id)
+    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id})
 
 
 class TestJSONBFullGraphQLExecution:
