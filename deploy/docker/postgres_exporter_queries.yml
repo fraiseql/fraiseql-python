@@ -1,0 +1,80 @@
+# Custom queries for postgres_exporter to expose pg_stat_statements metrics.
+#
+# These queries use the v_query_stats view created by FraiseQL's monitoring
+# schema (src/fraiseql/monitoring/schema.sql). The view handles:
+#   - dbid filtering (current database only)
+#   - Utility statement exclusion (SET, BEGIN, COMMIT, etc.)
+#   - Cache hit ratio computation
+#
+# Usage:
+#   postgres_exporter \
+#     --extend.query-path=/etc/postgres_exporter/queries.yml \
+#     --web.listen-address=:9187
+#
+# docker-compose example:
+#   postgres-exporter:
+#     image: prometheuscommunity/postgres-exporter:latest
+#     environment:
+#       DATA_SOURCE_NAME: "postgresql://prometheus:prometheus_password@db:5432/fraiseql_prod?sslmode=disable"
+#     volumes:
+#       - ./postgres_exporter_queries.yml:/etc/postgres_exporter/queries.yml:ro
+#     command:
+#       - "--extend.query-path=/etc/postgres_exporter/queries.yml"
+#     ports:
+#       - "9187:9187"
+
+# ---------------------------------------------------------------------------
+# Per-query metrics (top 50 by total execution time)
+# ---------------------------------------------------------------------------
+fraiseql_pg_query_stats:
+  query: |
+    SELECT
+      queryid::text AS queryid,
+      LEFT(query_preview, 80) AS query_preview,
+      calls,
+      total_exec_time_ms / 1000.0 AS total_exec_time_seconds,
+      mean_exec_time_ms / 1000.0 AS mean_exec_time_seconds,
+      rows_returned,
+      cache_hit_ratio
+    FROM v_query_stats
+    ORDER BY total_exec_time_ms DESC
+    LIMIT 50
+  metrics:
+    - queryid:
+        usage: "LABEL"
+        description: "Query identifier (hash)"
+    - query_preview:
+        usage: "LABEL"
+        description: "Truncated query text"
+    - calls:
+        usage: "COUNTER"
+        description: "Total number of times the query has been executed"
+    - total_exec_time_seconds:
+        usage: "GAUGE"
+        description: "Total execution time in seconds"
+    - mean_exec_time_seconds:
+        usage: "GAUGE"
+        description: "Mean execution time per call in seconds"
+    - rows_returned:
+        usage: "COUNTER"
+        description: "Total rows returned by the query"
+    - cache_hit_ratio:
+        usage: "GAUGE"
+        description: "Percentage of block reads served from shared buffer cache"
+
+# ---------------------------------------------------------------------------
+# Database-wide aggregate cache hit ratio
+# ---------------------------------------------------------------------------
+fraiseql_pg_database_cache_hit:
+  query: |
+    SELECT
+      CASE
+        WHEN SUM(shared_blks_hit + shared_blks_read) > 0
+        THEN ROUND(SUM(shared_blks_hit)::numeric / SUM(shared_blks_hit + shared_blks_read) * 100, 2)
+        ELSE 100.0
+      END AS cache_hit_ratio
+    FROM v_query_stats
+  metrics:
+    - cache_hit_ratio:
+        usage: "GAUGE"
+        description: "Overall database cache hit ratio from tracked queries (percentage)"
