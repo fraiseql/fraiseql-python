@@ -5,6 +5,21 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-05-14
+
+### Added
+
+- **pg_stat_statements integration** (#357)
+  - `v_query_stats` SQL view and `get_query_stats()` function with cache hit
+    ratio computation, utility statement filtering, and graceful degradation
+  - `QueryStatsCollector` Python API with `get_stats()`, `is_available()`,
+    `reset_stats()` and global singleton pattern (`init_query_stats()`)
+  - `check_query_stats()` optional health check for monitoring endpoints
+  - `fraiseql query-stats` CLI command with `--top-n`, `--order-by`, `--reset`
+    flags and color-coded cache hit ratios
+  - Prometheus integration via `postgres_exporter_queries.yml` custom queries
+  - Test container configured with `shared_preload_libraries=pg_stat_statements`
+
 ## [1.21.0] - 2026-05-13
 
 ### Added
