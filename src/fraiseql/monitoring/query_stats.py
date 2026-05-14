@@ -22,9 +22,7 @@ from fraiseql.core.exceptions import FraiseQLError
 
 logger = logging.getLogger(__name__)
 
-VALID_ORDER_BY = frozenset(
-    {"total_exec_time", "mean_exec_time", "calls", "cache_hit_ratio"}
-)
+VALID_ORDER_BY = frozenset({"total_exec_time", "mean_exec_time", "calls", "cache_hit_ratio"})
 
 _ORDER_BY_COLUMN = {
     "total_exec_time": "total_exec_time_ms",
@@ -110,10 +108,7 @@ class QueryStatsCollector:
             ValueError: If order_by is not a valid metric name.
         """
         if order_by not in VALID_ORDER_BY:
-            msg = (
-                f"Invalid order_by: {order_by!r}. "
-                f"Allowed: {', '.join(sorted(VALID_ORDER_BY))}"
-            )
+            msg = f"Invalid order_by: {order_by!r}. Allowed: {', '.join(sorted(VALID_ORDER_BY))}"
             raise ValueError(msg)
 
         try:
@@ -150,10 +145,7 @@ class QueryStatsCollector:
             psycopg.errors.UndefinedFunction,
         ):
             if not self._warned:
-                logger.warning(
-                    "pg_stat_statements not available — "
-                    "returning empty query stats"
-                )
+                logger.warning("pg_stat_statements not available — returning empty query stats")
                 self._warned = True
             self._available = False
             return []

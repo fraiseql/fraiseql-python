@@ -10,9 +10,7 @@ from fraiseql.monitoring.query_stats import (
     init_query_stats,
 )
 
-ORDER_BY_CHOICES = click.Choice(
-    ["total_exec_time", "mean_exec_time", "calls", "cache_hit_ratio"]
-)
+ORDER_BY_CHOICES = click.Choice(["total_exec_time", "mean_exec_time", "calls", "cache_hit_ratio"])
 
 
 def _format_duration(ms: float) -> str:
@@ -38,10 +36,7 @@ def _print_stats_table(
     database_url: str,
 ) -> None:
     """Print formatted query statistics table."""
-    click.echo(
-        f"\nFraiseQL Query Statistics "
-        f"(ordered by {order_by})"
-    )
+    click.echo(f"\nFraiseQL Query Statistics (ordered by {order_by})")
     click.echo(f"Database: {_mask_password(database_url)}\n")
 
     if not stats:
@@ -106,9 +101,7 @@ async def _run_query_stats(
     """Async implementation of query-stats display."""
     from psycopg_pool import AsyncConnectionPool
 
-    pool = AsyncConnectionPool(
-        database_url, min_size=1, max_size=2, open=False
-    )
+    pool = AsyncConnectionPool(database_url, min_size=1, max_size=2, open=False)
     await pool.open()
 
     try:
@@ -139,9 +132,7 @@ async def _run_reset(database_url: str) -> None:
 
     from fraiseql.core.exceptions import FraiseQLError
 
-    pool = AsyncConnectionPool(
-        database_url, min_size=1, max_size=2, open=False
-    )
+    pool = AsyncConnectionPool(database_url, min_size=1, max_size=2, open=False)
     await pool.open()
 
     try:
@@ -210,6 +201,4 @@ def query_stats(
             return
         asyncio.run(_run_reset(database_url))
     else:
-        asyncio.run(
-            _run_query_stats(database_url, top_n, order_by)
-        )
+        asyncio.run(_run_query_stats(database_url, top_n, order_by))
