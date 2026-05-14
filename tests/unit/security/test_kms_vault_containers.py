@@ -53,8 +53,12 @@ def vault_container():
             time.sleep(1)
 
         # Get the mapped port
-        host = container.get_container_host_ip()
-        port = container.get_exposed_port(8200)
+        try:
+            host = container.get_container_host_ip()
+            port = container.get_exposed_port(8200)
+        except TimeoutError:
+            ctx.__exit__(None, None, None)
+            pytest.skip("Vault container did not become ready in time")
 
         yield {
             "addr": f"http://{host}:{port}",

@@ -283,7 +283,7 @@ async def test_nested_organization_without_tenant_id() -> None:
             if user_id is None:
                 user_id = UUID("75736572-0000-0000-0000-000000000000")
 
-            result = await db.find_one("v_user", id=user_id)
+            result = await db.find_one("v_user", mandatory_filters={"id": user_id})
 
             if result:
                 return User.from_dict(result)

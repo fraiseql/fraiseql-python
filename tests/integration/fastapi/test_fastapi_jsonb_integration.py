@@ -52,7 +52,7 @@ async def product_with_jsonb(info, id: ID) -> ProductWithJSONB | None:
     """Single query with typed return value."""
     pool = info.context.get("pool")
     repo = FraiseQLRepository(pool, context={"mode": "development"})
-    return await repo.find_one("test_products_fastapi_jsonb_view", id=id)
+    return await repo.find_one("test_products_fastapi_jsonb_view", mandatory_filters={"id": id})
 
 
 @fraiseql.mutation
@@ -74,7 +74,7 @@ async def create_product_with_jsonb(
 
     # Return the created product via repository
     repo = FraiseQLRepository(pool, context={"mode": "development"})
-    return await repo.find_one("test_products_fastapi_jsonb_view", id=id)
+    return await repo.find_one("test_products_fastapi_jsonb_view", mandatory_filters={"id": id})
 
 
 class TestFastAPIJSONBIntegration:

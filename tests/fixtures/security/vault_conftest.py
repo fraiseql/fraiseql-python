@@ -34,7 +34,10 @@ def vault_container() -> Generator[VaultContainer | None]:
         )
 
     container = VaultContainer()
-    container.start()
+    try:
+        container.start()
+    except TimeoutError:
+        pytest.skip("Vault container did not become ready in time")
 
     yield container
 

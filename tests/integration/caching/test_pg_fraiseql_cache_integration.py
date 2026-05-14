@@ -382,7 +382,7 @@ class TestTenantIdInCacheKeys:
         mock_pool.connection = MagicMock(return_value=mock_conn)
 
         # Execute find query
-        await cached_repo.find("users", status="active")
+        await cached_repo.find("users", mandatory_filters={"status": "active"})
 
         # Verify cache.get was called
         assert mock_cache_backend.get.call_count >= 1, "Cache should be checked"
@@ -443,12 +443,12 @@ class TestTenantIdInCacheKeys:
         # Tenant A queries
         base_repo_a = FraiseQLRepository(pool=mock_pool, context={"tenant_id": tenant_a})
         cached_repo_a = CachedRepository(base_repo_a, cache)
-        await cached_repo_a.find("users", status="active")
+        await cached_repo_a.find("users", mandatory_filters={"status": "active"})
 
         # Tenant B queries (same query)
         base_repo_b = FraiseQLRepository(pool=mock_pool, context={"tenant_id": tenant_b})
         cached_repo_b = CachedRepository(base_repo_b, cache)
-        await cached_repo_b.find("users", status="active")
+        await cached_repo_b.find("users", mandatory_filters={"status": "active"})
 
         # Verify we tracked 2 cache lookups
         assert len(cache_keys_used) == 2, "Should have 2 cache lookups"
