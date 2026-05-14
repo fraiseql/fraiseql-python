@@ -56,9 +56,8 @@ def vault_container():
         try:
             host = container.get_container_host_ip()
             port = container.get_exposed_port(8200)
-        except TimeoutError:
-            ctx.__exit__(None, None, None)
-            pytest.skip("Vault container did not become ready in time")
+        except (TimeoutError, Exception) as exc:
+            pytest.skip(f"Vault container did not become ready: {exc}")
 
         yield {
             "addr": f"http://{host}:{port}",
@@ -66,7 +65,10 @@ def vault_container():
             "container": container,
         }
     finally:
-        ctx.__exit__(None, None, None)
+        try:
+            ctx.__exit__(None, None, None)
+        except Exception:
+            pass  # Container may already be removed
 
 
 @pytest.fixture
