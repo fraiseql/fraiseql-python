@@ -383,7 +383,6 @@ def _graphql_post_routes(app: FastAPI) -> set[str]:
     }
 
 
-@pytest.mark.xfail(strict=True, reason="#365: enable_rust_endpoint default-off not yet landed")
 def test_default_app_has_no_rust_post_route() -> None:
     """By default the resolver-bypass /graphql/rust route is not mounted (issue #365).
 

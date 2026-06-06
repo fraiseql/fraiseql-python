@@ -1713,75 +1713,80 @@ def create_graphql_router(
 
         return await graphql_endpoint(request_obj, http_request, context)
 
-    # Phase 9: Add simplified unified Rust pipeline endpoint
-    @router.post("/graphql/rust", response_class=Response)
-    async def graphql_endpoint_rust(
-        request: GraphQLRequest,
-        http_request: Request,
-        context: dict[str, Any] = context_dependency,
-    ) -> Response:
-        """Execute GraphQL query using unified Rust pipeline (Phase 9).
+    # Phase 9: simplified unified Rust pipeline endpoint. Opt-in (issue #365): this is a
+    # resolver-bypass route, so it is mounted only when explicitly enabled. It is still
+    # authorization-gated when present (issue #362); when disabled it simply does not exist
+    # (a request 404s), keeping the route allow-list the single source of truth.
+    if config.enable_rust_endpoint:
 
-        This endpoint demonstrates the dramatic simplification achieved by
-        moving all database operations to Rust. All work happens in a
-        single Rust function call.
-        """
-        # Operation authorization gate (issue #362). This endpoint hands off to Rust
-        # and never runs a Python resolver, so enforcement happens here, before the
-        # Rust call. Per-operation decorator overrides do not apply on this path.
-        authorizer = _registry_default_authorizer()
-        if authorizer is not None:
-            from graphql import GraphQLError
+        @router.post("/graphql/rust", response_class=Response)
+        async def graphql_endpoint_rust(
+            request: GraphQLRequest,
+            http_request: Request,
+            context: dict[str, Any] = context_dependency,
+        ) -> Response:
+            """Execute GraphQL query using unified Rust pipeline (Phase 9).
 
-            from fraiseql.security.authorization import enforce_operation_value
+            This endpoint demonstrates the dramatic simplification achieved by
+            moving all database operations to Rust. All work happens in a
+            single Rust function call.
+            """
+            # Operation authorization gate (issue #362). This endpoint hands off to Rust
+            # and never runs a Python resolver, so enforcement happens here, before the
+            # Rust call. Per-operation decorator overrides do not apply on this path.
+            authorizer = _registry_default_authorizer()
+            if authorizer is not None:
+                from graphql import GraphQLError
 
-            op_type, op_name = _derive_operation_info(request.query)
-            try:
-                decision = await enforce_operation_value(
-                    authorizer=authorizer,
-                    context=context,
-                    operation_type=op_type,
-                    operation_name=op_name,
-                    arguments=request.variables or {},
-                )
-            except GraphQLError as exc:
-                # Deny short-circuits: the Rust pipeline is never invoked.
-                return Response(
-                    content=json.dumps(_forbidden_error_payload(exc)).encode(),
-                    media_type="application/json",
-                )
-            if decision.filters:
-                # Per-row filters are impossible (work happens in Rust) → rely on
-                # session variables + RLS for row scoping; never silently drop them.
-                logger.warning(
-                    "authorization filters are ignored on the /graphql/rust path; "
-                    "rely on session variables + RLS for row scoping"
-                )
+                from fraiseql.security.authorization import enforce_operation_value
 
-        # Import the unified Rust function
-        from fraiseql._fraiseql_rs import execute_graphql_query
+                op_type, op_name = _derive_operation_info(request.query)
+                try:
+                    decision = await enforce_operation_value(
+                        authorizer=authorizer,
+                        context=context,
+                        operation_type=op_type,
+                        operation_name=op_name,
+                        arguments=request.variables or {},
+                    )
+                except GraphQLError as exc:
+                    # Deny short-circuits: the Rust pipeline is never invoked.
+                    return Response(
+                        content=json.dumps(_forbidden_error_payload(exc)).encode(),
+                        media_type="application/json",
+                    )
+                if decision.filters:
+                    # Per-row filters are impossible (work happens in Rust) → rely on
+                    # session variables + RLS for row scoping; never silently drop them.
+                    logger.warning(
+                        "authorization filters are ignored on the /graphql/rust path; "
+                        "rely on session variables + RLS for row scoping"
+                    )
 
-        # Extract user context for authorization. ``context["user"]`` is None for
-        # unauthenticated requests, so guard before attribute access.
-        user = context.get("user") or {}
-        user_context = {
-            "user_id": user.get("id"),
-            "permissions": user.get("permissions", []),
-            "roles": user.get("roles", []),
-        }
+            # Import the unified Rust function
+            from fraiseql._fraiseql_rs import execute_graphql_query
 
-        # Call unified Rust pipeline - all work done in Rust!
-        result_bytes = await execute_graphql_query(
-            query_string=request.query or "",
-            variables=request.variables or {},
-            user_context=user_context,
-        )
+            # Extract user context for authorization. ``context["user"]`` is None for
+            # unauthenticated requests, so guard before attribute access.
+            user = context.get("user") or {}
+            user_context = {
+                "user_id": user.get("id"),
+                "permissions": user.get("permissions", []),
+                "roles": user.get("roles", []),
+            }
 
-        # Return bytes directly (no Python JSON processing)
-        return Response(
-            content=result_bytes,
-            media_type="application/json",
-        )
+            # Call unified Rust pipeline - all work done in Rust!
+            result_bytes = await execute_graphql_query(
+                query_string=request.query or "",
+                variables=request.variables or {},
+                user_context=user_context,
+            )
+
+            # Return bytes directly (no Python JSON processing)
+            return Response(
+                content=result_bytes,
+                media_type="application/json",
+            )
 
     # Add metrics endpoint if enabled
     if hasattr(unified_executor, "get_metrics") and not is_production_env:
