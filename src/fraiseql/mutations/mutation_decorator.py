@@ -904,6 +904,7 @@ def mutation(
     context_params: dict[str, str] | None = None,
     error_config: MutationErrorConfig | None = None,
     enable_cascade: bool = False,
+    authorizer: Any | None = None,
 ) -> type[T] | Callable[[type[T]], type[T]] | Callable[..., Any]:
     """Decorator to define GraphQL mutations with PostgreSQL function backing.
 
@@ -918,6 +919,9 @@ def mutation(
         context_params: Maps GraphQL context keys to PostgreSQL function parameter names
         error_config: Optional configuration for error detection behavior
         enable_cascade: Enable GraphQL cascade functionality to include side effects in response
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #362). It takes precedence over the global default
+            authorizer for this mutation only.
 
     Returns:
         Decorated mutation with automatic PostgreSQL function integration
@@ -1249,6 +1253,8 @@ def mutation(
             # Store metadata for schema building
             fn.__fraiseql_mutation__ = True
             fn.__fraiseql_resolver__ = fn
+            # Per-operation authorizer override (issue #362).
+            fn.__fraiseql_authorizer__ = authorizer
 
             # Auto-register with schema
             registry.register_mutation(fn)
@@ -1267,6 +1273,9 @@ def mutation(
 
         # Create and store resolver
         cls.__fraiseql_resolver__ = definition.create_resolver()
+        # Per-operation authorizer override (issue #362) — set on the resolver fn the
+        # registry stores, so resolve_authorizer can read it at resolve time.
+        cls.__fraiseql_resolver__.__fraiseql_authorizer__ = authorizer
 
         # Auto-register with schema
         registry.register_mutation(cls)

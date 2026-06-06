@@ -1008,6 +1008,13 @@ async def execute_multi_field_query(
                 "path": [response_key],
             }
 
+            # Preserve GraphQLError extensions (e.g. authorization deny carries
+            # extensions={"code": "FORBIDDEN"}) so the deny shape is consistent with
+            # the other execution paths (issue #362).
+            error_extensions = getattr(e, "extensions", None)
+            if error_extensions:
+                error_dict["extensions"] = error_extensions
+
             # Add location info if available
             location = _extract_field_location(field_node)
             if location:
