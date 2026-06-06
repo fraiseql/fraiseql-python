@@ -120,3 +120,24 @@ async def test_no_authorizer_streams_unchanged() -> None:
     values = await _drain(stream)
     assert [v.label for v in values] == ["a"]
     assert _yields == ["ticks"]
+
+
+async def test_per_operation_override_beats_global_default() -> None:
+    """`@subscription(authorizer=...)` wins over a global deny-all default (issue #364, phase 2)."""
+
+    @fraiseql.subscription(authorizer=AllowAll())
+    async def overridden(info) -> AsyncGenerator[Tick]:
+        _yields.append("overridden")
+        yield Tick(id=2, label="b")
+
+    schema = build_fraiseql_schema(
+        query_types=[Tick, _ticks],
+        subscription_resolvers=[overridden],
+        authorizer=DenyAll(),
+    )
+    field = next(iter(schema.subscription_type.fields.values()))
+    info = SimpleNamespace(context={}, field_name="overridden")
+    stream = await field.subscribe(None, info)
+    values = await _drain(stream)
+    assert [v.label for v in values] == ["b"]
+    assert _yields == ["overridden"]

@@ -192,10 +192,10 @@ def subscription(fn: F) -> F: ...
 
 
 @overload
-def subscription() -> Callable[[F], F]: ...
+def subscription(*, authorizer: Any | None = None) -> Callable[[F], F]: ...
 
 
-def subscription(fn: F | None = None) -> F | Callable[[F], F]:
+def subscription(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable[[F], F]:
     """Decorator to mark a function as a GraphQL subscription.
 
     This decorator automatically registers the function with the GraphQL schema
@@ -204,6 +204,9 @@ def subscription(fn: F | None = None) -> F | Callable[[F], F]:
 
     Args:
         fn: The subscription function to decorate (when used without parentheses)
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #364). It takes precedence over the global default
+            authorizer for this subscription only, enforced once at subscribe time.
 
     Returns:
         The decorated async generator function with GraphQL subscription metadata
@@ -302,6 +305,9 @@ def subscription(fn: F | None = None) -> F | Callable[[F], F]:
         # Register with schema
         registry = SchemaRegistry.get_instance()
         registry.register_subscription(func)
+        # Per-operation authorizer override (issue #364); None falls back to the
+        # registry default at subscribe time via resolve_authorizer.
+        func.__fraiseql_authorizer__ = authorizer
         return func
 
     if fn is None:

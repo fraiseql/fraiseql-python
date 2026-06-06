@@ -2,15 +2,30 @@
 
 import inspect
 from collections.abc import AsyncGenerator, Callable
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 from fraiseql.core.types import SubscriptionField
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def subscription(fn: F) -> F:
+@overload
+def subscription(fn: F) -> F: ...
+
+
+@overload
+def subscription(*, authorizer: Any | None = None) -> Callable[[F], F]: ...
+
+
+def subscription(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable[[F], F]:
     """Decorator to mark a function as a GraphQL subscription.
+
+    Args:
+        fn: The subscription function to decorate (when used without parentheses).
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #364). It takes precedence over the global default
+            authorizer for this subscription only, and is enforced once at subscribe
+            time (mirroring ``@query`` / ``@mutation``).
 
     Example:
         @subscription
@@ -18,43 +33,52 @@ def subscription(fn: F) -> F:
             async for task in watch_project_tasks(project_id):
                 yield task
     """
-    if not inspect.isasyncgenfunction(fn):
-        msg = (
-            f"Subscription {fn.__name__} must be an async generator function "
-            f"(use 'async def' and 'yield')"
+
+    def decorator(func: F) -> F:
+        if not inspect.isasyncgenfunction(func):
+            msg = (
+                f"Subscription {func.__name__} must be an async generator function "
+                f"(use 'async def' and 'yield')"
+            )
+            raise TypeError(
+                msg,
+            )
+
+        # Extract type hints
+        hints = inspect.get_annotations(func)
+        return_type = hints.get("return", Any)
+
+        # Parse AsyncGenerator type
+        if hasattr(return_type, "__origin__") and return_type.__origin__ is AsyncGenerator:
+            yield_type = return_type.__args__[0] if return_type.__args__ else Any
+        else:
+            # Try to infer from first yield
+            yield_type = Any
+
+        # Create subscription field
+        field = SubscriptionField(
+            name=func.__name__,
+            resolver=func,
+            return_type=yield_type,
+            args=hints,
+            description=func.__doc__,
         )
-        raise TypeError(
-            msg,
-        )
 
-    # Extract type hints
-    hints = inspect.get_annotations(fn)
-    return_type = hints.get("return", Any)
+        # Register with schema builder
+        from fraiseql.gql.schema_builder import SchemaRegistry
 
-    # Parse AsyncGenerator type
-    if hasattr(return_type, "__origin__") and return_type.__origin__ is AsyncGenerator:
-        yield_type = return_type.__args__[0] if return_type.__args__ else Any
-    else:
-        # Try to infer from first yield
-        yield_type = Any
+        schema_registry = SchemaRegistry.get_instance()
+        schema_registry.register_subscription(func)
 
-    # Create subscription field
-    field = SubscriptionField(
-        name=fn.__name__,
-        resolver=fn,
-        return_type=yield_type,
-        args=hints,
-        description=fn.__doc__,
-    )
+        # Add metadata
+        func.__fraiseql_subscription__ = True
+        func._field_def = field
+        # Per-operation authorizer override (issue #364); None falls back to the
+        # registry default at subscribe time via resolve_authorizer.
+        func.__fraiseql_authorizer__ = authorizer
 
-    # Register with schema builder
-    from fraiseql.gql.schema_builder import SchemaRegistry
+        return func
 
-    schema_registry = SchemaRegistry.get_instance()
-    schema_registry.register_subscription(fn)
-
-    # Add metadata
-    fn.__fraiseql_subscription__ = True
-    fn._field_def = field
-
-    return fn
+    if fn is None:
+        return decorator
+    return decorator(fn)
