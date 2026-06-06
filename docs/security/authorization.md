@@ -149,13 +149,15 @@ from fraiseql.security import authorize_field, field_authorizer_adapter
 
 @field
 @authorize_field(field_authorizer_adapter(my_authorizer, field="User.email"))
-async def email(self, info) -> str | None:
+def email(self) -> str | None:
     return self._email
 ```
 
-> A field method combined with `@authorize_field` must take `info` (`async def
-> email(self, info)`): the check needs the request context, and an `async` resolver lets an
-> async authorizer run without the sync→async event-loop fallback.
+> `@field` and `@authorize_field` compose in **either order**, for any field-method shape
+> (`self`, `self, info`, sync or `async`). The permission check always receives the request
+> `info`; the field method itself only needs `info` if its own body uses it. A sync resolver
+> gated by an async authorizer (such as `field_authorizer_adapter`) works without warnings —
+> the check runs on the request's event loop.
 
 ### Automatic field gating (opt-in)
 

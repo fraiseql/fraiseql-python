@@ -162,6 +162,24 @@ async def doc(info) -> Doc:
     return Doc(id=1)
 
 
+# The natural sync self-only form the docs now show: @field outer / @authorize_field inner on
+# a plain ``def email(self)`` gated by the (async) adapter. Kept in lockstep with the docs.
+@fraiseql.type
+class DocSync:
+    id: int
+
+    @fraiseql.field
+    @authorize_field(field_authorizer_adapter(AllowAll(), field="DocSync.email"))
+    def email(self) -> str | None:
+        _executions.append("docsync_email")
+        return "secret@example.com"
+
+
+@fraiseql.query
+async def doc_sync(info) -> DocSync:
+    return DocSync(id=1)
+
+
 async def test_documented_field_authorizer_adapter_pattern() -> None:
     """The documented hand-applied adapter pattern on an async ``(self, info)`` field method."""
     schema = build_fraiseql_schema(query_types=[Doc, doc], authorizer=None)
@@ -169,3 +187,16 @@ async def test_documented_field_authorizer_adapter_pattern() -> None:
     assert not result.errors
     assert result.data["doc"]["email"] == "secret@example.com"
     assert "doc_email" in _executions
+
+
+async def test_documented_field_authorizer_adapter_pattern_sync_self_only() -> None:
+    """The natural ``def email(self)`` form (sync, self-only) the docs example shows.
+
+    A sync resolver gated by the async adapter must resolve without warnings and without
+    needing ``info`` on the method signature.
+    """
+    schema = build_fraiseql_schema(query_types=[DocSync, doc_sync], authorizer=None)
+    result = await graphql(schema, "{ docSync { email } }", context_value={})
+    assert not result.errors
+    assert result.data["docSync"]["email"] == "secret@example.com"
+    assert "docsync_email" in _executions

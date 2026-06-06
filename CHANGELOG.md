@@ -5,6 +5,29 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.5] - 2026-06-06
+
+### Fixed
+
+- **`@field` / `@authorize_field` compose in either decorator order** — a pre-existing
+  field-resolver defect, surfaced during the #366 work
+  - A field method gated with `@authorize_field` now runs its check and resolver with the
+    correct arguments regardless of decorator order (`@authorize_field` outer / `@field`
+    inner, or `@field` outer / `@authorize_field` inner) and for any method shape (`self`,
+    `self, info`, sync or `async`). Previously the `@field`-outer order silently failed for
+    `self`-only methods (the order the docs showed).
+  - Auth wrappers no longer mis-report their signature: `@authorize_field` drops the
+    `functools.wraps`-set `__wrapped__`, so an outer `@field` (and `inspect.signature`) reads
+    the wrapper's real `(root, info, *args, **kwargs)` interface. **Note:** external tooling
+    that followed `__wrapped__` on an auth wrapper now sees this real signature instead of the
+    inner method's.
+  - A sync field resolver gated by an async authorizer (e.g. `field_authorizer_adapter`) no
+    longer emits a `RuntimeWarning` or risks an event-loop deadlock: the wrapper is async
+    end-to-end whenever the resolver or the check is async, so graphql-core awaits it directly.
+  - Internals: a single `invoke_resolver` convention
+    (`fraiseql.core.resolver_invocation`) is now the source of truth for how `@field` and
+    `@authorize_field` call what they wrap. Fail-closed behavior is unchanged on every deny.
+
 ## [1.23.4] - 2026-06-06
 
 ### Added
