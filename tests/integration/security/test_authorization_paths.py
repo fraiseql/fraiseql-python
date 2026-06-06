@@ -32,7 +32,10 @@ removed exactly when its phase completes (and turning any *new* ungated path red
 from __future__ import annotations
 
 import asyncio
+import inspect
+from collections.abc import AsyncGenerator  # noqa: TC003 — runtime hint for get_type_hints
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -42,7 +45,7 @@ from fastapi.testclient import TestClient
 import fraiseql
 from fraiseql.fastapi import create_fraiseql_app
 from fraiseql.fastapi.config import FraiseQLConfig
-from fraiseql.gql.schema_builder import SchemaRegistry
+from fraiseql.gql.schema_builder import SchemaRegistry, build_fraiseql_schema
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -90,6 +93,13 @@ async def create_user(info, name: str) -> User:
     """Create a user (records execution)."""
     _executions.append("create_user")
     return User(id=2, name=name)
+
+
+@fraiseql.subscription
+async def message_stream(info) -> AsyncGenerator[Post]:
+    """Stream messages (records execution before the first yield)."""
+    _executions.append("message_stream")
+    yield Post(id=201, title="streamed")
 
 
 class DenyAll:
@@ -302,6 +312,44 @@ def _run_apq() -> tuple[bool, bool]:
     return _is_forbidden(body), served_cached
 
 
+def _run_subscription() -> tuple[bool, bool]:
+    """Drive the Subscription field's ``subscribe`` directly under a deny-all authorizer.
+
+    Mirrors ``_run_turbo``: exercise the resolver as a unit via ``asyncio.run``. The
+    websocket manager (``websocket.py:256``) drives graphql-core's ``subscribe``, which
+    invokes this same field resolver, so a single gate here covers the websocket path too.
+    """
+    from graphql import GraphQLError
+
+    _executions.clear()
+    schema = build_fraiseql_schema(
+        query_types=[User, Post, users, posts],
+        subscription_resolvers=[message_stream],
+    )
+    _set_default_authorizer(DenyAll())
+
+    field = next(iter(schema.subscription_type.fields.values()))
+    subscribe = field.subscribe
+    info = SimpleNamespace(context={}, field_name="messageStream")
+
+    async def _drive() -> None:
+        # Phase 1 makes ``subscribe`` a plain ``async def``: awaiting it enforces (raising
+        # on deny) *before* the inner generator is created. Today it is an async generator
+        # function, so calling it returns a generator whose body runs only on iteration.
+        result = subscribe(None, info)
+        if inspect.isawaitable(result):
+            result = await result
+        async for _value in result:
+            break
+
+    forbidden = False
+    try:
+        asyncio.run(_drive())
+    except GraphQLError as exc:
+        forbidden = (exc.extensions or {}).get("code") == "FORBIDDEN"
+    return forbidden, bool(_executions)
+
+
 _CASES = [
     pytest.param(_run_mutation, id="mutation"),  # gated in Phase 2
     pytest.param(_run_single_query, id="single-field-query"),  # gated in Phase 3
@@ -310,6 +358,14 @@ _CASES = [
     pytest.param(_run_turbo, id="turbo"),  # gated in Phase 4 (part A)
     pytest.param(_run_rust, id="graphql-rust"),  # gated in Phase 4 (part B)
     pytest.param(_run_apq, id="apq-cache-hit"),  # gated in Phase 4 (part C)
+    pytest.param(
+        _run_subscription,
+        id="subscription",
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason="#364: subscribe-time gate not yet landed",
+        ),
+    ),
 ]
 
 
