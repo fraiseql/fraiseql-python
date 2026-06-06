@@ -50,13 +50,13 @@ class TenantAuthorizer:
 - The return value may be a plain `bool` (`True` → allow, `False` → deny) or an
   `AuthorizationDecision`.
 - The method may be **sync or async** — the framework awaits awaitables.
-- `operation_type` is `"query"` or `"mutation"`; `operation_name` is the GraphQL field name;
-  `arguments` are the (Python-named) operation arguments.
+- `operation_type` is `"query"`, `"mutation"`, or `"subscription"`; `operation_name` is the
+  GraphQL field name; `arguments` are the (Python-named) operation arguments.
 
 ## Wiring it up
 
-Pass `authorizer=` to the supported entry point. It gates every root query and mutation, the
-three resolver-bypass paths, and survives schema hot-reload:
+Pass `authorizer=` to the supported entry point. It gates every root query, mutation, and
+subscription, the three resolver-bypass paths, and survives schema hot-reload:
 
 ```python
 from fraiseql import create_fraiseql_app
@@ -144,6 +144,33 @@ def email(self) -> str:
     return self._email
 ```
 
+## Subscriptions
+
+A subscription *is* an operation, so it is gated by the same PEP — enforced **once, at
+subscribe time**, before the event stream is created. graphql-core calls the subscription's
+`subscribe` resolver to obtain the stream; the authorizer runs there with
+`operation_type="subscription"`, so a deny raises a `GraphQLError` *during the subscribe
+call* and the inner generator — which is what would query the database — is never built.
+This covers both the schema execution path and the websocket transport (which routes through
+graphql-core's `subscribe`).
+
+```python
+@fraiseql.subscription(authorizer=AdminOnly())   # per-operation override
+async def audit_stream(info) -> AsyncGenerator[AuditEntry, None]:
+    ...
+```
+
+As with queries and mutations, a per-operation `@subscription(authorizer=...)` takes
+precedence over the global default; with no authorizer in effect, subscriptions stream
+byte-for-byte as before.
+
+- **Filters are ignored.** A subscription stream is not a single scoped read set, so a
+  returned `decision.filters` has no row-scoping meaning. It is **logged, not silently
+  dropped** (mirroring the mutation path) — rely on the stream source for any scoping.
+- **Subscribe-time only (for now).** Enforcement runs once, when the client subscribes — not
+  per emitted event. Revoking a *live* stream when permissions change mid-flight (per-event
+  re-checking) is a deliberate future opt-in, not part of this contract.
+
 ## Migration from the registry rewrite
 
 **Before** — coupling the security boundary to a private attribute:
@@ -172,5 +199,4 @@ shared — but a single policy implementation can serve both runtimes.
 
 ## Out of scope
 
-- Subscriptions — operation-level gating for subscriptions is a follow-up.
 - A built-in policy DSL — only the enforcement point and decision contract are provided.
