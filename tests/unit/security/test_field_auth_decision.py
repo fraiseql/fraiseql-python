@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import warnings
 from types import SimpleNamespace
 from typing import Any
@@ -66,6 +67,24 @@ async def test_filters_at_field_granularity_are_ignored_and_warned() -> None:
         result = await wrapped(None, _info())
     assert result == "secret"
     assert any("filter" in str(w.message).lower() for w in caught)
+
+
+def test_auth_wrapper_reports_its_real_signature() -> None:
+    """The wrapper must advertise ``(root, info, *args, **kwargs)`` — no ``__wrapped__`` leak.
+
+    ``functools.wraps`` would set ``__wrapped__`` and make ``inspect.signature`` follow it to
+    the inner method's ``(self)``-only shape; an outer ``@field`` would then call the wrapper
+    with too few arguments. Asserting on the wrapper's own signature pins the fix.
+    """
+
+    def email(self) -> str:  # noqa: N805 - self-only field method
+        return "secret"
+
+    wrapped = authorize_field(lambda info: True)(email)
+
+    assert not hasattr(wrapped, "__wrapped__"), "auth wrapper must not leak inner via __wrapped__"
+    params = list(inspect.signature(wrapped).parameters)
+    assert params == ["root", "info", "args", "kwargs"]
 
 
 async def test_field_authorizer_adapter_delegates_to_operation_authorizer() -> None:

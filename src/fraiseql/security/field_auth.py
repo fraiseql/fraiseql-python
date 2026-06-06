@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
 from graphql import GraphQLError, GraphQLResolveInfo
 
+from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.security.authorization import AuthorizationDecision, normalize_decision
 
 if TYPE_CHECKING:
@@ -86,6 +87,33 @@ def _enforce_field_decision(
     raise FieldAuthorizationError(default_message)
 
 
+def _copy_resolver_metadata(wrapper: Any, func: Any) -> None:
+    """Copy resolver metadata onto an auth wrapper **without** setting ``__wrapped__``.
+
+    Mirrors ``@field``'s manual metadata copy (``decorators.py``) instead of using
+    ``functools.wraps``. ``functools.wraps`` sets ``wrapper.__wrapped__ = func``, and
+    ``inspect.signature`` follows ``__wrapped__`` by default — so an outer ``@field`` would
+    read the *inner* method's signature (e.g. ``(self)``) rather than the wrapper's real
+    ``(root, info, *args, **kwargs)`` interface, then call the wrapper with too few arguments.
+    That signature leak is the root of the decorator-order composition bug. Copying metadata
+    by hand keeps the wrapper signature-faithful.
+    """
+    wrapper.__name__ = getattr(func, "__name__", wrapper.__name__)
+    wrapper.__doc__ = func.__doc__
+    if hasattr(func, "__annotations__"):
+        wrapper.__annotations__ = func.__annotations__.copy()
+    if hasattr(func, "__fraiseql_field__"):
+        wrapper.__fraiseql_field__ = func.__fraiseql_field__
+        wrapper.__fraiseql_field_resolver__ = func.__fraiseql_field_resolver__
+        wrapper.__fraiseql_field_description__ = getattr(
+            func,
+            "__fraiseql_field_description__",
+            None,
+        )
+    if hasattr(func, "__fraiseql_original_func__"):
+        wrapper.__fraiseql_original_func__ = func.__fraiseql_original_func__
+
+
 def authorize_field(
     permission_check: PermissionCheck,
     *,
@@ -146,7 +174,6 @@ def authorize_field(
 
         if is_async:
 
-            @functools.wraps(func)
             async def async_auth_wrapper(
                 root: Any, info: GraphQLResolveInfo, *args: Any, **kwargs: Any
             ) -> Any:
@@ -163,24 +190,13 @@ def authorize_field(
 
                 _enforce_field_decision(authorized, error_message=error_message, info=info)
 
-                # Call the original function
-                return await func(root, info, *args, **kwargs)
+                # Call the wrapped resolver via the shared convention so the call adapts to
+                # whatever func is (a @field wrapper in order A, a raw method in order B).
+                return await invoke_resolver(func, root, info, *args, **kwargs)
 
-            # Preserve field metadata
-            if hasattr(func, "__fraiseql_field__"):
-                async_auth_wrapper.__fraiseql_field__ = func.__fraiseql_field__
-                async_auth_wrapper.__fraiseql_field_resolver__ = func.__fraiseql_field_resolver__
-                async_auth_wrapper.__fraiseql_field_description__ = getattr(
-                    func,
-                    "__fraiseql_field_description__",
-                    None,
-                )
-                if hasattr(func, "__fraiseql_original_func__"):
-                    async_auth_wrapper.__fraiseql_original_func__ = func.__fraiseql_original_func__
-
+            _copy_resolver_metadata(async_auth_wrapper, func)
             return async_auth_wrapper  # type: ignore[return-value]
 
-        @functools.wraps(func)
         def sync_auth_wrapper(
             root: Any, info: GraphQLResolveInfo, *args: Any, **kwargs: Any
         ) -> Any:
@@ -227,21 +243,11 @@ def authorize_field(
 
             _enforce_field_decision(authorized, error_message=error_message, info=info)
 
-            # Call the original function
-            return func(root, info, *args, **kwargs)
+            # Call the wrapped resolver via the shared convention so the call adapts to
+            # whatever func is (a @field wrapper in order A, a raw method in order B).
+            return invoke_resolver(func, root, info, *args, **kwargs)
 
-        # Preserve field metadata
-        if hasattr(func, "__fraiseql_field__"):
-            sync_auth_wrapper.__fraiseql_field__ = func.__fraiseql_field__
-            sync_auth_wrapper.__fraiseql_field_resolver__ = func.__fraiseql_field_resolver__
-            sync_auth_wrapper.__fraiseql_field_description__ = getattr(
-                func,
-                "__fraiseql_field_description__",
-                None,
-            )
-            if hasattr(func, "__fraiseql_original_func__"):
-                sync_auth_wrapper.__fraiseql_original_func__ = func.__fraiseql_original_func__
-
+        _copy_resolver_metadata(sync_auth_wrapper, func)
         return sync_auth_wrapper  # type: ignore[return-value]
 
     return decorator

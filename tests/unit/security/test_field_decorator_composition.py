@@ -328,11 +328,6 @@ _CASES = [
             expected="v6",
             expects_warning=False,
         ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="Order B (@field outer / @authorize_field inner) self-only method: "
-            "auth wrapper mis-reports its signature; resolver never runs (fixed Phase 2)",
-        ),
         id="row6-orderB-self-synccheck",
     ),
     pytest.param(
@@ -340,12 +335,10 @@ _CASES = [
             name="row7-orderB-self-asyncadapter",
             build=lambda: _graphql_runner("t7", "data", "T7", T7, t7),
             expected="v7",
-            expects_warning=False,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="Order B self-only method + async check: same signature bug as row 6 "
-            "(fixed Phase 2; warning-free in Phase 3)",
+            # Phase 2 makes this resolve correctly, but a sync resolver with an async check
+            # still routes through the run_until_complete bridge and warns. Phase 3 removes
+            # the bridge and this flips to expects_warning=False.
+            expects_warning=True,
         ),
         id="row7-orderB-self-asyncadapter",
     ),
