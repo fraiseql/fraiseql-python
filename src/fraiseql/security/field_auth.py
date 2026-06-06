@@ -160,11 +160,10 @@ def authorize_field(
         if hasattr(func, "__fraiseql_original_func__"):
             actual_func = func.__fraiseql_original_func__
 
-        is_async = asyncio.iscoroutinefunction(actual_func)
+        is_async_resolver = asyncio.iscoroutinefunction(actual_func)
+        is_async_check = asyncio.iscoroutinefunction(permission_check)
 
         # Inspect permission check signature to see if it expects root
-        import inspect
-
         perm_sig = inspect.signature(permission_check)
         perm_params = list(perm_sig.parameters.keys())
         # Skip 'self' if it's a method
@@ -172,13 +171,17 @@ def authorize_field(
             perm_params = perm_params[1:]
         expects_root = len(perm_params) >= 2
 
-        if is_async:
+        # Present an async wrapper whenever the resolver OR the check is async, so graphql-core
+        # awaits the whole thing. An async check no longer has to be driven from a sync
+        # resolver (which warned and could deadlock under a running loop); an async wrapper
+        # around a sync inner resolver simply returns the plain value.
+        if is_async_resolver or is_async_check:
 
             async def async_auth_wrapper(
                 root: Any, info: GraphQLResolveInfo, *args: Any, **kwargs: Any
             ) -> Any:
-                # Check permission first
-                if asyncio.iscoroutinefunction(permission_check):
+                # Check permission first (await the check if it is async).
+                if is_async_check:
                     if expects_root:
                         authorized = await permission_check(info, root, *args, **kwargs)
                     else:
@@ -191,52 +194,23 @@ def authorize_field(
                 _enforce_field_decision(authorized, error_message=error_message, info=info)
 
                 # Call the wrapped resolver via the shared convention so the call adapts to
-                # whatever func is (a @field wrapper in order A, a raw method in order B).
-                return await invoke_resolver(func, root, info, *args, **kwargs)
+                # whatever func is (a @field wrapper in order A, a raw method in order B). The
+                # wrapper may be async only because the *check* is async, so the inner resolver
+                # can still be sync — await only if it actually returned an awaitable.
+                result = invoke_resolver(func, root, info, *args, **kwargs)
+                if inspect.isawaitable(result):
+                    result = await result
+                return result
 
             _copy_resolver_metadata(async_auth_wrapper, func)
             return async_auth_wrapper  # type: ignore[return-value]
 
+        # Reached only when both the resolver and the check are sync.
         def sync_auth_wrapper(
             root: Any, info: GraphQLResolveInfo, *args: Any, **kwargs: Any
         ) -> Any:
-            # Check permission first
-            if asyncio.iscoroutinefunction(permission_check):
-                # Warn about using async permission check with sync resolver
-                warnings.warn(
-                    f"Using async permission check with sync resolver '{func.__name__}'. "
-                    "Consider making the resolver async for better performance.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
-
-                # Handle async permission check in sync context
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        # We're in an async context, create a task
-                        # Store reference to avoid RUF006
-                        asyncio.ensure_future(permission_check(info, *args, **kwargs))  # noqa: RUF006
-                        # This is not ideal but necessary for sync resolvers
-                        authorized = asyncio.run_coroutine_threadsafe(
-                            permission_check(info, *args, **kwargs),
-                            loop,
-                        ).result()
-                    else:
-                        # No running loop, use run_until_complete
-                        authorized = loop.run_until_complete(
-                            permission_check(info, *args, **kwargs),
-                        )
-                except RuntimeError:
-                    # No event loop, create a new one
-                    loop = asyncio.new_event_loop()
-                    try:
-                        authorized = loop.run_until_complete(
-                            permission_check(info, *args, **kwargs),
-                        )
-                    finally:
-                        loop.close()
-            elif expects_root:
+            # Check permission first (always sync here).
+            if expects_root:
                 authorized = permission_check(info, root, *args, **kwargs)
             else:
                 authorized = permission_check(info, *args, **kwargs)

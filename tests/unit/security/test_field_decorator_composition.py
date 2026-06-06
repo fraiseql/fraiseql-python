@@ -335,10 +335,9 @@ _CASES = [
             name="row7-orderB-self-asyncadapter",
             build=lambda: _graphql_runner("t7", "data", "T7", T7, t7),
             expected="v7",
-            # Phase 2 makes this resolve correctly, but a sync resolver with an async check
-            # still routes through the run_until_complete bridge and warns. Phase 3 removes
-            # the bridge and this flips to expects_warning=False.
-            expects_warning=True,
+            # Phase 3: an async check now produces an async wrapper, so the sync-resolver
+            # bridge is gone and there is no warning.
+            expects_warning=False,
         ),
         id="row7-orderB-self-asyncadapter",
     ),
@@ -347,7 +346,7 @@ _CASES = [
             name="row8-orderB-selfinfo-asyncadapter",
             build=lambda: _graphql_runner("t8", "data", "T8", T8, t8),
             expected="v8",
-            expects_warning=True,
+            expects_warning=False,
         ),
         id="row8-orderB-selfinfo-asyncadapter",
     ),
@@ -390,3 +389,30 @@ def test_field_decorator_composition_matrix(case: _Case) -> None:
     assert deny.code == "FIELD_AUTHORIZATION_ERROR", f"{case.name}: deny surfaces the field code"
     assert not deny.body_ran, f"{case.name}: resolver body must NOT run when denied (fail-closed)"
     assert deny.value is None, f"{case.name}: denied field yields no value"
+
+
+async def test_sync_resolver_async_check_under_running_loop() -> None:
+    """A sync resolver gated by an async check resolves cleanly under a *running* loop.
+
+    This is the scenario the removed run_until_complete/run_coroutine_threadsafe bridge
+    handled badly (a deadlock risk + a RuntimeWarning). Now the async check produces an async
+    wrapper that graphql-core awaits on the already-running loop. ``await graphql(...)`` here
+    runs inside pytest-asyncio's loop, exercising exactly that path.
+    """
+    schema = build_fraiseql_schema(query_types=[T7, t7])
+    query_str = "{ t7 { data } }"
+
+    _executions.clear()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        allowed = await graphql(schema, query_str, context_value=_ALLOW)
+    assert not allowed.errors
+    assert allowed.data["t7"]["data"] == "v7"
+    assert "T7" in _executions
+    assert not _warned(caught), "the sync->async bridge warning must be gone"
+
+    _executions.clear()
+    denied = await graphql(schema, query_str, context_value=_DENY)
+    codes = {(e.extensions or {}).get("code") for e in (denied.errors or [])}
+    assert "FIELD_AUTHORIZATION_ERROR" in codes
+    assert "T7" not in _executions, "fail-closed: denied body must not run"
