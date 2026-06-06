@@ -148,7 +148,7 @@ def t5(info) -> T5:
     return T5(id=1)
 
 
-# Row 6 -- Order B, ``def m(self)``, sync lambda. BROKEN today (fixed clean in Phase 2).
+# Row 6 -- Order B, ``def m(self)``, sync lambda. The self-only order that used to fail.
 @fraiseql.type
 class T6:
     id: int
@@ -165,8 +165,8 @@ def t6(info) -> T6:
     return T6(id=1)
 
 
-# Row 7 -- Order B, ``def m(self)``, async adapter check. BROKEN today; Phase 2 resolves it
-# (with a RuntimeWarning), Phase 3 makes it clean.
+# Row 7 -- Order B, ``def m(self)``, async adapter check. A sync resolver gated by an async
+# check: must resolve via an async wrapper, with no event-loop bridge and no warning.
 @fraiseql.type
 class T7:
     id: int
@@ -184,7 +184,7 @@ def t7(info) -> T7:
 
 
 # Row 8 -- Order B, ``def m(self, info)`` sync, async adapter check. Same scenario as row 7
-# (sync resolver + async check); passes today but warns. Phase 3 makes it clean.
+# (sync resolver + async check), differing only in the method shape.
 @fraiseql.type
 class T8:
     id: int
@@ -225,9 +225,9 @@ def _warned(caught: list[warnings.WarningMessage]) -> bool:
 def _graphql_runner(query_field: str, type_field: str, marker: str, type_cls: Any, query_fn: Any):
     """Build the schema once and return a ``run(ctx) -> _Exec`` closure.
 
-    Picks ``graphql`` vs ``graphql_sync`` from the *built* field resolver's async-ness, so
-    the runner auto-adapts when a phase changes a wrapper from sync to async (e.g. row 7
-    after Phase 3) without the matrix having to encode the phase.
+    Picks ``graphql`` vs ``graphql_sync`` from the *built* field resolver's async-ness, so the
+    runner adapts to whether the composed wrapper ended up sync or async without the matrix
+    having to hard-code it per row.
     """
     schema = build_fraiseql_schema(query_types=[type_cls, query_fn])
     obj_type = schema.query_type.fields[query_field].type
@@ -335,8 +335,8 @@ _CASES = [
             name="row7-orderB-self-asyncadapter",
             build=lambda: _graphql_runner("t7", "data", "T7", T7, t7),
             expected="v7",
-            # Phase 3: an async check now produces an async wrapper, so the sync-resolver
-            # bridge is gone and there is no warning.
+            # An async check produces an async wrapper end-to-end, so there is no
+            # sync-resolver event-loop bridge and no warning.
             expects_warning=False,
         ),
         id="row7-orderB-self-asyncadapter",
