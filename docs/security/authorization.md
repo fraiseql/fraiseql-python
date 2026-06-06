@@ -148,10 +148,14 @@ Field checks (`authorize_field`) speak the **same** contract: a `PermissionCheck
 from fraiseql.security import authorize_field, field_authorizer_adapter
 
 @field
-@authorize_field(field_authorizer_adapter(my_authorizer, field="email"))
-def email(self) -> str:
+@authorize_field(field_authorizer_adapter(my_authorizer, field="User.email"))
+async def email(self, info) -> str | None:
     return self._email
 ```
+
+> A field method combined with `@authorize_field` must take `info` (`async def
+> email(self, info)`): the check needs the request context, and an `async` resolver lets an
+> async authorizer run without the sync→async event-loop fallback.
 
 ### Automatic field gating (opt-in)
 

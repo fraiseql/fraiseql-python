@@ -8,6 +8,7 @@ tags:
   - config
 ---
 
+<!-- markdownlint-disable-next-line MD025 -->
 # Configuration
 
 FraiseQLConfig class for comprehensive application configuration.
@@ -45,7 +46,7 @@ app = create_fraiseql_app(types=[User, Post], config=config)
 
 FraiseQL uses psycopg3's `AsyncConnectionPool` for efficient connection management. You can configure the pool using either `FraiseQLConfig` or directly via `create_fraiseql_app()` parameters.
 
-**Method 1: Using FraiseQLConfig**
+#### Method 1: Using FraiseQLConfig
 
 ```python
 # Standard PostgreSQL URL
@@ -68,7 +69,7 @@ config = FraiseQLConfig(
 )
 ```
 
-**Method 2: Using create_fraiseql_app() parameters**
+#### Method 2: Using create_fraiseql_app() parameters
 
 ```python
 # Quick configuration without creating FraiseQLConfig
@@ -417,6 +418,7 @@ FraiseQL uses an exclusive Rust pipeline for all query execution.
 
 - `field_projection: bool = True` - Enable Rust-based field filtering
 - `schema_registry: bool = True` - Enable schema-based transformation
+- `enable_rust_endpoint: bool = False` - Mount the `POST /graphql/rust` passthrough route
 
 ### Example
 
@@ -427,6 +429,24 @@ config = FraiseQLConfig(
     field_projection=True,  # Optional: disable for debugging
 )
 ```
+
+### `enable_rust_endpoint` (opt-in, issue #365)
+
+`POST /graphql/rust` is a Rust passthrough that **bypasses Python resolvers entirely**. It is
+**off by default** — a resolver-bypass route should not exist unless explicitly requested —
+and is mounted only when `enable_rust_endpoint=True`:
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    enable_rust_endpoint=True,  # or FRAISEQL_ENABLE_RUST_ENDPOINT=true
+)
+```
+
+When disabled the route is not mounted (a request 404s). When enabled it is still
+authorization-gated (issue #362); row scoping relies on session variables + RLS, not per-row
+filter injection. **Behavior change:** apps that relied on `/graphql/rust` must now set this
+flag.
 
 ## Schema Settings
 
