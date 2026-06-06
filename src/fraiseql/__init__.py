@@ -46,6 +46,13 @@ _input_decorator = fraise_input  # For fraiseql.input access via __getattr__
 enum = fraise_enum
 interface = fraise_interface
 
+# Operation-level authorization (issue #362)
+from .security.authorization import (
+    AuthorizationDecision,
+    Authorizer,
+    normalize_decision,
+)
+
 # FastAPI integration (optional)
 try:
     from .fastapi import FraiseQLConfig, create_fraiseql_app
@@ -137,6 +144,8 @@ __all__ = [
     "Auth0Config",
     "Auth0Provider",
     "AuthProvider",
+    "AuthorizationDecision",
+    "Authorizer",
     "CQRSExecutor",
     "CQRSRepository",
     "Connection",
@@ -168,6 +177,7 @@ __all__ = [
     # "input",  # REMOVED: Shadows builtin - use fraiseql.input or fraise_input
     "interface",
     "mutation",
+    "normalize_decision",
     "query",
     "requires_auth",
     "requires_permission",

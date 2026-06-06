@@ -230,6 +230,11 @@ class Auth0Config:
 class Auth0Provider(AuthProvider):
     def __init__(self, config: Auth0Config) -> None: ...
 
+# Operation-level authorization (issue #362)
+from .security.authorization import AuthorizationDecision as AuthorizationDecision
+from .security.authorization import Authorizer as Authorizer
+from .security.authorization import normalize_decision as normalize_decision
+
 # FastAPI integration (when available)
 try:
     from .fastapi import FraiseQLConfig as FraiseQLConfig
@@ -261,6 +266,9 @@ __all__ = [
     "Auth0Provider",
     # Auth (optional)
     "AuthProvider",
+    # Operation authorization (issue #362)
+    "AuthorizationDecision",
+    "Authorizer",
     "CQRSExecutor",
     # CQRS
     "CQRSRepository",
@@ -301,6 +309,7 @@ __all__ = [
     "input",
     "interface",
     "mutation",
+    "normalize_decision",
     "query",
     "requires_auth",
     "requires_permission",

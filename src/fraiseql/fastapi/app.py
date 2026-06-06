@@ -3,7 +3,7 @@
 import logging
 from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import psycopg_pool
 from fastapi import FastAPI, Request
@@ -25,6 +25,9 @@ from fraiseql.fastapi.turbo import TurboRegistry
 from fraiseql.gql.schema_builder import build_fraiseql_schema
 from fraiseql.introspection import AutoDiscovery
 from fraiseql.utils import normalize_database_url
+
+if TYPE_CHECKING:
+    from fraiseql.security.authorization import Authorizer
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +189,8 @@ def create_fraiseql_app(
     enable_schema_registry: bool = True,
     # FastAPI app to extend (optional)
     app: FastAPI | None = None,
+    # Operation authorization (issue #362)
+    authorizer: "Authorizer | None" = None,
 ) -> FastAPI:
     """Create a FastAPI application with FraiseQL GraphQL endpoint.
 
@@ -211,6 +216,10 @@ def create_fraiseql_app(
         connection_pool_recycle: Seconds before recycling idle connections (default: 3600)
         enable_schema_registry: Whether to initialize Rust schema registry (default: True)
         app: Existing FastAPI app to extend (creates new if None)
+        authorizer: Optional global default operation authorizer (issue #362). When
+            provided it gates every root query/mutation and the three resolver-bypass
+            paths (TurboRouter, /graphql/rust, APQ cache hits), and survives schema
+            hot-reload. With no authorizer, behavior is byte-for-byte unchanged.
 
     Returns:
         Configured FastAPI application
@@ -488,6 +497,7 @@ def create_fraiseql_app(
         query_types=all_query_types,
         mutation_resolvers=all_mutations,
         camel_case_fields=config.auto_camel_case,
+        authorizer=authorizer,
     )
 
     # Store configuration for potential schema refresh
@@ -501,8 +511,12 @@ def create_fraiseql_app(
         "enable_schema_registry": enable_schema_registry,
         "config": config,
         "auth_provider": auth_provider,
+        # Re-applied on hot-reload so the authorizer survives a schema rebuild (#362).
+        "authorizer": authorizer,
     }
     app.state.graphql_schema = schema
+    # Expose the configured authorizer for the bypass gates / reload closure (#362).
+    app.state._fraiseql_authorizer = authorizer
 
     # Initialize Rust schema registry for type resolution
     # This enables correct __typename for nested JSONB objects and field aliasing
@@ -803,6 +817,9 @@ def create_fraiseql_app(
             query_types=all_query_types,
             mutation_resolvers=all_mutations,
             camel_case_fields=refresh_config["camel_case_fields"],
+            # Re-apply the authorizer so it survives hot-reload, re-installing it on the
+            # registry slot that the rebuilt resolver wrap and bypass gates read (#362).
+            authorizer=refresh_config.get("authorizer"),
         )
         logger.debug(f"Rebuilt schema with {len(new_schema.type_map)} types")
 
