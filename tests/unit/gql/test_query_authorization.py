@@ -76,6 +76,24 @@ async def test_deny_all_blocks_sync_query() -> None:
     assert _ran == []
 
 
+async def test_alias_does_not_bypass_enforcement() -> None:
+    # graphql-core resolves the canonical field (info.field_name), so a field alias
+    # cannot slip past the gate.
+    schema = _build(authorizer=DenyAll())
+    result = await graphql(schema, "{ renamed: widgets { id } }")
+    assert result.errors
+    assert result.errors[0].extensions["code"] == "FORBIDDEN"
+    assert _ran == []
+
+
+async def test_named_operation_does_not_bypass_enforcement() -> None:
+    schema = _build(authorizer=DenyAll())
+    result = await graphql(schema, "query Q { widgets { id } }", operation_name="Q")
+    assert result.errors
+    assert result.errors[0].extensions["code"] == "FORBIDDEN"
+    assert _ran == []
+
+
 async def test_allow_all_runs_query() -> None:
     schema = _build(authorizer=AllowAll())
     result = await graphql(schema, "{ widgets { id name } }")
