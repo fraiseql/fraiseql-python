@@ -153,6 +153,43 @@ def email(self) -> str:
     return self._email
 ```
 
+### Automatic field gating (opt-in)
+
+Instead of decorating each field by hand, a type can declare which fields the configured
+operation `Authorizer` should gate automatically (issue #366):
+
+```python
+@fraise_type(authorize_fields=["email", "ssn"])
+class User:
+    id: int
+    name: str          # ungated
+    email: str         # gated automatically
+    ssn: str           # gated automatically
+```
+
+Each listed field is checked with `operation_type="field"` and
+`operation_name="User.email"` (`"TypeName.fieldName"` — a stable identifier to write
+policies against) **before its resolver runs**, so a denial means the field body never
+executes. Guarantees:
+
+- **Narrow opt-in by design.** Only the declared fields are gated; everything else carries
+  zero extra cost. There is deliberately no "gate every field" switch (it would be a
+  performance and blast-radius footgun).
+- **No authorizer → unchanged.** The gate reads the global default authorizer live; with
+  none configured it is a true no-op.
+- **Fail-closed.** A raising field authorizer is normalized to a
+  `FIELD_AUTHORIZATION_ERROR` deny (parity with the operation path); `filters` are ignored
+  with a warning at field granularity.
+- **Precedence.** An explicit `@authorize_field` on a field is **AND-combined** with the
+  automatic gate — both must allow.
+
+> **⚠️ Performance: this fires per resolved object.** For a list of *N* objects each
+> exposing *M* gated fields, that is up to *N×M* authorizer calls. Keep the opt-in set
+> narrow, and enable **decision caching** (see below) — the same `(principal, "field",
+> "Type.field", arguments)` repeats across every object in a list, so a cache collapses the
+> *N* calls per field into one within the TTL. Measure the call volume for representative
+> nested-list queries before gating hot fields.
+
 ## Subscriptions
 
 A subscription *is* an operation, so it is gated by the same PEP — enforced **once, at
