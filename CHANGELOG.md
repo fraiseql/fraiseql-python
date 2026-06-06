@@ -5,6 +5,18 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.2] - 2026-06-06
+
+### Changed
+
+- **`POST /graphql/rust` is now opt-in** (#365) — defense-in-depth follow-up to #362
+  - New `FraiseQLConfig.enable_rust_endpoint` flag (default `False`,
+    `FRAISEQL_ENABLE_RUST_ENDPOINT`). The Rust passthrough bypasses Python resolvers
+    entirely, so the route is mounted only when explicitly enabled; when disabled it is
+    not registered (a request 404s). When mounted it is still authorization-gated (#362).
+  - ⚠️ **Behavior change:** apps that were calling `/graphql/rust` must now set
+    `enable_rust_endpoint=True`, or the endpoint returns 404.
+
 ## [1.23.1] - 2026-06-06
 
 ### Added
