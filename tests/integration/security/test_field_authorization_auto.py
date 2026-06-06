@@ -16,7 +16,7 @@ from graphql import graphql
 import fraiseql
 from fraiseql.gql.builders import SchemaRegistry
 from fraiseql.gql.schema_builder import build_fraiseql_schema
-from fraiseql.security import authorize_field
+from fraiseql.security import authorize_field, field_authorizer_adapter
 
 pytestmark = pytest.mark.integration
 
@@ -141,3 +141,31 @@ async def test_auto_gate_and_explicit_authorize_field_are_anded() -> None:
     assert not allowed.errors
     assert allowed.data["account"]["both"] == "guarded"
     assert "both" in _executions
+
+
+# The hand-applied pattern documented in docs/security/authorization.md must keep working.
+
+
+@fraiseql.type
+class Doc:
+    id: int
+
+    @fraiseql.field
+    @authorize_field(field_authorizer_adapter(AllowAll(), field="Doc.email"))
+    async def email(self, info) -> str | None:
+        _executions.append("doc_email")
+        return "secret@example.com"
+
+
+@fraiseql.query
+async def doc(info) -> Doc:
+    return Doc(id=1)
+
+
+async def test_documented_field_authorizer_adapter_pattern() -> None:
+    """The documented hand-applied adapter pattern on an async ``(self, info)`` field method."""
+    schema = build_fraiseql_schema(query_types=[Doc, doc], authorizer=None)
+    result = await graphql(schema, "{ doc { email } }", context_value={})
+    assert not result.errors
+    assert result.data["doc"]["email"] == "secret@example.com"
+    assert "doc_email" in _executions
