@@ -28,8 +28,27 @@ from fraiseql.utils.naming import snake_to_camel
 
 if TYPE_CHECKING:
     from fraiseql.gql.builders.registry import SchemaRegistry
+    from fraiseql.security.authorization import AuthorizationDecision
 
 logger = logging.getLogger(__name__)
+
+
+def _warn_filters_ignored_on_mutation(
+    decision: AuthorizationDecision,
+    root: Any,
+    info: GraphQLResolveInfo,
+    kwargs: dict[str, Any],
+) -> None:
+    """Mutations have no row-scoping semantics, so a returned ``filters`` is ignored.
+
+    Never silently drop it — warn so the misuse is visible (issue #362).
+    """
+    if decision.filters:
+        logger.warning(
+            "authorization filters are ignored on mutations (no row-scoping semantics); "
+            "operation=%s",
+            getattr(info, "field_name", "<unknown>"),
+        )
 
 
 class MutationTypeBuilder:
@@ -168,6 +187,7 @@ class MutationTypeBuilder:
                     fn=fn,
                     registry=self.registry,
                     operation_type="mutation",
+                    on_decision=_warn_filters_ignored_on_mutation,
                 )
 
             return async_resolver
@@ -191,6 +211,7 @@ class MutationTypeBuilder:
                 fn=fn,
                 registry=self.registry,
                 operation_type="mutation",
+                on_decision=_warn_filters_ignored_on_mutation,
             )
 
         return sync_resolver

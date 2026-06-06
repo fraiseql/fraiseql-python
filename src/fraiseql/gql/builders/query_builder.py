@@ -32,8 +32,35 @@ from fraiseql.utils.naming import snake_to_camel
 
 if TYPE_CHECKING:
     from fraiseql.gql.builders.registry import SchemaRegistry
+    from fraiseql.security.authorization import AuthorizationDecision
 
 logger = logging.getLogger(__name__)
+
+
+def _write_auth_filters_to_context(
+    decision: AuthorizationDecision,
+    root: Any,
+    info: GraphQLResolveInfo,
+    kwargs: dict[str, Any],
+) -> None:
+    """Write authorization row-scoping filters into the repository context (issue #362).
+
+    ``mandatory_filters`` is a repository-method kwarg consumed in a *different* call
+    frame than the resolver (the user's ``@query`` function sits in between), so the
+    filter cannot ride resolver kwargs. Instead it rides the repository context — keyed
+    by root field name — where ``FraiseQLRepository._consume_mandatory_filters`` merges
+    it into every read. Nothing is added to ``kwargs``.
+    """
+    if not decision.filters:
+        return
+    context = getattr(info, "context", None)
+    if not context or "db" not in context:
+        return
+    db = context["db"]
+    if not hasattr(db, "context"):
+        return
+    buckets = db.context.setdefault("_fraiseql_auth_filters", {})
+    buckets[info.field_name] = decision.filters
 
 
 class QueryTypeBuilder:
@@ -417,6 +444,7 @@ class QueryTypeBuilder:
                     fn=fn,
                     registry=self.registry,
                     operation_type="query",
+                    on_decision=_write_auth_filters_to_context,
                 )
 
             return async_resolver
@@ -461,6 +489,7 @@ class QueryTypeBuilder:
                 fn=fn,
                 registry=self.registry,
                 operation_type="query",
+                on_decision=_write_auth_filters_to_context,
             )
 
         return sync_resolver

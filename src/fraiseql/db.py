@@ -822,6 +822,37 @@ class FraiseQLRepository:
         # Cache for type names to avoid repeated registry lookups
         self._type_name_cache: dict[str, Optional[str]] = {}
 
+    def _consume_mandatory_filters(self, kwargs: dict[str, Any]) -> dict[str, Any] | None:
+        """Pop the caller's ``mandatory_filters`` and AND-merge authorization filters.
+
+        Operation-level authorization (issue #362) writes row-scoping filters into the
+        repository context, keyed by the current root field, via the query resolver.
+        This helper merges them with any explicit ``mandatory_filters`` the caller passed,
+        so every read method applies both. Column safety and parameterization remain in
+        :func:`_make_mandatory_conditions`.
+
+        Overlapping columns between the caller's filters and the authorization filters
+        are rejected loudly — silently overwriting one with the other would quietly widen
+        or contradict an authorization scope.
+
+        Returns:
+            The merged ``{column: value}`` dict, or ``None`` when neither source applies.
+        """
+        explicit = kwargs.pop("mandatory_filters", None) or {}
+        auth = (self.context.get("_fraiseql_auth_filters") or {}).get(
+            self.context.get("graphql_field_name")
+        ) or {}
+        if not auth:
+            return explicit or None
+        overlap = set(explicit) & set(auth)
+        if overlap:
+            from graphql import GraphQLError
+
+            msg = f"authorization filter conflicts with caller mandatory_filters: {sorted(overlap)}"
+            raise GraphQLError(msg)
+        merged = {**explicit, **auth}
+        return merged or None
+
     def _get_cached_type_name(self, view_name: str) -> Optional[str]:
         """Get cached type name for a view, or lookup and cache it if not found.
 
@@ -1269,7 +1300,7 @@ class FraiseQLRepository:
             info = self.context["graphql_info"]
 
         # Extract mandatory_filters before any dispatch path (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         mandatory_parts, mandatory_params = (
             _make_mandatory_conditions(mandatory_filters) if mandatory_filters else ([], [])
         )
@@ -1521,7 +1552,7 @@ class FraiseQLRepository:
             info = self.context["graphql_info"]
 
         # Extract mandatory_filters before it reaches kwargs (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = mandatory_parts
@@ -1652,7 +1683,7 @@ class FraiseQLRepository:
         from psycopg.sql import SQL, Composed, Identifier
 
         # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = mandatory_parts
@@ -1724,7 +1755,7 @@ class FraiseQLRepository:
         from psycopg.sql import SQL, Composed, Identifier
 
         # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = mandatory_parts
@@ -1794,7 +1825,7 @@ class FraiseQLRepository:
         from psycopg.sql import SQL, Composed, Identifier
 
         # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = mandatory_parts
@@ -1857,7 +1888,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -1916,7 +1947,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -1971,7 +2002,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -2030,7 +2061,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -2098,7 +2129,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -2177,7 +2208,7 @@ class FraiseQLRepository:
         if not aggregations:
             return {}
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -2251,7 +2282,7 @@ class FraiseQLRepository:
         if not ids:
             return {}
 
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
@@ -2524,7 +2555,7 @@ class FraiseQLRepository:
         from psycopg.sql import SQL, Composed, Identifier, Literal
 
         # Convert mandatory_filters to internal parts if passed directly (#344)
-        mandatory_filters = kwargs.pop("mandatory_filters", None)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
         if mandatory_filters:
             m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
             kwargs["_mandatory_parts"] = m_parts
