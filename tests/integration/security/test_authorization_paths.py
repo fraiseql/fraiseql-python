@@ -307,21 +307,9 @@ _CASES = [
     pytest.param(_run_single_query, id="single-field-query"),  # gated in Phase 3
     pytest.param(_run_multi_field, id="multi-field-query"),  # gated in Phase 3
     pytest.param(_run_get_query, id="get-query"),  # gated in Phase 3
-    pytest.param(
-        _run_turbo,
-        id="turbo",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 4"),
-    ),
-    pytest.param(
-        _run_rust,
-        id="graphql-rust",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 4"),
-    ),
-    pytest.param(
-        _run_apq,
-        id="apq-cache-hit",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 4"),
-    ),
+    pytest.param(_run_turbo, id="turbo"),  # gated in Phase 4 (part A)
+    pytest.param(_run_rust, id="graphql-rust"),  # gated in Phase 4 (part B)
+    pytest.param(_run_apq, id="apq-cache-hit"),  # gated in Phase 4 (part C)
 ]
 
 

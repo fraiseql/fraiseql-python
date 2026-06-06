@@ -1089,6 +1089,52 @@ class GraphQLRequest(BaseModel):
         return v
 
 
+def _derive_operation_info(query_string: str | None) -> tuple[str, str]:
+    """Best-effort ``(operation_type, root_field_name)`` from a query string.
+
+    The resolver-bypass authorization gates (``/graphql/rust`` and the APQ cache hit)
+    have no ``GraphQLResolveInfo``, so they derive the operation identity from the raw
+    query. Defaults to ``("query", "")`` when the document cannot be parsed.
+    """
+    if not query_string:
+        return "query", ""
+    try:
+        document = parse(query_string)
+    except Exception:
+        return "query", ""
+    for definition in document.definitions:
+        if isinstance(definition, OperationDefinitionNode):
+            op_type = definition.operation.value
+            for selection in definition.selection_set.selections:
+                if isinstance(selection, FieldNode):
+                    return op_type, selection.name.value
+            return op_type, ""
+    return "query", ""
+
+
+def _registry_default_authorizer() -> Any:
+    """Return the global default operation authorizer from the registry (issue #362).
+
+    The bypass gates read this live so a configured authorizer (set at build time or
+    re-applied on hot-reload) reaches them without per-request plumbing.
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    return SchemaRegistry.get_instance().default_authorizer
+
+
+def _forbidden_error_payload(exc: Any) -> dict[str, Any]:
+    """Shape a denied :class:`GraphQLError` into a GraphQL error response body."""
+    return {
+        "errors": [
+            {
+                "message": getattr(exc, "message", str(exc)),
+                "extensions": getattr(exc, "extensions", None) or {"code": "FORBIDDEN"},
+            }
+        ]
+    }
+
+
 def create_graphql_router(
     schema: GraphQLSchema,
     config: FraiseQLConfig,
@@ -1141,7 +1187,10 @@ def create_graphql_router(
     if turbo_registry is not None:
         try:
             logger.info(f"Creating TurboRouter with registry: {turbo_registry}")
-            turbo_router = TurboRouter(turbo_registry)
+            # Thread the global default authorizer into the bypass gate (issue #362).
+            turbo_router = TurboRouter(
+                turbo_registry, default_authorizer=_registry_default_authorizer()
+            )
             logger.info(f"TurboRouter created successfully: {turbo_router}")
         except Exception:
             logger.exception("Failed to create TurboRouter")
@@ -1285,8 +1334,43 @@ def create_graphql_router(
                     request, apq_backend, config, context=context
                 )
                 if cached_response:
-                    logger.debug(f"APQ cache hit: {sha256_hash[:8]}...")
-                    return cached_response
+                    # Operation authorization gate (issue #362): a cached (baked)
+                    # response cannot be re-scoped per principal, so enforce BEFORE
+                    # serving it. This path bypasses GraphQLField.resolve.
+                    serve_cached = True
+                    authorizer = _registry_default_authorizer()
+                    if authorizer is not None:
+                        from graphql import GraphQLError
+
+                        from fraiseql.security.authorization import enforce_operation_value
+
+                        persisted_text = (
+                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                        )
+                        op_type, op_name = _derive_operation_info(persisted_text)
+                        try:
+                            decision = await enforce_operation_value(
+                                authorizer=authorizer,
+                                context=context,
+                                operation_type=op_type,
+                                operation_name=op_name,
+                                arguments=request.variables or {},
+                            )
+                        except GraphQLError as exc:
+                            # Deny short-circuits: the cached response is never served.
+                            return _forbidden_error_payload(exc)
+                        if decision.filters:
+                            # A baked cached response cannot honor per-row filters →
+                            # skip the cache and fall through to normal resolver
+                            # execution (which applies the filter on the read path).
+                            logger.info(
+                                "APQ cache skipped due to authorization scoping filters; "
+                                "falling through to normal execution"
+                            )
+                            serve_cached = False
+                    if serve_cached:
+                        logger.debug(f"APQ cache hit: {sha256_hash[:8]}...")
+                        return cached_response
 
                 # 2. Fallback to query resolution from backend
                 persisted_query_text = None
@@ -1642,6 +1726,38 @@ def create_graphql_router(
         moving all database operations to Rust. All work happens in a
         single Rust function call.
         """
+        # Operation authorization gate (issue #362). This endpoint hands off to Rust
+        # and never runs a Python resolver, so enforcement happens here, before the
+        # Rust call. Per-operation decorator overrides do not apply on this path.
+        authorizer = _registry_default_authorizer()
+        if authorizer is not None:
+            from graphql import GraphQLError
+
+            from fraiseql.security.authorization import enforce_operation_value
+
+            op_type, op_name = _derive_operation_info(request.query)
+            try:
+                decision = await enforce_operation_value(
+                    authorizer=authorizer,
+                    context=context,
+                    operation_type=op_type,
+                    operation_name=op_name,
+                    arguments=request.variables or {},
+                )
+            except GraphQLError as exc:
+                # Deny short-circuits: the Rust pipeline is never invoked.
+                return Response(
+                    content=json.dumps(_forbidden_error_payload(exc)).encode(),
+                    media_type="application/json",
+                )
+            if decision.filters:
+                # Per-row filters are impossible (work happens in Rust) → rely on
+                # session variables + RLS for row scoping; never silently drop them.
+                logger.warning(
+                    "authorization filters are ignored on the /graphql/rust path; "
+                    "rely on session variables + RLS for row scoping"
+                )
+
         # Import the unified Rust function
         from fraiseql._fraiseql_rs import execute_graphql_query
 

@@ -20,6 +20,8 @@ from fraiseql.fastapi.turbo import TurboQuery, TurboRegistry, TurboRouter
 if TYPE_CHECKING:
     from graphql import GraphQLSchema
 
+    from fraiseql.security.authorization import Authorizer
+
 
 @dataclass
 class EnhancedTurboQuery(TurboQuery):
@@ -260,13 +262,20 @@ class EnhancedTurboRegistry(TurboRegistry):
 class EnhancedTurboRouter(TurboRouter):
     """TurboRouter with complexity analysis and adaptive caching."""
 
-    def __init__(self, registry: EnhancedTurboRegistry) -> None:
+    def __init__(
+        self,
+        registry: EnhancedTurboRegistry,
+        default_authorizer: Authorizer | None = None,
+    ) -> None:
         """Initialize the enhanced router.
 
         Args:
             registry: EnhancedTurboRegistry with complexity analysis
+            default_authorizer: Optional global operation authorizer (issue #362),
+                passed through to the base TurboRouter so a single gate in
+                ``TurboRouter.execute`` covers both routers.
         """
-        super().__init__(registry)
+        super().__init__(registry, default_authorizer=default_authorizer)
         self.registry: EnhancedTurboRegistry = registry  # Type hint override
 
     async def execute(
