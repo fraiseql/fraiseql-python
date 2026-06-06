@@ -121,13 +121,22 @@ is impossible** on them:
 | Path | Gate | Row scoping |
 |------|------|-------------|
 | **TurboRouter / persisted queries** | enforced before the cached SQL template runs | session variables + database **RLS** |
-| **`POST /graphql/rust`** | enforced before the Rust pipeline is called | session variables + database **RLS** |
+| **`POST /graphql/rust`** (opt-in) | enforced before the Rust pipeline is called | session variables + database **RLS** |
 | **APQ cached passthrough** | enforced before the cached response is served | a returned filter **bypasses the cache** and falls through to normal resolver execution (which applies the filter) |
 
 If an authorizer returns `filters` on the turbo or rust path, the filter is **logged, not
 silently dropped** — rely on session variables + RLS for row scoping there. For APQ, a returned
 filter is honored by skipping the (unscoped) cache entry. `filters` are also ignored (with a
 warning) on mutations and at field granularity.
+
+> **`POST /graphql/rust` is opt-in (issue #365).** It is **off by default** — a route that
+> bypasses Python resolvers entirely should not exist unless the app asks for it. Enable it
+> with `enable_rust_endpoint=True` on `FraiseQLConfig` (or `FRAISEQL_ENABLE_RUST_ENDPOINT=true`).
+> When disabled the route is simply not mounted (a request 404s). When enabled it is still
+> authorization-gated as above; row scoping relies on session variables + RLS.
+>
+> **Behavior change:** apps that were calling `/graphql/rust` before this release must now set
+> `enable_rust_endpoint=True`, or the endpoint returns 404.
 
 ## Field-level authorization
 
