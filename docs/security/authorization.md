@@ -180,6 +180,59 @@ byte-for-byte as before.
   per emitted event. Revoking a *live* stream when permissions change mid-flight (per-event
   re-checking) is a deliberate future opt-in, not part of this contract.
 
+## Decision caching (optional)
+
+An authorizer that issues a DB query or calls an external policy service adds latency to the
+hot path. You can **opt in** to memoizing its decisions so an identical
+`(principal, operation_type, operation_name, arguments)` is not re-evaluated within a short
+TTL:
+
+```python
+from fraiseql import create_fraiseql_app, AuthorizationCacheConfig
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...], queries=[...], mutations=[...],
+    authorizer=MyAuthorizer(),
+    authorization_cache=AuthorizationCacheConfig(
+        principal_key=lambda ctx: ctx["user"]["id"],  # required: identify the principal
+        ttl_seconds=5.0,        # keep short — a stale *allow* is a security risk
+        max_entries=10_000,     # LRU bound
+    ),
+)
+```
+
+**Off by default.** Always-evaluate is the safe default; a stale *allow* briefly authorizes a
+now-revoked principal (a stale *deny* is only an availability nuisance). Caching is never
+implicit.
+
+**⚠️ Correctness contract — the authorizer must be a pure function of the key.** A cache hit
+replays a prior decision, so caching is only correct if the decision depends on **nothing
+outside** `(principal_key(context), operation_type, operation_name, arguments)`. An authorizer
+that also reads tenant, request IP, time-of-day, feature flags, or resource state from
+`context` will be served a **wrong** decision on a hit — including a *stale allow*. This is a
+correctness bug, **not** merely a TTL staleness window: such an authorizer is broken under
+caching regardless of how short the TTL is. Fold the extra inputs into `principal_key`, or
+leave caching off. The framework cannot detect a non-pure authorizer.
+
+Other guarantees:
+
+- **`principal_key` is required**, and a `None` return (anonymous/unknown principal) is
+  **never cached** — an entry is never shared across unidentified principals.
+- **Non-serializable arguments are never cached** — the call falls through to evaluate.
+- **The whole decision is cached, including `filters`** (they are principal- and
+  argument-derived, already in the key). Denies are cached too; the TTL bounds staleness.
+- **A raising authorizer is never cached.** It still hits the fail-closed branch, so a
+  transient policy-service error can neither pin a deny nor leak an allow.
+- **TTL-only invalidation.** There is **no active invalidation hook** in this version — keep
+  the TTL short. Revoke-on-event is a possible future extension.
+- The cache is process-global (held on the registry) and survives schema hot-reload, which is
+  exactly why `principal_key` must be present and correct.
+
+> Hit-rate note (not a defect): the resolver path keys on `info.field_name` + resolved kwargs
+> while the bypass gates derive the operation name and pass request variables, so the same
+> logical op keys differently per path. This is safe (no false sharing) — just a lower hit rate.
+
 ## Migration from the registry rewrite
 
 **Before** — coupling the security boundary to a private attribute:
