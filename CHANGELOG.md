@@ -5,6 +5,35 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-06-06
+
+### Added
+
+- **First-class operation authorization extension point** (#362)
+  - `Authorizer` protocol + `AuthorizationDecision` value type (`allow`/`deny`,
+    optional `code`/`message`/`filters`), exported from `fraiseql` and
+    `fraiseql.security`; a single decision contract aligned with v2 (#422)
+  - `create_fraiseql_app(authorizer=...)` and `build_fraiseql_schema(authorizer=...)`
+    install a global default authorizer on `SchemaRegistry.default_authorizer`;
+    `@query(authorizer=...)` / `@mutation(authorizer=...)` add per-operation overrides
+  - Enforcement around every root query and mutation (sync + async resolvers) with
+    **fail-closed** semantics in one shared helper: an authorizer that raises denies,
+    a deny becomes a `GraphQLError` with `extensions.code`, and the raw exception is
+    never surfaced to the client
+  - **Resolver-bypass paths gated**: TurboRouter / persisted queries,
+    `POST /graphql/rust`, and APQ cached passthrough all enforce the same authorizer
+    before reaching the database / Rust
+  - **Row-scoping filter injection**: a query authorizer may return `filters` that are
+    AND-merged into the repository's validated, parameterized `mandatory_filters` via
+    the repository context (keyed per root field; overlapping columns rejected). On the
+    bypass paths a returned filter is logged (rely on session variables + RLS); APQ
+    skips the cache when filters are present
+  - Authorizer survives schema hot-reload; the legacy `registry._mutations` rewrite
+    keeps working during migration
+  - Field-level `authorize_field` accepts `AuthorizationDecision | bool` on one contract;
+    `field_authorizer_adapter` lets one policy object serve fields and operations
+  - New guide `docs/security/authorization.md` and `examples/authorization/`
+
 ## [1.22.0] - 2026-05-14
 
 ### Added
