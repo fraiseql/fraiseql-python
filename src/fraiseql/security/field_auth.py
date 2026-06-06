@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import inspect
+import logging
 import warnings
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
@@ -14,6 +16,8 @@ from fraiseql.security.authorization import AuthorizationDecision, normalize_dec
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -362,15 +366,89 @@ def field_authorizer_adapter(authorizer: Any, *, field: str) -> PermissionCheck:
     (issue #362): the returned check calls ``authorizer.authorize_operation`` with
     ``operation_type="field"`` and returns its decision, which ``authorize_field``
     enforces. ``filters`` are ignored at field granularity.
+
+    Fail-closed (issue #366): a ``GraphQLError`` raised by the authorizer propagates
+    unchanged, but any other exception is normalized to a deny (never falls through to
+    allow), mirroring ``enforce_operation_value`` on the operation path.
     """
 
-    async def _check(info: GraphQLResolveInfo, *args: Any, **kwargs: Any) -> AuthorizationDecision:
+    async def _check(
+        info: GraphQLResolveInfo, *args: Any, **kwargs: Any
+    ) -> AuthorizationDecision | bool:
         context = getattr(info, "context", None) or {}
-        return await authorizer.authorize_operation(
-            context=context,
-            operation_type="field",
-            operation_name=field,
-            arguments=kwargs,
-        )
+        try:
+            return await authorizer.authorize_operation(
+                context=context,
+                operation_type="field",
+                operation_name=field,
+                arguments=kwargs,
+            )
+        except GraphQLError:
+            raise
+        except Exception as exc:  # FAIL CLOSED: any error denies, never allows.
+            logger.warning("field authorizer raised; denying field access", exc_info=exc)
+            return AuthorizationDecision.deny(code=_DEFAULT_FIELD_CODE)
 
     return _check
+
+
+async def _auto_field_authorization(
+    info: GraphQLResolveInfo, *, field: str, arguments: dict[str, Any]
+) -> bool | AuthorizationDecision:
+    """Evaluate the registry's default authorizer for one field (issue #366).
+
+    Reads ``SchemaRegistry.default_authorizer`` **live** so default apps (no authorizer)
+    are byte-for-byte unaffected — ``None`` returns an allow. Otherwise runs the authorizer
+    with ``operation_type="field"`` through the fail-closed :func:`field_authorizer_adapter`,
+    consulting the optional decision cache (issue #367). A bare ``False`` deny is given the
+    field error code so denials shape consistently with or without a cache hit.
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    registry = SchemaRegistry.get_instance()
+    authorizer = registry.default_authorizer
+    if authorizer is None:
+        return True
+
+    cache = registry.decision_cache
+    context = getattr(info, "context", None) or {}
+    key = cache.make_key(context, "field", field, arguments) if cache is not None else None
+    if cache is not None and key is not None:
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+
+    raw = await field_authorizer_adapter(authorizer, field=field)(info, **arguments)
+    if isinstance(raw, AuthorizationDecision):
+        decision = raw
+    else:
+        decision = (
+            AuthorizationDecision.allow()
+            if raw
+            else AuthorizationDecision.deny(code=_DEFAULT_FIELD_CODE)
+        )
+    if cache is not None and key is not None:
+        cache.put(key, decision)
+    return decision
+
+
+def gate_field_resolver(resolver: Callable[..., Any], *, field: str) -> Callable[..., Any]:
+    """Compose automatic field-level authorization around a built field resolver (issue #366).
+
+    Always async so a sync inner resolver composes cleanly with an async authorizer under
+    graphql-core. The gate runs *before* the resolver, so a denial means the field body never
+    executes (no data leaks). It is fail-closed and reuses :func:`_enforce_field_decision` for
+    ``code``/``message`` shaping and the filters-ignored warning. Wrapping an already
+    ``@authorize_field``-decorated resolver AND-composes the two checks (both must allow).
+    """
+
+    @functools.wraps(resolver)
+    async def _gated(root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
+        decision = await _auto_field_authorization(info, field=field, arguments=kwargs)
+        _enforce_field_decision(decision, error_message=None, info=info)
+        result = resolver(root, info, **kwargs)
+        if inspect.isawaitable(result):
+            result = await result
+        return result
+
+    return _gated
