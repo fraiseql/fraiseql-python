@@ -81,6 +81,7 @@ def _build_app() -> FastAPI:
     config = FraiseQLConfig(
         database_url="postgresql://test:test@localhost/test",
         environment="development",
+        enable_rust_endpoint=True,  # opt-in route under test (issue #365)
     )
     return create_fraiseql_app(
         config=config,

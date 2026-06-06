@@ -82,11 +82,12 @@ def _clean_registry():
     _ran.clear()
 
 
-def _build_app(*, authorizer=None, apq=False) -> FastAPI:
+def _build_app(*, authorizer=None, apq=False, rust=False) -> FastAPI:
     config = FraiseQLConfig(
         database_url="postgresql://test:test@localhost/test",
         environment="development",
         apq_cache_responses=apq,
+        enable_rust_endpoint=rust,  # opt-in route (issue #365)
     )
     return create_fraiseql_app(
         config=config,
@@ -140,7 +141,7 @@ def test_no_authorizer_is_baseline() -> None:
 
 
 def test_rust_endpoint_gated_through_app() -> None:
-    app = _build_app(authorizer=DenyAll())
+    app = _build_app(authorizer=DenyAll(), rust=True)
     calls: list[Any] = []
 
     async def _spy(*a: Any, **k: Any) -> bytes:
