@@ -57,10 +57,6 @@ async def _noop_lifespan(app: FastAPI):
     yield
 
 
-async def _user_ctx(request) -> dict[str, Any]:
-    return {"user": {"id": "u1", "permissions": [], "roles": []}}
-
-
 @pytest.fixture(autouse=True)
 def _clean_registry():
     registry = SchemaRegistry.get_instance()
@@ -98,7 +94,6 @@ def _build_app(*, authorizer=None, apq=False) -> FastAPI:
         queries=[widgets],
         mutations=[make_widget],
         lifespan=_noop_lifespan,
-        context_getter=_user_ctx,
         authorizer=authorizer,
     )
 
@@ -172,7 +167,6 @@ def test_apq_cache_hit_gated_through_app() -> None:
         queries=[widgets],
         mutations=[make_widget],
         lifespan=_noop_lifespan,
-        context_getter=_user_ctx,
         authorizer=DenyAll(),
     )
     query = "{ widgets { id } }"
