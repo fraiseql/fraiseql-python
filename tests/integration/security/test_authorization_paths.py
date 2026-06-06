@@ -358,14 +358,7 @@ _CASES = [
     pytest.param(_run_turbo, id="turbo"),  # gated in Phase 4 (part A)
     pytest.param(_run_rust, id="graphql-rust"),  # gated in Phase 4 (part B)
     pytest.param(_run_apq, id="apq-cache-hit"),  # gated in Phase 4 (part C)
-    pytest.param(
-        _run_subscription,
-        id="subscription",
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="#364: subscribe-time gate not yet landed",
-        ),
-    ),
+    pytest.param(_run_subscription, id="subscription"),  # gated in #364 (subscribe-time)
 ]
 
 

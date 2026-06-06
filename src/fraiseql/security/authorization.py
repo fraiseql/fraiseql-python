@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-OperationType = str  # "query" | "mutation" (| "subscription" later)
+OperationType = str  # "query" | "mutation" | "subscription"
 
 # Shared defaults so every enforcement site denies with the same shape.
 DEFAULT_DENY_CODE = "FORBIDDEN"
