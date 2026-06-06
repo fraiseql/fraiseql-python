@@ -5,6 +5,24 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.1] - 2026-06-06
+
+### Added
+
+- **Subscription authorization** (#364) — follow-up to the operation PEP (#362)
+  - The configured `Authorizer` now gates subscriptions, enforced **once at subscribe
+    time** with `operation_type="subscription"`, before the event stream is created. A
+    deny (or a raising authorizer) raises a `GraphQLError` during the awaited `subscribe`,
+    so the inner generator is never built and the database is never queried. Covers both
+    the schema path and the websocket transport (which routes through graphql-core's
+    `subscribe`)
+  - `@subscription(authorizer=...)` per-operation override, mirroring
+    `@query` / `@mutation`; the global default still applies otherwise
+  - A returned `decision.filters` is **logged, not silently dropped** on subscriptions
+    (no row-scoping semantics on a stream), mirroring the mutation path
+  - Per-event re-checking of live streams is explicitly a future opt-in, not this change
+  - With no authorizer configured, subscriptions stream byte-for-byte as before
+
 ## [1.23.0] - 2026-06-06
 
 ### Added
