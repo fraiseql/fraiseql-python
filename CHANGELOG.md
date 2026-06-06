@@ -5,6 +5,22 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.4] - 2026-06-06
+
+### Added
+
+- **Automatic field-level authorization** (#366) — ergonomics follow-up to #362
+  - `@fraise_type(authorize_fields=[...])` gates the listed fields with the configured
+    operation `Authorizer` automatically, checked with `operation_type="field"` and
+    `operation_name="TypeName.fieldName"` before each field resolver runs — no per-field
+    `@authorize_field` needed. Narrow opt-in by design (no gate-everything switch)
+  - Fail-closed: `field_authorizer_adapter` now normalizes a raising authorizer to a
+    `FIELD_AUTHORIZATION_ERROR` deny (parity with the operation path). An explicit
+    `@authorize_field` AND-combines with the automatic gate
+  - With no authorizer configured the gate is a no-op (byte-for-byte unchanged). The gate
+    consults the optional decision cache (#367), which collapses the per-object call volume
+    on nested lists; the per-object cost is documented in `docs/security/authorization.md`
+
 ## [1.23.3] - 2026-06-06
 
 ### Added
