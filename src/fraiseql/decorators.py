@@ -19,10 +19,10 @@ def query(fn: F) -> F: ...
 
 
 @overload
-def query() -> Callable[[F], F]: ...
+def query(*, authorizer: Any | None = None) -> Callable[[F], F]: ...
 
 
-def query(fn: F | None = None) -> F | Callable[[F], F]:
+def query(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable[[F], F]:
     """Decorator to mark a function as a GraphQL query.
 
     This decorator automatically registers the function with the GraphQL schema,
@@ -30,6 +30,9 @@ def query(fn: F | None = None) -> F | Callable[[F], F]:
 
     Args:
         fn: The query function to decorate (when used without parentheses)
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #362). It takes precedence over the global default
+            authorizer for this query only.
 
     Returns:
         The decorated function with GraphQL query metadata
@@ -164,6 +167,10 @@ def query(fn: F | None = None) -> F | Callable[[F], F]:
                 return func(*args, **kwargs)
 
             wrapper = sync_wrapper
+
+        # Per-operation authorizer override (issue #362); None falls back to the
+        # registry default at resolve time.
+        wrapper.__fraiseql_authorizer__ = authorizer
 
         # Register the wrapper (not the original function)
         registry.register_query(wrapper)

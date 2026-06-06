@@ -304,21 +304,9 @@ def _run_apq() -> tuple[bool, bool]:
 
 _CASES = [
     pytest.param(_run_mutation, id="mutation"),  # gated in Phase 2
-    pytest.param(
-        _run_single_query,
-        id="single-field-query",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 3"),
-    ),
-    pytest.param(
-        _run_multi_field,
-        id="multi-field-query",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 3"),
-    ),
-    pytest.param(
-        _run_get_query,
-        id="get-query",
-        marks=pytest.mark.xfail(strict=True, reason="gated in Phase 3"),
-    ),
+    pytest.param(_run_single_query, id="single-field-query"),  # gated in Phase 3
+    pytest.param(_run_multi_field, id="multi-field-query"),  # gated in Phase 3
+    pytest.param(_run_get_query, id="get-query"),  # gated in Phase 3
     pytest.param(
         _run_turbo,
         id="turbo",
