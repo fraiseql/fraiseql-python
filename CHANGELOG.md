@@ -5,6 +5,26 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.3] - 2026-06-06
+
+### Added
+
+- **Optional authorization decision caching** (#367) — performance follow-up to #362
+  - `AuthorizationCacheConfig` + `DecisionCache` (exported from `fraiseql` and
+    `fraiseql.security`): opt-in TTL+LRU memoization of authorization decisions, wired via
+    `create_fraiseql_app(authorization_cache=...)` and installed on
+    `SchemaRegistry.decision_cache`; survives schema hot-reload
+  - Consulted on every gated path — the resolver wrap, subscriptions, and the three
+    resolver-bypass gates (TurboRouter, `/graphql/rust`, APQ) — keyed on
+    `(principal_key(context), operation_type, operation_name, stable_hash(arguments))`
+  - **Off by default** (always-evaluate is the safe default). Fail-closed is never cached
+    around: a raising authorizer is never cached; a `None` principal is never cached;
+    non-JSON-serializable arguments fall through to evaluate
+  - **Correctness contract:** enable only if the authorizer is a pure function of
+    principal + operation + arguments — a non-pure authorizer is served a wrong decision on
+    a hit (documented in `docs/security/authorization.md`). TTL-only invalidation (no active
+    revoke hook in this version)
+
 ## [1.23.2] - 2026-06-06
 
 ### Changed
