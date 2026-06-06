@@ -150,11 +150,12 @@ def _clean_registry():
     app_mod._global_turbo_registry = None
 
 
-def _build_app() -> FastAPI:
+def _build_app(*, enable_rust_endpoint: bool = False) -> FastAPI:
     config = FraiseQLConfig(
         database_url="postgresql://test:test@localhost/test",
         environment="development",
         apq_cache_responses=True,
+        enable_rust_endpoint=enable_rust_endpoint,
     )
     return create_fraiseql_app(
         config=config,
@@ -256,7 +257,9 @@ def _run_turbo() -> tuple[bool, bool]:
 
 
 def _run_rust() -> tuple[bool, bool]:
-    app = _build_app()
+    # The /graphql/rust route is opt-in (issue #365); the deny-all gate must still hold
+    # when the route exists.
+    app = _build_app(enable_rust_endpoint=True)
     _set_default_authorizer(DenyAll())
 
     calls: list[Any] = []
@@ -370,17 +373,27 @@ def test_deny_all_blocks_every_path(runner) -> None:
     assert not executed, "operation reached the database/Rust despite a deny-all authorizer"
 
 
-def test_graphql_post_routes_are_a_known_allow_list() -> None:
-    """Freeze the set of POST routes under /graphql*.
-
-    A newly added POST route (a potential resolver-bypass) breaks this test until it is
-    added to the matrix above *and* gated in the parametrized spec.
-    """
-    app = _build_app()
-    post_routes = {
+def _graphql_post_routes(app: FastAPI) -> set[str]:
+    """The set of POST routes under /graphql* mounted on ``app``."""
+    return {
         route.path
         for route in app.routes
         if getattr(route, "path", "").startswith("/graphql")
         and "POST" in getattr(route, "methods", set())
     }
-    assert post_routes == {"/graphql", "/graphql/rust"}
+
+
+@pytest.mark.xfail(strict=True, reason="#365: enable_rust_endpoint default-off not yet landed")
+def test_default_app_has_no_rust_post_route() -> None:
+    """By default the resolver-bypass /graphql/rust route is not mounted (issue #365).
+
+    A newly added POST route (a potential resolver-bypass) breaks this test until it is
+    added to the matrix above *and* gated in the parametrized spec.
+    """
+    assert _graphql_post_routes(_build_app()) == {"/graphql"}
+
+
+def test_enable_rust_endpoint_mounts_rust_post_route() -> None:
+    """With ``enable_rust_endpoint=True`` the gated Rust passthrough is mounted (issue #365)."""
+    app = _build_app(enable_rust_endpoint=True)
+    assert _graphql_post_routes(app) == {"/graphql", "/graphql/rust"}
