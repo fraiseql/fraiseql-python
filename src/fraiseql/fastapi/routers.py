@@ -1123,6 +1123,17 @@ def _registry_default_authorizer() -> Any:
     return SchemaRegistry.get_instance().default_authorizer
 
 
+def _registry_decision_cache() -> Any:
+    """Return the optional decision cache from the registry (issue #367).
+
+    Read live, like :func:`_registry_default_authorizer`, so a configured cache reaches the
+    bypass gates without per-request plumbing. ``None`` means always-evaluate.
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    return SchemaRegistry.get_instance().decision_cache
+
+
 def _forbidden_error_payload(exc: Any) -> dict[str, Any]:
     """Shape a denied :class:`GraphQLError` into a GraphQL error response body."""
     return {
@@ -1187,9 +1198,12 @@ def create_graphql_router(
     if turbo_registry is not None:
         try:
             logger.info(f"Creating TurboRouter with registry: {turbo_registry}")
-            # Thread the global default authorizer into the bypass gate (issue #362).
+            # Thread the global default authorizer and the optional decision cache into the
+            # bypass gate (issues #362, #367).
             turbo_router = TurboRouter(
-                turbo_registry, default_authorizer=_registry_default_authorizer()
+                turbo_registry,
+                default_authorizer=_registry_default_authorizer(),
+                decision_cache=_registry_decision_cache(),
             )
             logger.info(f"TurboRouter created successfully: {turbo_router}")
         except Exception:
@@ -1355,6 +1369,7 @@ def create_graphql_router(
                                 operation_type=op_type,
                                 operation_name=op_name,
                                 arguments=request.variables or {},
+                                cache=_registry_decision_cache(),
                             )
                         except GraphQLError as exc:
                             # Deny short-circuits: the cached response is never served.
@@ -1748,6 +1763,7 @@ def create_graphql_router(
                         operation_type=op_type,
                         operation_name=op_name,
                         arguments=request.variables or {},
+                        cache=_registry_decision_cache(),
                     )
                 except GraphQLError as exc:
                     # Deny short-circuits: the Rust pipeline is never invoked.

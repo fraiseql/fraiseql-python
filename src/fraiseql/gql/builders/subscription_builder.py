@@ -143,6 +143,7 @@ class SubscriptionTypeBuilder:
                 operation_name=getattr(info, "field_name", ""),
                 arguments=kwargs,
                 authorizer=authorizer,
+                cache=self.registry.decision_cache,
             )
             if decision.filters:
                 # A subscription stream is not a single scoped read set, so row-scoping

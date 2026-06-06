@@ -52,6 +52,12 @@ from .csrf_protection import (
     setup_csrf_protection,
 )
 
+# Optional decision caching (issue #367)
+from .decision_cache import (
+    AuthorizationCacheConfig,
+    DecisionCache,
+)
+
 # Field-level authorization
 from .field_auth import (
     FieldAuthorizationError,
@@ -98,6 +104,8 @@ from .validators import (
 )
 
 __all__ = [
+    # Optional decision caching (issue #367)
+    "AuthorizationCacheConfig",
     # Operation-level authorization (issue #362)
     "AuthorizationDecision",
     "Authorizer",
@@ -109,6 +117,7 @@ __all__ = [
     "CSRFTokenGenerator",
     "CSRFTokenStorage",
     "ContentSecurityPolicy",
+    "DecisionCache",
     # Field-level authorization
     "FieldAuthorizationError",
     "FrameOptions",
