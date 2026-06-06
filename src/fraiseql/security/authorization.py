@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLResolveInfo
 
     from fraiseql.gql.builders.registry import SchemaRegistry
+    from fraiseql.security.decision_cache import DecisionCache
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,18 @@ def resolve_authorizer(fn: Any, registry: SchemaRegistry) -> Authorizer | None:
     return getattr(fn, "__fraiseql_authorizer__", None) or registry.default_authorizer
 
 
+def _raise_on_deny(decision: AuthorizationDecision) -> AuthorizationDecision:
+    """Raise a ``GraphQLError`` (with a stable ``code``) if ``decision`` denies; else return it."""
+    if not decision.allowed:
+        from graphql import GraphQLError
+
+        raise GraphQLError(
+            decision.message or DEFAULT_DENY_MESSAGE,
+            extensions={"code": decision.code or DEFAULT_DENY_CODE},
+        )
+    return decision
+
+
 async def enforce_operation_value(
     *,
     authorizer: Authorizer | None,
@@ -112,6 +125,7 @@ async def enforce_operation_value(
     operation_type: str,
     operation_name: str,
     arguments: dict[str, Any],
+    cache: DecisionCache | None = None,
 ) -> AuthorizationDecision:
     """Run the authorizer and enforce its decision, fail-closed.
 
@@ -125,12 +139,26 @@ async def enforce_operation_value(
       raw exception is logged but never surfaced to the client.
     - Deny -> ``GraphQLError`` carrying ``extensions={"code": ...}``.
 
+    When a :class:`DecisionCache` is supplied (issue #367), a fresh hit replays the prior
+    decision **without calling the authorizer**; a clean authorizer return (allow *or* deny)
+    is cached. An authorizer that *raises* hits the fail-closed branch and is **never**
+    cached, so a transient error can neither pin a deny nor leak an allow. With ``cache=None``
+    behavior is byte-for-byte unchanged.
+
     Returns the (allow) decision so callers can read ``decision.filters``.
     """
     if authorizer is None:
         return AuthorizationDecision.allow()
 
     from graphql import GraphQLError
+
+    key = None
+    if cache is not None:
+        key = cache.make_key(context, operation_type, operation_name, arguments)
+        if key is not None:
+            cached = cache.get(key)
+            if cached is not None:
+                return _raise_on_deny(cached)
 
     try:
         raw = authorizer.authorize_operation(
@@ -141,18 +169,17 @@ async def enforce_operation_value(
         )
         raw = await raw if inspect.isawaitable(raw) else raw
         decision = normalize_decision(raw)
+        # Cache only on a clean return (allow or deny); the except branch below never
+        # reaches this, so a raising authorizer is never cached.
+        if cache is not None and key is not None:
+            cache.put(key, decision)
     except GraphQLError:
         raise
     except Exception as exc:  # FAIL CLOSED: any error denies, never allows.
         logger.warning("authorizer raised; denying operation", exc_info=exc)
         decision = AuthorizationDecision.deny(code=DEFAULT_DENY_CODE)
 
-    if not decision.allowed:
-        raise GraphQLError(
-            decision.message or DEFAULT_DENY_MESSAGE,
-            extensions={"code": decision.code or DEFAULT_DENY_CODE},
-        )
-    return decision
+    return _raise_on_deny(decision)
 
 
 async def enforce_operation(
@@ -162,11 +189,12 @@ async def enforce_operation(
     operation_name: str,
     arguments: dict[str, Any],
     authorizer: Authorizer | None,
+    cache: DecisionCache | None = None,
 ) -> AuthorizationDecision:
     """Resolver-side wrapper around :func:`enforce_operation_value`.
 
     Reads ``context`` from the GraphQL resolve info; otherwise identical semantics
-    (including fail-closed). Returns the decision.
+    (including fail-closed and the optional decision ``cache``). Returns the decision.
     """
     context = getattr(info, "context", None) or {}
     return await enforce_operation_value(
@@ -175,6 +203,7 @@ async def enforce_operation(
         operation_type=operation_type,
         operation_name=operation_name,
         arguments=arguments,
+        cache=cache,
     )
 
 
@@ -203,6 +232,7 @@ async def enforce_around_async(
         operation_name=getattr(info, "field_name", ""),
         arguments=kwargs,
         authorizer=authorizer,
+        cache=registry.decision_cache,
     )
     if on_decision is not None:
         on_decision(decision, root, info, kwargs)
@@ -239,6 +269,7 @@ def enforce_around_sync(
             operation_name=getattr(info, "field_name", ""),
             arguments=kwargs,
             authorizer=authorizer,
+            cache=registry.decision_cache,
         )
         if on_decision is not None:
             on_decision(decision, root, info, kwargs)

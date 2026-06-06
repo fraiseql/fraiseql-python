@@ -10,8 +10,9 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from graphql import GraphQLError
 
-from fraiseql.security.authorization import AuthorizationDecision
+from fraiseql.security.authorization import AuthorizationDecision, enforce_operation_value
 from fraiseql.security.decision_cache import AuthorizationCacheConfig, DecisionCache
 
 pytestmark = pytest.mark.unit
@@ -133,3 +134,114 @@ def test_get_refreshes_lru_recency() -> None:
     assert cache.get(k1) is not None
     assert cache.get(k2) is None
     assert cache.get(k3) is not None
+
+
+# --- behavioral spec through enforce_operation_value (headless, no DB) -----------------
+
+
+class _CountingAuthorizer:
+    """Counts invocations; returns a fixed result (bool or AuthorizationDecision)."""
+
+    def __init__(self, result: Any = True) -> None:
+        self.calls = 0
+        self._result = result
+
+    async def authorize_operation(self, **_: Any) -> Any:
+        self.calls += 1
+        return self._result
+
+
+class _FlakyAuthorizer:
+    """Raises on the first call (transient PDP error), allows thereafter."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def authorize_operation(self, **_: Any) -> bool:
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("transient PDP error")
+        return True
+
+
+async def _enforce(authorizer: Any, cache: Any, *, context: Any = None, arguments: Any = None):
+    return await enforce_operation_value(
+        authorizer=authorizer,
+        context=_CTX if context is None else context,
+        operation_type="query",
+        operation_name="users",
+        arguments={} if arguments is None else arguments,
+        cache=cache,
+    )
+
+
+async def test_identical_calls_invoke_authorizer_once() -> None:
+    auth = _CountingAuthorizer()
+    cache = _cache()
+    await _enforce(auth, cache, arguments={"x": 1})
+    await _enforce(auth, cache, arguments={"x": 1})
+    assert auth.calls == 1, "second identical call should be served from cache"
+
+
+async def test_different_arguments_invoke_separately() -> None:
+    auth = _CountingAuthorizer()
+    cache = _cache()
+    await _enforce(auth, cache, arguments={"x": 1})
+    await _enforce(auth, cache, arguments={"x": 2})
+    assert auth.calls == 2
+
+
+async def test_different_principal_invoke_separately() -> None:
+    auth = _CountingAuthorizer()
+    cache = _cache()
+    await _enforce(auth, cache, context={"user": {"id": "u1"}})
+    await _enforce(auth, cache, context={"user": {"id": "u2"}})
+    assert auth.calls == 2
+
+
+async def test_ttl_expiry_reinvokes_authorizer() -> None:
+    clock = _Clock()
+    auth = _CountingAuthorizer()
+    cache = _cache(ttl=5.0, clock=clock)
+    await _enforce(auth, cache)
+    clock.now += 6.0
+    await _enforce(auth, cache)
+    assert auth.calls == 2
+
+
+async def test_raising_authorizer_denied_and_not_cached() -> None:
+    """A raising authorizer fails closed and is never cached: the retry can allow."""
+    auth = _FlakyAuthorizer()
+    cache = _cache()
+    with pytest.raises(GraphQLError) as exc:
+        await _enforce(auth, cache)
+    assert exc.value.extensions["code"] == "FORBIDDEN"
+    decision = await _enforce(auth, cache)  # not served from a cached deny
+    assert decision.allowed
+    assert auth.calls == 2
+
+
+async def test_deny_decision_served_from_cache() -> None:
+    auth = _CountingAuthorizer(result=AuthorizationDecision.deny(code="NO_READS"))
+    cache = _cache()
+    for _ in range(2):
+        with pytest.raises(GraphQLError):
+            await _enforce(auth, cache)
+    assert auth.calls == 1, "a clean deny decision is cached and re-enforced"
+
+
+async def test_none_principal_never_cached() -> None:
+    auth = _CountingAuthorizer()
+    cache = _cache()
+    ctx = {"user": None}
+    await _enforce(auth, cache, context=ctx)
+    await _enforce(auth, cache, context=ctx)
+    assert auth.calls == 2
+
+
+async def test_no_cache_invokes_every_time() -> None:
+    """With no cache configured, behavior is exactly today's: evaluate every call."""
+    auth = _CountingAuthorizer()
+    await _enforce(auth, None)
+    await _enforce(auth, None)
+    assert auth.calls == 2

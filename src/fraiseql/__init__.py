@@ -52,6 +52,10 @@ from .security.authorization import (
     Authorizer,
     normalize_decision,
 )
+from .security.decision_cache import (
+    AuthorizationCacheConfig,
+    DecisionCache,
+)
 
 # FastAPI integration (optional)
 try:
@@ -144,12 +148,14 @@ __all__ = [
     "Auth0Config",
     "Auth0Provider",
     "AuthProvider",
+    "AuthorizationCacheConfig",
     "AuthorizationDecision",
     "Authorizer",
     "CQRSExecutor",
     "CQRSRepository",
     "Connection",
     "Date",
+    "DecisionCache",
     "Edge",
     "EmailAddress",
     "Error",

@@ -28,6 +28,7 @@ from fraiseql.utils import normalize_database_url
 
 if TYPE_CHECKING:
     from fraiseql.security.authorization import Authorizer
+    from fraiseql.security.decision_cache import AuthorizationCacheConfig
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,8 @@ def create_fraiseql_app(
     app: FastAPI | None = None,
     # Operation authorization (issue #362)
     authorizer: "Authorizer | None" = None,
+    # Optional authorization decision caching (issue #367)
+    authorization_cache: "AuthorizationCacheConfig | None" = None,
 ) -> FastAPI:
     """Create a FastAPI application with FraiseQL GraphQL endpoint.
 
@@ -220,6 +223,11 @@ def create_fraiseql_app(
             provided it gates every root query/mutation and the three resolver-bypass
             paths (TurboRouter, /graphql/rust, APQ cache hits), and survives schema
             hot-reload. With no authorizer, behavior is byte-for-byte unchanged.
+        authorization_cache: Optional :class:`AuthorizationCacheConfig` enabling opt-in
+            TTL+LRU memoization of authorization decisions (issue #367). Off by default
+            (always-evaluate is the safe default). Enable only if the authorizer is a pure
+            function of principal + operation + arguments; see ``docs/security/authorization.md``.
+            Survives schema hot-reload like ``authorizer``.
 
     Returns:
         Configured FastAPI application
@@ -493,11 +501,20 @@ def create_fraiseql_app(
     all_query_types = list(types) + list(queries) + auto_types + auto_queries
     all_mutations = list(mutations) + auto_mutations
 
+    # Build the optional decision cache once (issue #367) so it (and its entries) survive
+    # hot-reload, mirroring how the authorizer instance is re-applied.
+    decision_cache = None
+    if authorization_cache is not None:
+        from fraiseql.security.decision_cache import DecisionCache
+
+        decision_cache = DecisionCache(authorization_cache)
+
     schema = build_fraiseql_schema(
         query_types=all_query_types,
         mutation_resolvers=all_mutations,
         camel_case_fields=config.auto_camel_case,
         authorizer=authorizer,
+        decision_cache=decision_cache,
     )
 
     # Store configuration for potential schema refresh
@@ -513,10 +530,14 @@ def create_fraiseql_app(
         "auth_provider": auth_provider,
         # Re-applied on hot-reload so the authorizer survives a schema rebuild (#362).
         "authorizer": authorizer,
+        # Same instance re-applied on hot-reload so the cache survives a rebuild (#367).
+        "decision_cache": decision_cache,
     }
     app.state.graphql_schema = schema
     # Expose the configured authorizer for the bypass gates / reload closure (#362).
     app.state._fraiseql_authorizer = authorizer
+    # Expose the configured decision cache for the reload closure (#367).
+    app.state._fraiseql_decision_cache = decision_cache
 
     # Initialize Rust schema registry for type resolution
     # This enables correct __typename for nested JSONB objects and field aliasing
@@ -820,6 +841,8 @@ def create_fraiseql_app(
             # Re-apply the authorizer so it survives hot-reload, re-installing it on the
             # registry slot that the rebuilt resolver wrap and bypass gates read (#362).
             authorizer=refresh_config.get("authorizer"),
+            # Likewise re-apply the decision cache (same instance) so it survives reload (#367).
+            decision_cache=refresh_config.get("decision_cache"),
         )
         logger.debug(f"Rebuilt schema with {len(new_schema.type_map)} types")
 

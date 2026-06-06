@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from fraiseql.security.authorization import Authorizer
+    from fraiseql.security.decision_cache import DecisionCache
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ def build_fraiseql_schema(
     subscription_resolvers: list[Callable[..., Any]] | None = None,
     camel_case_fields: bool = True,
     authorizer: Authorizer | None = None,
+    decision_cache: DecisionCache | None = None,
 ) -> GraphQLSchema:
     """Compose a full GraphQL schema from query types, mutation resolvers, and subscriptions.
 
@@ -49,6 +51,9 @@ def build_fraiseql_schema(
             provided, it is installed as ``SchemaRegistry.default_authorizer`` and
             enforced around every root query/mutation operation. ``None`` leaves the
             slot cleared, so behavior is byte-for-byte unchanged.
+        decision_cache: Optional authorization decision cache (issue #367). Installed as
+            ``SchemaRegistry.decision_cache`` and consulted by enforcement and the bypass
+            gates. ``None`` leaves the slot cleared (always-evaluate, today's behavior).
 
     Returns:
         A GraphQLSchema combining the registered query, mutation, and subscription types.
@@ -70,6 +75,7 @@ def build_fraiseql_schema(
 
     registry = SchemaRegistry.get_instance()
     registry.set_default_authorizer(authorizer)
+    registry.set_decision_cache(decision_cache)
 
     for typ in query_types:
         if callable(typ) and not isinstance(typ, type):

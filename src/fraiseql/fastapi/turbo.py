@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from psycopg import AsyncConnection
 
     from fraiseql.security.authorization import Authorizer
+    from fraiseql.security.decision_cache import DecisionCache
 
 logger = logging.getLogger(__name__)
 
@@ -295,6 +296,7 @@ class TurboRouter:
         self,
         registry: TurboRegistry | None,
         default_authorizer: Authorizer | None = None,
+        decision_cache: DecisionCache | None = None,
     ) -> None:
         """Initialize the router with a registry.
 
@@ -304,11 +306,14 @@ class TurboRouter:
                 TurboRouter bypasses ``GraphQLField.resolve``, so this gate is the only
                 authorization point on the persisted-query path. Per-operation decorator
                 overrides do not apply here — only the global default.
+            decision_cache: Optional authorization decision cache (issue #367); when set,
+                identical ``(principal, query, variables)`` checks are memoized within its TTL.
         """
         if registry is None:
             raise ValueError("TurboRouter requires a non-None TurboRegistry")
         self.registry = registry
         self.default_authorizer = default_authorizer
+        self.decision_cache = decision_cache
 
     async def execute(
         self,
@@ -343,6 +348,7 @@ class TurboRouter:
                 operation_type="query",
                 operation_name=_turbo_operation_name(query),
                 arguments=variables or {},
+                cache=self.decision_cache,
             )
             if decision.filters:
                 # Per-row filter injection is impossible against a fixed SQL template;
