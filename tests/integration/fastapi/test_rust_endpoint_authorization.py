@@ -77,13 +77,6 @@ def _clean_registry():
     app_mod._global_turbo_registry = None
 
 
-async def _ctx_getter(request) -> dict[str, Any]:
-    # graphql_endpoint_rust reads context["user"].get(...) when building user_context;
-    # supply a user so the allow path reaches the Rust call (the deny path short-circuits
-    # before it regardless).
-    return {"user": {"id": "u1", "permissions": [], "roles": []}}
-
-
 def _build_app() -> FastAPI:
     config = FraiseQLConfig(
         database_url="postgresql://test:test@localhost/test",
@@ -94,7 +87,6 @@ def _build_app() -> FastAPI:
         types=[Widget],
         queries=[widgets],
         lifespan=_noop_lifespan,
-        context_getter=_ctx_getter,
     )
 
 

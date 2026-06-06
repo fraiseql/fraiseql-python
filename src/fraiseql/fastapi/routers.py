@@ -1761,11 +1761,13 @@ def create_graphql_router(
         # Import the unified Rust function
         from fraiseql._fraiseql_rs import execute_graphql_query
 
-        # Extract user context for authorization
+        # Extract user context for authorization. ``context["user"]`` is None for
+        # unauthenticated requests, so guard before attribute access.
+        user = context.get("user") or {}
         user_context = {
-            "user_id": context.get("user", {}).get("id"),
-            "permissions": context.get("user", {}).get("permissions", []),
-            "roles": context.get("user", {}).get("roles", []),
+            "user_id": user.get("id"),
+            "permissions": user.get("permissions", []),
+            "roles": user.get("roles", []),
         }
 
         # Call unified Rust pipeline - all work done in Rust!
