@@ -32,6 +32,13 @@ from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
 
+# Operation-level authorization (issue #362)
+from .authorization import (
+    AuthorizationDecision,
+    Authorizer,
+    normalize_decision,
+)
+
 # CSRF protection
 from .csrf_protection import (
     CSRFConfig,
@@ -90,6 +97,9 @@ from .validators import (
 )
 
 __all__ = [
+    # Operation-level authorization (issue #362)
+    "AuthorizationDecision",
+    "Authorizer",
     "CSPDirective",
     # CSRF protection
     "CSRFConfig",
@@ -129,6 +139,7 @@ __all__ = [
     "create_production_csrf_config",
     "create_production_security_config",
     "create_strict_csp",
+    "normalize_decision",
     "setup_csrf_protection",
     "setup_rate_limiting",
     # Main setup function

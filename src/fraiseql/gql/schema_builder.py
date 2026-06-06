@@ -23,6 +23,8 @@ from fraiseql.gql.builders import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from fraiseql.security.authorization import Authorizer
+
 logger = logging.getLogger(__name__)
 
 # The SchemaRegistry is imported from builders module
@@ -34,6 +36,7 @@ def build_fraiseql_schema(
     mutation_resolvers: list[type | Callable[..., Any]] | None = None,
     subscription_resolvers: list[Callable[..., Any]] | None = None,
     camel_case_fields: bool = True,
+    authorizer: Authorizer | None = None,
 ) -> GraphQLSchema:
     """Compose a full GraphQL schema from query types, mutation resolvers, and subscriptions.
 
@@ -42,6 +45,10 @@ def build_fraiseql_schema(
         mutation_resolvers: Optional list of mutation classes or resolver functions.
         subscription_resolvers: Optional list of subscription functions to register.
         camel_case_fields: Whether to convert snake_case field names to camelCase in GraphQL schema.
+        authorizer: Optional global default operation authorizer (issue #362). When
+            provided, it is installed as ``SchemaRegistry.default_authorizer`` and
+            enforced around every root query/mutation operation. ``None`` leaves the
+            slot cleared, so behavior is byte-for-byte unchanged.
 
     Returns:
         A GraphQLSchema combining the registered query, mutation, and subscription types.
@@ -62,6 +69,7 @@ def build_fraiseql_schema(
     _graphql_type_cache.clear()
 
     registry = SchemaRegistry.get_instance()
+    registry.set_default_authorizer(authorizer)
 
     for typ in query_types:
         if callable(typ) and not isinstance(typ, type):

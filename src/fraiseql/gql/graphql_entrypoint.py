@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLSchema
 from starlette.requests import Request
@@ -13,6 +13,9 @@ from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.fastapi.json_encoder import FraiseQLJSONResponse, clean_unset_values
 from fraiseql.gql.schema_builder import SchemaRegistry
 from fraiseql.graphql.execute import execute_graphql
+
+if TYPE_CHECKING:
+    from fraiseql.security.authorization import Authorizer
 
 
 class GraphNoteRouter(Router):
@@ -118,17 +121,22 @@ def build_fraiseql_schema(
     *,
     query_types: Sequence[type] = (),
     mutation_resolvers: Sequence[Callable[..., Any]] = (),
+    authorizer: "Authorizer | None" = None,
 ) -> GraphQLSchema:
     """Compose a GraphQL schema from provided query types and mutation resolvers.
 
     Args:
         query_types: Iterable of Python dataclasses decorated as GraphNote types.
         mutation_resolvers: Iterable of async resolver callables for mutations.
+        authorizer: Optional global default operation authorizer (issue #362),
+            installed as ``SchemaRegistry.default_authorizer``. ``None`` leaves the
+            slot cleared (behavior unchanged).
 
     Returns:
         GraphQLSchema object with query and mutation types built.
     """
     registry = SchemaRegistry.get_instance()
+    registry.set_default_authorizer(authorizer)
 
     for typ in query_types:
         registry.register_type(typ)
