@@ -22,6 +22,7 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.mutations.decorators import resolve_union_annotation
+from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
 
@@ -157,7 +158,17 @@ class MutationTypeBuilder:
                         mapped_kwargs[python_name] = value
                     kwargs = mapped_kwargs
 
-                return await coerced_fn(root, info, **kwargs)
+                # Operation authorization (issue #362): enforce after arg-name mapping,
+                # before the resolver body, fail-closed.
+                return await enforce_around_async(
+                    coerced_fn,
+                    root,
+                    info,
+                    kwargs,
+                    fn=fn,
+                    registry=self.registry,
+                    operation_type="mutation",
+                )
 
             return async_resolver
 
@@ -170,6 +181,16 @@ class MutationTypeBuilder:
                     mapped_kwargs[python_name] = value
                 kwargs = mapped_kwargs
 
-            return coerced_fn(root, info, **kwargs)
+            # Operation authorization (issue #362): when an authorizer is in effect this
+            # returns a coroutine that enforces before the body; otherwise pure-sync.
+            return enforce_around_sync(
+                coerced_fn,
+                root,
+                info,
+                kwargs,
+                fn=fn,
+                registry=self.registry,
+                operation_type="mutation",
+            )
 
         return sync_resolver
