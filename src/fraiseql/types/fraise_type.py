@@ -23,6 +23,7 @@ def fraise_type(
     jsonb_column: str | None = ...,  # Use ... as sentinel for "not specified"
     implements: list[type] | None = None,
     resolve_nested: bool = False,
+    authorize_fields: list[str] | None = None,
 ) -> Callable[[T], T]: ...
 
 
@@ -37,6 +38,7 @@ def fraise_type(  # type: ignore[misc]
     jsonb_column: str | None = ...,  # Use ... as sentinel for "not specified"
     implements: list[type] | None = None,
     resolve_nested: bool = False,
+    authorize_fields: list[str] | None = None,
 ) -> T | Callable[[T], T]:
     """Decorator to define a FraiseQL GraphQL output type.
 
@@ -56,6 +58,12 @@ def fraise_type(  # type: ignore[misc]
             type, FraiseQL will attempt to resolve it via a separate query to its
             sql_source. If False (default), assumes the data is embedded in the
             parent's JSONB and won't create a separate resolver.
+        authorize_fields: Optional list of field names to gate automatically with the
+            configured operation ``Authorizer`` (issue #366), e.g. ``["email", "phone"]``.
+            Each listed field is checked with ``operation_type="field"`` and
+            ``operation_name="TypeName.fieldName"`` before its resolver runs. Off by
+            default (empty), and a no-op unless an authorizer is configured. Narrow opt-in
+            by design — fires per resolved object, so pair with decision caching (#367).
 
     Returns:
         The decorated class enhanced with FraiseQL capabilities.
@@ -150,6 +158,11 @@ def fraise_type(  # type: ignore[misc]
         # Infer kind: treat no SQL source as a pure type
         inferred_kind = "type" if sql_source is None else "output"
         cls = define_fraiseql_type(cls, kind=inferred_kind)
+
+        # Automatic field-level authorization opt-in (issue #366). Read live at the
+        # resolver build site; empty/absent means no field is auto-gated.
+        if authorize_fields:
+            cls.__fraiseql_authorize_fields__ = frozenset(authorize_fields)
 
         if sql_source:
             cls.__gql_table__ = sql_source
