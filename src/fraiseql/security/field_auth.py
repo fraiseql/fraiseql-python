@@ -9,31 +9,77 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
 from graphql import GraphQLError, GraphQLResolveInfo
 
+from fraiseql.security.authorization import AuthorizationDecision, normalize_decision
+
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
 
 T = TypeVar("T")
 
+_DEFAULT_FIELD_CODE = "FIELD_AUTHORIZATION_ERROR"
+
 
 class FieldAuthorizationError(GraphQLError):
     """Raised when field authorization fails."""
 
-    def __init__(self, message: str = "Not authorized to access this field") -> None:
-        super().__init__(message, extensions={"code": "FIELD_AUTHORIZATION_ERROR"})
+    def __init__(
+        self,
+        message: str = "Not authorized to access this field",
+        *,
+        code: str = _DEFAULT_FIELD_CODE,
+    ) -> None:
+        super().__init__(message, extensions={"code": code})
 
 
 class PermissionCheck(Protocol):
-    """Protocol for permission check functions."""
+    """Protocol for permission check functions.
+
+    A check may return a plain ``bool`` (legacy) or an
+    :class:`~fraiseql.security.AuthorizationDecision` (issue #362), sync or async.
+    """
 
     def __call__(
         self,
         info: GraphQLResolveInfo,
         *args: Any,
         **kwargs: Any,
-    ) -> Union[bool, Awaitable[bool]]:
+    ) -> Union[bool, AuthorizationDecision, Awaitable[Union[bool, AuthorizationDecision]]]:
         """Check if the field access is authorized."""
         ...
+
+
+def _enforce_field_decision(
+    authorized: bool | AuthorizationDecision,
+    *,
+    error_message: str | None,
+    info: GraphQLResolveInfo,
+) -> None:
+    """Raise :class:`FieldAuthorizationError` if the check denied access (issue #362).
+
+    Accepts both the legacy ``bool`` and an ``AuthorizationDecision``. A decision's
+    ``code``/``message`` are surfaced on the error; a plain ``bool`` keeps the original
+    ``FIELD_AUTHORIZATION_ERROR`` code so existing checks are unchanged. ``filters`` have
+    no meaning at field granularity and are ignored with a warning.
+    """
+    decision = normalize_decision(authorized)
+    if decision.filters:
+        warnings.warn(
+            "authorization filters are ignored at field granularity",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+    if decision.allowed:
+        return
+
+    field_name = getattr(info, "field_name", "field")
+    default_message = error_message or f"Not authorized to access field '{field_name}'"
+    if isinstance(authorized, AuthorizationDecision):
+        raise FieldAuthorizationError(
+            authorized.message or default_message,
+            code=authorized.code or _DEFAULT_FIELD_CODE,
+        )
+    raise FieldAuthorizationError(default_message)
 
 
 def authorize_field(
@@ -111,11 +157,7 @@ def authorize_field(
                 else:
                     authorized = permission_check(info, *args, **kwargs)
 
-                if not authorized:
-                    field_name = getattr(info, "field_name", "field")
-                    raise FieldAuthorizationError(
-                        error_message or f"Not authorized to access field '{field_name}'",
-                    )
+                _enforce_field_decision(authorized, error_message=error_message, info=info)
 
                 # Call the original function
                 return await func(root, info, *args, **kwargs)
@@ -179,11 +221,7 @@ def authorize_field(
             else:
                 authorized = permission_check(info, *args, **kwargs)
 
-            if not authorized:
-                field_name = getattr(info, "field_name", "field")
-                raise FieldAuthorizationError(
-                    error_message or f"Not authorized to access field '{field_name}'",
-                )
+            _enforce_field_decision(authorized, error_message=error_message, info=info)
 
             # Call the original function
             return func(root, info, *args, **kwargs)
@@ -315,3 +353,24 @@ def any_permission(*checks: PermissionCheck) -> PermissionCheck:
     if any(asyncio.iscoroutinefunction(check) for check in checks):
         return async_any_check
     return sync_any_check
+
+
+def field_authorizer_adapter(authorizer: Any, *, field: str) -> PermissionCheck:
+    """Adapt an operation-style ``Authorizer`` into a field :class:`PermissionCheck`.
+
+    Lets one policy object serve both operation-level and field-level authorization
+    (issue #362): the returned check calls ``authorizer.authorize_operation`` with
+    ``operation_type="field"`` and returns its decision, which ``authorize_field``
+    enforces. ``filters`` are ignored at field granularity.
+    """
+
+    async def _check(info: GraphQLResolveInfo, *args: Any, **kwargs: Any) -> AuthorizationDecision:
+        context = getattr(info, "context", None) or {}
+        return await authorizer.authorize_operation(
+            context=context,
+            operation_type="field",
+            operation_name=field,
+            arguments=kwargs,
+        )
+
+    return _check

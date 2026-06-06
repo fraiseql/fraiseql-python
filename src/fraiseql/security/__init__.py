@@ -58,6 +58,7 @@ from .field_auth import (
     any_permission,
     authorize_field,
     combine_permissions,
+    field_authorizer_adapter,
 )
 
 # Rate limiting
@@ -139,6 +140,7 @@ __all__ = [
     "create_production_csrf_config",
     "create_production_security_config",
     "create_strict_csp",
+    "field_authorizer_adapter",
     "normalize_decision",
     "setup_csrf_protection",
     "setup_rate_limiting",
