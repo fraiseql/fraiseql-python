@@ -129,6 +129,11 @@ silently dropped** — rely on session variables + RLS for row scoping there. Fo
 filter is honored by skipping the (unscoped) cache entry. `filters` are also ignored (with a
 warning) on mutations and at field granularity.
 
+**Field-level gating is enforced on these paths too.** Although they skip per-field resolvers,
+each re-applies the automatic `authorize_fields` gate against the query's selection set before
+serving data — see [Automatic field gating](#automatic-field-gating-opt-in). The Rust
+multi-field merge and JSON-passthrough paths are covered the same way.
+
 > **`POST /graphql/rust` is opt-in (issue #365).** It is **off by default** — a route that
 > bypasses Python resolvers entirely should not exist unless the app asks for it. Enable it
 > with `enable_rust_endpoint=True` on `FraiseQLConfig` (or `FRAISEQL_ENABLE_RUST_ENDPOINT=true`).
@@ -188,6 +193,20 @@ executes. Guarantees:
   with a warning at field granularity.
 - **Precedence.** An explicit `@authorize_field` on a field is **AND-combined** with the
   automatic gate — both must allow.
+- **Enforced on the resolver-bypass paths too (issue #366).** The Rust multi-field merge, JSON
+  passthrough, TurboRouter, and `POST /graphql/rust` paths never invoke `GraphQLField.resolve`,
+  so the per-field gate would otherwise fail open there. Before any data is served, those paths
+  re-run the gate for every gated field the query selects — fail-closed, decision-cache-aware,
+  using the same `"TypeName.fieldName"` identity — and a denial returns
+  `FIELD_AUTHORIZATION_ERROR` without serving the data.
+
+  Because a bypass path has no resolved parent object, an `authorize_fields` policy must be a
+  function of **`context`, the field identity, and arguments only** — never the parent row. (The
+  automatic gate already calls the authorizer without the parent object, so a policy written for
+  it satisfies this; a hand-rolled `@authorize_field` that inspects `root` is enforced only on
+  the resolver path.) Detection is **per-document**: a gated field anywhere in the request is
+  enforced, which for the rare multi-operation document can only over-enforce (a conservative
+  deny), never silently allow.
 
 > **⚠️ Performance: this fires per resolved object.** For a list of *N* objects each
 > exposing *M* gated fields, that is up to *N×M* authorizer calls. Keep the opt-in set

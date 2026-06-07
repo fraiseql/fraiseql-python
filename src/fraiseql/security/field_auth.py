@@ -5,17 +5,23 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
+import json
 import logging
 import warnings
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
-from graphql import GraphQLError, GraphQLResolveInfo
+from graphql import GraphQLError, GraphQLResolveInfo, TypeInfo, Visitor, parse, visit
+from graphql.execution.values import get_argument_values
+from graphql.utilities.type_info import TypeInfoVisitor
 
 from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.security.authorization import AuthorizationDecision, normalize_decision
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+
+    from graphql import DocumentNode, GraphQLSchema
 
 
 logger = logging.getLogger(__name__)
@@ -372,16 +378,23 @@ def field_authorizer_adapter(authorizer: Any, *, field: str) -> PermissionCheck:
     return _check
 
 
-async def _auto_field_authorization(
-    info: GraphQLResolveInfo, *, field: str, arguments: dict[str, Any]
+async def _authorize_field_value(
+    *, context: dict[str, Any], field: str, arguments: dict[str, Any]
 ) -> bool | AuthorizationDecision:
-    """Evaluate the registry's default authorizer for one field (issue #366).
+    """Evaluate the registry's default authorizer for one field, given only its context.
 
-    Reads ``SchemaRegistry.default_authorizer`` **live** so default apps (no authorizer)
-    are byte-for-byte unaffected — ``None`` returns an allow. Otherwise runs the authorizer
-    with ``operation_type="field"`` through the fail-closed :func:`field_authorizer_adapter`,
-    consulting the optional decision cache (issue #367). A bare ``False`` deny is given the
-    field error code so denials shape consistently with or without a cache hit.
+    The root-independent core shared by the resolver gate (:func:`_auto_field_authorization`)
+    and the resolver-bypass enforcement (:func:`enforce_selected_field_authorization`), so a
+    field's decision is identical whether it is reached through ``GraphQLField.resolve`` or
+    served by a bypass path (issue #366). ``authorize_fields`` checks never consult the parent
+    object — only ``context``, ``operation_type="field"``, the field id, and arguments — which
+    is exactly what makes faithful bypass-path enforcement possible.
+
+    Reads ``SchemaRegistry.default_authorizer`` **live** so default apps (no authorizer) are
+    byte-for-byte unaffected — ``None`` returns an allow. Otherwise runs the authorizer through
+    the fail-closed :func:`field_authorizer_adapter`, consulting the optional decision cache
+    (issue #367). A bare ``False`` deny is given the field error code so denials shape
+    consistently with or without a cache hit.
     """
     from fraiseql.gql.builders import SchemaRegistry
 
@@ -391,14 +404,17 @@ async def _auto_field_authorization(
         return True
 
     cache = registry.decision_cache
-    context = getattr(info, "context", None) or {}
     key = cache.make_key(context, "field", field, arguments) if cache is not None else None
     if cache is not None and key is not None:
         cached = cache.get(key)
         if cached is not None:
             return cached
 
-    raw = await field_authorizer_adapter(authorizer, field=field)(info, **arguments)
+    # The adapter only reads ``info.context``; a context-carrying shim lets the resolver and
+    # bypass paths share one evaluation without a real ``GraphQLResolveInfo``.
+    raw = await field_authorizer_adapter(authorizer, field=field)(
+        SimpleNamespace(context=context), **arguments
+    )
     if isinstance(raw, AuthorizationDecision):
         decision = raw
     else:
@@ -410,6 +426,17 @@ async def _auto_field_authorization(
     if cache is not None and key is not None:
         cache.put(key, decision)
     return decision
+
+
+async def _auto_field_authorization(
+    info: GraphQLResolveInfo, *, field: str, arguments: dict[str, Any]
+) -> bool | AuthorizationDecision:
+    """Evaluate the registry's default authorizer for one field on the resolver path (#366).
+
+    Thin wrapper over :func:`_authorize_field_value` that sources the context from ``info``.
+    """
+    context = getattr(info, "context", None) or {}
+    return await _authorize_field_value(context=context, field=field, arguments=arguments)
 
 
 def gate_field_resolver(resolver: Callable[..., Any], *, field: str) -> Callable[..., Any]:
@@ -431,4 +458,99 @@ def gate_field_resolver(resolver: Callable[..., Any], *, field: str) -> Callable
             result = await result
         return result
 
+    # Mark the wrapper so the resolver-bypass dispatch (Rust merge / passthrough / turbo /
+    # POST /graphql/rust) can detect — by inspecting ``GraphQLField.resolve`` — that this field
+    # carries auto field-level authorization and enforce it before serving data (issue #366).
+    # Without this, those paths never invoke the resolver and the gate silently fails open.
+    _gated.__fraiseql_field_gated__ = True
+    _gated.__fraiseql_field_auth_id__ = field
+
     return _gated
+
+
+def iter_gated_selections(
+    schema: GraphQLSchema,
+    document: DocumentNode,
+    variable_values: dict[str, Any],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Return ``[(field_auth_id, arguments), ...]`` for every gated field the document selects.
+
+    A field is *gated* when its ``GraphQLField.resolve`` carries the ``__fraiseql_field_gated__``
+    marker set by :func:`gate_field_resolver` (i.e. it is listed in ``authorize_fields``). The
+    document is walked with graphql-core's :class:`TypeInfo` so each field is resolved against
+    its real parent type — covering nested fields, named fragments, and inline fragments — and
+    each field's arguments are coerced exactly as its resolver would receive them via
+    ``get_argument_values``. ``field_auth_id`` is the ``"TypeName.fieldName"`` id the resolver
+    path uses, so the authorizer call and decision-cache key match across paths.
+
+    Detection is per-document (every gated field anywhere in the document is reported). For the
+    common single-operation request this is exact; for a multi-operation document it can only
+    *over*-report, which the fail-closed enforcement turns into a conservative deny — never a
+    silent allow.
+    """
+    type_info = TypeInfo(schema)
+    found: list[tuple[str, dict[str, Any]]] = []
+    seen: set[str] = set()
+
+    class _Collector(Visitor):
+        def enter_field(self, node: Any, *_args: Any) -> None:
+            field_def = type_info.get_field_def()
+            resolve = getattr(field_def, "resolve", None)
+            if not getattr(resolve, "__fraiseql_field_gated__", False):
+                return
+            auth_id = getattr(resolve, "__fraiseql_field_auth_id__", None)
+            if auth_id is None:
+                return
+            try:
+                arguments = get_argument_values(field_def, node, variable_values)
+            except Exception:  # an invalid document is rejected by normal execution anyway
+                arguments = {}
+            try:
+                dedup = f"{auth_id}\x00{json.dumps(arguments, sort_keys=True, default=str)}"
+            except Exception:
+                dedup = f"{auth_id}\x00{len(found)}"
+            if dedup in seen:
+                return
+            seen.add(dedup)
+            found.append((auth_id, arguments))
+
+    visit(document, TypeInfoVisitor(type_info, _Collector()))
+    return found
+
+
+async def enforce_selected_field_authorization(
+    *,
+    schema: GraphQLSchema,
+    query: str,
+    context: dict[str, Any],
+    variables: dict[str, Any] | None = None,
+) -> None:
+    """Enforce automatic field-level authorization (#366) on a resolver-bypass path.
+
+    The Rust merge / passthrough / TurboRouter / ``POST /graphql/rust`` paths never invoke
+    ``GraphQLField.resolve``, so the per-field gate installed by :func:`gate_field_resolver`
+    would silently fail open. This re-applies it: for every gated field the document selects,
+    the registry's default authorizer is consulted with ``operation_type="field"`` — through the
+    same fail-closed, decision-cache-aware core the resolver path uses
+    (:func:`_authorize_field_value`) — *before* any data is served. Raises a ``GraphQLError`` on
+    the first deny.
+
+    It is a no-op (returns without touching the document) when no authorizer is configured, so
+    default apps pay nothing; and a no-op when the query selects no gated field or cannot be
+    parsed (normal execution rejects an unparseable document).
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    if SchemaRegistry.get_instance().default_authorizer is None:
+        return
+    try:
+        document = parse(query)
+    except Exception:
+        return
+    for field_id, arguments in iter_gated_selections(schema, document, variables or {}):
+        decision = await _authorize_field_value(
+            context=context, field=field_id, arguments=arguments
+        )
+        _enforce_field_decision(
+            decision, error_message=None, info=SimpleNamespace(field_name=field_id)
+        )

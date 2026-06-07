@@ -5,6 +5,36 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.6] - 2026-06-07
+
+### Fixed
+
+- **Field-level authorization is now enforced on the resolver-bypass paths (issue #366)** —
+  closing a silent fail-open
+  - `@fraise_type(authorize_fields=[...])` installs a per-field gate on
+    `GraphQLField.resolve`. The Rust multi-field merge, JSON passthrough, TurboRouter, and
+    `POST /graphql/rust` paths never invoke that resolver, so a gated field could be served
+    **without consulting the authorizer**. Each bypass path now re-applies the gate against the
+    query's selection set before serving data — fail-closed, decision-cache-aware, using the
+    same `"TypeName.fieldName"` identity and the same evaluation core as the resolver path.
+  - Because a bypass path has no resolved parent object, an `authorize_fields` policy must be a
+    function of `context`, the field identity, and arguments only (the automatic gate already
+    calls authorizers this way). A hand-rolled `@authorize_field` that inspects `root` remains
+    enforced on the resolver path only. Detection is per-document: a gated field anywhere in the
+    request is enforced (conservative over-enforcement for multi-operation documents, never a
+    silent allow).
+  - New API: `fraiseql.security.field_auth.enforce_selected_field_authorization` and
+    `iter_gated_selections`. `TurboRouter`/`EnhancedTurboRouter` gained an optional `schema`
+    argument (wired automatically inside `create_graphql_router`) enabling the field gate on
+    that path.
+
+- **TurboRouter authorization gate no longer mislabels persisted mutations as queries
+  (issue #368)** — a security regression in the #362 turbo gate
+  - `TurboRouter.execute` hardcoded `operation_type="query"`, so a **mutation** served via the
+    TurboRouter was presented to the `Authorizer` as a *query*, silently defeating write-guards
+    that gate on `operation_type`. The operation type and name are now derived from the document
+    (via `_derive_operation_info`), exactly as the APQ and `/graphql/rust` gates already do.
+
 ## [1.23.5] - 2026-06-06
 
 ### Fixed
