@@ -5,6 +5,34 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.7] - 2026-06-07
+
+### Security
+
+- **Upgraded dependencies to resolve known advisories** (all open Dependabot alerts + a
+  pip-audit pass):
+  - `pyjwt` 2.12.1 -> 2.13.0 — fixes PYSEC-2026-175/177/178/179 (the JWT auth library).
+  - `starlette` 0.52.1 -> 1.2.1 (pulls `fastapi` 0.129.0 -> 0.136.3) — fixes GHSA-86qp-5c8j-p5mr.
+  - `aiohttp` 3.13.5 -> 3.14.0 — fixes GHSA-hg6j-4rv6-33pg, GHSA-jg22-mg44-37j8 (dev).
+  - `idna` 3.11 -> 3.18 — fixes GHSA-65pc-fj4g-8rjx.
+  - `langchain-classic` 1.0.1 -> 1.0.7 — fixes GHSA-3644-q5cj-c5c7 (dev tooling).
+  - `pymdown-extensions` 10.21 -> 10.21.3 (and `docs/requirements.txt` 10.5 -> 10.21.3) —
+    fixes GHSA-62q4-447f-wv8h, GHSA-r6h4-mm7h-8pmq (docs).
+  - All 3,462 unit + security/FastAPI integration tests pass on the upgraded stack
+    (including the FastAPI 0.136 / Starlette 1.2 major bump).
+
+- **Container compliance gate (government-grade) now passes.** The 2 CRITICAL and HIGH
+  findings flagged by Trivy are all unpatchable base-image OS packages (`perl-base`,
+  `ncurses`; `FixedVersion: none`) that are never invoked at runtime by the API server. They
+  are documented as accepted, monitored risks in `.trivyignore` (CATEGORY 12) per the existing
+  exception process, to be removed once Debian ships fixes.
+
+### Notes
+
+- One pip-audit finding remains with no upstream fix: `py` 1.11.0 (PYSEC-2022-42969), an EOL
+  transitive of the dev-group `pytest-forked` (used for process-isolation tests). It is not
+  installed by the CI dependency-audit extras and is not invoked at runtime.
+
 ## [1.23.6] - 2026-06-07
 
 ### Fixed
