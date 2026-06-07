@@ -12,6 +12,7 @@ from fraiseql.fastapi.turbo import TurboQuery, TurboRegistry, TurboRouter
 from fraiseql.fastapi.turbo_enhanced import EnhancedTurboRegistry, EnhancedTurboRouter
 
 _QUERY = "query { widgets { id } }"
+_MUTATION = 'mutation { createWidget(name: "x") { id } }'
 
 
 class _SpyDB:
@@ -44,10 +45,42 @@ class Boom:
         raise RuntimeError("kaboom")
 
 
+class RecordingAuthorizer:
+    """Allow-all authorizer that records the operation identity it was handed."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    async def authorize_operation(
+        self, *, operation_type: str, operation_name: str, **_: Any
+    ) -> bool:
+        self.calls.append((operation_type, operation_name))
+        return True
+
+
+class DenyMutations:
+    """A write-guard: denies mutations, allows everything else (issue #368 repro)."""
+
+    async def authorize_operation(self, *, operation_type: str, **_: Any) -> Any:
+        from fraiseql.security.authorization import AuthorizationDecision
+
+        if operation_type == "mutation":
+            return AuthorizationDecision.deny()
+        return AuthorizationDecision.allow()
+
+
 def _registry() -> TurboRegistry:
     registry = TurboRegistry()
     registry.register(
         TurboQuery(graphql_query=_QUERY, sql_template="SELECT 1 AS result", param_mapping={})
+    )
+    return registry
+
+
+def _registry_with(query: str) -> TurboRegistry:
+    registry = TurboRegistry()
+    registry.register(
+        TurboQuery(graphql_query=query, sql_template="SELECT 1 AS result", param_mapping={})
     )
     return registry
 
@@ -107,6 +140,38 @@ async def test_enhanced_turbo_inherits_gate() -> None:
     router = EnhancedTurboRouter(_enhanced_registry(), default_authorizer=DenyAll())
     with pytest.raises(GraphQLError) as exc:
         await router.execute(_QUERY, {}, {"db": spy})
+    assert exc.value.extensions["code"] == "FORBIDDEN"
+    assert spy.tx_calls == 0
+
+
+async def test_query_via_turbo_reports_query_operation() -> None:
+    """A turbo query is presented to the authorizer as a query with its root field name."""
+    spy = _SpyDB()
+    rec = RecordingAuthorizer()
+    router = TurboRouter(_registry(), default_authorizer=rec)
+    await router.execute(_QUERY, {}, {"db": spy})
+    assert rec.calls == [("query", "widgets")]
+
+
+async def test_mutation_via_turbo_reports_mutation_operation() -> None:
+    """A turbo mutation must be labeled ``mutation`` to the authorizer, not ``query`` (#368).
+
+    Hardcoding ``operation_type="query"`` here silently defeats any write-guard that gates
+    on ``operation_type``, reopening the resolver-bypass gap #362 closed.
+    """
+    spy = _SpyDB()
+    rec = RecordingAuthorizer()
+    router = TurboRouter(_registry_with(_MUTATION), default_authorizer=rec)
+    await router.execute(_MUTATION, {}, {"db": spy})
+    assert rec.calls == [("mutation", "createWidget")]
+
+
+async def test_write_guard_denies_mutation_via_turbo() -> None:
+    """An authorizer that denies mutations must block a mutation on the turbo path (#368)."""
+    spy = _SpyDB()
+    router = TurboRouter(_registry_with(_MUTATION), default_authorizer=DenyMutations())
+    with pytest.raises(GraphQLError) as exc:
+        await router.execute(_MUTATION, {}, {"db": spy})
     assert exc.value.extensions["code"] == "FORBIDDEN"
     assert spy.tx_calls == 0
 
