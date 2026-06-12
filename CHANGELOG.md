@@ -5,6 +5,26 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.8] - 2026-06-12
+
+### Fixed
+
+- **Type stub `__init__.pyi` now carries `@dataclass_transform`** (#370). The hand-written
+  stub completely shadows the runtime `.py` for type checkers (ty / mypy / pyright). It
+  re-declared the core type decorators *without* `@dataclass_transform`, so a
+  `@fraiseql.type`-decorated class's `__init__` resolved to `object.__init__` and **every
+  keyword construction** was flagged as `unknown-argument` / `reportCallIssue` (216 such
+  diagnostics measured on a mid-size 1.23.x consumer; ~208 false diagnostics removed).
+  Restored `@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))`
+  on `type` / `input` / `success` / `error` / `interface`, and synced `mutation()` to the
+  runtime signature (`enable_cascade`, `authorizer`, `schema: str | None`, and a
+  bare-`@mutation` overload).
+- **FastAPI block in the stub** no longer trips strict checkers: replaced the PEP 695
+  `type X = None` `except`-branch aliases (which collided with the class imported in the
+  `try` branch → `reportAssignmentType`) with a plain typed import, and fixed `__all__` to
+  export the real `create_fraiseql_app` instead of the phantom `CreateFraiseQLApp`
+  (`reportUnsupportedDunderAll`).
+
 ## [1.23.7] - 2026-06-07
 
 ### Security
