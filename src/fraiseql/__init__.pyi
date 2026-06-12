@@ -1,11 +1,28 @@
-from typing import Any, Callable, Type, TypeVar, overload
+from typing import Any, Callable, Type, TypeVar, dataclass_transform, overload
 
 from .mutations.error_config import MutationErrorConfig as MutationErrorConfig
 
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., Any])
 
+# Helper function for fields — declared up here so the `field_specifiers` of the
+# `@dataclass_transform` decorators below can reference it.
+def fraise_field(
+    *,
+    description: str | None = None,
+    alias: str | None = None,
+    deprecation_reason: str | None = None,
+    default: Any = ...,
+) -> Any: ...
+
 # Core type decorators
+#
+# `@dataclass_transform` mirrors the runtime decorators (fraiseql/types/fraise_type.py
+# etc.): it tells type checkers that the decorated class gains a dataclass-style
+# `__init__` synthesised from its annotated fields. Without it this stub shadows the
+# runtime annotation and every `@fraiseql.type(...)` construction is reported as
+# `unknown-argument` (the constructor resolves to `object.__init__`).
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 @overload
 def fraise_type_decorator(cls: Type[_T]) -> Type[_T]: ...
 @overload
@@ -26,6 +43,7 @@ def fraise_type_decorator(
     resolve_nested: bool = False,
     authorize_fields: list[str] | None = None,
 ) -> Type[_T] | Callable[[Type[_T]], Type[_T]]: ...
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 @overload
 def fraise_input_decorator(cls: Type[_T]) -> Type[_T]: ...
 @overload
@@ -38,10 +56,13 @@ def fraise_input_decorator(
     *,
     description: str | None = None,
 ) -> Type[_T] | Callable[[Type[_T]], Type[_T]]: ...
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 def success(cls: Type[_T]) -> Type[_T]: ...
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 def error(cls: Type[_T]) -> Type[_T]: ...
 def result(cls: Type[_T]) -> Type[_T]: ...
 def enum(cls: Type[_T]) -> Type[_T]: ...
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 def interface(cls: Type[_T]) -> Type[_T]: ...
 
 # Query decorator
@@ -83,14 +104,29 @@ def dataloader_field(
     description: str | None = None,
 ) -> _F | Callable[[_F], _F]: ...
 
-# Mutation decorator
+# Mutation decorator — keep in sync with fraiseql/mutations/mutation_decorator.py.
+@overload
+def mutation(_cls: Type[_T]) -> Type[_T]: ...
+@overload
 def mutation(
     *,
     function: str | None = None,
-    schema: str = "graphql",
+    schema: str | None = None,
     context_params: dict[str, str] | None = None,
     error_config: MutationErrorConfig | None = None,
+    enable_cascade: bool = False,
+    authorizer: Any | None = None,
 ) -> Callable[[Type[_T]], Type[_T]]: ...
+def mutation(
+    _cls: Type[_T] | None = None,
+    *,
+    function: str | None = None,
+    schema: str | None = None,
+    context_params: dict[str, str] | None = None,
+    error_config: MutationErrorConfig | None = None,
+    enable_cascade: bool = False,
+    authorizer: Any | None = None,
+) -> Type[_T] | Callable[[Type[_T]], Type[_T]]: ...
 
 # Subscription decorator
 @overload
@@ -98,15 +134,6 @@ def subscription(func: _F) -> _F: ...
 @overload
 def subscription() -> Callable[[_F], _F]: ...
 def subscription(func: _F | None = None) -> _F | Callable[[_F], _F]: ...
-
-# Helper function for fields
-def fraise_field(
-    *,
-    description: str | None = None,
-    alias: str | None = None,
-    deprecation_reason: str | None = None,
-    default: Any = ...,
-) -> Any: ...
 
 # Scalar field types
 class Date:
