@@ -5,6 +5,33 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.9] - 2026-06-12
+
+### Fixed
+
+- **Type stub `error_config.pyi` now mirrors the runtime dataclass** (#374). The hand-written
+  stub `src/fraiseql/mutations/error_config.pyi` shadows the runtime `error_config.py`
+  `@dataclass` for type checkers (ty / mypy / pyright) and had drifted four ways: it declared
+  a non-existent **required** field/param `error_as_data_prefixes`, omitted the real fields
+  `error_pattern` and `always_return_as_data`, marked **every** `__init__` param required (the
+  runtime defaults all of them), and listed methods that don't exist (`is_success` / `is_error`
+  / `should_return_as_data` instead of `is_error_status` / `get_error_code`). The documented
+  construction `MutationErrorConfig(success_keywords=..., error_prefixes=..., error_keywords=...)`
+  was therefore flagged `missing-argument` for the phantom `error_as_data_prefixes` in every
+  downstream consumer. Same `.pyi`-drift class as #370. The stub is now marked `@dataclass` so
+  checkers synthesize an all-optional constructor from the field defaults, `ALWAYS_DATA_CONFIG`
+  is correctly typed as the deprecated factory function (not a constant), and regression tests
+  guard the stub-vs-runtime field/method sets going forward.
+
+### Security
+
+- **CVE monitoring** (#369): of the four watched base-image CVEs, only `CVE-2025-14104`
+  (util-linux) has an upstream fix — it was already removed from the active `.trivyignore`
+  exception list when `python:3.13-slim` picked up the patch (2026-03-14). The remaining three
+  (`CVE-2025-6141` ncurses, `CVE-2024-56433` shadow-utils, `CVE-2025-9820` GnuTLS) have no
+  upstream fix yet and stay under active monitoring; none is reachable from the GraphQL API
+  server. No repository change was required.
+
 ## [1.23.8] - 2026-06-12
 
 ### Fixed
