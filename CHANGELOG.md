@@ -5,6 +5,111 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.9] - 2026-06-12
+
+### Fixed
+
+- **Type stub `error_config.pyi` now mirrors the runtime dataclass** (#374). The hand-written
+  stub `src/fraiseql/mutations/error_config.pyi` shadows the runtime `error_config.py`
+  `@dataclass` for type checkers (ty / mypy / pyright) and had drifted four ways: it declared
+  a non-existent **required** field/param `error_as_data_prefixes`, omitted the real fields
+  `error_pattern` and `always_return_as_data`, marked **every** `__init__` param required (the
+  runtime defaults all of them), and listed methods that don't exist (`is_success` / `is_error`
+  / `should_return_as_data` instead of `is_error_status` / `get_error_code`). The documented
+  construction `MutationErrorConfig(success_keywords=..., error_prefixes=..., error_keywords=...)`
+  was therefore flagged `missing-argument` for the phantom `error_as_data_prefixes` in every
+  downstream consumer. Same `.pyi`-drift class as #370. The stub is now marked `@dataclass` so
+  checkers synthesize an all-optional constructor from the field defaults, `ALWAYS_DATA_CONFIG`
+  is correctly typed as the deprecated factory function (not a constant), and regression tests
+  guard the stub-vs-runtime field/method sets going forward.
+
+### Security
+
+- **CVE monitoring** (#369): of the four watched base-image CVEs, only `CVE-2025-14104`
+  (util-linux) has an upstream fix — it was already removed from the active `.trivyignore`
+  exception list when `python:3.13-slim` picked up the patch (2026-03-14). The remaining three
+  (`CVE-2025-6141` ncurses, `CVE-2024-56433` shadow-utils, `CVE-2025-9820` GnuTLS) have no
+  upstream fix yet and stay under active monitoring; none is reachable from the GraphQL API
+  server. No repository change was required.
+
+## [1.23.8] - 2026-06-12
+
+### Fixed
+
+- **Type stub `__init__.pyi` now carries `@dataclass_transform`** (#370). The hand-written
+  stub completely shadows the runtime `.py` for type checkers (ty / mypy / pyright). It
+  re-declared the core type decorators *without* `@dataclass_transform`, so a
+  `@fraiseql.type`-decorated class's `__init__` resolved to `object.__init__` and **every
+  keyword construction** was flagged as `unknown-argument` / `reportCallIssue` (216 such
+  diagnostics measured on a mid-size 1.23.x consumer; ~208 false diagnostics removed).
+  Restored `@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))`
+  on `type` / `input` / `success` / `error` / `interface`, and synced `mutation()` to the
+  runtime signature (`enable_cascade`, `authorizer`, `schema: str | None`, and a
+  bare-`@mutation` overload).
+- **FastAPI block in the stub** no longer trips strict checkers: replaced the PEP 695
+  `type X = None` `except`-branch aliases (which collided with the class imported in the
+  `try` branch → `reportAssignmentType`) with a plain typed import, and fixed `__all__` to
+  export the real `create_fraiseql_app` instead of the phantom `CreateFraiseQLApp`
+  (`reportUnsupportedDunderAll`).
+
+## [1.23.7] - 2026-06-07
+
+### Security
+
+- **Upgraded dependencies to resolve known advisories** (all open Dependabot alerts + a
+  pip-audit pass):
+  - `pyjwt` 2.12.1 -> 2.13.0 — fixes PYSEC-2026-175/177/178/179 (the JWT auth library).
+  - `starlette` 0.52.1 -> 1.2.1 (pulls `fastapi` 0.129.0 -> 0.136.3) — fixes GHSA-86qp-5c8j-p5mr.
+  - `aiohttp` 3.13.5 -> 3.14.0 — fixes GHSA-hg6j-4rv6-33pg, GHSA-jg22-mg44-37j8 (dev).
+  - `idna` 3.11 -> 3.18 — fixes GHSA-65pc-fj4g-8rjx.
+  - `langchain-classic` 1.0.1 -> 1.0.7 — fixes GHSA-3644-q5cj-c5c7 (dev tooling).
+  - `pymdown-extensions` 10.21 -> 10.21.3 (and `docs/requirements.txt` 10.5 -> 10.21.3) —
+    fixes GHSA-62q4-447f-wv8h, GHSA-r6h4-mm7h-8pmq (docs).
+  - All 3,462 unit + security/FastAPI integration tests pass on the upgraded stack
+    (including the FastAPI 0.136 / Starlette 1.2 major bump).
+
+- **Container compliance gate (government-grade) now passes.** The 2 CRITICAL and HIGH
+  findings flagged by Trivy are all unpatchable base-image OS packages (`perl-base`,
+  `ncurses`; `FixedVersion: none`) that are never invoked at runtime by the API server. They
+  are documented as accepted, monitored risks in `.trivyignore` (CATEGORY 12) per the existing
+  exception process, to be removed once Debian ships fixes.
+
+### Notes
+
+- One pip-audit finding remains with no upstream fix: `py` 1.11.0 (PYSEC-2022-42969), an EOL
+  transitive of the dev-group `pytest-forked` (used for process-isolation tests). It is not
+  installed by the CI dependency-audit extras and is not invoked at runtime.
+
+## [1.23.6] - 2026-06-07
+
+### Fixed
+
+- **Field-level authorization is now enforced on the resolver-bypass paths (issue #366)** —
+  closing a silent fail-open
+  - `@fraise_type(authorize_fields=[...])` installs a per-field gate on
+    `GraphQLField.resolve`. The Rust multi-field merge, JSON passthrough, TurboRouter, and
+    `POST /graphql/rust` paths never invoke that resolver, so a gated field could be served
+    **without consulting the authorizer**. Each bypass path now re-applies the gate against the
+    query's selection set before serving data — fail-closed, decision-cache-aware, using the
+    same `"TypeName.fieldName"` identity and the same evaluation core as the resolver path.
+  - Because a bypass path has no resolved parent object, an `authorize_fields` policy must be a
+    function of `context`, the field identity, and arguments only (the automatic gate already
+    calls authorizers this way). A hand-rolled `@authorize_field` that inspects `root` remains
+    enforced on the resolver path only. Detection is per-document: a gated field anywhere in the
+    request is enforced (conservative over-enforcement for multi-operation documents, never a
+    silent allow).
+  - New API: `fraiseql.security.field_auth.enforce_selected_field_authorization` and
+    `iter_gated_selections`. `TurboRouter`/`EnhancedTurboRouter` gained an optional `schema`
+    argument (wired automatically inside `create_graphql_router`) enabling the field gate on
+    that path.
+
+- **TurboRouter authorization gate no longer mislabels persisted mutations as queries
+  (issue #368)** — a security regression in the #362 turbo gate
+  - `TurboRouter.execute` hardcoded `operation_type="query"`, so a **mutation** served via the
+    TurboRouter was presented to the `Authorizer` as a *query*, silently defeating write-guards
+    that gate on `operation_type`. The operation type and name are now derived from the document
+    (via `_derive_operation_info`), exactly as the APQ and `/graphql/rust` gates already do.
+
 ## [1.23.5] - 2026-06-06
 
 ### Fixed
