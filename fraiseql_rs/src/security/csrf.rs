@@ -1,6 +1,6 @@
 //! CSRF token validation.
 
-use rand::Rng;
+use rand::RngExt;
 use sha2::{Digest, Sha256};
 
 use super::errors::{Result, SecurityError};
@@ -17,7 +17,7 @@ impl CSRFManager {
 
     /// Generate CSRF token for session
     pub fn generate_token(&self, session_id: &str) -> String {
-        let nonce: [u8; 32] = rand::thread_rng().gen();
+        let nonce: [u8; 32] = rand::rng().random();
         let payload = format!("{}:{}", session_id, hex::encode(nonce));
 
         let mut hasher = Sha256::new();
