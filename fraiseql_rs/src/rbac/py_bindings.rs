@@ -17,7 +17,7 @@ pub struct PyPermissionResolver {
 impl PyPermissionResolver {
     #[new]
     pub fn new(pool: Py<crate::db::pool::DatabasePool>, cache_capacity: usize) -> PyResult<Self> {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let db_pool = pool.borrow(py);
             let rust_pool = db_pool
                 .get_pool()
@@ -101,7 +101,7 @@ impl PyFieldAuthChecker {
         _user_id: Option<String>,
         _roles: Vec<String>,
         _field_name: String,
-        _field_permissions: PyObject,
+        _field_permissions: Py<PyAny>,
         _tenant_id: Option<String>,
     ) -> PyResult<String> {
         // TODO: Implement full async Python binding

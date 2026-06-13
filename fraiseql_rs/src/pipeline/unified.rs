@@ -238,7 +238,7 @@ impl PyGraphQLPipeline {
         query_string: String,
         variables: &Bound<'_, PyDict>,
         user_context: &Bound<'_, PyDict>,
-    ) -> PyResult<PyObject> {
+    ) -> PyResult<Py<PyAny>> {
         let vars = dict_to_hashmap(variables)?;
         let user = dict_to_user_context(user_context)?;
 

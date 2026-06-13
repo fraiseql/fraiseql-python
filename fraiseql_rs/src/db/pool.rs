@@ -7,7 +7,7 @@ use crate::db::types::{ConnectionInfo, DatabaseError, DatabaseResult, PoolConfig
 
 /// Database connection pool manager
 #[derive(Clone)]
-#[pyclass(name = "DatabasePool")]
+#[pyclass(name = "DatabasePool", from_py_object)]
 pub struct DatabasePool {
     #[allow(dead_code)] // Phase 1: Validation only, pool will be used in Phase 1.5+
     pool: Option<Pool>, // None in Phase 1, Some(Pool) in Phase 1.5+
