@@ -1,15 +1,13 @@
-"""
-FraiseQL Test Scenarios for Chaos Engineering
+"""FraiseQL Test Scenarios for Chaos Engineering
 
 This module provides realistic test scenarios that interact with actual FraiseQL
 operations, making chaos engineering tests more valuable and representative.
 """
 
-import time
-import json
 import random
-from typing import Dict, Any, List, Optional
+import time
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -113,14 +111,14 @@ class FraiseQLTestScenarios:
         """Batch query for multiple users."""
         return GraphQLOperation(
             name=f"batch_users_query_{count}",
-            query=f"""
-            query GetUsers($ids: [ID!]!) {{
-                users(ids: $ids) {{
+            query="""
+            query GetUsers($ids: [ID!]!) {
+                users(ids: $ids) {
                     id
                     name
                     email
-                }}
-            }}
+                }
+            }
             """,
             variables={"ids": [f"user_{i}" for i in range(count)]},
             expected_complexity=count * 3,
@@ -181,8 +179,7 @@ class FraiseQLTestScenarios:
 
 
 class MockFraiseQLClient:
-    """
-    Mock FraiseQL client for chaos testing.
+    """Mock FraiseQL client for chaos testing.
 
     This simulates FraiseQL behavior without requiring a full running instance.
     In production, this would be replaced with actual HTTP calls to FraiseQL.
@@ -216,8 +213,7 @@ class MockFraiseQLClient:
         self.packet_loss_rate = 0.0
 
     def execute_query(self, operation: GraphQLOperation, timeout: float = 30.0) -> Dict[str, Any]:
-        """
-        Execute a GraphQL operation against FraiseQL.
+        """Execute a GraphQL operation against FraiseQL.
 
         Simulates realistic FraiseQL behavior including:
         - Connection acquisition time
@@ -277,8 +273,7 @@ class MockFraiseQLClient:
             self.active_connections -= 1
 
     def _calculate_execution_time(self, complexity: int) -> float:
-        """
-        Calculate realistic execution time based on query complexity.
+        """Calculate realistic execution time based on query complexity.
 
         This simulates FraiseQL's actual performance characteristics.
         """
@@ -313,7 +308,7 @@ class MockFraiseQLClient:
                 }
             }
 
-        elif "GetUsers" in operation.query:
+        if "GetUsers" in operation.query:
             user_ids = operation.variables.get("ids", []) if operation.variables else []
             users = []
             for user_id in user_ids[:10]:  # Limit to 10 users
@@ -327,7 +322,7 @@ class MockFraiseQLClient:
 
             return {"data": {"users": users}}
 
-        elif "CreatePost" in operation.query:
+        if "CreatePost" in operation.query:
             return {
                 "data": {
                     "createPost": {
@@ -339,7 +334,7 @@ class MockFraiseQLClient:
                 }
             }
 
-        elif "SearchPosts" in operation.query:
+        if "SearchPosts" in operation.query:
             return {
                 "data": {
                     "searchPosts": {
@@ -406,8 +401,7 @@ def execute_with_retry(
 
     if last_error:
         raise last_error
-    else:
-        raise RuntimeError("Retry logic failed without specific error")
+    raise RuntimeError("Retry logic failed without specific error")
 
 
 # Test scenario collections

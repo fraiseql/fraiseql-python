@@ -1,16 +1,15 @@
-"""
-Phase 2 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
+"""Phase 2 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
 
 Tests to validate that Phase 2 database chaos test success criteria are met.
 Validates that FraiseQL maintains data consistency and handles database failures gracefully.
 """
 
-import pytest
-import statistics
 import asyncio
+import statistics
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -18,8 +17,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_query_execution_success_rate(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate query execution success rate under chaos.
+    """Validate query execution success rate under chaos.
 
     Success Criteria: 70% of operations must succeed under database chaos
     """
@@ -60,8 +58,7 @@ async def test_query_execution_success_rate(chaos_db_client, chaos_test_schema, 
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_data_consistency_under_concurrent_load(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate data consistency under concurrent load.
+    """Validate data consistency under concurrent load.
 
     Success Criteria: Concurrent operations should maintain data consistency
     """
@@ -109,8 +106,7 @@ async def test_data_consistency_under_concurrent_load(chaos_db_client, chaos_tes
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_error_rate_under_chaos_bounds(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate error rate stays within acceptable bounds under chaos.
+    """Validate error rate stays within acceptable bounds under chaos.
 
     Success Criteria: Error rate spike should not exceed 60%
     """
@@ -159,8 +155,7 @@ async def test_error_rate_under_chaos_bounds(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_latency_degradation_bounds(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate latency degradation stays within bounds.
+    """Validate latency degradation stays within bounds.
 
     Success Criteria: Query latency degradation should not exceed 10 seconds
     """
@@ -214,8 +209,7 @@ async def test_latency_degradation_bounds(chaos_db_client, chaos_test_schema, ba
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_operation_isolation_under_concurrency(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate operation isolation under concurrent execution.
+    """Validate operation isolation under concurrent execution.
 
     Success Criteria: Concurrent operations should maintain isolation
     """
@@ -263,8 +257,7 @@ async def test_operation_isolation_under_concurrency(chaos_db_client, chaos_test
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cascading_failure_containment(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate that cascading failures are contained.
+    """Validate that cascading failures are contained.
 
     Success Criteria: 95% of cascades should be prevented
     """

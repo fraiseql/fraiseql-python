@@ -150,6 +150,7 @@ class FraiseQLConfig(BaseSettings):
         complexity_enabled: Enable query complexity analysis (default: True)
         rate_limit_enabled: Enable rate limiting (default: True)
         cors_enabled: Enable CORS (default: False - use reverse proxy)
+        enable_rust_endpoint: Mount POST /graphql/rust resolver-bypass route (default: False)
 
     Example:
         ```python
@@ -283,9 +284,17 @@ class FraiseQLConfig(BaseSettings):
     execution_timeout_ms: int = 30000  # 30 seconds
     include_execution_metadata: bool = False  # Include timing in response
 
+    enable_rust_endpoint: bool = False
+    """Mount POST /graphql/rust (Rust passthrough, bypasses Python resolvers).
+
+    Off by default: a resolver-bypass route should not exist unless explicitly enabled.
+    The route is still authorization-gated when mounted (issue #362)."""
+
     # Default schema settings
     default_mutation_schema: str = "public"  # Default schema for mutations when not specified
     default_query_schema: str = "public"  # Default schema for queries when not specified
+    # Schema for tb_* entity tables (needed by descendant_of_id / ancestor_of_id operators)
+    default_entity_schema: str | None = None
 
     # NEW FIELD - Add after default_query_schema
     default_error_config: MutationErrorConfig | None = Field(

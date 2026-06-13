@@ -32,6 +32,13 @@ from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
 
+# Operation-level authorization (issue #362)
+from .authorization import (
+    AuthorizationDecision,
+    Authorizer,
+    normalize_decision,
+)
+
 # CSRF protection
 from .csrf_protection import (
     CSRFConfig,
@@ -45,12 +52,19 @@ from .csrf_protection import (
     setup_csrf_protection,
 )
 
+# Optional decision caching (issue #367)
+from .decision_cache import (
+    AuthorizationCacheConfig,
+    DecisionCache,
+)
+
 # Field-level authorization
 from .field_auth import (
     FieldAuthorizationError,
     any_permission,
     authorize_field,
     combine_permissions,
+    field_authorizer_adapter,
 )
 
 # Rate limiting
@@ -90,6 +104,11 @@ from .validators import (
 )
 
 __all__ = [
+    # Optional decision caching (issue #367)
+    "AuthorizationCacheConfig",
+    # Operation-level authorization (issue #362)
+    "AuthorizationDecision",
+    "Authorizer",
     "CSPDirective",
     # CSRF protection
     "CSRFConfig",
@@ -98,6 +117,7 @@ __all__ = [
     "CSRFTokenGenerator",
     "CSRFTokenStorage",
     "ContentSecurityPolicy",
+    "DecisionCache",
     # Field-level authorization
     "FieldAuthorizationError",
     "FrameOptions",
@@ -129,6 +149,8 @@ __all__ = [
     "create_production_csrf_config",
     "create_production_security_config",
     "create_strict_csp",
+    "field_authorizer_adapter",
+    "normalize_decision",
     "setup_csrf_protection",
     "setup_rate_limiting",
     # Main setup function

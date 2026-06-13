@@ -26,13 +26,41 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.gql.enum_serializer import wrap_resolver_with_enum_serialization
+from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
 
 if TYPE_CHECKING:
     from fraiseql.gql.builders.registry import SchemaRegistry
+    from fraiseql.security.authorization import AuthorizationDecision
 
 logger = logging.getLogger(__name__)
+
+
+def _write_auth_filters_to_context(
+    decision: AuthorizationDecision,
+    root: Any,
+    info: GraphQLResolveInfo,
+    kwargs: dict[str, Any],
+) -> None:
+    """Write authorization row-scoping filters into the repository context (issue #362).
+
+    ``mandatory_filters`` is a repository-method kwarg consumed in a *different* call
+    frame than the resolver (the user's ``@query`` function sits in between), so the
+    filter cannot ride resolver kwargs. Instead it rides the repository context — keyed
+    by root field name — where ``FraiseQLRepository._consume_mandatory_filters`` merges
+    it into every read. Nothing is added to ``kwargs``.
+    """
+    if not decision.filters:
+        return
+    context = getattr(info, "context", None)
+    if not context or "db" not in context:
+        return
+    db = context["db"]
+    if not hasattr(db, "context"):
+        return
+    buckets = db.context.setdefault("_fraiseql_auth_filters", {})
+    buckets[info.field_name] = decision.filters
 
 
 class QueryTypeBuilder:
@@ -406,7 +434,18 @@ class QueryTypeBuilder:
                         mapped_kwargs[python_name] = value
                     kwargs = mapped_kwargs
 
-                return await coerced_fn(root, info, **kwargs)
+                # Operation authorization (issue #362): enforce after WHERE/pagination
+                # validation and arg-name mapping, before the resolver body.
+                return await enforce_around_async(
+                    coerced_fn,
+                    root,
+                    info,
+                    kwargs,
+                    fn=fn,
+                    registry=self.registry,
+                    operation_type="query",
+                    on_decision=_write_auth_filters_to_context,
+                )
 
             return async_resolver
 
@@ -440,7 +479,18 @@ class QueryTypeBuilder:
                     mapped_kwargs[python_name] = value
                 kwargs = mapped_kwargs
 
-            return coerced_fn(root, info, **kwargs)
+            # Operation authorization (issue #362): when an authorizer is in effect this
+            # returns a coroutine that enforces before the body; otherwise pure-sync.
+            return enforce_around_sync(
+                coerced_fn,
+                root,
+                info,
+                kwargs,
+                fn=fn,
+                registry=self.registry,
+                operation_type="query",
+                on_decision=_write_auth_filters_to_context,
+            )
 
         return sync_resolver
 

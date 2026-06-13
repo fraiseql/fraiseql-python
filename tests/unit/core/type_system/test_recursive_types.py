@@ -14,11 +14,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import pytest
 from graphql import GraphQLList, GraphQLNonNull, GraphQLObjectType
 
 # Import needed for assertions
-
 from fraiseql import type as fraiseql_type
 from fraiseql.core.graphql_type import convert_type_to_graphql_output
 
@@ -37,7 +35,7 @@ class TestSimpleSelfReference:
             id: str
             name: str
             description: str | None = None
-            child_playlists: list["Playlist"] = field(default_factory=list)
+            child_playlists: list[Playlist] = field(default_factory=list)
 
         # This should NOT raise RecursionError
         result = convert_type_to_graphql_output(Playlist)
@@ -81,7 +79,7 @@ class TestSimpleSelfReference:
 
             id: str
             value: str
-            parent: "TreeNode | None" = None
+            parent: TreeNode | None = None
 
         # This should NOT raise RecursionError
         result = convert_type_to_graphql_output(TreeNode)
@@ -189,9 +187,9 @@ class TestComplexRecursion:
 
             id: str
             name: str
-            manager: "OrgNode | None" = None
-            direct_reports: list["OrgNode"] = field(default_factory=list)
-            all_subordinates: list["OrgNode"] = field(default_factory=list)
+            manager: OrgNode | None = None
+            direct_reports: list[OrgNode] = field(default_factory=list)
+            all_subordinates: list[OrgNode] = field(default_factory=list)
 
         # This should NOT raise RecursionError
         result = convert_type_to_graphql_output(OrgNode)
@@ -218,8 +216,8 @@ class TestComplexRecursion:
 
             id: str
             name: str
-            parent_category: "Category | None" = None
-            subcategories: list["Category"] = field(default_factory=list)
+            parent_category: Category | None = None
+            subcategories: list[Category] = field(default_factory=list)
 
         # This should NOT raise RecursionError
         result = convert_type_to_graphql_output(Category)
@@ -264,7 +262,7 @@ class TestCaching:
             """A simple node."""
 
             id: str
-            children: list["Node"] = field(default_factory=list)
+            children: list[Node] = field(default_factory=list)
 
         # Convert twice
         first = convert_type_to_graphql_output(Node)
@@ -282,7 +280,7 @@ class TestCaching:
             """A linked list node."""
 
             value: str
-            next_node: "LinkedList | None" = None
+            next_node: LinkedList | None = None
 
         result = convert_type_to_graphql_output(LinkedList)
 
@@ -307,7 +305,7 @@ class TestEdgeCases:
             path: str
             size: int
             is_directory: bool
-            children: list["FileNode"] = field(default_factory=list)
+            children: list[FileNode] = field(default_factory=list)
             metadata: dict[str, str] = field(default_factory=dict)
 
         result = convert_type_to_graphql_output(FileNode)
@@ -330,7 +328,7 @@ class TestEdgeCases:
             """A simple node without defaults."""
 
             id: str
-            children: list["SimpleNode"]
+            children: list[SimpleNode]
 
         # Should work even without field(default_factory=list)
         result = convert_type_to_graphql_output(SimpleNode)

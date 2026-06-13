@@ -1,16 +1,15 @@
-"""
-Phase 0 Verification Test
+"""Phase 0 Verification Test
 
 This test verifies that the Phase 0 chaos engineering infrastructure is working correctly.
 """
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from chaos.base import ChaosTestCase
-from chaos.plugin import chaos_inject, FailureType
+from chaos.plugin import FailureType, chaos_inject
 
 
 class TestPhase0Infrastructure(ChaosTestCase):
@@ -50,7 +49,6 @@ class TestPhase0Infrastructure(ChaosTestCase):
     def test_chaos_decorator(self):
         """Test that chaos injection decorator works."""
         # This test should have chaos injection metadata
-        pass
 
 
 def test_chaos_injector_creation():

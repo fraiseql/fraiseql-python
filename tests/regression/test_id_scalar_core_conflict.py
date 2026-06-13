@@ -29,7 +29,6 @@ import pytest
 from graphql import (
     GraphQLID,
     GraphQLNonNull,
-    GraphQLObjectType,
     GraphQLSchema,
     graphql,
     print_schema,

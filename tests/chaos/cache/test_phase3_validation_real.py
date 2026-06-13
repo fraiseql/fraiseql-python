@@ -1,16 +1,15 @@
-"""
-Phase 3 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
+"""Phase 3 Chaos Engineering Validation Tests (Real PostgreSQL Backend)
 
 Tests to validate Phase 3 cache and authentication chaos test success criteria.
 Validates FraiseQL's cache resilience and authentication security.
 """
 
-import pytest
-import statistics
 import asyncio
+import statistics
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -18,8 +17,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_miss_performance_impact(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate cache miss performance impact is acceptable.
+    """Validate cache miss performance impact is acceptable.
 
     Success Criteria: Cache misses should degrade performance but remain functional
     """
@@ -80,8 +78,7 @@ async def test_cache_miss_performance_impact(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_coherency_under_concurrent_access(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate cache coherency under concurrent access.
+    """Validate cache coherency under concurrent access.
 
     Success Criteria: Concurrent cache access should maintain consistency
     """
@@ -122,8 +119,7 @@ async def test_cache_coherency_under_concurrent_access(chaos_db_client, chaos_te
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_authentication_success_rate(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate authentication success rate under normal and chaotic conditions.
+    """Validate authentication success rate under normal and chaotic conditions.
 
     Success Criteria: Authentication should succeed 80%+ of the time
     """
@@ -176,8 +172,7 @@ async def test_authentication_success_rate(chaos_db_client, chaos_test_schema, b
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_rbac_policy_enforcement(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate RBAC policy enforcement.
+    """Validate RBAC policy enforcement.
 
     Success Criteria: Authorization policies should be enforced correctly
     """
@@ -218,8 +213,7 @@ async def test_rbac_policy_enforcement(chaos_db_client, chaos_test_schema, basel
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_cache_stampede_prevention(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Validate cache stampede prevention under concurrent cache misses.
+    """Validate cache stampede prevention under concurrent cache misses.
 
     Success Criteria: Cache stampedes should be prevented or minimized
     """

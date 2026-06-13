@@ -70,9 +70,12 @@ def postgres_container() -> Generator[Any]:
         password="fraiseql",
         dbname="fraiseql_test",
         driver="psycopg",  # psycopg3
-    )
+    ).with_command("postgres -c shared_preload_libraries=pg_stat_statements")
 
-    container.start()
+    try:
+        container.start()
+    except Exception as exc:
+        pytest.skip(f"Docker container failed to start: {exc}")
 
     # Wait for database to be ready before proceeding
     url = container.get_connection_url().replace("postgresql+psycopg://", "postgresql://")
@@ -145,6 +148,12 @@ async def session_db_pool(postgres_url) -> AsyncGenerator[psycopg_pool.AsyncConn
         await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
         await conn.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
         await conn.execute('CREATE EXTENSION IF NOT EXISTS "ltree"')
+
+        # Try pg_stat_statements extension
+        try:
+            await conn.execute('CREATE EXTENSION IF NOT EXISTS "pg_stat_statements"')
+        except Exception:
+            pass
 
         # Try vector extension
         try:

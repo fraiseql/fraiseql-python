@@ -1008,6 +1008,13 @@ async def execute_multi_field_query(
                 "path": [response_key],
             }
 
+            # Preserve GraphQLError extensions (e.g. authorization deny carries
+            # extensions={"code": "FORBIDDEN"}) so the deny shape is consistent with
+            # the other execution paths (issue #362).
+            error_extensions = getattr(e, "extensions", None)
+            if error_extensions:
+                error_dict["extensions"] = error_extensions
+
             # Add location info if available
             location = _extract_field_location(field_node)
             if location:
@@ -1082,6 +1089,63 @@ class GraphQLRequest(BaseModel):
         return v
 
 
+def _derive_operation_info(query_string: str | None) -> tuple[str, str]:
+    """Best-effort ``(operation_type, root_field_name)`` from a query string.
+
+    The resolver-bypass authorization gates (``/graphql/rust`` and the APQ cache hit)
+    have no ``GraphQLResolveInfo``, so they derive the operation identity from the raw
+    query. Defaults to ``("query", "")`` when the document cannot be parsed.
+    """
+    if not query_string:
+        return "query", ""
+    try:
+        document = parse(query_string)
+    except Exception:
+        return "query", ""
+    for definition in document.definitions:
+        if isinstance(definition, OperationDefinitionNode):
+            op_type = definition.operation.value
+            for selection in definition.selection_set.selections:
+                if isinstance(selection, FieldNode):
+                    return op_type, selection.name.value
+            return op_type, ""
+    return "query", ""
+
+
+def _registry_default_authorizer() -> Any:
+    """Return the global default operation authorizer from the registry (issue #362).
+
+    The bypass gates read this live so a configured authorizer (set at build time or
+    re-applied on hot-reload) reaches them without per-request plumbing.
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    return SchemaRegistry.get_instance().default_authorizer
+
+
+def _registry_decision_cache() -> Any:
+    """Return the optional decision cache from the registry (issue #367).
+
+    Read live, like :func:`_registry_default_authorizer`, so a configured cache reaches the
+    bypass gates without per-request plumbing. ``None`` means always-evaluate.
+    """
+    from fraiseql.gql.builders import SchemaRegistry
+
+    return SchemaRegistry.get_instance().decision_cache
+
+
+def _forbidden_error_payload(exc: Any) -> dict[str, Any]:
+    """Shape a denied :class:`GraphQLError` into a GraphQL error response body."""
+    return {
+        "errors": [
+            {
+                "message": getattr(exc, "message", str(exc)),
+                "extensions": getattr(exc, "extensions", None) or {"code": "FORBIDDEN"},
+            }
+        ]
+    }
+
+
 def create_graphql_router(
     schema: GraphQLSchema,
     config: FraiseQLConfig,
@@ -1134,7 +1198,14 @@ def create_graphql_router(
     if turbo_registry is not None:
         try:
             logger.info(f"Creating TurboRouter with registry: {turbo_registry}")
-            turbo_router = TurboRouter(turbo_registry)
+            # Thread the global default authorizer and the optional decision cache into the
+            # bypass gate (issues #362, #367).
+            turbo_router = TurboRouter(
+                turbo_registry,
+                default_authorizer=_registry_default_authorizer(),
+                decision_cache=_registry_decision_cache(),
+                schema=schema,
+            )
             logger.info(f"TurboRouter created successfully: {turbo_router}")
         except Exception:
             logger.exception("Failed to create TurboRouter")
@@ -1278,8 +1349,66 @@ def create_graphql_router(
                     request, apq_backend, config, context=context
                 )
                 if cached_response:
-                    logger.debug(f"APQ cache hit: {sha256_hash[:8]}...")
-                    return cached_response
+                    # Operation authorization gate (issue #362): a cached (baked)
+                    # response cannot be re-scoped per principal, so enforce BEFORE
+                    # serving it. This path bypasses GraphQLField.resolve.
+                    serve_cached = True
+                    authorizer = _registry_default_authorizer()
+                    if authorizer is not None:
+                        from graphql import GraphQLError
+
+                        from fraiseql.security.authorization import enforce_operation_value
+
+                        persisted_text = (
+                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                        )
+                        op_type, op_name = _derive_operation_info(persisted_text)
+                        try:
+                            decision = await enforce_operation_value(
+                                authorizer=authorizer,
+                                context=context,
+                                operation_type=op_type,
+                                operation_name=op_name,
+                                arguments=request.variables or {},
+                                cache=_registry_decision_cache(),
+                            )
+                        except GraphQLError as exc:
+                            # Deny short-circuits: the cached response is never served.
+                            return _forbidden_error_payload(exc)
+                        if decision.filters:
+                            # A baked cached response cannot honor per-row filters →
+                            # skip the cache and fall through to normal resolver
+                            # execution (which applies the filter on the read path).
+                            logger.info(
+                                "APQ cache skipped due to authorization scoping filters; "
+                                "falling through to normal execution"
+                            )
+                            serve_cached = False
+                    if serve_cached:
+                        # Field-level authorization gate (issue #366): a baked cached response
+                        # is served without invoking resolvers, so re-apply the per-field gate
+                        # (authorize_fields) against the persisted document before serving it.
+                        from graphql import GraphQLError
+
+                        from fraiseql.security.field_auth import (
+                            enforce_selected_field_authorization,
+                        )
+
+                        persisted_text = (
+                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                        )
+                        if persisted_text:
+                            try:
+                                await enforce_selected_field_authorization(
+                                    schema=schema,
+                                    query=persisted_text,
+                                    context=context,
+                                    variables=request.variables or {},
+                                )
+                            except GraphQLError as exc:
+                                return _forbidden_error_payload(exc)
+                        logger.debug(f"APQ cache hit: {sha256_hash[:8]}...")
+                        return cached_response
 
                 # 2. Fallback to query resolution from backend
                 persisted_query_text = None
@@ -1354,6 +1483,22 @@ def create_graphql_router(
                     f"🚀 Multi-field query detected ({field_count} root fields) - "
                     f"using Rust-only merge path"
                 )
+                # Field-level authorization gate (issue #366): the Rust merge path serves data
+                # without invoking per-field resolvers, so the per-field gate (authorize_fields)
+                # would fail open. Enforce it here, fail-closed, before the merge runs.
+                from graphql import GraphQLError
+
+                from fraiseql.security.field_auth import enforce_selected_field_authorization
+
+                try:
+                    await enforce_selected_field_authorization(
+                        schema=schema,
+                        query=request.query,
+                        context=context,
+                        variables=request.variables,
+                    )
+                except GraphQLError as exc:
+                    return _forbidden_error_payload(exc)
                 try:
                     result = await execute_multi_field_query(
                         schema, request.query, request.variables, context
@@ -1385,6 +1530,22 @@ def create_graphql_router(
                 # Check if UnifiedExecutor returned RustResponseBytes directly (zero-copy path)
                 # Only use fast path for single-field queries to avoid dropping fields
                 if isinstance(result, RustResponseBytes) and not has_multiple_root_fields:
+                    # Field-level authorization gate (issue #366): this passthrough serves
+                    # Rust-rendered bytes without invoking per-field resolvers. Enforce the
+                    # per-field gate before serving (the data was fetched but is not yet served).
+                    from graphql import GraphQLError
+
+                    from fraiseql.security.field_auth import enforce_selected_field_authorization
+
+                    try:
+                        await enforce_selected_field_authorization(
+                            schema=schema,
+                            query=request.query,
+                            context=context,
+                            variables=request.variables,
+                        )
+                    except GraphQLError as exc:
+                        return _forbidden_error_payload(exc)
                     logger.info("🚀 Direct path: Returning RustResponseBytes from unified executor")
                     return Response(
                         content=bytes(result),
@@ -1622,41 +1783,102 @@ def create_graphql_router(
 
         return await graphql_endpoint(request_obj, http_request, context)
 
-    # Phase 9: Add simplified unified Rust pipeline endpoint
-    @router.post("/graphql/rust", response_class=Response)
-    async def graphql_endpoint_rust(
-        request: GraphQLRequest,
-        http_request: Request,
-        context: dict[str, Any] = context_dependency,
-    ) -> Response:
-        """Execute GraphQL query using unified Rust pipeline (Phase 9).
+    # Phase 9: simplified unified Rust pipeline endpoint. Opt-in (issue #365): this is a
+    # resolver-bypass route, so it is mounted only when explicitly enabled. It is still
+    # authorization-gated when present (issue #362); when disabled it simply does not exist
+    # (a request 404s), keeping the route allow-list the single source of truth.
+    if config.enable_rust_endpoint:
 
-        This endpoint demonstrates the dramatic simplification achieved by
-        moving all database operations to Rust. All work happens in a
-        single Rust function call.
-        """
-        # Import the unified Rust function
-        from fraiseql._fraiseql_rs import execute_graphql_query
+        @router.post("/graphql/rust", response_class=Response)
+        async def graphql_endpoint_rust(
+            request: GraphQLRequest,
+            http_request: Request,
+            context: dict[str, Any] = context_dependency,
+        ) -> Response:
+            """Execute GraphQL query using unified Rust pipeline (Phase 9).
 
-        # Extract user context for authorization
-        user_context = {
-            "user_id": context.get("user", {}).get("id"),
-            "permissions": context.get("user", {}).get("permissions", []),
-            "roles": context.get("user", {}).get("roles", []),
-        }
+            This endpoint demonstrates the dramatic simplification achieved by
+            moving all database operations to Rust. All work happens in a
+            single Rust function call.
+            """
+            # Operation authorization gate (issue #362). This endpoint hands off to Rust
+            # and never runs a Python resolver, so enforcement happens here, before the
+            # Rust call. Per-operation decorator overrides do not apply on this path.
+            authorizer = _registry_default_authorizer()
+            if authorizer is not None:
+                from graphql import GraphQLError
 
-        # Call unified Rust pipeline - all work done in Rust!
-        result_bytes = await execute_graphql_query(
-            query_string=request.query or "",
-            variables=request.variables or {},
-            user_context=user_context,
-        )
+                from fraiseql.security.authorization import enforce_operation_value
 
-        # Return bytes directly (no Python JSON processing)
-        return Response(
-            content=result_bytes,
-            media_type="application/json",
-        )
+                op_type, op_name = _derive_operation_info(request.query)
+                try:
+                    decision = await enforce_operation_value(
+                        authorizer=authorizer,
+                        context=context,
+                        operation_type=op_type,
+                        operation_name=op_name,
+                        arguments=request.variables or {},
+                        cache=_registry_decision_cache(),
+                    )
+                except GraphQLError as exc:
+                    # Deny short-circuits: the Rust pipeline is never invoked.
+                    return Response(
+                        content=json.dumps(_forbidden_error_payload(exc)).encode(),
+                        media_type="application/json",
+                    )
+                if decision.filters:
+                    # Per-row filters are impossible (work happens in Rust) → rely on
+                    # session variables + RLS for row scoping; never silently drop them.
+                    logger.warning(
+                        "authorization filters are ignored on the /graphql/rust path; "
+                        "rely on session variables + RLS for row scoping"
+                    )
+
+            # Field-level authorization gate (issue #366): the Rust pipeline renders bytes
+            # without invoking per-field resolvers, so re-apply the per-field gate
+            # (authorize_fields) here, fail-closed, before the Rust call. A no-op when no
+            # authorizer is configured.
+            from graphql import GraphQLError
+
+            from fraiseql.security.field_auth import enforce_selected_field_authorization
+
+            try:
+                await enforce_selected_field_authorization(
+                    schema=schema,
+                    query=request.query or "",
+                    context=context,
+                    variables=request.variables or {},
+                )
+            except GraphQLError as exc:
+                return Response(
+                    content=json.dumps(_forbidden_error_payload(exc)).encode(),
+                    media_type="application/json",
+                )
+
+            # Import the unified Rust function
+            from fraiseql._fraiseql_rs import execute_graphql_query
+
+            # Extract user context for authorization. ``context["user"]`` is None for
+            # unauthenticated requests, so guard before attribute access.
+            user = context.get("user") or {}
+            user_context = {
+                "user_id": user.get("id"),
+                "permissions": user.get("permissions", []),
+                "roles": user.get("roles", []),
+            }
+
+            # Call unified Rust pipeline - all work done in Rust!
+            result_bytes = await execute_graphql_query(
+                query_string=request.query or "",
+                variables=request.variables or {},
+                user_context=user_context,
+            )
+
+            # Return bytes directly (no Python JSON processing)
+            return Response(
+                content=result_bytes,
+                media_type="application/json",
+            )
 
     # Add metrics endpoint if enabled
     if hasattr(unified_executor, "get_metrics") and not is_production_env:

@@ -1,7 +1,8 @@
 """Tests for unified Rust GraphQL pipeline (Phase 9)."""
 
-import pytest
 import json
+
+import pytest
 from fraiseql._fraiseql_rs import PyGraphQLPipeline
 
 

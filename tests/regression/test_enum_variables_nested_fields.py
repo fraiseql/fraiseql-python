@@ -28,7 +28,6 @@ from graphql import (
 
 import fraiseql
 
-
 pytestmark = pytest.mark.regression
 
 
@@ -86,10 +85,9 @@ class TestEnumVariableBug:
             # Simulate finding a user
             if status_str == "ACTIVE":
                 return {"id": "1", "name": "Alice", "status": "ACTIVE"}
-            elif status_str == "INACTIVE":
+            if status_str == "INACTIVE":
                 return {"id": "2", "name": "Bob", "status": "INACTIVE"}
-            else:
-                return {"id": "3", "name": "Charlie", "status": "PENDING"}
+            return {"id": "3", "name": "Charlie", "status": "PENDING"}
 
         query_type = GraphQLObjectType(
             "Query",

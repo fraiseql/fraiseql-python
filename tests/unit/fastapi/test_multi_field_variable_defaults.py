@@ -1,5 +1,4 @@
-"""
-Tests for multi-field GraphQL default variable values.
+"""Tests for multi-field GraphQL default variable values.
 
 Tests that default values in variable declarations are properly applied
 when variables are not provided or partially provided.

@@ -1,15 +1,14 @@
-"""
-Chaos Engineering Base Classes and Infrastructure
+"""Chaos Engineering Base Classes and Infrastructure
 
 This module provides the foundation for chaos engineering tests in FraiseQL,
 including metrics collection, test case management, and chaos injection utilities.
 """
 
-import time
 import statistics
+import time
 import unittest
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -86,8 +85,7 @@ class ChaosMetrics:
 
 
 class ChaosTestCase(unittest.TestCase):
-    """
-    Base class for chaos engineering tests.
+    """Base class for chaos engineering tests.
 
     Provides common functionality for chaos test setup, execution, and cleanup.
     """
@@ -121,7 +119,7 @@ class ChaosTestCase(unittest.TestCase):
         baseline_file = baseline_file or self.baseline_file
 
         try:
-            with open(baseline_file, "r") as f:
+            with open(baseline_file) as f:
                 return json.load(f)
         except FileNotFoundError:
             return {}
@@ -174,8 +172,7 @@ class ChaosTestCase(unittest.TestCase):
             json.dump(results, f, indent=2)
 
     def inject_chaos(self, failure_type: str, duration: int, **kwargs):
-        """
-        Inject chaos into the system.
+        """Inject chaos into the system.
 
         This is a placeholder - actual implementation will be in subclasses
         or through decorators.

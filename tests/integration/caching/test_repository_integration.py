@@ -43,7 +43,7 @@ class TestCachedRepository:
         mock_cache_backend.get.return_value = cached_data
 
         # Execute
-        result = await cached_repo.find("users", status="active", limit=10)
+        result = await cached_repo.find("users", mandatory_filters={"status": "active"}, limit=10)
 
         # Verify
         assert result == cached_data
@@ -79,7 +79,7 @@ class TestCachedRepository:
         mock_pool.connection = MagicMock(return_value=mock_conn)
 
         # Execute
-        result = await cached_repo.find("users", status="active")
+        result = await cached_repo.find("users", mandatory_filters={"status": "active"})
 
         # Verify
         mock_cache_backend.get.assert_called_once()
@@ -104,7 +104,7 @@ class TestCachedRepository:
         mock_cache_backend.get.return_value = cached_data
 
         # Execute
-        result = await cached_repo.find_one("users", id=uuid4())
+        result = await cached_repo.find_one("users", mandatory_filters={"id": uuid4()})
 
         # Verify
         assert result == cached_data

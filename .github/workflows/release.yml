@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -86,7 +86,7 @@ jobs:
           cp fraiseql_rs/target/wheels/*.whl dist/
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.target }}
           path: dist/*.whl
@@ -101,9 +101,12 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build sdist
         run: |
@@ -113,7 +116,7 @@ jobs:
           cp fraiseql_rs/target/wheels/*.tar.gz dist/
 
       - name: Upload sdist artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -126,7 +129,7 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: dist/
           merge-multiple: true

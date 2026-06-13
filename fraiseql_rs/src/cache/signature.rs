@@ -14,7 +14,7 @@ pub fn generate_signature(parsed_query: &ParsedQuery) -> String {
     hasher.update(&structure);
     let hash = hasher.finalize();
 
-    format!("{:x}", hash)
+    hex::encode(hash)
 }
 
 /// Build structural representation (variables → placeholders).

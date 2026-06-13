@@ -10,10 +10,10 @@ from tests.unit.utils.fixtures.test_classes_with_docstrings import (
 )
 
 __all__ = [
-    "UserWithDocstrings",
-    "ProductWithDocstrings",
-    "OrderWithMultilineDocstrings",
-    "MixedDocumentation",
     "AllQuoteTypes",
+    "MixedDocumentation",
+    "OrderWithMultilineDocstrings",
     "PriorityTest",
+    "ProductWithDocstrings",
+    "UserWithDocstrings",
 ]

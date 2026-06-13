@@ -12,11 +12,11 @@ import asyncio
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
-import pytest
 import psycopg
 import psycopg_pool
+import pytest
 import pytest_asyncio
 
 from tests.chaos.fraiseql_scenarios import GraphQLOperation
@@ -125,7 +125,7 @@ class RealFraiseQLClient:
 
                 return result
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise TimeoutError(f"Query execution timeout after {timeout}s")
         except Exception as e:
             raise e
@@ -153,8 +153,7 @@ class RealFraiseQLClient:
                         "server_time": row[1].isoformat(),
                     }
                 }
-            else:
-                return {"data": {"connected": False}}
+            return {"data": {"connected": False}}
 
         except Exception as e:
             # Return error response in GraphQL format

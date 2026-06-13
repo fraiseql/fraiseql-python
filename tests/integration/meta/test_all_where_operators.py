@@ -15,7 +15,7 @@ from graphql import graphql
 import fraiseql.gql.schema_builder  # noqa: F401
 from fraiseql import fraise_type, query
 from fraiseql.gql.builders import SchemaRegistry
-from fraiseql.types import CIDR, DateRange, IpAddress, LTree
+from fraiseql.types import CIDR, ID, DateRange, IpAddress, LTree
 from fraiseql.where_clause import ALL_OPERATORS
 
 
@@ -217,6 +217,12 @@ def operator_test_schema(meta_test_schema):
         id: int
         data: dict  # Maps to JSONBFilter
 
+    # IDFilter test type - for ID/UUID operators (descendant_of_id, ancestor_of_id)
+    @fraise_type(sql_source="test_ids")
+    class IDTestType:
+        id: int
+        entity_id: ID  # Maps to IDFilter
+
     # ==========================================
     # Register queries for each type
     # ==========================================
@@ -257,6 +263,10 @@ def operator_test_schema(meta_test_schema):
     async def get_jsonb(info) -> list[JSONBTestType]:
         return []
 
+    @query
+    async def get_ids(info) -> list[IDTestType]:
+        return []
+
     # Register all types and queries
     meta_test_schema.register_type(StringTestType)
     meta_test_schema.register_type(NumberTestType)
@@ -267,6 +277,7 @@ def operator_test_schema(meta_test_schema):
     meta_test_schema.register_type(VectorTestType)
     meta_test_schema.register_type(FullTextTestType)
     meta_test_schema.register_type(JSONBTestType)
+    meta_test_schema.register_type(IDTestType)
 
     meta_test_schema.register_query(get_strings)
     meta_test_schema.register_query(get_numbers)
@@ -277,6 +288,7 @@ def operator_test_schema(meta_test_schema):
     meta_test_schema.register_query(get_vectors)
     meta_test_schema.register_query(get_fulltext)
     meta_test_schema.register_query(get_jsonb)
+    meta_test_schema.register_query(get_ids)
 
     return meta_test_schema
 
@@ -375,6 +387,8 @@ async def test_operator_in_where_clause_with_database(operator, meta_test_pool):
             field_type = CIDR  # Use CIDR scalar type
         elif column_type == "DATERANGE":
             field_type = DateRange  # Use DateRange scalar type
+        elif column_type == "UUID":
+            field_type = ID  # Use ID scalar type for IDFilter
         else:
             field_type = str
 
@@ -572,6 +586,17 @@ def get_test_params_for_operator(operator):
         "inRange": ({"from": "192.168.0.1", "to": "192.168.0.255"}, "ipAddress", "getNetworks"),
         "strictleft": ("10.0.0.0/8", "network", "getNetworks"),
         "strictright": ("10.0.0.0/8", "network", "getNetworks"),
+        # Advanced network operators (CamelCase)
+        "isLoopback": (True, "ipAddress", "getNetworks"),
+        "isMulticast": (True, "ipAddress", "getNetworks"),
+        "isBroadcast": (True, "ipAddress", "getNetworks"),
+        "isLinkLocal": (True, "ipAddress", "getNetworks"),
+        "isDocumentation": (True, "ipAddress", "getNetworks"),
+        "isReserved": (True, "ipAddress", "getNetworks"),
+        "isCarrierGrade": (True, "ipAddress", "getNetworks"),
+        "isSiteLocal": (True, "ipAddress", "getNetworks"),
+        "isUniqueLocal": (True, "ipAddress", "getNetworks"),
+        "isGlobalUnicast": (True, "ipAddress", "getNetworks"),
         # Lowercase variants
         "isipv4": (True, "ipAddress", "getNetworks"),
         "isipv6": (True, "ipAddress", "getNetworks"),
@@ -579,6 +604,22 @@ def get_test_params_for_operator(operator):
         "ispublic": (True, "ipAddress", "getNetworks"),
         "insubnet": ("192.168.1.0/24", "ipAddress", "getNetworks"),
         "inrange": ({"from": "192.168.0.1", "to": "192.168.0.255"}, "ipAddress", "getNetworks"),
+        # Advanced network operators (lowercase)
+        "isloopback": (True, "ipAddress", "getNetworks"),
+        "ismulticast": (True, "ipAddress", "getNetworks"),
+        "isbroadcast": (True, "ipAddress", "getNetworks"),
+        "islinklocal": (True, "ipAddress", "getNetworks"),
+        "isdocumentation": (True, "ipAddress", "getNetworks"),
+        "isreserved": (True, "ipAddress", "getNetworks"),
+        "iscarriergrade": (True, "ipAddress", "getNetworks"),
+        "issitelocal": (True, "ipAddress", "getNetworks"),
+        "isuniquelocal": (True, "ipAddress", "getNetworks"),
+        "isglobalunicast": (True, "ipAddress", "getNetworks"),
+        # ==========================================
+        # IDFilter operators (getIds)
+        # ==========================================
+        "descendant_of_id": ("some-id", "entityId", "getIds"),
+        "ancestor_of_id": ("some-id", "entityId", "getIds"),
         # ==========================================
         # LTreeFilter operators (getLtrees)
         # ==========================================
@@ -786,6 +827,41 @@ def get_db_test_params_for_operator(operator):
         "ispublic": ("8.8.8.8", "ip_address", "test_ispublic_lower_table", "INET"),
         "insubnet": ("192.168.1.100", "ip_address", "test_insubnet_lower_table", "INET"),
         "inrange": ("192.168.1.100", "ip_address", "test_inrange_lower_table", "INET"),
+        # Advanced network operators (CamelCase)
+        "isLoopback": ("127.0.0.1", "ip_address", "test_isloopback_table", "INET"),
+        "isMulticast": ("224.0.0.1", "ip_address", "test_ismulticast_table", "INET"),
+        "isBroadcast": ("255.255.255.255", "ip_address", "test_isbroadcast_table", "INET"),
+        "isLinkLocal": ("169.254.0.1", "ip_address", "test_islinklocal_table", "INET"),
+        "isDocumentation": ("192.0.2.1", "ip_address", "test_isdocumentation_table", "INET"),
+        "isReserved": ("240.0.0.1", "ip_address", "test_isreserved_table", "INET"),
+        "isCarrierGrade": ("100.64.0.1", "ip_address", "test_iscarriergrade_table", "INET"),
+        "isSiteLocal": ("10.0.0.1", "ip_address", "test_issitelocal_table", "INET"),
+        "isUniqueLocal": ("fc00::1", "ip_address", "test_isuniquelocal_table", "INET"),
+        "isGlobalUnicast": ("8.8.8.8", "ip_address", "test_isglobalunicast_table", "INET"),
+        # Advanced network operators (lowercase)
+        "isloopback": ("127.0.0.1", "ip_address", "test_isloopback_lower_table", "INET"),
+        "ismulticast": ("224.0.0.1", "ip_address", "test_ismulticast_lower_table", "INET"),
+        "isbroadcast": ("255.255.255.255", "ip_address", "test_isbroadcast_lower_table", "INET"),
+        "islinklocal": ("169.254.0.1", "ip_address", "test_islinklocal_lower_table", "INET"),
+        "isdocumentation": ("192.0.2.1", "ip_address", "test_isdocumentation_lower_table", "INET"),
+        "isreserved": ("240.0.0.1", "ip_address", "test_isreserved_lower_table", "INET"),
+        "iscarriergrade": ("100.64.0.1", "ip_address", "test_iscarriergrade_lower_table", "INET"),
+        "issitelocal": ("10.0.0.1", "ip_address", "test_issitelocal_lower_table", "INET"),
+        "isuniquelocal": ("fc00::1", "ip_address", "test_isuniquelocal_lower_table", "INET"),
+        "isglobalunicast": ("8.8.8.8", "ip_address", "test_isglobalunicast_lower_table", "INET"),
+        # ID/UUID operators
+        "descendant_of_id": (
+            "11111111-1111-1111-1111-111111111111",
+            "entity_id",
+            "test_descendant_of_id_table",
+            "UUID",
+        ),
+        "ancestor_of_id": (
+            "11111111-1111-1111-1111-111111111111",
+            "entity_id",
+            "test_ancestor_of_id_table",
+            "UUID",
+        ),
         # ==========================================
         # LTree operators (21 operators)
         # ==========================================

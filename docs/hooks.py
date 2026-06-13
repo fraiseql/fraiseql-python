@@ -35,7 +35,7 @@ def _render(source: str) -> str | None:
     try:
         proc = subprocess.run(
             ["d2", "-", "-"],
-            input=source,
+            check=False, input=source,
             capture_output=True,
             text=True,
             timeout=30,
@@ -50,7 +50,7 @@ def _render(source: str) -> str | None:
     return None
 
 
-def on_page_content(html_content: str, **_kwargs: object) -> str:  # noqa: ARG001
+def on_page_content(html_content: str, **_kwargs: object) -> str:
     """Replace d2 fence blocks with rendered SVG inline."""
 
     def replace(match: re.Match[str]) -> str:

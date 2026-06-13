@@ -4,12 +4,47 @@ TurboRouter bypasses GraphQL parsing and validation for registered queries
 by directly executing pre-validated SQL templates.
 """
 
+from __future__ import annotations
+
 import hashlib
+import logging
+import re
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from psycopg import AsyncConnection
+if TYPE_CHECKING:
+    from graphql import GraphQLSchema
+    from psycopg import AsyncConnection
+
+    from fraiseql.security.authorization import Authorizer
+    from fraiseql.security.decision_cache import DecisionCache
+
+logger = logging.getLogger(__name__)
+
+
+def _turbo_operation_name(query_str: str) -> str:
+    """Extract the root field name from a GraphQL query, handling fragments.
+
+    Used as the ``operation_name`` for the TurboRouter authorization gate. Returns
+    an empty string if no root field can be parsed.
+    """
+    clean_query = re.sub(r"#.*", "", query_str)
+    clean_query = " ".join(clean_query.split())
+
+    named_query_match = re.search(r"query\s+\w+[^{]*{\s*(\w+)", clean_query, re.DOTALL)
+    if named_query_match:
+        return named_query_match.group(1)
+
+    anonymous_query_match = re.search(r"^\s*{\s*(\w+)", clean_query)
+    if anonymous_query_match:
+        return anonymous_query_match.group(1)
+
+    fallback_match = re.search(r"query\s*{\s*(\w+)", clean_query)
+    if fallback_match:
+        return fallback_match.group(1)
+
+    return ""
 
 
 @dataclass
@@ -258,15 +293,34 @@ class TurboRegistry:
 class TurboRouter:
     """High-performance router for registered GraphQL queries."""
 
-    def __init__(self, registry: TurboRegistry | None) -> None:
+    def __init__(
+        self,
+        registry: TurboRegistry | None,
+        default_authorizer: Authorizer | None = None,
+        decision_cache: DecisionCache | None = None,
+        schema: GraphQLSchema | None = None,
+    ) -> None:
         """Initialize the router with a registry.
 
         Args:
             registry: TurboRegistry containing registered queries
+            default_authorizer: Optional global operation authorizer (issue #362).
+                TurboRouter bypasses ``GraphQLField.resolve``, so this gate is the only
+                authorization point on the persisted-query path. Per-operation decorator
+                overrides do not apply here — only the global default.
+            decision_cache: Optional authorization decision cache (issue #367); when set,
+                identical ``(principal, query, variables)`` checks are memoized within its TTL.
+            schema: Optional GraphQL schema (issue #366). When provided, the per-field
+                authorization gate (``authorize_fields``) is re-applied here before the SQL
+                template runs, since this path renders the whole row without invoking per-field
+                resolvers. Omitted (``None``) → field gating is skipped on this router.
         """
         if registry is None:
             raise ValueError("TurboRouter requires a non-None TurboRegistry")
         self.registry = registry
+        self.default_authorizer = default_authorizer
+        self.decision_cache = decision_cache
+        self.schema = schema
 
     async def execute(
         self,
@@ -288,6 +342,49 @@ class TurboRouter:
         turbo_query = self.registry.get(query)
         if turbo_query is None:
             return None
+
+        # Operation authorization gate (issue #362). This path bypasses
+        # GraphQLField.resolve, so enforcement happens here, fail-closed, before any
+        # SQL is built or executed. enforce_operation_value raises GraphQLError on deny.
+        if self.default_authorizer is not None:
+            # Derive the real operation identity from the document, exactly as the APQ
+            # and /graphql/rust gates do (issue #368). Hardcoding operation_type="query"
+            # here mislabels persisted mutations and defeats write-guards that gate on
+            # operation_type. Imported lazily: routers imports turbo at module load, so a
+            # top-level import here would be circular.
+            from fraiseql.fastapi.routers import _derive_operation_info
+            from fraiseql.security.authorization import enforce_operation_value
+
+            operation_type, operation_name = _derive_operation_info(query)
+            decision = await enforce_operation_value(
+                authorizer=self.default_authorizer,
+                context=context,
+                operation_type=operation_type,
+                operation_name=operation_name,
+                arguments=variables or {},
+                cache=self.decision_cache,
+            )
+            if decision.filters:
+                # Per-row filter injection is impossible against a fixed SQL template;
+                # row scoping on this path relies on session variables + database RLS.
+                logger.warning(
+                    "authorization filters are ignored on the TurboRouter path "
+                    "(fixed SQL template); rely on session variables + RLS for row scoping"
+                )
+
+        # Field-level authorization gate (issue #366). The fixed SQL template renders the whole
+        # row without invoking per-field resolvers, so the per-field gate (authorize_fields)
+        # would fail open. Re-apply it here, fail-closed, before any SQL runs. Requires the
+        # schema to resolve the selection set; a no-op when no schema or no authorizer is set.
+        if self.schema is not None:
+            from fraiseql.security.field_auth import enforce_selected_field_authorization
+
+            await enforce_selected_field_authorization(
+                schema=self.schema,
+                query=query,
+                context=context,
+                variables=variables or {},
+            )
 
         # Get database from context
         db = context.get("db")
@@ -354,33 +451,6 @@ class TurboRouter:
 
                 # Determine the root field name from the query
                 # Handle queries with fragments by looking for the actual query operation
-                import re
-
-                def extract_root_field_name(query_str: str) -> str | None:
-                    """Extract the root field name from a GraphQL query, handling fragments."""
-                    # Remove comments and normalize whitespace
-                    clean_query = re.sub(r"#.*", "", query_str)
-                    clean_query = " ".join(clean_query.split())
-
-                    # Pattern 1: Named query (handles fragments before query)
-                    named_query_match = re.search(
-                        r"query\s+\w+[^{]*{\s*(\w+)", clean_query, re.DOTALL
-                    )
-                    if named_query_match:
-                        return named_query_match.group(1)
-
-                    # Pattern 2: Anonymous query starting with {
-                    anonymous_query_match = re.search(r"^\s*{\s*(\w+)", clean_query)
-                    if anonymous_query_match:
-                        return anonymous_query_match.group(1)
-
-                    # Pattern 3: Query keyword without name
-                    fallback_match = re.search(r"query\s*{\s*(\w+)", clean_query)
-                    if fallback_match:
-                        return fallback_match.group(1)
-
-                    return None
-
                 def process_turbo_result(data: any, root_field: str) -> dict[str, any]:
                     """Process TurboRouter result with smart GraphQL response detection."""
                     # Case 1: Data is already a complete GraphQL response
@@ -405,7 +475,7 @@ class TurboRouter:
                     # Case 3: Raw data - wrap normally
                     return {"data": {root_field: data}}
 
-                root_field = extract_root_field_name(query)
+                root_field = _turbo_operation_name(query)
                 if root_field:
                     return process_turbo_result(data, root_field)
 

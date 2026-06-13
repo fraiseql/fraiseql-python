@@ -117,7 +117,7 @@ class TestExists:
         import uuid
 
         tenant_id = uuid.uuid4()
-        result = await db.exists("v_users", tenant_id=tenant_id)
+        result = await db.exists("v_users", mandatory_filters={"tenant_id": tenant_id})
 
         # Verify tenant_id was included in SQL
         assert mock_cursor.execute.called
@@ -284,7 +284,7 @@ class TestSum:
         import uuid
 
         tenant_id = uuid.uuid4()
-        result = await db.sum("v_orders", "amount", tenant_id=tenant_id)
+        result = await db.sum("v_orders", "amount", mandatory_filters={"tenant_id": tenant_id})
 
         assert mock_cursor.execute.called
         sql_query = str(mock_cursor.execute.call_args[0][0])
@@ -668,7 +668,7 @@ class TestDistinct:
         import uuid
 
         tenant_id = uuid.uuid4()
-        result = await db.distinct("v_users", "country", tenant_id=tenant_id)
+        result = await db.distinct("v_users", "country", mandatory_filters={"tenant_id": tenant_id})
 
         assert mock_cursor.execute.called
         sql_query = str(mock_cursor.execute.call_args[0][0])

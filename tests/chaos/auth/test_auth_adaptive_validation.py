@@ -1,5 +1,4 @@
-"""
-Validation tests for adaptive auth chaos tests.
+"""Validation tests for adaptive auth chaos tests.
 
 These tests verify that adaptive auth tests scale correctly across
 different hardware profiles (LOW, MEDIUM, HIGH).
@@ -14,8 +13,7 @@ class TestAdaptiveAuthValidation:
 
     @pytest.mark.parametrize("profile", ["low", "medium", "high"])
     def test_jwt_expiration_scales_correctly(self, profile):
-        """
-        Verify JWT expiration test scales across profiles.
+        """Verify JWT expiration test scales across profiles.
 
         Tests that iteration counts are appropriate for each profile:
         - LOW (0.5x): 5 iterations (minimum)
@@ -52,8 +50,7 @@ class TestAdaptiveAuthValidation:
 
     @pytest.mark.parametrize("profile", ["low", "medium", "high"])
     def test_jwt_signature_validation_scales_correctly(self, profile):
-        """
-        Verify JWT signature validation test scales across profiles.
+        """Verify JWT signature validation test scales across profiles.
 
         Tests that iteration counts are appropriate for each profile:
         - LOW (0.5x): 5 iterations (minimum)
@@ -91,8 +88,7 @@ class TestAdaptiveAuthValidation:
 
     @pytest.mark.parametrize("profile", ["low", "medium", "high"])
     def test_config_timeout_scaling(self, profile):
-        """
-        Verify timeout scaling is inverse to hardware performance.
+        """Verify timeout scaling is inverse to hardware performance.
 
         Faster hardware → stricter timeouts
         Slower hardware → more lenient timeouts
@@ -120,8 +116,7 @@ class TestAdaptiveAuthValidation:
 
     @pytest.mark.parametrize("profile", ["low", "medium", "high"])
     def test_concurrent_requests_scaling(self, profile):
-        """
-        Verify concurrent request counts scale with hardware.
+        """Verify concurrent request counts scale with hardware.
 
         Better hardware → more concurrent requests
         Weaker hardware → fewer concurrent requests
@@ -144,8 +139,7 @@ class TestAdaptiveAuthValidation:
         )
 
     def test_multiplier_based_formula_never_breaks(self):
-        """
-        Verify multiplier-based formula produces valid results for all profiles.
+        """Verify multiplier-based formula produces valid results for all profiles.
 
         This test ensures we never get unusably low iteration counts,
         which was the critical flaw in divisor-based formulas.
@@ -181,8 +175,7 @@ class TestAdaptiveAuthValidation:
                     )
 
     def test_divisor_based_formula_would_fail(self):
-        """
-        Demonstrate why divisor-based formulas are broken.
+        """Demonstrate why divisor-based formulas are broken.
 
         This test shows what would happen if we used the original
         divisor-based approach (concurrent_requests // divisor).

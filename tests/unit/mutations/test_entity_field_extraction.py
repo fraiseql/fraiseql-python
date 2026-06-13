@@ -9,7 +9,6 @@ Related to GitHub issue #525.
 
 from unittest.mock import MagicMock
 
-import pytest
 from graphql import FieldNode, InlineFragmentNode, TypeNode
 
 from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections

@@ -18,7 +18,6 @@ async def test_multi_field_query_with_variables(init_schema_registry_fixture):
         GraphQLField,
         GraphQLInt,
         GraphQLList,
-        GraphQLNonNull,
         GraphQLObjectType,
         GraphQLSchema,
         GraphQLString,

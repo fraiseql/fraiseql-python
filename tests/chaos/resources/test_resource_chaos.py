@@ -1,20 +1,17 @@
-"""
-Phase 4.1: Resource Chaos Tests
+"""Phase 4.1: Resource Chaos Tests
 
 Tests for system resource failures and exhaustion scenarios.
 Validates FraiseQL's resource management and graceful degradation under resource constraints.
 """
 
-import pytest
-import time
 import random
 import statistics
+import time
+
 import psutil
-import os
+import pytest
 from chaos.base import ChaosTestCase
-from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestResourceChaos(ChaosTestCase):
@@ -23,8 +20,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_memory_pressure_handling(self):
-        """
-        Test memory pressure handling and graceful degradation.
+        """Test memory pressure handling and graceful degradation.
 
         Scenario: System memory becomes constrained, forcing garbage collection and memory management.
         Expected: FraiseQL handles memory pressure gracefully without crashes.
@@ -85,8 +81,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_cpu_spike_resilience(self):
-        """
-        Test CPU spike handling and computational resource management.
+        """Test CPU spike handling and computational resource management.
 
         Scenario: CPU usage spikes due to computational intensive operations.
         Expected: FraiseQL manages CPU resources and maintains responsiveness.
@@ -157,8 +152,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_disk_io_contention(self):
-        """
-        Test disk I/O contention and storage resource management.
+        """Test disk I/O contention and storage resource management.
 
         Scenario: Disk I/O becomes contended due to concurrent operations.
         Expected: FraiseQL handles I/O contention gracefully with queuing.
@@ -213,8 +207,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_resource_exhaustion_recovery(self):
-        """
-        Test resource exhaustion scenarios and recovery mechanisms.
+        """Test resource exhaustion scenarios and recovery mechanisms.
 
         Scenario: System resources become exhausted, then gradually recover.
         Expected: FraiseQL handles resource exhaustion gracefully and recovers.
@@ -294,8 +287,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_system_resource_monitoring(self):
-        """
-        Test system resource monitoring and adaptive behavior.
+        """Test system resource monitoring and adaptive behavior.
 
         Scenario: System monitors resource usage and adapts behavior accordingly.
         Expected: FraiseQL adapts to resource constraints intelligently.
@@ -360,8 +352,7 @@ class TestResourceChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_resources
     def test_cascading_resource_failure_prevention(self):
-        """
-        Test prevention of cascading resource failures.
+        """Test prevention of cascading resource failures.
 
         Scenario: One resource failure triggers cascading effects on other resources.
         Expected: FraiseQL contains resource failures and prevents cascading degradation.
@@ -417,7 +408,7 @@ class TestResourceChaos(ChaosTestCase):
 
                 break  # Stop after primary failure to check cascading
 
-            except Exception as e:
+            except Exception:
                 # Other failures (not cascading)
                 self.metrics.record_error()
 

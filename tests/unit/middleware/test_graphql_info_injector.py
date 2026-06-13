@@ -1,8 +1,8 @@
 """Unit tests for GraphQL info auto-injection middleware."""
 
-import inspect
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from fraiseql.middleware.graphql_info_injector import GraphQLInfoInjector
 

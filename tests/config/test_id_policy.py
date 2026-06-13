@@ -321,8 +321,6 @@ class TestIDPolicyWhereFilters:
         """Test that create_graphql_where_input respects ID policy."""
         import fraiseql
         from fraiseql.sql.graphql_where_generator import (
-            IDFilter,
-            UUIDFilter,
             create_graphql_where_input,
         )
 

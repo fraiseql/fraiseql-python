@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 
     from graphql import GraphQLEnumType, GraphQLScalarType
 
+    from fraiseql.security.authorization import Authorizer
+    from fraiseql.security.decision_cache import DecisionCache
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +34,12 @@ class SchemaRegistry:
         self._scalars: dict[str, GraphQLScalarType] = {}  # NEW: Custom scalar registry
         self._type_map: dict[str, Any] = {}  # GraphQL types cache for Connection/Edge/PageInfo
         self.config: Any = None  # FraiseQLConfig instance
+        # Global default operation authorizer (issue #362). Enforcement reads this
+        # slot live at resolve time; the bypass gates source it at construction.
+        self._default_authorizer: Authorizer | None = None
+        # Optional decision cache (issue #367). Read live by enforcement and the bypass
+        # gates, the same way as the default authorizer. ``None`` means always-evaluate.
+        self._decision_cache: DecisionCache | None = None
 
     @classmethod
     def get_instance(cls) -> SchemaRegistry:
@@ -62,6 +71,8 @@ class SchemaRegistry:
         self._interfaces.clear()
         self._type_map.clear()
         self.config = None
+        self._default_authorizer = None
+        self._decision_cache = None
         logger.debug("Registry after clearing: %s", list(self._types.keys()))
 
         # Clear mutation decorator registries
@@ -335,3 +346,31 @@ class SchemaRegistry:
     def scalars(self) -> dict[str, GraphQLScalarType]:
         """Get registered scalars."""
         return self._scalars
+
+    @property
+    def default_authorizer(self) -> Authorizer | None:
+        """The global default operation authorizer, or ``None`` if unset (issue #362)."""
+        return self._default_authorizer
+
+    def set_default_authorizer(self, authorizer: Authorizer | None) -> None:
+        """Set (or clear) the global default operation authorizer.
+
+        Enforcement reads this slot at resolve time, and the resolver-bypass gates
+        (TurboRouter, ``/graphql/rust``, APQ) source it as well, so one configured
+        authorizer covers every execution path.
+        """
+        self._default_authorizer = authorizer
+
+    @property
+    def decision_cache(self) -> DecisionCache | None:
+        """The optional authorization decision cache, or ``None`` if unset (issue #367)."""
+        return self._decision_cache
+
+    def set_decision_cache(self, cache: DecisionCache | None) -> None:
+        """Set (or clear) the optional authorization decision cache.
+
+        Enforcement and the resolver-bypass gates read this slot the same way they read
+        :attr:`default_authorizer`, so one cache covers every execution path. ``None``
+        restores the always-evaluate default.
+        """
+        self._decision_cache = cache

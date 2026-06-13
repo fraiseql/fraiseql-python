@@ -1,15 +1,15 @@
-"""
-Chaos Engineering Pytest Plugin
+"""Chaos Engineering Pytest Plugin
 
 This plugin provides decorators and utilities for chaos engineering tests,
 including failure injection, retry logic, and chaos scenario management.
 """
 
-import time
 import functools
-import pytest
-from typing import Dict, Any, Optional, Callable
+import time
 from enum import Enum
+from typing import Any, Callable, Dict, Optional
+
+import pytest
 
 # Import for type annotations
 
@@ -36,8 +36,7 @@ class ChaosInjector:
         self.active_failures: Dict[str, Dict[str, Any]] = {}
 
     def inject_failure(self, failure_type: FailureType, duration_ms: int, **kwargs) -> str:
-        """
-        Inject a failure scenario.
+        """Inject a failure scenario.
 
         Returns a failure ID that can be used to check status or cancel.
         """
@@ -90,8 +89,7 @@ _chaos_injector = ChaosInjector()
 
 
 def chaos_inject(failure_type: FailureType, duration_ms: int = 5000, **kwargs):
-    """
-    Decorator to inject chaos into a test function.
+    """Decorator to inject chaos into a test function.
 
     Args:
         failure_type: Type of failure to inject
@@ -120,9 +118,9 @@ def chaos_inject(failure_type: FailureType, duration_ms: int = 5000, **kwargs):
                 _chaos_injector.cancel_failure(failure_id)
 
         # Mark the function as a chaos test
-        setattr(wrapper, "_chaos_test", True)
-        setattr(wrapper, "_failure_type", failure_type)
-        setattr(wrapper, "_chaos_duration", duration_ms)
+        wrapper._chaos_test = True
+        wrapper._failure_type = failure_type
+        wrapper._chaos_duration = duration_ms
 
         return wrapper
 
@@ -132,8 +130,7 @@ def chaos_inject(failure_type: FailureType, duration_ms: int = 5000, **kwargs):
 def retry_chaos_test(
     max_retries: int = 3, retry_on: tuple = (Exception,), record_all: bool = False
 ):
-    """
-    Decorator to retry chaos tests that may be inherently flaky.
+    """Decorator to retry chaos tests that may be inherently flaky.
 
     Args:
         max_retries: Maximum number of retry attempts
@@ -183,7 +180,6 @@ def _record_chaos_attempt(test_name: str, attempt: int, success: bool, error: Op
     """Record a chaos test attempt for analysis."""
     # TODO: Implement attempt recording
     # This could write to a database or file for later analysis
-    pass
 
 
 # Pytest plugin hooks

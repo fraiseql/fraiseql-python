@@ -1,5 +1,4 @@
-"""
-Test adaptive configuration fixtures.
+"""Test adaptive configuration fixtures.
 
 This test verifies that the environment detection and adaptive config
 fixtures work correctly.

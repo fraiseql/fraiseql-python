@@ -1,7 +1,8 @@
 """Orders subgraph schema - extends User, owns Order entity"""
 
-from fraiseql import type, key, extends, external, requires, query, mutation, ID
-from typing import Optional, List
+from typing import List, Optional
+
+from fraiseql import ID, extends, external, key, type
 
 
 @extends
@@ -30,19 +31,15 @@ class Query:
 
     def order(self, id: ID) -> Optional[Order]:
         """Get order by ID"""
-        pass
 
     def orders(self) -> List[Order]:
         """Get all orders"""
-        pass
 
     def orders_by_user(self, user_id: ID) -> List[Order]:
         """Get orders for a user"""
-        pass
 
     def orders_by_status(self, status: str) -> List[Order]:
         """Get orders by status"""
-        pass
 
 
 @type
@@ -51,12 +48,9 @@ class Mutation:
 
     def create_order(self, user_id: ID, total: float) -> Order:
         """Create a new order"""
-        pass
 
     def update_order_status(self, id: ID, status: str) -> Optional[Order]:
         """Update order status"""
-        pass
 
     def delete_order(self, id: ID) -> bool:
         """Delete order"""
-        pass

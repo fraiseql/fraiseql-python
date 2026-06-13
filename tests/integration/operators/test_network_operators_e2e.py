@@ -356,6 +356,17 @@ class TestNetworkOperatorsE2E:
             "overlaps",
             "strictleft",
             "strictright",
+            # Advanced network classification (v1.17.0+)
+            "isLoopback",
+            "isMulticast",
+            "isBroadcast",
+            "isLinkLocal",
+            "isDocumentation",
+            "isReserved",
+            "isCarrierGrade",
+            "isSiteLocal",
+            "isUniqueLocal",
+            "isGlobalUnicast",
         ],
     )
     async def test_all_network_operators_registered(self, operator_name):

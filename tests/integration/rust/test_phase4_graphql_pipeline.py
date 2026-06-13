@@ -1,13 +1,13 @@
 """Basic integration test for Phase 4 GraphQL pipeline."""
 
-import pytest
 import json
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from src.fraiseql.core.graphql_pipeline import (
     RustGraphQLPipeline,
-    execute_graphql_query,
     execute_graphql_mutation,
+    execute_graphql_query,
 )
 
 
@@ -152,17 +152,12 @@ class TestGraphQLPipelineBasic:
         """Test that convenience functions exist."""
         # These are just smoke tests to ensure the functions exist
         # They would need proper async testing in a real test environment
-        import asyncio
 
         async def test_functions():
             # Test convenience functions exist (would need real Rust backend)
             pass
 
         # Just verify the functions can be imported
-        from src.fraiseql.core.graphql_pipeline import (
-            execute_graphql_query,
-            execute_graphql_mutation,
-        )
 
         assert callable(execute_graphql_query)
         assert callable(execute_graphql_mutation)

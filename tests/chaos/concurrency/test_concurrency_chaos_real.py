@@ -1,19 +1,17 @@
-"""
-Phase 4.2: Concurrency Chaos Tests (Real PostgreSQL Backend)
+"""Phase 4.2: Concurrency Chaos Tests (Real PostgreSQL Backend)
 
 Tests for concurrent execution scenarios and thread safety.
 Uses real PostgreSQL connections to validate FraiseQL's concurrent operation
 handling and deadlock prevention.
 """
 
-import pytest
-import time
+import asyncio
 import random
 import statistics
-import asyncio
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -21,8 +19,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_concurrent_query_execution(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test concurrent query execution and thread safety.
+    """Test concurrent query execution and thread safety.
 
     Scenario: Multiple concurrent requests execute simultaneously.
     Expected: FraiseQL handles concurrent requests gracefully without interference.
@@ -91,8 +88,7 @@ async def test_concurrent_query_execution(chaos_db_client, chaos_test_schema, ba
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_race_condition_prevention(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test race condition prevention in concurrent operations.
+    """Test race condition prevention in concurrent operations.
 
     Scenario: Multiple concurrent requests might cause race conditions.
     Expected: FraiseQL prevents race conditions and maintains data consistency.
@@ -160,8 +156,7 @@ async def test_race_condition_prevention(chaos_db_client, chaos_test_schema, bas
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_deadlock_prevention_under_load(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test deadlock prevention under concurrent load.
+    """Test deadlock prevention under concurrent load.
 
     Scenario: Complex concurrent operations that could create deadlocks.
     Expected: FraiseQL prevents deadlocks through proper resource ordering.
@@ -243,8 +238,7 @@ async def test_deadlock_prevention_under_load(chaos_db_client, chaos_test_schema
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_concurrent_connection_pooling(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test concurrent access to connection pools.
+    """Test concurrent access to connection pools.
 
     Scenario: Multiple concurrent requests compete for database connections.
     Expected: FraiseQL manages connection pooling correctly under concurrency.
@@ -315,8 +309,7 @@ async def test_concurrent_connection_pooling(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_concurrent_mutation_isolation(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test mutation operation isolation under concurrent execution.
+    """Test mutation operation isolation under concurrent execution.
 
     Scenario: Multiple mutation operations execute concurrently.
     Expected: FraiseQL maintains operation isolation and consistency.
@@ -385,8 +378,7 @@ async def test_concurrent_mutation_isolation(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_load_shedding_under_extreme_concurrency(chaos_db_client, chaos_test_schema, baseline_metrics):
-    """
-    Test load shedding behavior under extreme concurrent load.
+    """Test load shedding behavior under extreme concurrent load.
 
     Scenario: Many concurrent requests exceed system capacity.
     Expected: FraiseQL gracefully degrades and sheds load appropriately.

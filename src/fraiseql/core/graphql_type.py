@@ -508,6 +508,19 @@ def convert_type_to_graphql_output(
                 # This allows the type to reference itself (e.g., Playlist with child_playlists)
                 def make_fields_thunk():
                     gql_fields = {}
+
+                    # Automatic field-level authorization opt-in (issue #366). Wrap only the
+                    # declared fields' resolvers; a no-op (returns the resolver unchanged) for
+                    # any field not in the set, so non-opted fields carry zero extra cost.
+                    _authorize_fields = getattr(typ, "__fraiseql_authorize_fields__", None)
+
+                    def _gate(resolver: Any, field_name: str) -> Any:
+                        if not _authorize_fields or field_name not in _authorize_fields:
+                            return resolver
+                        from fraiseql.security.field_auth import gate_field_resolver
+
+                        return gate_field_resolver(resolver, field=f"{typ.__name__}.{field_name}")
+
                     for name, field in fields.items():
                         field_type = field.field_type or type_hints.get(name)
                         if field_type is not None:
@@ -583,8 +596,9 @@ def convert_type_to_graphql_output(
                                     type_=gql_type,
                                     description=field.description,
                                     args=gql_args,
-                                    resolve=wrap_resolver_with_enum_serialization(
-                                        enhanced_resolver
+                                    resolve=_gate(
+                                        wrap_resolver_with_enum_serialization(enhanced_resolver),
+                                        name,
                                     ),
                                 )
                                 continue  # Skip other resolver creation
@@ -626,7 +640,10 @@ def convert_type_to_graphql_output(
                                 gql_fields[graphql_field_name] = GraphQLField(
                                     type_=gql_type,
                                     description=field.description,
-                                    resolve=wrap_resolver_with_enum_serialization(smart_resolver),
+                                    resolve=_gate(
+                                        wrap_resolver_with_enum_serialization(smart_resolver),
+                                        name,
+                                    ),
                                 )
                                 continue  # Skip the regular resolver creation
 
@@ -767,8 +784,11 @@ def convert_type_to_graphql_output(
                             gql_fields[graphql_field_name] = GraphQLField(
                                 type_=gql_type,
                                 description=field.description,
-                                resolve=wrap_resolver_with_enum_serialization(
-                                    make_field_resolver(name, field_type)
+                                resolve=_gate(
+                                    wrap_resolver_with_enum_serialization(
+                                        make_field_resolver(name, field_type)
+                                    ),
+                                    name,
                                 ),
                             )
 
@@ -860,7 +880,7 @@ def convert_type_to_graphql_output(
 
                                 gql_fields[graphql_field_name] = GraphQLField(
                                     type_=cast("GraphQLOutputType", gql_return_type),
-                                    resolve=wrapped_resolver,
+                                    resolve=_gate(wrapped_resolver, attr_name),
                                     description=description,
                                 )
 

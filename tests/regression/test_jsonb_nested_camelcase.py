@@ -87,7 +87,7 @@ class NetworkConfiguration:
 async def network_configuration(info, id: uuid.UUID) -> NetworkConfiguration | None:
     """Get a network configuration by ID."""
     repo = info.context["db"]
-    return await repo.find_one("tv_network_configuration", id=str(id))
+    return await repo.find_one("tv_network_configuration", mandatory_filters={"id": str(id)})
 
 
 @query

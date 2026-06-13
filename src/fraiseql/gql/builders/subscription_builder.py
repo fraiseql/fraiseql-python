@@ -16,6 +16,7 @@ from graphql import (
 
 from fraiseql.config.schema_config import SchemaConfig
 from fraiseql.core.graphql_type import convert_type_to_graphql_input, convert_type_to_graphql_output
+from fraiseql.security.authorization import enforce_operation, resolve_authorizer
 from fraiseql.utils.naming import snake_to_camel
 
 if TYPE_CHECKING:
@@ -102,27 +103,58 @@ class SubscriptionTypeBuilder:
     ) -> Callable[..., Any]:
         """Create a GraphQL subscription from an async generator function.
 
+        The outer ``subscribe`` is a plain coroutine (not an async generator) so the
+        configured authorizer runs **once, at subscribe time**, before the event stream
+        is created (issue #364). graphql-core awaits the ``subscribe`` resolver to obtain
+        the stream; a denied decision raises a ``GraphQLError`` *during that await*, so
+        the inner generator — which is what would query the database — is never built.
+        This covers both the schema path and the websocket path, which routes through
+        graphql-core's ``subscribe`` (``websocket.py:256``).
+
         Args:
             fn: The async generator function to wrap as a GraphQL subscription.
             arg_name_mapping: Mapping from GraphQL argument names to Python parameter names.
 
         Returns:
-            A GraphQL-compatible subscription function.
+            A GraphQL-compatible subscription resolver.
         """
+
+        async def _stream(info: GraphQLResolveInfo, kwargs: dict[str, Any]) -> AsyncGenerator[Any]:
+            # The original subscription body, built only after an allow decision: call the
+            # user generator (without the root argument) and forward every yielded value.
+            async for value in fn(info, **kwargs):
+                yield value
 
         async def subscribe(
             root: Any, info: GraphQLResolveInfo, **kwargs: Any
         ) -> AsyncGenerator[Any]:
-            # Map GraphQL argument names to Python parameter names
+            # Map GraphQL argument names to Python parameter names.
             if arg_name_mapping:
-                mapped_kwargs = {}
-                for gql_name, value in kwargs.items():
-                    python_name = arg_name_mapping.get(gql_name, gql_name)
-                    mapped_kwargs[python_name] = value
-                kwargs = mapped_kwargs
+                kwargs = {arg_name_mapping.get(name, name): value for name, value in kwargs.items()}
 
-            # Call the original function without the root argument
-            async for value in fn(info, **kwargs):
-                yield value
+            # Enforce once, at subscribe time (issue #364). Fail-closed is inherited from
+            # the shared enforcement core: a deny — or a raising authorizer — raises a
+            # GraphQLError here, before _stream (and the database) is ever reached. A
+            # missing authorizer is the no-op fast path (no authorizer call).
+            authorizer = resolve_authorizer(fn, self.registry)
+            decision = await enforce_operation(
+                info=info,
+                operation_type="subscription",
+                operation_name=getattr(info, "field_name", ""),
+                arguments=kwargs,
+                authorizer=authorizer,
+                cache=self.registry.decision_cache,
+            )
+            if decision.filters:
+                # A subscription stream is not a single scoped read set, so row-scoping
+                # filters have no meaning here. Never silently drop them — warn so the
+                # misuse is visible (mirrors the mutation path, issue #362).
+                logger.warning(
+                    "authorization filters are ignored on subscriptions (no row-scoping "
+                    "semantics); operation=%s",
+                    getattr(info, "field_name", "<unknown>"),
+                )
+
+            return _stream(info, kwargs)
 
         return subscribe

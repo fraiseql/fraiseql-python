@@ -92,7 +92,12 @@ class TestDynamicFilterConstruction:
             where["is_current"] = {"eq": True}
 
         # This should return only current allocations (10 items)
-        result = await repo.find("test_allocation", tenant_id=tenant_id, where=where, limit=100)
+        result = await repo.find(
+            "test_allocation",
+            mandatory_filters={"tenant_id": tenant_id},
+            where=where,
+            limit=100,
+        )
 
         # Extract data from RustResponseBytes
         results = extract_graphql_data(result, "test_allocation")
@@ -200,7 +205,11 @@ class TestDynamicFilterConstruction:
             where["is_active"] = {"eq": True}
 
         # Execute query with dynamic filters
-        result = await repo.find("test_product", tenant_id=tenant_id, where=where)
+        result = await repo.find(
+            "test_product",
+            mandatory_filters={"tenant_id": tenant_id},
+            where=where,
+        )
 
         # Extract data from RustResponseBytes
         results = extract_graphql_data(result, "test_product")
@@ -276,7 +285,11 @@ class TestDynamicFilterConstruction:
         if filter_status:
             where["status"] = {"eq": filter_status}
 
-        result = await repo.find("test_items", tenant_id=tenant_id, where=where)
+        result = await repo.find(
+            "test_items",
+            mandatory_filters={"tenant_id": tenant_id},
+            where=where,
+        )
 
         # Extract data from RustResponseBytes
         results = extract_graphql_data(result, "test_items")
@@ -356,7 +369,11 @@ class TestDynamicFilterConstruction:
         max_attendees = 100
         where["attendees"] = {"gte": min_attendees, "lte": max_attendees}
 
-        result = await repo.find("test_events", tenant_id=tenant_id, where=where)
+        result = await repo.find(
+            "test_events",
+            mandatory_filters={"tenant_id": tenant_id},
+            where=where,
+        )
 
         # Extract data from RustResponseBytes
         results = extract_graphql_data(result, "test_events")

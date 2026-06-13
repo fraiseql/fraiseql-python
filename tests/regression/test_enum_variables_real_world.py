@@ -18,7 +18,6 @@ from graphql import graphql
 
 import fraiseql
 
-
 pytestmark = pytest.mark.regression
 
 
@@ -71,10 +70,9 @@ class TestEnumVariableBugRealWorld:
             # Return mock data
             if period == Period.CURRENT:
                 return [Allocation(id="1", machine_name="PrinterA", location="Floor1", period=period)]
-            elif period == Period.STOCK:
+            if period == Period.STOCK:
                 return [Allocation(id="2", machine_name="PrinterB", location="Warehouse", period=period)]
-            else:
-                return []
+            return []
 
         schema = fraiseql.build_fraiseql_schema(query_types=[allocations])
 

@@ -8,7 +8,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -16,16 +16,18 @@ updates:
       - "dependencies"
       - "security"
     groups:
-      patch-updates:
+      # Group all patch and minor updates into single PRs
+      patch-and-minor:
         patterns:
           - "*"
         update-types:
           - "patch"
-      minor-updates:
-        patterns:
-          - "*"
-        update-types:
           - "minor"
+      # Major updates get individual PRs for careful review
+    # Ignore packages where we manage version constraints manually
+    ignore:
+      - dependency-name: "boto3"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -33,11 +35,40 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(ci)"
     labels:
       - "ci"
       - "dependencies"
+    groups:
+      # Group all GH Actions updates into a single PR
+      actions-updates:
+        patterns:
+          - "*"
+
+  # Rust crate (native extension) - pyo3 bindings
+  - package-ecosystem: "cargo"
+    directory: "/fraiseql_rs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "rust"
+      - "dependencies"
+      - "security"
+    groups:
+      # Group all patch and minor updates into single PRs
+      cargo-patch-and-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
 
 # Note: We intentionally do not scan benchmark directories as they:
 # - Are not part of the distributed package

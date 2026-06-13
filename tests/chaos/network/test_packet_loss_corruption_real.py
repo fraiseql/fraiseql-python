@@ -1,18 +1,16 @@
-"""
-Phase 1.3: Packet Loss & Corruption Chaos Tests (Real PostgreSQL Backend)
+"""Phase 1.3: Packet Loss & Corruption Chaos Tests (Real PostgreSQL Backend)
 
 Tests for packet loss, corruption, and network reliability scenarios.
 Uses real PostgreSQL connections to validate handling of unreliable network conditions.
 """
 
-import pytest
-import time
+import asyncio
 import random
 import statistics
-import asyncio
 
-from chaos.fraiseql_scenarios import FraiseQLTestScenarios
+import pytest
 from chaos.base import ChaosMetrics
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 
 
 @pytest.mark.chaos
@@ -20,8 +18,7 @@ from chaos.base import ChaosMetrics
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test recovery from packet loss at different severity levels.
+    """Test recovery from packet loss at different severity levels.
 
     Scenario: Network drops packets at specified rate (1%, 5%, 10%).
     Expected: FraiseQL handles packet loss with retries and timeouts,
@@ -155,8 +152,7 @@ async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of corrupted packets.
+    """Test handling of corrupted packets.
 
     Scenario: Network delivers corrupted data at varying rates.
     Expected: FraiseQL detects corruption and handles appropriately.
@@ -242,8 +238,7 @@ async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, ba
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of out-of-order packet delivery.
+    """Test handling of out-of-order packet delivery.
 
     Scenario: Network delivers packets in wrong order (variable arrival timing).
     Expected: FraiseQL handles reordering gracefully (TCP handles most of this).
@@ -299,8 +294,7 @@ async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baselin
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
 async def test_duplicate_packet_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """
-    Test handling of duplicate packet delivery.
+    """Test handling of duplicate packet delivery.
 
     Scenario: Network delivers duplicate packets (TCP handles detection).
     Expected: FraiseQL handles duplicates gracefully.
@@ -362,8 +356,7 @@ async def test_duplicate_packet_handling(chaos_db_client, chaos_test_schema, bas
 async def test_adaptive_retry_under_packet_loss(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):
-    """
-    Test adaptive retry strategies under packet loss.
+    """Test adaptive retry strategies under packet loss.
 
     Scenario: System adapts retry count based on packet loss conditions.
     Expected: FraiseQL implements intelligent retry logic.
@@ -447,8 +440,7 @@ async def test_adaptive_retry_under_packet_loss(
 async def test_network_recovery_after_corruption(
     chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
 ):
-    """
-    Test network recovery after corruption chaos.
+    """Test network recovery after corruption chaos.
 
     Scenario: Heavy packet corruption followed by network recovery.
     Expected: FraiseQL recovers quickly when network improves.

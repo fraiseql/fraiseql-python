@@ -93,6 +93,35 @@ docker run -p 8000:8000 \
 - **Test**: ~200MB (includes dev dependencies)
 - **All-in-one**: ~400MB (includes PostgreSQL)
 
+## Prometheus monitoring with postgres_exporter
+
+FraiseQL includes a custom queries config for
+[postgres_exporter](https://github.com/prometheus-community/postgres_exporter)
+at `postgres_exporter_queries.yml`. This exposes `pg_stat_statements` metrics
+via the `v_query_stats` view.
+
+### Setup
+
+Add postgres_exporter to your `docker-compose.yml`:
+
+```yaml
+postgres-exporter:
+  image: prometheuscommunity/postgres-exporter:latest
+  environment:
+    DATA_SOURCE_NAME: "postgresql://prometheus:prometheus_password@db:5432/fraiseql_prod?sslmode=disable"
+  volumes:
+    - ./postgres_exporter_queries.yml:/etc/postgres_exporter/queries.yml:ro
+  command:
+    - "--extend.query-path=/etc/postgres_exporter/queries.yml"
+  ports:
+    - "9187:9187"
+```
+
+The `prometheus` role is created by `init.sql` with `pg_monitor` access.
+
+See `docs/observability/query-stats.md` for full documentation on
+interpreting query performance data.
+
 ---
 
 *Docker configurations are optimized for security, performance, and developer experience.*

@@ -8,6 +8,7 @@ from typing import Any, Optional, TypeVar, overload
 
 from graphql import GraphQLResolveInfo
 
+from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.gql.schema_builder import SchemaRegistry
 from fraiseql.types.generic import Connection
 
@@ -19,10 +20,10 @@ def query(fn: F) -> F: ...
 
 
 @overload
-def query() -> Callable[[F], F]: ...
+def query(*, authorizer: Any | None = None) -> Callable[[F], F]: ...
 
 
-def query(fn: F | None = None) -> F | Callable[[F], F]:
+def query(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable[[F], F]:
     """Decorator to mark a function as a GraphQL query.
 
     This decorator automatically registers the function with the GraphQL schema,
@@ -30,6 +31,9 @@ def query(fn: F | None = None) -> F | Callable[[F], F]:
 
     Args:
         fn: The query function to decorate (when used without parentheses)
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #362). It takes precedence over the global default
+            authorizer for this query only.
 
     Returns:
         The decorated function with GraphQL query metadata
@@ -165,6 +169,10 @@ def query(fn: F | None = None) -> F | Callable[[F], F]:
 
             wrapper = sync_wrapper
 
+        # Per-operation authorizer override (issue #362); None falls back to the
+        # registry default at resolve time.
+        wrapper.__fraiseql_authorizer__ = authorizer
+
         # Register the wrapper (not the original function)
         registry.register_query(wrapper)
 
@@ -185,10 +193,10 @@ def subscription(fn: F) -> F: ...
 
 
 @overload
-def subscription() -> Callable[[F], F]: ...
+def subscription(*, authorizer: Any | None = None) -> Callable[[F], F]: ...
 
 
-def subscription(fn: F | None = None) -> F | Callable[[F], F]:
+def subscription(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable[[F], F]:
     """Decorator to mark a function as a GraphQL subscription.
 
     This decorator automatically registers the function with the GraphQL schema
@@ -197,6 +205,9 @@ def subscription(fn: F | None = None) -> F | Callable[[F], F]:
 
     Args:
         fn: The subscription function to decorate (when used without parentheses)
+        authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
+            override (issue #364). It takes precedence over the global default
+            authorizer for this subscription only, enforced once at subscribe time.
 
     Returns:
         The decorated async generator function with GraphQL subscription metadata
@@ -295,6 +306,9 @@ def subscription(fn: F | None = None) -> F | Callable[[F], F]:
         # Register with schema
         registry = SchemaRegistry.get_instance()
         registry.register_subscription(func)
+        # Per-operation authorizer override (issue #364); None falls back to the
+        # registry default at subscribe time via resolve_authorizer.
+        func.__fraiseql_authorizer__ = authorizer
         return func
 
     if fn is None:
@@ -478,21 +492,10 @@ def field(
     """
 
     def decorator(func: F) -> F:
-        # Determine if the function is async
+        # Determine if the function is async; that selects the wrapper variant. How the
+        # resolver is actually called is delegated to invoke_resolver (the shared
+        # convention), so @field and @authorize_field never disagree on argument shape.
         is_async = asyncio.iscoroutinefunction(func)
-
-        # Inspect the function signature to determine how to call it
-        import inspect
-
-        sig = inspect.signature(func)
-        params = list(sig.parameters.keys())
-
-        # Determine the expected number of arguments
-        # For methods: self is first, then optionally info
-        # For functions: root is first, then info
-        has_self = "self" in params
-        expects_info = "info" in params
-        len(params)
 
         if is_async:
 
@@ -506,23 +509,7 @@ def field(
                 if detector and detector.enabled:
                     start_time = time.time()
                     try:
-                        # Call the original method based on its signature
-                        if hasattr(func, "__self__"):
-                            # Bound method - self is already bound
-                            if expects_info:
-                                result = await func(info, *args, **kwargs)
-                            else:
-                                result = await func(*args, **kwargs)
-                        # Unbound method or function
-                        elif has_self:
-                            # Method expects self as first arg
-                            if expects_info:
-                                result = await func(root, info, *args, **kwargs)
-                            else:
-                                result = await func(root, *args, **kwargs)
-                        else:
-                            # Regular function
-                            result = await func(root, info, *args, **kwargs)
+                        result = await invoke_resolver(func, root, info, *args, **kwargs)
                         execution_time = time.time() - start_time
                         # Track field resolution without blocking
                         # Using create_task is safe here as detector manages its own lifecycle
@@ -539,21 +526,8 @@ def field(
                         )
                         task.add_done_callback(lambda t: t.exception() if t.done() else None)
                         raise
-                # Call the original method based on its signature
-                elif hasattr(func, "__self__"):
-                    # Bound method - self is already bound
-                    if expects_info:
-                        return await func(info, *args, **kwargs)
-                    return await func(*args, **kwargs)
-                # Unbound method or function
-                elif has_self:
-                    # Method expects self as first arg
-                    if expects_info:
-                        return await func(root, info, *args, **kwargs)
-                    return await func(root, *args, **kwargs)
-                else:
-                    # Regular function
-                    return await func(root, info, *args, **kwargs)
+                # No N+1 tracking: call through the shared invocation convention.
+                return await invoke_resolver(func, root, info, *args, **kwargs)
 
             wrapped_func = async_wrapped_resolver
 
@@ -569,23 +543,7 @@ def field(
                 if detector and detector.enabled:
                     start_time = time.time()
                     try:
-                        # Call the original method based on its signature
-                        if hasattr(func, "__self__"):
-                            # Bound method - self is already bound
-                            if expects_info:
-                                result = func(info, *args, **kwargs)
-                            else:
-                                result = func(*args, **kwargs)
-                        # Unbound method or function
-                        elif has_self:
-                            # Method expects self as first arg
-                            if expects_info:
-                                result = func(root, info, *args, **kwargs)
-                            else:
-                                result = func(root, *args, **kwargs)
-                        else:
-                            # Regular function
-                            result = func(root, info, *args, **kwargs)
+                        result = invoke_resolver(func, root, info, *args, **kwargs)
                         execution_time = time.time() - start_time
                         # Track field resolution without blocking
                         # For sync resolvers, we need to handle async tracking differently
@@ -624,21 +582,8 @@ def field(
                             # No event loop - skip tracking for now
                             pass
                         raise
-                # Call the original method based on its signature
-                elif hasattr(func, "__self__"):
-                    # Bound method - self is already bound
-                    if expects_info:
-                        return func(info, *args, **kwargs)
-                    return func(*args, **kwargs)
-                # Unbound method or function
-                elif has_self:
-                    # Method expects self as first arg
-                    if expects_info:
-                        return func(root, info, *args, **kwargs)
-                    return func(root, *args, **kwargs)
-                else:
-                    # Regular function
-                    return func(root, info, *args, **kwargs)
+                # No N+1 tracking: call through the shared invocation convention.
+                return invoke_resolver(func, root, info, *args, **kwargs)
 
             wrapped_func = sync_wrapped_resolver
 

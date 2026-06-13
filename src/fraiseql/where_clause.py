@@ -137,6 +137,28 @@ NETWORK_OPERATORS = {
     "inrange": "{} <<= {}",
     "isipv4": "family({}) = 4",
     "isipv6": "family({}) = 6",
+    # Advanced network classification (v1.17.0+)
+    "isLoopback": "LOOPBACK_CIDR_CHECK",
+    "isMulticast": "MULTICAST_CIDR_CHECK",
+    "isBroadcast": "BROADCAST_CIDR_CHECK",
+    "isLinkLocal": "LINK_LOCAL_CIDR_CHECK",
+    "isDocumentation": "DOCUMENTATION_CIDR_CHECK",
+    "isReserved": "RESERVED_CIDR_CHECK",
+    "isCarrierGrade": "CARRIER_GRADE_CIDR_CHECK",
+    "isSiteLocal": "SITE_LOCAL_CIDR_CHECK",
+    "isUniqueLocal": "UNIQUE_LOCAL_CIDR_CHECK",
+    "isGlobalUnicast": "NOT_SPECIAL_PURPOSE_CHECK",
+    # Lowercase aliases for advanced operators
+    "isloopback": "LOOPBACK_CIDR_CHECK",
+    "ismulticast": "MULTICAST_CIDR_CHECK",
+    "isbroadcast": "BROADCAST_CIDR_CHECK",
+    "islinklocal": "LINK_LOCAL_CIDR_CHECK",
+    "isdocumentation": "DOCUMENTATION_CIDR_CHECK",
+    "isreserved": "RESERVED_CIDR_CHECK",
+    "iscarriergrade": "CARRIER_GRADE_CIDR_CHECK",
+    "issitelocal": "SITE_LOCAL_CIDR_CHECK",
+    "isuniquelocal": "UNIQUE_LOCAL_CIDR_CHECK",
+    "isglobalunicast": "NOT_SPECIAL_PURPOSE_CHECK",
 }
 
 # MAC Address operators
@@ -159,6 +181,8 @@ DATERANGE_OPERATORS = {
 LTREE_OPERATORS = {
     "ancestor_of": "@>",
     "descendant_of": "<@",
+    "descendant_of_id": "<@",  # descendant_of with UUID resolution
+    "ancestor_of_id": "@>",  # ancestor_of with UUID resolution
     "matches_lquery": "~",
     "matches_ltxtquery": "@",
     "matches_any_lquery": "?",
@@ -347,6 +371,38 @@ class FieldCondition:
 
         if self.lookup_strategy == "fk_column":
             # FK column lookup: machine_id = %s
+
+            # ID-based ltree hierarchy operators — generate nested IN subquery for FK references
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires FraiseQLConfig.default_entity_schema "
+                        f"to be set (e.g., 'tenant')."
+                    )
+
+                # Resolve entity name from FK column (e.g., location_id -> location)
+                entity_name = _resolve_entity_name(self.target_column)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+
+                # For FK columns, wrap the column reference in a Composed object
+                fk_column_ref = Identifier(self.target_column)
+                sql = _build_hierarchy_subquery(
+                    entity_schema, entity_name, str(self.value), ltree_op, fk_column_ref
+                )
+                return sql, params
+
             sql_op = ALL_OPERATORS[self.operator]
 
             if self.operator in CONTAINMENT_OPERATORS:
@@ -384,6 +440,33 @@ class FieldCondition:
             path_parts.extend([SQL(" ->> "), SQLLiteral(str(self.jsonb_path[-1]))])
 
             jsonb_expr = Composed(path_parts)
+
+            # ID-based ltree hierarchy operators — generate nested IN subquery
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires FraiseQLConfig.default_entity_schema "
+                        f"to be set (e.g., 'tenant')."
+                    )
+                db_field_name = self.jsonb_path[-1]
+                entity_name = _resolve_entity_name(db_field_name)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+                sql = _build_hierarchy_subquery(
+                    entity_schema, entity_name, str(self.value), ltree_op, jsonb_expr
+                )
+                return sql, params
 
             if self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders
@@ -424,6 +507,37 @@ class FieldCondition:
 
         elif self.lookup_strategy == "sql_column":
             # Direct SQL column: status = %s
+
+            # ID-based ltree hierarchy operators — native UUID column variant
+            if self.operator in ("descendant_of_id", "ancestor_of_id"):
+                from fraiseql.gql.builders.registry import SchemaRegistry
+                from fraiseql.sql.where.core.sql_builder import (
+                    _build_hierarchy_subquery,
+                    _resolve_entity_name,
+                )
+
+                registry_instance = SchemaRegistry.get_instance()
+                entity_schema = (
+                    registry_instance.config.default_entity_schema
+                    if registry_instance.config
+                    else None
+                )
+                if entity_schema is None:
+                    raise ValueError(
+                        f"Operator '{self.operator}' requires "
+                        "FraiseQLConfig.default_entity_schema to be set (e.g. 'tenant')."
+                    )
+                entity_name = _resolve_entity_name(self.target_column)
+                ltree_op = "<@" if self.operator == "descendant_of_id" else "@>"
+                sql = _build_hierarchy_subquery(
+                    entity_schema,
+                    entity_name,
+                    str(self.value),
+                    ltree_op,
+                    Identifier(self.target_column),
+                )
+                return sql, params
+
             sql_op = ALL_OPERATORS[self.operator]
 
             # Special case: 'contains' can be both string LIKE or array @>

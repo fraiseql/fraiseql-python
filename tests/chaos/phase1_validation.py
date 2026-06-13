@@ -1,12 +1,12 @@
-"""
-Phase 1 Chaos Engineering Success Criteria
+"""Phase 1 Chaos Engineering Success Criteria
 
 This module implements validation logic for Phase 1 chaos engineering test success criteria.
 Tests validate that FraiseQL maintains acceptable performance and reliability under network chaos.
 """
 
 import statistics
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
+
 from chaos.base import ChaosTestCase
 
 
@@ -27,8 +27,7 @@ class Phase1SuccessCriteria:
     def validate_connection_chaos_test(
         cls, test_case: ChaosTestCase, baseline_metrics: Dict[str, Any]
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate database connection chaos test results.
+        """Validate database connection chaos test results.
 
         Success Criteria:
         - System continues to operate during connection failures
@@ -73,8 +72,7 @@ class Phase1SuccessCriteria:
     def validate_latency_chaos_test(
         cls, test_case: ChaosTestCase, latency_ms: int
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate network latency chaos test results.
+        """Validate network latency chaos test results.
 
         Success Criteria:
         - Performance degrades proportionally to latency
@@ -131,8 +129,7 @@ class Phase1SuccessCriteria:
     def validate_packet_loss_chaos_test(
         cls, test_case: ChaosTestCase, loss_rate: float
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate packet loss chaos test results.
+        """Validate packet loss chaos test results.
 
         Success Criteria:
         - System handles packet loss with retries
@@ -180,8 +177,7 @@ class Phase1SuccessCriteria:
     def validate_phase1_overall_success(
         cls, test_results: List[Tuple[bool, str, Dict[str, Any]]]
     ) -> Tuple[bool, str, Dict[str, Any]]:
-        """
-        Validate overall Phase 1 success based on all test results.
+        """Validate overall Phase 1 success based on all test results.
 
         Success Criteria:
         - 80% of tests must pass
@@ -295,8 +291,7 @@ class Phase1SuccessCriteria:
 def validate_chaos_test_success(
     test_case: ChaosTestCase, test_type: str, baseline_metrics: Dict[str, Any], **kwargs
 ) -> Tuple[bool, str, Dict[str, Any]]:
-    """
-    Validate a chaos test based on its type and success criteria.
+    """Validate a chaos test based on its type and success criteria.
 
     Args:
         test_case: The ChaosTestCase that was executed
@@ -309,14 +304,13 @@ def validate_chaos_test_success(
     """
     if test_type == "connection_chaos":
         return Phase1SuccessCriteria.validate_connection_chaos_test(test_case, baseline_metrics)
-    elif test_type == "latency_chaos":
+    if test_type == "latency_chaos":
         latency_ms = kwargs.get("latency_ms", 500)
         return Phase1SuccessCriteria.validate_latency_chaos_test(test_case, latency_ms)
-    elif test_type == "packet_loss_chaos":
+    if test_type == "packet_loss_chaos":
         loss_rate = kwargs.get("loss_rate", 0.05)
         return Phase1SuccessCriteria.validate_packet_loss_chaos_test(test_case, loss_rate)
-    else:
-        return False, "FAIL", {"issues": [f"Unknown test type: {test_type}"]}
+    return False, "FAIL", {"issues": [f"Unknown test type: {test_type}"]}
 
 
 # Phase 1 summary statistics

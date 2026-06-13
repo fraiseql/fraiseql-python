@@ -13,6 +13,7 @@ from .commands import (
     generate,
     init_command,
     migrate,
+    query_stats,
     sbom,
     sql,
     turbo,
@@ -41,6 +42,7 @@ cli.add_command(sql)
 cli.add_command(turbo)
 cli.add_command(migrate)
 cli.add_command(sbom.sbom_cli)
+cli.add_command(query_stats)
 cli.add_command(validate_mutation_return_command)
 
 

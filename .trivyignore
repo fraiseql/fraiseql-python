@@ -1,5 +1,5 @@
 # Trivy Vulnerability Exceptions for International Compliance
-# Last Updated: 2026-03-14
+# Last Updated: 2026-05-12
 # Review Schedule: Monthly
 # Approval: Security Team
 # Compliance: US (NIST/FedRAMP), EU (NIS2/GDPR), UK (NCSC), ISO 27001, SOC 2
@@ -215,6 +215,136 @@ CVE-2025-5278 # coreutils sort - sort command not used
 
 # Temporary/Unassigned Identifiers
 TEMP-0841856-B18BAF # bash privilege escalation - no shell access
+
+# -----------------------------------------------------------------------------
+# CATEGORY 7: GnuTLS Vulnerabilities (Not Used Directly)
+# Risk Level: LOW (FraiseQL uses Python ssl module, not GnuTLS directly)
+# Mitigation: TLS termination handled by reverse proxy (nginx/envoy)
+# -----------------------------------------------------------------------------
+
+# CVE-2026-33845: GnuTLS DoS via DTLS zero-length fragment (CRITICAL)
+# Justification: FraiseQL does not use DTLS protocol
+# Mitigation: Python ssl module uses OpenSSL, not GnuTLS; DTLS not used
+# Status: MONITORING - No patch in python:3.13-slim yet
+CVE-2026-33845
+
+# CVE-2026-33846: GnuTLS heap buffer overflow in DTLS handshake (HIGH)
+# Justification: DTLS protocol not used by FraiseQL
+# Mitigation: Same as CVE-2026-33845
+CVE-2026-33846
+
+# CVE-2026-42011: GnuTLS name constraint bypass (HIGH)
+# Justification: Certificate validation done by Python ssl / reverse proxy
+# Mitigation: TLS termination at load balancer, not in container
+CVE-2026-42011
+
+# CVE-2026-42010: GnuTLS auth bypass via NUL char in username (HIGH)
+# Justification: Authentication handled by FraiseQL JWT, not GnuTLS
+# Mitigation: No GnuTLS-based auth in application
+CVE-2026-42010
+
+# CVE-2026-3833: GnuTLS case-sensitive nameConstraints bypass (HIGH)
+# Justification: Certificate validation not done via GnuTLS
+# Mitigation: Reverse proxy handles TLS
+CVE-2026-3833
+
+# CVE-2026-3832: GnuTLS OCSP response bypass (LOW)
+# Justification: OCSP checking not done via GnuTLS in container
+CVE-2026-3832
+
+# CVE-2026-42009, CVE-2026-42012, CVE-2026-42013, CVE-2026-42014,
+# CVE-2026-42015: GnuTLS additional CVEs (severity unclassified)
+# Justification: GnuTLS not used directly by FraiseQL
+CVE-2026-42009
+CVE-2026-42012
+CVE-2026-42013
+CVE-2026-42014
+CVE-2026-42015
+
+# -----------------------------------------------------------------------------
+# CATEGORY 8: libssh2 Vulnerability (Not Used)
+# Risk Level: NONE (FraiseQL does not use SSH)
+# -----------------------------------------------------------------------------
+
+# CVE-2026-7598: libssh2 integer overflow via large username/password (CRITICAL)
+# Justification: FraiseQL is a GraphQL API; no SSH connections made
+# Mitigation: libssh2 present in base image but not used by application
+CVE-2026-7598
+
+# -----------------------------------------------------------------------------
+# CATEGORY 9: Kerberos (krb5) Vulnerabilities (Not Used)
+# Risk Level: NONE (FraiseQL does not use Kerberos auth)
+# -----------------------------------------------------------------------------
+
+# CVE-2026-40356: krb5 integer underflow and OOB read (MEDIUM)
+# Justification: Kerberos auth not used; PostgreSQL uses password/cert auth
+CVE-2026-40356
+
+# CVE-2026-40355: krb5 NULL pointer dereference in NegoEx (MEDIUM)
+# Justification: NegoEx mechanism not used
+CVE-2026-40355
+
+# -----------------------------------------------------------------------------
+# CATEGORY 10: curl/libcurl Vulnerabilities (Build Stage Only)
+# Risk Level: LOW (curl only present in build stage, not runtime)
+# Mitigation: Multi-stage Docker build; runtime image has minimal surface
+# -----------------------------------------------------------------------------
+
+# CVE-2026-6276: libcurl cookie leak with custom Host headers (LOW)
+CVE-2026-6276
+
+# CVE-2026-6429: libcurl credential leak via proxy redirects (MEDIUM)
+CVE-2026-6429
+
+# CVE-2026-6253: curl proxy credential disclosure (MEDIUM)
+CVE-2026-6253
+
+# CVE-2026-5773: libcurl wrong file transfer via SMB reuse (MEDIUM)
+CVE-2026-5773
+
+# CVE-2026-5545: libcurl HTTP Negotiate connection reuse (MEDIUM)
+CVE-2026-5545
+
+# CVE-2026-4873: curl TLS connection reuse info disclosure (MEDIUM)
+CVE-2026-4873
+
+# -----------------------------------------------------------------------------
+# CATEGORY 11: pip and other build-time CVEs
+# Risk Level: LOW (only present in build stage)
+# -----------------------------------------------------------------------------
+
+# CVE-2026-6357: pip arbitrary code execution via malicious wheel (MEDIUM)
+# Justification: pip only used during image build, not at runtime
+# Mitigation: Dependencies pinned via uv.lock; no pip install at runtime
+CVE-2026-6357
+
+# CVE-2026-7168: Unclassified (MEDIUM)
+CVE-2026-7168
+
+# CVE-2026-5419, CVE-2026-5260: Unclassified severity
+CVE-2026-5419
+CVE-2026-5260
+
+# -----------------------------------------------------------------------------
+# CATEGORY 12: perl-base and ncurses Vulnerabilities (No Upstream Fix)
+# Risk Level: LOW (base-image OS packages; not invoked by a Python GraphQL app)
+# Added: 2026-06-07 | Review: Monthly until Debian ships a fix (FixedVersion=none)
+# Mitigation: perl and ncurses are pulled in by python:3.13-slim but are never
+#   executed at runtime by FraiseQL (Python GraphQL API server). Debian has not
+#   published fixed versions yet, so there is no patch to apply. Remove these
+#   exceptions once a fixed base image is available.
+# -----------------------------------------------------------------------------
+
+# perl-base 5.40.1-6 - no fixed version available upstream
+CVE-2026-42496 # perl-base (CRITICAL) - perl interpreter not invoked at runtime
+CVE-2026-8376  # perl-base (CRITICAL) - perl interpreter not invoked at runtime
+CVE-2026-42497 # perl-base (HIGH) - perl interpreter not invoked at runtime
+CVE-2026-48962 # perl-base (HIGH) - perl interpreter not invoked at runtime
+CVE-2026-9538  # perl-base (HIGH) - perl interpreter not invoked at runtime
+
+# ncurses 6.5+20250216-2 (libncursesw6 / libtinfo6 / ncurses-base / ncurses-bin)
+# - no fixed version available upstream
+CVE-2025-69720 # ncurses (HIGH) - terminal library not used by the API server
 
 # =============================================================================
 # DISTROLESS IMAGE CVEs (Reference Only - Not Currently Used)

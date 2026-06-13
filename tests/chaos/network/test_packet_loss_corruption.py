@@ -1,18 +1,17 @@
-"""
-Phase 1.3: Packet Loss & Corruption Chaos Tests
+"""Phase 1.3: Packet Loss & Corruption Chaos Tests
 
 Tests for packet loss, corruption, and network reliability scenarios.
 Validates FraiseQL's handling of unreliable network conditions.
 """
 
-import pytest
-import time
 import random
 import statistics
+import time
+
+import pytest
 from chaos.base import ChaosTestCase
 from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestPacketLossCorruptionChaos(ChaosTestCase):
@@ -21,8 +20,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_packet_loss_recovery(self):
-        """
-        Test recovery from packet loss at different severity levels.
+        """Test recovery from packet loss at different severity levels.
 
         Scenario: Network drops packets at specified rate.
         Expected: FraiseQL handles packet loss with retries and timeouts.
@@ -141,8 +139,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_packet_corruption_handling(self):
-        """
-        Test handling of corrupted packets.
+        """Test handling of corrupted packets.
 
         Scenario: Network delivers corrupted data.
         Expected: FraiseQL detects corruption and handles appropriately.
@@ -173,14 +170,13 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
                     # Corrupted packet - operation fails
                     corrupt_failures += 1
                     self.metrics.record_error()
+                # Normal operation, but may still fail due to impact
+                elif random.random() >= impact_rate:
+                    corrupt_successes += 1
+                    self.metrics.record_query_time(10.0 + random.uniform(-2, 2))
                 else:
-                    # Normal operation, but may still fail due to impact
-                    if random.random() >= impact_rate:
-                        corrupt_successes += 1
-                        self.metrics.record_query_time(10.0 + random.uniform(-2, 2))
-                    else:
-                        corrupt_failures += 1
-                        self.metrics.record_error()
+                    corrupt_failures += 1
+                    self.metrics.record_error()
 
             success_rate = corrupt_successes / 15.0
             expected_min_success = 1.0 - corruption_rate - impact_rate
@@ -196,8 +192,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_out_of_order_delivery(self):
-        """
-        Test handling of out-of-order packet delivery.
+        """Test handling of out-of-order packet delivery.
 
         Scenario: Network delivers packets in wrong order.
         Expected: FraiseQL handles reordering gracefully (TCP handles this).
@@ -244,8 +239,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_duplicate_packet_handling(self):
-        """
-        Test handling of duplicate packet delivery.
+        """Test handling of duplicate packet delivery.
 
         Scenario: Network delivers duplicate packets.
         Expected: FraiseQL handles duplicates gracefully (TCP handles this).
@@ -292,8 +286,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_adaptive_retry_under_packet_loss(self):
-        """
-        Test adaptive retry strategies under packet loss.
+        """Test adaptive retry strategies under packet loss.
 
         Scenario: System adapts retry count based on packet loss conditions.
         Expected: FraiseQL implements intelligent retry logic.
@@ -351,8 +344,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_network
     def test_network_recovery_after_corruption(self):
-        """
-        Test network recovery after corruption chaos.
+        """Test network recovery after corruption chaos.
 
         Scenario: Heavy packet corruption followed by network recovery.
         Expected: FraiseQL recovers quickly when network improves.

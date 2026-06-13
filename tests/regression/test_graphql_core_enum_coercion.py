@@ -20,7 +20,6 @@ from graphql import (
     parse,
 )
 
-
 pytestmark = pytest.mark.regression
 
 
@@ -130,9 +129,8 @@ async def test_fraiseql_enum_coercion_in_resolver_wrapping():
     This test checks if FraiseQL's wrap_resolver() properly coerces
     enum variables using its custom resolver logic.
     """
-    from fraiseql.gql.resolver_wrappers import wrap_resolver
-
     import fraiseql
+    from fraiseql.gql.resolver_wrappers import wrap_resolver
 
     @fraiseql.enum
     class Color(Enum):
@@ -166,6 +164,6 @@ async def test_fraiseql_enum_coercion_in_resolver_wrapping():
     string_received_type = received_types[-1][0]
     string_received_value = received_types[-1][1]
     if string_received_type == "Color":
-        print(f"✅ wrap_resolver converted string to Color enum")
+        print("✅ wrap_resolver converted string to Color enum")
     elif string_received_type == "str":
-        print(f"⚠️  wrap_resolver passed string through (needs external coercion)")
+        print("⚠️  wrap_resolver passed string through (needs external coercion)")

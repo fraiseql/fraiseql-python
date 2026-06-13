@@ -1,17 +1,15 @@
-"""
-Phase 2.1: Query Execution Chaos Tests
+"""Phase 2.1: Query Execution Chaos Tests
 
 Tests for database query execution failures and performance degradation.
 Validates FraiseQL's handling of slow queries, deadlocks, and serialization failures.
 """
 
-import pytest
-import time
 import statistics
+import time
+
+import pytest
 from chaos.base import ChaosTestCase
-from chaos.fixtures import ToxiproxyManager
-from chaos.plugin import chaos_inject, FailureType
-from chaos.fraiseql_scenarios import MockFraiseQLClient, FraiseQLTestScenarios
+from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
 
 
 class TestQueryExecutionChaos(ChaosTestCase):
@@ -20,8 +18,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_slow_query_timeout_handling(self):
-        """
-        Test handling of slow queries that exceed timeout limits.
+        """Test handling of slow queries that exceed timeout limits.
 
         Scenario: Queries take progressively longer to execute.
         Expected: FraiseQL handles timeouts gracefully with proper error responses.
@@ -76,8 +73,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_deadlock_detection_and_recovery(self):
-        """
-        Test detection and recovery from database deadlocks.
+        """Test detection and recovery from database deadlocks.
 
         Scenario: Concurrent operations create deadlock conditions.
         Expected: FraiseQL detects deadlocks and retries appropriately.
@@ -135,8 +131,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_serialization_failure_handling(self):
-        """
-        Test handling of serialization failures in concurrent environments.
+        """Test handling of serialization failures in concurrent environments.
 
         Scenario: Multiple transactions conflict due to concurrent modifications.
         Expected: FraiseQL handles serialization failures with appropriate retry logic.
@@ -193,8 +188,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_query_execution_pool_exhaustion(self):
-        """
-        Test handling of database connection pool exhaustion during query execution.
+        """Test handling of database connection pool exhaustion during query execution.
 
         Scenario: All database connections become occupied, new queries queue or fail.
         Expected: FraiseQL handles pool exhaustion gracefully.
@@ -252,8 +246,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_query_complexity_resource_exhaustion(self):
-        """
-        Test handling of resource exhaustion from highly complex queries.
+        """Test handling of resource exhaustion from highly complex queries.
 
         Scenario: Very complex queries consume excessive database resources.
         Expected: FraiseQL handles resource exhaustion gracefully.
@@ -307,8 +300,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
     @pytest.mark.chaos
     @pytest.mark.chaos_database
     def test_concurrent_query_deadlock_simulation(self):
-        """
-        Test deadlock detection in concurrent query scenarios.
+        """Test deadlock detection in concurrent query scenarios.
 
         Scenario: Multiple queries execute concurrently, creating deadlock potential.
         Expected: FraiseQL detects and resolves deadlocks appropriately.

@@ -1,6 +1,7 @@
 """Unit tests for ORDER BY COLLATE support."""
 
 import pytest
+
 from fraiseql.sql.order_by_generator import OrderBy, OrderBySet, OrderDirection
 
 

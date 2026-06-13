@@ -209,6 +209,8 @@ class UUIDFilter:
     in_: list[UUID] | None = fraise_field(default=None, graphql_name="in")
     nin: list[UUID] | None = None
     isnull: bool | None = None
+    descendant_of_id: str | None = None  # IN (SELECT id FROM tb_entity WHERE path <@ subquery)
+    ancestor_of_id: str | None = None  # IN (SELECT id FROM tb_entity WHERE path @> subquery)
 
 
 # Import ID type for IDFilter
@@ -229,6 +231,8 @@ class IDFilter:
     in_: list[ID] | None = fraise_field(default=None, graphql_name="in")
     nin: list[ID] | None = None
     isnull: bool | None = None
+    descendant_of_id: ID | None = fraise_field(default=None, graphql_name="descendantOfId")
+    ancestor_of_id: ID | None = fraise_field(default=None, graphql_name="ancestorOfId")
 
 
 @fraise_input
@@ -318,6 +322,18 @@ class NetworkAddressFilter:
     isSiteLocal: bool | None = None  # Site-local IPv6 (fec0::/10 - deprecated)  # noqa: N815
     isUniqueLocal: bool | None = None  # Unique local IPv6 (fc00::/7)  # noqa: N815
     isGlobalUnicast: bool | None = None  # Global unicast address  # noqa: N815
+
+    # Lowercase aliases for advanced network classification
+    isloopback: bool | None = None
+    ismulticast: bool | None = None
+    isbroadcast: bool | None = None
+    islinklocal: bool | None = None
+    isdocumentation: bool | None = None
+    isreserved: bool | None = None
+    iscarriergrade: bool | None = None
+    issitelocal: bool | None = None
+    isuniquelocal: bool | None = None
+    isglobalunicast: bool | None = None
 
     # Intentionally excludes: contains, startswith, endswith
 

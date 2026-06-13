@@ -5,13 +5,11 @@ using FraiseQL's db.find() method with enum filtering.
 """
 
 from enum import Enum
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from graphql import graphql
 
 import fraiseql
-
 
 pytestmark = pytest.mark.regression
 
@@ -199,7 +197,7 @@ class TestEnumVariablesWithDatabase:
             assert allocations[0]["machine"]["name"] == "PrinterA"
             print(f"\n✅ INLINE: {debug_info[-1]}")
         else:
-            print(f"⚠️  No allocations returned for CURRENT period")
+            print("⚠️  No allocations returned for CURRENT period")
 
         # Reset debug info
         debug_info.clear()

@@ -22,13 +22,33 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.mutations.decorators import resolve_union_annotation
+from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
 
 if TYPE_CHECKING:
     from fraiseql.gql.builders.registry import SchemaRegistry
+    from fraiseql.security.authorization import AuthorizationDecision
 
 logger = logging.getLogger(__name__)
+
+
+def _warn_filters_ignored_on_mutation(
+    decision: AuthorizationDecision,
+    root: Any,
+    info: GraphQLResolveInfo,
+    kwargs: dict[str, Any],
+) -> None:
+    """Mutations have no row-scoping semantics, so a returned ``filters`` is ignored.
+
+    Never silently drop it — warn so the misuse is visible (issue #362).
+    """
+    if decision.filters:
+        logger.warning(
+            "authorization filters are ignored on mutations (no row-scoping semantics); "
+            "operation=%s",
+            getattr(info, "field_name", "<unknown>"),
+        )
 
 
 class MutationTypeBuilder:
@@ -157,7 +177,18 @@ class MutationTypeBuilder:
                         mapped_kwargs[python_name] = value
                     kwargs = mapped_kwargs
 
-                return await coerced_fn(root, info, **kwargs)
+                # Operation authorization (issue #362): enforce after arg-name mapping,
+                # before the resolver body, fail-closed.
+                return await enforce_around_async(
+                    coerced_fn,
+                    root,
+                    info,
+                    kwargs,
+                    fn=fn,
+                    registry=self.registry,
+                    operation_type="mutation",
+                    on_decision=_warn_filters_ignored_on_mutation,
+                )
 
             return async_resolver
 
@@ -170,6 +201,17 @@ class MutationTypeBuilder:
                     mapped_kwargs[python_name] = value
                 kwargs = mapped_kwargs
 
-            return coerced_fn(root, info, **kwargs)
+            # Operation authorization (issue #362): when an authorizer is in effect this
+            # returns a coroutine that enforces before the body; otherwise pure-sync.
+            return enforce_around_sync(
+                coerced_fn,
+                root,
+                info,
+                kwargs,
+                fn=fn,
+                registry=self.registry,
+                operation_type="mutation",
+                on_decision=_warn_filters_ignored_on_mutation,
+            )
 
         return sync_resolver

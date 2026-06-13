@@ -4,6 +4,7 @@ import logging
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from datetime import UTC
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin
 
 from psycopg.rows import dict_row
@@ -46,6 +47,37 @@ _NULL_RESPONSE_CACHE: set[bytes] = {
     b'{"data":{"result":[]}}',
     b'{"data":{"data":[]}}',
 }
+
+
+# Valid SQL column name pattern for mandatory_filters validation
+_SAFE_COLUMN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$", re.IGNORECASE)
+
+
+def _make_mandatory_conditions(
+    filters: dict[str, Any],
+) -> tuple[list[Composed], list[Any]]:
+    """Convert {column: value} dict into raw SQL equality conditions.
+
+    Each column name is validated as a safe SQL identifier. Values are always
+    parameterised — never interpolated into the SQL string.
+
+    Returns:
+        (where_parts, params) in the same format as _build_where_clause output.
+
+    Raises:
+        ValueError: If a column name contains unsafe characters.
+    """
+    from psycopg.sql import Identifier
+
+    parts: list[Composed] = []
+    params: list[Any] = []
+    for col, val in filters.items():
+        if not _SAFE_COLUMN.fullmatch(col):
+            msg = f"mandatory_filters key is not a valid column name: {col!r}"
+            raise ValueError(msg)
+        parts.append(Composed([Identifier(col), SQL(" = "), SQL("%s")]))
+        params.append(val)
+    return parts, params
 
 
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
@@ -260,10 +292,11 @@ def _build_non_jsonb_field_expr(field_path: str, table_alias: str = "t") -> Comp
 def _derive_auto_aggregation(
     field_paths: list[list[str]],
     aggregation_meta: dict[str, Any],
-) -> tuple[list[str], dict[str, str], set[str]] | None:
+) -> tuple[list[str], dict[str, str], set[str], dict[str, str]] | None:
     """Derive group_by and aggregations from field selection + metadata.
 
-    Returns (group_by, aggregations, native_dimensions) if auto-aggregation
+    Returns (group_by, aggregations, native_dimensions, native_dimension_mapping)
+    if auto-aggregation
     should be applied, or None if the query should not be aggregated (e.g.
     'id' is selected).
 
@@ -272,13 +305,15 @@ def _derive_auto_aggregation(
         aggregation_meta: The "aggregation" dict from register_type_for_view.
 
     Returns:
-        A 3-tuple of (group_by, aggregations, native_dimensions) where
+        A 4-tuple of (group_by, aggregations, native_dimensions, native_dimension_mapping) where
         native_dimensions is the set of group_by entries that correspond to
-        native SQL columns (not JSONB-extracted), or None to skip aggregation.
+        native SQL columns (not JSONB-extracted), and native_dimension_mapping is
+        a dict mapping JSONB dimension paths to native column names, or None to skip aggregation.
     """
     measures_meta: dict[str, str] = aggregation_meta.get("measures", {})
     dimensions_prefix: str = aggregation_meta.get("dimensions", "dimensions")
     native_dims: set[str] = set(aggregation_meta.get("native_dimensions", []))
+    native_dim_mapping: dict[str, str] = aggregation_meta.get("native_dimension_mapping", {})
 
     # Check if any top-level identity field is selected — if so, skip aggregation
     skip_fields = aggregation_meta.get("skip_when", {"id", "tenant_id"})
@@ -286,17 +321,20 @@ def _derive_auto_aggregation(
         if len(fp) == 1 and fp[0] in skip_fields:
             return None
 
-    group_by: list[str] = []
+    # Native dimensions always land in GROUP BY regardless of field selection.
+    # Without this, a query selecting dimensions.dateInfo.date but not the
+    # top-level date field would omit date from GROUP BY, making ORDER BY date
+    # illegal (PostgreSQL rejects columns in ORDER BY that are absent from
+    # GROUP BY and not functionally determined by it).
+    group_by: list[str] = list(native_dims)
     aggregations: dict[str, str] = {}
-    native_found: set[str] = set()
+    native_found: set[str] = set(native_dims)
 
     for fp in field_paths:
         dot_path = ".".join(fp)
 
-        # Check if this is a native dimension (top-level column, not JSONB)
+        # Skip native dimensions — already added above
         if len(fp) == 1 and fp[0] in native_dims:
-            group_by.append(fp[0])
-            native_found.add(fp[0])
             continue
 
         # Check if this is a dimension field
@@ -319,7 +357,362 @@ def _derive_auto_aggregation(
     if not group_by:
         return None
 
-    return group_by, aggregations, native_found
+    return group_by, aggregations, native_found, native_dim_mapping
+
+
+def _build_trunc_expr(trunc: str, col_id: Any) -> Any:
+    """Return a SQL expression that truncates a date column to the given granularity.
+
+    For standard PostgreSQL intervals, uses date_trunc().
+    For non-standard intervals (semester, half_month), generates equivalent expressions.
+    """
+    from psycopg.sql import SQL, Literal
+
+    if trunc in ("day", "week", "month", "quarter", "year"):
+        return SQL("date_trunc({}, t.{})::date").format(Literal(trunc), col_id)
+
+    if trunc == "semester":
+        return SQL(
+            "MAKE_DATE("
+            "EXTRACT(YEAR FROM t.{col})::int, "
+            "CASE WHEN EXTRACT(MONTH FROM t.{col}) <= 6 THEN 1 ELSE 7 END, "
+            "1)"
+        ).format(col=col_id)
+
+    if trunc == "half_month":
+        return SQL(
+            "CASE WHEN EXTRACT(DAY FROM t.{col}) <= 15 "
+            "THEN date_trunc('month', t.{col})::date "
+            "ELSE date_trunc('month', t.{col})::date + 15 "
+            "END"
+        ).format(col=col_id)
+
+    msg = f"Unsupported time_grain_trunc: {trunc!r}"
+    raise ValueError(msg)
+
+
+def _build_fine_grain_branch(
+    *,
+    fine_grain_view: str,
+    time_grain_column: str,
+    time_grain_trunc: str,
+    date_gte: Any,
+    date_lt: Any,
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where_sql: Any | None,
+) -> tuple[Any, list[Any]]:
+    """Build one fine-grain branch of the UNION ALL query.
+
+    Returns (branch_sql, branch_params).  Date bounds are embedded as Literals.
+    ``extra_where_sql`` is a Composed fragment produced by WhereClause.to_sql()
+    (may be None when no extra conditions).
+    """
+    from psycopg.sql import SQL, Composed, Identifier, Literal
+
+    table_id = Identifier(fine_grain_view)
+    col_id = Identifier(time_grain_column)
+
+    def build_field(fp: str) -> SQL | Composed:
+        if fp == time_grain_column:
+            return _build_trunc_expr(time_grain_trunc, col_id)
+        if fp in native_dimensions:
+            return _build_non_jsonb_field_expr(fp, "t")
+        if native_dimension_mapping and fp in native_dimension_mapping:
+            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+        if native_measures and fp in native_measures:
+            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        return _build_jsonb_field_expr(fp, jsonb_col)
+
+    # Build entries for json_build_object
+    entries: list[tuple[str, SQL | Composed]] = []
+    group_by_exprs: list[SQL | Composed] = []
+
+    for fp in group_by:
+        expr = build_field(fp)
+        entries.append((fp, expr))
+        group_by_exprs.append(expr)
+
+    if aggregations:
+        for alias, agg_expr_str in aggregations.items():
+            func, field = _parse_aggregation_expr(agg_expr_str)
+            field_expr = build_field(field) if field != "*" else SQL("*")
+            is_native = (
+                field in native_dimensions
+                or (native_measures and field in native_measures)
+                or (native_dimension_mapping and field in native_dimension_mapping)
+            )
+            if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
+                agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
+            else:
+                agg_sql = SQL("{}({})").format(SQL(func), field_expr)
+            entries.append((alias, agg_sql))
+
+    nested_obj = _build_nested_json_object(entries)
+
+    # WHERE clause parts
+    where_parts: list[SQL | Composed] = [
+        SQL("{} >= {}").format(SQL("t.") + col_id, Literal(date_gte)),
+        SQL("{} < {}").format(SQL("t.") + col_id, Literal(date_lt)),
+    ]
+    if extra_where_sql is not None:
+        where_parts.append(extra_where_sql)
+
+    branch_parts: list[SQL | Composed] = [
+        SQL("SELECT "),
+        nested_obj,
+        SQL("::text FROM "),
+        table_id,
+        SQL(" AS t WHERE "),
+        SQL(" AND ").join(where_parts),
+    ]
+
+    if group_by_exprs:
+        branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
+
+    return Composed(branch_parts), []
+
+
+def _build_coarse_branch(
+    *,
+    coarse_view: str,
+    time_grain_column: str,
+    date_gte: Any,
+    date_lt: Any,
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where_sql: Any | None,
+) -> tuple[Any, list[Any]]:
+    """Build the coarse-grain branch of the UNION ALL query.
+
+    Returns (branch_sql, branch_params).
+    """
+    from psycopg.sql import SQL, Composed, Identifier, Literal
+
+    table_id = Identifier(coarse_view)
+    col_id = Identifier(time_grain_column)
+
+    def build_field(fp: str) -> SQL | Composed:
+        if fp in native_dimensions:
+            return _build_non_jsonb_field_expr(fp, "t")
+        if native_dimension_mapping and fp in native_dimension_mapping:
+            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+        if native_measures and fp in native_measures:
+            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        return _build_jsonb_field_expr(fp, jsonb_col)
+
+    entries: list[tuple[str, SQL | Composed]] = []
+    group_by_exprs: list[SQL | Composed] = []
+    for fp in group_by:
+        expr = build_field(fp)
+        entries.append((fp, expr))
+        group_by_exprs.append(expr)
+
+    if aggregations:
+        for alias, agg_expr_str in aggregations.items():
+            func, field = _parse_aggregation_expr(agg_expr_str)
+            field_expr = build_field(field) if field != "*" else SQL("*")
+            is_native = (
+                field in native_dimensions
+                or (native_measures and field in native_measures)
+                or (native_dimension_mapping and field in native_dimension_mapping)
+            )
+            if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
+                agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
+            else:
+                agg_sql = SQL("{}({})").format(SQL(func), field_expr)
+            entries.append((alias, agg_sql))
+
+    nested_obj = _build_nested_json_object(entries)
+
+    where_parts: list[SQL | Composed] = [
+        SQL("{} >= {}").format(SQL("t.") + col_id, Literal(date_gte)),
+        SQL("{} < {}").format(SQL("t.") + col_id, Literal(date_lt)),
+    ]
+    if extra_where_sql is not None:
+        where_parts.append(extra_where_sql)
+
+    branch_parts: list[SQL | Composed] = [
+        SQL("SELECT "),
+        nested_obj,
+        SQL("::text FROM "),
+        table_id,
+        SQL(" AS t WHERE "),
+        SQL(" AND ").join(where_parts),
+    ]
+
+    if group_by_exprs:
+        branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
+
+    return Composed(branch_parts), []
+
+
+def _build_partial_period_union_query(
+    *,
+    coarse_view: str,
+    fine_grain_view: str,
+    time_grain_column: str,
+    time_grain_trunc: str,
+    lower_bound: Any,  # date
+    group_by: list[str],
+    aggregations: dict[str, str],
+    native_dimensions: set[str],
+    native_measures: dict[str, str] | None,
+    native_dimension_mapping: dict[str, str] | None,
+    jsonb_col: str,
+    extra_where: Any | None,  # WhereClause | None
+    today: Any | None = None,  # date | None
+) -> "DatabaseQuery":
+    """Build a three-branch UNION ALL query for partial-period awareness.
+
+    When a date filter on a coarse-grain (pre-aggregated) view falls in the
+    middle of a period, this builder generates up to three branches:
+
+      - Branch 1 (partial first period): fine-grain rows from lower_bound to
+        the end of its period (omitted when lower_bound is period-aligned).
+      - Branch 2 (complete periods): coarse-grain rows for full periods between
+        the partial period and the current period.
+      - Branch 3 (current in-progress period): always fine-grain rows for the
+        current period up to today.
+
+    All date values are embedded as SQL Literals, so the returned statement
+    can be rendered via ``as_string(None)`` in tests without a connection.
+
+    Args:
+        coarse_view:             Name of the pre-aggregated view.
+        fine_grain_view:         Name of the fine-grain view.
+        time_grain_column:       SQL column holding the period date (e.g. "date").
+        time_grain_trunc:        One of "day", "week", "half_month", "month",
+                                 "quarter", "semester", "year".
+        lower_bound:             Effective lower-bound date extracted from the query.
+        group_by:                Dimension field paths for GROUP BY.
+        aggregations:            Map of measure alias → aggregation expression.
+        native_dimensions:       Set of group_by fields that are native SQL columns.
+        native_measures:         Map of measure path → SQL column name (or None).
+        native_dimension_mapping: Map of JSONB path → SQL column name (or None).
+        jsonb_col:               JSONB column name for JSONB extraction.
+        extra_where:             Additional WhereClause conditions (no date filter).
+                                 Pass None when there are no extra conditions.
+        today:                   Override today's date (for deterministic testing).
+                                 Defaults to ``date.today()``.
+
+    Returns:
+        DatabaseQuery with a UNION ALL Composed statement and params list.
+    """
+    from datetime import datetime, timedelta
+
+    from psycopg.sql import SQL, Composed
+
+    from fraiseql.partial_period import (
+        _is_period_aligned,
+        _next_period_start,
+        _period_start,
+    )
+
+    if today is None:
+        today = datetime.now(tz=UTC).date()
+
+    aligned = _is_period_aligned(lower_bound, time_grain_trunc)
+    next_ps = _next_period_start(lower_bound, time_grain_trunc)
+    current_ps = _period_start(today, time_grain_trunc)
+
+    # Branch 2 starts at lower_bound when aligned, else at next_ps
+    b2_start = lower_bound if aligned else next_ps
+    # Branch 2 is only useful when there are complete periods before the current period
+    include_b2 = b2_start < current_ps
+
+    # Branch 3 upper bound: exclusive tomorrow makes "date < tomorrow" equivalent to "date <= today"
+    today_exclusive = today + timedelta(days=1)
+
+    # Build extra_where SQL once (used in all branches)
+    extra_where_sql = None
+    extra_where_params: list[Any] = []
+    if extra_where is not None:
+        ew_sql, ew_params = extra_where.to_sql()
+        if ew_sql is not None:
+            extra_where_sql = ew_sql
+            extra_where_params = list(ew_params)
+
+    common = {
+        "time_grain_column": time_grain_column,
+        "group_by": group_by,
+        "aggregations": aggregations,
+        "native_dimensions": native_dimensions,
+        "native_measures": native_measures,
+        "native_dimension_mapping": native_dimension_mapping,
+        "jsonb_col": jsonb_col,
+        "extra_where_sql": extra_where_sql,
+    }
+
+    branches: list[Any] = []
+    all_params: list[Any] = []
+
+    # Branch 1: partial first period (only when not aligned)
+    if not aligned:
+        b1_sql, b1_params = _build_fine_grain_branch(
+            fine_grain_view=fine_grain_view,
+            time_grain_trunc=time_grain_trunc,
+            date_gte=lower_bound,
+            date_lt=next_ps,
+            **common,
+        )
+        branches.append(b1_sql)
+        all_params.extend(b1_params)
+        all_params.extend(extra_where_params)
+
+    # Branch 2: complete coarse-grain periods
+    if include_b2:
+        b2_sql, b2_params = _build_coarse_branch(
+            coarse_view=coarse_view,
+            date_gte=b2_start,
+            date_lt=current_ps,
+            **common,
+        )
+        branches.append(b2_sql)
+        all_params.extend(b2_params)
+        all_params.extend(extra_where_params)
+
+    # Branch 3: current in-progress period (always fine-grain)
+    # Use today_exclusive (= today + 1 day) so "date < today_exclusive" ≡ "date <= today"
+    b3_sql, b3_params = _build_fine_grain_branch(
+        fine_grain_view=fine_grain_view,
+        time_grain_trunc=time_grain_trunc,
+        date_gte=current_ps,
+        date_lt=today_exclusive,
+        time_grain_column=time_grain_column,
+        group_by=group_by,
+        aggregations=aggregations,
+        native_dimensions=native_dimensions,
+        native_measures=native_measures,
+        native_dimension_mapping=native_dimension_mapping,
+        jsonb_col=jsonb_col,
+        extra_where_sql=extra_where_sql,
+    )
+    branches.append(b3_sql)
+    all_params.extend(b3_params)
+    all_params.extend(extra_where_params)
+
+    # Join branches with UNION ALL and add ORDER BY 1
+    if len(branches) == 1:
+        statement = Composed([branches[0], SQL(" ORDER BY 1")])
+    else:
+        union_parts: list[Any] = []
+        for i, branch in enumerate(branches):
+            if i > 0:
+                union_parts.append(SQL(" UNION ALL "))
+            union_parts.append(branch)
+        union_parts.append(SQL(" ORDER BY 1"))
+        statement = Composed(union_parts)
+
+    return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
 
 
 def register_type_for_view(
@@ -351,15 +744,29 @@ def register_type_for_view(
         aggregation: Optional aggregation metadata for auto-aggregation.
             Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
                       "dimensions": "dimensions",
-                      "native_dimensions": ["period_date", "category_id"]}
+                      "native_dimensions": ["period_date", "category_id"],
+                      "native_measures": {"measures.volume": "volume"},
+                      "native_dimension_mapping": {"dimensions.category.id": "category_id"}}
             When present, db.find() will auto-aggregate when the field selection
             contains only dimensions and measures (no identity fields like 'id').
             The ``native_dimensions`` key lists SQL columns that should be grouped
             via ``t."col"`` instead of JSONB extraction, enabling btree index
             usage and correct ORDER BY behavior (#337).
+            The ``native_measures`` key maps JSONB measure paths to flat SQL column
+            names, allowing SUM operations on native numeric columns instead of
+            JSONB-extracted values, avoiding ::numeric casts and improving performance.
+            The ``native_dimension_mapping`` key maps deep JSONB dimension paths
+            to flat SQL column names, enabling GROUP BY on native columns for
+            complex nested dimension paths.
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
+
+    # Validate time_grain_trunc early (fast-fail before any query is built)
+    if aggregation and "time_grain_trunc" in aggregation:
+        from fraiseql.partial_period import _validate_grain_trunc
+
+        _validate_grain_trunc(aggregation["time_grain_trunc"])
 
     # Initialize FK relationships
     fk_relationships = fk_relationships or {}
@@ -414,6 +821,37 @@ class FraiseQLRepository:
         self.query_timeout = self.context.get("query_timeout", 30)
         # Cache for type names to avoid repeated registry lookups
         self._type_name_cache: dict[str, Optional[str]] = {}
+
+    def _consume_mandatory_filters(self, kwargs: dict[str, Any]) -> dict[str, Any] | None:
+        """Pop the caller's ``mandatory_filters`` and AND-merge authorization filters.
+
+        Operation-level authorization (issue #362) writes row-scoping filters into the
+        repository context, keyed by the current root field, via the query resolver.
+        This helper merges them with any explicit ``mandatory_filters`` the caller passed,
+        so every read method applies both. Column safety and parameterization remain in
+        :func:`_make_mandatory_conditions`.
+
+        Overlapping columns between the caller's filters and the authorization filters
+        are rejected loudly — silently overwriting one with the other would quietly widen
+        or contradict an authorization scope.
+
+        Returns:
+            The merged ``{column: value}`` dict, or ``None`` when neither source applies.
+        """
+        explicit = kwargs.pop("mandatory_filters", None) or {}
+        auth = (self.context.get("_fraiseql_auth_filters") or {}).get(
+            self.context.get("graphql_field_name")
+        ) or {}
+        if not auth:
+            return explicit or None
+        overlap = set(explicit) & set(auth)
+        if overlap:
+            from graphql import GraphQLError
+
+            msg = f"authorization filter conflicts with caller mandatory_filters: {sorted(overlap)}"
+            raise GraphQLError(msg)
+        merged = {**explicit, **auth}
+        return merged or None
 
     def _get_cached_type_name(self, view_name: str) -> Optional[str]:
         """Get cached type name for a view, or lookup and cache it if not found.
@@ -861,6 +1299,12 @@ class FraiseQLRepository:
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
 
+        # Extract mandatory_filters before any dispatch path (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        mandatory_parts, mandatory_params = (
+            _make_mandatory_conditions(mandatory_filters) if mandatory_filters else ([], [])
+        )
+
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
@@ -930,9 +1374,19 @@ class FraiseQLRepository:
             if agg_meta:
                 result = _derive_auto_aggregation(field_paths, agg_meta)
                 if result is not None:
-                    kwargs["group_by"], kwargs["aggregations"], native_dims = result
+                    (
+                        kwargs["group_by"],
+                        kwargs["aggregations"],
+                        native_dims,
+                        native_dim_mapping,
+                    ) = result
                     if native_dims:
                         kwargs["native_dimensions"] = native_dims
+                    if native_dim_mapping:
+                        kwargs["native_dimension_mapping"] = native_dim_mapping
+                    native_meas = agg_meta.get("native_measures")
+                    if native_meas:
+                        kwargs["native_measures"] = native_meas
 
         # 3. Build SQL query
         # When group_by is used, the output structure differs from the view,
@@ -941,13 +1395,105 @@ class FraiseQLRepository:
             field_paths = None
             field_selections_json = None
 
-        query = self._build_find_query(
-            view_name,
-            field_paths=field_paths,
-            info=info,
-            jsonb_column=jsonb_column,
-            **kwargs,
-        )
+        # 2c. Partial-period UNION ALL dispatch (#341)
+        # When a coarse view has fine_grain_view metadata AND the query has a date
+        # lower bound, route through _build_partial_period_union_query instead of
+        # the standard _build_find_query.
+        use_union_all = False
+        if kwargs.get("group_by") and view_name in _table_metadata:
+            agg_meta = _table_metadata[view_name].get("aggregation") or {}
+            fine_grain_view = agg_meta.get("fine_grain_view")
+            time_grain_column = agg_meta.get("time_grain_column")
+            time_grain_trunc = agg_meta.get("time_grain_trunc")
+            if fine_grain_view and time_grain_column and time_grain_trunc:
+                where_obj = kwargs.get("where")
+                if where_obj is not None:
+                    table_columns = (
+                        _table_metadata[view_name].get("columns")
+                        if view_name in _table_metadata
+                        else None
+                    )
+                    try:
+                        where_clause_for_pp = self._normalize_where(
+                            where_obj, view_name, table_columns
+                        )
+                        from fraiseql.partial_period import _extract_lower_date_bound
+
+                        lower_bound = _extract_lower_date_bound(
+                            where_clause_for_pp, time_grain_column
+                        )
+                        if lower_bound is not None:
+                            use_union_all = True
+                    except Exception:
+                        pass
+
+        if use_union_all:
+            # Strip the date condition from the where clause for extra_where
+            # (date bounds are encoded per-branch in the UNION builder)
+
+            remaining_conditions = [
+                c for c in where_clause_for_pp.conditions if c.target_column != time_grain_column
+            ]
+            extra_where = (
+                WhereClause(conditions=remaining_conditions) if remaining_conditions else None
+            )
+
+            # Inject mandatory_filters into extra_where as FieldConditions (#344)
+            if mandatory_filters:
+                from fraiseql.where_clause import FieldCondition
+
+                mandatory_fc = [
+                    FieldCondition(
+                        field_path=[col],
+                        operator="eq",
+                        value=val,
+                        lookup_strategy="sql_column",
+                        target_column=col,
+                    )
+                    for col, val in mandatory_filters.items()
+                ]
+                if extra_where:
+                    extra_where = WhereClause(
+                        conditions=[*mandatory_fc, *extra_where.conditions],
+                        nested_clauses=extra_where.nested_clauses,
+                        not_clause=extra_where.not_clause,
+                    )
+                else:
+                    extra_where = WhereClause(conditions=mandatory_fc)
+
+            # Collect kwargs that affect the query structure
+            union_group_by = kwargs.get("group_by") or []
+            union_aggregations = kwargs.get("aggregations") or {}
+            union_native_dims = kwargs.get("native_dimensions") or set()
+            union_native_measures = kwargs.get("native_measures")
+            union_native_dim_mapping = kwargs.get("native_dimension_mapping")
+            union_jsonb_col = jsonb_column or "data"
+
+            query = _build_partial_period_union_query(
+                coarse_view=view_name,
+                fine_grain_view=fine_grain_view,
+                time_grain_column=time_grain_column,
+                time_grain_trunc=time_grain_trunc,
+                lower_bound=lower_bound,
+                group_by=union_group_by,
+                aggregations=union_aggregations,
+                native_dimensions=union_native_dims,
+                native_measures=union_native_measures,
+                native_dimension_mapping=union_native_dim_mapping,
+                jsonb_col=union_jsonb_col,
+                extra_where=extra_where,
+            )
+        else:
+            # Inject mandatory conditions for _build_where_clause consumption (#344)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
+            query = self._build_find_query(
+                view_name,
+                field_paths=field_paths,
+                info=info,
+                jsonb_column=jsonb_column,
+                **kwargs,
+            )
 
         # 4. Get type name for Rust transformation
         type_name = self._get_cached_type_name(view_name)
@@ -992,7 +1538,7 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info
-            **kwargs: Query parameters (id, where, etc.)
+            **kwargs: Query parameters (id, where, mandatory_filters, etc.)
 
         Returns:
             RustResponseBytes for non-null results, None for null results (no record found)
@@ -1004,6 +1550,13 @@ class FraiseQLRepository:
         # Auto-extract info from context if not explicitly provided
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
+
+        # Extract mandatory_filters before it reaches kwargs (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
@@ -1125,9 +1678,16 @@ class FraiseQLRepository:
         Example:
             count = await db.count("v_users", where={"status": {"eq": "active"}})
             total = await db.count("v_products")
-            tenant_count = await db.count("v_orders", tenant_id="tenant-123")
+            tenant_count = await db.count("v_orders", mandatory_filters={"tenant_id": "tenant-123"})
         """
         from psycopg.sql import SQL, Composed, Identifier
+
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # Build WHERE clause (extracted to helper method for reuse)
         where_parts, params = self._build_where_clause(view_name, **kwargs)
@@ -1182,7 +1742,9 @@ class FraiseQLRepository:
             exists = await db.exists("v_users", where={"email": {"eq": "test@example.com"}})
 
             # Check if tenant has orders
-            has_orders = await db.exists("v_orders", tenant_id=tenant_id)
+            has_orders = await db.exists(
+                "v_orders", mandatory_filters={"tenant_id": tenant_id}
+            )
 
             # Check with multiple filters
             exists = await db.exists(
@@ -1191,6 +1753,13 @@ class FraiseQLRepository:
             )
         """
         from psycopg.sql import SQL, Composed, Identifier
+
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
         # Build WHERE clause using existing helper
         where_parts, params = self._build_where_clause(view_name, **kwargs)
@@ -1249,14 +1818,21 @@ class FraiseQLRepository:
             )
 
             # Total for tenant
-            total = await db.sum("v_orders", "amount", tenant_id=tenant_id)
+            total = await db.sum(
+                "v_orders", "amount", mandatory_filters={"tenant_id": tenant_id}
+            )
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        # Extract mandatory_filters before _build_where_clause (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = mandatory_parts
+            kwargs["_mandatory_params"] = mandatory_params
 
-        # Handle schema-qualified table names
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
@@ -1312,10 +1888,14 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
 
-        # Handle schema-qualified table names
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
@@ -1367,8 +1947,13 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1417,8 +2002,13 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1464,13 +2054,20 @@ class FraiseQLRepository:
             # Returns: ["books", "clothing", "electronics"]
 
             # Get statuses for tenant
-            statuses = await db.distinct("v_orders", "status", tenant_id=tenant_id)
+            statuses = await db.distinct(
+                "v_orders", "status", mandatory_filters={"tenant_id": tenant_id}
+            )
             # Returns: ["cancelled", "completed", "pending"]
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -1532,32 +2129,36 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Build WHERE clause using existing helper
-        where_parts = self._build_where_clause(view_name, **kwargs)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
 
-        # Handle schema-qualified table names
+        limit = kwargs.pop("limit", None)
+        offset = kwargs.pop("offset", None)
+
+        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+
         if "." in view_name:
             schema_name, table_name = view_name.split(".", 1)
             table_identifier = Identifier(schema_name, table_name)
         else:
             table_identifier = Identifier(view_name)
 
-        # Build query with optional LIMIT and OFFSET
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
 
         if where_parts:
             query_parts.append(SQL(" WHERE "))
             query_parts.append(SQL(" AND ").join(where_parts))
 
-        # Add LIMIT if provided
-        if "limit" in kwargs:
+        if limit is not None:
             query_parts.append(SQL(" LIMIT "))
-            query_parts.append(SQL(str(kwargs["limit"])))
+            query_parts.append(SQL(str(limit)))
 
-        # Add OFFSET if provided
-        if "offset" in kwargs:
+        if offset is not None:
             query_parts.append(SQL(" OFFSET "))
-            query_parts.append(SQL(str(kwargs["offset"])))
+            query_parts.append(SQL(str(offset)))
 
         query = Composed(query_parts)
 
@@ -1607,7 +2208,12 @@ class FraiseQLRepository:
         if not aggregations:
             return {}
 
-        # Build WHERE clause using existing helper
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
@@ -1676,7 +2282,12 @@ class FraiseQLRepository:
         if not ids:
             return {}
 
-        # Build WHERE clause using existing helper
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
 
         # Handle schema-qualified table names
@@ -1825,10 +2436,12 @@ class FraiseQLRepository:
         Returns:
             Tuple of (where_parts, params)
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        # Extract mandatory conditions (injected by find/find_one/count/exists)
+        mandatory_parts = kwargs.pop("_mandatory_parts", [])
+        mandatory_params = kwargs.pop("_mandatory_params", [])
 
-        where_parts = []
-        all_params = []
+        where_parts = list(mandatory_parts)
+        all_params = list(mandatory_params)
 
         # Extract where parameter
         where_obj = kwargs.pop("where", None)
@@ -1879,11 +2492,13 @@ class FraiseQLRepository:
                 logger.exception(f"WHERE normalization failed for {view_name}")
                 raise
 
-        # Process remaining kwargs as simple equality filters
-        for key, value in kwargs.items():
-            where_condition = Composed([Identifier(key), SQL(" = "), SQL("%s")])
-            where_parts.append(where_condition)
-            all_params.append(value)
+        # Guard against unrecognised kwargs (#344)
+        if kwargs:
+            msg = (
+                f"_build_where_clause received unexpected keyword arguments: "
+                f"{set(kwargs)}. Use mandatory_filters={{col: val}} for equality filters."
+            )
+            raise TypeError(msg)
 
         return where_parts, all_params
 
@@ -1939,6 +2554,13 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier, Literal
 
+        # Convert mandatory_filters to internal parts if passed directly (#344)
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = m_parts
+            kwargs["_mandatory_params"] = m_params
+
         # Extract special parameters BEFORE passing to _build_where_clause
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
@@ -1946,6 +2568,10 @@ class FraiseQLRepository:
         group_by: list[str] | None = kwargs.pop("group_by", None)
         aggregations: dict[str, str] | None = kwargs.pop("aggregations", None)
         native_dimensions: set[str] = kwargs.pop("native_dimensions", None) or set()
+        native_measures: dict[str, str] | None = kwargs.pop("native_measures", None)
+        native_dimension_mapping: dict[str, str] | None = kwargs.pop(
+            "native_dimension_mapping", None
+        )
 
         if aggregations and not group_by:
             msg = "aggregations requires group_by"
@@ -1966,13 +2592,19 @@ class FraiseQLRepository:
         if group_by:
             # Choose the field expression builder based on table type
             is_jsonb = jsonb_column is not None
-            has_native = bool(native_dimensions)
+            has_native = (
+                bool(native_dimensions) or bool(native_measures) or bool(native_dimension_mapping)
+            )
             jsonb_col = jsonb_column or "data"
 
             def build_field(fp: str) -> SQL | Composed:
                 """Build field expression, dispatching native vs JSONB."""
                 if fp in native_dimensions:
                     return _build_non_jsonb_field_expr(fp, "t")
+                if native_dimension_mapping and fp in native_dimension_mapping:
+                    return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
+                if native_measures and fp in native_measures:
+                    return _build_non_jsonb_field_expr(native_measures[fp], "t")
                 if is_jsonb:
                     return _build_jsonb_field_expr(fp, jsonb_col)
                 return _build_non_jsonb_field_expr(fp, "t")
@@ -1992,7 +2624,12 @@ class FraiseQLRepository:
                         agg_expr = SQL("{}(*)").format(SQL(func))
                     else:
                         field_expr = build_field(field)
-                        if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS:
+                        is_native_field = (
+                            field in native_dimensions
+                            or (native_measures and field in native_measures)
+                            or (native_dimension_mapping and field in native_dimension_mapping)
+                        )
+                        if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS and not is_native_field:
                             agg_expr = SQL("{}(({})::{})").format(
                                 SQL(func), field_expr, SQL("numeric")
                             )
