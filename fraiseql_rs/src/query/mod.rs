@@ -130,7 +130,7 @@ pub fn build_sql_query_cached(
 
 /// Get cache statistics.
 #[pyfunction]
-pub fn get_cache_stats(_py: Python) -> PyResult<PyObject> {
+pub fn get_cache_stats(_py: Python) -> PyResult<Py<PyAny>> {
     let stats = QUERY_PLAN_CACHE.stats().map_err(|e| {
         PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Cache stats error: {}", e))
     })?;

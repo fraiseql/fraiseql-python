@@ -149,13 +149,13 @@ pub fn transform_dict_keys(
 #[inline]
 fn transform_value_recursive(py: Python, value: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
     // Check if it's a dictionary (most common case for nested GraphQL objects)
-    if let Ok(dict) = value.downcast::<PyDict>() {
+    if let Ok(dict) = value.cast::<PyDict>() {
         let transformed = transform_dict_keys(py, dict, true)?;
         return Ok(transformed.into_any());
     }
 
     // Check if it's a list (common for nested arrays)
-    if let Ok(list) = value.downcast::<PyList>() {
+    if let Ok(list) = value.cast::<PyList>() {
         let new_list = PyList::empty(py);
         for item in list.iter() {
             let transformed_item = transform_value_recursive(py, &item)?;

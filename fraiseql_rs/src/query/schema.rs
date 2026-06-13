@@ -13,7 +13,7 @@ pub struct SchemaMetadata {
 }
 
 /// Schema for a single database view/table.
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableSchema {
     #[pyo3(get)]

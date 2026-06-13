@@ -75,7 +75,7 @@ pub fn execute_graphql_query(
     query_string: String,
     variables: Bound<'_, PyDict>,
     user_context: Bound<'_, PyDict>,
-) -> PyResult<PyObject> {
+) -> PyResult<Py<PyAny>> {
     // Handle mutex poisoning gracefully
     let pipeline_guard = match GLOBAL_PIPELINE.lock() {
         Ok(guard) => guard,
@@ -217,7 +217,7 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
         })
     } else if let Ok(s) = value.extract::<String>() {
         Ok(serde_json::Value::String(s))
-    } else if let Ok(dict) = value.downcast::<PyDict>() {
+    } else if let Ok(dict) = value.cast::<PyDict>() {
         // Recursively convert nested dict
         let mut map = serde_json::Map::new();
         for (k, v) in dict.iter() {
@@ -226,7 +226,7 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
             map.insert(key_str, json_val);
         }
         Ok(serde_json::Value::Object(map))
-    } else if let Ok(list) = value.downcast::<PyList>() {
+    } else if let Ok(list) = value.cast::<PyList>() {
         // Recursively convert list items
         list.iter()
             .map(|item| python_to_json(&item))

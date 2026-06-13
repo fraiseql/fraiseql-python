@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Parsed GraphQL query in Rust.
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParsedQuery {
     #[pyo3(get)]
@@ -44,7 +44,7 @@ impl ParsedQuery {
 }
 
 /// Field selection in GraphQL query.
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldSelection {
     #[pyo3(get)]
@@ -64,7 +64,7 @@ pub struct FieldSelection {
 }
 
 /// GraphQL directive (e.g., @requiresRole(role: "admin")).
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Directive {
     #[pyo3(get)]
@@ -75,7 +75,7 @@ pub struct Directive {
 }
 
 /// GraphQL argument (e.g., where: {...}).
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphQLArgument {
     #[pyo3(get)]
@@ -89,7 +89,7 @@ pub struct GraphQLArgument {
 }
 
 /// GraphQL type representation
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphQLType {
     #[pyo3(get)]
@@ -103,7 +103,7 @@ pub struct GraphQLType {
 }
 
 /// Variable definition.
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariableDefinition {
     #[pyo3(get)]
@@ -117,7 +117,7 @@ pub struct VariableDefinition {
 }
 
 /// Fragment definition.
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FragmentDefinition {
     #[pyo3(get)]

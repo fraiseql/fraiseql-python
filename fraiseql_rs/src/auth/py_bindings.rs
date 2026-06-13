@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// Python wrapper for UserContext (exposed from Rust to Python)
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct PyUserContext {
     #[pyo3(get)]
