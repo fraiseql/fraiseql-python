@@ -1725,6 +1725,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operation Authorization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -7108,6 +7136,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Database">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-1-using-fraiseqlconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method 1: Using FraiseQLConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-2-using-create_fraiseql_app-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method 2: Using create_fraiseql_app() parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -7309,6 +7365,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#enable_rust_endpoint-opt-in-issue-365" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enable_rust_endpoint (opt-in, issue #365)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7428,6 +7495,7 @@
   
 
 
+<!-- markdownlint-disable-next-line MD025 -->
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
 <p>FraiseQLConfig class for comprehensive application configuration.</p>
 <p><strong>📖 Before configuring</strong>: Make sure FraiseQL is <a href="../../getting-started/installation/">installed</a> and your environment is set up.</p>
@@ -7494,7 +7562,7 @@
 </table>
 <p><strong>Connection Pool Configuration</strong>:</p>
 <p>FraiseQL uses psycopg3's <code>AsyncConnectionPool</code> for efficient connection management. You can configure the pool using either <code>FraiseQLConfig</code> or directly via <code>create_fraiseql_app()</code> parameters.</p>
-<p><strong>Method 1: Using FraiseQLConfig</strong></p>
+<h4 id="method-1-using-fraiseqlconfig">Method 1: Using FraiseQLConfig<a class="headerlink" href="#method-1-using-fraiseqlconfig" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Standard PostgreSQL URL</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span>
@@ -7514,7 +7582,7 @@
     <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">7200</span>  <span class="c1"># Recycle every 2 hours</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>Method 2: Using create_fraiseql_app() parameters</strong></p>
+<h4 id="method-2-using-create_fraiseql_app-parameters">Method 2: Using create_fraiseql_app() parameters<a class="headerlink" href="#method-2-using-create_fraiseql_app-parameters" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Quick configuration without creating FraiseQLConfig</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
@@ -8280,6 +8348,7 @@
 <ul>
 <li><code>field_projection: bool = True</code> - Enable Rust-based field filtering</li>
 <li><code>schema_registry: bool = True</code> - Enable schema-based transformation</li>
+<li><code>enable_rust_endpoint: bool = False</code> - Mount the <code>POST /graphql/rust</code> passthrough route</li>
 </ul>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
@@ -8288,6 +8357,19 @@
     <span class="n">field_projection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Optional: disable for debugging</span>
 <span class="p">)</span>
 </code></pre></div>
+<h3 id="enable_rust_endpoint-opt-in-issue-365"><code>enable_rust_endpoint</code> (opt-in, issue #365)<a class="headerlink" href="#enable_rust_endpoint-opt-in-issue-365" title="Permanent link">&para;</a></h3>
+<p><code>POST /graphql/rust</code> is a Rust passthrough that <strong>bypasses Python resolvers entirely</strong>. It is
+<strong>off by default</strong> — a resolver-bypass route should not exist unless explicitly requested —
+and is mounted only when <code>enable_rust_endpoint=True</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">enable_rust_endpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># or FRAISEQL_ENABLE_RUST_ENDPOINT=true</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>When disabled the route is not mounted (a request 404s). When enabled it is still
+authorization-gated (issue #362); row scoping relies on session variables + RLS, not per-row
+filter injection. <strong>Behavior change:</strong> apps that relied on <code>/graphql/rust</code> must now set this
+flag.</p>
 <h2 id="schema-settings">Schema Settings<a class="headerlink" href="#schema-settings" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
