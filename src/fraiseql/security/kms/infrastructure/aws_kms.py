@@ -226,7 +226,7 @@ class AWSKMSProvider(BaseKMSProvider):
             ) from error
 
         # At this point we know it's a ClientError with response attribute
-        error_code = error.response["Error"]["Code"]  # type: ignore[attr-defined]
+        error_code = error.response["Error"]["Code"]  # type: ignore[attr-defined]  # ty: ignore[not-subscriptable]
 
         if error_code in ("NotFoundException", "InvalidKeyId"):
             raise KeyNotFoundError(f"Key not found during {operation}") from error

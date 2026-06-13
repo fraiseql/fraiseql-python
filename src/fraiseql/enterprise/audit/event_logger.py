@@ -11,6 +11,7 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import psycopg
+import psycopg.types.json
 from psycopg import AsyncConnection
 
 from fraiseql.db import DatabaseQuery, FraiseQLRepository

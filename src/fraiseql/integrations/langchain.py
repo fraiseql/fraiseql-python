@@ -69,7 +69,7 @@ except ImportError:
             return [0.0] * 384
 
 
-class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # type: ignore[misc,name-defined]
+class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # type: ignore[misc,name-defined]  # ty: ignore[unsupported-base]
     """FraiseQL vector store for LangChain.
 
     Stores documents in PostgreSQL with pgvector for semantic search,

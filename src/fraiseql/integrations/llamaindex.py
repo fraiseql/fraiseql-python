@@ -129,7 +129,7 @@ except ImportError:
 import psycopg_pool
 
 
-class FraiseQLReader(BaseReader if LLAMAINDEX_AVAILABLE else object):  # type: ignore[misc]
+class FraiseQLReader(BaseReader if LLAMAINDEX_AVAILABLE else object):  # type: ignore[misc]  # ty: ignore[unsupported-base]
     """FraiseQL reader for LlamaIndex.
 
     Reads data from FraiseQL tables and converts them to LlamaIndex documents.
@@ -256,7 +256,7 @@ class FraiseQLReader(BaseReader if LLAMAINDEX_AVAILABLE else object):  # type: i
         return asyncio.run(self.aload_data(where_clause, limit, offset))
 
 
-class FraiseQLVectorStore(BasePydanticVectorStore if LLAMAINDEX_AVAILABLE else object):  # type: ignore[misc,name-defined]
+class FraiseQLVectorStore(BasePydanticVectorStore if LLAMAINDEX_AVAILABLE else object):  # type: ignore[misc,name-defined]  # ty: ignore[unsupported-base]
     """FraiseQL vector store for LlamaIndex.
 
     Stores documents in PostgreSQL with pgvector for semantic search,
