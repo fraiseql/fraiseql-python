@@ -5,6 +5,36 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.10] - 2026-06-13
+
+### Security
+
+- **Upgraded `pyo3` 0.25 → 0.29 in the native Rust extension** — fixes
+  **GHSA-36hh-v3qg-5jq4** (HIGH; out-of-bounds read in `PyList`/`PyTuple`
+  `nth`/`nth_back` iterators) and **GHSA-chgr-c6px-7xpp** (MEDIUM; missing `Sync`
+  bound on `PyCFunction::new_closure` closures). The migration is behaviour-preserving
+  (`downcast`→`cast`, `with_gil`→`attach`, `PyObject`→`Py<PyAny>`, opt-in
+  `#[pyclass(from_py_object)]`); validated with `clippy -D warnings` and the
+  Rust-extension test suite.
+
+### Changed
+
+- **Dependency maintenance** (no functional change to the FraiseQL API):
+  - Rust crates: `thiserror` 1→2, `http` 0.2→1.4, `rand` 0.8→0.10, `sha2` 0.10→0.11,
+    `lru` 0.16→0.18 (with the necessary `rand`/`sha2` API migrations).
+  - Python: `uvicorn` ≥0.49, plus dev-tooling bumps (`pypdf`, `tox`, `langchain`,
+    `cyclonedx-python-lib`, `pytest-benchmark`, `testcontainers`,
+    `opentelemetry-instrumentation-psycopg`).
+  - Adopted `ty` ≥0.0.35 and fixed the diagnostics it surfaces (consolidated the dual
+    `ty` pin; explicit `import psycopg.types.json`; `# ty: ignore` on dynamically-typed
+    boundary code).
+
+### Tooling
+
+- Added a `cargo` ecosystem to `.github/dependabot.yml` so Rust advisories now get
+  automatic update PRs, and bumped GitHub Actions to the Node 24-compatible majors
+  (`setup-python` v6, `codeql-action` v4, `action-gh-release` v2).
+
 ## [1.23.9] - 2026-06-12
 
 ### Fixed
