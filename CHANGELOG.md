@@ -5,6 +5,22 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.11] - 2026-06-14
+
+### Fixed
+
+- **Partial-period aggregation now honors the `lte`/`lt` upper bound.** When a
+  type is registered with `fine_grain_view` partial-period awareness
+  (`time_grain_column` / `time_grain_trunc`), a `where` date range with both
+  `gte` and `lte` previously applied only the lower bound — the upper bound was
+  silently dropped and the query returned every period from `gte` through the
+  current period (including future periods). The UNION rewrite now threads the
+  upper bound through and clamps the upper edge symmetrically to the lower edge:
+  a period that straddles `lte` is recomputed from the fine-grain view over
+  `[period_start … lte]` rather than returned as a full-period aggregate. This
+  fix also removes a latent double-count where a non-aligned `gte` inside the
+  current period emitted overlapping fine-grain branches.
+
 ## [1.23.10] - 2026-06-13
 
 ### Security

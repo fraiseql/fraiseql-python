@@ -569,19 +569,30 @@ def _build_partial_period_union_query(
     native_dimension_mapping: dict[str, str] | None,
     jsonb_col: str,
     extra_where: Any | None,  # WhereClause | None
+    upper_bound_exclusive: Any | None = None,  # date | None (exclusive)
     today: Any | None = None,  # date | None
 ) -> "DatabaseQuery":
-    """Build a three-branch UNION ALL query for partial-period awareness.
+    """Build a UNION ALL query for partial-period awareness.
 
-    When a date filter on a coarse-grain (pre-aggregated) view falls in the
-    middle of a period, this builder generates up to three branches:
+    A date filter on a coarse-grain (pre-aggregated) view may straddle a period
+    boundary at either edge of the requested window.  This builder partitions
+    the half-open window ``[lower_bound, upper)`` into up to three contiguous,
+    non-overlapping segments and reads each from the appropriate view:
 
-      - Branch 1 (partial first period): fine-grain rows from lower_bound to
-        the end of its period (omitted when lower_bound is period-aligned).
-      - Branch 2 (complete periods): coarse-grain rows for full periods between
-        the partial period and the current period.
-      - Branch 3 (current in-progress period): always fine-grain rows for the
-        current period up to today.
+      - Leading partial period (fine-grain): the portion of the first period
+        below ``lower_bound``'s period boundary, present only when
+        ``lower_bound`` is not period-aligned.
+      - Complete periods (coarse-grain): whole periods that fall entirely inside
+        the window and have already ended (strictly before the current period).
+      - Upper-edge / current period (fine-grain): the trailing partial period
+        that straddles the upper bound, and/or the current in-progress period,
+        recomputed from the fine-grain view.
+
+    The effective exclusive upper bound is ``upper_bound_exclusive`` when
+    supplied, capped at ``today + 1 day`` (no data exists beyond today, and the
+    coarse view's "complete period" guarantee only holds for periods before the
+    current one).  When ``upper_bound_exclusive`` is None the window runs through
+    today, preserving the original behaviour.
 
     All date values are embedded as SQL Literals, so the returned statement
     can be rendered via ``as_string(None)`` in tests without a connection.
@@ -592,7 +603,7 @@ def _build_partial_period_union_query(
         time_grain_column:       SQL column holding the period date (e.g. "date").
         time_grain_trunc:        One of "day", "week", "half_month", "month",
                                  "quarter", "semester", "year".
-        lower_bound:             Effective lower-bound date extracted from the query.
+        lower_bound:             Effective inclusive lower-bound date.
         group_by:                Dimension field paths for GROUP BY.
         aggregations:            Map of measure alias → aggregation expression.
         native_dimensions:       Set of group_by fields that are native SQL columns.
@@ -601,6 +612,8 @@ def _build_partial_period_union_query(
         jsonb_col:               JSONB column name for JSONB extraction.
         extra_where:             Additional WhereClause conditions (no date filter).
                                  Pass None when there are no extra conditions.
+        upper_bound_exclusive:   Effective exclusive upper-bound date, or None to
+                                 run through today.
         today:                   Override today's date (for deterministic testing).
                                  Defaults to ``date.today()``.
 
@@ -620,17 +633,48 @@ def _build_partial_period_union_query(
     if today is None:
         today = datetime.now(tz=UTC).date()
 
-    aligned = _is_period_aligned(lower_bound, time_grain_trunc)
-    next_ps = _next_period_start(lower_bound, time_grain_trunc)
+    # Exclusive "tomorrow" makes "date < today_exclusive" ≡ "date <= today".
+    today_exclusive = today + timedelta(days=1)
     current_ps = _period_start(today, time_grain_trunc)
 
-    # Branch 2 starts at lower_bound when aligned, else at next_ps
-    b2_start = lower_bound if aligned else next_ps
-    # Branch 2 is only useful when there are complete periods before the current period
-    include_b2 = b2_start < current_ps
+    lo = lower_bound
+    # Effective exclusive upper bound of the window, capped at today_exclusive:
+    # no data exists beyond today, and coarse rows are only reliable before the
+    # current period (handled via coarse_end below).
+    if upper_bound_exclusive is None:
+        hi = today_exclusive
+    else:
+        hi = min(upper_bound_exclusive, today_exclusive)
 
-    # Branch 3 upper bound: exclusive tomorrow makes "date < tomorrow" equivalent to "date <= today"
-    today_exclusive = today + timedelta(days=1)
+    # Lower edge: coarse data can start at the lower bound when it is
+    # period-aligned; otherwise the leading partial period is recomputed from
+    # the fine-grain view up to the next period start.
+    if _is_period_aligned(lo, time_grain_trunc):
+        coarse_start = lo
+    else:
+        coarse_start = _next_period_start(lo, time_grain_trunc)
+
+    # Upper edge: when the window ends exactly on a period boundary the final
+    # period is complete (coarse-safe); otherwise it straddles the upper bound
+    # and must be recomputed from the fine-grain view.
+    if _is_period_aligned(hi, time_grain_trunc):
+        upper_coarse_end = hi
+    else:
+        upper_coarse_end = _period_start(hi - timedelta(days=1), time_grain_trunc)
+
+    # Coarse rows are only reliable for periods strictly before the current one.
+    coarse_end = min(upper_coarse_end, current_ps)
+
+    # Partition [lo, hi) into at most three contiguous, non-overlapping segments:
+    #   [p0, p1) fine-grain leading partial period
+    #   [p1, p2) coarse-grain complete periods
+    #   [p2, p3) fine-grain upper-edge / current in-progress period
+    # Clamping keeps the cut points ordered (p0 ≤ p1 ≤ p2 ≤ p3) even for tiny
+    # windows that fall inside a single period.
+    p0 = lo
+    p1 = min(max(coarse_start, p0), hi)
+    p2 = min(max(coarse_end, p1), hi)
+    p3 = hi
 
     # Build extra_where SQL once (used in all branches)
     extra_where_sql = None
@@ -655,50 +699,43 @@ def _build_partial_period_union_query(
     branches: list[Any] = []
     all_params: list[Any] = []
 
-    # Branch 1: partial first period (only when not aligned)
-    if not aligned:
-        b1_sql, b1_params = _build_fine_grain_branch(
+    def _add_fine(date_gte: Any, date_lt: Any) -> None:
+        branch_sql, branch_params = _build_fine_grain_branch(
             fine_grain_view=fine_grain_view,
             time_grain_trunc=time_grain_trunc,
-            date_gte=lower_bound,
-            date_lt=next_ps,
+            date_gte=date_gte,
+            date_lt=date_lt,
             **common,
         )
-        branches.append(b1_sql)
-        all_params.extend(b1_params)
+        branches.append(branch_sql)
+        all_params.extend(branch_params)
         all_params.extend(extra_where_params)
 
-    # Branch 2: complete coarse-grain periods
-    if include_b2:
-        b2_sql, b2_params = _build_coarse_branch(
+    def _add_coarse(date_gte: Any, date_lt: Any) -> None:
+        branch_sql, branch_params = _build_coarse_branch(
             coarse_view=coarse_view,
-            date_gte=b2_start,
-            date_lt=current_ps,
+            date_gte=date_gte,
+            date_lt=date_lt,
             **common,
         )
-        branches.append(b2_sql)
-        all_params.extend(b2_params)
+        branches.append(branch_sql)
+        all_params.extend(branch_params)
         all_params.extend(extra_where_params)
 
-    # Branch 3: current in-progress period (always fine-grain)
-    # Use today_exclusive (= today + 1 day) so "date < today_exclusive" ≡ "date <= today"
-    b3_sql, b3_params = _build_fine_grain_branch(
-        fine_grain_view=fine_grain_view,
-        time_grain_trunc=time_grain_trunc,
-        date_gte=current_ps,
-        date_lt=today_exclusive,
-        time_grain_column=time_grain_column,
-        group_by=group_by,
-        aggregations=aggregations,
-        native_dimensions=native_dimensions,
-        native_measures=native_measures,
-        native_dimension_mapping=native_dimension_mapping,
-        jsonb_col=jsonb_col,
-        extra_where_sql=extra_where_sql,
-    )
-    branches.append(b3_sql)
-    all_params.extend(b3_params)
-    all_params.extend(extra_where_params)
+    # Branch 1: fine-grain leading partial period
+    if p1 > p0:
+        _add_fine(p0, p1)
+    # Branch 2: coarse-grain complete periods
+    if p2 > p1:
+        _add_coarse(p1, p2)
+    # Branch 3: fine-grain upper-edge / current in-progress period
+    if p3 > p2:
+        _add_fine(p2, p3)
+
+    # Degenerate window (hi ≤ lo): emit a single empty fine-grain branch so the
+    # statement stays valid and simply returns no rows.
+    if not branches:
+        _add_fine(lo, lo)
 
     # Join branches with UNION ALL and add ORDER BY 1
     if len(branches) == 1:
@@ -1400,6 +1437,7 @@ class FraiseQLRepository:
         # lower bound, route through _build_partial_period_union_query instead of
         # the standard _build_find_query.
         use_union_all = False
+        upper_bound_exclusive = None
         if kwargs.get("group_by") and view_name in _table_metadata:
             agg_meta = _table_metadata[view_name].get("aggregation") or {}
             fine_grain_view = agg_meta.get("fine_grain_view")
@@ -1417,13 +1455,21 @@ class FraiseQLRepository:
                         where_clause_for_pp = self._normalize_where(
                             where_obj, view_name, table_columns
                         )
-                        from fraiseql.partial_period import _extract_lower_date_bound
+                        from fraiseql.partial_period import (
+                            _extract_lower_date_bound,
+                            _extract_upper_date_bound,
+                        )
 
                         lower_bound = _extract_lower_date_bound(
                             where_clause_for_pp, time_grain_column
                         )
                         if lower_bound is not None:
                             use_union_all = True
+                            # Honour the upper bound (lte/lt) symmetrically so a
+                            # bounded range does not run through to today (#341).
+                            upper_bound_exclusive = _extract_upper_date_bound(
+                                where_clause_for_pp, time_grain_column
+                            )
                     except Exception:
                         pass
 
@@ -1482,6 +1528,7 @@ class FraiseQLRepository:
                 native_dimension_mapping=union_native_dim_mapping,
                 jsonb_col=union_jsonb_col,
                 extra_where=extra_where,
+                upper_bound_exclusive=upper_bound_exclusive,
             )
         else:
             # Inject mandatory conditions for _build_where_clause consumption (#344)
