@@ -201,3 +201,51 @@ def _extract_lower_date_bound(
         return value
 
     return None
+
+
+def _extract_upper_date_bound(
+    where_clause: "WhereClause",
+    column: str,
+) -> date | None:
+    """Extract the effective *exclusive* upper-bound date from a WhereClause.
+
+    Scans *where_clause.conditions* for the first ``lte`` or ``lt`` condition
+    whose ``target_column`` matches *column*.  The result is always an
+    **exclusive** upper bound (``date < result``), which keeps the boundary
+    arithmetic in the partial-period union builder uniform with the half-open
+    intervals it generates:
+
+      - For ``lte`` (``date <= '2024-06-30'``): returns ``'2024-07-01'`` (value
+        incremented by one day, because ``<=`` on a DATE column is equivalent to
+        ``<`` the following day).
+      - For ``lt``  (``date <  '2024-07-01'``): returns ``'2024-07-01'`` unchanged.
+      - ``None`` if no matching condition is found.
+
+    Only top-level conditions are scanned (nested_clauses are ignored), mirroring
+    :func:`_extract_lower_date_bound`.
+
+    Args:
+        where_clause: The normalised WHERE clause to scan.
+        column:       The database column name to match (e.g. ``"date"``).
+
+    Returns:
+        The effective exclusive upper-bound date, or None.
+    """
+    for cond in where_clause.conditions:
+        if cond.target_column != column:
+            continue
+        if cond.operator not in ("lte", "lt"):
+            continue
+
+        value = cond.value
+        # Accept both date objects and ISO strings
+        if isinstance(value, str):
+            value = date.fromisoformat(value)
+        if not isinstance(value, date):
+            continue
+
+        if cond.operator == "lte":
+            value = value + timedelta(days=1)
+        return value
+
+    return None
