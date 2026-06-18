@@ -27,17 +27,9 @@ Practical how-to guides for operators, developers, and DevOps teams.
 
 ## 🛠️ Development Guides
 
-### Testing & Profiling
+### Development
 
 - **[Testing Strategy](testing-strategy.md)** — Unit, integration, E2E, and performance testing
-- **[E2E Testing](development/e2e-testing.md)** — End-to-end testing with real services
-- **[Profiling Guide](development/profiling-guide.md)** — Profile and optimize code
-- **[Benchmarking](development/benchmarking.md)** — Performance benchmarking with Criterion
-
-### Code Quality
-
-- **[Linting](development/linting.md)** — Code quality and linting standards
-- **[Test Coverage](development/test-coverage.md)** — Measure and improve test coverage
 - **[Developer Guide](development/developer-guide.md)** — Development environment setup
 
 ## 📊 Operations & Monitoring

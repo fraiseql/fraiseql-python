@@ -737,5 +737,4 @@ FraiseQL-cli compile schema.json
 ## See Also
 
 - [CLI Schema Format Guide](../reference/cli-schema-format.md)
-- [E2E Testing Guide](./development/e2e-testing.md)
 - [FraiseQL Guides](./README.md)

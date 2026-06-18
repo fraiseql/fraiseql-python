@@ -413,8 +413,6 @@ cargo bench -p FraiseQL-core
 - CPU utilization
 - Database connection overhead
 
-See [Benchmarking Guide](guides/development/benchmarking.md) for detailed setup.
-
 ---
 
 ## 🎓 Additional Resources
