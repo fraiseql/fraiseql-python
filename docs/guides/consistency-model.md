@@ -778,7 +778,6 @@ The mutation either succeeds completely or fails cleanly. No partial states.
 **Testing & Validation:**
 
 - **[Testing Strategy](./testing-strategy.md)** — Testing consistency guarantees
-- **[E2E Testing Guide](../guides/development/e2e-testing.md)** — End-to-end consistency validation
 
 **Related Concepts:**
 
