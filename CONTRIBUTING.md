@@ -1,6 +1,8 @@
 # Contributing to FraiseQL
 
-Thank you for your interest in contributing to FraiseQL v2! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to FraiseQL! This document provides guidelines and instructions for contributing.
+
+FraiseQL (this repository, `fraiseql-python`) is a **runtime GraphQL framework for PostgreSQL**, written in Python with an optional Rust acceleration extension (`fraiseql_rs`).
 
 ## Table of Contents
 
@@ -12,6 +14,7 @@ Thank you for your interest in contributing to FraiseQL v2! This document provid
 - [Testing](#testing)
 - [Pull Request Process](#pull-request-process)
 - [Release Process](#release-process)
+- [Architecture Guidelines](#architecture-guidelines)
 
 ---
 
@@ -27,14 +30,14 @@ Be respectful, professional, and collaborative. We're building something great t
 2. **Clone your fork**:
 
    ```bash
-   git clone git@github.com:YOUR_USERNAME/fraiseql.git
-   cd fraiseql
+   git clone git@github.com:YOUR_USERNAME/fraiseql-python.git
+   cd fraiseql-python
    ```
 
-3. **Add upstream remote**:
+3. **Add the upstream remote**:
 
    ```bash
-   git remote add upstream git@github.com:fraiseql/fraiseql.git
+   git remote add upstream git@github.com:fraiseql/fraiseql-python.git
    ```
 
 ---
@@ -120,32 +123,28 @@ uv run pytest \
 
 ### 1. Create a Feature Branch
 
+`dev` is the default integration branch; `main` tracks production. Branch off `dev`:
+
 ```bash
-git checkout v2-development
-git pull upstream v2-development
+git checkout dev
+git pull upstream dev
 git checkout -b feature/my-feature
 ```
 
 ### 2. Make Changes
 
 - Write code following our [Code Style](#code-style)
-- Add tests for new functionality
+- Add tests for new functionality (write the failing test first)
 - Update documentation if needed
 
 ### 3. Run Checks Locally
 
 ```bash
-# Format code
-make fmt
-
-# Run linter
-make clippy
-
-# Run tests
-make test
-
-# Or run all checks
-make check
+make format        # format with ruff  (uv run ruff format src/)
+make lint          # lint with ruff    (uv run ruff check src/)
+uv run ty check    # type-check with ty
+make test          # unit + integration tests
+make check         # format + lint + test in one step
 ```
 
 ### 4. Commit Changes
@@ -160,7 +159,7 @@ git commit -m "feat(scope): description
 
 **Commit Message Format:**
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -182,133 +181,104 @@ git commit -m "feat(scope): description
 ### 5. Push and Create PR
 
 ```bash
-git push origin feature/my-feature
+git push -u origin feature/my-feature
 ```
 
-Then create a Pull Request on GitHub targeting `v2-development`.
+Then open a Pull Request on GitHub targeting `dev`.
 
 ---
 
 ## Code Style
 
-### Rust Style
-
-We follow the official [Rust Style Guide](https://doc.rust-lang.org/nightly/style-guide/).
+FraiseQL uses the [Ruff](https://docs.astral.sh/ruff/) toolchain and modern Python conventions (config in `pyproject.toml`).
 
 **Key points:**
 
-- **Line width**: 100 characters
-- **Indentation**: 4 spaces
-- **Imports**: Organized with `cargo fmt`
-- **Documentation**: Required for public items
-- **Error handling**: Use `Result` and `?` operator
+- **Python 3.13** with modern union syntax: `X | None`, not `Optional[X]`
+- **Built-in generics**: `list` / `dict` / `set`, not `typing.List` / `Dict` / `Set`
+- **Formatting & linting**: `ruff format` / `ruff check`
+- **Type checking**: `ty` (not mypy) — `uv run ty check`
+- **Docstrings**: required for public functions and classes
 
 **Example:**
 
-```rust
-/// Calculate the sum of two numbers.
-///
-/// # Arguments
-///
-/// * `a` - First number
-/// * `b` - Second number
-///
-/// # Returns
-///
-/// Sum of a and b
-///
-/// # Example
-///
-/// ```
-/// let result = add(2, 3);
-/// assert_eq!(result, 5);
-/// ```
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
-}
+```python
+def get_user(user_id: int) -> User | None:
+    """Get a single user by ID.
+
+    Args:
+        user_id: The unique user identifier.
+
+    Returns:
+        The User, or None if not found.
+
+    Raises:
+        DatabaseError: If the database connection fails.
+    """
+    ...
 ```
 
-### Linting
+### Rust extension
 
-All code must pass Clippy with no warnings:
+Changes to the optional `fraiseql_rs` extension must pass the strict Clippy gate:
 
 ```bash
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --manifest-path fraiseql_rs/Cargo.toml --all-features -- -D warnings
+cargo fmt --manifest-path fraiseql_rs/Cargo.toml
 ```
+
+Rebuild the extension into your environment with `uv run maturin develop`.
 
 ---
 
 ## Testing
 
+FraiseQL uses **pytest** with `pytest-asyncio`.
+
 ### Test Levels
 
-1. **Unit Tests**: Test individual functions/modules
+1. **Unit tests** (`tests/unit/`) — fast, no database:
 
-   ```rust
-   #[cfg(test)]
-   mod tests {
-       use super::*;
+   ```python
+   import pytest
 
-       #[test]
-       fn test_addition() {
-           assert_eq!(add(2, 2), 4);
-       }
-   }
+
+   @pytest.mark.asyncio
+   async def test_query_execution():
+       result = await schema.execute("{ users { id name } }")
+       assert result.data["users"][0]["name"] == "Alice"
    ```
 
-2. **Integration Tests**: Test module interactions
+2. **Integration tests** (`tests/integration/`) — require PostgreSQL:
 
-   ```rust
-   // tests/integration/test_schema.rs
-   #[test]
-   fn test_schema_loading() {
-       let schema = CompiledSchema::load("test.json").unwrap();
-       assert!(schema.is_valid());
-   }
+   ```python
+   @pytest.mark.asyncio
+   async def test_user_creation(test_db_connection):
+       result = await schema.execute(
+           'mutation { createUser(name: "Bob") { id } }'
+       )
+       assert result.data["createUser"]["id"]
    ```
 
-3. **End-to-End Tests**: Test complete flows
-
-   ```rust
-   // tests/e2e/test_query_execution.rs
-   #[tokio::test]
-   async fn test_query_execution() {
-       let executor = setup_executor().await;
-       let result = executor.execute("query { users { id } }").await.unwrap();
-       assert!(!result.has_errors());
-   }
-   ```
+Other suites live in `tests/chaos/` (chaos engineering) and `tests/e2e/`
+(end-to-end).
 
 ### Test Database
 
-Integration tests require PostgreSQL:
+Integration tests use a Docker-managed PostgreSQL:
 
 ```bash
-# Create test database (local setup)
-make db-setup-local
-
-# Or use Docker containers
-make db-up
-
-# Run integration tests
-make test-integration
-
-# Clean up (local)
-make db-teardown-local
-
-# Or stop Docker containers
-make db-down
+make db-up              # start the test database(s)
+make test-integration   # run integration tests
+make db-down            # stop the database(s)
+make db-reset           # reset (remove volumes)
 ```
 
 ### Coverage
 
-We aim for **85%+ test coverage**:
-
 ```bash
-# Generate coverage report
-make coverage
-
-# View report at target/llvm-cov/html/index.html
+uv run pytest --cov=fraiseql --cov-report=html
+# open htmlcov/index.html
 ```
 
 ---
@@ -319,25 +289,26 @@ make coverage
 
 Before submitting a PR, ensure:
 
-- [ ] Code compiles without warnings
 - [ ] All tests pass (`make test`)
-- [ ] Code is formatted (`make fmt`)
-- [ ] Clippy passes (`make clippy`)
-- [ ] Documentation is updated (if needed)
+- [ ] Code is formatted and lint-clean (`make format`, `make lint`)
+- [ ] Type checks pass (`uv run ty check`)
 - [ ] Tests are added for new functionality
-- [ ] Commit messages follow conventional format
-- [ ] PR description explains the change
+- [ ] Documentation is updated (if needed)
+- [ ] Commit messages follow the conventional format
+- [ ] PR targets `dev` and explains the change
 
 ### PR Review Process
 
-1. **Automated checks** run via GitHub Actions
+1. **Automated checks** run via GitHub Actions — the `CI Success`,
+   `Security Gate ✅`, and `Compliance Validation` gates must pass
 2. **Code review** by maintainers
 3. **Address feedback** if requested
 4. **Merge** once approved and CI passes
 
 ### After Merge
 
-The PR will be merged into `v2-development`. Your contribution will be included in the next release!
+Your change merges into `dev` and ships to `main` on the next `dev → main`
+sync, included in the next release.
 
 ---
 
@@ -345,38 +316,27 @@ The PR will be merged into `v2-development`. Your contribution will be included 
 
 Releases are managed by maintainers:
 
-1. Version bump in `Cargo.toml`
+1. Version bump in `pyproject.toml` (the runtime `__version__` is read from package metadata)
 2. Update `CHANGELOG.md`
-3. Create git tag (`v2.x.x`)
-4. CI builds and publishes to crates.io and PyPI
+3. `dev` is synced to `main`
+4. `make release` builds and publishes the wheel + sdist to PyPI
 
 ---
 
 ## Architecture Guidelines
 
-FraiseQL v2 is a **compiled GraphQL execution engine**. Key principles:
+FraiseQL v1 is a **runtime GraphQL framework**: Python decorators define types,
+queries, and mutations, and FraiseQL generates the GraphQL schema and executes
+queries against PostgreSQL at runtime.
 
-### 1. Separation of Concerns
+- **Decorator API**: `@fraise_type`, `@query`, `@mutation` define the schema.
+- **SQL generation**: queries compile to parameterized SQL — never string interpolation.
+- **Optional Rust acceleration**: `fraiseql_rs` (PyO3) speeds up hot paths; the framework runs in pure Python without it.
+- **FastAPI integration**: served over ASGI with configurable middleware.
 
-- **Compilation Layer**: Schema definition → SQL compilation (build-time via fraiseql-cli)
-- **Runtime Layer**: Query execution → Result streaming (runtime via fraiseql-server)
-- **Database Layer**: Data storage and retrieval (multi-database support)
-
-See `.claude/ARCHITECTURE_PRINCIPLES.md` for detailed architecture documentation.
-
-### 2. Layered Optionality
-
-- **Core**: Minimal build includes GraphQL execution engine only
-- **Extensions**: Optional features via Cargo features (Arrow, Observers, Wire)
-- **Configuration**: All behavior controlled via fraiseql.toml or environment variables
-
-### 3. World-Class Engineering
-
-- **No `unsafe` code** (forbidden at compile time via Cargo.toml lints)
-- **Comprehensive error handling** with Result types and context
-- **Extensive documentation** for all public APIs
-- **Thorough testing** (2,400+ tests: unit, integration, E2E, chaos)
-- **Performance-conscious** design with zero-copy patterns and compile-time optimization
+See [`.claude/CLAUDE.md`](.claude/CLAUDE.md) and
+[`.claude/ARCHITECTURE_PRINCIPLES.md`](.claude/ARCHITECTURE_PRINCIPLES.md) for
+detailed architecture documentation.
 
 ---
 
@@ -384,14 +344,15 @@ See `.claude/ARCHITECTURE_PRINCIPLES.md` for detailed architecture documentation
 
 - **Questions**: Open a GitHub Discussion
 - **Bugs**: File a GitHub Issue
-- **Security**: Email <security@fraiseql.dev>
+- **Security**: see [SECURITY.md](SECURITY.md) — please do not report vulnerabilities via public issues
 
 ---
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (MIT OR Apache-2.0).
+By contributing, you agree that your contributions will be licensed under the
+project's [MIT License](LICENSE).
 
 ---
 
-**Thank you for contributing to FraiseQL v2!** 🚀
+**Thank you for contributing to FraiseQL!** 🚀
