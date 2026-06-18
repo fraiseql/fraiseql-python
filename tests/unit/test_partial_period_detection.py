@@ -12,7 +12,11 @@ from datetime import date
 
 import pytest
 
-from fraiseql.partial_period import _extract_lower_date_bound, _is_period_aligned
+from fraiseql.partial_period import (
+    _extract_lower_date_bound,
+    _extract_upper_date_bound,
+    _is_period_aligned,
+)
 from fraiseql.where_clause import FieldCondition, WhereClause
 
 # ── _is_period_aligned ────────────────────────────────────────────────────────
@@ -154,3 +158,68 @@ def test_first_matching_condition_wins() -> None:
     wc = WhereClause(conditions=[cond1, cond2])
     result = _extract_lower_date_bound(wc, "date")
     assert result == date(2025, 1, 1)
+
+
+# ── _extract_upper_date_bound ────────────────────────────────────────────────
+
+
+def _make_wc_with_op(col: str, operator: str, value: object) -> WhereClause:
+    cond = FieldCondition(
+        field_path=[col],
+        operator=operator,
+        value=value,
+        lookup_strategy="sql_column",
+        target_column=col,
+    )
+    return WhereClause(conditions=[cond])
+
+
+def test_extracts_lte_as_exclusive_next_day() -> None:
+    """Inclusive lte '2024-06-30' becomes exclusive upper '2024-07-01'."""
+    wc = _make_wc_with_op("date", "lte", date(2024, 6, 30))
+    assert _extract_upper_date_bound(wc, "date") == date(2024, 7, 1)
+
+
+def test_extracts_lt_unchanged() -> None:
+    """Exclusive lt '2024-07-01' is returned unchanged."""
+    wc = _make_wc_with_op("date", "lt", date(2024, 7, 1))
+    assert _extract_upper_date_bound(wc, "date") == date(2024, 7, 1)
+
+
+def test_upper_returns_none_for_lower_bound_operators() -> None:
+    for op in ("gte", "gt", "eq"):
+        wc = _make_wc_with_op("date", op, date(2024, 6, 30))
+        assert _extract_upper_date_bound(wc, "date") is None
+
+
+def test_upper_returns_none_when_no_date_filter() -> None:
+    assert _extract_upper_date_bound(_make_wc_no_date(), "date") is None
+
+
+def test_upper_returns_none_when_column_differs() -> None:
+    wc = _make_wc_with_op("event_date", "lte", date(2024, 6, 30))
+    assert _extract_upper_date_bound(wc, "date") is None
+
+
+def test_upper_accepts_iso_string_value() -> None:
+    wc = _make_wc_with_op("date", "lte", "2024-06-30")
+    assert _extract_upper_date_bound(wc, "date") == date(2024, 7, 1)
+
+
+def test_upper_first_matching_condition_wins() -> None:
+    cond1 = FieldCondition(
+        field_path=["date"],
+        operator="lte",
+        value=date(2024, 6, 30),
+        lookup_strategy="sql_column",
+        target_column="date",
+    )
+    cond2 = FieldCondition(
+        field_path=["date"],
+        operator="lte",
+        value=date(2024, 12, 31),
+        lookup_strategy="sql_column",
+        target_column="date",
+    )
+    wc = WhereClause(conditions=[cond1, cond2])
+    assert _extract_upper_date_bound(wc, "date") == date(2024, 7, 1)
