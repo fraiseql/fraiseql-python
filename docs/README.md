@@ -116,7 +116,7 @@ Practical how-to guides for operators, developers, and DevOps teams.
 - **Getting Started**: [Language Generators](guides/language-generators.md), [Patterns](guides/patterns.md)
 - **Deployment**: [Production Deployment](guides/production-deployment.md) — Kubernetes deployment
 - **Operations**: [Monitoring](guides/monitoring.md), [Observability](guides/observability.md), [Analytics Patterns](guides/analytics-patterns.md)
-- **Development**: [Testing Strategy](guides/testing-strategy.md), [Benchmarking](guides/development/benchmarking.md), [Profiling](guides/development/profiling-guide.md)
+- **Development**: [Testing Strategy](guides/testing-strategy.md), [Developer Guide](guides/development/developer-guide.md)
 
 ### [Configuration](configuration/)
 
