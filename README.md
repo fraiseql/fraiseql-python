@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**v1.9.17** | **Stable** | **Rust-Powered GraphQL for PostgreSQL**
+**Stable** | **Rust-Powered GraphQL for PostgreSQL**
 
 **Python**: 3.13+ | **PostgreSQL**: 13+
 
@@ -53,11 +53,11 @@ app = create_fraiseql_app(
 
 FraiseQL has two versions with overlapping but complementary strengths:
 
-### v1.9.16 (This Repository: `fraiseql-python`)
+### v1 (This Repository: `fraiseql-python`)
 
 **Python framework with integrated Rust pipeline**
 
-- ✅ **Stable, production-ready** (v1.9.16)
+- ✅ **Stable, production-ready**
 - 🐍 **Python 3.13+ native** - write schema in Python decorators
 - 🚀 **Rust pipeline included** - 7-10x faster JSON transformation
 - 📡 **FastAPI runtime** - immediate deployment, hot reload, development-friendly
@@ -85,7 +85,7 @@ FraiseQL has two versions with overlapping but complementary strengths:
 
 ### Comparison
 
-| Aspect | v1.9.16 | v2 |
+| Aspect | v1 | v2 |
 |--------|---------|-----|
 | **Schema in Python** | ✅ Native | ✅ Supported (1 of 16+ languages) |
 | **Rust Performance** | ✅ Included | ✅ Full engine in Rust |
@@ -314,12 +314,12 @@ mutation {
 
 **Roadmap:**
 
-- **v1.9.16**: Complete security profile enforcement (Issue #225)
-- **v1.9.16**: Add RBAC enforcement verification tests
-- **v1.9.16**: Unified field filtering for all query types
-- **v1.9.16**: Full security audit and penetration testing
+- Complete security profile enforcement (Issue #225)
+- Add RBAC enforcement verification tests
+- Unified field filtering for all query types
+- Full security audit and penetration testing
 
-> **Important**: This matrix reflects current implementation status (v1.9.16). Security features are under active development. Always verify features meet your requirements before production deployment. See [Issue #225](https://github.com/fraiseql/fraiseql-python/issues/225) for implementation progress.
+> **Important**: This matrix reflects current implementation status. Security features are under active development. Always verify features meet your requirements before production deployment. See [Issue #225](https://github.com/fraiseql/fraiseql-python/issues/225) for implementation progress.
 
 ---
 
@@ -1118,10 +1118,10 @@ MIT License - see [LICENSE](LICENSE)
 
 | Project | Version | Repository | Status | Best For |
 |---------|---------|-----------|--------|----------|
-| **fraiseql-python** (v1) | v1.9.16 | [fraiseql/fraiseql-python](https://github.com/fraiseql/fraiseql-python) | ✅ Stable | Python teams, rapid iteration |
+| **fraiseql-python** (v1) | v1.x | [fraiseql/fraiseql-python](https://github.com/fraiseql/fraiseql-python) | ✅ Stable | Python teams, rapid iteration |
 | **fraiseql** (v2) | v2.0.0-alpha.2 | [fraiseql/fraiseql](https://github.com/fraiseql/fraiseql) | 🚀 Beta | Multi-language, multi-database |
 
-**This Repository:** `fraiseql-python` (v1.9.16 - Python-based with Rust pipeline)
+**This Repository:** `fraiseql-python` (v1 - Python-based with Rust pipeline)
 
 ### Quick Navigation
 
