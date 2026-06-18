@@ -1,4 +1,4 @@
-# Contributing to FraiseQL v2
+# Contributing to FraiseQL
 
 Thank you for your interest in contributing to FraiseQL v2! This document provides guidelines and instructions for contributing.
 
@@ -43,46 +43,75 @@ Be respectful, professional, and collaborative. We're building something great t
 
 ### Prerequisites
 
-- **Rust** 1.75+ (install via [rustup](https://rustup.rs/))
+- **Python** 3.13 (the project targets `>=3.13,<3.14`)
+- **uv** (package/environment manager — install via the [uv docs](https://docs.astral.sh/uv/))
+- **Rust** toolchain (needed to build the optional `fraiseql_rs` extension; install via [rustup](https://rustup.rs/))
 - **PostgreSQL** 14+ (for integration tests)
 - **Make** (optional, for convenience commands)
 
-### Install Development Tools
+### Install Dependencies
 
 ```bash
-# Install Rust toolchain
-rustup toolchain install stable
-rustup component add rustfmt clippy rust-analyzer
+# Create the virtualenv with runtime + dev dependencies and build the Rust extension
+uv sync
 
-# Install cargo tools
-cargo install cargo-watch cargo-audit cargo-llvm-cov
-
-# Install pre-commit hooks (optional)
-pip install pre-commit
-pre-commit install
+# Install the pre-commit hooks
+uv run pre-commit install
 ```
 
-### Build the Project
+`uv sync` installs the runtime dependencies plus the `dev` dependency group
+(linters and test tooling). The optional integration libraries (LangChain,
+LlamaIndex) are **not** installed by default — see [Optional extras](#optional-extras).
+
+### Optional extras
+
+The LangChain and LlamaIndex integrations live behind opt-in extras so the
+default install stays lean:
+
+| Extra | Pulls in |
+|-------|----------|
+| `langchain` | langchain, langchain-community, langchain-core, langchain-text-splitters, langsmith |
+| `llamaindex` | llama-index, llama-index-core, banks, pillow, pypdf |
+| `llm` | both of the above (convenience aggregate) |
+
+Install with pip:
 
 ```bash
-# Build all crates
-make build
+pip install "fraiseql[llm]"          # both integrations
+pip install "fraiseql[langchain]"    # LangChain only
+pip install "fraiseql[llamaindex]"   # LlamaIndex only
+```
 
-# Or with cargo directly
-cargo build --all-features
+…or add them to your local dev environment:
+
+```bash
+uv sync --extra langchain --extra llamaindex
 ```
 
 ### Run Tests
 
 ```bash
-# Run all tests
-make test
+# Unit tests (fast, no database)
+make test-unit            # or: uv run pytest tests/unit/ -q
 
-# Run integration tests (requires PostgreSQL)
+# Integration tests (requires PostgreSQL)
 make test-integration
 
-# Run specific test
-cargo test test_schema
+# Everything
+make test
+
+# A single test, verbose
+uv run pytest tests/unit/test_file.py::test_name -xvs
+```
+
+The LangChain/LlamaIndex integration tests **skip automatically** unless their
+extras are installed. To exercise them, sync the extras first:
+
+```bash
+uv sync --extra langchain --extra llamaindex
+uv run pytest \
+  tests/integration/test_langchain_vectorstore_integration.py \
+  tests/integration/test_llamaindex_vectorstore_integration.py
 ```
 
 ---
