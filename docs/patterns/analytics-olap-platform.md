@@ -1,834 +1,567 @@
-<!-- Skip to main content -->
 ---
-
 title: Analytics Platform with OLAP
-description: Complete guide to building a scalable analytics and business intelligence platform using FraiseQL with OLAP (Online Analytical Processing) patterns.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]
+description: Build a scalable analytics and business-intelligence platform with FraiseQL using PostgreSQL fact/dimension modelling, view-backed reads, and runtime auto-aggregation.
+keywords: ["analytics", "olap", "aggregation", "fact-table", "dimension", "postgresql"]
+tags: ["documentation", "patterns"]
 ---
 
 # Analytics Platform with OLAP
 
-**Status:** ✅ Production Ready
-**Complexity:** ⭐⭐⭐⭐ (Advanced)
+**Status:** Production Ready
+**Complexity:** Advanced
 **Audience:** Data engineers, analytics architects, BI developers
 **Reading Time:** 30-35 minutes
-**Last Updated:** 2026-02-05
 
-Complete guide to building a scalable analytics and business intelligence platform using FraiseQL with OLAP (Online Analytical Processing) patterns.
-
----
-
-## Architecture Overview
-
-**Diagram: Analytics Pattern** - Denormalized fact table design with JSONB dimensions
-
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
-
-Sources: "Data Sources" {
-  shape: box
-  style.fill: "#e3f2fd"
-  children: [
-    AppDB: "Application\nDatabases"
-    APIs: "APIs"
-    ThirdParty: "Third-Party\nServices"
-  ]
-}
-
-Warehouse: "Data Warehouse (PostgreSQL)" {
-  shape: box
-  style.fill: "#f3e5f5"
-  children: [
-    Fact: "Fact Tables\n(Events - billions of rows)"
-    Dim: "Dimension Tables\n(Reference data)"
-    Agg: "Aggregate Tables\n(Pre-computed)"
-  ]
-}
-
-Server: "FraiseQL Server (OLAP Mode)" {
-  shape: box
-  style.fill: "#fff3e0"
-  children: [
-    Exec: "Executes analytical queries"
-    Scale: "Handles aggregations at scale"
-    Export: "Supports Arrow Flight for bulk exports"
-  ]
-}
-
-Consumers: "Data Consumers" {
-  shape: box
-  style.fill: "#c8e6c9"
-  children: [
-    Dashboard: "📊 Dashboards\n(React)"
-    Reports: "📄 Reports\n(PDF)"
-    Exports: "📥 Exports\n(Excel)"
-    RealTime: "🔴 Real-time\n(WebSocket)"
-  ]
-}
-
-Sources -> Warehouse: "ETL/ELT"
-Warehouse -> Server: "GraphQL OLAP queries"
-Server -> Consumers: "Results"
-```text
-<!-- Code example in TEXT -->
+This guide shows how to build an OLAP-style analytics and business-intelligence
+platform on top of FraiseQL. Everything here is **PostgreSQL-only** and runs at
+**application runtime** — there is no compile step, no columnar engine, and no
+separate analytics server. You model your analytics in PostgreSQL (fact and
+dimension tables you maintain via ETL, plus `v_`/`tv_` read views), and FraiseQL
+serves them as a GraphQL API. When a query selects dimensions and measures,
+FraiseQL derives the `GROUP BY` + aggregate SQL automatically at runtime.
 
 ---
 
-## Schema Design: FraiseQL Fact Tables (Denormalized OLAP)
+## How FraiseQL Fits OLAP
 
-FraiseQL uses a **denormalized fact table pattern** optimized for fast analytics without expensive joins:
+| Concern | Where it lives |
+|---------|----------------|
+| Raw events / fact rows | PostgreSQL tables you load via ETL (e.g. `tb_event`) |
+| Reference / dimension data | PostgreSQL dimension tables (e.g. `tb_dim_product`) |
+| Read model exposed to GraphQL | `v_` views (logical) or `tv_` projection tables (pre-composed) |
+| Aggregation (`GROUP BY` + `SUM`/`AVG`/…) | Derived at **runtime** by FraiseQL from the selected fields |
+| Heavy pre-computed rollups | Aggregate tables / materialized views you refresh on a schedule |
 
-**Diagram: Analytics Pattern** - Denormalized fact table design with JSONB dimensions
-
-```d2
-<!-- Code example in D2 Diagram -->
-direction: right
-
-FactTable: "tf_events\n(Fact Table)" {
-  shape: box
-  style.fill: "#fff59d"
-  style.border: "3px solid #f57f17"
-  children: [
-    Measures: "Measures (SQL columns)\nrevenue, quantity, sessions"
-    Dimensions: "Dimensions (JSONB)\nuser, product, category, region"
-    Filters: "Filters (Indexed)\nuser_id, occurred_at"
-  ]
-}
-
-Benefits: "✅ No expensive joins\n✅ Flexible dimensions\n✅ Fast GROUP BY" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-FactTable -> Benefits
-```text
-<!-- Code example in TEXT -->
-
-**Why FraiseQL's Pattern?**
-
-| Aspect | Traditional Star Schema | FraiseQL Fact Tables |
-|--------|----------------------|-------------------|
-| **Structure** | Fact table + multiple dimension tables | Single denormalized fact table |
-| **Joins** | Multiple expensive joins per query | No joins needed |
-| **Dimensions** | Fixed schema columns | JSONB with flexible schema |
-| **Query Speed** | Slower (N joins) | Faster (no joins) |
-| **Schema Flexibility** | Hard to add dimensions | Easy (JSONB expansion) |
+FraiseQL's reads always go through a view (or `tv_` projection table) that exposes
+a public `id` column and a `data` JSONB column built with `jsonb_build_object(...)`.
+The internal `pk_*`/`fk_*` BIGINT keys used for fast joins are **never** exposed and
+**never** placed inside `data`.
 
 ---
 
-### Fact Tables (tf_events)
+## Runtime Auto-Aggregation
 
-FraiseQL fact tables follow a three-part structure:
+This is the core OLAP capability. When a GraphQL query against a view-backed type
+selects aggregate fields, FraiseQL builds the `GROUP BY` and the aggregate
+expressions for you at runtime — no compiler, no plan artifacts, no special
+decorator. The supported PostgreSQL aggregates are:
+
+`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `STDDEV`, `VARIANCE`
+
+You declare which measures a view-backed type can aggregate, and which fields act
+as group-by dimensions, when you register the type for its view:
+
+```python
+import fraiseql
+from fraiseql.types import ID, Date
+
+@fraiseql.type(sql_source="v_event", jsonb_column="data")
+class Event:
+    """A single analytics event, read from v_event."""
+    id: ID
+    event_date: Date
+    product_id: str
+    category: str
+    region: str
+    source: str
+    device_type: str
+    revenue: float
+    quantity: int
+    sessions: int
+```
+
+```python
+from fraiseql import register_type_for_view
+
+# Declare the aggregations FraiseQL may derive at runtime for this view.
+register_type_for_view(
+    Event,
+    view_name="v_event",
+    aggregation={
+        "group_by": ["event_date", "product_id", "category", "region", "source"],
+        "measures": {
+            "revenue": ["SUM", "AVG", "MIN", "MAX"],
+            "quantity": ["SUM", "AVG"],
+            "sessions": ["SUM"],
+            "id": ["COUNT"],
+        },
+    },
+)
+```
+
+A GraphQL query then picks the dimensions and measures it wants, and FraiseQL
+derives the SQL:
+
+```graphql
+query RevenueByProduct($start: Date!, $end: Date!) {
+  events(
+    where: { eventDate: { gte: $start, lte: $end } }
+    groupBy: [PRODUCT_ID, CATEGORY]
+  ) {
+    productId
+    category
+    revenueSum
+    revenueAvg
+    quantitySum
+    count
+  }
+}
+```
+
+FraiseQL's repository (`_derive_auto_aggregation` / `_parse_aggregation_expr` in
+`db.py`) turns the selected dimensions into a `GROUP BY` clause and the selected
+measures into the matching aggregate expressions, then executes the query against
+`v_event`. The `where` clause maps to a parameterized `WHERE` on the view.
+
+> All aggregation is plain PostgreSQL. Anything you can express with `GROUP BY`,
+> `HAVING`, `FILTER (WHERE …)`, and window functions can be embedded in the view
+> SQL; FraiseQL's auto-aggregation handles the common dimension/measure rollups
+> on top of that.
+
+---
+
+## Schema Design: Fact and Dimension Tables
+
+The classic OLAP modelling pattern works directly in PostgreSQL. You maintain the
+fact and dimension tables through your own ETL/load process, and FraiseQL reads
+them through views.
+
+### Fact Table
+
+A fact table holds the numeric measures plus the foreign keys (or denormalized
+dimension values) needed to slice them.
 
 ```sql
-<!-- Code example in SQL -->
--- Fact table with measures, JSONB dimensions, and indexed filters
-CREATE TABLE tf_events (
-  -- Row identifier
-  event_id BIGSERIAL PRIMARY KEY,
+CREATE TABLE tb_event (
+    pk_event       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id             UUID NOT NULL DEFAULT gen_random_uuid(),
 
-  -- MEASURES: Numeric columns for fast aggregation
-  revenue DECIMAL(12, 2),
-  quantity INT,
-  cost DECIMAL(12, 2),
-  sessions INT,
+    -- Measures: numeric columns for fast aggregation
+    revenue        NUMERIC(12, 2),
+    quantity       INT,
+    cost           NUMERIC(12, 2),
+    sessions       INT,
 
-  -- DIMENSIONS: JSONB for flexible GROUP BY
-  -- Contains: user_category, product, region, country, utm_source, etc.
-  data JSONB NOT NULL,
+    -- Dimensions: foreign keys to dimension tables + flexible JSONB attributes
+    fk_product     BIGINT REFERENCES tb_dim_product (pk_product),
+    fk_user        BIGINT REFERENCES tb_dim_user (pk_user),
+    attributes     JSONB NOT NULL DEFAULT '{}'::jsonb,  -- utm_source, device, etc.
 
-  -- FILTERS: Indexed denormalized columns for fast WHERE
-  user_id UUID NOT NULL,
-  occurred_at TIMESTAMP NOT NULL,
-
-  -- Temporal partitioning
-  event_date DATE NOT NULL,  -- Partition key
-
-  -- Audit columns
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  -- Indexes for query performance
-  INDEX idx_event_date (event_date),
-  INDEX idx_user_id (user_id),
-  INDEX idx_occurred_at (occurred_at),
-  INDEX idx_data GIN (data)
+    -- Filters: indexed columns for fast WHERE / time-range scans
+    occurred_at    TIMESTAMPTZ NOT NULL,
+    event_date     DATE NOT NULL  -- partition key
 ) PARTITION BY RANGE (event_date);
 
--- Create monthly partitions
-CREATE TABLE tf_events_2024_01 PARTITION OF tf_events
-  FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-CREATE TABLE tf_events_2024_02 PARTITION OF tf_events
-  FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
--- ... continue for each month
-```text
-<!-- Code example in TEXT -->
+CREATE TABLE tb_event_2026_01 PARTITION OF tb_event
+    FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE tb_event_2026_02 PARTITION OF tb_event
+    FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+-- ... one partition per period
 
-**Key components:**
+CREATE INDEX idx_event_date ON tb_event (event_date);
+CREATE INDEX idx_event_occurred_at ON tb_event (occurred_at);
+CREATE INDEX idx_event_attributes ON tb_event USING GIN (attributes);
+```
 
-1. **Measures** (numeric columns):
-   - `revenue`, `quantity`, `cost`, `sessions`
-   - Used in `SUM()`, `AVG()`, `COUNT()` aggregations
-   - Keep these as direct SQL columns for performance
+Notes on the columns:
 
-2. **Dimensions** (JSONB column):
-   - Single `data` JSONB column containing flexible schema
-   - Paths like `data->>'user_category'`, `data->>'product'`, `data->>'region'`
-   - Easy to add new dimensions without schema migration
-   - Query with operators: `->>` (text), `->` (JSON), `@>` (contains)
+1. **Measures** (`revenue`, `quantity`, `cost`, `sessions`): keep these as direct
+   numeric columns so `SUM`/`AVG`/`COUNT` stay fast.
+2. **Dimensions**: model stable, frequently-joined dimensions as foreign keys to
+   dimension tables; keep sparse or fast-evolving attributes in a `JSONB` column
+   so you can add slices without a schema migration.
+3. **Filters**: index the columns you filter on most (`event_date`,
+   `occurred_at`). Avoid hot WHERE predicates that have to dig into JSONB.
+4. **Partitioning**: range-partition by `event_date` so time-range queries only
+   scan the relevant partitions, and old partitions can be detached/archived.
 
-3. **Filters** (indexed columns):
-   - `user_id`, `occurred_at` - denormalized for fast WHERE
-   - Must be indexed: `INDEX idx_user_id (user_id)`
-   - Avoid searching these values in JSONB (slow)
-
-4. **Temporal structure**:
-   - Partition by `event_date` (monthly or daily)
-   - Improves query speed for time-range filters
-   - Enables archival of old partitions
-
-### Aggregate Tables (Pre-Computed)
+### Dimension Tables
 
 ```sql
-<!-- Code example in SQL -->
--- Daily aggregates (updated nightly)
-CREATE TABLE agg_daily_metrics (
-  date DATE NOT NULL,
-  product_id UUID NOT NULL,
-  country VARCHAR(2) NOT NULL,
-  metric_name VARCHAR(50) NOT NULL,
-  metric_value DECIMAL(15, 2),
-  event_count INT,
-  unique_users INT,
-  PRIMARY KEY (date, product_id, country, metric_name),
-
-  INDEX idx_date (date),
-  INDEX idx_product_id (product_id),
-  INDEX idx_country (country)
+CREATE TABLE tb_dim_product (
+    pk_product   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid(),
+    identifier   TEXT UNIQUE,            -- optional human-readable slug
+    product_name TEXT NOT NULL,
+    category     TEXT NOT NULL,
+    region       TEXT
 );
 
--- Hourly rolling aggregates (updated every hour)
-CREATE TABLE agg_hourly_metrics (
-  hour_timestamp TIMESTAMP NOT NULL,
-  product_id UUID NOT NULL,
-  source VARCHAR(100),
-  event_count INT,
-  revenue DECIMAL(12, 2),
-  unique_users INT,
-  PRIMARY KEY (hour_timestamp, product_id, source),
-
-  INDEX idx_timestamp (hour_timestamp),
-  INDEX idx_product_id (product_id)
+CREATE TABLE tb_dim_user (
+    pk_user      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid(),
+    signup_date  DATE NOT NULL,
+    country      VARCHAR(2)
 );
+```
 
--- Cohort Analysis Table
-CREATE TABLE agg_cohorts (
-  cohort_date DATE NOT NULL,
-  days_since_signup INT NOT NULL,
-  cohort_size INT,
-  retention_rate DECIMAL(5, 2),
-  revenue DECIMAL(12, 2),
-  PRIMARY KEY (cohort_date, days_since_signup)
+### Calendar / Date Dimension
+
+A date dimension is useful for fiscal periods, week numbers, and holiday flags.
+Compute the calendar attributes in your table or view SQL — they are a
+DBA/ETL responsibility, not something FraiseQL auto-detects.
+
+```sql
+CREATE TABLE tb_dim_date (
+    pk_date     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    date_value  DATE NOT NULL UNIQUE,
+    year        INT  NOT NULL,
+    quarter     INT  NOT NULL,
+    month       INT  NOT NULL,
+    week        INT  NOT NULL,
+    day_of_week INT  NOT NULL,
+    is_weekend  BOOLEAN NOT NULL,
+    is_holiday  BOOLEAN NOT NULL DEFAULT false
 );
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## FraiseQL OLAP Schema
+## Read Views
 
-FraiseQL uses a **fact table pattern** with measures (SQL columns) and dimensions (JSONB):
-
-```python
-<!-- Code example in Python -->
-# analytics_schema.py
-from FraiseQL import types
-from decimal import Decimal
-from datetime import datetime, date
-
-@types.fact_table(
-    table_name="tf_events",
-    measures=["revenue", "quantity", "sessions"],
-    dimension_column="data",
-    dimension_paths=[
-        {"name": "product_id", "json_path": "data->>'product_id'", "data_type": "text"},
-        {"name": "category", "json_path": "data->>'category'", "data_type": "text"},
-        {"name": "region", "json_path": "data->>'region'", "data_type": "text"},
-        {"name": "source", "json_path": "data->>'source'", "data_type": "text"},
-        {"name": "device_type", "json_path": "data->>'device_type'", "data_type": "text"},
-    ]
-)
-@types.object
-class Event:
-    """Event fact table - denormalized for fast analytics"""
-    event_id: UUID  # UUID v4 for GraphQL ID
-    event_date: date
-    event_timestamp: datetime
-
-    # MEASURES: Numeric columns for fast SUM/AVG/COUNT aggregation
-    revenue: Decimal | None              # NULL for non-purchase events
-    quantity: int | None                 # NULL for non-sale events
-    sessions: int | None                 # Session count
-
-    # DIMENSIONS: JSONB for flexible GROUP BY
-    # Includes: product_id, category, region, source, device_type
-    dimensions: dict                     # data JSONB column
-
-    # FILTERS: Indexed denormalized columns for fast WHERE clauses
-    user_id: str                         # Indexed for fast filtering
-    occurred_at: datetime                # Indexed for time-range queries
-```text
-<!-- Code example in TEXT -->
-
-**Schema mapping:**
-
-- `revenue`, `quantity`, `sessions` → **Measures** (direct columns, fast aggregation)
-- `dimensions` dict (JSONB column `data`) → **Dimensions** (flexible, no joins needed)
-- `user_id`, `occurred_at` → **Filters** (indexed for WHERE performance)
-
-```python
-<!-- Code example in Python -->
-@types.object
-class MetricResult:
-    """Metric aggregation result"""
-    dimension_value: str
-    event_count: int
-    revenue: Decimal
-    unique_users: int
-    conversion_rate: Decimal
-
-@types.object
-class CohortResult:
-    """Cohort analysis result"""
-    cohort_date: date
-    days_since_signup: int
-    cohort_size: int
-    retention_rate: Decimal
-    revenue: Decimal
-
-@types.object
-class Query:
-    # Time-series metrics
-    def daily_revenue(
-        self,
-        start_date: date,
-        end_date: date,
-        product_id: str | None = None,
-        country: str | None = None
-    ) -> list[dict]:
-        """Daily revenue over time period"""
-        pass
-
-    def hourly_events(
-        self,
-        date: date,
-        event_type: str | None = None
-    ) -> list[dict]:
-        """Hourly event breakdown for a day"""
-        pass
-
-    # Segmentation queries
-    def revenue_by_product(
-        self,
-        start_date: date,
-        end_date: date,
-        limit: int = 50
-    ) -> list[MetricResult]:
-        """Revenue segmented by product"""
-        pass
-
-    def conversion_by_source(
-        self,
-        start_date: date,
-        end_date: date
-    ) -> list[MetricResult]:
-        """Conversion rate by traffic source"""
-        pass
-
-    def customer_lifetime_value_distribution(
-        self,
-        country: str | None = None
-    ) -> list[dict]:
-        """Distribution of customer lifetime values"""
-        pass
-
-    # Cohort analysis
-    def retention_cohort(
-        self,
-        cohort_start: date,
-        cohort_end: date,
-        max_days: int = 90
-    ) -> list[CohortResult]:
-        """User retention by signup cohort"""
-        pass
-
-    # Funnel analysis
-    def conversion_funnel(
-        self,
-        start_date: date,
-        end_date: date,
-        steps: list[str]  # ['view', 'add_to_cart', 'purchase']
-    ) -> list[dict]:
-        """Funnel conversion analysis"""
-        pass
-
-    # Real-time metrics
-    def realtime_metrics(self) -> dict:
-        """Current real-time metrics (last 1 hour)"""
-        pass
-
-    # Drill-down queries
-    def product_details(
-        self,
-        product_id: str,
-        start_date: date,
-        end_date: date
-    ) -> dict:
-        """Deep-dive into single product performance"""
-        pass
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Complex OLAP Queries
-
-### Daily Revenue Trend
-
-```graphql
-<!-- Code example in GraphQL -->
-query DailyRevenue($startDate: Date!, $endDate: Date!, $productId: ID) {
-  dailyRevenue(startDate: $startDate, endDate: $endDate, productId: $productId) {
-    date
-    revenue
-    orders
-    average_order_value
-    unique_customers
-    returning_customer_percentage
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Corresponding SQL (generated by FraiseQL):**
+FraiseQL queries a `v_` view (or a `tv_` projection table), never the raw fact
+table directly. The view joins the dimensions you need and emits a `data` JSONB
+payload alongside the public `id`. Aggregations are derived on top of this view at
+runtime.
 
 ```sql
-<!-- Code example in SQL -->
+CREATE VIEW v_event AS
 SELECT
-  event_date as date,
-  SUM(revenue) as revenue,
-  COUNT(DISTINCT order_id) as orders,
-  AVG(revenue) as average_order_value,
-  COUNT(DISTINCT user_id) as unique_customers,
-  ROUND(
-    SUM(CASE WHEN is_returning THEN 1 ELSE 0 END)::NUMERIC / COUNT(DISTINCT user_id) * 100,
-    2
-  ) as returning_customer_percentage
-FROM events
-WHERE event_date BETWEEN $1 AND $2
-  AND event_type = 'purchase'
-  AND (product_id = $3 OR $3 IS NULL)
-GROUP BY event_date
-ORDER BY event_date DESC;
-```text
-<!-- Code example in TEXT -->
+    e.id,                               -- public UUID, required by FraiseQL
+    e.event_date,
+    e.occurred_at,
+    p.id          AS product_id,
+    p.category,
+    p.region,
+    e.attributes ->> 'source'      AS source,
+    e.attributes ->> 'device_type' AS device_type,
+    e.revenue,
+    e.quantity,
+    e.sessions,
+    jsonb_build_object(
+        'event_date',  e.event_date,
+        'product_id',  p.id,
+        'category',    p.category,
+        'region',      p.region,
+        'source',      e.attributes ->> 'source',
+        'device_type', e.attributes ->> 'device_type',
+        'revenue',     e.revenue,
+        'quantity',    e.quantity,
+        'sessions',    e.sessions
+    ) AS data
+FROM tb_event e
+LEFT JOIN tb_dim_product p ON p.pk_product = e.fk_product;
+```
 
-### Cohort Retention Analysis
+### `tv_` Projection Tables for Heavy Reads
 
-```graphql
-<!-- Code example in GraphQL -->
-query RetentionCohort($cohortStart: Date!, $cohortEnd: Date!, $maxDays: Int!) {
-  retentionCohort(cohortStart: $cohortStart, cohortEnd: $cohortEnd, maxDays: $maxDays) {
-    cohortDate
-    daysSinceSilgnup
-    cohortSize
-    retentionRate
-    revenue
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**SQL (complex multi-CTE query):**
+When a read is too expensive to compute per request — deep nesting, wide joins, or
+large rollups — materialize it into a `tv_` projection table: a real table holding
+pre-composed JSONB, refreshed by functions, triggers, or a schedule. FraiseQL
+queries a `tv_` table exactly like a `v_` view.
 
 ```sql
-<!-- Code example in SQL -->
+CREATE TABLE tv_daily_product_metrics (
+    id           UUID NOT NULL DEFAULT gen_random_uuid(),
+    metric_date  DATE NOT NULL,
+    product_id   UUID NOT NULL,
+    data         JSONB NOT NULL,        -- pre-composed payload
+    PRIMARY KEY (metric_date, product_id)
+);
+```
+
+---
+
+## Aggregation Patterns in View SQL
+
+Beyond the runtime auto-aggregation, the heavy lifting of OLAP lives in plain
+PostgreSQL that you embed in your `v_`/`tv_` views.
+
+### Time Bucketing with `DATE_TRUNC`
+
+```sql
+SELECT
+    DATE_TRUNC('day', e.occurred_at)::DATE AS bucket,
+    SUM(e.revenue)                          AS revenue,
+    COUNT(*)                                AS events,
+    AVG(e.revenue)                          AS avg_order_value
+FROM tb_event e
+WHERE e.event_date BETWEEN $1 AND $2
+GROUP BY DATE_TRUNC('day', e.occurred_at)
+ORDER BY bucket;
+```
+
+### Conditional Aggregates with `FILTER (WHERE …)`
+
+`FILTER` computes several conditional measures in a single scan — ideal for funnel
+and segmentation reporting.
+
+```sql
+SELECT
+    p.category,
+    COUNT(*) FILTER (WHERE e.attributes ->> 'step' = 'view')        AS views,
+    COUNT(*) FILTER (WHERE e.attributes ->> 'step' = 'add_to_cart') AS add_to_cart,
+    COUNT(*) FILTER (WHERE e.attributes ->> 'step' = 'purchase')    AS purchases,
+    SUM(e.revenue) FILTER (WHERE e.attributes ->> 'step' = 'purchase') AS revenue
+FROM tb_event e
+JOIN tb_dim_product p ON p.pk_product = e.fk_product
+WHERE e.event_date BETWEEN $1 AND $2
+GROUP BY p.category;
+```
+
+### Window Functions
+
+Window functions (`ROW_NUMBER`, `RANK`, `LAG`, `LEAD`, running totals over
+`OVER (PARTITION BY …)`) are standard PostgreSQL. Embed them in your view SQL when
+you need rankings, period-over-period deltas, or moving aggregates.
+
+```sql
+CREATE VIEW v_daily_revenue_trend AS
+SELECT
+    gen_random_uuid() AS id,
+    bucket            AS event_date,
+    revenue,
+    revenue - LAG(revenue) OVER (ORDER BY bucket)                 AS revenue_delta,
+    AVG(revenue) OVER (ORDER BY bucket ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+                                                                  AS revenue_7d_avg,
+    jsonb_build_object(
+        'event_date',     bucket,
+        'revenue',        revenue,
+        'revenue_delta',  revenue - LAG(revenue) OVER (ORDER BY bucket)
+    ) AS data
+FROM (
+    SELECT DATE_TRUNC('day', occurred_at)::DATE AS bucket, SUM(revenue) AS revenue
+    FROM tb_event
+    GROUP BY DATE_TRUNC('day', occurred_at)
+) daily;
+```
+
+### Cohort Retention
+
+Cohort analysis is a multi-CTE query you wrap in a view (or a `tv_` projection
+table if it is expensive):
+
+```sql
+CREATE VIEW v_retention_cohort AS
 WITH cohort_users AS (
-  SELECT
-    DATE_TRUNC('month', signup_date)::DATE as cohort_date,
-    user_id
-  FROM dim_users
-  WHERE signup_date BETWEEN $1 AND $2
+    SELECT DATE_TRUNC('month', u.signup_date)::DATE AS cohort_date, u.pk_user
+    FROM tb_dim_user u
 ),
-user_activities AS (
-  SELECT
-    cu.cohort_date,
-    cu.user_id,
-    EXTRACT(DAY FROM e.event_date - cu.cohort_date)::INT as days_since_signup,
-    SUM(e.revenue) as daily_revenue
-  FROM cohort_users cu
-  JOIN events e ON cu.user_id = e.user_id
-  WHERE e.event_date >= cu.cohort_date
-  GROUP BY cu.cohort_date, cu.user_id, EXTRACT(DAY FROM e.event_date - cu.cohort_date)
+activity AS (
+    SELECT
+        c.cohort_date,
+        c.pk_user,
+        (e.event_date - c.cohort_date)::INT AS days_since_signup
+    FROM cohort_users c
+    JOIN tb_event e ON e.fk_user = c.pk_user AND e.event_date >= c.cohort_date
 )
 SELECT
-  cohort_date,
-  days_since_signup,
-  COUNT(DISTINCT CASE WHEN days_since_signup = 0 THEN user_id END) as cohort_size,
-  ROUND(
-    COUNT(DISTINCT user_id)::NUMERIC /
-    COUNT(DISTINCT CASE WHEN days_since_signup = 0 THEN user_id END) * 100,
-    2
-  ) as retention_rate,
-  COALESCE(SUM(daily_revenue), 0) as revenue
-FROM user_activities
-WHERE days_since_signup BETWEEN 0 AND $3
-GROUP BY cohort_date, days_since_signup
-ORDER BY cohort_date, days_since_signup;
-```text
-<!-- Code example in TEXT -->
-
-### Funnel Conversion Analysis
-
-```graphql
-<!-- Code example in GraphQL -->
-query ConversionFunnel(
-  $startDate: Date!
-  $endDate: Date!
-  $steps: [String!]!
-) {
-  conversionFunnel(startDate: $startDate, endDate: $endDate, steps: $steps) {
-    step
-    users
-    dropoff
-    conversionRate
-  }
-}
-```text
-<!-- Code example in TEXT -->
+    gen_random_uuid() AS id,
+    cohort_date,
+    days_since_signup,
+    COUNT(DISTINCT pk_user) FILTER (WHERE days_since_signup = 0) AS cohort_size,
+    ROUND(
+        COUNT(DISTINCT pk_user)::NUMERIC
+        / NULLIF(COUNT(DISTINCT pk_user) FILTER (WHERE days_since_signup = 0), 0)
+        * 100, 2
+    ) AS retention_rate,
+    jsonb_build_object(
+        'cohort_date',       cohort_date,
+        'days_since_signup', days_since_signup
+    ) AS data
+FROM activity
+GROUP BY cohort_date, days_since_signup;
+```
 
 ---
 
-## Performance Optimization Strategies
+## Exposing the Analytics API
 
-### 1. Pre-Computed Aggregates
+Define the view-backed types and the queries that read them, then build the app.
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID, Date
+
+
+@fraiseql.type(sql_source="v_daily_revenue_trend", jsonb_column="data")
+class DailyRevenue:
+    id: ID
+    event_date: Date
+    revenue: float
+    revenue_delta: float | None
+
+
+@fraiseql.query
+async def daily_revenue(info, start: Date, end: Date) -> list[DailyRevenue]:
+    """Daily revenue trend over a date range."""
+    db = info.context["db"]
+    return await db.find(
+        "v_daily_revenue_trend",
+        where={"event_date": {"gte": start, "lte": end}},
+    )
+
+
+@fraiseql.query
+async def revenue_by_product(info, start: Date, end: Date) -> list[Event]:
+    """Revenue segmented by product, aggregated at runtime."""
+    db = info.context["db"]
+    return await db.find(
+        "v_event",
+        where={"event_date": {"gte": start, "lte": end}},
+    )
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/analytics",
+    types=[Event, DailyRevenue],
+    queries=[daily_revenue, revenue_by_product],
+    production=True,  # False enables the GraphQL playground
+)
+```
+
+Run it with any ASGI server:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+## Performance Optimization
+
+### Pre-Computed Aggregate Tables
+
+For dashboards that hit the same rollups repeatedly, refresh an aggregate table on
+a schedule and expose it through a `tv_`/`v_` view.
 
 ```sql
-<!-- Code example in SQL -->
--- Refresh aggregates nightly
-CREATE OR REPLACE FUNCTION refresh_daily_aggregates()
+CREATE OR REPLACE FUNCTION fn_refresh_daily_aggregates()
 RETURNS void AS $$
 BEGIN
-  DELETE FROM agg_daily_metrics
-  WHERE date >= CURRENT_DATE - INTERVAL '1 day';
+    DELETE FROM tv_daily_product_metrics
+    WHERE metric_date >= CURRENT_DATE - INTERVAL '1 day';
 
-  INSERT INTO agg_daily_metrics
-  SELECT
-    event_date,
-    product_id,
-    country,
-    'revenue' as metric_name,
-    SUM(revenue) as metric_value,
-    COUNT(*) as event_count,
-    COUNT(DISTINCT user_id) as unique_users
-  FROM events
-  WHERE event_date >= CURRENT_DATE - INTERVAL '30 days'
-  GROUP BY event_date, product_id, country
-  UNION ALL
-  SELECT
-    event_date,
-    product_id,
-    country,
-    'events' as metric_name,
-    COUNT(*),
-    COUNT(*),
-    COUNT(DISTINCT user_id)
-  FROM events
-  WHERE event_date >= CURRENT_DATE - INTERVAL '30 days'
-  GROUP BY event_date, product_id, country;
+    INSERT INTO tv_daily_product_metrics (metric_date, product_id, data)
+    SELECT
+        e.event_date,
+        p.id,
+        jsonb_build_object(
+            'revenue',      SUM(e.revenue),
+            'event_count',  COUNT(*),
+            'unique_users', COUNT(DISTINCT e.fk_user)
+        )
+    FROM tb_event e
+    JOIN tb_dim_product p ON p.pk_product = e.fk_product
+    WHERE e.event_date >= CURRENT_DATE - INTERVAL '30 days'
+    GROUP BY e.event_date, p.id;
 END;
 $$ LANGUAGE plpgsql;
 
--- Schedule with cron (pg_cron extension)
-SELECT cron.schedule('refresh_daily_aggregates', '0 2 * * *', 'SELECT refresh_daily_aggregates()');
-```text
-<!-- Code example in TEXT -->
+-- Schedule nightly with pg_cron
+SELECT cron.schedule(
+    'refresh_daily_aggregates', '0 2 * * *',
+    'SELECT fn_refresh_daily_aggregates()'
+);
+```
 
-### 2. Partition Pruning
+### Partition Pruning
 
-Queries are automatically optimized by date:
-
-```sql
-<!-- Code example in SQL -->
--- Only scans relevant partitions
-SELECT * FROM events
-WHERE event_date BETWEEN '2024-06-01' AND '2024-06-30';
--- ↑ Only queries events_2024_06 partition
-```text
-<!-- Code example in TEXT -->
-
-### 3. Materialized Views
+Range-partitioning by `event_date` lets PostgreSQL skip irrelevant partitions:
 
 ```sql
-<!-- Code example in SQL -->
--- Fast views for common queries
+-- Only scans the January 2026 partition
+SELECT SUM(revenue) FROM tb_event
+WHERE event_date BETWEEN '2026-01-01' AND '2026-01-31';
+```
+
+### Materialized Views
+
+For expensive, slow-changing rollups, a materialized view refreshed
+concurrently keeps reads fast:
+
+```sql
 CREATE MATERIALIZED VIEW mv_top_products_by_revenue AS
 SELECT
-  p.product_id,
-  p.product_name,
-  SUM(e.revenue) as total_revenue,
-  COUNT(DISTINCT e.user_id) as unique_customers,
-  COUNT(*) as event_count
-FROM events e
-JOIN dim_products p ON e.product_id = p.product_id
+    p.id          AS product_id,
+    p.product_name,
+    SUM(e.revenue) AS total_revenue,
+    COUNT(DISTINCT e.fk_user) AS unique_customers
+FROM tb_event e
+JOIN tb_dim_product p ON p.pk_product = e.fk_product
 WHERE e.event_date >= CURRENT_DATE - INTERVAL '30 days'
-GROUP BY p.product_id, p.product_name
+GROUP BY p.id, p.product_name
 ORDER BY total_revenue DESC
 LIMIT 100;
 
--- Refresh hourly
-SELECT cron.schedule('refresh_mv_top_products', '0 * * * *', 'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_top_products_by_revenue');
+CREATE UNIQUE INDEX idx_mv_top_products ON mv_top_products_by_revenue (product_id);
 
-CREATE INDEX idx_mv_top_products_revenue ON mv_top_products_by_revenue(total_revenue DESC);
-```text
-<!-- Code example in TEXT -->
+SELECT cron.schedule(
+    'refresh_mv_top_products', '0 * * * *',
+    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_top_products_by_revenue'
+);
+```
 
-### 4. Columnar Storage (Citus/Timescale Extension)
+---
 
-For very large fact tables:
+## Real-Time Metrics with Subscriptions
+
+For a live dashboard, expose a subscription whose async-generator resolver yields
+the latest metrics. The generator can poll a recent-window aggregate or be driven
+by PostgreSQL `LISTEN/NOTIFY`; FraiseQL streams whatever it yields over WebSocket.
+
+```python
+import asyncio
+from collections.abc import AsyncGenerator
+
+import fraiseql
+
+
+@fraiseql.subscription
+async def realtime_metrics(info) -> AsyncGenerator[dict, None]:
+    """Stream rolling metrics for the last hour every 10 seconds."""
+    db = info.context["db"]
+    while True:
+        rows = await db.find("v_realtime_metrics")
+        yield rows[0] if rows else {}
+        await asyncio.sleep(10)
+```
+
+Back `v_realtime_metrics` with a view that aggregates the trailing window:
 
 ```sql
-<!-- Code example in SQL -->
--- Create hypertable (TimescaleDB)
-CREATE TABLE events (
-  event_timestamp TIMESTAMP NOT NULL,
-  user_id UUID,
-  event_type VARCHAR(50),
-  revenue DECIMAL(12, 2)
-) WITH (timescaledb.compress);
-
--- Compress old data automatically
-SELECT add_compression_policy('events', INTERVAL '7 days');
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Real-Time Subscriptions
-
-### Live Metrics Dashboard
-
-```graphql
-<!-- Code example in GraphQL -->
-subscription RealtimeMetrics {
-  realtimeMetrics {
-    timestamp
-    events_per_minute
-    revenue_per_minute
-    active_users
-    top_event_type
-    top_country
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Implementation:**
-
-```python
-<!-- Code example in Python -->
-@types.subscription
-class Subscription:
-    def realtime_metrics(self) -> dict:
-        """Stream updates every 10 seconds"""
-        # Queries the last 1-hour aggregates
-        # Emits when new data arrives
-        pass
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Export Capabilities
-
-### CSV Export
-
-```graphql
-<!-- Code example in GraphQL -->
-query ExportDailyRevenue($startDate: Date!, $endDate: Date!) {
-  exportDailyRevenue(startDate: $startDate, endDate: $endDate, format: CSV) {
-    url  # Pre-signed S3 URL
-    size_bytes
-    created_at
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### Arrow Flight Export (Bulk Data)
-
-```graphql
-<!-- Code example in GraphQL -->
-query ExportArrowFlight($startDate: Date!, $endDate: Date!) {
-  exportArrowFlight(startDate: $startDate, endDate: $endDate) {
-    arrow_endpoint  # Arrow Flight server endpoint
-    query_id
-    row_count
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Client Usage:**
-
-```python
-<!-- Code example in Python -->
-import pyarrow.flight as flight
-import pandas as pd
-
-# Connect to Arrow Flight server
-client = flight.connect(('localhost', 5005))
-
-# Fetch large dataset
-flight_descriptor = flight.FlightDescriptor.for_command(
-    query_id.encode('utf-8')
-)
-reader = client.do_get(flight_descriptor)
-
-# Read into pandas
-table = reader.read_all()
-df = table.to_pandas()
-
-# Write to Parquet
-df.to_parquet('export.parquet')
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Dashboard Implementation (React)
-
-```typescript
-<!-- Code example in TypeScript -->
-import { useQuery, gql } from '@apollo/client';
-import { LineChart, PieChart } from 'recharts';
-
-const DAILY_REVENUE = gql`
-  query DailyRevenue($startDate: Date!, $endDate: Date!) {
-    dailyRevenue(startDate: $startDate, endDate: $endDate) {
-      date
-      revenue
-      orders
-    }
-  }
-`;
-
-export function AnalyticsDashboard() {
-  const [dateRange, setDateRange] = useState({
-    start: subDays(new Date(), 30),
-    end: new Date(),
-  });
-
-  const { data, loading } = useQuery(DAILY_REVENUE, {
-    variables: {
-      startDate: format(dateRange.start, 'yyyy-MM-dd'),
-      endDate: format(dateRange.end, 'yyyy-MM-dd'),
-    },
-    fetchPolicy: 'cache-and-network',
-  });
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <div className="dashboard">
-      <DateRangePicker onChange={setDateRange} />
-      <LineChart data={data?.dailyRevenue}>
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Line type="monotone" dataKey="revenue" />
-      </LineChart>
-      <KPICards data={data} />
-    </div>
-  );
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Testing Analytical Queries
-
-```typescript
-<!-- Code example in TypeScript -->
-describe('Analytical Queries', () => {
-  it('should calculate daily revenue', async () => {
-    const result = await client.query(DAILY_REVENUE, {
-      variables: {
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-      },
-    });
-
-    expect(result.data.dailyRevenue).toHaveLength(31);
-    expect(result.data.dailyRevenue[0]).toHaveProperty('revenue');
-    expect(result.data.dailyRevenue[0].revenue).toBeGreaterThan(0);
-  });
-
-  it('should handle date filtering', async () => {
-    const result = await client.query(DAILY_REVENUE, {
-      variables: {
-        startDate: '2024-06-15',
-        endDate: '2024-06-20',
-      },
-    });
-
-    expect(result.data.dailyRevenue.length).toBeLessThanOrEqual(6);
-    result.data.dailyRevenue.forEach((day: any) => {
-      expect(day.date).toBeGreaterThanOrEqual('2024-06-15');
-      expect(day.date).toBeLessThanOrEqual('2024-06-20');
-    });
-  });
-
-  it('should calculate cohort retention correctly', async () => {
-    const result = await client.query(RETENTION_COHORT, {
-      variables: {
-        cohortStart: '2024-01-01',
-        cohortEnd: '2024-02-01',
-        maxDays: 30,
-      },
-    });
-
-    // Retention rate should decrease over time
-    const rates = result.data.retentionCohort.map(c => c.retention_rate);
-    for (let i = 1; i < rates.length; i++) {
-      expect(rates[i]).toBeLessThanOrEqual(rates[i - 1]);
-    }
-  });
-});
-```text
-<!-- Code example in TEXT -->
+CREATE VIEW v_realtime_metrics AS
+SELECT
+    gen_random_uuid() AS id,
+    COUNT(*)          AS events_last_hour,
+    SUM(revenue)      AS revenue_last_hour,
+    COUNT(DISTINCT fk_user) AS active_users,
+    jsonb_build_object(
+        'events_last_hour',  COUNT(*),
+        'revenue_last_hour', SUM(revenue),
+        'active_users',      COUNT(DISTINCT fk_user)
+    ) AS data
+FROM tb_event
+WHERE occurred_at >= NOW() - INTERVAL '1 hour';
+```
 
 ---
 
 ## Monitoring Analytical Performance
 
+Use `pg_stat_statements` to find the slowest analytical queries and the views that
+need a `tv_` projection or an extra index:
+
 ```sql
-<!-- Code example in SQL -->
--- Track slow analytical queries
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
-SELECT
-  query,
-  calls,
-  mean_exec_time,
-  max_exec_time
+SELECT query, calls, mean_exec_time, max_exec_time
 FROM pg_stat_statements
-WHERE query LIKE '%events%'
+WHERE query ILIKE '%v_event%'
 ORDER BY mean_exec_time DESC
 LIMIT 20;
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -836,20 +569,18 @@ LIMIT 20;
 
 **Related Patterns:**
 
-- [Multi-Tenant SaaS](./saas-multi-tenant.md) - Per-tenant analytics
-- [IoT Time-Series](./iot-timeseries.md) - Specialized time-series
+- [Patterns Overview](./README.md)
+- [Multi-Tenant SaaS](./saas-multi-tenant.md) — per-tenant analytics with RLS
+- [IoT Time-Series](./iot-timeseries.md) — specialized time-series ingestion and bucketing
 
-**Performance Guides:**
+**Architecture:**
+
+- [Aggregation Model](../architecture/analytics/aggregation-model.md)
+- [Fact/Dimension Pattern](../architecture/analytics/fact-dimension-pattern.md)
+- [`tv_` Table Pattern](../architecture/database/tv-table-pattern.md)
+
+**Guides:**
 
 - [Performance Optimization](../guides/performance-optimization.md)
-- [Query Optimization](../guides/schema-design-best-practices.md)
-
-**Deployment:**
-
+- [Schema Design Best Practices](../guides/schema-design-best-practices.md)
 - [Production Deployment](../guides/production-deployment.md)
-- [Scaling Guidelines](../guides/monitoring.md)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

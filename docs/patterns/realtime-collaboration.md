@@ -1,391 +1,762 @@
-<!-- Skip to main content -->
 ---
-
 title: Real-Time Collaboration with Subscriptions
-description: Complete guide to building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]
+description: Blueprint for building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions backed by PostgreSQL LISTEN/NOTIFY.
+keywords: ["realtime", "collaboration", "subscriptions", "websocket", "postgresql", "listen-notify"]
+tags: ["documentation", "patterns"]
 ---
 
 # Real-Time Collaboration with Subscriptions
 
-**Status:** ✅ Production Ready
-**Complexity:** ⭐⭐⭐⭐ (Advanced)
+**Status:** Production Ready
+**Complexity:** Advanced
 **Audience:** Frontend architects, real-time systems engineers
 **Reading Time:** 25-30 minutes
-**Last Updated:** 2026-02-05
 
-Complete guide to building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions.
+Blueprint for building collaborative tools (like Google Docs, Figma, Notion) with
+real-time synchronization using FraiseQL subscriptions.
+
+In FraiseQL v1 a subscription is an **async-generator resolver** served over a
+GraphQL WebSocket connection. You write the generator; FraiseQL streams whatever it
+yields to the subscribed client. The natural event source for collaboration is
+PostgreSQL **`LISTEN`/`NOTIFY`**: a trigger on a write table emits `NOTIFY` on a
+channel, and the resolver `async for`s those notifications, re-reads a read view,
+and `yield`s the fresh value. Everything — documents, operations, presence, comments
+— lives in PostgreSQL.
 
 ---
 
 ## Architecture Overview
 
-**Diagram: Real-Time Architecture** - WebSocket-based collaboration with presence tracking
-
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
-
-Users: "Collaborators" {
-  shape: box
-  style.fill: "#e3f2fd"
-  children: [
-    UserA: "👤 User A\n(Editor)"
-    UserB: "👤 User B\n(Editor)"
-    UserC: "👤 User C\n(Viewer)"
-  ]
-}
-
-Server: "WebSocket Server\n(FraiseQL Rust)" {
-  shape: box
-  style.fill: "#f3e5f5"
-  style.border: "2px solid #7b1fa2"
-}
-
-Operations: "Mutations\n(operations)" {
-  shape: box
-  style.fill: "#fff3e0"
-}
-
-Subscriptions: "Subscriptions\n(live updates)" {
-  shape: box
-  style.fill: "#f1f8e9"
-}
-
-Presence: "Presence\n(who's online)" {
-  shape: box
-  style.fill: "#ffe0b2"
-}
-
-Database: "PostgreSQL" {
-  shape: box
-  style.fill: "#c8e6c9"
-  children: [
-    Docs: "📄 Documents"
-    Ops: "📝 Operations log"
-    Changes: "📋 Changes (CRDT)"
-  ]
-}
-
-Users -> Server: "WebSocket"
-Server -> Operations
-Server -> Subscriptions
-Server -> Presence
-Operations -> Database: "Write operations"
-Subscriptions -> Database: "Subscribe to changes"
-Presence -> Database: "Update presence"
-Database -> Server: "Broadcast updates"
-Server -> Users: "Real-time sync"
 ```text
-<!-- Code example in TEXT -->
+Collaborators (browsers)
+        |   GraphQL over WebSocket (graphql-transport-ws)
+        v
+FastAPI app  (create_fraiseql_app)
+  - @fraiseql.query      reads v_/tv_ views
+  - @fraiseql.mutation   calls fn_ functions (which also NOTIFY)
+  - @fraiseql.subscription  async generators: LISTEN a channel -> re-read view -> yield
+        |
+        v
+PostgreSQL
+  - tb_document, tb_document_change, tb_presence, tb_comment   (write tables)
+  - triggers: AFTER INSERT/UPDATE -> NOTIFY <channel>, <id>
+  - v_document, v_document_change, v_presence, v_comment       (read views, data JSONB)
+  - fn_apply_operation, fn_update_presence, fn_add_comment     (write functions)
+```
+
+The flow for a single edit:
+
+1. A client sends an `applyOperation` **mutation**. The resolver calls a `fn_` function
+   that writes a row into `tb_document_change` and updates `tb_document`.
+2. A PostgreSQL **trigger** on `tb_document_change` issues
+   `NOTIFY document_change, '<document_id>'`.
+3. Every **subscription** resolver that is `LISTEN`-ing on the `document_change`
+   channel for that document wakes up, re-reads `v_document_change`, and `yield`s the
+   new change.
+4. FraiseQL pushes the yielded payload down each subscribed WebSocket to the other
+   collaborators.
+
+There is no external broker. PostgreSQL is the source of truth and the message bus.
 
 ---
 
 ## Schema Design
 
-### Document Model
+FraiseQL's convention separates the normalized write tables (`tb_`) from the read
+views (`v_`) that build a `data` JSONB column. Internal `pk_` keys stay hidden; the
+public surface is the `id` UUID.
+
+### Write tables
 
 ```sql
-<!-- Code example in SQL -->
 -- Documents (editable items)
-CREATE TABLE documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  workspace_id UUID NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  content_type VARCHAR(50) NOT NULL,  -- text, rich-text, spreadsheet, drawing
-  created_by UUID NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  deleted_at TIMESTAMP,  -- Soft delete
-
-  INDEX idx_workspace_id (workspace_id),
-  INDEX idx_updated_at (updated_at)
+CREATE TABLE tb_document (
+    pk_document   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id            UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    workspace_id  UUID NOT NULL,
+    title         TEXT NOT NULL,
+    content_type  TEXT NOT NULL,          -- text, rich-text, spreadsheet, drawing
+    content       TEXT NOT NULL DEFAULT '',
+    created_by    UUID NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at    TIMESTAMPTZ              -- soft delete
 );
+CREATE INDEX idx_document_workspace ON tb_document (workspace_id);
+CREATE INDEX idx_document_updated   ON tb_document (updated_at);
 
 -- Permissions (who can edit/view)
-CREATE TABLE document_permissions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  permission VARCHAR(50) NOT NULL,  -- view, edit, comment, manage
-  granted_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(document_id, user_id),
-  INDEX idx_document_id (document_id)
+CREATE TABLE tb_document_permission (
+    pk_document_permission BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_document  BIGINT NOT NULL REFERENCES tb_document (pk_document) ON DELETE CASCADE,
+    user_id      UUID NOT NULL,
+    permission   TEXT NOT NULL,           -- view, edit, comment, manage
+    granted_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (fk_document, user_id)
 );
 
--- Changes/Operations (for CRDT - Conflict-free Replicated Data Type)
-CREATE TABLE document_changes (
-  id BIGSERIAL PRIMARY KEY,
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  operation JSONB NOT NULL,  -- { type: 'insert', position: 100, content: 'text' }
-  vector_clock JSONB NOT NULL,  -- For CRDT: { user_1: 5, user_2: 3 }
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_document_id (document_id),
-  INDEX idx_created_at (created_at)
+-- Changes / operations (one row per edit)
+CREATE TABLE tb_document_change (
+    pk_document_change BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_document  BIGINT NOT NULL REFERENCES tb_document (pk_document) ON DELETE CASCADE,
+    user_id      UUID NOT NULL,
+    operation    JSONB NOT NULL,          -- { "type": "insert", "position": 100, "content": "text" }
+    vector_clock JSONB NOT NULL,          -- causality, e.g. { "user_1": 5, "user_2": 3 }
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_change_document ON tb_document_change (fk_document, pk_document_change);
 
--- Activity Stream (for showing what's happening)
-CREATE TABLE document_activity (
-  id BIGSERIAL PRIMARY KEY,
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  activity_type VARCHAR(50) NOT NULL,  -- edit, comment, join, leave
-  metadata JSONB,
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_document_id (document_id),
-  INDEX idx_created_at (created_at)
+-- Presence (who is currently editing)
+CREATE TABLE tb_presence (
+    pk_presence  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_document  BIGINT NOT NULL REFERENCES tb_document (pk_document) ON DELETE CASCADE,
+    user_id      UUID NOT NULL,
+    cursor_position INT,
+    selection_start INT,
+    selection_end   INT,
+    color        TEXT,                     -- "#FF5733"
+    last_activity TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (fk_document, user_id)
 );
-
--- Presence (who's currently editing)
-CREATE TABLE document_presence (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id),
-  user_id UUID NOT NULL,
-  cursor_position INT,  -- Position in document
-  selection_start INT,
-  selection_end INT,
-  color VARCHAR(7),  -- #FF5733 for user's color
-  last_activity TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_document_id (document_id),
-  INDEX idx_last_activity (last_activity)
-);
+CREATE INDEX idx_presence_activity ON tb_presence (fk_document, last_activity);
 
 -- Comments
-CREATE TABLE comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  content TEXT NOT NULL,
-  position INT,  -- Where in document (for inline comments)
-  resolved BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_document_id (document_id),
-  INDEX idx_resolved (resolved)
+CREATE TABLE tb_comment (
+    pk_comment   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id           UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_document  BIGINT NOT NULL REFERENCES tb_document (pk_document) ON DELETE CASCADE,
+    fk_parent    BIGINT REFERENCES tb_comment (pk_comment) ON DELETE CASCADE,
+    user_id      UUID NOT NULL,
+    content      TEXT NOT NULL,
+    position     INT,                      -- where in the document, for inline comments
+    resolved     BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_comment_document ON tb_comment (fk_document);
+```
+
+### Read views (the GraphQL query/subscription sources)
+
+Each view exposes the public `id` plus a `data` JSONB column built with
+`jsonb_build_object(...)`. Never put `pk_*` inside `data`.
+
+```sql
+CREATE VIEW v_document AS
+SELECT
+    d.id,
+    d.workspace_id,
+    jsonb_build_object(
+        'id',            d.id,
+        'title',         d.title,
+        'contentType',   d.content_type,
+        'content',       d.content,
+        'createdBy',     d.created_by,
+        'createdAt',     d.created_at,
+        'updatedAt',     d.updated_at
+    ) AS data
+FROM tb_document d
+WHERE d.deleted_at IS NULL;
+
+CREATE VIEW v_document_change AS
+SELECT
+    c.id,
+    d.id AS document_id,
+    jsonb_build_object(
+        'id',           c.id,
+        'userId',       c.user_id,
+        'operation',    c.operation,
+        'vectorClock',  c.vector_clock,
+        'createdAt',    c.created_at
+    ) AS data
+FROM tb_document_change c
+JOIN tb_document d ON d.pk_document = c.fk_document;
+
+CREATE VIEW v_presence AS
+SELECT
+    p.id,
+    d.id AS document_id,
+    jsonb_build_object(
+        'userId',         p.user_id,
+        'cursorPosition', p.cursor_position,
+        'selectionStart', p.selection_start,
+        'selectionEnd',   p.selection_end,
+        'color',          p.color,
+        'lastActivity',   p.last_activity
+    ) AS data
+FROM tb_presence p
+JOIN tb_document d ON d.pk_document = p.fk_document;
+
+CREATE VIEW v_comment AS
+SELECT
+    c.id,
+    d.id AS document_id,
+    jsonb_build_object(
+        'id',         c.id,
+        'userId',     c.user_id,
+        'content',    c.content,
+        'position',   c.position,
+        'resolved',   c.resolved,
+        'createdAt',  c.created_at
+    ) AS data
+FROM tb_comment c
+JOIN tb_document d ON d.pk_document = c.fk_document;
+```
+
+---
+
+## Triggers: turn writes into NOTIFY events
+
+The bridge between a mutation and every live subscription is a trigger that emits a
+`NOTIFY`. The payload is just the document `id`, so listeners know which document
+changed; they re-read the view to get the fresh data.
+
+```sql
+-- Notify on every new change row
+CREATE OR REPLACE FUNCTION fn_notify_document_change() RETURNS TRIGGER AS $$
+DECLARE
+    v_document_id UUID;
+BEGIN
+    SELECT id INTO v_document_id FROM tb_document WHERE pk_document = NEW.fk_document;
+    PERFORM pg_notify('document_change', v_document_id::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_document_change_notify
+    AFTER INSERT ON tb_document_change
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_notify_document_change();
+
+-- Notify on presence updates
+CREATE OR REPLACE FUNCTION fn_notify_presence() RETURNS TRIGGER AS $$
+DECLARE
+    v_document_id UUID;
+BEGIN
+    SELECT id INTO v_document_id FROM tb_document WHERE pk_document = NEW.fk_document;
+    PERFORM pg_notify('presence', v_document_id::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_presence_notify
+    AFTER INSERT OR UPDATE ON tb_presence
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_notify_presence();
+
+-- Notify on new comments
+CREATE OR REPLACE FUNCTION fn_notify_comment() RETURNS TRIGGER AS $$
+DECLARE
+    v_document_id UUID;
+BEGIN
+    SELECT id INTO v_document_id FROM tb_document WHERE pk_document = NEW.fk_document;
+    PERFORM pg_notify('comment', v_document_id::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_comment_notify
+    AFTER INSERT ON tb_comment
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_notify_comment();
+```
+
+> `pg_notify` payloads are capped at 8000 bytes, which is why we send only the
+> document `id` and re-read the view rather than shipping the whole row over the
+> channel.
+
+---
+
+## Write functions (`fn_`)
+
+Mutations never touch tables directly. They call PostgreSQL functions that hold the
+write logic and return JSONB describing success or failure. Because the writes go
+through `tb_document_change` / `tb_presence` / `tb_comment`, the triggers above fire
+automatically — the mutation does not have to `NOTIFY` by hand.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_apply_operation(
+    p_document_id  UUID,
+    p_user_id      UUID,
+    p_operation    JSONB,
+    p_vector_clock JSONB
+) RETURNS JSONB AS $$
+DECLARE
+    v_pk_document BIGINT;
+    v_change      tb_document_change;
+BEGIN
+    SELECT pk_document INTO v_pk_document
+    FROM tb_document
+    WHERE id = p_document_id AND deleted_at IS NULL;
+
+    IF v_pk_document IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+    END IF;
+
+    INSERT INTO tb_document_change (fk_document, user_id, operation, vector_clock)
+    VALUES (v_pk_document, p_user_id, p_operation, p_vector_clock)
+    RETURNING * INTO v_change;
+
+    -- Apply the operation to the materialized content (insert/delete on text).
+    UPDATE tb_document
+    SET content = CASE p_operation->>'type'
+            WHEN 'insert' THEN
+                left(content, (p_operation->>'position')::int)
+                || (p_operation->>'content')
+                || substr(content, (p_operation->>'position')::int + 1)
+            WHEN 'delete' THEN
+                left(content, (p_operation->>'position')::int)
+                || substr(content,
+                          (p_operation->>'position')::int
+                          + (p_operation->>'length')::int + 1)
+            ELSE content
+        END,
+        updated_at = now()
+    WHERE pk_document = v_pk_document;
+
+    RETURN jsonb_build_object('success', true, 'change_id', v_change.id);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_update_presence(
+    p_document_id     UUID,
+    p_user_id         UUID,
+    p_cursor_position INT,
+    p_selection_start INT,
+    p_selection_end   INT,
+    p_color           TEXT
+) RETURNS JSONB AS $$
+DECLARE
+    v_pk_document BIGINT;
+BEGIN
+    SELECT pk_document INTO v_pk_document FROM tb_document WHERE id = p_document_id;
+    IF v_pk_document IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+    END IF;
+
+    INSERT INTO tb_presence
+        (fk_document, user_id, cursor_position, selection_start, selection_end, color)
+    VALUES
+        (v_pk_document, p_user_id, p_cursor_position,
+         p_selection_start, p_selection_end, p_color)
+    ON CONFLICT (fk_document, user_id) DO UPDATE
+        SET cursor_position = EXCLUDED.cursor_position,
+            selection_start = EXCLUDED.selection_start,
+            selection_end   = EXCLUDED.selection_end,
+            color           = EXCLUDED.color,
+            last_activity   = now();
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_add_comment(
+    p_document_id UUID,
+    p_user_id     UUID,
+    p_content     TEXT,
+    p_position    INT
+) RETURNS JSONB AS $$
+DECLARE
+    v_pk_document BIGINT;
+    v_comment     tb_comment;
+BEGIN
+    SELECT pk_document INTO v_pk_document FROM tb_document WHERE id = p_document_id;
+    IF v_pk_document IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+    END IF;
+
+    INSERT INTO tb_comment (fk_document, user_id, content, position)
+    VALUES (v_pk_document, p_user_id, p_content, p_position)
+    RETURNING * INTO v_comment;
+
+    RETURN jsonb_build_object('success', true, 'comment_id', v_comment.id);
+END;
+$$ LANGUAGE plpgsql;
+```
 
 ---
 
 ## FraiseQL Schema
 
-```python
-<!-- Code example in Python -->
-# collaboration_schema.py
-from FraiseQL import types
-from datetime import datetime
-from typing import Optional
+Types map to the read views. Queries and mutations follow the CQRS split; the
+subscriptions are async generators backed by `LISTEN/NOTIFY`.
 
-@types.object
+```python
+# collaboration_schema.py
+from collections.abc import AsyncGenerator
+from datetime import datetime
+
+import fraiseql
+from fraiseql.types import ID, JSON
+
+
+@fraiseql.type(sql_source="v_document", jsonb_column="data")
 class Document:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     title: str
     content_type: str
-    content: str  # Current document state
-    created_by: 'User'
+    content: str               # current materialized document state
+    created_by: ID
     created_at: datetime
     updated_at: datetime
-    permissions: list['DocumentPermission']
-    current_editors: list['User']  # Who's online
-    comments: list['Comment']
 
-@types.object
-class DocumentPermission:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    permission: str  # view, edit, comment, manage
-    granted_at: datetime
 
-@types.object
+@fraiseql.type(sql_source="v_document_change", jsonb_column="data")
 class DocumentChange:
-    """Individual operation (for reconstruction)"""
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    operation: dict  # type, position, content
-    vector_clock: dict  # For CRDT
+    """A single applied operation."""
+
+    id: ID
+    user_id: ID
+    operation: JSON            # { type, position, content }
+    vector_clock: JSON         # causality across users
     created_at: datetime
 
-@types.object
+
+@fraiseql.type(sql_source="v_presence", jsonb_column="data")
 class Presence:
-    """Real-time user presence"""
-    user_id: UUID  # UUID v4 for GraphQL ID
-    cursor_position: int
-    selection_start: Optional[int]
-    selection_end: Optional[int]
-    color: str
+    """Real-time editor presence."""
 
-@types.object
-class DocumentActivity:
-    """Activity stream"""
-    user_id: UUID  # UUID v4 for GraphQL ID
-    activity_type: str  # edit, comment, join, leave
-    metadata: dict
-    created_at: datetime
+    user_id: ID
+    cursor_position: int | None
+    selection_start: int | None
+    selection_end: int | None
+    color: str | None
+    last_activity: datetime
 
-@types.object
+
+@fraiseql.type(sql_source="v_comment", jsonb_column="data")
 class Comment:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
+    id: ID
+    user_id: ID
     content: str
-    position: Optional[int]
+    position: int | None
     resolved: bool
     created_at: datetime
-    replies: list['Comment']
 
-@types.object
-class Query:
-    def document(self, id: str) -> Document:
-        """Get document with full content"""
-        pass
 
-    def document_changes(
-        self,
-        document_id: str,
-        since_version: int = 0
-    ) -> list[DocumentChange]:
-        """Get changes since version (for sync)"""
-        pass
+@fraiseql.input
+class ApplyOperationInput:
+    document_id: ID
+    operation: JSON
+    vector_clock: JSON
 
-    def activity_feed(
-        self,
-        document_id: str,
-        limit: int = 50
-    ) -> list[DocumentActivity]:
-        """Activity stream"""
-        pass
 
-@types.object
-class Mutation:
-    def update_document(
-        self,
-        document_id: str,
-        operation: dict,
-        vector_clock: dict
-    ) -> DocumentChange:
-        """Apply operation (edit)"""
-        pass
+@fraiseql.input
+class UpdatePresenceInput:
+    document_id: ID
+    cursor_position: int
+    selection_start: int | None = None
+    selection_end: int | None = None
+    color: str | None = None
 
-    def add_comment(
-        self,
-        document_id: str,
-        content: str,
-        position: Optional[int] = None
-    ) -> Comment:
-        """Add comment"""
-        pass
 
-    def resolve_comment(self, comment_id: str) -> Comment:
-        """Mark comment as resolved"""
-        pass
+@fraiseql.input
+class AddCommentInput:
+    document_id: ID
+    content: str
+    position: int | None = None
 
-@types.object
-class Subscription:
-    def document_changes(self, document_id: str) -> DocumentChange:
-        """Stream of changes from other users"""
-        pass
 
-    def presence(self, document_id: str) -> Presence:
-        """Real-time presence updates"""
-        pass
+@fraiseql.success
+class ChangeSuccess:
+    change: DocumentChange
 
-    def activity(self, document_id: str) -> DocumentActivity:
-        """Real-time activity stream"""
-        pass
 
-    def comments(self, document_id: str) -> Comment:
-        """New comments"""
-        pass
-```text
-<!-- Code example in TEXT -->
+@fraiseql.error
+class ChangeError:
+    message: str
+    code: str = "OPERATION_FAILED"
+```
 
----
-
-## Operational Transformation (OT) for Conflict Resolution
-
-### Apply Operation
+### Queries (reads)
 
 ```python
-<!-- Code example in Python -->
-class OperationTransform:
-    @staticmethod
-    def apply_operation(text: str, operation: dict) -> str:
-        """Apply insert/delete operation"""
-        op_type = operation.get('type')
-        pos = operation.get('position')
-        content = operation.get('content')
+@fraiseql.query
+async def document(info, id: ID) -> Document | None:
+    db = info.context["db"]
+    return await db.find_one("v_document", id=id)
 
-        if op_type == 'insert':
-            return text[:pos] + content + text[pos:]
-        elif op_type == 'delete':
-            length = operation.get('length', 1)
-            return text[:pos] + text[pos + length:]
-        return text
 
-    @staticmethod
-    def transform_operations(op1: dict, op2: dict) -> dict:
-        """Transform op2 against op1 (for conflict resolution)"""
-        # If both insert at same position, use user ID to break tie
-        if op1.get('type') == 'insert' and op2.get('type') == 'insert':
-            if op1.get('position') == op2.get('position'):
-                # Insert later user's content after earlier user's
-                return {
-                    **op2,
-                    'position': op2['position'] + len(op1.get('content', ''))
-                }
-        # If op2 deletes after op1 insert, adjust position
-        elif op1.get('type') == 'insert' and op2.get('type') == 'delete':
-            if op2.get('position') > op1.get('position'):
-                return {
-                    **op2,
-                    'position': op2['position'] + len(op1.get('content', ''))
-                }
-        return op2
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query
+async def document_changes(info, document_id: ID) -> list[DocumentChange]:
+    """Changes for a document, oldest first (used to catch up on reconnect)."""
+    db = info.context["db"]
+    return await db.find("v_document_change", document_id=document_id)
+
+
+@fraiseql.query
+async def comments(info, document_id: ID) -> list[Comment]:
+    db = info.context["db"]
+    return await db.find("v_comment", document_id=document_id)
+```
+
+### Mutations (writes via `fn_`)
+
+```python
+@fraiseql.mutation
+async def apply_operation(
+    info, input: ApplyOperationInput
+) -> ChangeSuccess | ChangeError:
+    db = info.context["db"]
+    user_id = info.context["user_id"]
+    result = await db.execute_function(
+        "fn_apply_operation",
+        {
+            "p_document_id": input.document_id,
+            "p_user_id": user_id,
+            "p_operation": input.operation,
+            "p_vector_clock": input.vector_clock,
+        },
+    )
+    if not result.get("success"):
+        return ChangeError(message=result.get("message", "failed"))
+    change = await db.find_one("v_document_change", id=result["change_id"])
+    return ChangeSuccess(change=change)
+
+
+@fraiseql.mutation
+async def update_presence(info, input: UpdatePresenceInput) -> bool:
+    db = info.context["db"]
+    user_id = info.context["user_id"]
+    result = await db.execute_function(
+        "fn_update_presence",
+        {
+            "p_document_id": input.document_id,
+            "p_user_id": user_id,
+            "p_cursor_position": input.cursor_position,
+            "p_selection_start": input.selection_start,
+            "p_selection_end": input.selection_end,
+            "p_color": input.color,
+        },
+    )
+    return bool(result.get("success"))
+
+
+@fraiseql.mutation
+async def add_comment(info, input: AddCommentInput) -> Comment | None:
+    db = info.context["db"]
+    user_id = info.context["user_id"]
+    result = await db.execute_function(
+        "fn_add_comment",
+        {
+            "p_document_id": input.document_id,
+            "p_user_id": user_id,
+            "p_content": input.content,
+            "p_position": input.position,
+        },
+    )
+    if not result.get("success"):
+        return None
+    return await db.find_one("v_comment", id=result["comment_id"])
+```
 
 ---
 
-## Real-Time Synchronization Flow
+## Subscriptions: async generators over LISTEN/NOTIFY
 
-### Client-Side (React)
+A subscription resolver is an **async generator**. It opens a dedicated PostgreSQL
+connection, runs `LISTEN <channel>`, and `async for`s incoming notifications. When a
+notification arrives whose payload matches the subscribed document, it re-reads the
+relevant view and `yield`s the fresh value. FraiseQL serves each yielded value to the
+client over the WebSocket.
+
+```python
+# realtime.py
+from collections.abc import AsyncGenerator
+
+import fraiseql
+from fraiseql.types import ID
+
+
+async def _listen(pool, channel: str, document_id: str) -> AsyncGenerator[None, None]:
+    """Yield once per NOTIFY on `channel` whose payload is `document_id`."""
+    async with pool.connection() as conn:
+        await conn.execute(f"LISTEN {channel}")
+        async for notify in conn.notifies():
+            if notify.payload == str(document_id):
+                yield None
+
+
+@fraiseql.subscription
+async def document_change_stream(
+    info, document_id: ID
+) -> AsyncGenerator[DocumentChange, None]:
+    """Stream every change applied to a document by anyone."""
+    db = info.context["db"]
+    pool = info.context["pool"]
+    last_seen = None
+    async for _ in _listen(pool, "document_change", document_id):
+        changes = await db.find("v_document_change", document_id=document_id)
+        for change in changes:
+            if last_seen is None or change.created_at > last_seen:
+                last_seen = change.created_at
+                yield change
+
+
+@fraiseql.subscription
+async def presence_stream(
+    info, document_id: ID
+) -> AsyncGenerator[Presence, None]:
+    """Stream presence updates (cursor moves, joins, leaves)."""
+    db = info.context["db"]
+    pool = info.context["pool"]
+    async for _ in _listen(pool, "presence", document_id):
+        for presence in await db.find("v_presence", document_id=document_id):
+            yield presence
+
+
+@fraiseql.subscription
+async def comment_stream(
+    info, document_id: ID
+) -> AsyncGenerator[Comment, None]:
+    """Stream new comments as they are posted."""
+    db = info.context["db"]
+    pool = info.context["pool"]
+    async for _ in _listen(pool, "comment", document_id):
+        for comment in await db.find("v_comment", document_id=document_id):
+            yield comment
+```
+
+Transport is GraphQL-over-WebSocket. FraiseQL's `SubscriptionManager` /
+`WebSocketConnection` handle both the modern `graphql-transport-ws` protocol and the
+legacy `graphql-ws` one, so the standard clients (Apollo, urql, `graphql-ws`) connect
+without custom code.
+
+### Subscription helpers
+
+FraiseQL ships helpers you can layer onto a subscription:
+
+- **`subscription_filter`** — drop yielded values that don't match a predicate
+  (for example, never echo a user's own edit back to them).
+- **`complexity`** — bound the cost of a subscription so a client can't open an
+  unbounded fan-out.
+- **`with_lifecycle`** — run setup/teardown around the generator (for example, write
+  a presence row on connect and remove it on disconnect).
+- **subscription result `cache`** — reuse a recently computed payload across
+  subscribers of the same document.
+
+```python
+from fraiseql.subscriptions import subscription_filter
+
+
+@fraiseql.subscription
+@subscription_filter(lambda change, info: change.user_id != info.context["user_id"])
+async def others_changes(
+    info, document_id: ID
+) -> AsyncGenerator[DocumentChange, None]:
+    """Like document_change_stream, but skips the caller's own changes."""
+    db = info.context["db"]
+    pool = info.context["pool"]
+    last_seen = None
+    async for _ in _listen(pool, "document_change", document_id):
+        for change in await db.find("v_document_change", document_id=document_id):
+            if last_seen is None or change.created_at > last_seen:
+                last_seen = change.created_at
+                yield change
+```
+
+You can also gate a subscription with an authorizer, exactly as for queries:
+
+```python
+@fraiseql.subscription(authorizer=document_viewer_authorizer)
+async def guarded_stream(
+    info, document_id: ID
+) -> AsyncGenerator[DocumentChange, None]:
+    ...
+```
+
+### Wiring it into the app
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/collab",
+    types=[Document, DocumentChange, Presence, Comment],
+    queries=[document, document_changes, comments],
+    mutations=[apply_operation, update_presence, add_comment],
+    subscriptions=[document_change_stream, presence_stream, comment_stream],
+    production=False,   # enables the GraphQL playground (and WebSocket testing)
+)
+```
+
+Run it like any FastAPI app:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+## Conflict resolution
+
+For documents with concurrent edits, resolve order deterministically before applying:
+
+1. **Vector clocks** — track causality between users' operations.
+2. **Position-based transform** — adjust an operation's position against operations
+   that landed earlier.
+3. **User-ID tiebreaker** — when two inserts target the same position, order by user
+   ID so every replica converges on the same result.
+
+This logic can live in the client (apply optimistically, reconcile on the incoming
+stream) and/or in the `fn_apply_operation` function (authoritative ordering). A simple
+position transform:
+
+```python
+def transform_operation(incoming: dict, applied: dict) -> dict:
+    """Shift `incoming` so it stays correct after `applied` already landed."""
+    if applied.get("type") == "insert" and incoming.get("position", 0) >= applied["position"]:
+        shift = len(applied.get("content", ""))
+        return {**incoming, "position": incoming["position"] + shift}
+    if applied.get("type") == "delete" and incoming.get("position", 0) > applied["position"]:
+        shift = applied.get("length", 0)
+        return {**incoming, "position": max(applied["position"], incoming["position"] - shift)}
+    return incoming
+```
+
+Because the authoritative `content` is rebuilt inside `fn_apply_operation`, the server
+is always the tiebreaker of record; clients converge by replaying the
+`document_change_stream`.
+
+---
+
+## Client integration (React + Apollo)
+
+The client subscribes over WebSocket and applies incoming operations.
 
 ```typescript
-<!-- Code example in TypeScript -->
-import { useQuery, useMutation, useSubscription, gql } from '@apollo/client';
-import { useCallback, useRef, useState } from 'react';
+import { useMutation, useQuery, useSubscription, gql } from "@apollo/client";
 
-const DOCUMENT_QUERY = gql`
-  query GetDocument($id: ID!) {
+const DOCUMENT = gql`
+  query Document($id: ID!) {
     document(id: $id) {
       id
       title
       content
-      currentEditors { id email }
-      comments { id content resolved }
     }
   }
 `;
 
-const UPDATE_DOCUMENT = gql`
-  mutation UpdateDocument($docId: ID!, $operation: JSON!, $vectorClock: JSON!) {
-    updateDocument(documentId: $docId, operation: $operation, vectorClock: $vectorClock) {
-      id
-      operation
-      createdAt
+const APPLY_OPERATION = gql`
+  mutation ApplyOperation($input: ApplyOperationInput!) {
+    applyOperation(input: $input) {
+      ... on ChangeSuccess {
+        change { id operation createdAt }
+      }
+      ... on ChangeError {
+        message
+        code
+      }
     }
   }
 `;
 
-const DOCUMENT_CHANGES_SUB = gql`
-  subscription OnDocumentChanges($docId: ID!) {
-    documentChanges(documentId: $docId) {
+const CHANGE_STREAM = gql`
+  subscription ChangeStream($documentId: ID!) {
+    documentChangeStream(documentId: $documentId) {
       id
       userId
       operation
@@ -395,9 +766,9 @@ const DOCUMENT_CHANGES_SUB = gql`
   }
 `;
 
-const PRESENCE_SUB = gql`
-  subscription OnPresence($docId: ID!) {
-    presence(documentId: $docId) {
+const PRESENCE_STREAM = gql`
+  subscription PresenceStream($documentId: ID!) {
+    presenceStream(documentId: $documentId) {
       userId
       cursorPosition
       color
@@ -406,397 +777,54 @@ const PRESENCE_SUB = gql`
 `;
 
 export function CollaborativeEditor({ documentId }: { documentId: string }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [content, setContent] = useState('');
-  const [vectorClock, setVectorClock] = useState<Record<string, number>>({});
-  const [editors, setEditors] = useState<any[]>[]);
-  const userId = getCurrentUserId();
-
-  // Fetch initial document
-  const { data: docData } = useQuery(DOCUMENT_QUERY, {
-    variables: { id: documentId },
+  const { data: doc } = useQuery(DOCUMENT, { variables: { id: documentId } });
+  const { data: change } = useSubscription(CHANGE_STREAM, {
+    variables: { documentId },
   });
-
-  // Listen for changes from other users
-  const { data: changesData } = useSubscription(DOCUMENT_CHANGES_SUB, {
-    variables: { docId: documentId },
+  const { data: presence } = useSubscription(PRESENCE_STREAM, {
+    variables: { documentId },
   });
+  const [applyOperation] = useMutation(APPLY_OPERATION);
 
-  // Listen for presence updates
-  const { data: presenceData } = useSubscription(PRESENCE_SUB, {
-    variables: { docId: documentId },
-  });
+  // Apply remote changes streamed from other editors.
+  // Send local edits via applyOperation(...) — the server's trigger NOTIFYs
+  // every other subscriber on the "document_change" channel.
 
-  const [updateDocument] = useMutation(UPDATE_DOCUMENT);
-
-  // Initialize
-  useEffect(() => {
-    if (docData?.document) {
-      setContent(docData.document.content);
-      setEditors(docData.document.currentEditors);
-    }
-  }, [docData]);
-
-  // Apply remote changes
-  useEffect(() => {
-    if (changesData?.documentChanges) {
-      const change = changesData.documentChanges;
-      const newContent = applyOperation(content, change.operation);
-      setContent(newContent);
-
-      // Update vector clock
-      setVectorClock(prev => ({
-        ...prev,
-        [change.userId]: (prev[change.userId] || 0) + 1,
-      }));
-    }
-  }, [changesData]);
-
-  // Update presence indicators
-  useEffect(() => {
-    if (presenceData?.presence) {
-      renderCursorPosition(presenceData.presence);
-    }
-  }, [presenceData]);
-
-  // Handle local edits
-  const handleChange = useCallback(
-    async (e: React.ChangeEvent<HTMLDivElement>) => {
-      const newContent = e.currentTarget.textContent'';
-      const operation = detectOperation(content, newContent);
-
-      // Update local state immediately
-      setContent(newContent);
-
-      // Increment our vector clock
-      const newClock = {
-        ...vectorClock,
-        [userId]: (vectorClock[userId] || 0) + 1,
-      };
-      setVectorClock(newClock);
-
-      // Send to server
-      await updateDocument({
-        variables: {
-          docId: documentId,
-          operation,
-          vectorClock: newClock,
-        },
-      });
-    },
-    [content, vectorClock, documentId, updateDocument, userId]
-  );
-
-  return (
-    <div>
-      <h1>{docData?.document?.title}</h1>
-
-      {/* Show current editors */}
-      <div className="editors">
-        {editors.map(editor => (
-          <span key={editor.id} title={editor.email}>👤</span>
-        ))}
-      </div>
-
-      {/* Editor with collaborative cursors */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleChange}
-        className="editor"
-      >
-        {content}
-      </div>
-
-      {/* Comments sidebar */}
-      <CommentsSidebar documentId={documentId} />
-    </div>
-  );
+  return <Editor doc={doc} change={change} presence={presence} onEdit={applyOperation} />;
 }
+```
 
-function detectOperation(oldContent: string, newContent: string) {
-  // Find the difference
-  const minLen = Math.min(oldContent.length, newContent.length);
-  let start = 0;
-  while (start < minLen && oldContent[start] === newContent[start]) {
-    start++;
-  }
-
-  if (newContent.length > oldContent.length) {
-    // Insert
-    return {
-      type: 'insert',
-      position: start,
-      content: newContent.slice(start, newContent.length - (oldContent.length - start)),
-    };
-  } else {
-    // Delete
-    return {
-      type: 'delete',
-      position: start,
-      length: oldContent.length - newContent.length,
-    };
-  }
-}
-
-function applyOperation(text: string, operation: any): string {
-  if (operation.type === 'insert') {
-    return text.slice(0, operation.position) +
-           operation.content +
-           text.slice(operation.position);
-  } else if (operation.type === 'delete') {
-    return text.slice(0, operation.position) +
-           text.slice(operation.position + operation.length);
-  }
-  return text;
-}
-
-function renderCursorPosition(presence: any) {
-  // Render remote user's cursor in document
-  const cursor = document.querySelector(`[data-user-id="${presence.userId}"]`);
-  if (cursor) {
-    cursor.style.left = presence.cursorPosition + 'px';
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Activity Feed & Presence
-
-### Track Activity
-
-```sql
-<!-- Code example in SQL -->
--- Trigger to log activity
-CREATE OR REPLACE FUNCTION log_activity() RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO document_activity (
-    document_id,
-    user_id,
-    activity_type,
-    metadata
-  ) VALUES (
-    NEW.document_id,
-    NEW.user_id,
-    'edit',
-    jsonb_build_object(
-      'operation_type', NEW.operation->>'type',
-      'operation_id', NEW.id
-    )
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER document_changes_activity
-AFTER INSERT ON document_changes
-FOR EACH ROW
-EXECUTE FUNCTION log_activity();
-```text
-<!-- Code example in TEXT -->
-
-### Presence Management
+Send presence updates on a debounce so cursor movement doesn't flood the channel:
 
 ```typescript
-<!-- Code example in TypeScript -->
-// Update presence every time cursor moves
-const handleCursorMove = useDebouncedCallback((position: number) => {
+const pushPresence = useDebouncedCallback((position: number) => {
   updatePresence({
-    variables: {
-      documentId,
-      cursorPosition: position,
-      selectionStart: selection.start,
-      selectionEnd: selection.end,
-    },
+    variables: { input: { documentId, cursorPosition: position } },
   });
-}, 500); // Debounce to avoid spam
-
-// Clean up on unmount (user left)
-useEffect(() => {
-  return () => {
-    removePresence({
-      variables: { documentId },
-    });
-  };
-}, [documentId]);
-```text
-<!-- Code example in TEXT -->
+}, 500);
+```
 
 ---
 
-## Comments & Threading
+## Performance and operational notes
 
-```typescript
-<!-- Code example in TypeScript -->
-const ADD_COMMENT = gql`
-  mutation AddComment($docId: ID!, $content: String!, $position: Int) {
-    addComment(documentId: $docId, content: $content, position: $position) {
-      id
-      content
-      userId
-      createdAt
-    }
-  }
-`;
-
-export function CommentsSidebar({ documentId }: { documentId: string }) {
-  const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
-  const { data } = useQuery(DOCUMENT_QUERY, { variables: { id: documentId } });
-  const [addComment] = useMutation(ADD_COMMENT);
-
-  const handleHighlightText = (start: number, end: number) => {
-    setSelectedPosition(start);
-  };
-
-  const handleSubmitComment = async (content: string) => {
-    await addComment({
-      variables: {
-        docId: documentId,
-        content,
-        position: selectedPosition,
-      },
-    });
-    setSelectedPosition(null);
-  };
-
-  return (
-    <aside className="comments-sidebar">
-      {data?.document?.comments?.map(comment => (
-        <CommentThread key={comment.id} comment={comment} />
-      ))}
-      {selectedPosition !== null && (
-        <CommentForm onSubmit={handleSubmitComment} />
-      )}
-    </aside>
-  );
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Conflict Resolution Strategy
-
-For documents with concurrent edits:
-
-1. **Vector Clocks** - Track causality
-2. **Last-Write-Wins** - If concurrent edits at same position
-3. **User ID Tiebreaker** - Sort by user ID for determinism
-4. **Operational Transform** - Adjust operations based on order
-
-```python
-<!-- Code example in Python -->
-def resolve_conflict(op1: dict, op2: dict, user1_id: str, user2_id: str) -> tuple:
-    """Return (transformed_op1, transformed_op2)"""
-
-    # If both inserting at same position
-    if (op1['type'] == 'insert' and op2['type'] == 'insert' and
-        op1['position'] == op2['position']):
-
-        # User with earlier ID gets their insert first
-        if user1_id < user2_id:
-            op2_new = {
-                **op2,
-                'position': op2['position'] + len(op1['content'])
-            }
-            return (op1, op2_new)
-        else:
-            op1_new = {
-                **op1,
-                'position': op1['position'] + len(op2['content'])
-            }
-            return (op1_new, op2)
-
-    # Handle other cases...
-    return (op1, op2)
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Testing Real-Time Collaboration
-
-```typescript
-<!-- Code example in TypeScript -->
-describe('Collaborative Editing', () => {
-  it('should merge concurrent edits', async () => {
-    const user1Changes = [
-      { type: 'insert', position: 0, content: 'Hello' },
-    ];
-    const user2Changes = [
-      { type: 'insert', position: 0, content: 'World' },
-    ];
-
-    const result = await resolveConflict(user1Changes, user2Changes);
-
-    // Both changes should be preserved in final content
-    expect(result).toContain('Hello');
-    expect(result).toContain('World');
-  });
-
-  it('should update presence correctly', async () => {
-    const presence = usePresenceHook('doc123');
-
-    expect(presence.editors).toHaveLength(0);
-    presence.join('user1');
-    expect(presence.editors).toHaveLength(1);
-    presence.leave('user1');
-    expect(presence.editors).toHaveLength(0);
-  });
-
-  it('should maintain comment threads', async () => {
-    const comment = await addComment({
-      documentId: 'doc123',
-      content: 'Fix this typo',
-      position: 100,
-    });
-
-    expect(comment.id).toBeDefined();
-    expect(comment.position).toBe(100);
-
-    const reply = await replyToComment({
-      commentId: comment.id,
-      content: 'Already fixed!',
-    });
-
-    expect(reply.parentCommentId).toBe(comment.id);
-  });
-});
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Performance Optimization
-
-- **Debounce presence updates** - Only send every 500ms
-- **Batch operations** - Group changes from same user
-- **Archive old changes** - Delete changes older than 30 days
-- **Snapshot documents** - Store full content snapshot periodically
-- **Compress change log** - Compact operations into final state
+- **One `LISTEN` connection per subscription stream.** `LISTEN/NOTIFY` requires a
+  session-level connection, so keep a small dedicated pool for subscriptions and put a
+  ceiling on concurrent streams (the `complexity` helper helps here).
+- **Payloads carry only the `id`.** Re-reading the view keeps notifications tiny and
+  under PostgreSQL's 8000-byte limit, and guarantees subscribers see committed data.
+- **Debounce presence.** Send cursor updates at most every ~500ms.
+- **Archive old changes.** Move `tb_document_change` rows older than your retention
+  window to cold storage; the materialized `content` is the snapshot.
+- **Snapshot periodically.** The `content` column is already a snapshot, so reconnecting
+  clients only need to replay changes since their last seen `created_at`.
 
 ---
 
 ## See Also
 
-**Related Patterns:**
-
-- [Multi-Tenant SaaS](./saas-multi-tenant.md) - Document ownership/permissions
-- [Activity Feeds in Social Networks](../patterns/realtime-collaboration.md) - Similar patterns
-
-**Real-Time Features:**
-
-- [Real-Time Patterns](../guides/patterns.md)
-- [Subscriptions & WebSockets](../guides/clients/README.md)
-
-**Production Deployment:**
-
-- [Production Deployment](../guides/production-deployment.md)
-- [Observability & Monitoring](../guides/observability.md)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- [Patterns overview](./README.md)
+- [E-commerce workflows](./ecommerce-workflows.md) — mutations via `fn_` functions
+- [Multi-tenant SaaS](./saas-multi-tenant.md) — document ownership and permissions via RLS
+- [Subscriptions architecture](../architecture/realtime/subscriptions.md) — WebSocket transport internals
+- [Core concepts](../foundation/02-core-concepts.md) — the `tb_`/`v_`/`fn_` CQRS model
