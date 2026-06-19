@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="How FraiseQL v1 integrates with external systems through PostgreSQL FDW, FastAPI composition, and GraphQL clients.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/integration/integration-patterns/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Integration Patterns - FraiseQL Documentation</title>
+        <title>FraiseQL Integration Patterns: FDW, FastAPI, and Clients - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-integration-patterns-federation-webhooks-and-messaging" class="md-skip">
+        <a href="#fraiseql-integration-patterns-fdw-fastapi-and-clients" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Integration Patterns
+              FraiseQL Integration Patterns: FDW, FastAPI, and Clients
             
           </span>
         </div>
@@ -1686,22 +1688,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-federation-patterns" class="md-nav__link">
+  <a href="#1-database-level-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Federation Patterns
+        1. Database-Level Integration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Federation Patterns">
+    <nav class="md-nav" aria-label="1. Database-Level Integration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-basic-federation-http" class="md-nav__link">
+  <a href="#11-reading-external-data-with-postgresql-fdw" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Basic Federation (HTTP)
+        1.1 Reading External Data with PostgreSQL FDW
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-reaching-out-from-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Reaching Out from fn_ Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-other-postgresql-integration-surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Other PostgreSQL Integration Surfaces
       
     </span>
   </a>
@@ -1710,6 +1734,139 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-application-level-integration-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Application-Level Integration (FastAPI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Application-Level Integration (FastAPI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-adding-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Adding Middleware
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-mounting-inside-a-larger-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Mounting Inside a Larger Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-sharing-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Sharing Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-client-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Client Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Client Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-graphql-over-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 GraphQL over HTTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-graphql-over-websocket-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 GraphQL over WebSocket (Subscriptions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-choosing-what-a-client-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Choosing What a Client Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-putting-it-together-a-reference-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Putting It Together: A Reference Topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5001,22 +5158,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-federation-patterns" class="md-nav__link">
+  <a href="#1-database-level-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Federation Patterns
+        1. Database-Level Integration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Federation Patterns">
+    <nav class="md-nav" aria-label="1. Database-Level Integration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-basic-federation-http" class="md-nav__link">
+  <a href="#11-reading-external-data-with-postgresql-fdw" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Basic Federation (HTTP)
+        1.1 Reading External Data with PostgreSQL FDW
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-reaching-out-from-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Reaching Out from fn_ Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-other-postgresql-integration-surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Other PostgreSQL Integration Surfaces
       
     </span>
   </a>
@@ -5025,6 +5204,139 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-application-level-integration-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Application-Level Integration (FastAPI)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Application-Level Integration (FastAPI)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-adding-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Adding Middleware
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-mounting-inside-a-larger-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Mounting Inside a Larger Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-sharing-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Sharing Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-client-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Client Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Client Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-graphql-over-http" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 GraphQL over HTTP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-graphql-over-websocket-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 GraphQL over WebSocket (Subscriptions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-choosing-what-a-client-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Choosing What a Client Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-putting-it-together-a-reference-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Putting It Together: A Reference Topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5048,696 +5360,401 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Integration Patterns: Federation, Webhooks, and Messaging
-description: FraiseQL integrates with external systems through three primary patterns:
-keywords: ["workflow", "design", "scalability", "saas", "performance", "realtime", "patterns", "ecommerce"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="fraiseql-integration-patterns-federation-webhooks-and-messaging">FraiseQL Integration Patterns: Federation, Webhooks, and Messaging<a class="headerlink" href="#fraiseql-integration-patterns-federation-webhooks-and-messaging" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> January 2026
-<strong>Status:</strong> Complete System Specification
-<strong>Audience:</strong> Integration architects, backend engineers, microservices specialists</p>
+<h1 id="fraiseql-integration-patterns-fdw-fastapi-and-clients">FraiseQL Integration Patterns: FDW, FastAPI, and Clients<a class="headerlink" href="#fraiseql-integration-patterns-fdw-fastapi-and-clients" title="Permanent link">&para;</a></h1>
+<p><strong>Audience:</strong> Integration architects, backend engineers, platform teams</p>
 <hr />
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL integrates with external systems through three primary patterns:</p>
+<p>FraiseQL v1 is a Python runtime GraphQL framework that serves a PostgreSQL
+database over FastAPI. It does not ship a federation gateway, a webhook engine,
+or a message-broker publisher. Instead, integration happens at three well-defined
+layers, each using technology you already control:</p>
 <ol>
-<li><strong>Federation</strong> — Compose multiple GraphQL services (Apollo Federation v2)</li>
-<li><strong>Webhooks</strong> — Push events to external HTTP endpoints</li>
-<li><strong>Messaging</strong> — Publish events to message brokers (Kafka, RabbitMQ, etc.)</li>
+<li><strong>Database-level integration</strong> — read external or remote PostgreSQL data
+   <em>inside your views</em> with PostgreSQL Foreign Data Wrappers (FDW), and reach out
+   from <code>fn_</code> functions via <code>LISTEN/NOTIFY</code> or an outbox table.</li>
+<li><strong>Application-level integration</strong> — mount the FraiseQL FastAPI app inside a
+   larger FastAPI/ASGI application, add middleware, and share authentication so
+   REST and GraphQL are served together.</li>
+<li><strong>Client integration</strong> — talk to FraiseQL over standard GraphQL-over-HTTP and
+   the GraphQL-over-WebSocket subscription endpoint.</li>
 </ol>
-<p>Each pattern provides different trade-offs between consistency, latency, and complexity.</p>
+<p>Each layer is composed from standard tools (PostgreSQL, FastAPI, GraphQL clients),
+not from FraiseQL-specific integration decorators.</p>
 <hr />
-<h2 id="1-federation-patterns">1. Federation Patterns<a class="headerlink" href="#1-federation-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="11-basic-federation-http">1.1 Basic Federation (HTTP)<a class="headerlink" href="#11-basic-federation-http" title="Permanent link">&para;</a></h3>
-<p>Standard Apollo Federation v2 with HTTP subgraph communication:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─────────────────┐
-│  Apollo Router  │
-│  (Gateway)      │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼──┐  ┌──▼───┐
-│Users │  │Orders│
-│Subgraph │  │Subgraph│
-└────────┘  └───────┘</p>
-<p>HTTP <code>_entities</code> calls for federation
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="1-database-level-integration">1. Database-Level Integration<a class="headerlink" href="#1-database-level-integration" title="Permanent link">&para;</a></h2>
+<p>The deepest integration surface in FraiseQL is PostgreSQL itself. Because every
+GraphQL query reads from a <code>v_</code>/<code>tv_</code> view and every mutation calls an <code>fn_</code>
+function, anything PostgreSQL can do becomes available to your API without a new
+FraiseQL feature.</p>
+<h3 id="11-reading-external-data-with-postgresql-fdw">1.1 Reading External Data with PostgreSQL FDW<a class="headerlink" href="#11-reading-external-data-with-postgresql-fdw" title="Permanent link">&para;</a></h3>
+<p>PostgreSQL Foreign Data Wrappers let a <code>v_</code>/<code>tv_</code> view read tables that live in
+<em>another</em> PostgreSQL database (or, with the right wrapper, another data source) as
+if they were local. This is a <strong>PostgreSQL feature you compose into your views</strong> —
+FraiseQL never sees the difference, because it only ever queries the view.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- In your application database:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">postgres_fdw</span><span class="p">;</span>
 
-<p><strong>Implementation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="users-subgraph">Users subgraph<a class="headerlink" href="#users-subgraph" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@FraiseQL.key(fields=["id"])
-class User:
-    id: ID!
-    name: str
-    email: str</p>
-<h1 id="orders-subgraph-extended-type">Orders subgraph (extended type)<a class="headerlink" href="#orders-subgraph-extended-type" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type(extend=True)
-@FraiseQL.key(fields=["id"])
-class User:
-    id: ID! = FraiseQL.external()
-    orders: [Order] = FraiseQL.requires(fields=["id"])
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
+<span class="w">  </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">WRAPPER</span><span class="w"> </span><span class="n">postgres_fdw</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">host</span><span class="w"> </span><span class="s1">&#39;orders-db&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">dbname</span><span class="w"> </span><span class="s1">&#39;orders_db&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="s1">&#39;5432&#39;</span><span class="p">);</span>
 
-<p><strong>Latency characteristics:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Single entity resolution: 50-200ms (HTTP roundtrip)
-Federation 1 level deep: 50-200ms
-Federation 2 levels deep: 100-400ms (cascading calls)
-Federation 3+ levels: Unacceptable (avoid)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">MAPPING</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">current_user</span>
+<span class="w">  </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">user</span><span class="w"> </span><span class="s1">&#39;fdw_reader&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="s1">&#39;secret&#39;</span><span class="p">);</span>
 
-<h3 id="12-database-linked-federation-postgresql-fdw">1.2 Database-Linked Federation (PostgreSQL FDW)<a class="headerlink" href="#12-database-linked-federation-postgresql-fdw" title="Permanent link">&para;</a></h3>
-<p>Optimization for same-database FraiseQL-to-FraiseQL federation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌──────────────────────────────────────┐
-│ PostgreSQL (Primary Cluster)         │
-├──────────────────────────────────────┤
-│ Schema: users_schema                 │
-│ ├─ tb_user, v_user                   │
-│ └─ Foreign table: orders_schema.v_order (via FDW)
-│                                       │
-│ Schema: orders_schema                │
-│ ├─ tb_order, v_order                 │
-│ └─ Foreign table: users_schema.v_user (via FDW)
-└──────────────────────────────────────┘</p>
-<p>Both subgraphs accessible via database-level join
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Setup FDW:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- In users database:
-CREATE EXTENSION IF NOT EXISTS postgres_fdw;</p>
-<p>CREATE SERVER orders_fdw FOREIGN DATA WRAPPER postgres_fdw
-  OPTIONS (host 'orders-db', dbname 'orders_db', port '5432');</p>
-<p>CREATE USER MAPPING FOR current_user SERVER orders_fdw
-  OPTIONS (user 'fdw_user', password 'secret');</p>
-<p>-- Foreign table
-CREATE FOREIGN TABLE orders_schema_v_order (
-    pk_order BIGINTEGER,
-    id UUID,
-    user_id UUID,
-    data JSONB
-) SERVER orders_fdw
-  OPTIONS (schema_name 'orders_schema', table_name 'v_order');
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Entity resolution with FDW:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Resolve User with orders (FDW join)
-CREATE FUNCTION resolve_user_with_orders(keys UUID[]) RETURNS JSONB[] AS $$
-  SELECT array_agg(
-    u.data || jsonb_build_object(
-      'orders', COALESCE(o.orders, '[]'::jsonb)
-    ) ORDER BY idx
-  )
-  FROM unnest(keys) WITH ORDINALITY AS t(key, idx)
-  JOIN users_schema.v_user u ON u.id = t.key
-  LEFT JOIN (
-    SELECT user_id, jsonb_agg(data ORDER BY created_at DESC) AS orders
-    FROM orders_schema_v_order
-    WHERE user_id = ANY(keys)
-    GROUP BY user_id
-  ) o ON o.user_id = u.id
-$$ LANGUAGE sql STABLE;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Latency characteristics:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Single entity resolution: 5-15ms (database join, no network)
-Federation 1 level deep: 5-15ms (10x faster than HTTP)
-Federation 2 levels deep: 10-30ms (same database, all FDW)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="13-hybrid-federation-mixed-http-and-fdw">1.3 Hybrid Federation (Mixed HTTP and FDW)<a class="headerlink" href="#13-hybrid-federation-mixed-http-and-fdw" title="Permanent link">&para;</a></h3>
-<p>Combine HTTP and database-level federation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌────────────────────────────────────┐
-│ Users (FraiseQL on PostgreSQL)     │
-├────────────────────────────────────┤
-│ ├─ Orders via FDW (same DB): 10ms  │
-│ ├─ Products via HTTP (Apollo): 100ms
-│ └─ Inventory via FDW (same DB): 10ms
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Strategy selection (auto-detect):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="at-compile-time-detect-federation-targets">At compile time, detect federation targets:<a class="headerlink" href="#at-compile-time-detect-federation-targets" title="Permanent link">&para;</a></h1>
-<p>if target_subgraph.is_fraiseql and target_db_type == source_db_type:
-    resolution_strategy = "database_linking"  # FDW
-else:
-    resolution_strategy = "http"  # Standard federation
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Product:
-    id: ID!
-    name: str</p>
-<div class="highlight"><pre><span></span><code># This comes from Orders subgraph (FraiseQL, same DB)
-@FraiseQL.requires(fields=[&quot;id&quot;])
-orders: [Order]  # Will use FDW (fast)
-
-# This comes from Inventory subgraph (Apollo Server)
-@FraiseQL.requires(fields=[&quot;id&quot;])
-inventory: Inventory  # Will use HTTP (standard)
+<span class="c1">-- Expose the remote read view as a local foreign table.</span>
+<span class="c1">-- Mirror the remote v_order shape: a public id (UUID) plus a data JSONB column.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">remote_v_order</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">      </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">    </span><span class="n">JSONB</span>
+<span class="p">)</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">schema_name</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="s1">&#39;v_order&#39;</span><span class="p">);</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="2-webhook-patterns">2. Webhook Patterns<a class="headerlink" href="#2-webhook-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="21-webhook-delivery">2.1 Webhook Delivery<a class="headerlink" href="#21-webhook-delivery" title="Permanent link">&para;</a></h3>
-<p>Push events to external HTTP endpoints:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL Event
-    ↓
-Webhook Dispatcher
-    ├─ Serialize event to JSON
-    ├─ Sign with HMAC
-    ├─ POST to webhook URL
-    └─ Track delivery status</p>
-<p>External System
-    ├─ Verify HMAC signature
-    ├─ Deserialize event
-    ├─ Process event
-    └─ Return 200 OK</p>
-<p>FraiseQL marks delivered
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="22-webhook-configuration">2.2 Webhook Configuration<a class="headerlink" href="#22-webhook-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure webhooks:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.webhook(
-    name="order_created_webhook",
-    url="https://external.com/webhooks/order_created",
-    events=["order_created"],
-    secret="webhook_secret_key_123"
-)
-def on_order_created(event):
-    """Webhook for order creation"""
-    pass</p>
-<h1 id="register-webhook">Register webhook<a class="headerlink" href="#register-webhook" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.webhooks.register(
-    event_type="order_created",
-    webhook_url="https://external.com/webhooks/order_created",
-    secret="webhook_secret_key_123"
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="23-webhook-payload-format">2.3 Webhook Payload Format<a class="headerlink" href="#23-webhook-payload-format" title="Permanent link">&para;</a></h3>
-<p>Standard webhook format:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "id": "evt-abc123",
-  "type": "order_created",
-  "timestamp": "2026-01-15T10:30:45Z",
-  "data": {
-    "order_id": "order-789",
-    "user_id": "user-456",
-    "total": 150.00,
-    "items": [...]
-  },
-  "metadata": {
-    "webhook_id": "webhook-123",
-    "attempt": 1,
-    "timestamp": "2026-01-15T10:30:45Z"
-  },
-  "signature": "sha256=abcdef123..."
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="24-webhook-retry-logic">2.4 Webhook Retry Logic<a class="headerlink" href="#24-webhook-retry-logic" title="Permanent link">&para;</a></h3>
-<p>Handle delivery failures:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="retry-strategy">Retry strategy<a class="headerlink" href="#retry-strategy" title="Permanent link">&para;</a></h1>
-<p>Attempt 1: Immediate
-Attempt 2: +5 seconds (exponential backoff)
-Attempt 3: +25 seconds
-Attempt 4: +125 seconds
-Attempt 5: +625 seconds
-Max attempts: 5 (over ~20 minutes)</p>
-<h1 id="final-failure">Final failure<a class="headerlink" href="#final-failure" title="Permanent link">&para;</a></h1>
-<p>After 5 failed attempts:
-  ├─ Mark webhook delivery as failed
-  ├─ Alert operations team
-  ├─ Can manually retry via dashboard
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="25-webhook-signature-verification">2.5 Webhook Signature Verification<a class="headerlink" href="#25-webhook-signature-verification" title="Permanent link">&para;</a></h3>
-<p>Secure webhooks with HMAC:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import hmac
-import hashlib</p>
-<h1 id="webhook-payload">Webhook payload<a class="headerlink" href="#webhook-payload" title="Permanent link">&para;</a></h1>
-<p>payload = json.dumps(event).encode()</p>
-<h1 id="shared-secret">Shared secret<a class="headerlink" href="#shared-secret" title="Permanent link">&para;</a></h1>
-<p>secret = "webhook_secret_key_123"</p>
-<h1 id="calculate-signature">Calculate signature<a class="headerlink" href="#calculate-signature" title="Permanent link">&para;</a></h1>
-<p>signature = hmac.new(
-    secret.encode(),
-    payload,
-    hashlib.sha256
-).hexdigest()</p>
-<h1 id="include-in-header">Include in header<a class="headerlink" href="#include-in-header" title="Permanent link">&para;</a></h1>
-<p>headers = {
-    "X-FraiseQL-Signature": f"sha256={signature}"
-}</p>
-<h1 id="recipient-verifies">Recipient verifies<a class="headerlink" href="#recipient-verifies" title="Permanent link">&para;</a></h1>
-<p>received_signature = request.headers.get("X-FraiseQL-Signature")
-expected_signature = hmac.new(
-    secret.encode(),
-    request.body,
-    hashlib.sha256
-).hexdigest()</p>
-<p>if not hmac.compare_digest(received_signature, f"sha256={expected_signature}"):
-    raise ValueError("Invalid signature")
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="26-webhook-idempotency">2.6 Webhook Idempotency<a class="headerlink" href="#26-webhook-idempotency" title="Permanent link">&para;</a></h3>
-<p>Handle duplicate deliveries:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="webhook-includes-event-id">Webhook includes event ID<a class="headerlink" href="#webhook-includes-event-id" title="Permanent link">&para;</a></h1>
-<p>event = {
-    "id": "evt-abc123",  # Unique event identifier
-    "type": "order_created",
-    "data": {...}
-}</p>
-<h1 id="recipient-deduplicates">Recipient deduplicates<a class="headerlink" href="#recipient-deduplicates" title="Permanent link">&para;</a></h1>
-<p>recipient_side_dedup:
-    if db.get_event_id("evt-abc123"):
-        return  # Already processed</p>
-<div class="highlight"><pre><span></span><code># Process event
-process_event(event)
-
-# Mark as processed
-db.mark_event_processed(&quot;evt-abc123&quot;)
+<p>Now reference the foreign table from a normal FraiseQL read view. The view still
+produces the standard <code>id</code> + <code>data</code> JSONB shape that FraiseQL expects:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_with_orders</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="k">data</span>
+<span class="w">      </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">           </span><span class="s1">&#39;orders&#39;</span><span class="p">,</span>
+<span class="w">           </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">             </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;createdAt&#39;</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">              </span><span class="k">FROM</span><span class="w"> </span><span class="n">remote_v_order</span><span class="w"> </span><span class="n">o</span>
+<span class="w">              </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">),</span>
+<span class="w">             </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">           </span><span class="p">)</span>
+<span class="w">         </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>Your <code>@fraiseql.type</code> and <code>@fraiseql.query</code> stay unchanged — they target
+<code>v_user_with_orders</code> like any other view:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<hr />
-<h2 id="3-message-broker-patterns">3. Message Broker Patterns<a class="headerlink" href="#3-message-broker-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="31-kafka-integration">3.1 Kafka Integration<a class="headerlink" href="#31-kafka-integration" title="Permanent link">&para;</a></h3>
-<p>Publish events to Kafka topics:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.kafka_publisher(
-    topic="FraiseQL.events",
-    broker="kafka://broker1:9092,broker2:9092"
-)
-async def publish_to_kafka(event):
-    """Publish FraiseQL events to Kafka"""
-    pass</p>
-<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.messaging.configure({
-    "kafka": {
-        "enabled": True,
-        "brokers": ["kafka1:9092", "kafka2:9092"],
-        "topic": "FraiseQL.events",
-        "compression": "snappy"
-    }
-})
-```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>Kafka message format:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "event_id": "evt-abc123",
-  "event_type": "order_created",
-  "timestamp": "2026-01-15T10:30:45Z",
-  "source": "FraiseQL",
-  "version": "2.0.0",
-  "data": {
-    "order_id": "order-789",
-    "user_id": "user-456"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_with_orders&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Order&quot;</span><span class="p">]</span>
 
-<h3 id="32-rabbitmq-integration">3.2 RabbitMQ Integration<a class="headerlink" href="#32-rabbitmq-integration" title="Permanent link">&para;</a></h3>
-<p>Publish events to RabbitMQ exchanges:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.rabbitmq_publisher(
-    exchange="FraiseQL.events",
-    routing_key="FraiseQL.{event_type}"
-)
-async def publish_to_rabbitmq(event):
-    """Publish FraiseQL events to RabbitMQ"""
-    pass</p>
-<h1 id="configuration_1">Configuration<a class="headerlink" href="#configuration_1" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.messaging.configure({
-    "rabbitmq": {
-        "enabled": True,
-        "url": "amqp://user:pass@localhost:5672/",
-        "exchange": "FraiseQL.events",
-        "exchange_type": "topic",
-        "durable": True
-    }
-})
-```text</p>
-<!-- Code example in TEXT -->
 
-<h3 id="33-consumer-groups-kafka">3.3 Consumer Groups (Kafka)<a class="headerlink" href="#33-consumer-groups-kafka" title="Permanent link">&para;</a></h3>
-<p>Multiple consumers process events:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Kafka topic: FraiseQL.events
-├─ Consumer Group 1 (notifications)
-│  ├─ Consumer 1A: Partition 0
-│  ├─ Consumer 1B: Partition 1
-│  └─ Consumer 1C: Partition 2
-│
-├─ Consumer Group 2 (analytics)
-│  ├─ Consumer 2A: Partition 0
-│  ├─ Consumer 2B: Partition 1
-│  └─ Consumer 2C: Partition 2
-│
-└─ Consumer Group 3 (audit)
-   ├─ Consumer 3A: Partition 0
-   ├─ Consumer 3B: Partition 1
-   └─ Consumer 3C: Partition 2</p>
-<p>Each consumer group gets all events
-Multiple consumers in same group share partitions
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="34-event-stream-ordering">3.4 Event Stream Ordering<a class="headerlink" href="#34-event-stream-ordering" title="Permanent link">&para;</a></h3>
-<p>Guarantee ordering with message brokers:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Option 1: Topic-level (global order)
-  ├─ All events go to single topic
-  ├─ Consumers receive in order
-  └─ Performance: Limited by single partition</p>
-<p>Option 2: Event-type topics (per-entity order)
-  ├─ FraiseQL.events.orders
-  ├─ FraiseQL.events.users
-  ├─ Each topic ordered within type
-  ├─ Different types may interleave
-  └─ Performance: Parallelized</p>
-<p>FraiseQL choice: Option 2 (per-entity order)
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="4-consistency-patterns">4. Consistency Patterns<a class="headerlink" href="#4-consistency-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="41-eventual-consistency-webhooksmessaging">4.1 Eventual Consistency (Webhooks/Messaging)<a class="headerlink" href="#41-eventual-consistency-webhooksmessaging" title="Permanent link">&para;</a></h3>
-<p>When using webhooks or message brokers:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL Event (T0)
-  ├─ Immediately available to queries (database updated)
-  ├─ Webhook sent (may take 100-500ms)
-  ├─ Message broker published (may take 10-100ms)</p>
-<p>External system processing:
-  ├─ Receive webhook: T0 + 500ms
-  ├─ Process event: T0 + 600ms
-  ├─ Update external database: T0 + 700ms</p>
-<p>External system query:
-  ├─ At T0 + 100ms: Doesn't see change (not yet received)
-  ├─ At T0 + 800ms: Sees change (processed)</p>
-<p>Model: Eventual consistency (typically &lt;1 second)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="42-request-response-consistency-federation">4.2 Request-Response Consistency (Federation)<a class="headerlink" href="#42-request-response-consistency-federation" title="Permanent link">&para;</a></h3>
-<p>When using federation (HTTP or FDW):</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query: Get User with Orders</p>
-<p>FraiseQL (HTTP federation):
-  ├─ Query users table
-  ├─ For each user, call orders service
-  ├─ All data from same logical point in time
-  ├─ Consistent snapshot</p>
-<p>Consistency: Strong (synchronous)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="43-idempotent-event-processing">4.3 Idempotent Event Processing<a class="headerlink" href="#43-idempotent-event-processing" title="Permanent link">&para;</a></h3>
-<p>Ensure external systems handle duplicate events:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="external-system-receives-events">External system receives events<a class="headerlink" href="#external-system-receives-events" title="Permanent link">&para;</a></h1>
-<h1 id="webhookmessage-could-be-delivered-twice">Webhook/message could be delivered twice<a class="headerlink" href="#webhookmessage-could-be-delivered-twice" title="Permanent link">&para;</a></h1>
-<h1 id="idempotent-processing">Idempotent processing<a class="headerlink" href="#idempotent-processing" title="Permanent link">&para;</a></h1>
-<p>async def process_order_created(event):
-    # Check if already processed
-    existing = db.query(
-        "SELECT id FROM processed_events WHERE event_id = $1",
-        [event.id]
-    )</p>
-<div class="highlight"><pre><span></span><code>if existing:
-    return  # Already processed, safe to skip
-
-# Process event
-order = parse_order_data(event.data)
-db.insert(&quot;orders&quot;, order)
-
-# Mark as processed
-db.insert(&quot;processed_events&quot;, {&quot;event_id&quot;: event.id, &quot;processed_at&quot;: now()})
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user_with_orders&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>This is not FraiseQL federation.</strong> There is no gateway, no entity-resolution
+protocol, and no subgraph registry. The join happens entirely inside PostgreSQL,
+so the cost profile is a database join (single-digit milliseconds when the foreign
+server is nearby and indexed) rather than an HTTP round-trip per entity.</p>
+<p><strong>Operational notes for FDW views:</strong></p>
+<ul>
+<li>Foreign-table reads are only as fast as the remote query plan. Add appropriate
+  indexes on the remote side and use <code>IMPORT FOREIGN SCHEMA</code> or <code>ANALYZE</code> so the
+  planner has statistics.</li>
+<li>Network and credential failures surface as query errors. Wrap heavy FDW joins in
+  a <code>tv_</code> projection table that you refresh on a schedule if you need to decouple
+  read latency from the remote system's availability.</li>
+<li>Never expose internal <code>pk_</code>/<code>fk_</code> columns through the view's <code>data</code> JSONB —
+  publish only the public <code>id</code> (UUID) and the requested fields.</li>
+</ul>
+<h3 id="12-reaching-out-from-fn_-functions">1.2 Reaching Out from <code>fn_</code> Functions<a class="headerlink" href="#12-reaching-out-from-fn_-functions" title="Permanent link">&para;</a></h3>
+<p>Mutations call <code>fn_</code> PostgreSQL functions through <code>db.execute_function(...)</code>. Those
+functions can signal other systems as part of the same transaction, so there is no
+need for a FraiseQL-side publisher.</p>
+<p><strong><code>LISTEN/NOTIFY</code> for in-process / nearby listeners:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">();</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;userId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
 
-<hr />
-<h2 id="5-integration-topology-patterns">5. Integration Topology Patterns<a class="headerlink" href="#5-integration-topology-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="51-star-topology-centralized">5.1 Star Topology (Centralized)<a class="headerlink" href="#51-star-topology-centralized" title="Permanent link">&para;</a></h3>
-<p>One central FraiseQL service connects to many external systems:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<div class="highlight"><pre><span></span><code>    ┌─────────────┐
-    │ FraiseQL    │
-    │ (Central)   │
-    └──────┬──────┘
-┌───────┬──┴──┬────────┬──────┐
-│       │     │        │      │
+<span class="w">    </span><span class="c1">-- Emit an event on commit; any LISTENer on this channel receives it.</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;order_events&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;order_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">)::</span><span class="nb">text</span>
+<span class="w">    </span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>┌───▼──┐ ┌─▼──┐ ┌▼───┐ ┌──▼──┐ ┌─▼───┐
-│Kafka │ │ELK │ │S3  │ │Email│ │Auth │
-└──────┘ └────┘ └────┘ └─────┘ └─────┘</p>
-<p>Pros: Centralized control, single GraphQL API
-Cons: Single point of failure, scalability limits
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>pg_notify</code> payloads are limited (8 KB) and only delivered to currently-connected
+listeners — there is no replay. For durable, ordered delivery, prefer the outbox
+pattern below.</p>
+<p><strong>Transactional outbox for durable delivery to your own workers:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Written in the SAME transaction as the business write.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_outbox</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">event_type</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w">      </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">   </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">processed_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span>
+<span class="p">);</span>
 
-<h3 id="52-federated-topology-distributed">5.2 Federated Topology (Distributed)<a class="headerlink" href="#52-federated-topology-distributed" title="Permanent link">&para;</a></h3>
-<p>Multiple FraiseQL services with federation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌──────────────────┐     ┌──────────────────┐
-│ FraiseQL Users   │◄────►│ FraiseQL Orders  │
-│ (Subgraph A)     │     │ (Subgraph B)     │
-└──────────────────┘     └──────────────────┘
-         ▲                       ▲
-         │                       │
-    ┌────▼────┐             ┌────▼────┐
-    │ Auth    │             │ Kafka   │
-    └─────────┘             └─────────┘</p>
-<p>┌──────────────────┐
-│ Apollo Router    │
-│ (Gateway)        │
-└──────────────────┘</p>
-<p>Pros: Distributed, scalable, isolated
-Cons: More complex deployment, eventual consistency
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">();</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;userId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
 
-<h3 id="53-hub-and-spoke-topology-hybrid">5.3 Hub-and-Spoke Topology (Hybrid)<a class="headerlink" href="#53-hub-and-spoke-topology-hybrid" title="Permanent link">&para;</a></h3>
-<p>Mix of federation and direct integrations:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<div class="highlight"><pre><span></span><code>    ┌─────────────┐
-    │ FraiseQL    │
-    │ (Hub)       │
-    └──────┬──────┘
-┌───────┬──┴──┬────────┐
-│       │     │        │
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;order_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;orderId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>┌───▼──┐ ┌─▼───────▼───┐ ┌▼────────┐
-│Kafka │ │ Federated   │ │ External│
-│      │ │ Subgraphs   │ │ Systems │
-└──────┘ │ (Users,     │ └─────────┘
-         │  Orders)    │
-         └─────────────┘</p>
-<p>Pros: Flexible, balanced, controlled complexity
-Cons: Moderate complexity, requires good design
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="6-real-time-synchronization-patterns">6. Real-Time Synchronization Patterns<a class="headerlink" href="#6-real-time-synchronization-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="61-dual-write-anti-pattern">6.1 Dual-Write (Anti-pattern)<a class="headerlink" href="#61-dual-write-anti-pattern" title="Permanent link">&para;</a></h3>
-<p>Don't do this:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-write-to-both-database-and-external-system">❌ WRONG: Write to both database and external system<a class="headerlink" href="#wrong-write-to-both-database-and-external-system" title="Permanent link">&para;</a></h1>
-<p>def create_order(order):
-    db.insert("orders", order)  # Write 1
-    external_service.post("/orders", order)  # Write 2</p>
-<h1 id="problem-if-write-2-fails-inconsistency">Problem: If Write 2 fails, inconsistency<a class="headerlink" href="#problem-if-write-2-fails-inconsistency" title="Permanent link">&para;</a></h1>
-<h1 id="order-in-fraiseql-but-not-in-external-system">Order in FraiseQL but not in external system<a class="headerlink" href="#order-in-fraiseql-but-not-in-external-system" title="Permanent link">&para;</a></h1>
-<h1 id="if-write-1-fails-but-write-2-succeeds-reverse-problem">If Write 1 fails but Write 2 succeeds, reverse problem<a class="headerlink" href="#if-write-1-fails-but-write-2-succeeds-reverse-problem" title="Permanent link">&para;</a></h1>
-<h1 id="no-atomicity-across-systems">No atomicity across systems<a class="headerlink" href="#no-atomicity-across-systems" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="62-primary-database-with-cdc">6.2 Primary Database with CDC<a class="headerlink" href="#62-primary-database-with-cdc" title="Permanent link">&para;</a></h3>
-<p>Correct pattern:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-single-write-to-database-events-propagate">✅ CORRECT: Single write to database, events propagate<a class="headerlink" href="#correct-single-write-to-database-events-propagate" title="Permanent link">&para;</a></h1>
-<p>def create_order(order):
-    db.insert("orders", order)  # Single write (atomic)</p>
-<h1 id="trigger-fires-event-published">Trigger fires → Event published<a class="headerlink" href="#trigger-fires-event-published" title="Permanent link">&para;</a></h1>
-<h1 id="webhooks-called-external-system-updated">→ Webhooks called → External system updated<a class="headerlink" href="#webhooks-called-external-system-updated" title="Permanent link">&para;</a></h1>
-<h1 id="kafka-event-analytics-updated">→ Kafka event → Analytics updated<a class="headerlink" href="#kafka-event-analytics-updated" title="Permanent link">&para;</a></h1>
-<h1 id="inconsistency-window-order-in-fraiseql-not-yet-in-external">Inconsistency window: Order in FraiseQL, not yet in external<a class="headerlink" href="#inconsistency-window-order-in-fraiseql-not-yet-in-external" title="Permanent link">&para;</a></h1>
-<h1 id="but-convergence-guaranteed-eventual-consistency">But convergence guaranteed (eventual consistency)<a class="headerlink" href="#but-convergence-guaranteed-eventual-consistency" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="7-integration-monitoring">7. Integration Monitoring<a class="headerlink" href="#7-integration-monitoring" title="Permanent link">&para;</a></h2>
-<h3 id="71-metrics-to-track">7.1 Metrics to Track<a class="headerlink" href="#71-metrics-to-track" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Federation:
-  ├─ Subgraph latency: p50, p95, p99
-  ├─ Entity resolution success rate
-  ├─ Federation cache hit rate</p>
-<p>Webhooks:
-  ├─ Delivery success rate (target: &gt;99%)
-  ├─ Retry count distribution
-  ├─ Latency from event to delivery
-  └─ Failed webhook count (alert &gt;0)</p>
-<p>Messaging:
-  ├─ Events published per second
-  ├─ Consumer lag (target: &lt;1 minute)
-  ├─ Message loss (target: 0)
-  └─ Throughput (MB/sec)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="72-alert-rules">7.2 Alert Rules<a class="headerlink" href="#72-alert-rules" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Alert: Subgraph down
-  ├─ Condition: Federation call fails 5+ times in 1 minute
-  ├─ Action: Page on-call
-  └─ Impact: Federation queries fail</p>
-<p>Alert: Webhook delivery failing
-  ├─ Condition: &gt;5 consecutive failed deliveries
-  ├─ Action: Alert operations team
-  └─ Impact: External systems not notified</p>
-<p>Alert: Consumer lag increasing
-  ├─ Condition: Kafka lag &gt;10 minutes
-  ├─ Action: Scale consumers or investigate slowness
-  └─ Impact: Analytics delayed
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="8-best-practices">8. Best Practices<a class="headerlink" href="#8-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="81-federation">8.1 Federation<a class="headerlink" href="#81-federation" title="Permanent link">&para;</a></h3>
-<p><strong>DO:</strong></p>
+<p>A separate worker process — <strong>your application code, not a FraiseQL component</strong> —
+polls <code>tb_outbox</code> (or listens on a NOTIFY channel that the insert raises), delivers
+each event to Kafka/RabbitMQ/an HTTP webhook endpoint, and marks rows processed.
+Because the outbox row is written in the same transaction as the business data, you
+get a single atomic write with at-least-once downstream delivery; consumers
+deduplicate on the event <code>id</code>.</p>
+<blockquote>
+<p>The key principle is <strong>single write to PostgreSQL, events propagate from there.</strong>
+Never write to the database <em>and</em> call an external service directly from a
+resolver — if the second call fails you get an inconsistency with no atomicity.
+Let PostgreSQL own the write and let a worker drain the outbox.</p>
+</blockquote>
+<p>For consistency guarantees and the read/write model, see
+<a href="../../reliability/consistency-model/">../reliability/consistency-model.md</a> and
+<a href="../../../foundation/03-database-centric-architecture/">../../foundation/03-database-centric-architecture.md</a>.</p>
+<h3 id="13-other-postgresql-integration-surfaces">1.3 Other PostgreSQL Integration Surfaces<a class="headerlink" href="#13-other-postgresql-integration-surfaces" title="Permanent link">&para;</a></h3>
+<p>Because integration lives in the database, you can use the full PostgreSQL
+ecosystem inside your views and functions:</p>
 <ul>
-<li>✅ Use federation for loosely-coupled services</li>
-<li>✅ Use FDW for same-database services (10x faster)</li>
-<li>✅ Design shallow federation (max 2 levels)</li>
-<li>✅ Cache federation results</li>
-<li>✅ Monitor subgraph latency</li>
-</ul>
-<p><strong>DON'T:</strong></p>
-<ul>
-<li>❌ Chain more than 2 levels of federation</li>
-<li>❌ Use federation for internal services (too slow)</li>
-<li>❌ Assume federation latency &lt;100ms (plan for 100-200ms)</li>
-</ul>
-<h3 id="82-webhooks">8.2 Webhooks<a class="headerlink" href="#82-webhooks" title="Permanent link">&para;</a></h3>
-<p><strong>DO:</strong></p>
-<ul>
-<li>✅ Verify webhook signatures</li>
-<li>✅ Implement idempotent processing</li>
-<li>✅ Handle delivery failures gracefully</li>
-<li>✅ Track webhook delivery status</li>
-<li>✅ Provide webhook dashboard for debugging</li>
-</ul>
-<p><strong>DON'T:</strong></p>
-<ul>
-<li>❌ Trust webhook source without signature verification</li>
-<li>❌ Process duplicate events twice</li>
-<li>❌ Block webhook processing (use async)</li>
-<li>❌ Ignore delivery failures</li>
-</ul>
-<h3 id="83-messaging">8.3 Messaging<a class="headerlink" href="#83-messaging" title="Permanent link">&para;</a></h3>
-<p><strong>DO:</strong></p>
-<ul>
-<li>✅ Use message brokers for high-throughput events</li>
-<li>✅ Partition by entity for ordering</li>
-<li>✅ Monitor consumer lag</li>
-<li>✅ Implement dead-letter queues for failures</li>
-<li>✅ Version message format</li>
-</ul>
-<p><strong>DON'T:</strong></p>
-<ul>
-<li>❌ Expect global event ordering (not possible)</li>
-<li>❌ Use message broker for real-time (latency too high)</li>
-<li>❌ Ignore message loss</li>
-<li>❌ Deploy without monitoring consumer health</li>
+<li><strong>Extensions</strong> — <code>pgvector</code> (similarity search), <code>pg_trgm</code> (fuzzy text),
+  PostGIS (geospatial), <code>ltree</code> (hierarchies). Expose results through a view's
+  <code>data</code> JSONB.</li>
+<li><strong>PL/Python / PL/pgSQL</strong> — call out to compute inside <code>fn_</code> functions when the
+  logic genuinely belongs server-side.</li>
+<li><strong>Triggers</strong> — keep <code>tv_</code> projection tables current, or populate <code>tb_outbox</code>
+  rows automatically on write.</li>
 </ul>
 <hr />
-<p><strong>Document Version</strong>: 1.0.0
-<strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>FraiseQL integrations balance consistency, latency, and complexity through chosen patterns.</p>
+<h2 id="2-application-level-integration-fastapi">2. Application-Level Integration (FastAPI)<a class="headerlink" href="#2-application-level-integration-fastapi" title="Permanent link">&para;</a></h2>
+<p><code>create_fraiseql_app(...)</code> returns a standard FastAPI application. That makes
+FraiseQL a normal citizen of any FastAPI/ASGI deployment: you can add middleware,
+mount it under a path, run it beside REST routes, and share authentication.</p>
+<h3 id="21-adding-middleware">2.1 Adding Middleware<a class="headerlink" href="#21-adding-middleware" title="Permanent link">&para;</a></h3>
+<p>Pass standard Starlette/FastAPI middleware through <code>create_fraiseql_app</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">Middleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.gzip</span><span class="w"> </span><span class="kn">import</span> <span class="n">GZipMiddleware</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">middleware</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Middleware</span><span class="p">(</span>
+            <span class="n">CORSMiddleware</span><span class="p">,</span>
+            <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://app.example.com&quot;</span><span class="p">],</span>
+            <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;GET&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="n">Middleware</span><span class="p">(</span><span class="n">GZipMiddleware</span><span class="p">,</span> <span class="n">minimum_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Any ASGI middleware works the same way — request logging, tracing, rate limiting,
+and so on — because there is nothing FraiseQL-specific about the integration point.</p>
+<h3 id="22-mounting-inside-a-larger-application">2.2 Mounting Inside a Larger Application<a class="headerlink" href="#22-mounting-inside-a-larger-application" title="Permanent link">&para;</a></h3>
+<p>Run FraiseQL alongside your existing REST endpoints by mounting it as a
+sub-application. GraphQL lives under one path; the rest of your API is unchanged.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="c1"># Your existing REST API.</span>
+<span class="n">root</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Platform API&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+
+
+<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/v1/reports/</span><span class="si">{report_id}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_report</span><span class="p">(</span><span class="n">report_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="o">...</span>  <span class="c1"># existing REST handler</span>
+
+
+<span class="c1"># The FraiseQL GraphQL app.</span>
+<span class="n">graphql_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Serve GraphQL under /graphql, REST everywhere else.</span>
+<span class="n">root</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">graphql_app</span><span class="p">)</span>
+</code></pre></div>
+<p>Run the composed app with any ASGI server:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:root<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<p>The GraphQL HTTP endpoint, the GraphQL-over-WebSocket subscription endpoint, and
+(when <code>production=False</code>) the playground are all served under the mount path.</p>
+<h3 id="23-sharing-authentication">2.3 Sharing Authentication<a class="headerlink" href="#23-sharing-authentication" title="Permanent link">&para;</a></h3>
+<p>FraiseQL resolves authentication into <code>info.context</code>, so the cleanest pattern is to
+let one auth layer populate the request and have both REST and GraphQL read from it.
+Two common approaches:</p>
+<ul>
+<li><strong>Shared middleware</strong> — an ASGI auth middleware (JWT/Auth0/session) validates the
+  incoming token, attaches the principal to the request scope, and both the REST
+  routes and the FraiseQL resolvers read it. Pass it through <code>middleware=[...]</code>.</li>
+<li><strong>FraiseQL authorization</strong> — guard individual operations with
+  <code>@fraiseql.query(authorizer=...)</code> and <code>@fraiseql.subscription(authorizer=...)</code>,
+  and field-level access with the <code>authorize_fields</code> parameter on
+  <code>@fraiseql.type</code>. These run inside FraiseQL using the same principal the shared
+  middleware established.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">require_authenticated</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">principal</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>  <span class="c1"># populated by shared auth middleware</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">principal</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
+<p>Because authorization is enforced per resolver, keep it consistent across every
+operation — a resolver without an authorizer is open. See
+<a href="../extension-points/">./extension-points.md</a> for the full set of authorization,
+custom-field, and dataloader extension points.</p>
+<hr />
+<h2 id="3-client-integration">3. Client Integration<a class="headerlink" href="#3-client-integration" title="Permanent link">&para;</a></h2>
+<p>FraiseQL speaks the two standard GraphQL transports, so any conformant client works
+without special drivers.</p>
+<h3 id="31-graphql-over-http">3.1 GraphQL over HTTP<a class="headerlink" href="#31-graphql-over-http" title="Permanent link">&para;</a></h3>
+<p>Queries and mutations are plain <code>POST</code> requests to the GraphQL endpoint:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ users { id name } }&quot;}&#39;</span>
+</code></pre></div>
+<p>Any GraphQL client (Apollo Client, urql, graphql-request, Relay, or a hand-rolled
+<code>fetch</code>) connects the same way — point it at the endpoint URL and send the standard
+<code>{ query, variables, operationName }</code> body.</p>
+<h3 id="32-graphql-over-websocket-subscriptions">3.2 GraphQL over WebSocket (Subscriptions)<a class="headerlink" href="#32-graphql-over-websocket-subscriptions" title="Permanent link">&para;</a></h3>
+<p>Subscriptions are served over GraphQL-over-WebSocket. FraiseQL supports both the
+modern <code>graphql-transport-ws</code> protocol and the legacy <code>graphql-ws</code> protocol, so
+clients negotiate whichever they implement.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">task</span>
+</code></pre></div>
+<p>The event source is <strong>your async generator</strong> — it can be backed by PostgreSQL
+<code>LISTEN/NOTIFY</code>, polling a <code>tv_</code> projection, or an external stream you read. FraiseQL
+streams whatever the generator yields to the connected client over WebSocket. For
+the subscription model, lifecycle, and client setup, see
+<a href="../../realtime/subscriptions/">../realtime/subscriptions.md</a>.</p>
+<h3 id="33-choosing-what-a-client-reads">3.3 Choosing What a Client Reads<a class="headerlink" href="#33-choosing-what-a-client-reads" title="Permanent link">&para;</a></h3>
+<p>Whether a query is cheap depends on the view it hits. Point read-heavy or
+deeply-nested client queries at <code>tv_</code> projection tables and lighter queries at
+plain <code>v_</code> views. The trade-offs are covered in
+<a href="../../database/view-selection-guide/">../database/view-selection-guide.md</a>.</p>
+<hr />
+<h2 id="4-putting-it-together-a-reference-topology">4. Putting It Together: A Reference Topology<a class="headerlink" href="#4-putting-it-together-a-reference-topology" title="Permanent link">&para;</a></h2>
+<p>A typical FraiseQL deployment that integrates with several external systems uses
+each layer for what it does best:</p>
+<div class="highlight"><pre><span></span><code>        GraphQL clients (HTTP + WebSocket)
+                     |
+            ┌────────▼─────────┐
+            │  FastAPI root    │  REST routes + mounted /graphql
+            │  (your app)      │  shared auth middleware
+            └────────┬─────────┘
+                     │
+            ┌────────▼─────────┐
+            │   PostgreSQL     │
+            │  v_/tv_ views    │◀── FDW ──▶ remote PostgreSQL (read)
+            │  fn_ functions   │──▶ tb_outbox ──▶ your worker ──▶ Kafka / webhook
+            └──────────────────┘
+</code></pre></div>
+<ul>
+<li><strong>Reads</strong> that need remote data join through FDW <em>inside the view</em>.</li>
+<li><strong>Writes</strong> go to PostgreSQL via <code>fn_</code> functions; an outbox row makes downstream
+  delivery durable and atomic.</li>
+<li><strong>Your worker</strong> (not FraiseQL) drains the outbox and talks to brokers or HTTP
+  endpoints, keeping the single-write principle intact.</li>
+<li><strong>Clients</strong> use standard GraphQL transports; the playground is available in
+  development only.</li>
+</ul>
+<hr />
+<h2 id="5-best-practices">5. Best Practices<a class="headerlink" href="#5-best-practices" title="Permanent link">&para;</a></h2>
+<p><strong>Database-level (FDW + functions):</strong></p>
+<ul>
+<li>Compose FDW reads inside views; keep <code>@fraiseql.type</code> definitions unaware of the
+  remote source.</li>
+<li>Materialize expensive FDW joins into <code>tv_</code> projection tables when remote latency
+  or availability is a risk.</li>
+<li>Use the transactional outbox for durable, ordered, exactly-once-effective
+  delivery; use <code>LISTEN/NOTIFY</code> only for best-effort, nearby listeners.</li>
+<li>Never expose <code>pk_</code>/<code>fk_</code> columns through a view's <code>data</code> JSONB.</li>
+</ul>
+<p><strong>Application-level (FastAPI):</strong></p>
+<ul>
+<li>Mount FraiseQL under a path inside your existing app rather than running two
+  servers when REST and GraphQL share a deployment.</li>
+<li>Establish authentication once in shared middleware and read the principal from
+  <code>info.context</code> in resolvers.</li>
+<li>Apply an authorizer to every query, mutation, and subscription that needs one — a
+  missing authorizer means open access.</li>
+</ul>
+<p><strong>Client-level:</strong></p>
+<ul>
+<li>Use any standard GraphQL-over-HTTP client; no FraiseQL-specific SDK is required.</li>
+<li>Negotiate <code>graphql-transport-ws</code> for subscriptions; fall back to legacy
+  <code>graphql-ws</code> only for older clients.</li>
+<li>Disable the playground in production (<code>production=True</code>).</li>
+</ul>
+<hr />
+<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../extension-points/">./extension-points.md</a> — custom fields, dataloaders,
+  authorization, and middleware extension points.</li>
+<li><a href="../../realtime/subscriptions/">../realtime/subscriptions.md</a> — WebSocket
+  subscriptions and the async-generator event model.</li>
+<li><a href="../../reliability/consistency-model/">../reliability/consistency-model.md</a> — the
+  read/write consistency model behind the single-write principle.</li>
+<li><a href="../../database/view-selection-guide/">../database/view-selection-guide.md</a> —
+  choosing <code>v_</code> vs <code>tv_</code> for client query shapes.</li>
+<li><a href="../../../foundation/03-database-centric-architecture/">../../foundation/03-database-centric-architecture.md</a>
+  — why business logic and integration live in PostgreSQL.</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

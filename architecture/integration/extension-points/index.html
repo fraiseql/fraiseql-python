@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL v1 is extensible through custom field resolvers, dataloaders, scalars, FastAPI/ASGI middleware, operation authorizers, and PostgreSQL itself. This guide documents the real extension surfaces.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/integration/extension-points/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Extension Points - FraiseQL Documentation</title>
+        <title>FraiseQL Extension Points: Customizing and Extending the Framework - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-extension-points-plugins-customization-and-integration-hooks" class="md-skip">
+        <a href="#fraiseql-extension-points-customizing-and-extending-the-framework" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Extension Points
+              FraiseQL Extension Points: Customizing and Extending the Framework
             
           </span>
         </div>
@@ -1714,22 +1716,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-authorization-rule-extensions" class="md-nav__link">
+  <a href="#1-custom-field-resolvers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Authorization Rule Extensions
+        1. Custom Field Resolvers
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Authorization Rule Extensions">
+    <nav class="md-nav" aria-label="1. Custom Field Resolvers">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-custom-authorization-rules" class="md-nav__link">
+  <a href="#11-synchronous-computed-field" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Custom Authorization Rules
+        1.1 Synchronous computed field
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-async-field-with-database-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Async field with database access
       
     </span>
   </a>
@@ -1738,6 +1751,200 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dataloaders-batching-to-prevent-n1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Dataloaders: Batching to Prevent N+1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-custom-scalars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Custom Scalars
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-fastapi-asgi-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. FastAPI / ASGI Middleware
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. FastAPI / ASGI Middleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-add-middleware-to-the-generated-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Add middleware to the generated app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-mount-fraiseql-inside-a-larger-fastapi-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Mount FraiseQL inside a larger FastAPI app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Authorization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Authorization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-authorizer-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The Authorizer protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-global-and-per-operation-authorizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Global and per-operation authorizers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-decision-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Decision caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-enterprise-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Enterprise RBAC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-postgresql-the-deepest-extension-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. PostgreSQL: The Deepest Extension Surface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. PostgreSQL: The Deepest Extension Surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-business-logic-in-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Business logic in fn_ functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-triggers-and-custom-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Triggers and custom types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-postgresql-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 PostgreSQL extensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5001,22 +5208,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-authorization-rule-extensions" class="md-nav__link">
+  <a href="#1-custom-field-resolvers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Authorization Rule Extensions
+        1. Custom Field Resolvers
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Authorization Rule Extensions">
+    <nav class="md-nav" aria-label="1. Custom Field Resolvers">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-custom-authorization-rules" class="md-nav__link">
+  <a href="#11-synchronous-computed-field" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Custom Authorization Rules
+        1.1 Synchronous computed field
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-async-field-with-database-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Async field with database access
       
     </span>
   </a>
@@ -5025,6 +5243,200 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dataloaders-batching-to-prevent-n1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Dataloaders: Batching to Prevent N+1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-custom-scalars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Custom Scalars
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-fastapi-asgi-middleware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. FastAPI / ASGI Middleware
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. FastAPI / ASGI Middleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-add-middleware-to-the-generated-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Add middleware to the generated app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-mount-fraiseql-inside-a-larger-fastapi-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Mount FraiseQL inside a larger FastAPI app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Authorization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Authorization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-authorizer-protocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The Authorizer protocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-global-and-per-operation-authorizers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Global and per-operation authorizers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-decision-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Decision caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-enterprise-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Enterprise RBAC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-postgresql-the-deepest-extension-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. PostgreSQL: The Deepest Extension Surface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. PostgreSQL: The Deepest Extension Surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-business-logic-in-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Business logic in fn_ functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-triggers-and-custom-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Triggers and custom types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-postgresql-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 PostgreSQL extensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5048,748 +5460,418 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Extension Points: Plugins, Customization, and Integration Hooks
-description: FraiseQL provides extension points for customization without modifying core framework. Developers can extend behavior through hooks, custom validators, authoriz
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="fraiseql-extension-points-plugins-customization-and-integration-hooks">FraiseQL Extension Points: Plugins, Customization, and Integration Hooks<a class="headerlink" href="#fraiseql-extension-points-plugins-customization-and-integration-hooks" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> January 2026
-<strong>Status:</strong> Complete System Specification
-<strong>Audience:</strong> Framework extension developers, plugin authors, integration engineers</p>
+<h1 id="fraiseql-extension-points-customizing-and-extending-the-framework">FraiseQL Extension Points: Customizing and Extending the Framework<a class="headerlink" href="#fraiseql-extension-points-customizing-and-extending-the-framework" title="Permanent link">&para;</a></h1>
+<p><strong>Audience:</strong> Application developers, integration engineers, framework users</p>
 <hr />
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides extension points for customization without modifying core framework. Developers can extend behavior through hooks, custom validators, authorization rules, and metrics.</p>
-<p><strong>Core principle</strong>: Extensibility through composition, not modification. All extensions operate within compiled schema constraints.</p>
+<p>FraiseQL v1 is a Python runtime GraphQL framework for PostgreSQL. You define your
+schema with decorators; at application startup the schema is built in memory and
+served over FastAPI. There is no compile step and no separate plugin runtime.</p>
+<p>Extensibility is achieved through <strong>composition</strong> — you extend behavior by adding
+your own resolvers, scalars, middleware, and authorizers, and by pushing logic into
+PostgreSQL. The framework exposes the following real extension points:</p>
+<table>
+<thead>
+<tr>
+<th>Extension point</th>
+<th>What it customizes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@fraiseql.field</code></td>
+<td>Computed / derived fields on a type (sync or async)</td>
+</tr>
+<tr>
+<td><code>@fraiseql.dataloader_field</code></td>
+<td>Batched field resolution to prevent N+1 queries</td>
+</tr>
+<tr>
+<td>Custom scalars</td>
+<td>Domain-specific typed values</td>
+</tr>
+<tr>
+<td>FastAPI / ASGI middleware</td>
+<td>Cross-cutting request/response behavior</td>
+</tr>
+<tr>
+<td><code>Authorizer</code> + <code>authorizer=</code></td>
+<td>Per-operation and global authorization</td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td>The deepest surface: <code>fn_</code> functions, triggers, custom types, extensions</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="1-authorization-rule-extensions">1. Authorization Rule Extensions<a class="headerlink" href="#1-authorization-rule-extensions" title="Permanent link">&para;</a></h2>
-<h3 id="11-custom-authorization-rules">1.1 Custom Authorization Rules<a class="headerlink" href="#11-custom-authorization-rules" title="Permanent link">&para;</a></h3>
-<p>Define custom rules beyond built-in:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.authorization_rule(name="published_or_author")
-def rule_published_or_author(
-    resource: Any,
-    user_context: UserContext
-) -&gt; bool:
-    """Published posts or posts by current user"""
-    return (
-        resource.published == True
-        or resource.author_id == user_context.user_id
-    )</p>
-<p>@FraiseQL.authorization_rule(name="team_member")
-def rule_team_member(
-    resource: Any,
-    user_context: UserContext
-) -&gt; bool:
-    """User is member of resource's team"""
-    return resource.team_id in user_context.team_ids</p>
-<h1 id="use-in-schema">Use in schema<a class="headerlink" href="#use-in-schema" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class Post:
-    @FraiseQL.authorize(rule="published_or_author")
-    content: str</p>
-<p>@FraiseQL.type
-class Project:
-    @FraiseQL.authorize(rule="team_member")
-    budget: float
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="1-custom-field-resolvers">1. Custom Field Resolvers<a class="headerlink" href="#1-custom-field-resolvers" title="Permanent link">&para;</a></h2>
+<p>Use <code>@fraiseql.field</code> to add a computed or derived field to a <code>@fraiseql.type</code>. The
+decorated method becomes a GraphQL field whose value is produced at resolution time
+rather than read directly from the view's <code>data</code> JSONB.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<h3 id="12-complex-rule-logic">1.2 Complex Rule Logic<a class="headerlink" href="#12-complex-rule-logic" title="Permanent link">&para;</a></h3>
-<p>Rules can access database for context:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.authorization_rule(name="department_lead_or_admin")
-async def rule_department_lead(
-    resource: Any,
-    user_context: UserContext,
-    db: Database  # Database connection provided
-) -&gt; bool:
-    """User is department lead or admin"""
-    if user_context.is_admin:
-        return True</p>
-<div class="highlight"><pre><span></span><code># Query to check if user is lead of this department
-is_lead = await db.query_one(
-    &quot;SELECT COUNT(*) FROM tb_department_leads &quot;
-    &quot;WHERE user_id = $1 AND department_id = $2&quot;,
-    [user_context.user_id, resource.department_id]
-)
-return bool(is_lead)
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">resolver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">track_n1</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">field</span><span class="p">(</span><span class="o">...</span><span class="p">):</span> <span class="o">...</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>The signature is:</p>
+<ul>
+<li><code>resolver</code> — an optional custom resolver to override the default behavior
+  (defaults to <code>None</code>, in which case the decorated method body is the resolver).</li>
+<li><code>description</code> — the field description that appears in the GraphQL schema.</li>
+<li><code>track_n1</code> — whether to track N+1 query patterns for this field (default <code>True</code>).</li>
+</ul>
+<h3 id="11-synchronous-computed-field">1.1 Synchronous computed field<a class="headerlink" href="#11-synchronous-computed-field" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<h3 id="13-dynamic-rule-caching">1.3 Dynamic Rule Caching<a class="headerlink" href="#13-dynamic-rule-caching" title="Permanent link">&para;</a></h3>
-<p>Cache authorization decisions:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.authorization_rule(
-    name="expensive_rule",
-    cache_ttl_seconds=300,
-    cache_key_fields=["user_id", "resource_id"]
-)
-async def expensive_rule(resource, user_context, db):
-    """Rule with expensive computation"""
-    # Cached automatically for 5 minutes
-    # Cache key: {user_id}:{resource_id}</p>
-<div class="highlight"><pre><span></span><code>result = await db.query_expensive(...)
-return result
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">ID</span>
+    <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">last_name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User&#39;s full display name&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">display_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">last_name</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="12-async-field-with-database-access">1.2 Async field with database access<a class="headerlink" href="#12-async-field-with-database-access" title="Permanent link">&para;</a></h3>
+<p>The resolver receives the GraphQL <code>info</code> object, so it can reach the request-scoped
+repository through <code>info.context["db"]</code> and run additional reads.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
+
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of posts authored by this user&quot;</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
+            <span class="s2">&quot;SELECT count(*) FROM v_post WHERE author_id = $1&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">)</span>
+</code></pre></div>
+<p>Because the parent object (<code>self</code>) and <code>info</code> are both available, a custom field can
+combine already-loaded data with a targeted query. Keep these resolvers cheap: if a
+field issues one query per parent row, batch it with a dataloader instead (next
+section).</p>
 <hr />
-<h2 id="2-validation-rule-extensions">2. Validation Rule Extensions<a class="headerlink" href="#2-validation-rule-extensions" title="Permanent link">&para;</a></h2>
-<h3 id="21-custom-validators">2.1 Custom Validators<a class="headerlink" href="#21-custom-validators" title="Permanent link">&para;</a></h3>
-<p>Define validation on input fields:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.validator(name="email_validator")
-def validate_email(value: str) -&gt; None:
-    """Validate email format and domain"""
-    if not "@" in value:
-        raise ValidationError("Invalid email format")</p>
-<div class="highlight"><pre><span></span><code>domain = value.split(&quot;@&quot;)[1]
-if domain not in [&quot;company.com&quot;, &quot;trusted-partner.com&quot;]:
-    raise ValidationError(f&quot;Email domain {domain} not allowed&quot;)
+<h2 id="2-dataloaders-batching-to-prevent-n1">2. Dataloaders: Batching to Prevent N+1<a class="headerlink" href="#2-dataloaders-batching-to-prevent-n1" title="Permanent link">&para;</a></h2>
+<p>When a field needs to look up a related record for every parent in a list, resolving
+it one row at a time produces an N+1 query pattern. <code>@fraiseql.dataloader_field</code>
+batches those lookups into a single load.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">dataloader_field</span><span class="p">(</span>
+    <span class="n">loader_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">DataLoader</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">key_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="o">...</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
-<p>@FraiseQL.validator(name="password_strength")
-def validate_password(value: str) -&gt; None:
-    """Validate password meets security requirements"""
-    if len(value) &lt; 12:
-        raise ValidationError("Password must be at least 12 characters")</p>
-<div class="highlight"><pre><span></span><code>if not any(c.isupper() for c in value):
-    raise ValidationError(&quot;Password must contain uppercase letter&quot;)
+<ul>
+<li><code>loader_class</code> — a <code>DataLoader</code> subclass that knows how to batch-load by key.</li>
+<li><code>key_field</code> — the attribute on the parent object holding the key to load.</li>
+<li><code>description</code> — optional field description for the GraphQL schema.</li>
+</ul>
+<p>The decorated method must have the signature <code>(self, info) -&gt; ReturnType</code>; its body
+is auto-implemented by the decorator.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.optimization.dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
 
-if not any(c.isdigit() for c in value):
-    raise ValidationError(&quot;Password must contain digit&quot;)
-</code></pre></div>
-<h1 id="use-in-schema_1">Use in schema<a class="headerlink" href="#use-in-schema_1" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class User:
-    @FraiseQL.validate(rule="email_validator")
-    email: str</p>
-<div class="highlight"><pre><span></span><code>@FraiseQL.mutation
-@FraiseQL.validate(rule=&quot;password_strength&quot;)
-def update_password(self, new_password: str) -&gt; bool:
-    &quot;&quot;&quot;Update user password&quot;&quot;&quot;
-    pass
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
 
-<h3 id="22-async-validators">2.2 Async Validators<a class="headerlink" href="#22-async-validators" title="Permanent link">&para;</a></h3>
-<p>Validators can query database:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.validator(name="unique_email")
-async def validate_unique_email(
-    value: str,
-    db: Database
-) -&gt; None:
-    """Ensure email is unique in database"""
-    existing = await db.query_one(
-        "SELECT id FROM tb_user WHERE email = $1",
-        [value]
-    )</p>
-<div class="highlight"><pre><span></span><code>if existing:
-    raise ValidationError(f&quot;Email {value} already exists&quot;)
-</code></pre></div>
-<h1 id="use-in-mutation">Use in mutation<a class="headerlink" href="#use-in-mutation" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-def create_user(input: CreateUserInput) -&gt; User:
-    """Create user with unique email validation"""
-    # @unique_email validator runs during input validation
-    pass
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">class</span><span class="w"> </span><span class="nc">UserDataLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;User | None&quot;</span><span class="p">]:</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">id__in</span><span class="o">=</span><span class="n">keys</span><span class="p">)</span>
+        <span class="n">by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">by_id</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
+    <span class="n">author_id</span><span class="p">:</span> <span class="n">UUID</span>
+
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;author_id&quot;</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;User | None&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the post author. Batched across all posts in the request.&quot;&quot;&quot;</span>
+        <span class="o">...</span>  <span class="c1"># implementation generated by the decorator</span>
+</code></pre></div>
+<p>All <code>author</code> lookups across a page of posts collapse into one batched load instead
+of one query per post.</p>
+<p>See also: <a href="../../../foundation/09-type-system/">type system</a>.</p>
 <hr />
-<h2 id="3-lifecycle-hooks">3. Lifecycle Hooks<a class="headerlink" href="#3-lifecycle-hooks" title="Permanent link">&para;</a></h2>
-<h3 id="31-query-hooks">3.1 Query Hooks<a class="headerlink" href="#31-query-hooks" title="Permanent link">&para;</a></h3>
-<p>Execute code before/after queries:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.hook(event="query.before_execution")
-async def log_query_start(
-    query_name: str,
-    variables: dict,
-    user_context: UserContext
-) -&gt; None:
-    """Log query execution start"""
-    logger.info(
-        f"Query {query_name} started",
-        extra={
-            "user_id": user_context.user_id,
-            "variables": variables
-        }
-    )</p>
-<p>@FraiseQL.hook(event="query.after_execution")
-async def log_query_end(
-    query_name: str,
-    duration_ms: float,
-    error: Exception | None,
-    user_context: UserContext
-) -&gt; None:
-    """Log query execution end"""
-    if error:
-        logger.error(
-            f"Query {query_name} failed: {error}",
-            extra={"user_id": user_context.user_id}
-        )
-    else:
-        logger.info(
-            f"Query {query_name} completed in {duration_ms}ms",
-            extra={"user_id": user_context.user_id}
-        )
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="3-custom-scalars">3. Custom Scalars<a class="headerlink" href="#3-custom-scalars" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a library of domain scalars in <code>fraiseql.types</code>. Importing and
+annotating a field with one of these gives you parsing, serialization, and GraphQL
+schema typing for free.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">EmailAddress</span><span class="p">,</span> <span class="n">JSON</span><span class="p">,</span> <span class="n">LTree</span>
 
-<h3 id="32-mutation-hooks">3.2 Mutation Hooks<a class="headerlink" href="#32-mutation-hooks" title="Permanent link">&para;</a></h3>
-<p>Execute code before/after mutations:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.hook(event="mutation.before_execution")
-async def audit_mutation_intent(
-    mutation_name: str,
-    input_data: dict,
-    user_context: UserContext
-) -&gt; None:
-    """Log intention to perform mutation"""
-    logger.info(
-        f"Mutation {mutation_name} requested",
-        extra={
-            "user_id": user_context.user_id,
-            "mutation": mutation_name,
-            "data_summary": summarize_data(input_data)
-        }
-    )</p>
-<p>@FraiseQL.hook(event="mutation.after_execution")
-async def handle_mutation_side_effects(
-    mutation_name: str,
-    result: Any,
-    user_context: UserContext
-) -&gt; None:
-    """Handle side effects after mutation"""
-    if mutation_name == "DeleteUser":
-        # Trigger cleanup jobs
-        await trigger_user_cleanup(result.user_id)
-    elif mutation_name == "CreateOrder":
-        # Send confirmation email
-        await send_order_confirmation(result.order_id)
-```text</p>
-<!-- Code example in TEXT -->
 
-<h3 id="33-subscription-hooks">3.3 Subscription Hooks<a class="headerlink" href="#33-subscription-hooks" title="Permanent link">&para;</a></h3>
-<p>Execute code on subscription lifecycle:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.hook(event="subscription.connected")
-async def on_subscription_connected(
-    subscription_id: str,
-    subscription_name: str,
-    user_context: UserContext
-) -&gt; None:
-    """Handle new subscription connection"""
-    logger.info(
-        f"Subscription {subscription_name} connected",
-        extra={
-            "subscription_id": subscription_id,
-            "user_id": user_context.user_id
-        }
-    )</p>
-<div class="highlight"><pre><span></span><code># Track active subscriptions
-await metrics.gauge(&quot;active_subscriptions&quot;, increment=1)
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_account&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="n">EmailAddress</span>      <span class="c1"># validated email scalar</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>     <span class="c1"># ISO-8601 timestamp scalar</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">JSON</span>           <span class="c1"># arbitrary JSON payload</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">LTree</span>              <span class="c1"># PostgreSQL ltree hierarchical path</span>
 </code></pre></div>
-<p>@FraiseQL.hook(event="subscription.disconnected")
-async def on_subscription_disconnected(
-    subscription_id: str,
-    subscription_name: str,
-    reason: str
-) -&gt; None:
-    """Handle subscription disconnection"""
-    logger.info(
-        f"Subscription {subscription_name} disconnected: {reason}",
-        extra={"subscription_id": subscription_id}
-    )</p>
-<div class="highlight"><pre><span></span><code>await metrics.gauge(&quot;active_subscriptions&quot;, increment=-1)
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="34-error-hooks">3.4 Error Hooks<a class="headerlink" href="#34-error-hooks" title="Permanent link">&para;</a></h3>
-<p>Execute code on errors:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.hook(event="error.occurred")
-async def handle_error(
-    error: Exception,
-    error_code: str,
-    operation_type: str,
-    user_context: UserContext
-) -&gt; None:
-    """Handle any error in operation"""</p>
-<div class="highlight"><pre><span></span><code># Log authorization errors separately
-if error_code.startswith(&quot;E_AUTH_&quot;):
-    logger.warning(
-        f&quot;Authorization error: {error_code}&quot;,
-        extra={&quot;user_id&quot;: user_context.user_id}
-    )
-    await notify_security(error_code, user_context.user_id)
-
-# Alert on database errors
-elif error_code.startswith(&quot;E_DB_&quot;):
-    logger.error(
-        f&quot;Database error: {error_code}&quot;,
-        extra={&quot;error&quot;: str(error)}
-    )
-    await alert_oncall(&quot;Database error detected&quot;)
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p>Available scalars include <code>ID</code>, <code>Date</code>, <code>DateTime</code>, <code>EmailAddress</code>, <code>JSON</code>, <code>LTree</code>,
+and many more domain types. Each scalar carries its own validation and
+serialization, so an <code>EmailAddress</code> field rejects malformed input at the GraphQL
+boundary before it ever reaches your resolver, and an <code>LTree</code> value maps cleanly onto
+PostgreSQL's <code>ltree</code> type.</p>
+<p>For the complete catalog and the rules each scalar enforces, see the
+<a href="../../../reference/scalars/">scalars reference</a>.</p>
 <hr />
-<h2 id="4-custom-metrics">4. Custom Metrics<a class="headerlink" href="#4-custom-metrics" title="Permanent link">&para;</a></h2>
-<h3 id="41-counter-metrics">4.1 Counter Metrics<a class="headerlink" href="#41-counter-metrics" title="Permanent link">&para;</a></h3>
-<p>Track occurrences:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.metric(name="user_created", type="counter")
-def track_user_creation():
-    """Track user creation count"""
-    # Auto-incremented on mutation
-    pass</p>
-<h1 id="use-in-code">Use in code<a class="headerlink" href="#use-in-code" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.hook(event="mutation.after_execution")
-async def track_mutations(mutation_name, result):
-    if mutation_name == "CreateUser":
-        metrics.increment("user_created")
-        metrics.increment("mutations_total", labels={"type": "create"})
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="4-fastapi-asgi-middleware">4. FastAPI / ASGI Middleware<a class="headerlink" href="#4-fastapi-asgi-middleware" title="Permanent link">&para;</a></h2>
+<p>FraiseQL serves its GraphQL endpoint as a FastAPI application, so the entire FastAPI
+and Starlette middleware ecosystem is available to you. There are two ways to add
+cross-cutting request/response behavior.</p>
+<h3 id="41-add-middleware-to-the-generated-app">4.1 Add middleware to the generated app<a class="headerlink" href="#41-add-middleware-to-the-generated-app" title="Permanent link">&para;</a></h3>
+<p><code>create_fraiseql_app</code> returns a <code>FastAPI</code> instance. Add standard middleware to it
+with <code>add_middleware</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.gzip</span><span class="w"> </span><span class="kn">import</span> <span class="n">GZipMiddleware</span>
 
-<h3 id="42-gauge-metrics">4.2 Gauge Metrics<a class="headerlink" href="#42-gauge-metrics" title="Permanent link">&para;</a></h3>
-<p>Track instantaneous values:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.metric(name="active_sessions", type="gauge")
-async def update_active_sessions():
-    """Track active user sessions"""
-    count = await db.query_one(
-        "SELECT COUNT(*) FROM tb_session WHERE active = true"
-    )
-    metrics.set("active_sessions", count)</p>
-<h1 id="periodic-update">Periodic update<a class="headerlink" href="#periodic-update" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.schedule(interval_seconds=60)
-async def refresh_gauge_metrics():
-    await update_active_sessions()
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 
-<h3 id="43-histogram-metrics">4.3 Histogram Metrics<a class="headerlink" href="#43-histogram-metrics" title="Permanent link">&para;</a></h3>
-<p>Track distributions:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.metric(name="query_duration_ms", type="histogram")
-async def track_query_latency(duration_ms: float):
-    """Track query latency distribution"""
-    metrics.histogram("query_duration_ms", duration_ms)</p>
-<h1 id="use-in-hook">Use in hook<a class="headerlink" href="#use-in-hook" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.hook(event="query.after_execution")
-async def record_latency(duration_ms, query_name):
-    metrics.histogram(
-        "query_duration_ms",
-        duration_ms,
-        labels={"operation": query_name}
-    )
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="5-custom-scalars">5. Custom Scalars<a class="headerlink" href="#5-custom-scalars" title="Permanent link">&para;</a></h2>
-<h3 id="51-custom-scalar-types">5.1 Custom Scalar Types<a class="headerlink" href="#51-custom-scalar-types" title="Permanent link">&para;</a></h3>
-<p>Define domain-specific types:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.scalar(name="Email")
-class EmailScalar:
-    """Custom Email scalar with validation"""</p>
-<div class="highlight"><pre><span></span><code>@staticmethod
-def serialize(value: str) -&gt; str:
-    &quot;&quot;&quot;Convert to JSON&quot;&quot;&quot;
-    return value
-
-@staticmethod
-def parse_value(value: Any) -&gt; str:
-    &quot;&quot;&quot;Parse from JSON&quot;&quot;&quot;
-    if not isinstance(value, str):
-        raise ValueError(&quot;Email must be string&quot;)
-    if &quot;@&quot; not in value:
-        raise ValueError(&quot;Invalid email format&quot;)
-    return value
-
-@staticmethod
-def parse_literal(ast) -&gt; str:
-    &quot;&quot;&quot;Parse from GraphQL query literal&quot;&quot;&quot;
-    if ast.value == &quot;null&quot;:
-        return None
-    return EmailScalar.parse_value(ast.value)
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">GZipMiddleware</span><span class="p">,</span> <span class="n">minimum_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">CORSMiddleware</span><span class="p">,</span>
+    <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://app.example.com&quot;</span><span class="p">],</span>
+    <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">],</span>
+    <span class="n">allow_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;authorization&quot;</span><span class="p">,</span> <span class="s2">&quot;content-type&quot;</span><span class="p">],</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>@FraiseQL.scalar(name="Money")
-class MoneyScalar:
-    """Custom Money scalar (amount + currency)"""</p>
-<div class="highlight"><pre><span></span><code>@staticmethod
-def serialize(value: dict) -&gt; dict:
-    return {&quot;amount&quot;: value.amount, &quot;currency&quot;: value.currency}
+<h3 id="42-mount-fraiseql-inside-a-larger-fastapi-app">4.2 Mount FraiseQL inside a larger FastAPI app<a class="headerlink" href="#42-mount-fraiseql-inside-a-larger-fastapi-app" title="Permanent link">&para;</a></h3>
+<p>To run FraiseQL alongside your own REST routes and middleware, build your FastAPI app
+first and pass it to <code>create_fraiseql_app</code> via the <code>app=</code> parameter. FraiseQL extends
+that app with its GraphQL endpoint rather than creating a new one:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-@staticmethod
-def parse_value(value: dict) -&gt; dict:
-    return {
-        &quot;amount&quot;: Decimal(str(value[&quot;amount&quot;])),
-        &quot;currency&quot;: value[&quot;currency&quot;]
-    }
+<span class="n">parent</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Service&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/healthz&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">healthz</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+
+
+<span class="c1"># Add your own middleware to the parent app, then hand it to FraiseQL.</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">app</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+<span class="p">)</span>
 </code></pre></div>
-<h1 id="use-in-schema_2">Use in schema<a class="headerlink" href="#use-in-schema_2" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class User:
-    email: Email  # Custom scalar</p>
-<p>@FraiseQL.type
-class Order:
-    total: Money  # Custom scalar
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Because middleware runs at the ASGI layer, it wraps every GraphQL request uniformly —
+ideal for request IDs, structured logging, compression, CORS, and security headers.</p>
 <hr />
-<h2 id="6-custom-directives">6. Custom Directives<a class="headerlink" href="#6-custom-directives" title="Permanent link">&para;</a></h2>
-<h3 id="61-field-directives">6.1 Field Directives<a class="headerlink" href="#61-field-directives" title="Permanent link">&para;</a></h3>
-<p>Apply behavior to fields:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.directive(name="uppercase")
-def uppercase_directive(value: str) -&gt; str:
-    """Convert field value to uppercase"""
-    return value.upper() if value else value</p>
-<p>@FraiseQL.directive(name="redact")
-def redact_directive(value: str) -&gt; str:
-    """Redact sensitive value"""
-    if len(value) &gt; 4:
-        return value[:2] + "****" + value[-2:]
-    return "****"</p>
-<h1 id="use-in-schema_3">Use in schema<a class="headerlink" href="#use-in-schema_3" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class User:
-    @uppercase_directive
-    name: str</p>
-<div class="highlight"><pre><span></span><code>@redact_directive
-ssn: str
+<h2 id="5-authorization">5. Authorization<a class="headerlink" href="#5-authorization" title="Permanent link">&para;</a></h2>
+<p>FraiseQL enforces authorization at the <strong>operation</strong> level through the <code>Authorizer</code>
+protocol. An authorizer decides whether a top-level query, mutation, or subscription
+may run for the current request.</p>
+<h3 id="51-the-authorizer-protocol">5.1 The Authorizer protocol<a class="headerlink" href="#51-the-authorizer-protocol" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizationDecision</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Authorizer</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">operation_type</span><span class="p">,</span>        <span class="c1"># OperationType (query / mutation / subscription)</span>
+        <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthorizationDecision</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="o">...</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><code>authorize_operation</code> may be sync or async and may return either a plain <code>bool</code> (sugar
+for allow/deny) or an <code>AuthorizationDecision</code> carrying a stable <code>code</code>, message, and
+optional row filters. Enforcement is <strong>fail-closed</strong>: if no authorizer is configured
+the operation is allowed; if a configured authorizer raises an unexpected error the
+operation is denied and the raw error is never surfaced to the client.</p>
+<h3 id="52-global-and-per-operation-authorizers">5.2 Global and per-operation authorizers<a class="headerlink" href="#52-global-and-per-operation-authorizers" title="Permanent link">&para;</a></h3>
+<p>Pass an authorizer to <code>create_fraiseql_app</code> to apply it to every operation, and
+override it on a single operation with <code>@fraiseql.query(authorizer=...)</code> or
+<code>@fraiseql.subscription(authorizer=...)</code>. The per-operation authorizer wins over the
+global default.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="62-query-directives">6.2 Query Directives<a class="headerlink" href="#62-query-directives" title="Permanent link">&para;</a></h3>
-<p>Apply behavior to queries:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.directive(name="cache")
-def cache_directive(result: Any, ttl_seconds: int) -&gt; Any:
-    """Cache query result"""
-    # Framework handles caching
-    return result</p>
-<p>@FraiseQL.directive(name="rateLimit")
-def rate_limit_directive(
-    user_context: UserContext,
-    limit: int,
-    window_seconds: int
-) -&gt; None:
-    """Rate limit query per user"""
-    key = f"ratelimit:{user_context.user_id}"
-    current = cache.get(key) or 0</p>
-<div class="highlight"><pre><span></span><code>if current &gt;= limit:
-    raise RateLimitError(f&quot;Rate limit exceeded: {limit}/{window_seconds}s&quot;)
 
-cache.increment(key, 1, ttl=window_seconds)
+<span class="k">class</span><span class="w"> </span><span class="nc">TenantAuthorizer</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">operation_type</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">AdminOnlyAuthorizer</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">all_tenants</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tenant</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_tenant&quot;</span><span class="p">)</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Tenant</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">all_tenants</span><span class="p">],</span>
+    <span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">(),</span>   <span class="c1"># global default</span>
+<span class="p">)</span>
 </code></pre></div>
-<h1 id="use-in-query">Use in query<a class="headerlink" href="#use-in-query" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-@cache_directive(ttl_seconds=300)
-@rate_limit_directive(limit=100, window_seconds=60)
-def get_user_posts(user_id: ID) -&gt; [Post]:
-    """Get user's posts (cached, rate-limited)"""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="53-decision-caching">5.3 Decision caching<a class="headerlink" href="#53-decision-caching" title="Permanent link">&para;</a></h3>
+<p>Repeated authorization checks for the same context and operation can be served from a
+decision cache instead of re-running the authorizer. Enable it by passing an
+<code>AuthorizationCacheConfig</code> to <code>create_fraiseql_app</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizationCacheConfig</span>
 
-<hr />
-<h2 id="7-transform-hooks">7. Transform Hooks<a class="headerlink" href="#7-transform-hooks" title="Permanent link">&para;</a></h2>
-<h3 id="71-input-transform">7.1 Input Transform<a class="headerlink" href="#71-input-transform" title="Permanent link">&para;</a></h3>
-<p>Transform input before validation:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.transform(event="input.before_validation")
-def normalize_email(input_data: dict) -&gt; dict:
-    """Normalize email to lowercase"""
-    if "email" in input_data:
-        input_data["email"] = input_data["email"].lower().strip()
-    return input_data</p>
-<p>@FraiseQL.transform(event="input.before_validation")
-def sanitize_text(input_data: dict) -&gt; dict:
-    """Sanitize text inputs to prevent XSS"""
-    for field in ["title", "content", "description"]:
-        if field in input_data and isinstance(input_data[field], str):
-            input_data[field] = sanitize_html(input_data[field])
-    return input_data
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="72-output-transform">7.2 Output Transform<a class="headerlink" href="#72-output-transform" title="Permanent link">&para;</a></h3>
-<p>Transform response before sending:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.transform(event="response.before_sending")
-def add_metadata(response: dict) -&gt; dict:
-    """Add request metadata to response"""
-    response["_metadata"] = {
-        "timestamp": now_iso(),
-        "version": "2.0.0"
-    }
-    return response</p>
-<p>@FraiseQL.transform(event="response.before_sending")
-def redact_sensitive(response: dict) -&gt; dict:
-    """Redact sensitive fields from response"""
-    if "user" in response.get("data", {}):
-        user = response["data"]["user"]
-        if "password_hash" in user:
-            del user["password_hash"]
-    return response
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="8-middleware-extensions">8. Middleware Extensions<a class="headerlink" href="#8-middleware-extensions" title="Permanent link">&para;</a></h2>
-<h3 id="81-request-middleware">8.1 Request Middleware<a class="headerlink" href="#81-request-middleware" title="Permanent link">&para;</a></h3>
-<p>Process requests:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.middleware(type="request")
-async def add_request_id(request, next_handler):
-    """Add unique request ID"""
-    request.id = generate_uuid()
-    logger.info(f"Request {request.id} started")</p>
-<div class="highlight"><pre><span></span><code>try:
-    response = await next_handler(request)
-    logger.info(f&quot;Request {request.id} completed&quot;)
-    return response
-except Exception as e:
-    logger.error(f&quot;Request {request.id} failed: {e}&quot;)
-    raise
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Tenant</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">all_tenants</span><span class="p">],</span>
+    <span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">(),</span>
+    <span class="n">authorization_cache</span><span class="o">=</span><span class="n">AuthorizationCacheConfig</span><span class="p">(),</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>@FraiseQL.middleware(type="request")
-async def extract_user_context(request, next_handler):
-    """Extract user from token"""
-    token = extract_bearer_token(request)
-    if token:
-        request.user_context = verify_token(token)
-    return await next_handler(request)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="82-response-middleware">8.2 Response Middleware<a class="headerlink" href="#82-response-middleware" title="Permanent link">&para;</a></h3>
-<p>Process responses:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.middleware(type="response")
-async def add_cache_headers(request, response, next_handler):
-    """Add cache control headers"""
-    if is_cacheable_query(request):
-        response.headers["Cache-Control"] = "public, max-age=300"
-    return response</p>
-<p>@FraiseQL.middleware(type="response")
-async def compress_response(request, response, next_handler):
-    """Compress response if large"""
-    if len(response.body) &gt; 1024:
-        response.body = gzip_compress(response.body)
-        response.headers["Content-Encoding"] = "gzip"
-    return response
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>A fresh cache hit replays the prior decision without calling the authorizer. Clean
+returns (allow or deny) are cached; an authorizer that raises hits the fail-closed
+branch and is never cached, so a transient error can neither pin a deny nor leak an
+allow.</p>
+<h3 id="54-enterprise-rbac">5.4 Enterprise RBAC<a class="headerlink" href="#54-enterprise-rbac" title="Permanent link">&para;</a></h3>
+<p>For role-based access control at scale, the optional <code>fraiseql.enterprise.rbac</code>
+module provides hierarchical roles, PostgreSQL-native permission caching with
+automatic invalidation, and supporting GraphQL directives and middleware. Initialize
+it during startup with <code>setup_rbac_cache(db_pool)</code> and layer it on top of the
+<code>Authorizer</code> surface described above.</p>
+<p>For the full authorization model, see the
+<a href="../../../security/authorization/">authorization guide</a>.</p>
 <hr />
-<h2 id="9-database-extensions">9. Database Extensions<a class="headerlink" href="#9-database-extensions" title="Permanent link">&para;</a></h2>
-<h3 id="91-custom-database-functions">9.1 Custom Database Functions<a class="headerlink" href="#91-custom-database-functions" title="Permanent link">&para;</a></h3>
-<p>Call custom database functions from queries:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.database_function(name="search_full_text")
-def search_full_text(
-    db: Database,
-    query: str,
-    table: str
-) -&gt; list:
-    """Full-text search using database function"""
-    return db.query(
-        f"SELECT * FROM {table} WHERE search_vector @@ to_tsquery($1)",
-        [query]
-    )</p>
-<h1 id="use-in-schema_4">Use in schema<a class="headerlink" href="#use-in-schema_4" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def search_posts(query: str) -&gt; [Post]:
-    """Search posts by full-text"""
-    return search_full_text(query, "tb_post")
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="6-postgresql-the-deepest-extension-surface">6. PostgreSQL: The Deepest Extension Surface<a class="headerlink" href="#6-postgresql-the-deepest-extension-surface" title="Permanent link">&para;</a></h2>
+<p>In FraiseQL, PostgreSQL is not just storage — it is where most extension actually
+happens. Reads are served from <code>v_</code>/<code>tv_</code> views and writes run through <code>fn_</code>
+functions, so you can extend behavior end to end without touching the framework.</p>
+<h3 id="61-business-logic-in-fn_-functions">6.1 Business logic in <code>fn_</code> functions<a class="headerlink" href="#61-business-logic-in-fn_-functions" title="Permanent link">&para;</a></h3>
+<p>Every mutation calls a PostgreSQL function that performs validation and the write,
+then returns JSONB describing success or failure. This is the primary place to put
+domain logic.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;^[^@]+@[^@]+$&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalid email&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<h3 id="92-custom-database-views">9.2 Custom Database Views<a class="headerlink" href="#92-custom-database-views" title="Permanent link">&para;</a></h3>
-<p>Define custom materialized views:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.view(name="v_user_stats")
-def create_user_stats_view(db: Database) -&gt; str:
-    """Create materialized view with user statistics"""
-    return """
-    CREATE MATERIALIZED VIEW IF NOT EXISTS v_user_stats AS
-    SELECT
-        u.id,
-        u.username,
-        COUNT(p.id) as post_count,
-        COUNT(DISTINCT c.id) as comment_count,
-        MAX(p.created_at) as last_post_date
-    FROM tb_user u
-    LEFT JOIN tb_post p ON u.id = p.author_id
-    LEFT JOIN tb_comment c ON u.id = c.author_id
-    GROUP BY u.id, u.username
-    WITH DATA;</p>
-<div class="highlight"><pre><span></span><code>CREATE INDEX idx_user_stats_id ON v_user_stats(id);
-&quot;&quot;&quot;
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<hr />
-<h2 id="10-extension-configuration">10. Extension Configuration<a class="headerlink" href="#10-extension-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="101-enabledisable-extensions">10.1 Enable/Disable Extensions<a class="headerlink" href="#101-enabledisable-extensions" title="Permanent link">&para;</a></h3>
-<p>Control which extensions are active:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>FraiseQL.extensions.configure({
-    "authorization": {
-        "custom_rules": True,
-        "enable_rules": [
-            "published_or_author",
-            "team_member",
-            "department_lead"
-        ]
-    },
-    "validators": {
-        "enabled": True,
-        "enable_validators": [
-            "email_validator",
-            "password_strength",
-            "unique_email"
-        ]
-    },
-    "hooks": {
-        "enabled": True,
-        "enable_hooks": [
-            "query.before_execution",
-            "mutation.after_execution",
-            "error.occurred"
-        ]
-    },
-    "metrics": {
-        "enabled": True,
-        "custom_metrics": True
-    },
-    "middleware": {
-        "enabled": True,
-        "order": [
-            "add_request_id",
-            "extract_user_context",
-            "rate_limiting"
-        ]
-    }
-})
-```text</p>
-<!-- Code example in TEXT -->
 
-<h3 id="102-extension-namespace">10.2 Extension Namespace<a class="headerlink" href="#102-extension-namespace" title="Permanent link">&para;</a></h3>
-<p>Organize extensions:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="define-extension-namespace">Define extension namespace<a class="headerlink" href="#define-extension-namespace" title="Permanent link">&para;</a></h1>
-<p>class CustomExtensions:
-    @FraiseQL.authorization_rule(name="my_rule_1")
-    def rule_1(resource, user_context):
-        pass</p>
-<div class="highlight"><pre><span></span><code>@FraiseQL.validator(name=&quot;my_validator_1&quot;)
-def validator_1(value):
-    pass
-
-@FraiseQL.hook(event=&quot;query.before_execution&quot;)
-async def on_query_start(query_name, variables, user_context):
-    pass
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
 </code></pre></div>
-<h1 id="register-namespace">Register namespace<a class="headerlink" href="#register-namespace" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.extensions.register(CustomExtensions)
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="62-triggers-and-custom-types">6.2 Triggers and custom types<a class="headerlink" href="#62-triggers-and-custom-types" title="Permanent link">&para;</a></h3>
+<p>Use triggers to keep projection views (<code>tv_</code>) in sync, maintain audit trails, or
+populate denormalized columns. Use PostgreSQL <code>CREATE TYPE</code> (composite or enum types)
+and <code>DOMAIN</code> constraints to model domain values at the database level — the shape your
+views return flows straight into the GraphQL response.</p>
+<h3 id="63-postgresql-extensions">6.3 PostgreSQL extensions<a class="headerlink" href="#63-postgresql-extensions" title="Permanent link">&para;</a></h3>
+<p>Because views are just SQL, any installed PostgreSQL extension is available to your
+read and write paths:</p>
+<ul>
+<li><strong>pgvector</strong> — similarity search over embeddings inside a <code>v_</code> view.</li>
+<li><strong>pg_trgm</strong> — fuzzy text matching and trigram indexes.</li>
+<li><strong>PostGIS</strong> — geospatial queries and indexing.</li>
+<li><strong>ltree</strong> — hierarchical paths, surfaced through the <code>LTree</code> scalar.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">vector</span><span class="p">;</span>
 
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_document_search</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;similarity&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="p">:</span><span class="n">query_embedding</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="p">:</span><span class="n">query_embedding</span><span class="p">;</span>
+</code></pre></div>
+<p>The resolver queries this view like any other read; the extension does the heavy
+lifting inside PostgreSQL.</p>
 <hr />
-<h2 id="11-best-practices">11. Best Practices<a class="headerlink" href="#11-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="111-extension-development">11.1 Extension Development<a class="headerlink" href="#111-extension-development" title="Permanent link">&para;</a></h3>
+<h2 id="7-best-practices">7. Best Practices<a class="headerlink" href="#7-best-practices" title="Permanent link">&para;</a></h2>
 <p><strong>DO:</strong></p>
 <ul>
-<li>✅ Keep extensions focused (single responsibility)</li>
-<li>✅ Use async/await for I/O operations</li>
-<li>✅ Cache expensive computations</li>
-<li>✅ Log extension execution (for debugging)</li>
-<li>✅ Test extensions in isolation</li>
-<li>✅ Document extension behavior</li>
-<li>✅ Use strong typing (type hints)</li>
+<li>Keep custom field resolvers cheap; batch related lookups with a dataloader.</li>
+<li>Use <code>async</code>/<code>await</code> for any I/O in resolvers, authorizers, and middleware.</li>
+<li>Push validation and write logic into <code>fn_</code> functions where it stays transactional.</li>
+<li>Use the built-in domain scalars before reaching for a custom type.</li>
+<li>Make authorizers fail-closed and free of side effects.</li>
 </ul>
 <p><strong>DON'T:</strong></p>
 <ul>
-<li>❌ Modify user context (read-only)</li>
-<li>❌ Perform long-running operations in hooks (use async)</li>
-<li>❌ Bypass authorization checks</li>
-<li>❌ Log sensitive data (email, password, tokens)</li>
-<li>❌ Assume extension execution order</li>
-<li>❌ Create side effects in validators (should be pure)</li>
+<li>Issue one query per row in a field resolver — that is the N+1 pattern dataloaders
+  exist to prevent.</li>
+<li>Expose internal <code>pk_</code>/<code>fk_</code> columns through a view's <code>data</code> JSONB.</li>
+<li>Bypass the authorizer by reaching past <code>info.context</code>.</li>
+<li>Log sensitive data (tokens, passwords, full email lists) from middleware or hooks.</li>
 </ul>
-<h3 id="112-performance-considerations">11.2 Performance Considerations<a class="headerlink" href="#112-performance-considerations" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="slow-complex-rule-evaluated-for-every-request">❌ SLOW: Complex rule evaluated for every request<a class="headerlink" href="#slow-complex-rule-evaluated-for-every-request" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.authorization_rule(name="slow_rule")
-async def slow_rule(resource, user_context, db):
-    # Database query for every field access
-    result = await db.query_expensive(...)
-    return result</p>
-<h1 id="fast-rule-with-caching">✅ FAST: Rule with caching<a class="headerlink" href="#fast-rule-with-caching" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.authorization_rule(
-    name="fast_rule",
-    cache_ttl_seconds=300
-)
-async def fast_rule(resource, user_context, db):
-    # Cached for 5 minutes
-    result = await db.query_expensive(...)
-    return result
-```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
-<p><strong>Document Version</strong>: 1.0.0
-<strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>FraiseQL extensions enable powerful customization while maintaining framework constraints and consistency guarantees.</p>
+<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../integration-patterns/">Integration patterns</a></li>
+<li><a href="../../reliability/error-handling-model/">Error handling model</a></li>
+<li><a href="../../../foundation/09-type-system/">Type system</a></li>
+<li><a href="../../../reference/scalars/">Scalars reference</a></li>
+<li><a href="../../../reference/decorators/">Decorators reference</a></li>
+<li><a href="../../../security/authorization/">Authorization</a></li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

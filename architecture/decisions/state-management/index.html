@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="How FraiseQL keeps PostgreSQL as the single source of truth while caching query results with cascade invalidation.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/decisions/state-management/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>State Management - FraiseQL Documentation</title>
+        <title>FraiseQL State Management — Source of Truth and Result Caching - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-state-management-caching-change-data-capture-and-state-model" class="md-skip">
+        <a href="#fraiseql-state-management-source-of-truth-and-result-caching" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              State Management
+              FraiseQL State Management — Source of Truth and Result Caching
             
           </span>
         </div>
@@ -1595,22 +1597,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-caching-architecture" class="md-nav__link">
+  <a href="#1-the-state-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Caching Architecture
+        1. The State Model
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Caching Architecture">
+    <nav class="md-nav" aria-label="1. The State Model">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-cache-layers" class="md-nav__link">
+  <a href="#11-source-of-truth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Cache Layers
+        1.1 Source of truth
       
     </span>
   </a>
@@ -1618,10 +1620,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-cache-key-generation" class="md-nav__link">
+  <a href="#12-consistency-for-a-single-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 Cache Key Generation
+        1.2 Consistency for a single database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Read replicas
       
     </span>
   </a>
@@ -1630,6 +1643,205 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-result-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Result Caching
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Result Caching">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-the-cache-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What the cache stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-postgresql-cache-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The PostgreSQL cache backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cache-aside-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Cache-aside pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-cache-keys-and-tenant-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Cache keys and tenant isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 TTL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-the-cached-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 The cached repository
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-write-path-and-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 Write path and invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-cascade-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cascade Invalidation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cascade Invalidation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-cascade-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Cascade rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-automatic-cascade-rules-from-the-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Automatic cascade rules from the schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-how-a-cascade-fires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 How a cascade fires
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-layered-caching-thinking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Layered Caching Thinking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-decorator-based-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Decorator-Based Caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5012,22 +5224,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-caching-architecture" class="md-nav__link">
+  <a href="#1-the-state-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Caching Architecture
+        1. The State Model
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Caching Architecture">
+    <nav class="md-nav" aria-label="1. The State Model">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-cache-layers" class="md-nav__link">
+  <a href="#11-source-of-truth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Cache Layers
+        1.1 Source of truth
       
     </span>
   </a>
@@ -5035,10 +5247,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-cache-key-generation" class="md-nav__link">
+  <a href="#12-consistency-for-a-single-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 Cache Key Generation
+        1.2 Consistency for a single database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Read replicas
       
     </span>
   </a>
@@ -5047,6 +5270,205 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-result-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Result Caching
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Result Caching">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-the-cache-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What the cache stores
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-postgresql-cache-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The PostgreSQL cache backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cache-aside-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Cache-aside pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-cache-keys-and-tenant-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Cache keys and tenant isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 TTL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-the-cached-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 The cached repository
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-write-path-and-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 Write path and invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-cascade-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cascade Invalidation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cascade Invalidation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-cascade-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Cascade rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-automatic-cascade-rules-from-the-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Automatic cascade rules from the schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-how-a-cascade-fires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 How a cascade fires
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-layered-caching-thinking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Layered Caching Thinking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-decorator-based-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Decorator-Based Caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5070,662 +5492,349 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL State Management: Caching, Change Data Capture, and State Model
-description: FraiseQL state management spans three concerns:
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="fraiseql-state-management-caching-change-data-capture-and-state-model">FraiseQL State Management: Caching, Change Data Capture, and State Model<a class="headerlink" href="#fraiseql-state-management-caching-change-data-capture-and-state-model" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> January 2026
-<strong>Status:</strong> Complete System Specification
-<strong>Audience:</strong> System architects, cache engineers, CDC specialists, platform engineers</p>
+<h1 id="fraiseql-state-management-source-of-truth-and-result-caching">FraiseQL State Management — Source of Truth and Result Caching<a class="headerlink" href="#fraiseql-state-management-source-of-truth-and-result-caching" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Stable
+<strong>Audience:</strong> Application architects, backend engineers, DBAs</p>
 <hr />
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL state management spans three concerns:</p>
+<p>FraiseQL state management is built on one principle:</p>
+<blockquote>
+<p><strong>PostgreSQL is the single source of truth. Everything else is an optimization layer.</strong></p>
+</blockquote>
+<p>There is no separate state store, no event bus, and no change-data-capture pipeline in
+FraiseQL v1. Application state lives in your PostgreSQL tables (<code>tb_*</code>), is exposed through
+read views (<code>v_*</code> / <code>tv_*</code>), and is mutated through PostgreSQL functions (<code>fn_*</code>). On top of
+that, FraiseQL ships a real <strong>result cache</strong> (<code>src/fraiseql/caching/</code>) that caches the JSONB
+results of view queries and invalidates them when the underlying data changes.</p>
+<p>This document covers two concerns:</p>
 <ol>
-<li><strong>Caching</strong> — Query result caching for performance</li>
-<li><strong>Change Data Capture (CDC)</strong> — Event stream from database changes</li>
-<li><strong>State Model</strong> — How consistency is maintained across cache + live data</li>
+<li><strong>The state model</strong> — how PostgreSQL provides consistency for reads and writes.</li>
+<li><strong>Result caching</strong> — how FraiseQL caches query results and keeps them coherent with the
+   database via TTL expiry and cascade invalidation.</li>
 </ol>
-<p><strong>Core principle</strong>: Database is source of truth; cache is optimization layer; CDC drives everything else.</p>
 <hr />
-<h2 id="1-caching-architecture">1. Caching Architecture<a class="headerlink" href="#1-caching-architecture" title="Permanent link">&para;</a></h2>
-<h3 id="11-cache-layers">1.1 Cache Layers<a class="headerlink" href="#11-cache-layers" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<div class="highlight"><pre><span></span><code>            Application
-                ↓
-┌───────────────────────────────┐
-│ L1 Cache (In-Memory)          │ &lt;1ms access
-│ • Query results               │ • Per-instance
-│ • Size: 100MB-1GB             │ • Process-local
-└───────────────────────────────┘
-                ↓
-┌───────────────────────────────┐
-│ L2 Cache (Redis/Memcached)    │ 1-5ms access
-│ • Shared across instances     │ • Cluster-wide
-│ • Size: 1GB-10GB              │ • Network latency
-└───────────────────────────────┘
-                ↓
-┌───────────────────────────────┐
-│ L3 Cache (Database)           │ 10-50ms access
-│ • PostgreSQL views            │ • Permanent
-│ • Materialized views          │ • Slowest
-└───────────────────────────────┘
+<h2 id="1-the-state-model">1. The State Model<a class="headerlink" href="#1-the-state-model" title="Permanent link">&para;</a></h2>
+<h3 id="11-source-of-truth">1.1 Source of truth<a class="headerlink" href="#11-source-of-truth" title="Permanent link">&para;</a></h3>
+<p>All durable state lives in PostgreSQL:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Object</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write side</td>
+<td><code>tb_*</code> tables</td>
+<td>Normalized source of truth</td>
+</tr>
+<tr>
+<td>Write logic</td>
+<td><code>fn_*</code> functions</td>
+<td>Validation + writes (called by mutations)</td>
+</tr>
+<tr>
+<td>Read side</td>
+<td><code>v_*</code> views</td>
+<td>Logical views building a <code>data</code> JSONB column</td>
+</tr>
+<tr>
+<td>Read side</td>
+<td><code>tv_*</code> projection tables</td>
+<td>Pre-composed JSONB for heavy nested reads</td>
+</tr>
+</tbody>
+</table>
+<p>Queries read from <code>v_*</code> / <code>tv_*</code> views via <code>db.find(...)</code> / <code>db.find_one(...)</code>. Mutations
+call <code>fn_*</code> functions via <code>db.execute_function(...)</code>. No business state is held in the Python
+process — the schema is assembled in memory at startup, but the data is always PostgreSQL's.</p>
+<h3 id="12-consistency-for-a-single-database">1.2 Consistency for a single database<a class="headerlink" href="#12-consistency-for-a-single-database" title="Permanent link">&para;</a></h3>
+<p>Within a single PostgreSQL instance, consistency is whatever transaction isolation your
+database is configured for. A query started after a mutation commits sees that mutation's
+effects:</p>
+<div class="highlight"><pre><span></span><code>T0     Query: db.find(&quot;v_user&quot;)            sees A, B, C
+T0+1ms Mutation: db.execute_function(
+         &quot;fn_create_user&quot;, {...})          commits user D
+T0+10ms Query: db.find(&quot;v_user&quot;)           sees A, B, C, D
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="12-cache-key-generation">1.2 Cache Key Generation<a class="headerlink" href="#12-cache-key-generation" title="Permanent link">&para;</a></h3>
-<p>Cache keys combine operation + context:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="query-getuserpostsuserid-user-456-limit-20">Query: GetUserPosts(userId: "user-456", limit: 20)<a class="headerlink" href="#query-getuserpostsuserid-user-456-limit-20" title="Permanent link">&para;</a></h1>
-<p>cache_key = {
-    "operation": "GetUserPosts",
-    "user_id": "user-456",
-    "variables": { "limit": 20 },
-    "version": "2.0.0"
-}</p>
-<h1 id="hash-to-string">Hash to string<a class="headerlink" href="#hash-to-string" title="Permanent link">&para;</a></h1>
-<p>cache_key_string = hash(cache_key)</p>
-<h1 id="querygetuserpostsuser-456limit-20v2">"query:GetUserPosts:user-456:limit-20:v2"<a class="headerlink" href="#querygetuserpostsuser-456limit-20v2" title="Permanent link">&para;</a></h1>
-<h1 id="search-in-l1l2-cache">Search in L1/L2 cache<a class="headerlink" href="#search-in-l1l2-cache" title="Permanent link">&para;</a></h1>
-<p>cached_result = cache.get(cache_key_string)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="13-cache-ttl-time-to-live">1.3 Cache TTL (Time To Live)<a class="headerlink" href="#13-cache-ttl-time-to-live" title="Permanent link">&para;</a></h3>
-<p>Different TTL per operation type:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Static data (Product catalog):
-  ├─ TTL: 1 hour
-  ├─ Reason: Changes infrequently
-  └─ Miss cost: &lt;1s (reload from DB)</p>
-<p>User-specific data (My posts):
-  ├─ TTL: 5 minutes
-  ├─ Reason: User changes data frequently
-  └─ Miss cost: &lt;100ms</p>
-<p>Real-time data (Stock prices):
-  ├─ TTL: 10 seconds
-  ├─ Reason: Changes constantly
-  └─ Miss cost: &lt;100ms</p>
-<p>Personalized (User feed):
-  ├─ TTL: 30 seconds
-  ├─ Reason: User + algorithm dependent
-  └─ Miss cost: &lt;500ms
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="14-cache-invalidation">1.4 Cache Invalidation<a class="headerlink" href="#14-cache-invalidation" title="Permanent link">&para;</a></h3>
-<p>Invalidation cascade on mutation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Mutation: UpdatePost (post_id=789)
-    ↓
-1. Query database (write completes)
-    ↓
-2. Invalidate related queries:
-    ├─ GetPost(id=789) → INVALIDATE
-    ├─ GetPostsByAuthor(author_id=456) → INVALIDATE
-    ├─ GetTrendingPosts() → INVALIDATE
-    └─ GetUserFeed(user_id=456) → INVALIDATE
-    ↓
-3. Next requests:
-    ├─ GetPost(id=789) → Cache miss → Query DB
-    ├─ GetPostsByAuthor(author_id=456) → Cache miss → Query DB
-    └─ Both re-cached for TTL period
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="15-cache-warming">1.5 Cache Warming<a class="headerlink" href="#15-cache-warming" title="Permanent link">&para;</a></h3>
-<p>Pre-populate cache on startup:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.on_startup
-async def warm_cache():
-    """Pre-populate cache with frequently accessed data"""
-    await cache.preload([
-        "GetTrendingPosts",
-        "GetPopularUsers",
-        "GetProductCatalog",
-        "GetFeaturedBrands"
-    ])</p>
-<p>Result:
-  ├─ Startup takes 2 seconds longer
-  ├─ But 95%+ hit rate from moment 1
-  ├─ Smoother user experience (no initial delays)
-  └─ Reduced database load at launch
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>PostgreSQL is the arbiter. FraiseQL does not add its own consistency protocol on top of it.</p>
+<h3 id="13-read-replicas">1.3 Read replicas<a class="headerlink" href="#13-read-replicas" title="Permanent link">&para;</a></h3>
+<p>If you route reads to PostgreSQL read replicas, you inherit PostgreSQL's streaming
+replication semantics: writes go to the primary and become visible on replicas after a small
+replication lag (typically well under a second). This is standard PostgreSQL operations, not a
+FraiseQL feature; configure it through your connection routing and <code>DATABASE_URL</code>. See the
+consistency model document linked at the end for the guarantees this provides.</p>
 <hr />
-<h2 id="2-change-data-capture-cdc">2. Change Data Capture (CDC)<a class="headerlink" href="#2-change-data-capture-cdc" title="Permanent link">&para;</a></h2>
-<h3 id="21-cdc-architecture">2.1 CDC Architecture<a class="headerlink" href="#21-cdc-architecture" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database (PostgreSQL)
-    ├─ Trigger on INSERT/UPDATE/DELETE
-    ├─ Publishes to LISTEN channel (pg_notify)
-    ├─ Event: { type, entity_id, timestamp, payload }
-    ↓
-FraiseQL Runtime
-    ├─ LISTEN on channels
-    ├─ Receives events
-    ├─ Processes authorization
-    ├─ Publishes to subscribers
-    ├─ Invalidates caches
-    ↓
-Subscribers &amp; Caches
-    ├─ Subscriptions (WebSocket)
-    ├─ Webhooks (HTTP)
-    ├─ Message queues (Kafka)
-    ├─ Cache invalidation
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="2-result-caching">2. Result Caching<a class="headerlink" href="#2-result-caching" title="Permanent link">&para;</a></h2>
+<h3 id="21-what-the-cache-stores">2.1 What the cache stores<a class="headerlink" href="#21-what-the-cache-stores" title="Permanent link">&para;</a></h3>
+<p>FraiseQL caches the <strong>result of a view query</strong> — the JSONB payload returned by
+<code>db.find(...)</code> / <code>db.find_one(...)</code> — keyed by the view name, tenant, and query parameters.
+The cache is an optimization: a cache miss simply re-runs the query against PostgreSQL, so the
+database remains the source of truth at all times.</p>
+<p>The public API lives in <code>fraiseql.caching</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PostgresCache</code></td>
+<td>PostgreSQL-backed cache backend (UNLOGGED table)</td>
+</tr>
+<tr>
+<td><code>CacheBackend</code></td>
+<td>Protocol any backend implements (<code>get</code>/<code>set</code>/<code>delete</code>/<code>delete_pattern</code>)</td>
+</tr>
+<tr>
+<td><code>ResultCache</code></td>
+<td>Cache-aside engine (<code>get_or_set</code>, <code>invalidate</code>, <code>invalidate_pattern</code>, stats)</td>
+</tr>
+<tr>
+<td><code>CacheConfig</code></td>
+<td>TTL and behaviour configuration</td>
+</tr>
+<tr>
+<td><code>CacheStats</code></td>
+<td>Hit/miss/error counters and <code>hit_rate</code></td>
+</tr>
+<tr>
+<td><code>CacheKeyBuilder</code></td>
+<td>Deterministic, tenant-isolated cache keys</td>
+</tr>
+<tr>
+<td><code>CachedRepository</code></td>
+<td>Drop-in repository wrapper that caches reads and invalidates on writes</td>
+</tr>
+<tr>
+<td><code>cached_query</code></td>
+<td>Decorator to cache an arbitrary async query function</td>
+</tr>
+<tr>
+<td><code>CascadeRule</code></td>
+<td>One source-domain → target-domain invalidation rule</td>
+</tr>
+<tr>
+<td><code>SchemaAnalyzer</code></td>
+<td>Derives cascade rules from your GraphQL schema</td>
+</tr>
+<tr>
+<td><code>setup_auto_cascade_rules</code></td>
+<td>Registers all derived cascade rules at startup</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-the-postgresql-cache-backend">2.2 The PostgreSQL cache backend<a class="headerlink" href="#22-the-postgresql-cache-backend" title="Permanent link">&para;</a></h3>
+<p><code>PostgresCache</code> is the default backend. It stores cache entries in an <code>UNLOGGED</code> PostgreSQL
+table, so writes skip the WAL and run at in-memory speeds, while the entries remain shared
+across every application instance pointed at the same database. UNLOGGED tables are cleared on
+crash/restart, which is acceptable for cache data that can be regenerated.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span>
 
-<h3 id="22-cdc-events">2.2 CDC Events<a class="headerlink" href="#22-cdc-events" title="Permanent link">&para;</a></h3>
-<p>All changes generate events:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="mutation-createpost">Mutation: CreatePost<a class="headerlink" href="#mutation-createpost" title="Permanent link">&para;</a></h1>
-<p>mutation CreatePost($title: String!) {
-  createPost(input: { title: $title }) {
-    id
-    title
-  }
-}</p>
-<h1 id="database-trigger-generates">Database trigger generates:<a class="headerlink" href="#database-trigger-generates" title="Permanent link">&para;</a></h1>
-<p>Event {
-    type: "post_created",
-    entity_type: "Post",
-    entity_id: "post-789",
-    timestamp: "2026-01-15T10:30:45Z",
-    payload: {
-        id: "post-789",
-        title: "New Post",
-        author_id: "user-456",
-        created_at: "2026-01-15T10:30:45Z"
-    }
-}</p>
-<h1 id="event-triggers">Event triggers:<a class="headerlink" href="#event-triggers" title="Permanent link">&para;</a></h1>
-<ol>
-<li>Subscriptions (OnPostCreated)
-   ├─ Subscribers notified
-   └─ Delta plane events sent</li>
-<li>Cache invalidation
-   ├─ GetTrendingPosts invalidated
-   ├─ GetUserPosts(user_id=456) invalidated</li>
-<li>Webhooks (if configured)
-   ├─ POST https://external.com/webhooks/post_created</li>
-<li>Event stream (Kafka, etc.)
-   ├─ Published to post_created topic
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">)</span>
 
-<h3 id="23-cdc-event-ordering">2.3 CDC Event Ordering<a class="headerlink" href="#23-cdc-event-ordering" title="Permanent link">&para;</a></h3>
-<p><strong>Per-entity ordering guarantee:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Post #123 events (guaranteed ordered):
-    1. post_created (T0)
-    2. post_updated (T0 + 1s)
-    3. post_updated (T0 + 2s)
-    4. post_deleted (T0 + 3s)</p>
-<div class="highlight"><pre><span></span><code>Subscribers see in order: 1 → 2 → 3 → 4
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
 </code></pre></div>
-<p>Different entity events (may reorder):
-    Post #123: post_created (T0)
-    User #456: user_updated (T0 + 0.5s)
-    Post #123: post_updated (T0 + 1s)</p>
-<div class="highlight"><pre><span></span><code>Subscribers may see:
-├─ Post #123 created
-├─ Post #123 updated (both for #123 ordered)
-├─ User #456 updated (interleaved)
+<p>Because the cache lives in PostgreSQL, every instance sees the same entries and the same
+invalidations — there is no separate caching cluster to operate, and no cross-instance event
+stream to coordinate.</p>
+<h3 id="23-cache-aside-pattern">2.3 Cache-aside pattern<a class="headerlink" href="#23-cache-aside-pattern" title="Permanent link">&para;</a></h3>
+<p><code>ResultCache.get_or_set</code> implements the cache-aside pattern: look up the key, and on a miss,
+run the function, store the result, and return it.</p>
+<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_posts</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 
-OR:
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">():</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 
-├─ Post #123 created
-├─ User #456 updated
-├─ Post #123 updated (still ordered per entity)
+    <span class="k">return</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="24-cdc-event-deduplication">2.4 CDC Event Deduplication<a class="headerlink" href="#24-cdc-event-deduplication" title="Permanent link">&para;</a></h3>
-<p>Events may be delivered multiple times (at-least-once):</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Event: post_created (id: post-789)</p>
-<p>Delivery 1: Client A receives
-Delivery 2: Client B receives
-Delivery 3: Retry (network error on first attempt)</p>
-<p>Client must handle idempotency:
-```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.on_event("post_created")
-async def handle_post_created(event):
-    # Check if already processed
-    if await db.query("SELECT id FROM tb_posts WHERE id = $1", event.entity_id):
-        return  # Already processed</p>
-<div class="highlight"><pre><span></span><code># Process event
-await process_event(event)
+<p>On a hit it returns the cached JSONB; on a miss it queries the <code>v_post</code> view and caches the
+result. Hit/miss/error counters are tracked on <code>cache.get_stats()</code>.</p>
+<h3 id="24-cache-keys-and-tenant-isolation">2.4 Cache keys and tenant isolation<a class="headerlink" href="#24-cache-keys-and-tenant-isolation" title="Permanent link">&para;</a></h3>
+<p><code>CacheKeyBuilder</code> produces deterministic keys from the view name plus filters, ordering, and
+pagination. Crucially, it folds the <code>tenant_id</code> into the key so one tenant can never read
+another tenant's cached data:</p>
+<div class="highlight"><pre><span></span><code><span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
+    <span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>        <span class="c1"># prevents cross-tenant cache poisoning</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;published&quot;</span><span class="p">},</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><code>CachedRepository</code> does this automatically: it reads <code>tenant_id</code> from the repository context
+and includes it in every key. Never cache before an authorization check — caching is keyed by
+inputs, not by the caller's permissions, so authorization must run on every request.</p>
+<h3 id="25-ttl">2.5 TTL<a class="headerlink" href="#25-ttl" title="Permanent link">&para;</a></h3>
+<p><code>CacheConfig</code> controls time-to-live. <code>default_ttl</code> applies when a call does not specify one,
+and <code>max_ttl</code> caps any per-call TTL. Choose TTL by how fresh the data must be and how
+expensive the miss is:</p>
+<div class="highlight"><pre><span></span><code>Slow-changing reference data    long TTL (e.g. 1 hour) — rarely re-queried
+User-scoped data                short TTL (e.g. 5 minutes)
+Frequently changing data        very short TTL (e.g. 10–30 seconds)
+</code></pre></div>
+<p>Even without explicit invalidation, TTL guarantees the cache is never stale for longer than
+its lifetime — a hard backstop for correctness.</p>
+<h3 id="26-the-cached-repository">2.6 The cached repository<a class="headerlink" href="#26-the-cached-repository" title="Permanent link">&para;</a></h3>
+<p><code>CachedRepository</code> wraps a <code>FraiseQLRepository</code> so that reads are cached and writes invalidate
+the affected entries automatically — no changes to your resolvers:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CachedRepository</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
 
+<span class="n">cached_db</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">ResultCache</span><span class="p">(</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">)))</span>
+
+<span class="c1"># Reads go through the cache (tenant-isolated key, cache-aside)</span>
+<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;published&quot;</span><span class="p">)</span>
+
+<span class="c1"># Per-call overrides</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># bypass cache</span>
+<span class="n">short</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>             <span class="c1"># custom TTL</span>
+</code></pre></div>
+<p>When a mutation runs through the cached repository, it invalidates the affected entries:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Calls fn_update_post, then invalidates cached &quot;post&quot; (and &quot;posts&quot;) entries</span>
+<span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_post&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">post_id</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Updated&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p><code>execute_function</code> derives the affected view name from the function name and calls
+<code>invalidate_pattern</code> for both the singular and plural forms, so reads of those views miss on
+their next request and re-read fresh data from PostgreSQL.</p>
+<h3 id="27-write-path-and-invalidation">2.7 Write path and invalidation<a class="headerlink" href="#27-write-path-and-invalidation" title="Permanent link">&para;</a></h3>
+<p>The write path is always: mutation resolver → <code>fn_*</code> function → cache invalidation.</p>
+<div class="highlight"><pre><span></span><code>Mutation: fn_update_post(post_id=789)
+    1. db.execute_function runs fn_update_post (write commits in PostgreSQL)
+    2. Cache entries for the affected view(s) are invalidated
+    3. Next read of those views misses → re-queries PostgreSQL → re-caches
+</code></pre></div>
+<p>Because the database commit happens first and invalidation second, a reader can at worst see a
+slightly stale cache entry until invalidation completes or the TTL expires — never lost or
+corrupted data. The source of truth is always correct.</p>
 <hr />
-<h2 id="3-state-model">3. State Model<a class="headerlink" href="#3-state-model" title="Permanent link">&para;</a></h2>
-<h3 id="31-cap-theorem-trade-off">3.1 CAP Theorem Trade-off<a class="headerlink" href="#31-cap-theorem-trade-off" title="Permanent link">&para;</a></h3>
-<p>FraiseQL chooses <strong>consistency and partition tolerance</strong> (CP):</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>CAP: Choose 2 of 3
-├─ Consistency (all nodes same data)
-├─ Availability (always respond)
-└─ Partition tolerance (handle network failures)</p>
-<p>FraiseQL:
-├─ Consistency: ✅ (SERIALIZABLE by default)
-├─ Availability: ✅ (read replicas)
-└─ Partition tolerance: ✅ (single database, but read replicas)</p>
-<p>In practice:
-  ├─ Same database: Full CP
-  ├─ With replicas: Eventually consistent across replicas
-  ├─ Causal consistency for federation
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="3-cascade-invalidation">3. Cascade Invalidation<a class="headerlink" href="#3-cascade-invalidation" title="Permanent link">&para;</a></h2>
+<p>A single mutation often affects more than one cached view. Updating a <code>User</code> should invalidate
+cached <code>Post</code> results that embed that user's data. FraiseQL models this with <strong>cascade rules</strong>.</p>
+<h3 id="31-cascade-rules">3.1 Cascade rules<a class="headerlink" href="#31-cascade-rules" title="Permanent link">&para;</a></h3>
+<p>A <code>CascadeRule</code> says "when the source domain changes, invalidate the target domain":</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CascadeRule</span>
 
-<h3 id="32-consistency-guarantees">3.2 Consistency Guarantees<a class="headerlink" href="#32-consistency-guarantees" title="Permanent link">&para;</a></h3>
-<p><strong>Single database (SERIALIZABLE isolation):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query 1: SELECT * FROM users
-  ├─ Sees: User A, User B, User C
-  └─ Time: T0</p>
-<p>Mutation: Create User D
-  ├─ Executed: T0 + 1ms
-  └─ Committed: T0 + 5ms</p>
-<p>Query 2: SELECT * FROM users
-  ├─ Sees: User A, User B, User C, User D
-  └─ Time: T0 + 10ms</p>
-<p>Guarantee: Every query sees consistent, up-to-date state
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># When user data changes, invalidate post caches</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="n">rule_type</span><span class="o">=</span><span class="s2">&quot;invalidate&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Rules are registered on a <code>PostgresCache</code> via <code>register_cascade_rule</code>. Cascade invalidation
+requires the optional <code>pg_fraiseql_cache</code> PostgreSQL extension; if it is not installed,
+<code>PostgresCache</code> falls back to TTL-only caching and skips cascade registration.</p>
+<h3 id="32-automatic-cascade-rules-from-the-schema">3.2 Automatic cascade rules from the schema<a class="headerlink" href="#32-automatic-cascade-rules-from-the-schema" title="Permanent link">&para;</a></h3>
+<p>You rarely write cascade rules by hand. <code>SchemaAnalyzer</code> walks your GraphQL schema and derives
+a rule for every relationship field — <code>Post.author -&gt; User</code> produces <code>user → post</code>,
+<code>Comment.author -&gt; User</code> produces <code>user → comment</code>, and so on. <code>setup_auto_cascade_rules</code>
+analyzes the schema and registers all derived rules in one call:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
 
-<p><strong>With read replicas (eventual consistency):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Primary database: Write all mutations
-Read replicas (3 copies): Read-only</p>
-<p>Mutation: Create User D
-  ├─ Written to primary at T0
-  ├─ Replicated to replica 1 at T0 + 10ms
-  ├─ Replicated to replica 2 at T0 + 20ms
-  ├─ Replicated to replica 3 at T0 + 30ms</p>
-<p>Query from replica 1 at T0 + 15ms:
-  ├─ Sees new user ✓ (already replicated)</p>
-<p>Query from replica 3 at T0 + 15ms:
-  ├─ Doesn't see new user ✗ (not yet replicated)</p>
-<p>Result: Eventual consistency (typically &lt;1 second)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="33-cache-live-data-consistency">3.3 Cache + Live Data Consistency<a class="headerlink" href="#33-cache-live-data-consistency" title="Permanent link">&para;</a></h3>
-<p>Challenge: Cache can be stale</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Timeline:
-T0:     GetPost(id=789) → Cache miss → Query DB
-        ├─ Result: { title: "Original" }
-        └─ Cached for 5 minutes</p>
-<p>T0+1s:  UpdatePost(id=789, title="Updated")
-        ├─ Database updated immediately
-        └─ Cache invalidated</p>
-<p>T0+2s:  GetPost(id=789) → Cache miss → Query DB
-        ├─ Result: { title: "Updated" }
-        └─ Cached for 5 minutes</p>
-<p>Result: Cache always consistent (invalidated on write)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Edge case: Network partition</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Normal:
-  Mutation → Update database → Invalidate cache
-  Next query: Sees new data</p>
-<p>Network partition (Redis unreachable):
-  Mutation → Update database → Cache invalidation FAILS
-  Database updated: ✓
-  Cache invalidation: ✗ (Redis down)
-  Next query → Cache hit → Sees OLD data ✗</p>
-<p>Recovery:
-  ├─ Redis reconnected
-  ├─ Cache still has stale data
-  ├─ Run: cache.invalidate_all() (flush cache)
-  ├─ Or: Wait for TTL expiration (5 minutes)
-  ├─ Next query sees fresh data
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Run once at application startup (e.g. from a FastAPI lifespan handler)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">configure_cache_cascades</span><span class="p">():</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered </span><span class="si">%d</span><span class="s2"> cascade rules&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+</code></pre></div>
+<p>The analyzer reports each rule as <code>source_domain → target_domain</code> and builds a domain
+dependency graph (for example <code>comment</code> depends on <code>{user, post}</code>), giving you zero-config
+cache coherence that follows your real type relationships.</p>
+<h3 id="33-how-a-cascade-fires">3.3 How a cascade fires<a class="headerlink" href="#33-how-a-cascade-fires" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>Mutation: fn_update_user(user_id=456)
+    1. fn_update_user commits in PostgreSQL
+    2. &quot;user&quot; domain marked changed
+    3. Cascade rules fire:
+         user → post      → invalidate cached posts that embed this user
+         user → comment   → invalidate cached comments that embed this user
+    4. Next reads of those views miss → re-query PostgreSQL → re-cache
+</code></pre></div>
 <hr />
-<h2 id="4-state-consistency-patterns">4. State Consistency Patterns<a class="headerlink" href="#4-state-consistency-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="41-read-after-write-raw-consistency">4.1 Read-After-Write (RAW) Consistency<a class="headerlink" href="#41-read-after-write-raw-consistency" title="Permanent link">&para;</a></h3>
-<p>User sees their own writes immediately:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="cache-key-includes-user_id">Cache key includes user_id<a class="headerlink" href="#cache-key-includes-user_id" title="Permanent link">&para;</a></h1>
-<p>cache_key = f"GetUserPosts:{user_id}"</p>
-<h1 id="mutation-by-user-a">Mutation by User A<a class="headerlink" href="#mutation-by-user-a" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-async def createPost(input):
-    # Write to database
-    post = await db.insert(...)</p>
-<div class="highlight"><pre><span></span><code># Invalidate ONLY User A&#39;s cache
-cache.invalidate(f&quot;GetUserPosts:{user_id}&quot;)
-
-return post
-</code></pre></div>
-<h1 id="user-as-next-query">User A's next query<a class="headerlink" href="#user-as-next-query" title="Permanent link">&para;</a></h1>
-<h1 id="cache-miss-just-invalidated">Cache miss (just invalidated)<a class="headerlink" href="#cache-miss-just-invalidated" title="Permanent link">&para;</a></h1>
-<h1 id="query-database-sees-their-new-post">Query database (sees their new post)<a class="headerlink" href="#query-database-sees-their-new-post" title="Permanent link">&para;</a></h1>
-<h1 id="user-a-sees-their-own-writes">✓ User A sees their own writes<a class="headerlink" href="#user-a-sees-their-own-writes" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="42-causal-consistency-for-federation">4.2 Causal Consistency (for federation)<a class="headerlink" href="#42-causal-consistency-for-federation" title="Permanent link">&para;</a></h3>
-<p>Events propagate in order:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>User A: Create Post #1 (T0)
-    ├─ Primary database: Post created
-    ├─ Event published: post_created
-    ├─ Replicas start replication: T0 + 10ms</p>
-<p>User B (on different subgraph): Query posts
-    ├─ At T0 + 20ms (after replication)
-    ├─ Sees Post #1 ✓
-    ├─ Causal consistency maintained</p>
-<p>User C (on different subgraph): Query posts
-    ├─ At T0 + 5ms (before replication)
-    ├─ Doesn't see Post #1 (not replicated yet)
-    ├─ Re-queries at T0 + 25ms
-    ├─ Sees Post #1 ✓
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="43-eventual-consistency-multi-database">4.3 Eventual Consistency (multi-database)<a class="headerlink" href="#43-eventual-consistency-multi-database" title="Permanent link">&para;</a></h3>
-<p>Different databases eventually consistent:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database A (Primary for users): User created
-Database B (Replica): Gets replicated
-Database C (Replica): Gets replicated</p>
-<p>Timeline:
-  T0: User created in Database A
-  T0+10ms: Database B sees user
-  T0+20ms: Database C sees user</p>
-<p>Queries during replication:
-  T0+5ms  from DB C: Doesn't see user (not replicated)
-  T0+15ms from DB C: Sees user (replicated)</p>
-<p>Consistency model: Eventual (typically &lt;1s)
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="5-advanced-caching-patterns">5. Advanced Caching Patterns<a class="headerlink" href="#5-advanced-caching-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="51-cache-aside-pattern">5.1 Cache-Aside Pattern<a class="headerlink" href="#51-cache-aside-pattern" title="Permanent link">&para;</a></h3>
-<p>Check cache first, update on miss:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>async def get_user_posts(user_id):
-    # Check L1 cache
-    key = f"posts:{user_id}"
-    cached = cache_l1.get(key)
-    if cached:
-        return cached</p>
-<div class="highlight"><pre><span></span><code># Check L2 cache
-cached = await cache_l2.get(key)
-if cached:
-    cache_l1.set(key, cached)  # Promote to L1
-    return cached
-
-# Miss in both → Query database
-result = await db.query(f&quot;SELECT * FROM v_post WHERE user_id = {user_id}&quot;)
-
-# Populate both caches
-cache_l1.set(key, result, ttl=5*60)
-await cache_l2.set(key, result, ttl=1*60*60)
-
-return result
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="52-write-through-caching">5.2 Write-Through Caching<a class="headerlink" href="#52-write-through-caching" title="Permanent link">&para;</a></h3>
-<p>Update cache on write:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>async def create_post(input):
-    # Write to database
-    post = await db.insert("tb_post", input)</p>
-<div class="highlight"><pre><span></span><code># Update cache immediately
-user_id = input.user_id
-key = f&quot;posts:{user_id}&quot;
-
-# Get current cache value
-cached_posts = cache.get(key) or []
-
-# Add new post
-cached_posts.append(post)
-
-# Write back to cache
-cache.set(key, cached_posts, ttl=5*60)
-
-return post
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="53-write-behind-caching">5.3 Write-Behind Caching<a class="headerlink" href="#53-write-behind-caching" title="Permanent link">&para;</a></h3>
-<p>Update cache, then database (async):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>async def update_user_profile(user_id, data):
-    # Update cache immediately
-    cache.set(f"user:{user_id}", data)</p>
-<div class="highlight"><pre><span></span><code># Update database asynchronously
-asyncio.create_task(
-    db.update(&quot;tb_user&quot;, user_id, data)
-)
-
-return data
-</code></pre></div>
-<h1 id="client-sees-update-immediately-from-cache">Client sees update immediately (from cache)<a class="headerlink" href="#client-sees-update-immediately-from-cache" title="Permanent link">&para;</a></h1>
-<h1 id="database-eventually-consistent-async-write">Database eventually consistent (async write)<a class="headerlink" href="#database-eventually-consistent-async-write" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="6-cdc-integration-patterns">6. CDC Integration Patterns<a class="headerlink" href="#6-cdc-integration-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="61-event-driven-cache-invalidation">6.1 Event-Driven Cache Invalidation<a class="headerlink" href="#61-event-driven-cache-invalidation" title="Permanent link">&para;</a></h3>
-<p>Events drive cache updates:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.on_event("post_updated")
-async def on_post_updated(event):
-    """When post is updated, invalidate related caches"""</p>
-<div class="highlight"><pre><span></span><code># Get post details from event
-post_id = event.entity_id
-user_id = event.payload[&quot;user_id&quot;]
-
-# Invalidate caches
-cache.invalidate(f&quot;post:{post_id}&quot;)
-cache.invalidate(f&quot;posts:{user_id}&quot;)
-cache.invalidate(&quot;trending_posts&quot;)
-cache.invalidate(f&quot;user_feed:{user_id}&quot;)
-</code></pre></div>
-<p>@FraiseQL.on_event("post_deleted")
-async def on_post_deleted(event):
-    # Similar invalidation
-    ...
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="62-event-sourcing">6.2 Event Sourcing<a class="headerlink" href="#62-event-sourcing" title="Permanent link">&para;</a></h3>
-<p>Use events as primary store (optional):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="traditional-store-state">Traditional: Store state<a class="headerlink" href="#traditional-store-state" title="Permanent link">&para;</a></h1>
-<p>POST v_post: { id, title, content, updated_at }</p>
-<h1 id="event-sourcing-store-history">Event sourcing: Store history<a class="headerlink" href="#event-sourcing-store-history" title="Permanent link">&para;</a></h1>
-<p>tb_post_events: [
-    { type: "created", timestamp: T0, data: {...} },
-    { type: "title_updated", timestamp: T1, data: {...} },
-    { type: "content_updated", timestamp: T2, data: {...} }
-]</p>
-<p>Current state = Apply events from T0 to Tn
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="7-state-consistency-monitoring">7. State Consistency Monitoring<a class="headerlink" href="#7-state-consistency-monitoring" title="Permanent link">&para;</a></h2>
-<h3 id="71-metrics">7.1 Metrics<a class="headerlink" href="#71-metrics" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Cache metrics:
-  ├─ Hit rate: Target &gt;80%
-  ├─ Invalidation rate: Monitor trends
-  ├─ TTL distribution: Ensure balanced
-  └─ Size: Monitor growth</p>
-<p>Replication metrics:
-  ├─ Replication lag: Target &lt;1s
-  ├─ Bytes replicated: Monitor bandwidth
-  └─ Failed replications: Alert</p>
-<p>CDC metrics:
-  ├─ Event latency: Target &lt;100ms
-  ├─ Event ordering: Verify per-entity
-  ├─ Delivery reliability: Target 99.99%
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="72-health-checks">7.2 Health Checks<a class="headerlink" href="#72-health-checks" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Cache health:
-  ├─ Redis connectivity: UP/DOWN
-  ├─ Memcached connectivity: UP/DOWN
-  └─ Response time: &lt;5ms</p>
-<p>Replication health:
-  ├─ Primary-replica lag: &lt;1s?
-  ├─ Bytes behind: &lt;100MB?
-  └─ Replication errors: 0?</p>
-<p>CDC health:
-  ├─ LISTEN channels: Connected?
-  ├─ Event backlog: &lt;100?
-  └─ Trigger functions: Enabled?
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="8-state-management-configuration">8. State Management Configuration<a class="headerlink" href="#8-state-management-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="81-caching-configuration">8.1 Caching Configuration<a class="headerlink" href="#81-caching-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>FraiseQL.state.configure({
-    "cache": {
-        "l1": {
-            "backend": "memory",
-            "max_size_mb": 500,
-            "eviction": "lru"  # Least recently used
-        },
-        "l2": {
-            "backend": "redis",
-            "url": "redis://localhost:6379",
-            "max_size_mb": 5000
-        },
-        "default_ttl_seconds": 300,
-        "warmup_on_startup": True
-    },</p>
-<div class="highlight"><pre><span></span><code>&quot;invalidation&quot;: {
-    &quot;strategy&quot;: &quot;cascade&quot;,  # Cascade invalidation
-    &quot;batch_size&quot;: 100,
-    &quot;delay_ms&quot;: 10
-}
-</code></pre></div>
-<p>})
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="82-cdc-configuration">8.2 CDC Configuration<a class="headerlink" href="#82-cdc-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>FraiseQL.state.configure({
-    "cdc": {
-        "enabled": True,
-        "database": "postgresql",
-        "triggers": True,  # Use database triggers
-        "listen_timeout_seconds": 300,
-        "retry_policy": "exponential"
-    },</p>
-<div class="highlight"><pre><span></span><code>&quot;replication&quot;: {
-    &quot;replicas&quot;: [
-        &quot;postgresql://replica1:5432/FraiseQL&quot;,
-        &quot;postgresql://replica2:5432/FraiseQL&quot;
-    ],
-    &quot;lag_threshold_ms&quot;: 1000
-}
-</code></pre></div>
-<p>})
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="9-best-practices">9. Best Practices<a class="headerlink" href="#9-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="91-caching">9.1 Caching<a class="headerlink" href="#91-caching" title="Permanent link">&para;</a></h3>
-<p><strong>DO:</strong></p>
+<h2 id="4-layered-caching-thinking">4. Layered Caching Thinking<a class="headerlink" href="#4-layered-caching-thinking" title="Permanent link">&para;</a></h2>
+<p>The classic L1/L2 layering still applies, expressed through this API rather than a bespoke
+multi-tier cache:</p>
 <ul>
-<li>✅ Monitor cache hit rate</li>
-<li>✅ Adjust TTL based on access patterns</li>
-<li>✅ Invalidate on all related mutations</li>
-<li>✅ Use read replicas for analytics (no cache impact)</li>
-<li>✅ Test cache behavior with failures</li>
+<li><strong>PostgreSQL as the shared cache layer.</strong> <code>PostgresCache</code> (an UNLOGGED table) is fast and
+  shared across all instances, filling the role a separate cache cluster would otherwise play
+  — with no extra infrastructure.</li>
+<li><strong>Per-call read-through.</strong> <code>ResultCache.get_or_set</code> (and <code>CachedRepository</code>) is the
+  read-through tier: every read checks the cache first and only touches the underlying view on
+  a miss.</li>
+<li><strong>PostgreSQL views/projection tables as the durable backing store.</strong> <code>v_*</code> views and <code>tv_*</code>
+  projection tables are the permanent state; <code>tv_*</code> tables additionally pre-compose heavy
+  JSONB so even a cache miss is cheap.</li>
 </ul>
-<p><strong>DON'T:</strong></p>
+<p>If you need an additional in-process or external tier, implement the <code>CacheBackend</code> protocol
+(<code>get</code> / <code>set</code> / <code>delete</code> / <code>delete_pattern</code>) and pass it to <code>ResultCache</code>. The cache-aside,
+TTL, and cascade behaviour come for free regardless of backend.</p>
+<hr />
+<h2 id="5-decorator-based-caching">5. Decorator-Based Caching<a class="headerlink" href="#5-decorator-based-caching" title="Permanent link">&para;</a></h2>
+<p>For caching an arbitrary async query function (outside the repository), use <code>cached_query</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_query</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
+
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">))</span>
+
+<span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="s2">&quot;desc&quot;</span><span class="p">)],</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+<span class="c1"># Bypass on demand</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>The decorator builds a key from the function name and arguments (or a <code>key_func</code> you provide)
+and runs the same cache-aside path as <code>ResultCache.get_or_set</code>.</p>
+<hr />
+<h2 id="6-monitoring">6. Monitoring<a class="headerlink" href="#6-monitoring" title="Permanent link">&para;</a></h2>
+<p><code>ResultCache.get_stats()</code> returns a <code>CacheStats</code> with <code>hits</code>, <code>misses</code>, <code>errors</code>, <code>total</code>, and
+a computed <code>hit_rate</code>. <code>PostgresCache.get_stats()</code> exposes backend-level statistics (entry
+counts, expiry). Watch:</p>
 <ul>
-<li>❌ Rely on cache for correctness (optional optimization)</li>
-<li>❌ Cache without TTL expiration</li>
-<li>❌ Ignore stale data during network partition</li>
-<li>❌ Cache before authorization check (must check on every request)</li>
-</ul>
-<h3 id="92-cdc">9.2 CDC<a class="headerlink" href="#92-cdc" title="Permanent link">&para;</a></h3>
-<p><strong>DO:</strong></p>
-<ul>
-<li>✅ Process events idempotently (handle duplicates)</li>
-<li>✅ Monitor event lag</li>
-<li>✅ Test failure scenarios (database down, network partition)</li>
-<li>✅ Use per-entity ordering guarantee</li>
-</ul>
-<p><strong>DON'T:</strong></p>
-<ul>
-<li>❌ Assume global event ordering</li>
-<li>❌ Lose events (use durable event log)</li>
-<li>❌ Block event processing (async handling)</li>
+<li><strong>Hit rate</strong> — aim high; a sustained low hit rate suggests TTLs are too short or keys are too
+  granular.</li>
+<li><strong>Invalidation activity</strong> — a spike alongside writes is expected; a constant churn may mean
+  cascade rules are too broad.</li>
+<li><strong>Errors</strong> — cache errors are logged and degrade gracefully to a direct database read, so the
+  request still succeeds; investigate the trend, not individual misses.</li>
 </ul>
 <hr />
-<p><strong>Document Version</strong>: 1.0.0
-<strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>FraiseQL state management optimizes performance (caching) while maintaining consistency (CDC + immutable source of truth).</p>
+<h2 id="7-best-practices">7. Best Practices<a class="headerlink" href="#7-best-practices" title="Permanent link">&para;</a></h2>
+<p><strong>Do</strong></p>
+<ul>
+<li>Treat PostgreSQL as the source of truth — the cache is always optional for correctness.</li>
+<li>Always include <code>tenant_id</code> in cache keys (<code>CacheKeyBuilder</code> / <code>CachedRepository</code> do this).</li>
+<li>Set a TTL on every cached query as a correctness backstop, even with cascade rules.</li>
+<li>Let <code>setup_auto_cascade_rules</code> derive cascade rules from your schema; add manual
+  <code>CascadeRule</code>s only for relationships the schema can't express.</li>
+<li>Run authorization on every request, before serving from cache.</li>
+</ul>
+<p><strong>Don't</strong></p>
+<ul>
+<li>Rely on the cache for correctness — it is an optimization, not a state store.</li>
+<li>Cache without a TTL.</li>
+<li>Cache a value before checking the caller's permissions.</li>
+<li>Invent an external event pipeline for invalidation — invalidation is driven by mutations
+  going through <code>fn_*</code> functions and the cascade rules above.</li>
+</ul>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../anti-patterns/">Anti-Patterns</a> — state and caching mistakes to avoid.</li>
+<li><a href="../../reliability/consistency-model/">Consistency Model</a> — the guarantees PostgreSQL provides.</li>
+<li><a href="../../database/tv-table-pattern/">tv_ Table Pattern</a> — pre-composed projection tables for heavy reads.</li>
+<li><a href="../../database/view-selection-guide/">View Selection Guide</a> — choosing between <code>v_</code> and <code>tv_</code> sources.</li>
+<li><a href="../../../foundation/12-performance-characteristics/">Performance Characteristics</a> — latency and throughput context.</li>
+<li><a href="../../../performance/caching/">Result Caching Guide</a> — full configuration and the <code>pg_fraiseql_cache</code> extension.</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

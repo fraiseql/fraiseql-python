@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO do.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/decisions/anti-patterns/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Anti-Patterns - FraiseQL Documentation</title>
+        <title>FraiseQL Anti-Patterns: What NOT to Do - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Anti-Patterns
+              FraiseQL Anti-Patterns: What NOT to Do
             
           </span>
         </div>
@@ -1589,8 +1591,331 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#12-unbounded-result-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Unbounded Result Sets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-business-logic-in-python-instead-of-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Business Logic in Python Instead of fn_ Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-synchronous-blocking-side-effects-in-resolvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Synchronous Blocking Side Effects in Resolvers
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-authorization-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Authorization Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Authorization Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-scattered-authorization-in-resolver-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Scattered Authorization in Resolver Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-trusting-client-provided-identity-or-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Trusting Client-Provided Identity or Role
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-caching-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Caching Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Caching Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-caching-without-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Caching Without Invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-caching-sensitive-data-carelessly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Caching Sensitive Data Carelessly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-performance-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Performance Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Performance Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-premature-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Premature Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-ignoring-indexes-and-over-fetching-in-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Ignoring Indexes and Over-Fetching in Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-data-modeling-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Data Modeling Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Data Modeling Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-storing-derived-data-without-updating-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Storing Derived Data Without Updating It
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-concurrency-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Concurrency Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Concurrency Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-updating-without-a-version-or-conditional-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Updating Without a Version (or Conditional) Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-subscription-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Subscription Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Subscription Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-subscribing-to-everything-and-filtering-on-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Subscribing to Everything and Filtering on the Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-ignoring-connection-liveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Ignoring Connection Liveness
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-testing-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Testing Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Testing Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-testing-behavior-but-skipping-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Testing Behavior but Skipping Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-operational-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Operational Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Operational Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-skipping-health-checks-on-deploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Skipping Health Checks on Deploy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-anti-pattern-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: Anti-Pattern Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5023,8 +5348,331 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#12-unbounded-result-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Unbounded Result Sets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-business-logic-in-python-instead-of-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Business Logic in Python Instead of fn_ Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-synchronous-blocking-side-effects-in-resolvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Synchronous Blocking Side Effects in Resolvers
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-authorization-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Authorization Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Authorization Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-scattered-authorization-in-resolver-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Scattered Authorization in Resolver Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-trusting-client-provided-identity-or-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Trusting Client-Provided Identity or Role
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-caching-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Caching Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Caching Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-caching-without-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Caching Without Invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-caching-sensitive-data-carelessly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Caching Sensitive Data Carelessly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-performance-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Performance Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Performance Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-premature-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Premature Optimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-ignoring-indexes-and-over-fetching-in-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Ignoring Indexes and Over-Fetching in Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-data-modeling-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Data Modeling Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Data Modeling Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-storing-derived-data-without-updating-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Storing Derived Data Without Updating It
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-concurrency-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Concurrency Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Concurrency Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-updating-without-a-version-or-conditional-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Updating Without a Version (or Conditional) Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-subscription-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Subscription Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Subscription Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-subscribing-to-everything-and-filtering-on-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Subscribing to Everything and Filtering on the Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-ignoring-connection-liveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Ignoring Connection Liveness
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-testing-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Testing Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Testing Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-testing-behavior-but-skipping-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Testing Behavior but Skipping Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-operational-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Operational Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Operational Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-skipping-health-checks-on-deploy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Skipping Health Checks on Deploy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-anti-pattern-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: Anti-Pattern Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5048,20 +5696,26 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Anti-Patterns: What NOT to Do
-description: This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO
-keywords: ["workflow", "design", "scalability", "saas", "performance", "realtime", "patterns", "ecommerce"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="fraiseql-anti-patterns-what-not-to-do">FraiseQL Anti-Patterns: What NOT to Do<a class="headerlink" href="#fraiseql-anti-patterns-what-not-to-do" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> January 2026
-<strong>Status:</strong> Complete System Specification
-<strong>Audience:</strong> Developers, architects, technical leads</p>
+<p><strong>Audience:</strong> Developers, architects, technical leads</p>
 <hr />
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO do.</p>
+<p>This document catalogs anti-patterns—designs that seem reasonable but lead to
+problems in practice. Learning what NOT to do is as important as learning what
+TO do.</p>
+<p>FraiseQL v1 is a <strong>Python runtime GraphQL framework for PostgreSQL</strong>. You
+declare types and resolvers with decorators (<code>@fraiseql.type</code>,
+<code>@fraiseql.query</code>, <code>@fraiseql.mutation</code>); the schema is built in memory at app
+startup and served over FastAPI. The architecture is CQRS:</p>
+<ul>
+<li><strong>Reads</strong> come from PostgreSQL <strong>read views</strong> (<code>v_</code>) or table-backed
+  projection views (<code>tv_</code>) via <code>db.find</code> / <code>db.find_one</code>.</li>
+<li><strong>Writes</strong> run through PostgreSQL <strong>functions</strong> (<code>fn_</code>) via
+  <code>db.execute_function</code> — all write business logic lives in the database.</li>
+</ul>
+<p>Most of the anti-patterns below boil down to one root cause: <em>fighting the
+CQRS model</em> by pushing logic into the Python layer that belongs in your views
+and functions.</p>
 <p>Each anti-pattern includes:</p>
 <ul>
 <li><strong>Problem</strong>: Why it's wrong</li>
@@ -5072,796 +5726,872 @@ tags: ["documentation", "reference"]</p>
 <hr />
 <h2 id="1-query-mutation-anti-patterns">1. Query &amp; Mutation Anti-Patterns<a class="headerlink" href="#1-query-mutation-anti-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="11-deep-nested-queries-n1-problem">1.1 Deep Nested Queries (N+1 Problem)<a class="headerlink" href="#11-deep-nested-queries-n1-problem" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Design without considering query depth</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="wrong-dangerous-nesting-depth">❌ WRONG: Dangerous nesting depth<a class="headerlink" href="#wrong-dangerous-nesting-depth" title="Permanent link">&para;</a></h1>
-<p>query GetUserWithEverything {
-  user(id: "user-1") {
-    id
-    name
-    posts {                    # 1 JOIN
-      id
-      comments {              # 1 JOIN per post (N+1!)
-        id
-        author {              # 1 JOIN per comment (N+1+1!)
-          id
-          name
-        }
-      }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Anti-pattern</strong>: Resolving nested relationships one row at a time</p>
+<div class="highlight"><pre><span></span><code><span class="c"># ❌ WRONG: Dangerous nesting depth</span>
+<span class="k">query</span><span class="w"> </span><span class="nf">GetUserWithEverything</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">                    </span><span class="c"># 1 query</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span><span class="w">              </span><span class="c"># 1 query per post (N+1!)</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w">              </span><span class="c"># 1 query per comment (N+1+1!)</span>
+<span class="w">          </span><span class="n">id</span>
+<span class="w">          </span><span class="n">name</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>For 10 posts with 5 comments each = 50 database queries</li>
-<li>Exponential explosion with deeper nesting</li>
-<li>Can timeout or crash database</li>
+<li>For 10 posts with 5 comments each = 50+ database round trips</li>
+<li>Explosion gets worse with deeper nesting</li>
+<li>Can time out or overload the database</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Queries timeout despite small result set</li>
-<li>Database CPU spikes with simple queries</li>
-<li>"Query too complex" errors</li>
+<li>Queries time out despite a small result set</li>
+<li>Database CPU spikes on a single GraphQL request</li>
+<li>Per-field resolvers each issue their own <code>SELECT</code></li>
 </ul>
-<p><strong>Solution</strong>: Limit query depth</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="correct-controlled-nesting-2-3-levels-max">✅ CORRECT: Controlled nesting (2-3 levels max)<a class="headerlink" href="#correct-controlled-nesting-2-3-levels-max" title="Permanent link">&para;</a></h1>
-<p>query GetUserWithPosts {
-  user(id: "user-1") {
-    id
-    name
-    posts(limit: 20) {
-      id
-      title
-      commentCount  # Aggregated, not nested
-    }
-  }
-}</p>
-<h1 id="separate-query-for-comments-if-needed">Separate query for comments if needed<a class="headerlink" href="#separate-query-for-comments-if-needed" title="Permanent link">&para;</a></h1>
-<p>query GetPostComments($postId: ID!) {
-  post(id: $postId) {
-    id
-    comments(limit: 50) {
-      id
-      content
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution A — compose nesting inside the view.</strong> In FraiseQL, the natural fix
+is to build the nested shape once in your <code>v_</code>/<code>tv_</code> view's <code>data</code> JSONB, so a
+single <code>db.find</code> returns the whole tree:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- A read view that pre-composes posts (and their comment counts) as JSONB.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                      </span><span class="c1">-- public UUID (the GraphQL id)</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;commentCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
+<span class="w">                                 </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">)</span>
+<span class="w">            </span><span class="p">))</span>
+<span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Solution B — batch the field with a dataloader.</strong> When a field genuinely
+needs a separate resolver, use <code>@fraiseql.dataloader_field</code> so FraiseQL batches
+the lookups into one query instead of N:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Implementation</strong>: Set max query depth at compile time</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.schema_rule(max_query_depth=3)
-class MySchema:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">Comment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+    <span class="c1"># Called once per comment, but FraiseQL collects the keys and issues a</span>
+    <span class="c1"># single batched load — turning N+1 queries into 1.</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Solution C — cap depth and page nested lists.</strong> Keep request shapes sane and
+always paginate nested collections:</p>
+<div class="highlight"><pre><span></span><code><span class="c"># ✅ CORRECT: Controlled nesting, paginated nested lists, aggregates not joins</span>
+<span class="k">query</span><span class="w"> </span><span class="nf">GetUserWithPosts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">      </span><span class="n">commentCount</span><span class="w">  </span><span class="c"># Aggregated in the view, not nested + counted in app</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> unpredictable latency, database saturation under load, and
+GraphQL requests that work in dev but melt in production.</p>
 <hr />
 <h3 id="12-unbounded-result-sets">1.2 Unbounded Result Sets<a class="headerlink" href="#12-unbounded-result-sets" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Queries without LIMIT</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="wrong-no-limit-returns-all-rows">❌ WRONG: No limit, returns all rows<a class="headerlink" href="#wrong-no-limit-returns-all-rows" title="Permanent link">&para;</a></h1>
-<p>query GetAllUsers {
-  users {
-    id
-    name
-    email
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Anti-pattern</strong>: Queries (and views) without a <code>LIMIT</code></p>
+<div class="highlight"><pre><span></span><code><span class="c"># ❌ WRONG: No limit, returns every row in the view</span>
+<span class="k">query</span><span class="w"> </span><span class="nf">GetAllUsers</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: resolver hands the whole view back, no bound</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>   <span class="c1"># could be millions of rows</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Returns millions of rows</li>
-<li>Timeouts, memory exhaustion</li>
-<li>Network overload (10GB+ response)</li>
+<li>Returns the entire table behind the view</li>
+<li>Memory exhaustion and timeouts</li>
+<li>Huge response payloads saturate the network</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
 <li>Server runs out of memory</li>
 <li>Client connection hangs</li>
-<li>Database performance tanks</li>
+<li>Database and app latency spike together</li>
 </ul>
-<p><strong>Solution</strong>: Always use pagination</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="correct-paginated-with-cursor">✅ CORRECT: Paginated with cursor<a class="headerlink" href="#correct-paginated-with-cursor" title="Permanent link">&para;</a></h1>
-<p>query GetUsers($first: Int!, $after: String) {
-  users(first: $first, after: $after) {
-    edges {
-      cursor
-      node { id name email }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="13-synchronous-side-effects-in-mutations">1.3 Synchronous Side Effects in Mutations<a class="headerlink" href="#13-synchronous-side-effects-in-mutations" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Block mutation completion on side effects</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-mutation-waits-for-external-service">❌ WRONG: Mutation waits for external service<a class="headerlink" href="#wrong-mutation-waits-for-external-service" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-def create_order(input: OrderInput) -&gt; Order:
-    # Create order
-    order = db.insert("orders", input)</p>
-<div class="highlight"><pre><span></span><code># Wait for email service (blocking)
-email_service.send_confirmation(order.id)  # 2 seconds!
-
-# Wait for analytics (blocking)
-analytics.log_event(&quot;order_created&quot;, order)  # 1 second!
-
-# Total: 3 seconds (should be 50ms)
-return order
+<p><strong>Solution</strong>: Always paginate — accept <code>limit</code>/<code>offset</code> (or cursor args) and
+push them into the read:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: bounded read with a sane default cap</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>   <span class="c1"># hard ceiling regardless of client request</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>For client-driven paging, expose a cursor connection:</p>
+<div class="highlight"><pre><span></span><code><span class="c"># ✅ CORRECT: paginated with a cursor connection</span>
+<span class="k">query</span><span class="w"> </span><span class="nf">GetUsers</span><span class="p">(</span><span class="nv">$first</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">!,</span><span class="w"> </span><span class="nv">$after</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="nv">$first</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="nv">$after</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">edges</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">cursor</span>
+<span class="w">      </span><span class="n">node</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">pageInfo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">hasNextPage</span>
+<span class="w">      </span><span class="n">endCursor</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> a single innocent-looking query can OOM the process or
+stall every other request sharing the connection pool.</p>
+<hr />
+<h3 id="13-business-logic-in-python-instead-of-fn_-functions">1.3 Business Logic in Python Instead of <code>fn_</code> Functions<a class="headerlink" href="#13-business-logic-in-python-instead-of-fn_-functions" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Implementing write logic (validation, derived state,
+multi-row updates) in the Python resolver instead of a PostgreSQL function</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: mutation logic lives in Python, runs many round trips,</span>
+<span class="c1">#          and is not transactional</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
 
+    <span class="c1"># Validate by hand, in the app</span>
+    <span class="n">customer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_customer&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">customer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;unknown customer&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Several separate writes — not atomic, racy</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_insert_order_row&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_insert_order_line&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_recompute_order_total&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">order</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]})</span>
+
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">order</span><span class="p">))</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Mutation latency includes side effect latency</li>
-<li>External service slowness delays user feedback</li>
-<li>Failed external services block entire operation</li>
+<li>Multi-step writes are not atomic — a failure midway leaves partial state</li>
+<li>Validation rules drift from the database's own constraints</li>
+<li>Every step is a network round trip; latency stacks up</li>
+<li>The same logic gets re-implemented (inconsistently) in every caller</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Mutations taking 1-5 seconds</li>
-<li>User sees spinning wheel</li>
-<li>Dependent systems failure crashes mutations</li>
+<li>Resolvers are long and full of <code>if</code>/<code>await db...</code> chains</li>
+<li>Bugs where half an operation "took" and half didn't</li>
+<li>Business rules enforced in Python but missing at the SQL layer</li>
 </ul>
-<p><strong>Solution</strong>: Make side effects async</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-async-side-effects">✅ CORRECT: Async side effects<a class="headerlink" href="#correct-async-side-effects" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-async def create_order(input: OrderInput) -&gt; Order:
-    # Create order (synchronous, fast)
-    order = await db.insert("orders", input)</p>
-<div class="highlight"><pre><span></span><code># Schedule side effects (fire and forget)
-asyncio.create_task(
-    email_service.send_confirmation(order.id)
-)
-asyncio.create_task(
-    analytics.log_event(&quot;order_created&quot;, order)
-)
-
-# Return immediately
-return order
+<p><strong>Solution</strong>: Put the write logic in one <code>fn_</code> PostgreSQL function. The resolver
+just validates the shape of the input and calls it; the function does
+validation, the writes, and returns a JSONB result in a single transaction:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: resolver is thin; the database owns the write</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;customer_id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span> <span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
 </code></pre></div>
-<h1 id="mutation-latency-50ms-as-it-should-be">Mutation latency: 50ms (as it should be)<a class="headerlink" href="#mutation-latency-50ms-as-it-should-be" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order does the validation + all writes atomically and returns JSONB.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="n">p_customer_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="n">p_lines</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_order_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UNKNOWN_CUSTOMER&#39;</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;unknown customer&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">fk_customer</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_customer</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_customer_id</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">),</span>
+<span class="w">           </span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;sku&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;qty&#39;</span><span class="p">)::</span><span class="nb">int</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="n">p_lines</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">line</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">                              </span><span class="s1">&#39;order&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> non-atomic writes, duplicated and divergent business
+rules, and slow mutations that fan out into many round trips. See
+<a href="../../../foundation/04-design-principles/">design principles</a> for the rationale
+behind keeping write logic in the database.</p>
+<hr />
+<h3 id="14-synchronous-blocking-side-effects-in-resolvers">1.4 Synchronous Blocking Side Effects in Resolvers<a class="headerlink" href="#14-synchronous-blocking-side-effects-in-resolvers" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Block resolver completion on a slow external call</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: mutation waits on an external service inside the request path</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+
+    <span class="c1"># Blocks the whole request on third-party I/O</span>
+    <span class="n">email_service</span><span class="o">.</span><span class="n">send_confirmation</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>   <span class="c1"># 2 seconds!</span>
+    <span class="n">analytics</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;order_created&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">])</span>    <span class="c1"># 1 second!</span>
+
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<p><strong>Problem:</strong></p>
+<ul>
+<li>Request latency now includes every side-effect's latency</li>
+<li>A slow or failing third party degrades or breaks the mutation</li>
+<li>The user waits on work that has nothing to do with the response</li>
+</ul>
+<p><strong>Symptoms:</strong></p>
+<ul>
+<li>Mutations taking seconds instead of tens of milliseconds</li>
+<li>Outages in a notification/analytics provider taking down writes</li>
+<li>Tail latency dominated by external calls</li>
+</ul>
+<p><strong>Solution</strong>: Get the durable write done in PostgreSQL, then dispatch side
+effects out of the request path. The most robust approach keeps the dispatch
+<em>inside the transaction's reach</em> by recording intent in the database (an outbox
+row written by <code>fn_create_order</code>) and draining it with a separate worker:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order also enqueues the side effect transactionally.</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">kind</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;order_confirmation&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
+</code></pre></div>
+<p>A background worker (a separate process, not the GraphQL request) reads
+<code>tb_outbox</code> and performs the email/analytics calls with retries. The resolver
+returns as soon as the database commits:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: the request path only does the durable write</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<p>If you genuinely must dispatch from the process, hand the work to your own
+worker/queue — never <code>await</code> a slow third party inside the resolver, and never
+fire untracked background tasks whose failures vanish silently.</p>
+<p><strong>Cost of ignoring:</strong> user-visible latency tied to systems you don't control,
+and side effects that are either blocking <em>or</em> silently dropped on failure.</p>
 <hr />
 <h2 id="2-authorization-anti-patterns">2. Authorization Anti-Patterns<a class="headerlink" href="#2-authorization-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="21-authorization-in-application-code-not-schema">2.1 Authorization in Application Code (Not Schema)<a class="headerlink" href="#21-authorization-in-application-code-not-schema" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Put authorization logic in business logic</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-authorization-scattered-in-code">❌ WRONG: Authorization scattered in code<a class="headerlink" href="#wrong-authorization-scattered-in-code" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def get_user(id: ID) -&gt; User:
-    user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [id])</p>
-<div class="highlight"><pre><span></span><code># Check authorization in code
-if user.created_by_user_id != current_user_id:
-    if not current_user.is_admin:
-        raise PermissionError(&quot;Not authorized&quot;)
+<h3 id="21-scattered-authorization-in-resolver-code">2.1 Scattered Authorization in Resolver Code<a class="headerlink" href="#21-scattered-authorization-in-resolver-code" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Re-checking permissions ad hoc in every resolver</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: authorization scattered and easy to forget</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
-return user
-</code></pre></div>
-<p>@FraiseQL.mutation
-def delete_user(id: ID) -&gt; bool:
-    # Different check in different place
-    user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [id])
-    if user.id != current_user_id and not current_user.is_admin:
-        raise PermissionError("Not authorized")</p>
-<div class="highlight"><pre><span></span><code>db.delete(&quot;tb_user&quot;, id)
-return True
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;current_user&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">created_by</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;Not authorized&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">user</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="c1"># A *different* check, written by hand, in a different place</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;current_user&quot;</span><span class="p">]</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;Not authorized&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Authorization rules scattered everywhere</li>
-<li>Impossible to audit (where are all checks?)</li>
-<li>Easy to forget authorization (security hole)</li>
-<li>Hard to maintain (change rule = find all places)</li>
+<li>Rules are duplicated and drift apart between operations</li>
+<li>Impossible to audit — there is no single place that says "who can do what"</li>
+<li>Easy to forget a check on a new resolver (a silent security hole)</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Authorization inconsistency between operations</li>
-<li>Security audits find missing checks</li>
-<li>Accidental exposure of sensitive data</li>
+<li>Inconsistent behavior between similar operations</li>
+<li>Security reviews keep finding missing checks</li>
+<li>Accidental exposure of records a user shouldn't see</li>
 </ul>
-<p><strong>Solution</strong>: Declare authorization in schema</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-authorization-in-schema-compile-time-checked">✅ CORRECT: Authorization in schema (compile-time checked)<a class="headerlink" href="#correct-authorization-in-schema-compile-time-checked" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@FraiseQL.authorize(rule="owner_or_admin")
-class User:
-    id: ID
-    email: str
-    created_by_user_id: UUID  # UUID v4 for GraphQL ID</p>
-<p>@FraiseQL.query
-@FraiseQL.authorize(rule="owner_or_admin")
-def get_user(id: ID) -&gt; User:
-    # Authorization already checked (compile-time)
-    # Code is clean, authorization is auditable
-    return db.query_one(..., [id])</p>
-<p>@FraiseQL.mutation
-@FraiseQL.authorize(rule="owner_or_admin")
-def delete_user(id: ID) -&gt; bool:
-    # Same rule everywhere (consistent)
-    db.delete("tb_user", id)
-    return True
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Declare authorization once via an <code>Authorizer</code> and attach it to
+the operation, instead of re-implementing checks inline:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: one authorizer, attached declaratively</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">Authorizer</span>
 
+<span class="n">owner_or_admin</span> <span class="o">=</span> <span class="n">OwnerOrAdminAuthorizer</span><span class="p">()</span>   <span class="c1"># implements Authorizer</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">owner_or_admin</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteUserInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteUserSuccess</span> <span class="o">|</span> <span class="n">DeleteUserError</span><span class="p">:</span>
+    <span class="c1"># The same rule is enforced by fn_delete_user as well — see below.</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">DeleteUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;forbidden&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">DeleteUserSuccess</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
+<p>Defense in depth: enforce the <em>data</em> boundary in PostgreSQL too. <code>fn_delete_user</code>
+should refuse the operation (and your views should filter by tenant/owner) so a
+missed check in the app cannot leak data. Field-level authorization is available
+via <code>@fraiseql.type(..., authorize_fields=...)</code> and the
+<code>@fraiseql.field</code>/<code>@fraiseql.dataloader_field</code> resolver path.</p>
+<blockquote>
+<p><strong>Resolver-bypass note:</strong> authorization attached to a resolver only runs when
+that resolver runs. Cached or batched paths can shortcut the per-field
+resolver, so always enforce the authoritative boundary in the database
+(<code>fn_</code> functions and tenant-scoped views), not in the resolver alone.</p>
+</blockquote>
+<p><strong>Cost of ignoring:</strong> an unauditable patchwork of checks, one forgotten <code>if</code>
+away from a breach.</p>
 <hr />
-<h3 id="22-trusting-client-provided-authorization">2.2 Trusting Client-Provided Authorization<a class="headerlink" href="#22-trusting-client-provided-authorization" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Trust user role from GraphQL input</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-client-provides-their-role-can-be-forged">❌ WRONG: Client provides their role (can be forged)<a class="headerlink" href="#wrong-client-provides-their-role-can-be-forged" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def get_admin_panel() -&gt; AdminPanel:
-    # Check role from GraphQL input (client can lie!)
-    if input.user_role == "admin":
-        return admin_panel_data</p>
-<div class="highlight"><pre><span></span><code>raise PermissionError()
+<h3 id="22-trusting-client-provided-identity-or-role">2.2 Trusting Client-Provided Identity or Role<a class="headerlink" href="#22-trusting-client-provided-identity-or-role" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Reading the caller's role from GraphQL input</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: the client tells you their role (and can lie)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdminPanel</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;admin&quot;</span><span class="p">:</span>               <span class="c1"># forgeable!</span>
+        <span class="k">return</span> <span class="n">build_admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">()</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Client can modify GraphQL to claim any role</li>
-<li>Security boundary is client-side (non-existent)</li>
-<li>Any user can become admin</li>
+<li>Anyone can send <code>role: "admin"</code> in the variables</li>
+<li>The security boundary is on the client (i.e. nonexistent)</li>
+<li>Privilege escalation is trivial</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Users access restricted data</li>
-<li>Audit shows unauthorized access</li>
-<li>Security breach</li>
+<li>Users reaching data their role shouldn't allow</li>
+<li>Audit logs showing unauthorized access</li>
+<li>A breach waiting to happen</li>
 </ul>
-<p><strong>Solution</strong>: Derive authorization from verified token</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-server-derives-role-from-verified-token">✅ CORRECT: Server derives role from verified token<a class="headerlink" href="#correct-server-derives-role-from-verified-token" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-@FraiseQL.authorize(rule="admin_only")
-def get_admin_panel() -&gt; AdminPanel:
-    # Authorization derived from verified JWT
-    # Client cannot forge role
-    return admin_panel_data
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Solution</strong>: Derive identity and role from the verified request context (a
+validated JWT or session), never from operation arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: identity comes from the verified context, not the input</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">AdminOnlyAuthorizer</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdminPanel</span><span class="p">:</span>
+    <span class="c1"># info.context[&quot;current_user&quot;] was populated from a verified token by</span>
+    <span class="c1"># auth middleware; the client cannot forge it.</span>
+    <span class="k">return</span> <span class="n">build_admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> any user can impersonate any role; there is effectively no
+access control at all.</p>
 <hr />
 <h2 id="3-caching-anti-patterns">3. Caching Anti-Patterns<a class="headerlink" href="#3-caching-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="31-cache-without-invalidation">3.1 Cache Without Invalidation<a class="headerlink" href="#31-cache-without-invalidation" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Cache but never invalidate</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-cache-set-to-1-hour-never-invalidated">❌ WRONG: Cache set to 1 hour, never invalidated<a class="headerlink" href="#wrong-cache-set-to-1-hour-never-invalidated" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.cache.set(
-    f"product:{product_id}",
-    product_data,
-    ttl=3600  # 1 hour
-)</p>
-<h1 id="user-updates-product-price">User updates product price<a class="headerlink" href="#user-updates-product-price" title="Permanent link">&para;</a></h1>
-<p>mutation UpdateProduct {
-  updateProduct(id: "product-1", price: 150) {
-    price
-  }
-}</p>
-<h1 id="cache-not-invalidated">Cache not invalidated!<a class="headerlink" href="#cache-not-invalidated" title="Permanent link">&para;</a></h1>
-<h1 id="next-query-still-sees-old-price-for-up-to-1-hour">Next query still sees old price (for up to 1 hour)<a class="headerlink" href="#next-query-still-sees-old-price-for-up-to-1-hour" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL v1 ships a real PostgreSQL-backed result cache
+(<code>cached_query</code>, <code>ResultCache</code> / <code>CachedRepository</code>, with <code>CascadeRule</code> and
+<code>setup_auto_cascade_rules</code> for invalidation). The anti-patterns are about using
+it carelessly.</p>
+<h3 id="31-caching-without-invalidation">3.1 Caching Without Invalidation<a class="headerlink" href="#31-caching-without-invalidation" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Cache query results but never invalidate them on write</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: a long TTL with no invalidation path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_query</span>
 
-<p><strong>Problem:</strong></p>
-<ul>
-<li>Stale data served to users</li>
-<li>Data inconsistency between instances</li>
-<li>User sees old data, confused</li>
-</ul>
-<p><strong>Symptoms:</strong></p>
-<ul>
-<li>Users report stale data</li>
-<li>Updates not visible immediately</li>
-<li>Cache hits show old values</li>
-</ul>
-<p><strong>Solution</strong>: Invalidate on write</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-invalidate-on-mutation">✅ CORRECT: Invalidate on mutation<a class="headerlink" href="#correct-invalidate-on-mutation" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-async def update_product(id: ID, input: UpdateInput) -&gt; Product:
-    # Update database
-    product = await db.update("products", id, input)</p>
-<div class="highlight"><pre><span></span><code># Invalidate related caches immediately
-cache.invalidate(f&quot;product:{id}&quot;)
-cache.invalidate(&quot;featured_products&quot;)
-cache.invalidate(f&quot;products_by_category:{product.category}&quot;)
-
-return product
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">cached_query</span><span class="p">(</span>
+        <span class="n">db</span><span class="p">,</span> <span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>   <span class="c1"># 1 hour</span>
+    <span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="32-caching-sensitive-data">3.2 Caching Sensitive Data<a class="headerlink" href="#32-caching-sensitive-data" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Cache PII without safeguards</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-cache-user-email-pii">❌ WRONG: Cache user email (PII)<a class="headerlink" href="#wrong-cache-user-email-pii" title="Permanent link">&para;</a></h1>
-<p>cache.set(f"user:{user_id}", user_data)  # Contains email!</p>
-<h1 id="in-multi-tenant-system-another-tenant-might-hit-same-cache">In multi-tenant system, another tenant might hit same cache<a class="headerlink" href="#in-multi-tenant-system-another-tenant-might-hit-same-cache" title="Permanent link">&para;</a></h1>
-<h1 id="if-they-guess-the-key-or-keys-are-leaked-in-logs">if they guess the key (or keys are leaked in logs)<a class="headerlink" href="#if-they-guess-the-key-or-keys-are-leaked-in-logs" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c"># A mutation updates the price...</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateProduct</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p-1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># ...but nothing invalidates product:p-1, so queries serve the stale price</span>
+<span class="c"># for up to an hour.</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>PII leakage between users</li>
-<li>Privacy violation, compliance issue</li>
-<li>Cannot be forgotten (cache persists)</li>
+<li>Stale results served after a write</li>
+<li>Reads and writes disagree</li>
+<li>Users see old data and lose trust in the API</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Audit findings of PII in cache</li>
-<li>GDPR/privacy violations</li>
-<li>Users see other users' emails</li>
+<li>"I updated it but it still shows the old value"</li>
+<li>Cache hits returning superseded data</li>
+<li>Inconsistency that "fixes itself" after the TTL expires</li>
 </ul>
-<p><strong>Solution</strong>: Don't cache PII (or cache carefully)</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-cache-public-data-only">✅ CORRECT: Cache public data only<a class="headerlink" href="#correct-cache-public-data-only" title="Permanent link">&para;</a></h1>
-<p>cache.set(f"user:{user_id}", {
-    "id": user_id,
-    "name": "Alice",
-    "avatar_url": "https://...",
-    # NO email, no phone, no sensitive data
-})</p>
-<h1 id="sensitive-data-fetched-separately-not-cached">Sensitive data fetched separately (not cached)<a class="headerlink" href="#sensitive-data-fetched-separately-not-cached" title="Permanent link">&para;</a></h1>
-<h1 id="or-cached-with-very-short-ttl-30-seconds">Or cached with very short TTL (30 seconds)<a class="headerlink" href="#or-cached-with-very-short-ttl-30-seconds" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Tie invalidation to the write with cascade rules so that mutating
+a <code>tv_</code>/<code>v_</code> source invalidates the dependent cached queries automatically:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: register cascade rules so writes invalidate dependent reads</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CascadeRule</span><span class="p">,</span> <span class="n">setup_auto_cascade_rules</span>
 
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>          <span class="c1"># derive rules from the schema, or:</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">add_cascade_rule</span><span class="p">(</span>
+    <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;tv_product&quot;</span><span class="p">,</span> <span class="n">invalidates</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="s2">&quot;v_featured&quot;</span><span class="p">])</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>When <code>fn_update_product</code> writes the product, the cascade rule clears the cached
+<code>v_product</code> and <code>v_featured</code> entries. See
+<a href="../state-management/">state management</a> for the full caching/invalidation
+model.</p>
+<p><strong>Cost of ignoring:</strong> the cache becomes a correctness bug, not a performance
+win.</p>
+<hr />
+<h3 id="32-caching-sensitive-data-carelessly">3.2 Caching Sensitive Data Carelessly<a class="headerlink" href="#32-caching-sensitive-data-carelessly" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Cache PII or per-tenant data under a guessable, unscoped key</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: caches email (PII) under a key with no tenant scope</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">user_with_email</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Problem:</strong></p>
+<ul>
+<li>PII lingers in a shared cache outside your access controls</li>
+<li>In a multi-tenant system, an unscoped key can collide or leak across tenants</li>
+<li>"Right to be forgotten" is hard when copies live in cache</li>
+</ul>
+<p><strong>Symptoms:</strong></p>
+<ul>
+<li>Audits finding PII in cache storage</li>
+<li>Privacy/compliance violations</li>
+<li>One tenant's data surfacing for another</li>
+</ul>
+<p><strong>Solution</strong>: Cache only what is safe to share, scope keys by tenant, and keep
+sensitive fields on a short or no TTL:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: cache public projection, tenant-scoped key, sensitive data excluded</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tenant:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;avatar_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://...&quot;</span><span class="p">,</span>
+    <span class="c1"># no email, no phone, no tokens</span>
+<span class="p">})</span>
+</code></pre></div>
+<p>The cleanest version is to keep sensitive columns out of the cached <code>v_</code>/<code>tv_</code>
+view's <code>data</code> JSONB entirely, and never put internal keys (<code>pk_</code>/<code>fk_</code>) anywhere
+near the cache.</p>
+<p><strong>Cost of ignoring:</strong> a privacy incident and a cache you can't safely purge.</p>
 <hr />
 <h2 id="4-performance-anti-patterns">4. Performance Anti-Patterns<a class="headerlink" href="#4-performance-anti-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="41-premature-optimization">4.1 Premature Optimization<a class="headerlink" href="#41-premature-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>Anti-pattern</strong>: Optimize before measuring</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-complex-optimization-before-profiling">❌ WRONG: Complex optimization before profiling<a class="headerlink" href="#wrong-complex-optimization-before-profiling" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def get_users():
-    # Manual batch loading (complex)
-    batch_size = 1000
-    users = []
-    for i in range(0, total_users, batch_size):
-        users.extend(
-            db.query(f"SELECT * FROM users LIMIT {batch_size} OFFSET {i}")
-        )
-    return users</p>
-<h1 id="measurements-show-this-is-slower-than-simple-query">Measurements show: This is SLOWER than simple query<a class="headerlink" href="#measurements-show-this-is-slower-than-simple-query" title="Permanent link">&para;</a></h1>
-<h1 id="because-offset-pagination-is-on-not-o1">Because: Offset pagination is O(n), not O(1)<a class="headerlink" href="#because-offset-pagination-is-on-not-o1" title="Permanent link">&para;</a></h1>
-<h1 id="real-fix-use-keyset-pagination-1-query-not-n-queries">Real fix: Use keyset pagination (1 query, not n queries)<a class="headerlink" href="#real-fix-use-keyset-pagination-1-query-not-n-queries" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: hand-rolled offset batching, never profiled</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100_000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">):</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">i</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span>
+<span class="c1"># Offset pagination is O(n) in the offset — this is *slower*, not faster,</span>
+<span class="c1"># and it still returns an unbounded result set (see 1.2).</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Wasted effort on wrong bottleneck</li>
-<li>Complex code harder to maintain</li>
-<li>Solution might be slower than original</li>
+<li>Effort spent on the wrong bottleneck</li>
+<li>More complex code, no measured benefit</li>
+<li>The "optimization" can be slower than the naive version</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Optimization makes things slower</li>
-<li>Complexity increases without benefit</li>
-<li>Time wasted on wrong problems</li>
+<li>Changes that add complexity without moving the numbers</li>
+<li>Optimizations made on a hunch, not a profile</li>
 </ul>
-<p><strong>Solution</strong>: Profile first, optimize based on data</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-profile-identify-bottleneck-optimize">✅ CORRECT: Profile, identify bottleneck, optimize<a class="headerlink" href="#correct-profile-identify-bottleneck-optimize" title="Permanent link">&para;</a></h1>
-<h1 id="profile-shows-database-query-taking-95-of-time">Profile shows: Database query taking 95% of time<a class="headerlink" href="#profile-shows-database-query-taking-95-of-time" title="Permanent link">&para;</a></h1>
-<h1 id="root-cause-missing-index-on-filter-column">Root cause: Missing index on filter column<a class="headerlink" href="#root-cause-missing-index-on-filter-column" title="Permanent link">&para;</a></h1>
-<h1 id="fix-add-index-simple-high-impact">Fix: Add index (simple, high impact)<a class="headerlink" href="#fix-add-index-simple-high-impact" title="Permanent link">&para;</a></h1>
-<p>CREATE INDEX idx_user_status ON tb_user(status);</p>
-<h1 id="speedup-500ms-50ms-10x-faster-1-line-of-sql">Speedup: 500ms → 50ms (10x faster, 1 line of SQL)<a class="headerlink" href="#speedup-500ms-50ms-10x-faster-1-line-of-sql" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Solution</strong>: Measure first. In FraiseQL the bottleneck is almost always the
+SQL behind a view, so look there — usually it's a missing index:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Profile (EXPLAIN ANALYZE the view query) shows a seq scan on the filter column.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+<span class="c1">-- One line; 500ms -&gt; 50ms. No application change needed.</span>
+</code></pre></div>
+<p>See <a href="../../../foundation/12-performance-characteristics/">performance characteristics</a>
+for what to measure and the expected shapes of fast vs slow queries.</p>
+<p><strong>Cost of ignoring:</strong> time burned on non-bottlenecks while the real one (an
+index, or an over-fetching view) goes untouched.</p>
 <hr />
-<h3 id="42-over-replication">4.2 Over-Replication<a class="headerlink" href="#42-over-replication" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Replicate data everywhere</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-replicate-same-data-to-10-read-replicas">❌ WRONG: Replicate same data to 10 read replicas<a class="headerlink" href="#wrong-replicate-same-data-to-10-read-replicas" title="Permanent link">&para;</a></h1>
-<p>Configuration:
-  ├─ Primary database (writes)
-  ├─ Read replica 1
-  ├─ Read replica 2
-  ├─ Read replica 3
-  ├─ Read replica 4
-  ├─ Read replica 5
-  ├─ Read replica 6
-  ├─ Read replica 7
-  ├─ Read replica 8
-  ├─ Read replica 9
-  └─ Read replica 10</p>
-<h1 id="problem-replication-lag-storage-bloat-complexity">Problem: Replication lag, storage bloat, complexity<a class="headerlink" href="#problem-replication-lag-storage-bloat-complexity" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="42-ignoring-indexes-and-over-fetching-in-views">4.2 Ignoring Indexes and Over-Fetching in Views<a class="headerlink" href="#42-ignoring-indexes-and-over-fetching-in-views" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Building wide views that scan whole tables and select columns
+nobody asked for</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: builds a fat data blob and filters on an unindexed column</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;lines&#39;</span><span class="p">,</span><span class="w">     </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">...),</span>
+<span class="w">        </span><span class="s1">&#39;history&#39;</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_event</span><span class="w"> </span><span class="p">...),</span><span class="w">  </span><span class="c1">-- huge, rarely read</span>
+<span class="w">        </span><span class="s1">&#39;rawAudit&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">audit_blob</span><span class="w">                                      </span><span class="c1">-- never requested</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;OPEN&#39;</span><span class="p">;</span><span class="w">   </span><span class="c1">-- can&#39;t use an index</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Replication lag grows with replicas</li>
-<li>Storage cost multiplied</li>
-<li>Complexity in managing 11 instances</li>
-<li>Diminishing returns (beyond 3-5 replicas)</li>
+<li>The view materializes far more JSONB than any query selects</li>
+<li>Filtering on a JSONB expression bypasses ordinary column indexes</li>
+<li>Sequential scans on large tables for routine queries</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>High replication lag (&gt;10 seconds)</li>
-<li>Huge storage costs</li>
-<li>Difficult operational overhead</li>
+<li>Slow reads that <code>EXPLAIN ANALYZE</code> shows as seq scans</li>
+<li>High memory churn building JSONB that's immediately discarded</li>
+<li>A "simple" list query that's mysteriously expensive</li>
 </ul>
-<p><strong>Solution</strong>: Right-size replica count</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-minimal-replicas-for-needs">✅ CORRECT: Minimal replicas for needs<a class="headerlink" href="#correct-minimal-replicas-for-needs" title="Permanent link">&para;</a></h1>
-<p>Configuration:
-  ├─ Primary database (writes): Handles mutations
-  ├─ Read replica 1: Handles queries (local datacenter)
-  ├─ Read replica 2: Handles Arrow analytics (separate)
-  └─ Read replica 3: Disaster recovery (warm standby)</p>
-<h1 id="replication-lag-1-second">Replication lag: &lt;1 second<a class="headerlink" href="#replication-lag-1-second" title="Permanent link">&para;</a></h1>
-<h1 id="storage-manageable">Storage: Manageable<a class="headerlink" href="#storage-manageable" title="Permanent link">&para;</a></h1>
-<h1 id="complexity-operationally-reasonable">Complexity: Operationally reasonable<a class="headerlink" href="#complexity-operationally-reasonable" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Keep filterable columns as real, indexed columns on the view;
+build heavy sub-objects only where they're actually needed (or in a dedicated
+<code>tv_</code> projection refreshed out of band):</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ✅ CORRECT: expose an indexed status column; keep the heavy bits out of the list view</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span><span class="w">                                  </span><span class="c1">-- real column → indexable filter</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+<span class="c1">-- Order history / audit live in a separate detail view fetched only when asked for.</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> every list query pays for data it throws away, and the
+database can't use indexes for the filters that matter.</p>
 <hr />
 <h2 id="5-data-modeling-anti-patterns">5. Data Modeling Anti-Patterns<a class="headerlink" href="#5-data-modeling-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="51-storing-derived-data-without-updates">5.1 Storing Derived Data Without Updates<a class="headerlink" href="#51-storing-derived-data-without-updates" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Calculate once, store forever</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-calculate-user-score-store-never-update">❌ WRONG: Calculate user score, store, never update<a class="headerlink" href="#wrong-calculate-user-score-store-never-update" title="Permanent link">&para;</a></h1>
-<p>user = {
-    "id": "user-1",
-    "name": "Alice",
-    "score": 100  # Calculated once, never updated
-}</p>
-<h1 id="user-does-activities">User does activities<a class="headerlink" href="#user-does-activities" title="Permanent link">&para;</a></h1>
-<h1 id="score-should-update">Score should update<a class="headerlink" href="#score-should-update" title="Permanent link">&para;</a></h1>
-<h1 id="but-its-stale-in-database">But it's stale in database<a class="headerlink" href="#but-its-stale-in-database" title="Permanent link">&para;</a></h1>
-<h1 id="query-assumes-score-is-current-its-not">Query assumes score is current (it's not!)<a class="headerlink" href="#query-assumes-score-is-current-its-not" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="51-storing-derived-data-without-updating-it">5.1 Storing Derived Data Without Updating It<a class="headerlink" href="#51-storing-derived-data-without-updating-it" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Compute a derived value once and store it as a plain column
+that nothing keeps current</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: score is computed at insert and then drifts</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w"> </span><span class="nb">bigint</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">      </span><span class="n">uuid</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">name</span><span class="w">    </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">score</span><span class="w">   </span><span class="nb">int</span><span class="w">      </span><span class="c1">-- set once, never recomputed as activity accrues</span>
+<span class="p">);</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Stale derived data</li>
-<li>Inconsistency with calculated value</li>
-<li>Hard to know when last updated</li>
+<li>The stored value diverges from reality over time</li>
+<li>Readers assume it's current; it isn't</li>
+<li>No signal that it's stale</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>User score doesn't match their activities</li>
-<li>Reports show wrong aggregates</li>
-<li>Users confused by stale data</li>
+<li>Aggregates and scores that don't match the underlying rows</li>
+<li>"The number is wrong" reports that can't be reproduced from the data</li>
+<li>Inconsistency between the column and a fresh <code>COUNT(*)</code></li>
 </ul>
-<p><strong>Solution</strong>: Use database view or trigger</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-calculate-on-demand-view-or-auto-update-trigger">✅ CORRECT: Calculate on-demand (view) or auto-update (trigger)<a class="headerlink" href="#correct-calculate-on-demand-view-or-auto-update-trigger" title="Permanent link">&para;</a></h1>
-<h1 id="option-1-view-calculate-on-read">Option 1: View (calculate on read)<a class="headerlink" href="#option-1-view-calculate-on-read" title="Permanent link">&para;</a></h1>
-<p>CREATE VIEW v_user_stats AS
-SELECT
-    u.id,
-    u.name,
-    COUNT(a.id) as score
-FROM tb_user u
-LEFT JOIN tb_activity a ON u.id = a.user_id
-GROUP BY u.id;</p>
-<h1 id="option-2-trigger-update-on-write">Option 2: Trigger (update on write)<a class="headerlink" href="#option-2-trigger-update-on-write" title="Permanent link">&para;</a></h1>
-<p>CREATE TRIGGER update_user_score
-AFTER INSERT ON tb_activity
-FOR EACH ROW
-BEGIN
-    UPDATE tb_user
-    SET score = (SELECT COUNT(*) FROM tb_activity WHERE user_id = NEW.user_id)
-    WHERE id = NEW.user_id;
-END;
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Compute on read in a view, or maintain it in the database with a
+trigger or projection table — never leave it to chance:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Option A: compute on read in the view&#39;s data JSONB</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;score&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_activity</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 
+<span class="c1">-- Option B: maintain it on write with a trigger (when reads must be cheap)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_bump_user_score</span><span class="p">()</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">       </span><span class="k">SET</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_activity</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_user</span><span class="p">)</span>
+<span class="w">     </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_bump_user_score</span>
+<span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_activity</span>
+<span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_bump_user_score</span><span class="p">();</span>
+</code></pre></div>
+<p>For heavy aggregates, a <code>tv_</code> projection table refreshed by a function/trigger
+is the table-backed version of the same idea. See the
+<a href="../../analytics/aggregation-model/">aggregation model</a> for derived-data
+patterns and FraiseQL's runtime auto-aggregation.</p>
+<p><strong>Cost of ignoring:</strong> silently wrong numbers that erode trust and are painful to
+reconcile after the fact.</p>
 <hr />
 <h2 id="6-concurrency-anti-patterns">6. Concurrency Anti-Patterns<a class="headerlink" href="#6-concurrency-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="61-optimistic-locking-without-version-check">6.1 Optimistic Locking Without Version Check<a class="headerlink" href="#61-optimistic-locking-without-version-check" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Update without checking version</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-race-condition-possible">❌ WRONG: Race condition possible<a class="headerlink" href="#wrong-race-condition-possible" title="Permanent link">&para;</a></h1>
-<h1 id="thread-1-read-user-version-1">Thread 1: Read user (version: 1)<a class="headerlink" href="#thread-1-read-user-version-1" title="Permanent link">&para;</a></h1>
-<p>user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [user_id])</p>
-<h1 id="thread-2-update-user-version-1-2">Thread 2: Update user (version: 1 → 2)<a class="headerlink" href="#thread-2-update-user-version-1-2" title="Permanent link">&para;</a></h1>
-<p>db.update("tb_user", user_id, {"name": "Bob", "version": 2})</p>
-<h1 id="thread-1-update-without-checking-version">Thread 1: Update without checking version<a class="headerlink" href="#thread-1-update-without-checking-version" title="Permanent link">&para;</a></h1>
-<p>db.update("tb_user", user_id, {"email": "alice@example.com", "version": 1})</p>
-<h1 id="result-race-condition-version-conflict">Result: Race condition, version conflict<a class="headerlink" href="#result-race-condition-version-conflict" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="61-updating-without-a-version-or-conditional-check">6.1 Updating Without a Version (or Conditional) Check<a class="headerlink" href="#61-updating-without-a-version-or-conditional-check" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Read-then-write without guarding against a concurrent update</p>
+<div class="highlight"><pre><span></span><code># ❌ WRONG: lost-update race
+Tx 1: read user (version 1)
+Tx 2: update user, version 1 -&gt; 2
+Tx 1: update user using its stale copy, clobbering Tx 2&#39;s change
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Lost updates (Thread 1 overwrites Thread 2)</li>
-<li>Data corruption</li>
-<li>No conflict detection</li>
+<li>Lost updates: the last writer silently overwrites the others</li>
+<li>No conflict is detected or reported</li>
+<li>Data corruption that's invisible until someone notices missing changes</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Users report updates being lost</li>
-<li>Data inconsistency</li>
-<li>Stale data overwrites newer data</li>
+<li>"My edit disappeared"</li>
+<li>Fields reverting to older values</li>
+<li>Non-reproducible inconsistencies under load</li>
 </ul>
-<p><strong>Solution</strong>: Check version before update</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-optimistic-locking-with-version-check">✅ CORRECT: Optimistic locking with version check<a class="headerlink" href="#correct-optimistic-locking-with-version-check" title="Permanent link">&para;</a></h1>
-<p>user = db.query_one(
-    "SELECT id, name, email, version FROM tb_user WHERE id = $1",
-    [user_id]
-)</p>
-<h1 id="update-with-version-check">Update with version check<a class="headerlink" href="#update-with-version-check" title="Permanent link">&para;</a></h1>
-<p>result = db.execute(
-    "UPDATE tb_user SET email = $1, version = version + 1 "
-    "WHERE id = $2 AND version = $3",
-    ["newemail@example.com", user_id, user.version]
-)</p>
-<p>if result.rowcount == 0:
-    raise ConflictError("Version mismatch, refresh and retry")
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Make the write conditional inside the <code>fn_</code> function — increment a
+<code>version</code> column and update only when the version still matches, returning a
+conflict result when it doesn't:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ✅ CORRECT: optimistic concurrency enforced in the database</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user_email</span><span class="p">(</span><span class="n">p_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">p_version</span><span class="w"> </span><span class="nb">int</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_rows</span><span class="w"> </span><span class="nb">int</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">       </span><span class="k">SET</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_email</span><span class="p">,</span>
+<span class="w">           </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">     </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
+<span class="w">       </span><span class="k">AND</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_version</span><span class="p">;</span><span class="w">      </span><span class="c1">-- only if nobody else moved it</span>
+<span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
 
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CONFLICT&#39;</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;version mismatch, refresh and retry&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<p>The resolver passes the client's <code>version</code> through and surfaces the conflict as
+a typed error result. See the
+<a href="../../reliability/consistency-model/">consistency model</a> for transaction and
+concurrency guarantees.</p>
+<p><strong>Cost of ignoring:</strong> silent data loss under concurrency that's nearly
+impossible to debug after the fact.</p>
 <hr />
 <h2 id="7-subscription-anti-patterns">7. Subscription Anti-Patterns<a class="headerlink" href="#7-subscription-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="71-subscribing-to-all-events">7.1 Subscribing to All Events<a class="headerlink" href="#71-subscribing-to-all-events" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Get all events, filter on client</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="wrong-subscribe-to-all-events-filter-on-client">❌ WRONG: Subscribe to ALL events, filter on client<a class="headerlink" href="#wrong-subscribe-to-all-events-filter-on-client" title="Permanent link">&para;</a></h1>
-<p>subscription OnAllEvents {
-  events {
-    type
-    timestamp
-    data
-  }
-}</p>
-<h1 id="client-filters">Client filters<a class="headerlink" href="#client-filters" title="Permanent link">&para;</a></h1>
-<p>if (event.type === "order_created") {
-  handleOrderCreated(event);
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>FraiseQL v1 subscriptions are real and WebSocket-based: <code>@fraiseql.subscription</code>
+decorates an <strong>async generator</strong> whose yielded values are streamed to the
+client. The event source is <em>your</em> generator — it can be backed by PostgreSQL
+<code>LISTEN/NOTIFY</code>, polling, or an external stream.</p>
+<h3 id="71-subscribing-to-everything-and-filtering-on-the-client">7.1 Subscribing to Everything and Filtering on the Client<a class="headerlink" href="#71-subscribing-to-everything-and-filtering-on-the-client" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Stream all events and let the client throw most away</p>
+<div class="highlight"><pre><span></span><code><span class="c"># ❌ WRONG: subscribe to all events, filter in the browser</span>
+<span class="k">subscription</span><span class="w"> </span><span class="nf">OnAllEvents</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">events</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Network bloat (receiving events you don't care about)</li>
-<li>Buffer overflow (too many events)</li>
-<li>Wasted bandwidth</li>
+<li>The server pushes events every client doesn't care about</li>
+<li>Bandwidth and client CPU wasted on filtering</li>
+<li>Slow consumers fall behind and connections drop</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>WebSocket connection drops (buffer full)</li>
-<li>Network usage very high</li>
-<li>Client CPU high (filtering all events)</li>
+<li>WebSocket disconnects under event volume</li>
+<li>High network usage for a handful of relevant events</li>
+<li>Client-side filtering logic that mirrors what the server already knows</li>
 </ul>
-<p><strong>Solution</strong>: Filter on server</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="correct-subscribe-to-specific-events-filtered-on-server">✅ CORRECT: Subscribe to specific events (filtered on server)<a class="headerlink" href="#correct-subscribe-to-specific-events-filtered-on-server" title="Permanent link">&para;</a></h1>
-<p>subscription OnOrderCreated {
-  orderCreated {
-    id
-    total
-    user { id name }
-  }
-}</p>
-<h1 id="server-only-sends-order-created-events">Server only sends order created events<a class="headerlink" href="#server-only-sends-order-created-events" title="Permanent link">&para;</a></h1>
-<h1 id="no-buffer-overflow">No buffer overflow<a class="headerlink" href="#no-buffer-overflow" title="Permanent link">&para;</a></h1>
-<h1 id="network-efficient">Network efficient<a class="headerlink" href="#network-efficient" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Filter at the source — take arguments in the subscription
+generator and only <code>yield</code> matching events (FraiseQL also provides a
+<code>subscription_filter</code> helper):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: filter server-side; only matching events leave the server</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">order_created</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">customer_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Order</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">watch_orders</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">customer_id</span> <span class="o">==</span> <span class="n">customer_id</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">order</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> dropped connections and wasted bandwidth that gets worse
+as traffic grows.</p>
 <hr />
-<h3 id="72-no-heartbeat-handling">7.2 No Heartbeat Handling<a class="headerlink" href="#72-no-heartbeat-handling" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Assume subscription always connected</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-no-heartbeat-connection-silently-dies">❌ WRONG: No heartbeat, connection silently dies<a class="headerlink" href="#wrong-no-heartbeat-connection-silently-dies" title="Permanent link">&para;</a></h1>
-<p>subscription = await client.subscribe(query)</p>
-<p>async for event in subscription:
-    process_event(event)  # Dies silently if disconnected
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="72-ignoring-connection-liveness">7.2 Ignoring Connection Liveness<a class="headerlink" href="#72-ignoring-connection-liveness" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Assume a WebSocket subscription stays healthy forever</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: no liveness handling; a dead connection looks &quot;subscribed&quot;</span>
+<span class="n">subscription</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">subscription</span><span class="p">:</span>
+    <span class="n">process_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>   <span class="c1"># silently stops if the socket is half-open</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Connection dies silently</li>
-<li>Client thinks still connected</li>
-<li>Missed events</li>
+<li>A half-open connection delivers no events but looks connected</li>
+<li>The client believes it's live and misses updates</li>
+<li>No recovery without a manual refresh</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Subscription appears active but receives no events</li>
-<li>User doesn't know they missed events</li>
-<li>Must manually refresh</li>
+<li>A subscription that's "active" but quietly stops updating</li>
+<li>Users unaware they've missed events</li>
+<li>Reconnects only after someone notices</li>
 </ul>
-<p><strong>Solution</strong>: Implement heartbeat/ping</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-heartbeat-keeps-connection-alive">✅ CORRECT: Heartbeat keeps connection alive<a class="headerlink" href="#correct-heartbeat-keeps-connection-alive" title="Permanent link">&para;</a></h1>
-<p>subscription = await client.subscribe(query)</p>
-<p>async def monitor_subscription():
-    while subscription.is_active:
-        if time.time() - subscription.last_message &gt; 30:
-            # No message in 30 seconds, send ping
-            subscription.ping()
-        await asyncio.sleep(10)</p>
-<p>async for event in subscription:
-    subscription.last_message = time.time()
-    process_event(event)
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Use the GraphQL-over-WebSocket transport's keepalive
+(<code>graphql-transport-ws</code> ping/pong) and reconnect on missed pongs. On the server,
+FraiseQL's <code>WebSocketConnection</code> / <code>SubscriptionManager</code> handle the protocol;
+on the client, enable ping and re-subscribe on disconnect:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: client monitors liveness and reconnects</span>
+<span class="n">subscription</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">keepalive</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">watch_liveness</span><span class="p">():</span>
+    <span class="k">while</span> <span class="n">subscription</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span> <span class="o">-</span> <span class="n">subscription</span><span class="o">.</span><span class="n">last_message</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">subscription</span><span class="o">.</span><span class="n">reconnect</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> users silently stop receiving real-time updates and don't
+find out until it matters.</p>
 <hr />
 <h2 id="8-testing-anti-patterns">8. Testing Anti-Patterns<a class="headerlink" href="#8-testing-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="81-testing-without-authorization">8.1 Testing Without Authorization<a class="headerlink" href="#81-testing-without-authorization" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Test queries/mutations but skip authorization</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong-test-query-without-checking-authorization">❌ WRONG: Test query without checking authorization<a class="headerlink" href="#wrong-test-query-without-checking-authorization" title="Permanent link">&para;</a></h1>
-<p>def test_get_user():
-    result = query(GetUserQuery, variables={"id": "user-1"})
-    assert result.user.name == "Alice"
-    # Missing: Authorization test!</p>
-<p>def test_delete_user():
-    result = mutation(DeleteUserMutation, variables={"id": "user-1"})
-    assert result.success == True
-    # Missing: Test that non-owner cannot delete!
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="81-testing-behavior-but-skipping-authorization">8.1 Testing Behavior but Skipping Authorization<a class="headerlink" href="#81-testing-behavior-but-skipping-authorization" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Test the happy path and never test who is allowed to do it</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: only asserts the result, never the access boundary</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-1&quot;</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Alice&quot;</span>
+    <span class="c1"># No test that a different user is rejected!</span>
+</code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Authorization bypassed in tests</li>
-<li>Security hole not caught</li>
-<li>Test passes but production fails</li>
+<li>Authorization regressions sail through the test suite</li>
+<li>A removed or broken check is caught only in production</li>
+<li>The security boundary is the least-tested part of the system</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Tests pass but users report access denied</li>
-<li>Security audit finds authorization not tested</li>
-<li>Production bugs</li>
+<li>Green tests, but real users hit (or bypass) access errors</li>
+<li>Security reviews finding untested authorization paths</li>
 </ul>
-<p><strong>Solution</strong>: Test authorization explicitly</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="correct-test-with-and-without-authorization">✅ CORRECT: Test with and without authorization<a class="headerlink" href="#correct-test-with-and-without-authorization" title="Permanent link">&para;</a></h1>
-<p>def test_get_user_authorized():
-    # User can access their own user
-    result = query(GetUserQuery, user_id="user-1", variables={"id": "user-1"})
-    assert result.user.name == "Alice"</p>
-<p>def test_get_user_unauthorized():
-    # User cannot access other user
-    result = query(GetUserQuery, user_id="user-1", variables={"id": "user-2"})
-    assert result.errors[0].code == "E_AUTH_PERMISSION_401"</p>
-<p>def test_delete_user_admin():
-    # Admin can delete any user
-    result = mutation(DeleteUserMutation, user_role="admin", variables={"id": "user-1"})
-    assert result.success == True</p>
-<p>def test_delete_user_non_owner():
-    # Non-owner cannot delete
-    result = mutation(DeleteUserMutation, user_id="user-1", variables={"id": "user-2"})
-    assert result.errors[0].code == "E_AUTH_PERMISSION_401"
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution</strong>: Test both the allowed and the denied case explicitly, with the
+caller identity coming from context (as it does in production):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: assert both the grant and the denial</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user_owner_allowed</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
+                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-1&quot;</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Alice&quot;</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user_other_denied</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
+                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-2&quot;</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extensions</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;FORBIDDEN&quot;</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_delete_user_non_owner_denied</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_mutation</span><span class="p">(</span><span class="n">DELETE_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
+                                <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-2&quot;</span><span class="p">}})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;deleteUser&quot;</span><span class="p">][</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;DeleteUserError&quot;</span>
+</code></pre></div>
+<p>Also test the database boundary: a <code>fn_</code> function or tenant-scoped view should
+refuse a forbidden operation even if the resolver check were removed.</p>
+<p><strong>Cost of ignoring:</strong> the most security-critical behavior is the only behavior
+nobody verifies.</p>
 <hr />
-<h2 id="9-deployment-anti-patterns">9. Deployment Anti-Patterns<a class="headerlink" href="#9-deployment-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="91-schema-mismatch-between-instances">9.1 Schema Mismatch Between Instances<a class="headerlink" href="#91-schema-mismatch-between-instances" title="Permanent link">&para;</a></h3>
-<p><strong>Anti-pattern</strong>: Different instances using different schema versions</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Production deployment:
-├─ Instance 1: CompiledSchema v2.0.0
-├─ Instance 2: CompiledSchema v2.0.0
-├─ Instance 3: CompiledSchema v2.0.1 (oops!)
-└─ Load balancer: Routes to all 3</p>
-<p>Problem: Instance 3 has different behavior
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="9-operational-anti-patterns">9. Operational Anti-Patterns<a class="headerlink" href="#9-operational-anti-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="91-skipping-health-checks-on-deploy">9.1 Skipping Health Checks on Deploy<a class="headerlink" href="#91-skipping-health-checks-on-deploy" title="Permanent link">&para;</a></h3>
+<p><strong>Anti-pattern</strong>: Route traffic to a new instance before it can actually serve
+requests</p>
+<div class="highlight"><pre><span></span><code># ❌ WRONG: traffic shifts the moment the process starts
+1. Start new app process
+2. Load balancer immediately routes to it
+3. ...but startup (schema build, DB pool warm-up) isn&#39;t done
+4. First requests fail or hang
+</code></pre></div>
+<p>The FraiseQL schema is built <strong>in memory at startup</strong> from your decorators and
+the live database connection — there is no compiled artifact to ship or version.
+What can differ between instances is the <em>running code</em> and the <em>database it
+points at</em>, so an instance is only ready once it has built its schema and
+connected.</p>
 <p><strong>Problem:</strong></p>
 <ul>
-<li>Different query plans per instance</li>
-<li>Non-deterministic results</li>
-<li>Hard to debug (works on some instances, fails on others)</li>
+<li>Requests hit an instance that isn't finished starting</li>
+<li>Errors during the warm-up window</li>
+<li>Confusing "works on one pod, fails on another" reports</li>
 </ul>
 <p><strong>Symptoms:</strong></p>
 <ul>
-<li>Some instances work, others fail</li>
-<li>Errors are random (instance-dependent)</li>
-<li>User sees different results on refresh</li>
+<li>Spikes of errors right after each deploy</li>
+<li>Failures correlated with newly-added instances</li>
+<li>Intermittent failures behind a load balancer</li>
 </ul>
-<p><strong>Solution</strong>: Atomic deployments</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Correct deployment:</p>
-<ol>
-<li>Deploy new code version</li>
-<li>Wait for ready signal (health check)</li>
-<li>Verify schema matches</li>
-<li>Then route traffic</li>
-</ol>
-<p>All instances have identical schema
-All instances behave identically
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Solution</strong>: Gate traffic on a readiness check, and roll instances so old ones
+keep serving until new ones are ready and pointed at a compatible database:</p>
+<div class="highlight"><pre><span></span><code># ✅ CORRECT: ready-gated rollout
+1. Start new app process (builds schema, warms the connection pool)
+2. Readiness probe passes only after startup completes
+3. Load balancer routes to it; an old instance is drained
+4. Apply DB migrations before/with the rollout so views/functions are compatible
+</code></pre></div>
+<p><strong>Cost of ignoring:</strong> every deploy produces a burst of user-facing errors and
+flaky, instance-dependent behavior.</p>
 <hr />
 <h2 id="summary-anti-pattern-checklist">Summary: Anti-Pattern Checklist<a class="headerlink" href="#summary-anti-pattern-checklist" title="Permanent link">&para;</a></h2>
 <p>Before shipping code, check:</p>
 <ul>
-<li>❌ Deep query nesting? (max 3 levels)</li>
-<li>❌ Unbounded result sets? (always paginate)</li>
-<li>❌ Synchronous side effects? (make async)</li>
-<li>❌ Authorization in code? (declare in schema)</li>
-<li>❌ Trusting client input? (verify server-side)</li>
-<li>❌ Cache without invalidation? (invalidate on write)</li>
-<li>❌ Caching sensitive data? (don't)</li>
-<li>❌ Optimizing before profiling? (profile first)</li>
-<li>❌ Subscription to all events? (filter server-side)</li>
-<li>❌ Tests without authorization? (test both cases)</li>
-<li>❌ Schema mismatch across instances? (atomic deployments)</li>
+<li>❌ Per-row nested resolvers? (compose in the view or use <code>@fraiseql.dataloader_field</code>)</li>
+<li>❌ Unbounded result sets? (always paginate, with a hard ceiling)</li>
+<li>❌ Write logic in Python? (put it in a <code>fn_</code> function, atomically)</li>
+<li>❌ Blocking side effects in resolvers? (use an outbox / out-of-band worker)</li>
+<li>❌ Authorization scattered in resolvers? (declare an <code>Authorizer</code>; enforce in the DB too)</li>
+<li>❌ Trusting client-provided role/identity? (derive it from the verified context)</li>
+<li>❌ Caching without invalidation? (use <code>CascadeRule</code> / <code>setup_auto_cascade_rules</code>)</li>
+<li>❌ Caching sensitive data carelessly? (scope keys, exclude PII)</li>
+<li>❌ Optimizing before profiling? (measure the SQL; usually it's an index)</li>
+<li>❌ Filterable data buried in JSONB? (keep indexed columns; trim the view)</li>
+<li>❌ Derived data stored and forgotten? (compute in a view, or maintain via trigger)</li>
+<li>❌ Writes without a version check? (conditional update in the <code>fn_</code> function)</li>
+<li>❌ Subscriptions that send everything? (filter in the async generator)</li>
+<li>❌ No connection-liveness handling? (keepalive + reconnect)</li>
+<li>❌ Tests that skip authorization? (test both grant and denial)</li>
+<li>❌ Routing traffic before readiness? (gate on a health check)</li>
 </ul>
 <hr />
-<p><strong>Document Version</strong>: 1.0.0
-<strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>Learn from others' mistakes. Avoid these patterns and your application will be safer and faster.</p>
+<p>Learn from others' mistakes. Avoid these patterns and your FraiseQL application
+will be safer, faster, and far easier to reason about.</p>
+<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../state-management/">State management</a> — caching and invalidation model</li>
+<li><a href="../../reliability/error-handling-model/">Error handling model</a></li>
+<li><a href="../../reliability/consistency-model/">Consistency model</a></li>
+<li><a href="../../database/view-selection-guide/">View selection guide</a> — <code>v_</code> vs <code>tv_</code> reads</li>
+<li><a href="../../analytics/aggregation-model/">Aggregation model</a></li>
+<li><a href="../../../foundation/04-design-principles/">Design principles</a></li>
+<li><a href="../../../foundation/12-performance-characteristics/">Performance characteristics</a></li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

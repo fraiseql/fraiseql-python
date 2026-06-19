@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Real-time GraphQL subscriptions in FraiseQL v1, served over WebSocket from async-generator resolvers.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/realtime/subscriptions/">
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#subscriptions-event-projections-from-the-database" class="md-skip">
+        <a href="#subscriptions" class="md-skip">
           Skip to content
         </a>
       
@@ -1484,14 +1486,36 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Overview">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-defining-a-subscription" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Defining a subscription
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-driving-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Driving updates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Driving updates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-are-fraiseql-subscriptions" class="md-nav__link">
+  <a href="#31-postgresql-listennotify" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What Are FraiseQL Subscriptions?
+        3.1 PostgreSQL LISTEN/NOTIFY
       
     </span>
   </a>
@@ -1499,21 +1523,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-subscriptions-work-differently-in-fraiseql" class="md-nav__link">
+  <a href="#32-polling-a-view" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Subscriptions Work Differently in FraiseQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
+        3.2 Polling a view
       
     </span>
   </a>
@@ -1526,22 +1539,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-architecture" class="md-nav__link">
+  <a href="#4-filtering-complexity-and-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Architecture
+        4. Filtering, complexity, and lifecycle
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Architecture">
+    <nav class="md-nav" aria-label="4. Filtering, complexity, and lifecycle">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-high-level-event-flow-correct" class="md-nav__link">
+  <a href="#41-subscription_filter-gate-a-subscription" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 High-Level Event Flow (CORRECT)
+        4.1 subscription_filter — gate a subscription
       
     </span>
   </a>
@@ -1549,10 +1562,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-components" class="md-nav__link">
+  <a href="#42-complexity-bound-cost-and-depth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Components
+        4.2 complexity — bound cost and depth
       
     </span>
   </a>
@@ -1560,10 +1573,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#23-event-format" class="md-nav__link">
+  <a href="#43-with_lifecycle-setup-teardown-hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.3 Event Format
+        4.3 with_lifecycle — setup / teardown hooks
       
     </span>
   </a>
@@ -1571,66 +1584,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#24-architectural-insights" class="md-nav__link">
+  <a href="#44-cache-reuse-recent-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.4 Architectural Insights
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2.4 Architectural Insights">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-polling-not-listennotify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why Polling, Not LISTEN/NOTIFY?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-would-be-wrong-with-listennotify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Would Be Wrong With LISTEN/NOTIFY?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#current-limitations-temporary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Current Limitations (Temporary)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-characteristics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Characteristics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#implementation-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementation Notes
+        4.4 cache — reuse recent results
       
     </span>
   </a>
@@ -1641,70 +1598,48 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#25-relationship-to-observer-system" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#5-authorization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.5 Relationship to Observer System
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2.5 Relationship to Observer System">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#subscriptions-vs-observers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Subscriptions vs Observers
+        5. Authorization
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#architecture-two-branches-from-same-source" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#6-client-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture: Two Branches from Same Source
+        6. Client usage
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#why-subscriptions-dont-use-nats-directly" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#7-operational-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Subscriptions Don't Use NATS Directly
+        7. Operational notes
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration-composition-by-default-nats-optional" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration: Composition by Default, NATS Optional
+        Related
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5214,14 +5149,36 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Overview">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-defining-a-subscription" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Defining a subscription
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-driving-updates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Driving updates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Driving updates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-are-fraiseql-subscriptions" class="md-nav__link">
+  <a href="#31-postgresql-listennotify" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What Are FraiseQL Subscriptions?
+        3.1 PostgreSQL LISTEN/NOTIFY
       
     </span>
   </a>
@@ -5229,21 +5186,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-subscriptions-work-differently-in-fraiseql" class="md-nav__link">
+  <a href="#32-polling-a-view" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Subscriptions Work Differently in FraiseQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Cases
+        3.2 Polling a view
       
     </span>
   </a>
@@ -5256,22 +5202,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-architecture" class="md-nav__link">
+  <a href="#4-filtering-complexity-and-lifecycle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Architecture
+        4. Filtering, complexity, and lifecycle
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. Architecture">
+    <nav class="md-nav" aria-label="4. Filtering, complexity, and lifecycle">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-high-level-event-flow-correct" class="md-nav__link">
+  <a href="#41-subscription_filter-gate-a-subscription" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 High-Level Event Flow (CORRECT)
+        4.1 subscription_filter — gate a subscription
       
     </span>
   </a>
@@ -5279,10 +5225,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-components" class="md-nav__link">
+  <a href="#42-complexity-bound-cost-and-depth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 Components
+        4.2 complexity — bound cost and depth
       
     </span>
   </a>
@@ -5290,10 +5236,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#23-event-format" class="md-nav__link">
+  <a href="#43-with_lifecycle-setup-teardown-hooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.3 Event Format
+        4.3 with_lifecycle — setup / teardown hooks
       
     </span>
   </a>
@@ -5301,66 +5247,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#24-architectural-insights" class="md-nav__link">
+  <a href="#44-cache-reuse-recent-results" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.4 Architectural Insights
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2.4 Architectural Insights">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-polling-not-listennotify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why Polling, Not LISTEN/NOTIFY?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-would-be-wrong-with-listennotify" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Would Be Wrong With LISTEN/NOTIFY?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#current-limitations-temporary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Current Limitations (Temporary)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-characteristics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Characteristics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#implementation-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implementation Notes
+        4.4 cache — reuse recent results
       
     </span>
   </a>
@@ -5371,70 +5261,48 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#25-relationship-to-observer-system" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#5-authorization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.5 Relationship to Observer System
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2.5 Relationship to Observer System">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#subscriptions-vs-observers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Subscriptions vs Observers
+        5. Authorization
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#architecture-two-branches-from-same-source" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#6-client-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture: Two Branches from Same Source
+        6. Client usage
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#why-subscriptions-dont-use-nats-directly" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#7-operational-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Subscriptions Don't Use NATS Directly
+        7. Operational notes
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration-composition-by-default-nats-optional" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration: Composition by Default, NATS Optional
+        Related
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5458,1980 +5326,339 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Subscriptions: Event Projections from the Database
-description: 1. <a href="#1-overview">Overview</a>
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="subscriptions-event-projections-from-the-database">Subscriptions: Event Projections from the Database<a class="headerlink" href="#subscriptions-event-projections-from-the-database" title="Permanent link">&para;</a></h1>
-<p><strong>Version:</strong> 2.0
-<strong>Date:</strong> February 5, 2026
-<strong>Status:</strong> ✅ Implemented in v2.0.0-alpha.1
-<strong>Audience:</strong> Runtime Developers, Integration Engineers, Database Architects</p>
+<h1 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h1>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ol>
 <li><a href="#1-overview">Overview</a></li>
-<li><a href="#2-architecture">Architecture</a></li>
-<li><a href="#3-subscription-schema-authoring">Subscription Schema Authoring</a></li>
-<li><a href="#4-transport-protocols">Transport Protocols</a></li>
-<li><a href="#5-filtering--variables">Filtering &amp; Variables</a></li>
-<li><a href="#6-event-format--transformation">Event Format &amp; Transformation</a></li>
-<li><a href="#7-multi-database-support">Multi-Database Support</a></li>
-<li><a href="#8-system-architecture">System Architecture</a></li>
-<li><a href="#9-performance-characteristics">Performance Characteristics</a></li>
-<li><a href="#10-limitations--trade-offs">Limitations &amp; Trade-Offs</a></li>
-<li><a href="#11-security--authorization">Security &amp; Authorization</a></li>
-<li><a href="#12-examples">Examples</a></li>
-<li><a href="#13-appendix">Appendix</a></li>
+<li><a href="#2-defining-a-subscription">Defining a subscription</a></li>
+<li><a href="#3-driving-updates">Driving updates</a></li>
+<li><a href="#4-filtering-complexity-and-lifecycle">Filtering, complexity, and lifecycle</a></li>
+<li><a href="#5-authorization">Authorization</a></li>
+<li><a href="#6-client-usage">Client usage</a></li>
+<li><a href="#7-operational-notes">Operational notes</a></li>
 </ol>
 <hr />
 <h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
-<h3 id="what-are-fraiseql-subscriptions">What Are FraiseQL Subscriptions?<a class="headerlink" href="#what-are-fraiseql-subscriptions" title="Permanent link">&para;</a></h3>
-<p>FraiseQL subscriptions are <strong>compiled projections of database events</strong> delivered through multiple transport adapters. Unlike traditional GraphQL subscriptions that execute resolvers on-demand, FraiseQL subscriptions:</p>
+<p>FraiseQL v1 implements <strong>standard GraphQL subscriptions</strong> delivered over a
+WebSocket connection. A subscription is an ordinary GraphQL operation whose
+resolver is an <strong>async generator</strong>: every value it <code>yield</code>s becomes one
+subscription payload sent to the client.</p>
+<p>The model is intentionally simple:</p>
 <ul>
-<li><strong>Originate from database transactions</strong> — Events are sourced from committed database changes</li>
-<li><strong>Compiled, not interpreted</strong> — Subscription schemas are static, known at build time</li>
-<li><strong>Transport-agnostic</strong> — Same event stream delivers to graphql-ws clients, webhooks, Kafka, etc.</li>
-<li><strong>Deterministic</strong> — No user code execution, no dynamic logic</li>
-<li><strong>Buffered and replayed</strong> — Events persisted in <code>tb_entity_change_log</code> for durability</li>
+<li>You write an <code>async def</code> resolver that <code>yield</code>s values (an <em>async generator</em>).</li>
+<li>FraiseQL streams whatever you yield to the subscribing client over WebSocket.</li>
+<li>The <strong>event source is your generator</strong>. It can be backed by PostgreSQL
+  <code>LISTEN/NOTIFY</code>, by polling a view, or by any external stream — FraiseQL does
+  not mandate one.</li>
 </ul>
-<h3 id="why-subscriptions-work-differently-in-fraiseql">Why Subscriptions Work Differently in FraiseQL<a class="headerlink" href="#why-subscriptions-work-differently-in-fraiseql" title="Permanent link">&para;</a></h3>
-<p><strong>Traditional GraphQL Subscriptions:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client subscribes to User.nameChanged
-    ↓
-Server executes resolver function
-    ↓
-Resolver polls database or listens to app events
-    ↓
-Resolver emits value to client
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>FraiseQL Subscriptions:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database commits transaction (user.name updated)
-    ↓
-Application inserts event into tb_entity_change_log
-    ↓
-ChangeLogListener polls tb_entity_change_log (every 100ms)
-    ↓
-ObserverRuntime processes event
-    ↓
-Event matching filters from CompiledSchema
-    ↓
-Delivered via transport adapter (graphql-ws, webhook, Kafka)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h3>
-<p><strong>1. Real-Time UI Updates</strong></p>
+<p><strong>Transport.</strong> FraiseQL speaks GraphQL-over-WebSocket and supports both
+protocols:</p>
 <ul>
-<li>Client subscribes to OrderCreated events</li>
-<li>Receives updates within typical target envelope of &lt;10ms (local network, reference deployment)</li>
-<li>No polling, deterministic delivery</li>
+<li><code>graphql-transport-ws</code> — the modern protocol (uses <code>next</code> / <code>complete</code>
+  message types).</li>
+<li><code>graphql-ws</code> — the legacy Apollo protocol (uses <code>data</code> message types).</li>
 </ul>
-<p><strong>2. Event Streaming to External Systems</strong></p>
-<ul>
-<li>Backend service consumes events via Kafka adapter</li>
-<li>Replicates data to data warehouse</li>
-<li>Replays events from any point in time</li>
-</ul>
-<p><strong>3. Multi-Tenant Change Notification</strong></p>
-<ul>
-<li>Organization receives updates for their entities only</li>
-<li>Row-level filtering enforced at compile time</li>
-<li>No cross-tenant data leakage</li>
-</ul>
-<p><strong>4. Audit Trail Emission</strong></p>
-<ul>
-<li>All mutations automatically create subscription events</li>
-<li>Events sent to logging/analytics system</li>
-<li>Immutable record of all changes</li>
-</ul>
+<p>The WebSocket handshake, sub-protocol negotiation, keep-alive, and per-operation
+lifecycle are handled internally by <code>WebSocketConnection</code> and
+<code>SubscriptionManager</code>; you do not implement protocol framing yourself.</p>
+<p>There is <strong>no event-log table, no change-data-capture polling runtime, and no
+server-side event replay or buffering</strong> in v1. A subscription lives entirely
+inside its WebSocket connection. If the connection drops, the client reconnects
+and resubscribes (see <a href="#7-operational-notes">Operational notes</a>).</p>
 <hr />
-<h2 id="2-architecture">2. Architecture<a class="headerlink" href="#2-architecture" title="Permanent link">&para;</a></h2>
-<h3 id="21-high-level-event-flow-correct">2.1 High-Level Event Flow (CORRECT)<a class="headerlink" href="#21-high-level-event-flow-correct" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─────────────────────────────────────────────────────────────┐
-│ Application (GraphQL Mutation / Direct SQL)                │
-│ Executes: mutation CreateOrder($user_id, $amount)          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ↓
-        ┌──────────────────────────────────────┐
-        │ PostgreSQL Database Transaction      │
-        │ ├─ INSERT into tb_order              │
-        │ ├─ INSERT into tb_entity_change_log  │  ← Manual (for now)
-        │ └─ COMMIT                            │
-        └──────────────────────────┬───────────┘
-                                   │
-                    ┌──────────────┴──────────────────┐
-                    ↓                                 ↓
-        ┌──────────────────────┐      ┌──────────────────────┐
-        │ tb_entity_change_log │      │ tb_entity_change_log │
-        │ (Single Source of    │      │ (Debezium envelope)  │
-        │  Truth)              │      │                      │
-        │ - object_type        │      │ Polling every 100ms  │
-        │ - object_id          │      │ (effectively real-   │
-        │ - modification_type  │      │  time)               │
-        │ - object_data (JSONB)│      │                      │
-        │ - created_at         │      │                      │
-        └──────────┬────────────┘      └──────────────────────┘
-                   │
-                   ↓
-        ┌──────────────────────────────────────┐
-        │ ChangeLogListener                     │
-        │ (polls tb_entity_change_log)          │
-        │ - Poll interval: 100ms                │
-        │ - Batch size: 100 events              │
-        │ - Checkpoint tracking                 │
-        └──────────────────┬────────────────────┘
-                           │
-                           ↓
-        ┌──────────────────────────────────────┐
-        │ ObserverRuntime (background task)     │
-        │ Processes ChangeLogEntry → EntityEvent│
-        └──────────┬───────────────────┬─────────┘
-                   │                   │
-        ┌──────────┴────────┐    ┌────┴───────────────────┐
-        ↓                   ↓    ↓                        ↓
-┌───────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│ ObserverExecutor  │  │ Subscription     │  │ (Future: Other   │
-│                   │  │ Manager          │  │  Consumers)      │
-│ Actions:          │  │                  │  │                  │
-│ ├─ Webhooks       │  │ Transports:      │  │                  │
-│ ├─ Email          │  │ ├─ WebSocket     │  │                  │
-│ ├─ SMS            │  │ │  (graphql-ws)  │  │                  │
-│ ├─ Push           │  │ ├─ Kafka         │  │                  │
-│ ├─ Slack          │  │ └─ Webhooks      │  │                  │
-│ └─ Search Index   │  │                  │  │                  │
-└───────────────────┘  └──────────────────┘  └──────────────────┘
-     (automation)        (real-time UI)        (event streaming)
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="2-defining-a-subscription">2. Defining a subscription<a class="headerlink" href="#2-defining-a-subscription" title="Permanent link">&para;</a></h2>
+<p>Decorate an async generator with <code>@fraiseql.subscription</code>. The resolver receives
+<code>info</code> first (the GraphQL resolve info, with <code>info.context["db"]</code> available),
+followed by your declared arguments. Annotate the return type as
+<code>AsyncGenerator[T, None]</code>, where <code>T</code> is the GraphQL type you stream.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
-<hr />
-<h3 id="22-components">2.2 Components<a class="headerlink" href="#22-components" title="Permanent link">&para;</a></h3>
-<p><strong>tb_entity_change_log</strong> ✅ <em>Table exists, manual population</em></p>
-<ul>
-<li>Single source of truth for ALL database change events</li>
-<li>Debezium-compatible envelope format (op, before, after, source, ts_ms)</li>
-<li>Durable storage with sequence numbers for ordering</li>
-<li>Enables event replay from any checkpoint</li>
-<li><strong>Populated manually</strong> (application code must INSERT after mutations)</li>
-<li>Schema:</li>
-</ul>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_entity_change_log (
-      pk_entity_change_log BIGSERIAL PRIMARY KEY,
-      id UUID NOT NULL,
-      fk_customer_org UUID,
-      object_type VARCHAR(255) NOT NULL,
-      object_id VARCHAR(255) NOT NULL,
-      modification_type VARCHAR(10) NOT NULL,  -- INSERT, UPDATE, DELETE
-      change_status VARCHAR(50),
-      object_data JSONB NOT NULL,              -- Debezium "after" data
-      extra_metadata JSONB,
-      created_at TIMESTAMP NOT NULL DEFAULT NOW()
-  );
-  CREATE INDEX idx_entity_change_log_created ON tb_entity_change_log(created_at);
-  CREATE INDEX idx_entity_change_log_type ON tb_entity_change_log(object_type);
-  ```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>ChangeLogListener</strong> ✅ <em>Fully implemented</em></p>
-<ul>
-<li>Polls <code>tb_entity_change_log</code> at configurable interval (default: 100ms)</li>
-<li>Maintains checkpoint for recovery (no duplicate processing)</li>
-<li>Fetches entries in batches (default: 100 events)</li>
-<li>Parses Debezium envelope format (before/after/op)</li>
-<li>Location: <code>crates/FraiseQL-observers/src/listener/change_log.rs</code></li>
-<li><strong>Key insight:</strong> 100ms polling IS real-time for UI updates</li>
-</ul>
-<p><strong>ObserverRuntime</strong> ✅ <em>Fully implemented</em></p>
-<ul>
-<li>Background tokio task started in server initialization</li>
-<li>Calls <code>ChangeLogListener.next_batch()</code> in loop</li>
-<li>Converts <code>ChangeLogEntry</code> → <code>EntityEvent</code></li>
-<li>Routes events to registered consumers:</li>
-<li>ObserverExecutor (actions like webhooks, email)</li>
-<li>SubscriptionManager (transports like WebSocket, Kafka) ← <strong>To be added</strong></li>
-<li>Location: <code>crates/FraiseQL-server/src/observers/runtime.rs</code></li>
-</ul>
-<p><strong>SubscriptionManager</strong> ✅ <em>Fully implemented</em></p>
-<ul>
-<li>Manages active GraphQL subscriptions</li>
-<li>Matches events against subscription filters</li>
-<li>Projects data to subscription's field selection</li>
-<li>Broadcasts via <code>tokio::sync::broadcast</code> channels</li>
-<li>Delivers to transport adapters (WebSocket, Kafka, Webhooks)</li>
-<li>Location: <code>crates/FraiseQL-core/src/runtime/subscription.rs</code></li>
-</ul>
-<p><strong>Transport Adapters</strong> ✅ <em>All fully implemented</em></p>
-<ul>
-<li><strong>graphql-ws (WebSocket)</strong>: Real-time UI updates, complete protocol implementation</li>
-<li><strong>Webhooks</strong>: HTTP POST with HMAC signatures, exponential backoff retry</li>
-<li><strong>Kafka</strong>: Event streaming with compression, keyed by entity_id for partitioning</li>
-</ul>
-<hr />
-<h3 id="23-event-format">2.3 Event Format<a class="headerlink" href="#23-event-format" title="Permanent link">&para;</a></h3>
-<p>Events flow through the system in Debezium envelope format:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "pk_entity_change_log": 1234,
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "object_type": "Order",
-  "object_id": "ord_123",
-  "modification_type": "INSERT",
-  "object_data": {
-    "id": "ord_123",
-    "user_id": "usr_456",
-    "amount": 99.99,
-    "created_at": "2026-01-30T10:00:00Z"
-  },
-  "extra_metadata": {},
-  "created_at": "2026-01-30T10:00:00.123456Z"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Conversion to SubscriptionEvent:</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// In ObserverRuntime background task
-for entry in entries {
-    let entity_event = EntityEvent::from_change_log_entry(entry);</p>
-<div class="highlight"><pre><span></span><code>// Route to observers (existing)
-observer_executor.process_event(&amp;entity_event).await;
-
-// Route to subscriptions (TO BE ADDED)
-if let Some(ref sub_manager) = subscription_manager {
-    let subscription_event = SubscriptionEvent {
-        event_id: entity_event.id,
-        entity_type: entity_event.object_type,
-        entity_id: entity_event.object_id,
-        operation: entity_event.modification_type,  // INSERT/UPDATE/DELETE
-        data: entity_event.object_data,
-        old_data: None,  // Could extract from &quot;before&quot; field
-        timestamp: entity_event.created_at,
-        sequence_number: entity_event.pk,
-    };
-    sub_manager.publish_event(subscription_event).await?;
-}
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for a single project.&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">task</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Key points:</p>
+<ul>
+<li>The function <strong>must</strong> be an async generator (<code>async def</code> + <code>yield</code>).
+  Decorating a plain coroutine raises a <code>TypeError</code>.</li>
+<li>The yielded type is taken from the <code>AsyncGenerator[T, None]</code> annotation and
+  becomes the subscription's GraphQL field type.</li>
+<li>Arguments are regular typed parameters (<code>project_id: UUID</code> above) and appear
+  as GraphQL subscription arguments.</li>
+<li>The resolver runs once per subscribing client, with that client's arguments.</li>
+</ul>
+<p><code>watch_project_tasks</code> is <em>your</em> code — the next section shows two ways to
+implement it.</p>
 <hr />
-<h3 id="24-architectural-insights">2.4 Architectural Insights<a class="headerlink" href="#24-architectural-insights" title="Permanent link">&para;</a></h3>
-<h4 id="why-polling-not-listennotify">Why Polling, Not LISTEN/NOTIFY?<a class="headerlink" href="#why-polling-not-listennotify" title="Permanent link">&para;</a></h4>
-<p>FraiseQL subscriptions use database-centric polling architecture rather than PostgreSQL LISTEN/NOTIFY:</p>
-<ol>
-<li><strong>Database-Centric Design</strong> - FraiseQL's core philosophy is "database as source of truth"</li>
-<li><strong>Single Event Log</strong> - <code>tb_entity_change_log</code> is THE event log, shared by observers and subscriptions</li>
-<li><strong>Durability</strong> - Events in database table can be replayed, checkpointed, and audited</li>
-<li><strong>100ms Is Real-Time</strong> - For UI updates, 100ms latency is imperceptible to users</li>
-<li><strong>Simplicity</strong> - One polling mechanism (ChangeLogListener), not two (LISTEN + polling)</li>
-<li><strong>Existing Infrastructure</strong> - ObserverRuntime already processes events; extend it</li>
-</ol>
-<h4 id="what-would-be-wrong-with-listennotify">What Would Be Wrong With LISTEN/NOTIFY?<a class="headerlink" href="#what-would-be-wrong-with-listennotify" title="Permanent link">&para;</a></h4>
-<p>A LISTEN/NOTIFY based architecture would create:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database → PostgreSQL NOTIFY → PostgresListener → SubscriptionManager
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="3-driving-updates">3. Driving updates<a class="headerlink" href="#3-driving-updates" title="Permanent link">&para;</a></h2>
+<p>FraiseQL streams whatever your generator yields. The two common ways to produce
+those values from PostgreSQL are <code>LISTEN/NOTIFY</code> and polling.</p>
+<h3 id="31-postgresql-listennotify">3.1 PostgreSQL <code>LISTEN/NOTIFY</code><a class="headerlink" href="#31-postgresql-listennotify" title="Permanent link">&para;</a></h3>
+<p>This is the push-based approach with the lowest latency. A trigger on your write
+table (<code>tb_*</code>) calls <code>NOTIFY</code> on a channel whenever a row changes, and the
+generator wakes up on each notification, fetches the current row from the read
+view (<code>v_*</code>), and yields it.</p>
+<p>Database side — a trigger that announces changes:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_task_change</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="c1">-- Announce the affected task&#39;s public id on a per-project channel.</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;task_changes&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">json_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;project_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_project</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;task_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span>
+<span class="w">        </span><span class="p">)::</span><span class="nb">text</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
-<p><strong>Problems:</strong></p>
-<ul>
-<li>❌ Duplicate event capture mechanism (ChangeLogListener already polls)</li>
-<li>❌ No durability (NOTIFY messages are fire-and-forget)</li>
-<li>❌ No replay capability (can't reprocess old events)</li>
-<li>❌ Violates database-centric principle (message channel, not table)</li>
-<li>❌ Creates two parallel event systems fighting for same purpose</li>
-</ul>
-<h4 id="current-limitations-temporary">Current Limitations (Temporary)<a class="headerlink" href="#current-limitations-temporary" title="Permanent link">&para;</a></h4>
-<ol>
-<li><strong>Manual Event Population</strong> - Application code must explicitly INSERT into <code>tb_entity_change_log</code></li>
-<li>
-<p>Example:</p>
-<p>```rust</p>
-</li>
-</ol>
-<!-- Code example in RUST -->
-<div class="highlight"><pre><span></span><code> sqlx::query!(
-     &quot;INSERT INTO tb_entity_change_log (object_type, object_id, modification_type, object_data)
-      VALUES ($1, $2, $3, $4)&quot;,
-     &quot;Order&quot;,
-     order_id,
-     &quot;INSERT&quot;,
-     serde_json::to_value(&amp;order)?
- ).execute(&amp;pool).await?;
- ```text
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_notify_task_change</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_task</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_task_change</span><span class="p">();</span>
 </code></pre></div>
-<!-- Code example in TEXT -->
+<p>Resolver side — listen on the channel and yield matching tasks:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
-<ol>
-<li>
-<p><strong>SubscriptionManager Not Wired to ObserverRuntime</strong> - Integration pending (see migration path below)</p>
-</li>
-<li>
-<p><strong>No Multi-Tenant Authorization Enforcement</strong> - Filter evaluation exists but user context not passed</p>
-</li>
-</ol>
-<h4 id="performance-characteristics">Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Aspect</th>
-<th>Value</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Event Latency</strong></td>
-<td>100ms (P50), 200ms (P99)</td>
-<td>Polling interval + processing</td>
-</tr>
-<tr>
-<td><strong>Throughput</strong></td>
-<td>~1000 events/sec</td>
-<td>Batch size 100, 100ms polling</td>
-</tr>
-<tr>
-<td><strong>Subscription Delivery</strong></td>
-<td>100-150ms total</td>
-<td>Polling + matching + transport</td>
-</tr>
-<tr>
-<td><strong>Durability</strong></td>
-<td>✅ Full</td>
-<td>Events persisted in database table</td>
-</tr>
-<tr>
-<td><strong>Replay</strong></td>
-<td>✅ Supported</td>
-<td>Checkpoint-based from any point</td>
-</tr>
-<tr>
-<td><strong>Scalability</strong></td>
-<td>Limited by PostgreSQL</td>
-<td>Single table bottleneck</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Comparison:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Architecture</th>
-<th>Latency</th>
-<th>Durability</th>
-<th>Replay</th>
-<th>Complexity</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Polling (FraiseQL)</strong></td>
-<td>100ms</td>
-<td>✅</td>
-<td>✅</td>
-<td>Low</td>
-</tr>
-<tr>
-<td><strong>LISTEN/NOTIFY</strong></td>
-<td>&lt;10ms</td>
-<td>❌</td>
-<td>❌</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td><strong>Kafka</strong></td>
-<td>10-50ms</td>
-<td>✅</td>
-<td>✅</td>
-<td>High</td>
-</tr>
-<tr>
-<td><strong>Redis Streams</strong></td>
-<td>5-20ms</td>
-<td>⚠️</td>
-<td>⚠️</td>
-<td>Medium</td>
-</tr>
-</tbody>
-</table>
-<h4 id="implementation-notes">Implementation Notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h4>
-<p><strong>Current Status in v2.0.0-alpha.1:</strong></p>
-<p>The subscription architecture is fully designed and tested. The implementation integrates <code>SubscriptionManager</code> with <code>ObserverRuntime</code> to emit events from database changes, supporting automatic event population through executor hooks.</p>
-<p>For enhancement requests or implementation details, see the roadmap in the project repository.</p>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for one project via LISTEN/NOTIFY.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">&quot;task_changes&quot;</span><span class="p">):</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;project_id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># not our project — skip</span>
+
+        <span class="n">task</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_task&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">event</span><span class="p">[</span><span class="s2">&quot;task_id&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">task</span>
+</code></pre></div>
+<p>The exact API for consuming notifications depends on how your connection/pool is
+wired (for example, a <code>LISTEN</code> on a dedicated connection that exposes an async
+iterator of notification payloads). The important pattern is: subscribe to a
+channel, and on each notification re-read the affected row from your <code>v_</code>/<code>tv_</code>
+view and <code>yield</code> it.</p>
+<h3 id="32-polling-a-view">3.2 Polling a view<a class="headerlink" href="#32-polling-a-view" title="Permanent link">&para;</a></h3>
+<p>When you cannot add triggers, or the source is a periodically refreshed
+projection (<code>tv_*</code>), poll a read view on an interval and yield only what changed.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for one project by polling a view.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">seen</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># task id -&gt; last-seen updated_at</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_task&quot;</span><span class="p">,</span> <span class="n">fk_project</span><span class="o">=</span><span class="n">project_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">!=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span><span class="p">:</span>
+                <span class="n">seen</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span>
+                <span class="k">yield</span> <span class="n">task</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+<p>Polling trades latency and database load for simplicity. Prefer <code>LISTEN/NOTIFY</code>
+when you control the schema and need low latency.</p>
 <hr />
-<h3 id="25-relationship-to-observer-system">2.5 Relationship to Observer System<a class="headerlink" href="#25-relationship-to-observer-system" title="Permanent link">&para;</a></h3>
-<p>FraiseQL has <strong>two separate event consumer systems</strong> sharing the same event source:</p>
-<h4 id="subscriptions-vs-observers">Subscriptions vs Observers<a class="headerlink" href="#subscriptions-vs-observers" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Aspect</th>
-<th>Subscriptions</th>
-<th>Observers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Purpose</strong></td>
-<td>Real-time client notifications</td>
-<td>Automation actions</td>
-</tr>
-<tr>
-<td><strong>Consumers</strong></td>
-<td>Browser/mobile clients</td>
-<td>Webhooks, email, SMS, search indexing</td>
-</tr>
-<tr>
-<td><strong>Transports</strong></td>
-<td>graphql-ws, Kafka, HTTP webhooks</td>
-<td>EventTransport trait (PostgresNotify, <strong>NATS</strong>, InMemory)</td>
-</tr>
-<tr>
-<td><strong>Latency</strong></td>
-<td>100-150ms (polling)</td>
-<td>Variable (action-dependent)</td>
-</tr>
-<tr>
-<td><strong>Use Case</strong></td>
-<td>Live dashboards, real-time UI</td>
-<td>Background jobs, integrations</td>
-</tr>
-</tbody>
-</table>
-<h4 id="architecture-two-branches-from-same-source">Architecture: Two Branches from Same Source<a class="headerlink" href="#architecture-two-branches-from-same-source" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>tb_entity_change_log (single source of truth)
-    ↓
-ChangeLogListener (polls every 100ms)
-    ↓
-ObserverRuntime (in-process routing)
-    ├─ ObserverExecutor → Actions (can use NATS transport)
-    │   ├─ Webhooks
-    │   ├─ Email/SMS
-    │   ├─ Slack notifications
-    │   └─ Search indexing
-    │
-    └─ SubscriptionManager → Client transports
-        ├─ graphql-ws (WebSocket)
-        ├─ Kafka
-        └─ HTTP webhooks
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="4-filtering-complexity-and-lifecycle">4. Filtering, complexity, and lifecycle<a class="headerlink" href="#4-filtering-complexity-and-lifecycle" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a few helper decorators that compose with <code>@fraiseql.subscription</code>.
+Stack the helper <strong>below</strong> <code>@fraiseql.subscription</code>.</p>
+<h3 id="41-subscription_filter-gate-a-subscription">4.1 <code>subscription_filter</code> — gate a subscription<a class="headerlink" href="#41-subscription_filter-gate-a-subscription" title="Permanent link">&para;</a></h3>
+<p><code>subscription_filter(expression)</code> evaluates a small, sandboxed boolean
+expression before the stream runs and refuses the subscription if it is false.
+The expression can reference the connecting <code>user</code>, the subscription arguments,
+and (when applicable) a loaded <code>project</code>/<code>resource</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">subscription_filter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
-<h4 id="why-subscriptions-dont-use-nats-directly">Why Subscriptions Don't Use NATS Directly<a class="headerlink" href="#why-subscriptions-dont-use-nats-directly" title="Permanent link">&para;</a></h4>
-<p><strong>Subscriptions</strong> use their own transport adapters (graphql-ws, Kafka) because:</p>
-<ul>
-<li>Clients connect directly to FraiseQL server (WebSocket)</li>
-<li>No intermediate message bus needed for latency-sensitive UI</li>
-<li>GraphQL protocol expectations (graphql-ws spec)</li>
-</ul>
-<p><strong>Observers</strong> can optionally use NATS because:</p>
-<ul>
-<li>Actions are asynchronous (latency tolerance)</li>
-<li>May need polyglot consumers (Python, Go, etc.)</li>
-<li>Benefits from distributed event streaming</li>
-<li>Horizontal scaling of action processors</li>
-</ul>
-<h4 id="configuration-composition-by-default-nats-optional">Configuration: Composition by Default, NATS Optional<a class="headerlink" href="#configuration-composition-by-default-nats-optional" title="Permanent link">&para;</a></h4>
-<p><strong>Default (Composition):</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="fraiseqltoml">FraiseQL.toml<a class="headerlink" href="#fraiseqltoml" title="Permanent link">&para;</a></h1>
-<p>[observer_runtime]
-transport = "in_process"  # Direct routing, no NATS required</p>
-<h1 id="both-observers-and-subscriptions-get-events-from-same-observerruntime">Both observers and subscriptions get events from same ObserverRuntime<a class="headerlink" href="#both-observers-and-subscriptions-get-events-from-same-observerruntime" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>Optional (NATS Everywhere):</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observer_runtime]
-transport = "nats"
-nats_url = "nats://localhost:4222"
-stream_name = "FraiseQL.events"</p>
-<h1 id="all-events-published-to-nats-once">All events published to NATS once<a class="headerlink" href="#all-events-published-to-nats-once" title="Permanent link">&para;</a></h1>
-<h1 id="observerexecutor-and-subscriptionmanager-both-consume-from-nats">ObserverExecutor and SubscriptionManager both consume from NATS<a class="headerlink" href="#observerexecutor-and-subscriptionmanager-both-consume-from-nats" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="nd">@subscription_filter</span><span class="p">(</span><span class="s2">&quot;project.is_public or user.has_access&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">project_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">task</span>
+</code></pre></div>
+<p>Only a restricted set of names and attributes is allowed in the expression
+(boolean operators, comparisons, and attributes such as <code>is_public</code>,
+<code>has_access</code>, <code>is_owner</code>, <code>role</code>, <code>permissions</code>, <code>id</code>, <code>status</code>). Anything else
+is rejected, so the filter cannot run arbitrary code.</p>
+<h3 id="42-complexity-bound-cost-and-depth">4.2 <code>complexity</code> — bound cost and depth<a class="headerlink" href="#42-complexity-bound-cost-and-depth" title="Permanent link">&para;</a></h3>
+<p><code>complexity(score=..., max_depth=...)</code> rejects subscriptions whose computed cost
+or selection-set depth exceeds the configured limits, protecting the server from
+expensive live queries.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">complexity</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
-<p><strong>Key Insight:</strong> FraiseQL defaults to <strong>database-centric composition</strong> (no NATS required), but makes <strong>NATS everywhere</strong> easy to enable for distributed deployments.</p>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="nd">@complexity</span><span class="p">(</span><span class="n">score</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">expensive_feed</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">watch_events</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">event</span>
+</code></pre></div>
+<h3 id="43-with_lifecycle-setup-teardown-hooks">4.3 <code>with_lifecycle</code> — setup / teardown hooks<a class="headerlink" href="#43-with_lifecycle-setup-teardown-hooks" title="Permanent link">&para;</a></h3>
+<p><code>with_lifecycle(on_start=..., on_event=..., on_complete=...)</code> runs hooks around
+the stream: <code>on_start</code> when the client subscribes, <code>on_event</code> for each yielded
+value (it can transform the value), and <code>on_complete</code> when the subscription
+ends — including on disconnect — making it the right place to release resources.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">with_lifecycle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="nd">@with_lifecycle</span><span class="p">(</span>
+    <span class="n">on_start</span><span class="o">=</span><span class="n">open_resources</span><span class="p">,</span>
+    <span class="n">on_event</span><span class="o">=</span><span class="n">annotate_event</span><span class="p">,</span>
+    <span class="n">on_complete</span><span class="o">=</span><span class="n">close_resources</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audited_feed</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">watch_events</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">event</span>
+</code></pre></div>
+<h3 id="44-cache-reuse-recent-results">4.4 <code>cache</code> — reuse recent results<a class="headerlink" href="#44-cache-reuse-recent-results" title="Permanent link">&para;</a></h3>
+<p><code>cache(ttl=...)</code> memoizes the most recent yielded value for a short window
+(default 5 seconds), so identical subscriptions sharing a cache do not all
+recompute the same result.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="nd">@cache</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># reuse results for 10 seconds</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">live_stats</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Stats</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">stats</span> <span class="ow">in</span> <span class="n">compute_stats</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">stats</span>
+</code></pre></div>
 <hr />
-<h2 id="3-subscription-schema-authoring">3. Subscription Schema Authoring<a class="headerlink" href="#3-subscription-schema-authoring" title="Permanent link">&para;</a></h2>
-<h3 id="31-declaring-subscriptions">3.1 Declaring Subscriptions<a class="headerlink" href="#31-declaring-subscriptions" title="Permanent link">&para;</a></h3>
-<p>Subscriptions are declared using the same schema authoring languages as types and queries.</p>
-<p><strong>Python Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    """Events for new orders created by the authenticated user."""</p>
-<div class="highlight"><pre><span></span><code># Compile-time filter: Only current user&#39;s orders
-where: WhereOrder = FraiseQL.where(user_id=FraiseQL.context.user_id)
+<h2 id="5-authorization">5. Authorization<a class="headerlink" href="#5-authorization" title="Permanent link">&para;</a></h2>
+<p>Pass a per-operation <code>authorizer</code> to the decorator to control who may open a
+subscription:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
-# Fields to project from the Order entity
-id: ID
-user_id: ID
-created_at: DateTime
-amount: Decimal
 
-@FraiseQL.variable(name=&quot;since_date&quot;)
-class Filter:
-    &quot;&quot;&quot;Optional runtime filter for timestamp range.&quot;&quot;&quot;
-    created_at: DateTimeRange
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">project_member_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">task</span>
 </code></pre></div>
-<p>@FraiseQL.subscription
-class UserDeleted:
-    """Events for users deleted (admin only)."""</p>
-<div class="highlight"><pre><span></span><code># Authorization: Admin context required
-where: WhereUser = FraiseQL.where(
-    FraiseQL.context.role.contains(&quot;admin&quot;)
-)
-
-# Soft delete: Only fire if deleted_at is set
-id: ID
-email: Email
-deleted_at: DateTime
-</code></pre></div>
-<p>@FraiseQL.subscription
-class OrderStatusChanged:
-    """Events for status changes on organization's orders."""</p>
-<div class="highlight"><pre><span></span><code># Multi-tenant filtering
-where: WhereOrder = FraiseQL.where(
-    fk_org=FraiseQL.context.org_id
-)
-
-# Nested projection (Order → OrderStatus entity)
-id: ID
-status: OrderStatus
-updated_at: DateTime
-updated_by_user: User
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="32-compile-time-validation">3.2 Compile-Time Validation<a class="headerlink" href="#32-compile-time-validation" title="Permanent link">&para;</a></h3>
-<p>When the schema is compiled, the compiler:</p>
-<ol>
-<li><strong>Identifies all subscription types</strong></li>
-<li>Validates <code>@FraiseQL.subscription</code> decorators</li>
-<li>
-<p>Ensures each subscription is based on a valid entity type</p>
-</li>
-<li>
-<p><strong>Validates WHERE filters</strong></p>
-</li>
-<li><code>user_id=context.user_id</code> → Must exist in Order type</li>
-<li><code>role.contains("admin")</code> → Must be valid operator for role field</li>
-<li>
-<p>Context variables must be available (authentication required)</p>
-</li>
-<li>
-<p><strong>Validates field projections</strong></p>
-</li>
-<li>All fields requested must exist in entity type</li>
-<li>Nested fields checked recursively (Order → User)</li>
-<li>
-<p>Soft-delete logic applied automatically (WHERE deleted_at IS NULL)</p>
-</li>
-<li>
-<p><strong>Generates subscription dispatch table</strong></p>
-</li>
-</ol>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-     "subscriptions": {
-       "OrderCreated": {
-         "entity_type": "Order",
-         "filter_sql": "WHERE user_id = $1 AND deleted_at IS NULL",
-         "filter_params": ["user_id"],
-         "fields": ["id", "user_id", "created_at", "amount"],
-         "auth_required": true,
-         "operation": "CREATE"
-       }
-     }
-   }
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="33-multiple-key-subscriptions">3.3 Multiple Key Subscriptions<a class="headerlink" href="#33-multiple-key-subscriptions" title="Permanent link">&para;</a></h3>
-<p>Subscriptions can filter on multiple fields:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderUpdated:
-    """Subscription for specific order updates."""</p>
-<div class="highlight"><pre><span></span><code># Both compile-time constraints
-where: WhereOrder = FraiseQL.where(
-    fk_org=FraiseQL.context.org_id,
-    status=FraiseQL.context.allowed_statuses  # Must be in auth context
-)
-
-id: ID
-status: str
-updated_at: DateTime
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<ul>
+<li>The <code>authorizer</code> mirrors <code>@fraiseql.query</code> / <code>@fraiseql.mutation</code>: it takes
+  precedence over the global default authorizer <strong>for this subscription only</strong>.</li>
+<li>Authorization is evaluated <strong>once, at subscribe time</strong> (when the client sends
+  the <code>subscribe</code> message), not on every yielded value. If it fails, the
+  subscription is rejected and no stream is opened.</li>
+<li>When no <code>authorizer</code> is supplied, the registry's default authorizer applies.</li>
+</ul>
+<p><code>subscription_filter</code> (see above) is complementary: use the <code>authorizer</code> for the
+authentication/authorization decision, and <code>subscription_filter</code> for declarative
+access gates expressed inline.</p>
 <hr />
-<h2 id="4-transport-protocols">4. Transport Protocols<a class="headerlink" href="#4-transport-protocols" title="Permanent link">&para;</a></h2>
-<h3 id="41-graphql-websocket-graphql-ws">4.1 GraphQL WebSocket (graphql-ws)<a class="headerlink" href="#41-graphql-websocket-graphql-ws" title="Permanent link">&para;</a></h3>
-<p>The primary transport for real-time UI updates using the standard <code>graphql-ws</code> protocol.</p>
-<h4 id="connection-lifecycle">Connection Lifecycle<a class="headerlink" href="#connection-lifecycle" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client                              Server
-  │                                   │
-  ├──────── Connection Request ──────→│
-  │                                   │
-  │◄─── Connection Acknowledgement ──│
-  │                                   │
-  ├──────── Subscribe Message ────────→│
-  │ {                                 │
-  │   "type": "subscribe",            │
-  │   "id": "1",                      │
-  │   "payload": {                    │
-  │     "operationName": null,        │
-  │     "query": "subscription {...}" │
-  │     "variables": {                │
-  │       "since_date": "2026-01-01"  │
-  │     }                             │
-  │   }                               │
-  │ }                                 │
-  │                                   │
-  │◄── Subscribe Acknowledgement ────│
-  │                                   │
-  │◄─ Next (Event Payload) ──────────│
-  │ {                                 │
-  │   "type": "next",                 │
-  │   "id": "1",                      │
-  │   "payload": {                    │
-  │     "data": {                     │
-  │       "orderCreated": {           │
-  │         "id": "ord_123",          │
-  │         "amount": 99.99           │
-  │       }                           │
-  │     }                             │
-  │   }                               │
-  │ }                                 │
-  │                                   │
-  │◄─ Next (Event Payload) ──────────│
-  │ ...                               │
-  │                                   │
-  ├──────── Unsubscribe Message ─────→│
-  │ {                                 │
-  │   "type": "complete",             │
-  │   "id": "1"                       │
-  │ }                                 │
-  │                                   │
-  │◄───── Complete Acknowledgement ──│
-  │                                   │
-  ├───────── Close Connection ───────→│
-  │                                   │
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="6-client-usage">6. Client usage<a class="headerlink" href="#6-client-usage" title="Permanent link">&para;</a></h2>
+<p>Connect over WebSocket with a <code>graphql-transport-ws</code> client (the
+<a href="https://github.com/enisdenjo/graphql-ws"><code>graphql-ws</code></a> library is the common
+choice; the legacy <code>graphql-ws</code> Apollo protocol is also accepted).</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;graphql-ws&#39;</span><span class="p">;</span>
 
-<h4 id="example-browser-client">Example: Browser Client<a class="headerlink" href="#example-browser-client" title="Permanent link">&para;</a></h4>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>// React component using graphql-ws
-import { useSubscription } from '@apollo/client';</p>
-<p>const OrdersSubscription = gql<code>subscription OrderCreated($since_date: DateTime) {
-    orderCreated(since_date: $since_date) {
-      id
-      amount
-      created_at
-    }
-  }</code>;</p>
-<p>export function LiveOrders() {
-  const { data, loading, error } = useSubscription(
-    OrdersSubscription,
-    {
-      variables: {
-        since_date: new Date('2026-01-01').toISOString()
-      }
-    }
-  );</p>
-<p>if (loading) return <p>Listening for orders...</p>;
-  if (error) return <p>Subscription error: {error.message}</p>;</p>
-<p>return (
-    <div>
-      {data?.orderCreated &amp;&amp; (
-        <Order order={data.orderCreated} />
-      )}
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createClient</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">connectionParams</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Authorization</span><span class="o">:</span><span class="w"> </span><span class="sb">`Bearer </span><span class="si">${</span><span class="nx">token</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
 
-<h4 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h4>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "type": "error",
-  "id": "1",
-  "payload": [
-    {
-      "message": "Subscription not found",
-      "extensions": {
-        "code": "SUBSCRIPTION_NOT_FOUND"
-      }
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">subscription</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`</span>
+<span class="sb">  subscription TaskUpdates($projectId: UUID!) {</span>
+<span class="sb">    taskUpdates(projectId: $projectId) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      status</span>
+<span class="sb">      updatedAt</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-<p><strong>Common errors:</strong></p>
-<ul>
-<li><code>AUTHENTICATION_REQUIRED</code> — User not authenticated</li>
-<li><code>FORBIDDEN</code> — User lacks authorization for subscription</li>
-<li><code>SUBSCRIPTION_NOT_FOUND</code> — Subscription type not defined in schema</li>
-<li><code>INVALID_VARIABLES</code> — Runtime variable types incorrect</li>
-</ul>
-<h3 id="42-http-webhooks">4.2 HTTP Webhooks<a class="headerlink" href="#42-http-webhooks" title="Permanent link">&para;</a></h3>
-<p>For push-based delivery to external systems.</p>
-<h4 id="webhook-event">Webhook Event<a class="headerlink" href="#webhook-event" title="Permanent link">&para;</a></h4>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>POST https://external-service.example.com/webhooks/FraiseQL</p>
-<p>{
-  "event_id": "evt_550e8400-e29b-41d4-a716-446655440000",
-  "event_name": "OrderCreated",
-  "entity_name": "Order",
-  "entity_id": "ord_123",
-  "operation": "CREATE",
-  "timestamp": "2026-01-11T15:35:00.123456Z",
-  "sequence_number": 4521,
-  "data": {
-    "id": "ord_123",
-    "user_id": "usr_456",
-    "amount": 99.99,
-    "created_at": "2026-01-11T15:35:00.123456Z"
-  },
-  "signature": "sha256=<hmac_signature>"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">unsubscribe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="nx">subscription</span><span class="p">,</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">projectId</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">next</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;task changed&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">taskUpdates</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">error</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;subscription error&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">complete</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;subscription complete&#39;</span><span class="p">),</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">);</span>
 
-<h4 id="webhook-configuration">Webhook Configuration<a class="headerlink" href="#webhook-configuration" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    webhooks={
-        "OrderCreated": {
-            "url": "https://analytics.example.com/events",
-            "auth": {"token": "secret_key"},
-            "retry_max_attempts": 3,
-            "retry_backoff_seconds": [1, 5, 30]
-        }
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="delivery-semantics">Delivery Semantics<a class="headerlink" href="#delivery-semantics" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>At-least-once:</strong> Event may be delivered multiple times</li>
-<li><strong>Ordered per entity:</strong> Events for same entity arrive in order</li>
-<li><strong>Retried on failure:</strong> 3 retries with exponential backoff</li>
-<li><strong>Signature verification:</strong> HMAC-SHA256 for security</li>
-</ul>
-<h3 id="43-kafka-event-streaming">4.3 Kafka / Event Streaming<a class="headerlink" href="#43-kafka-event-streaming" title="Permanent link">&para;</a></h3>
-<p>For high-throughput consumption by backend systems.</p>
-<h4 id="kafka-topic">Kafka Topic<a class="headerlink" href="#kafka-topic" title="Permanent link">&para;</a></h4>
-<p>Topic name: <code>FraiseQL.{entity_type}.{operation}</code></p>
-<p>Examples:</p>
-<ul>
-<li><code>FraiseQL.order.created</code></li>
-<li><code>FraiseQL.user.updated</code></li>
-<li><code>FraiseQL.order.deleted</code></li>
-</ul>
-<h4 id="kafka-message">Kafka Message<a class="headerlink" href="#kafka-message" title="Permanent link">&para;</a></h4>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>Key: "ord_123" (entity_id)</p>
-<p>Value:
-{
-  "event_id": "evt_550e8400-e29b-41d4-a716-446655440000",
-  "event_name": "OrderCreated",
-  "entity_name": "Order",
-  "entity_id": "ord_123",
-  "operation": "CREATE",
-  "timestamp": "2026-01-11T15:35:00.123456Z",
-  "sequence_number": 4521,
-  "data": {...}
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="kafka-configuration">Kafka Configuration<a class="headerlink" href="#kafka-configuration" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    kafka={
-        "enabled": True,
-        "bootstrap_servers": ["kafka:9092"],
-        "subscriptions": {
-            "OrderCreated": {
-                "topic": "FraiseQL.order.created",
-                "partition_by": "entity_id"  # Orders with same ID → same partition
-            }
-        }
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="delivery-semantics_1">Delivery Semantics<a class="headerlink" href="#delivery-semantics_1" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>At-least-once:</strong> Messages may duplicate (use idempotent processing)</li>
-<li><strong>Ordered per partition:</strong> Events for same entity arrive in order</li>
-<li><strong>Offset management:</strong> Consumer tracks processed events</li>
-<li><strong>Replay capable:</strong> Seek to any offset to replay events</li>
-</ul>
-<h3 id="44-grpc-future">4.4 gRPC (Future)<a class="headerlink" href="#44-grpc-future" title="Permanent link">&para;</a></h3>
-<p>For low-latency service-to-service streaming.</p>
-<p>```protobuf</p>
-<!-- Code example in PROTOBUF -->
-<p>service FraiseQLSubscriptions {
-  rpc StreamEvents (StreamRequest) returns (stream Event);
-}</p>
-<p>message StreamRequest {
-  string subscription_name = 1;
-  google.protobuf.Struct variables = 2;
-  string auth_token = 3;
-}</p>
-<p>message Event {
-  string event_id = 1;
-  string entity_name = 2;
-  string entity_id = 3;
-  string operation = 4;
-  google.protobuf.Timestamp timestamp = 5;
-  google.protobuf.Struct data = 6;
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="5-filtering-variables">5. Filtering &amp; Variables<a class="headerlink" href="#5-filtering-variables" title="Permanent link">&para;</a></h2>
-<h3 id="51-compile-time-where-clauses">5.1 Compile-Time WHERE Clauses<a class="headerlink" href="#51-compile-time-where-clauses" title="Permanent link">&para;</a></h3>
-<p>Subscriptions filter events using WHERE clauses evaluated at compile time and rendered as SQL predicates.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    # Filter: Only orders for authenticated user
-    where: WhereOrder = FraiseQL.where(
-        user_id=FraiseQL.context.user_id
-    )</p>
-<h1 id="compiled-to">Compiled to:<a class="headerlink" href="#compiled-to" title="Permanent link">&para;</a></h1>
-<h1 id="where-user_id-1-with-1-bound-to-contextuser_id-at-runtime">WHERE user_id = $1 (with $1 bound to context.user_id at runtime)<a class="headerlink" href="#where-user_id-1-with-1-bound-to-contextuser_id-at-runtime" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Available context variables:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>FraiseQL.context.user_id         # Authenticated user ID
-FraiseQL.context.org_id          # Organization/tenant ID
-FraiseQL.context.role            # User role (string or list)
-FraiseQL.context.permissions     # User permissions
-FraiseQL.context.custom_claim    # Custom auth claim
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Example: Multi-tenant filtering</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderUpdated:
-    where: WhereOrder = FraiseQL.where(
-        fk_org=FraiseQL.context.org_id,
-        # Only notify on changes to orders in allowed statuses
-        status=FraiseQL.context.allowed_statuses
-    )</p>
-<div class="highlight"><pre><span></span><code>id: ID
-status: OrderStatus
-updated_at: DateTime
+<span class="c1">// Later, to stop receiving updates:</span>
+<span class="c1">// unsubscribe();</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="52-runtime-variables">5.2 Runtime Variables<a class="headerlink" href="#52-runtime-variables" title="Permanent link">&para;</a></h3>
-<p>Subscriptions accept typed runtime variables for additional filtering.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    where: WhereOrder = FraiseQL.where(
-        user_id=FraiseQL.context.user_id
-    )</p>
-<div class="highlight"><pre><span></span><code>@FraiseQL.variable(name=&quot;since_date&quot;, type=DateTime)
-@FraiseQL.variable(name=&quot;min_amount&quot;, type=Decimal)
-class Filter:
-    &quot;&quot;&quot;Optional runtime filtering on timestamp and amount.&quot;&quot;&quot;
-    created_at: DateTimeRange
-    amount: DecimalRange
-
-id: ID
-amount: Decimal
-created_at: DateTime
-</code></pre></div>
-<h1 id="client-side-usage">Client-side usage<a class="headerlink" href="#client-side-usage" title="Permanent link">&para;</a></h1>
-<p>subscription OrderCreated(
-  $since_date: DateTime
-  $min_amount: Decimal
-) {
-  orderCreated(since_date: $since_date, min_amount: $min_amount) {
-    id
-    amount
-    created_at
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>At runtime:</strong></p>
-<ol>
-<li>Client provides variables: <code>{ "since_date": "2026-01-01", "min_amount": 50.00 }</code></li>
-<li>Compiler validates variable types match WHERE operator expectations</li>
-<li>SQL predicate: <code>WHERE user_id = $1 AND created_at &gt; $2 AND amount &gt;= $3</code></li>
-<li>Only matching events delivered to client</li>
-</ol>
-<h3 id="53-authorization-enforcement">5.3 Authorization Enforcement<a class="headerlink" href="#53-authorization-enforcement" title="Permanent link">&para;</a></h3>
-<p>Subscriptions enforce authorization rules at compile time with runtime-safe parameter binding:</p>
-<p><strong>How it works:</strong></p>
-<ul>
-<li>Authorization rules are <strong>defined and validated</strong> at schema compile time (schema defines who can access what)</li>
-<li>Authorization values are <strong>bound safely</strong> at runtime (context.user_id, context.role, etc. resolved when subscription is established)</li>
-<li>No dynamic authorization logic—filters are deterministic SQL predicates evaluated by database</li>
-</ul>
-<p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class SensitiveDataAccessed:
-    # Only admins receive this subscription
-    where: WhereAuditLog = FraiseQL.where(
-        FraiseQL.context.role == "admin"
-    )</p>
-<div class="highlight"><pre><span></span><code># If context.role != &quot;admin&quot;, subscription unavailable
-# Compile-time error or runtime 403 FORBIDDEN
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Row-level authorization example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class UserProfileUpdated:
-    # User only sees updates to their own profile
-    where: WhereUser = FraiseQL.where(
-        id=FraiseQL.context.user_id
-    )</p>
-<div class="highlight"><pre><span></span><code>id: ID
-email: Email
-name: str
-updated_at: DateTime
-</code></pre></div>
-<h1 id="if-user-id-123-subscribes-only-receives-updates-where-id-123">If User ID = 123 subscribes, only receives updates where id = 123<a class="headerlink" href="#if-user-id-123-subscribes-only-receives-updates-where-id-123" title="Permanent link">&para;</a></h1>
-<h1 id="no-cross-user-data-leakage-possible-enforced-at-compile-time">No cross-user data leakage possible (enforced at compile time)<a class="headerlink" href="#no-cross-user-data-leakage-possible-enforced-at-compile-time" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p>The handshake (<code>connection_init</code> / <code>connection_ack</code>), the <code>subscribe</code> /
+<code>next</code> / <code>complete</code> message flow, and sub-protocol negotiation are handled by the
+client library on one side and by FraiseQL's <code>WebSocketConnection</code> /
+<code>SubscriptionManager</code> on the other.</p>
 <hr />
-<h2 id="6-event-format-transformation">6. Event Format &amp; Transformation<a class="headerlink" href="#6-event-format-transformation" title="Permanent link">&para;</a></h2>
-<h3 id="61-relationship-to-cdc-format">6.1 Relationship to CDC Format<a class="headerlink" href="#61-relationship-to-cdc-format" title="Permanent link">&para;</a></h3>
-<p>Subscription events are derived from CDC events in <code>tb_entity_change_log</code>.</p>
-<p><strong>CDC Event (raw, in database):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "event_id": "evt_550e8400-e29b-41d4-a716-446655440000",
-  "event_type": "entity:created",
-  "entity_type": "Order",
-  "entity_id": "ord_123",
-  "timestamp": "2026-01-11T15:35:00.123456Z",
-  "sequence_number": 4521,
-  "operation": {
-    "before": null,
-    "after": {
-      "id": "ord_123",
-      "user_id": "usr_456",
-      "status": "pending",
-      "amount": 99.99,
-      "created_at": "2026-01-11T15:35:00.123456Z",
-      "updated_at": "2026-01-11T15:35:00.123456Z"
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Subscription Event (projected, sent to client):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "event_id": "evt_550e8400-e29b-41d4-a716-446655440000",
-  "event_name": "OrderCreated",
-  "entity_name": "Order",
-  "entity_id": "ord_123",
-  "operation": "CREATE",
-  "timestamp": "2026-01-11T15:35:00.123456Z",
-  "sequence_number": 4521,
-  "data": {
-    "id": "ord_123",
-    "amount": 99.99,
-    "created_at": "2026-01-11T15:35:00.123456Z"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Transformation logic:</strong></p>
-<ol>
-<li><strong>Extract fields requested:</strong> Only <code>id</code>, <code>amount</code>, <code>created_at</code> included (as per subscription definition)</li>
-<li><strong>Apply WHERE filter:</strong> Event matches <code>user_id = $1</code> (context user)</li>
-<li><strong>Format for transport:</strong> Remove internal CDC fields, structure for GraphQL/webhook response</li>
-<li><strong>Add event metadata:</strong> <code>event_id</code>, <code>event_name</code>, <code>operation</code>, <code>sequence_number</code></li>
-</ol>
-<h3 id="62-field-projection">6.2 Field Projection<a class="headerlink" href="#62-field-projection" title="Permanent link">&para;</a></h3>
-<p>Subscription selection sets determine which fields are included in the event.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class UserUpdated:
-    # All user fields available for projection
-    id: ID
-    email: Email
-    name: str
-    phone: str
-    role: str
-    created_at: DateTime
-    updated_at: DateTime</p>
-<h1 id="client-requests-only-specific-fields">Client requests only specific fields<a class="headerlink" href="#client-requests-only-specific-fields" title="Permanent link">&para;</a></h1>
-<p>subscription UserUpdated {
-  userUpdated {
-    id
-    email
-    name
-    # phone, role, created_at, updated_at NOT requested, not included
-  }
-}</p>
-<h1 id="event-delivered-with-only-requested-fields">Event delivered with only requested fields:<a class="headerlink" href="#event-delivered-with-only-requested-fields" title="Permanent link">&para;</a></h1>
-<p>{
-  "data": {
-    "id": "usr_456",
-    "email": "alice@example.com",
-    "name": "Alice Smith"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="63-nested-projections">6.3 Nested Projections<a class="headerlink" href="#63-nested-projections" title="Permanent link">&para;</a></h3>
-<p>Subscriptions can project nested entities.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    id: ID
-    amount: Decimal
-    user: User  # Nested: include User entity
-    created_at: DateTime</p>
-<h1 id="client-requests-nested-fields">Client requests nested fields<a class="headerlink" href="#client-requests-nested-fields" title="Permanent link">&para;</a></h1>
-<p>subscription OrderCreated {
-  orderCreated {
-    id
-    amount
-    user {
-      id
-      email
-      name
-    }
-    created_at
-  }
-}</p>
-<h1 id="event-includes-nested-data">Event includes nested data:<a class="headerlink" href="#event-includes-nested-data" title="Permanent link">&para;</a></h1>
-<p>{
-  "data": {
-    "id": "ord_123",
-    "amount": 99.99,
-    "user": {
-      "id": "usr_456",
-      "email": "alice@example.com",
-      "name": "Alice Smith"
-    },
-    "created_at": "2026-01-11T15:35:00.123456Z"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="7-multi-database-support">7. Multi-Database Support<a class="headerlink" href="#7-multi-database-support" title="Permanent link">&para;</a></h2>
-<p><strong>PostgreSQL is the reference implementation for subscriptions.</strong> Other databases follow the same architectural contract but may vary in maturity, feature completeness, and performance characteristics.</p>
-<h3 id="71-postgresql">7.1 PostgreSQL<a class="headerlink" href="#71-postgresql" title="Permanent link">&para;</a></h3>
-<p><strong>Event capture mechanism:</strong> Database table polling (<code>tb_entity_change_log</code>)</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Event log table (already exists)
-CREATE TABLE tb_entity_change_log (
-    pk_entity_change_log BIGSERIAL PRIMARY KEY,
-    id UUID NOT NULL,
-    fk_customer_org UUID,
-    object_type VARCHAR(255) NOT NULL,
-    object_id VARCHAR(255) NOT NULL,
-    modification_type VARCHAR(10) NOT NULL,  -- INSERT, UPDATE, DELETE
-    change_status VARCHAR(50),
-    object_data JSONB NOT NULL,
-    extra_metadata JSONB,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);</p>
-<p>-- Indexes for efficient polling
-CREATE INDEX idx_entity_change_log_created ON tb_entity_change_log(created_at);
-CREATE INDEX idx_entity_change_log_type ON tb_entity_change_log(object_type);</p>
-<p>-- Application code inserts events after mutations
-INSERT INTO tb_entity_change_log (object_type, object_id, modification_type, object_data)
-VALUES ('Order', 'ord_123', 'INSERT', '{"id": "ord_123", "user_id": "usr_456", ...}'::jsonb);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Advantages (Reference Implementation):</strong></p>
+<h2 id="7-operational-notes">7. Operational notes<a class="headerlink" href="#7-operational-notes" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Database-centric (table as event log, not message channel)</li>
-<li>Full durability (events persisted in table)</li>
-<li>Replay capability (query any historical event)</li>
-<li>No additional infrastructure required</li>
-<li>Simple and predictable (100ms polling = real-time for UIs)</li>
-<li>Production-tested in FraiseQL observer system</li>
-</ul>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Manual event population required (no automatic triggers yet)</li>
-<li>100-200ms latency (polling interval)</li>
-<li>Limited by PostgreSQL write throughput (single table)</li>
-</ul>
-<h3 id="72-mysql">7.2 MySQL<a class="headerlink" href="#72-mysql" title="Permanent link">&para;</a></h3>
-<p><strong>Event capture mechanism:</strong> Database table polling (<code>tb_entity_change_log</code>)</p>
-<p><strong>Architecture:</strong> Same as PostgreSQL - application code inserts events into <code>tb_entity_change_log</code>, ChangeLogListener polls.</p>
-<p><strong>MySQL-specific considerations:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Same table schema as PostgreSQL
-CREATE TABLE tb_entity_change_log (
-    pk_entity_change_log BIGINT AUTO_INCREMENT PRIMARY KEY,
-    id CHAR(36) NOT NULL,
-    fk_customer_org CHAR(36),
-    object_type VARCHAR(255) NOT NULL,
-    object_id VARCHAR(255) NOT NULL,
-    modification_type VARCHAR(10) NOT NULL,
-    change_status VARCHAR(50),
-    object_data JSON NOT NULL,  -- MySQL uses JSON type
-    extra_metadata JSON,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>CREATE INDEX idx_entity_change_log_created ON tb_entity_change_log(created_at);
-CREATE INDEX idx_entity_change_log_type ON tb_entity_change_log(object_type);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Advantages:</strong></p>
-<ul>
-<li>Same architecture as PostgreSQL (consistency)</li>
-<li>No additional infrastructure required</li>
-<li>Works with managed MySQL services (AWS RDS, Cloud SQL)</li>
-</ul>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Manual event population (like PostgreSQL)</li>
-<li>100-200ms latency (polling interval)</li>
-<li>JSON type instead of JSONB (slightly less efficient)</li>
-</ul>
-<h3 id="73-sql-server">7.3 SQL Server<a class="headerlink" href="#73-sql-server" title="Permanent link">&para;</a></h3>
-<p><strong>Event capture mechanism:</strong> Database table polling (<code>tb_entity_change_log</code>)</p>
-<p><strong>Architecture:</strong> Same as PostgreSQL - application code inserts events into <code>tb_entity_change_log</code>, ChangeLogListener polls.</p>
-<p><strong>SQL Server-specific considerations:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Same table schema as PostgreSQL
-CREATE TABLE tb_entity_change_log (
-    pk_entity_change_log BIGINT IDENTITY(1,1) PRIMARY KEY,
-    id UNIQUEIDENTIFIER NOT NULL,
-    fk_customer_org UNIQUEIDENTIFIER,
-    object_type NVARCHAR(255) NOT NULL,
-    object_id NVARCHAR(255) NOT NULL,
-    modification_type NVARCHAR(10) NOT NULL,
-    change_status NVARCHAR(50),
-    object_data NVARCHAR(MAX) NOT NULL,  -- JSON stored as NVARCHAR(MAX)
-    extra_metadata NVARCHAR(MAX),
-    created_at DATETIME2 NOT NULL DEFAULT GETUTCDATE()
-);</p>
-<p>CREATE INDEX idx_entity_change_log_created ON tb_entity_change_log(created_at);
-CREATE INDEX idx_entity_change_log_type ON tb_entity_change_log(object_type);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Advantages:</strong></p>
-<ul>
-<li>Same architecture as PostgreSQL (consistency)</li>
-<li>No additional infrastructure required</li>
-<li>Works with all SQL Server editions (including Express)</li>
-</ul>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Manual event population (like PostgreSQL)</li>
-<li>100-200ms latency (polling interval)</li>
-<li>JSON stored as NVARCHAR(MAX) (less efficient than native JSON)</li>
-</ul>
-<h3 id="74-sqlite">7.4 SQLite<a class="headerlink" href="#74-sqlite" title="Permanent link">&para;</a></h3>
-<p><strong>Event capture mechanism:</strong> Triggers on temporary in-memory event log</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Triggers capture changes to temp table
-CREATE TEMP TABLE fraiseql_events (
-    id INTEGER PRIMARY KEY,
-    entity_type TEXT,
-    entity_id TEXT,
-    operation TEXT,
-    data JSON,
-    created_at TIMESTAMP
-);</p>
-<p>CREATE TRIGGER order_insert AFTER INSERT ON tb_order
-FOR EACH ROW
-INSERT INTO fraiseql_events (entity_type, entity_id, operation, data)
-VALUES ('Order', NEW.id, 'INSERT', json(...));</p>
-<p>-- Subscribers poll events from temp table
--- (No push capability; pull-based)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Advantages:</strong></p>
-<ul>
-<li>No additional infrastructure</li>
-<li>Suitable for development/testing</li>
-</ul>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Pull-based only (clients must poll)</li>
-<li>In-memory (events lost on disconnect)</li>
-<li>Single process only (no network clients)</li>
-<li>Not suitable for production subscriptions</li>
-</ul>
-<h3 id="75-database-abstraction">7.5 Database Abstraction<a class="headerlink" href="#75-database-abstraction" title="Permanent link">&para;</a></h3>
-<p>FraiseQL abstracts database-specific CDC via a plugin interface:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>pub trait CDCBackend {
-    async fn listen(&amp;self, entity_types: Vec<String>) -&gt; Result<EventStream>;
-    async fn query_events(&amp;self, after_seq: u64) -&gt; Result<Vec\<CDCEvent>>;
-    async fn get_current_position(&amp;self) -&gt; Result<u64>;
-}</p>
-<p>// Implementations per database
-impl CDCBackend for PostgresCDC { ... }
-impl CDCBackend for MySQLCDC { ... }
-impl CDCBackend for SQLServerCDC { ... }
-impl CDCBackend for SQLiteCDC { ... }
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="8-system-architecture">8. System Architecture<a class="headerlink" href="#8-system-architecture" title="Permanent link">&para;</a></h2>
-<h3 id="81-compilation">8.1 Compilation<a class="headerlink" href="#81-compilation" title="Permanent link">&para;</a></h3>
-<p>Subscriptions are <strong>compiled at schema build time</strong> into the CompiledSchema:</p>
-<p><strong>Compile-time processing:</strong></p>
-<ul>
-<li>Parse subscription declarations (all authoring languages)</li>
-<li>Validate subscription fields against event entity types</li>
-<li>Compile WHERE filters to SQL predicates</li>
-<li>Bind authorization rules for event matching</li>
-<li>Generate subscription dispatch tables</li>
-<li>Type-check against type system (same rules as queries/mutations)</li>
-</ul>
-<p><strong>Output:</strong> Subscription metadata in CompiledSchema includes:</p>
-<ul>
-<li>Event entity type(s) and operation types (INSERT/UPDATE/DELETE)</li>
-<li>WHERE filter predicates</li>
-<li>Field projection list</li>
-<li>Authorization requirements</li>
-<li>Transport adapter configurations</li>
-</ul>
-<h3 id="82-event-capture-dispatch">8.2 Event Capture &amp; Dispatch<a class="headerlink" href="#82-event-capture-dispatch" title="Permanent link">&para;</a></h3>
-<p>At runtime, subscriptions follow a unified event pipeline:</p>
-<p><strong>FraiseQL Architecture (database-centric):</strong></p>
-<ul>
-<li>Application code explicitly inserts events into <code>tb_entity_change_log</code> after mutations</li>
-<li><code>ChangeLogListener</code> polls table every 100ms with checkpoint tracking</li>
-<li><code>ObserverRuntime</code> processes events in background task</li>
-<li>Events routed to both <code>ObserverExecutor</code> (actions) and <code>SubscriptionManager</code> (transports)</li>
-</ul>
-<p><strong>Event capture across databases:</strong></p>
-<ul>
-<li>PostgreSQL: Direct table polling (reference implementation)</li>
-<li>MySQL: Table polling (same as PostgreSQL)</li>
-<li>SQL Server: Table polling (same as PostgreSQL)</li>
-<li>SQLite: Table polling for development/testing</li>
-</ul>
-<p><strong>Event buffer (<code>tb_entity_change_log</code>):</strong> All events written with:</p>
-<ul>
-<li>Monotonic sequence numbers (for replay and ordering)</li>
-<li>Debezium-compatible envelope format</li>
-<li>Full entity data in JSONB column</li>
-<li>Timestamp for chronological ordering</li>
-</ul>
-<h3 id="83-transport-adapters">8.3 Transport Adapters<a class="headerlink" href="#83-transport-adapters" title="Permanent link">&para;</a></h3>
-<p>Same event stream dispatched to multiple transports simultaneously:</p>
-<p><strong>graphql-ws (WebSocket)</strong> — Real-time UI clients</p>
-<ul>
-<li>Standard graphql-ws protocol</li>
-<li>Sub-millisecond latency (reference deployment)</li>
-<li>Connection pooling and state management</li>
-</ul>
-<p><strong>Webhooks</strong> — External system integration</p>
-<ul>
-<li>Outgoing HTTP POST with signed payloads</li>
-<li>Retry logic with exponential backoff</li>
-<li>Delivery status tracking</li>
-</ul>
-<p><strong>Kafka</strong> — Event streaming to data warehouses</p>
-<ul>
-<li>Producer integration with topic mapping</li>
-<li>Offset tracking for consumer resume</li>
-<li>Batching and buffer management</li>
-</ul>
-<p><strong>gRPC</strong> — Inter-service events (future)</p>
-<ul>
-<li>Server streaming for scalable event delivery</li>
-<li>Language-agnostic protocol</li>
-<li>Connection multiplexing</li>
-</ul>
-<h3 id="84-authorization-filtering">8.4 Authorization &amp; Filtering<a class="headerlink" href="#84-authorization-filtering" title="Permanent link">&para;</a></h3>
-<p>Authorization enforced at <strong>event capture time</strong> (not delivery time):</p>
-<p><strong>Compile-time rules:</strong></p>
-<ul>
-<li>WHERE clauses applied to event stream</li>
-<li>Row-level security policies enforced</li>
-<li>Field-level masking/redaction applied</li>
-<li>Multi-tenant isolation guaranteed</li>
-</ul>
-<p><strong>Runtime binding:</strong></p>
-<ul>
-<li>Auth context variables resolved per subscriber</li>
-<li>User-specific filtering applied</li>
-<li>Compliance audits generated</li>
+<li><strong>Per-connection.</strong> Each subscription is bound to a single WebSocket
+  connection and runs its own async generator. There is no shared server-side
+  fan-out buffer and no cross-process coordination.</li>
+<li><strong>No server-side replay.</strong> FraiseQL does not persist a stream of past events.
+  On disconnect, restart, or crash, the client simply <strong>reconnects and
+  resubscribes</strong>; it will receive updates from that point forward. If your
+  application needs gap-free delivery, make the generator re-read current state
+  on each (re)subscribe — for example, emit the latest snapshot from a <code>v_</code>/<code>tv_</code>
+  view first, then stream subsequent changes.</li>
+<li><strong>Resource cleanup.</strong> When a client disconnects, FraiseQL stops iterating the
+  generator. Use <code>with_lifecycle(on_complete=...)</code> (or a <code>finally</code> block in your
+  generator) to release listeners, cursors, or background tasks.</li>
+<li><strong>Latency vs. load.</strong> <code>LISTEN/NOTIFY</code> gives near-immediate delivery; polling
+  trades latency for simplicity. Choose per subscription.</li>
+<li><strong>Authentication.</strong> Authorization is enforced at subscribe time via the
+  per-operation <code>authorizer</code> (see <a href="#5-authorization">Authorization</a>).</li>
 </ul>
 <hr />
-<h2 id="9-performance-characteristics">9. Performance Characteristics<a class="headerlink" href="#9-performance-characteristics" title="Permanent link">&para;</a></h2>
-<h3 id="91-event-latency">9.1 Event Latency<a class="headerlink" href="#91-event-latency" title="Permanent link">&para;</a></h3>
-<p><strong>Database to subscription delivery:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Latency (Observed)</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ChangeLogListener polling</td>
-<td>100ms (P50), 200ms (P99)</td>
-<td>Polling interval + checkpoint</td>
-</tr>
-<tr>
-<td>graphql-ws client (local)</td>
-<td>100-150ms</td>
-<td>Polling + network round-trip</td>
-</tr>
-<tr>
-<td>graphql-ws client (remote)</td>
-<td>150-300ms</td>
-<td>Polling + WAN latency</td>
-</tr>
-<tr>
-<td>Webhook delivery</td>
-<td>150-400ms</td>
-<td>Polling + HTTP request + retry logic</td>
-</tr>
-<tr>
-<td>Kafka producer</td>
-<td>100-150ms</td>
-<td>Polling + async write to broker</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example: User creates order in UI, sees confirmation</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Mutation committed (1ms)</li>
-<li>Event inserted into tb_entity_change_log (1ms)</li>
-<li>ChangeLogListener polls (0-100ms, average 50ms)</li>
-<li>ObserverRuntime processes event (1ms)</li>
-<li>Filter evaluates (0.5ms)</li>
-<li>Transform to GraphQL (0.5ms)</li>
-<li>Send to WebSocket (1ms)</li>
-<li>Client receives (5-10ms network)
-────────────────
-Total: ~100-150ms (imperceptible to users)
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
-
-<h3 id="92-throughput">9.2 Throughput<a class="headerlink" href="#92-throughput" title="Permanent link">&para;</a></h3>
-<p><strong>Concurrent subscriptions:</strong></p>
+<h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Single process: 1,000-10,000 concurrent WebSocket connections (depends on memory)</li>
-<li>Horizontal scaling: Multiple FraiseQL instances behind load balancer</li>
-<li>Event buffering: <code>tb_entity_change_log</code> handles burst traffic</li>
+<li><a href="../../integration/integration-patterns/">Integration patterns</a> — connecting
+  FraiseQL to other systems.</li>
+<li><a href="../../reliability/consistency-model/">Consistency model</a> — read/write
+  consistency guarantees.</li>
+<li><a href="../../reliability/failure-modes-and-recovery/">Failure modes and recovery</a> —
+  reconnection and degradation behavior.</li>
+<li><a href="../../../foundation/02-core-concepts/">Core concepts</a> — types, queries, and
+  the CQRS read/write model.</li>
+<li><a href="../../../getting-started/first-hour/">First hour</a> — getting a FraiseQL app
+  running.</li>
 </ul>
-<p><strong>Event throughput (observed in reference deployments):</strong></p>
-<ul>
-<li>ChangeLogListener polling: 1,000-2,000 events/second (database-limited)</li>
-<li>Webhook delivery: Limited by HTTP endpoint capacity (external factor)</li>
-<li>Kafka: 100,000+ events/second (broker-dependent; target with typical configurations)</li>
-</ul>
-<h3 id="93-memory-usage">9.3 Memory Usage<a class="headerlink" href="#93-memory-usage" title="Permanent link">&para;</a></h3>
-<p><strong>Per subscription:</strong></p>
-<ul>
-<li>graphql-ws connection: ~10-50 KB (WebSocket buffer)</li>
-<li>Event filter state: Negligible (compiled SQL predicates)</li>
-<li>Buffered events: 1-10 MB (configurable retention)</li>
-</ul>
-<p><strong>Example:</strong> 1,000 concurrent subscriptions (reference deployment)</p>
-<ul>
-<li>Connection buffers: ~50 MB</li>
-<li>Event buffer: ~100 MB</li>
-<li><strong>Total observed: ~150 MB</strong> (typical, single process)</li>
-</ul>
-<h3 id="94-resource-utilization">9.4 Resource Utilization<a class="headerlink" href="#94-resource-utilization" title="Permanent link">&para;</a></h3>
-<p><strong>CPU:</strong></p>
-<ul>
-<li>Event filtering: &lt;1% per 1,000 events/second (database-side)</li>
-<li>GraphQL transformation: &lt;1% per 1,000 events/second (deterministic)</li>
-<li>Negligible overhead for idle subscriptions</li>
-</ul>
-<p><strong>Network:</strong></p>
-<ul>
-<li>graphql-ws keeps connection open (minimal bandwidth if idle)</li>
-<li>Webhook bursts: Limited by retry backoff</li>
-<li>Kafka: Configurable batch size</li>
-</ul>
-<hr />
-<h2 id="10-limitations-trade-offs">10. Limitations &amp; Trade-Offs<a class="headerlink" href="#10-limitations-trade-offs" title="Permanent link">&para;</a></h2>
-<h3 id="101-supported-semantics">10.1 Supported Semantics<a class="headerlink" href="#101-supported-semantics" title="Permanent link">&para;</a></h3>
-<p><strong>✅ Subscriptions CAN:</strong></p>
-<ul>
-<li>Project database entities (same fields as queries)</li>
-<li>Filter by compile-time WHERE clauses</li>
-<li>Filter by runtime variables</li>
-<li>Support nested projections</li>
-<li>Enforce row-level authorization (compile-time)</li>
-<li>Replay events from <code>tb_entity_change_log</code></li>
-<li>Deliver to multiple transport adapters simultaneously</li>
-<li>Order events per entity (not globally)</li>
-</ul>
-<h3 id="102-explicitly-not-supported">10.2 Explicitly NOT Supported<a class="headerlink" href="#102-explicitly-not-supported" title="Permanent link">&para;</a></h3>
-<p><strong>❌ Subscriptions CANNOT:</strong></p>
-<ul>
-<li>Execute arbitrary user code</li>
-<li>Modify subscription filter at runtime (must be declared at compile time)</li>
-<li>Subscribe across multiple entities in single query</li>
-</ul>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p># NOT ALLOWED: Subscribes to Order changes, but also User changes
-  subscription {
-    orderCreated { id }
-    userUpdated { id }
-  }
-  ```text</p>
-<!-- Code example in TEXT -->
-
-<ul>
-<li>Guarantee global event ordering (only per-entity ordering)</li>
-<li>Transform events via resolvers</li>
-<li>Access fields not declared in subscription schema</li>
-</ul>
-<p><strong>Why these limitations exist:</strong></p>
-<ul>
-<li>Subscriptions are <strong>projections</strong>, not programs</li>
-<li>Filters must be compile-time deterministic</li>
-<li>No user code execution (aligned with FraiseQL philosophy)</li>
-</ul>
-<h3 id="103-delivery-guarantees">10.3 Delivery Guarantees<a class="headerlink" href="#103-delivery-guarantees" title="Permanent link">&para;</a></h3>
-<p><strong>Guaranteed:</strong></p>
-<ul>
-<li>At-least-once delivery (events not lost)</li>
-<li>Per-entity ordering (events for same entity in order)</li>
-<li>Event idempotence (can process same event twice safely)</li>
-</ul>
-<p><strong>NOT guaranteed:</strong></p>
-<ul>
-<li>Exactly-once delivery (transport-dependent)</li>
-<li>Global event ordering (use event sequence_number for ordering)</li>
-<li>Delivery to all transports simultaneously (Kafka may lag WebSocket)</li>
-</ul>
-<h3 id="104-database-limitations">10.4 Database Limitations<a class="headerlink" href="#104-database-limitations" title="Permanent link">&para;</a></h3>
-<p><strong>All Databases (Polling Architecture):</strong></p>
-<ul>
-<li>Manual event population required (application must INSERT into <code>tb_entity_change_log</code>)</li>
-<li>100-200ms latency (polling interval)</li>
-<li>Single table write bottleneck (can scale with partitioning)</li>
-</ul>
-<p><strong>PostgreSQL:</strong></p>
-<ul>
-<li>None specific (reference implementation)</li>
-</ul>
-<p><strong>MySQL:</strong></p>
-<ul>
-<li>JSON type less efficient than PostgreSQL JSONB</li>
-<li>No native UUID type (stored as CHAR(36))</li>
-</ul>
-<p><strong>SQL Server:</strong></p>
-<ul>
-<li>JSON stored as NVARCHAR(MAX) (less efficient than native JSON)</li>
-<li>Different date/time types (DATETIME2 vs TIMESTAMP)</li>
-</ul>
-<p><strong>SQLite:</strong></p>
-<ul>
-<li>Single process (no network clients)</li>
-<li>Not suitable for production subscriptions</li>
-<li>Good for development/testing only</li>
-</ul>
-<hr />
-<h2 id="11-security-authorization">11. Security &amp; Authorization<a class="headerlink" href="#11-security-authorization" title="Permanent link">&para;</a></h2>
-<h3 id="111-authentication">11.1 Authentication<a class="headerlink" href="#111-authentication" title="Permanent link">&para;</a></h3>
-<p>Subscriptions require authentication same as mutations:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="only-authenticated-users-can-subscribe">Only authenticated users can subscribe<a class="headerlink" href="#only-authenticated-users-can-subscribe" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.subscription
-class OrderCreated:
-    where: WhereOrder = FraiseQL.where(
-        user_id=FraiseQL.context.user_id
-    )
-    # Fails if context.user_id is None (unauthenticated)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="112-row-level-authorization">11.2 Row-Level Authorization<a class="headerlink" href="#112-row-level-authorization" title="Permanent link">&para;</a></h3>
-<p>WHERE clauses enforce row-level access control through compile-time rule definition and runtime-safe parameter binding:</p>
-<p><strong>Mechanism:</strong></p>
-<ul>
-<li>Authorization rules <strong>defined</strong> at compile time in schema (WHERE clause states who can access what)</li>
-<li>Authorization values <strong>bound</strong> at runtime (context.user_id, context.org_id resolved from AuthContext when subscription established)</li>
-<li>Filters are deterministic SQL predicates—no dynamic logic</li>
-</ul>
-<p><strong>Examples:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="user-only-sees-their-own-orders">User only sees their own orders<a class="headerlink" href="#user-only-sees-their-own-orders" title="Permanent link">&para;</a></h1>
-<p>where: WhereOrder = FraiseQL.where(user_id=FraiseQL.context.user_id)</p>
-<h1 id="org-admin-sees-orgs-orders">Org admin sees org's orders<a class="headerlink" href="#org-admin-sees-orgs-orders" title="Permanent link">&para;</a></h1>
-<p>where: WhereOrder = FraiseQL.where(fk_org=FraiseQL.context.org_id)</p>
-<h1 id="admin-sees-everything-no-where-filter">Admin sees everything (no WHERE filter)<a class="headerlink" href="#admin-sees-everything-no-where-filter" title="Permanent link">&para;</a></h1>
-<p>where: WhereOrder = FraiseQL.where()  # No filter = all rows
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="113-field-level-authorization">11.3 Field-Level Authorization<a class="headerlink" href="#113-field-level-authorization" title="Permanent link">&para;</a></h3>
-<p>Projected fields can have authorization rules:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    id: ID  # Always visible
-    amount: Decimal  # Always visible</p>
-<div class="highlight"><pre><span></span><code># sensitive_notes only visible to admin
-sensitive_notes: Optional[str] = FraiseQL.field(
-    auth_required=[&quot;admin&quot;]
-)
-</code></pre></div>
-<h1 id="if-contextrole-admin-sensitive_notes-omitted-from-events">If context.role != "admin", sensitive_notes omitted from events<a class="headerlink" href="#if-contextrole-admin-sensitive_notes-omitted-from-events" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="114-signature-verification-webhooks">11.4 Signature Verification (Webhooks)<a class="headerlink" href="#114-signature-verification-webhooks" title="Permanent link">&para;</a></h3>
-<p>Webhooks include HMAC-SHA256 signature for verification:</p>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>// Webhook handler
-const signature = req.headers['x-FraiseQL-signature'];
-const payload = req.rawBody;</p>
-<p>const expected = crypto
-  .createHmac('sha256', WEBHOOK_SECRET)
-  .update(payload)
-  .digest('hex');</p>
-<p>if (signature !== expected) {
-  return res.status(401).send('Signature mismatch');
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="12-examples">12. Examples<a class="headerlink" href="#12-examples" title="Permanent link">&para;</a></h2>
-<h3 id="example-1-real-time-order-dashboard">Example 1: Real-Time Order Dashboard<a class="headerlink" href="#example-1-real-time-order-dashboard" title="Permanent link">&para;</a></h3>
-<p><strong>Schema definition:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class OrderCreated:
-    """Stream new orders for the organization."""</p>
-<div class="highlight"><pre><span></span><code>where: WhereOrder = FraiseQL.where(
-    fk_org=FraiseQL.context.org_id
-)
-
-id: ID
-user_id: ID
-amount: Decimal
-created_at: DateTime
-user: User  # Nested projection
-</code></pre></div>
-<p>@FraiseQL.subscription
-class OrderStatusChanged:
-    """Stream status updates for organization's orders."""</p>
-<div class="highlight"><pre><span></span><code>where: WhereOrder = FraiseQL.where(
-    fk_org=FraiseQL.context.org_id
-)
-
-id: ID
-old_status: OrderStatus
-new_status: OrderStatus
-updated_at: DateTime
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Client (React):</strong></p>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useSubscription } from '@apollo/client';</p>
-<p>export function OrderDashboard() {
-  const { data: newOrders } = useSubscription(gql<code>subscription {
-      orderCreated {
-        id
-        user_id
-        amount
-        created_at
-        user { name email }
-      }
-    }</code>);</p>
-<p>const { data: statusChanges } = useSubscription(gql<code>subscription {
-      orderStatusChanged {
-        id
-        old_status
-        new_status
-        updated_at
-      }
-    }</code>);</p>
-<p>return (
-    <div>
-      <LiveOrderList orders={newOrders?.orderCreated || []} />
-      <StatusUpdateFeed updates={statusChanges?.orderStatusChanged || []} />
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="example-2-event-streaming-to-analytics">Example 2: Event Streaming to Analytics<a class="headerlink" href="#example-2-event-streaming-to-analytics" title="Permanent link">&para;</a></h3>
-<p><strong>Schema definition:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class UserRegistered:
-    """Stream new user registrations (no filter, analytics event)."""</p>
-<div class="highlight"><pre><span></span><code>where: WhereUser = FraiseQL.where()  # All users
-
-id: ID
-email: Email
-created_at: DateTime
-source: str  # How they registered
-</code></pre></div>
-<p>@FraiseQL.subscription
-class PurchaseMade:
-    """Stream purchases for analytics and revenue tracking."""</p>
-<div class="highlight"><pre><span></span><code>where: WhereOrder = FraiseQL.where(
-    status=&quot;completed&quot;  # Only completed orders
-)
-
-id: ID
-user_id: ID
-amount: Decimal
-items: list[OrderItem]
-created_at: DateTime
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Kafka configuration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    kafka={
-        "enabled": True,
-        "bootstrap_servers": ["kafka:9092"],
-        "subscriptions": {
-            "UserRegistered": {
-                "topic": "analytics.users.registered",
-                "partition_by": "id"
-            },
-            "PurchaseMade": {
-                "topic": "analytics.orders.completed",
-                "partition_by": "user_id"
-            }
-        }
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Consumer (Python):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from kafka import KafkaConsumer
-import json</p>
-<p>consumer = KafkaConsumer(
-    'analytics.orders.completed',
-    bootstrap_servers=['kafka:9092'],
-    value_deserializer=lambda m: json.loads(m.decode('utf-8'))
-)</p>
-<p>for message in consumer:
-    event = message.value
-    # Insert into data warehouse
-    warehouse.insert_order(
-        order_id=event['data']['id'],
-        user_id=event['data']['user_id'],
-        amount=event['data']['amount'],
-        event_time=event['timestamp']
-    )
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="example-3-multi-tenant-filtering-with-variables">Example 3: Multi-Tenant Filtering with Variables<a class="headerlink" href="#example-3-multi-tenant-filtering-with-variables" title="Permanent link">&para;</a></h3>
-<p><strong>Schema definition:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.subscription
-class ActivityInOrganization:
-    """Stream activity (creates, updates, deletes) in organization."""</p>
-<div class="highlight"><pre><span></span><code>where: WhereAuditLog = FraiseQL.where(
-    fk_org=FraiseQL.context.org_id
-)
-
-@FraiseQL.variable(name=&quot;min_severity&quot;)
-class Filter:
-    &quot;&quot;&quot;Optional severity filter.&quot;&quot;&quot;
-    severity: AuditSeverity
-
-id: ID
-entity_type: str
-entity_id: UUID  # UUID v4 for GraphQL ID
-operation: str
-severity: AuditSeverity
-user: User
-created_at: DateTime
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Client with filtering:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>subscription ActivityInOrganization($min_severity: AuditSeverity) {
-  activityInOrganization(min_severity: $min_severity) {
-    id
-    entity_type
-    operation
-    severity
-    user { name }
-    created_at
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Usage:</strong></p>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>// Subscribe to high-priority events only
-useSubscription(ActivityInOrganization, {
-  variables: {
-    min_severity: "HIGH"
-  }
-});
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="13-appendix">13. Appendix<a class="headerlink" href="#13-appendix" title="Permanent link">&para;</a></h2>
-<h3 id="a-debugging-subscriptions">A. Debugging Subscriptions<a class="headerlink" href="#a-debugging-subscriptions" title="Permanent link">&para;</a></h3>
-<p><strong>Check if subscription is defined:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="query-introspection">Query introspection<a class="headerlink" href="#query-introspection" title="Permanent link">&para;</a></h1>
-<p>query {
-  __type(name: "Subscription") {
-    fields {
-      name
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Monitor event flow:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check event buffer
-SELECT COUNT(*) as pending_events
-FROM tb_entity_change_log
-WHERE created_at &gt; NOW() - INTERVAL '1 minute';</p>
-<p>-- Monitor subscription lag
-SELECT entity_type, MAX(created_at) as last_event
-FROM tb_entity_change_log
-GROUP BY entity_type;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Enable subscription tracing (Rust runtime):</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>if config.debug {
-    trace!("Subscription: OrderCreated");
-    trace!("  Filter: WHERE user_id = {} AND deleted_at IS NULL", user_id);
-    trace!("  Event matched: {}", event_matches_filter);
-    trace!("  Delivered to: {} clients", client_count);
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="b-monitoring-metrics">B. Monitoring Metrics<a class="headerlink" href="#b-monitoring-metrics" title="Permanent link">&para;</a></h3>
-<p><strong>Key metrics to track:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL.subscription.connections     # Current active connections
-FraiseQL.subscription.events_emitted   # Events matching filters
-FraiseQL.subscription.events_delivered # Events sent to clients
-FraiseQL.subscription.lag_seconds      # Delay from database to client
-FraiseQL.subscription.error_count      # Delivery failures
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="c-connection-pool-sizing">C. Connection Pool Sizing<a class="headerlink" href="#c-connection-pool-sizing" title="Permanent link">&para;</a></h3>
-<p><strong>Recommendation:</strong></p>
-<ul>
-<li>Pool size = (expected_concurrent_subscriptions / 10) + overhead</li>
-<li>Default: 20 connections</li>
-<li>Monitor connection count and adjust</li>
-</ul>
-<p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    database_url="postgresql://...",
-    subscriptions={
-        "connection_pool_size": 50,  # For 500+ concurrent subscriptions
-        "connection_timeout": 300,
-        "idle_timeout": 60
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="d-references">D. References<a class="headerlink" href="#d-references" title="Permanent link">&para;</a></h3>
-<p><strong>Related specifications:</strong></p>
-<ul>
-<li><code>docs/specs/cdc-format.md</code> — CDC event structure and format</li>
-<li><code>docs/specs/schema-conventions.md section 6</code> — <code>tb_entity_change_log</code> table definition</li>
-<li><code>docs/architecture/core/execution-model.md section 9.3</code> — CDC integration</li>
-<li>Apollo Federation v2: <code>docs/architecture/integration/federation.md</code> — Cross-subgraph subscriptions (future)</li>
-</ul>
-<p><strong>External standards:</strong></p>
-<ul>
-<li>graphql-ws protocol: <a href="https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md">https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md</a></li>
-<li>Debezium format: <a href="https://debezium.io/">https://debezium.io/</a></li>
-<li>Kafka consumers: <a href="https://kafka.apache.org/documentation/#consumerconfigs">https://kafka.apache.org/documentation/#consumerconfigs</a></li>
-</ul>
-<hr />
-<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p><strong>Subscriptions in FraiseQL are event projections from the database, not GraphQL resolver-based subscriptions.</strong></p>
-<p><strong>Key properties:</strong></p>
-<ul>
-<li>✅ Database-centric (table polling, not message channels)</li>
-<li>✅ Compiled, not interpreted</li>
-<li>✅ Transport-agnostic (graphql-ws, webhooks, Kafka, etc.)</li>
-<li>✅ Deterministic, no user code</li>
-<li>✅ Durable (buffered in <code>tb_entity_change_log</code>)</li>
-</ul>
-<p><strong>Architecture:</strong></p>
-<ol>
-<li>Database transaction commits</li>
-<li>Application inserts event into <code>tb_entity_change_log</code></li>
-<li>ChangeLogListener polls table every 100ms</li>
-<li>ObserverRuntime routes events to SubscriptionManager</li>
-<li>Filters evaluated against compiled predicates</li>
-<li>Delivered via transport adapter (graphql-ws, webhook, Kafka)</li>
-</ol>
-<p><strong>Performance:</strong></p>
-<ul>
-<li><strong>Latency:</strong> 100-150ms (polling + processing + network)</li>
-<li><strong>Throughput:</strong> 1,000-2,000 events/sec (database-limited)</li>
-<li><strong>Perceived latency:</strong> Imperceptible to users for UI updates</li>
-</ul>
-<p><strong>Relationship to Observers:</strong></p>
-<ul>
-<li>Subscriptions and Observers share the same event source (<code>tb_entity_change_log</code>)</li>
-<li>Observers can optionally use NATS for distributed action processing</li>
-<li>Subscriptions use direct transports (graphql-ws, Kafka) for client notifications</li>
-<li>Default: composition (in-process routing), NATS optional for distributed deployments</li>
-</ul>
-<p><strong>Security:</strong></p>
-<ul>
-<li>Row-level filtering enforced at compile time</li>
-<li>No cross-tenant data leakage</li>
-<li>Authorization via AuthContext</li>
-</ul>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Subscriptions are read-only (no mutations)</li>
-<li>Filters compile-time determined</li>
-<li>Per-entity ordering only</li>
-<li>Manual event population required (automatic triggers pending)</li>
-</ul>
-<p><em>End of Subscriptions Specification</em></p>
 
 
 
 
 
 
+
+  
+  
 
 
 
