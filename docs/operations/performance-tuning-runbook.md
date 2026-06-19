@@ -1,6 +1,4 @@
-<!-- Skip to main content -->
 ---
-
 title: Performance Tuning Runbook
 description: Operational procedures for diagnosing and optimizing FraiseQL query performance in production.
 keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
@@ -9,12 +7,17 @@ tags: ["documentation", "reference"]
 
 # Performance Tuning Runbook
 
-**Status:** ✅ Production Ready
+**Status:** Production Ready
 **Audience:** DevOps, Database Administrators, Performance Engineers
 **Reading Time:** 30-40 minutes
-**Last Updated:** 2026-02-05
 
 Operational procedures for diagnosing and optimizing FraiseQL query performance in production.
+
+FraiseQL v1 is a Python runtime GraphQL framework that serves a PostgreSQL database over
+FastAPI. Queries read `v_`/`tv_` views, mutations call `fn_` PostgreSQL functions, and the
+GraphQL schema is built in memory at application startup. Almost all performance work
+therefore happens in two places: **your PostgreSQL database** (indexes, statistics, views)
+and **the FastAPI app** (connection pool, caching). This runbook covers both.
 
 ---
 
@@ -32,7 +35,6 @@ This runbook provides **diagnosis workflows** and **remediation steps** for comm
 ## Quick Diagnosis Tree
 
 ```text
-<!-- Code example in TEXT -->
 Is performance issue...
 
 1. NEW: Slow since deployment?
@@ -49,8 +51,7 @@ Is performance issue...
 
 5. BROAD: Many queries slow?
    → Go to: DATABASE TUNING or NETWORK LATENCY
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -60,44 +61,40 @@ Is performance issue...
 
 ### Diagnosis Step 1: Enable Query Logging
 
+FraiseQL is a Python/FastAPI application. Turn up Python logging to see the SQL it issues
+against your views and functions. Set the logger level via standard Python logging (or the
+`FRAISEQL_` environment, e.g. `FRAISEQL_DATABASE_ECHO=true` to echo SQL).
+
+```python
+# In your app entry point, before create_fraiseql_app(...)
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("fraiseql").setLevel(logging.DEBUG)
+```
+
 ```bash
-<!-- Code example in BASH -->
-# Set environment variable
-export RUST_LOG=FraiseQL=debug
-
-# Restart server
-systemctl restart FraiseQL
-
-# Watch logs
-tail -f /var/log/FraiseQL.log | grep "QUERY"
-```text
-<!-- Code example in TEXT -->
+# Run the app with uvicorn and watch the logs
+uvicorn app:app --host 0.0.0.0 --port 8000 2>&1 | grep -i "query\|select"
+```
 
 **Look for:**
 
 - Query execution time
-- SQL generation time
+- The generated SQL against your `v_`/`tv_` views
 - Database roundtrip time
-- Result transformation time
+- Result transformation time (JSONB shaping, done by the optional `fraiseql_rs` extension)
 
 ### Diagnosis Step 2: Get Query Plan from Database
 
+Take the SQL FraiseQL logged (a `SELECT ... FROM v_...`) and run `EXPLAIN ANALYZE` against
+PostgreSQL:
+
 ```sql
-<!-- Code example in SQL -->
 -- PostgreSQL
 EXPLAIN ANALYZE
-SELECT ... FROM ... WHERE ...;
-
--- MySQL
-EXPLAIN FORMAT=JSON
-SELECT ... FROM ... WHERE ...;
-
--- SQL Server
-SET STATISTICS IO ON;
-SET STATISTICS TIME ON;
-SELECT ... FROM ... WHERE ...;
-```text
-<!-- Code example in TEXT -->
+SELECT ... FROM v_user WHERE ...;
+```
 
 **Interpret output:**
 
@@ -109,8 +106,7 @@ SELECT ... FROM ... WHERE ...;
 ### Diagnosis Step 3: Check for Missing Indexes
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Find tables without indexes
+-- Find tables without indexes
 SELECT schemaname, tablename
 FROM pg_tables
 WHERE schemaname = 'public'
@@ -120,83 +116,92 @@ FROM pg_indexes
 WHERE schemaname = 'public'
 ORDER BY tablename;
 
--- Check most common WHERE columns in slow queries
-SELECT query FROM pg_stat_statements
-WHERE mean_time > 100
-ORDER BY mean_time DESC LIMIT 5;
+-- Check the most expensive queries (requires the pg_stat_statements extension)
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC
+LIMIT 5;
 
--- Example output: "SELECT * FROM users WHERE created_at >= ..."
+-- Example output: "SELECT ... FROM tb_user WHERE created_at >= ..."
 -- → Need index on created_at
-```text
-<!-- Code example in TEXT -->
+```
+
+> Enable `pg_stat_statements` by adding it to `shared_preload_libraries` in
+> `postgresql.conf` and running `CREATE EXTENSION pg_stat_statements;`.
 
 ### Solutions
 
 **Solution 1: Add Missing Index**
 
 ```sql
-<!-- Code example in SQL -->
 -- Identify filter columns from EXPLAIN output
-CREATE INDEX idx_user_created_at ON users(created_at);
+CREATE INDEX idx_user_created_at ON tb_user(created_at);
 
--- Verify index is used
-EXPLAIN SELECT * FROM users WHERE created_at >= '2026-01-01';
+-- Verify the index is used
+EXPLAIN SELECT * FROM tb_user WHERE created_at >= '2026-01-01';
 -- Should show "Index Scan" not "Seq Scan"
-```text
-<!-- Code example in TEXT -->
+```
 
-**Syntax per database:**
+**Concurrent index creation (doesn't lock the table):**
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Concurrent index creation (doesn't lock table)
-CREATE INDEX CONCURRENTLY idx_user_created_at ON users(created_at);
+-- Build the index without blocking writes (recommended in production)
+CREATE INDEX CONCURRENTLY idx_user_created_at ON tb_user(created_at);
+```
 
--- MySQL: Online index creation (5.7+)
-ALTER TABLE users ADD INDEX idx_created_at (created_at), ALGORITHM=INPLACE;
+Because read views build a `data` JSONB column, you often want indexes on the JSONB
+expressions you filter on:
 
--- SQL Server: Online index creation
-CREATE INDEX idx_created_at ON users(created_at) WITH (ONLINE=ON);
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Index on a value extracted from the JSONB data column
+CREATE INDEX idx_user_email
+    ON tb_user ((data->>'email'));
+
+-- GIN index for containment / key-existence queries on the whole JSONB document
+CREATE INDEX idx_user_data_gin ON tb_user USING gin (data);
+```
 
 **Solution 2: Composite Indexes for Common Filter Combinations**
 
 ```sql
-<!-- Code example in SQL -->
 -- If queries often filter by both tenant and status:
--- CREATE INDEX idx_user_tenant_status ON users(tenant_id, status);
+CREATE INDEX idx_user_tenant_status ON tb_user(tenant_id, status);
 -- Covers WHERE tenant_id = X AND status = 'active'
 
--- If queries filter by range, put range column last:
--- CREATE INDEX idx_posts_user_date ON posts(user_id, created_at);
--- Covers WHERE user_id = X AND created_at >= Y
-```text
-<!-- Code example in TEXT -->
+-- If queries filter by range, put the range column last:
+CREATE INDEX idx_posts_user_date ON tb_post(fk_user, created_at);
+-- Covers WHERE fk_user = X AND created_at >= Y
+```
 
-**Solution 3: Switch to Materialized View (tv_*)**
+**Solution 3: Switch to a Table-Backed Projection View (`tv_*`)**
 
-If index doesn't help (aggregation or complex join):
+If indexing a logical `v_` view doesn't help (heavy aggregation or deep nested joins),
+move to a **table-backed projection view** (`tv_`): a real table that holds the
+pre-composed `data` JSONB, refreshed by your `fn_` functions or triggers. Reads then hit
+a pre-built, indexable table instead of recomputing JSONB per request.
 
 ```python
-<!-- Code example in Python -->
-# Before: Logical view (computed per query)
-@type
-class UserStats:
-    post_count: int = field(computed="COUNT(SELECT ...)")
+import fraiseql
+from fraiseql.types import ID
 
-# After: Table-backed view (materialized daily)
-@type
+# Logical view: data JSONB computed per query (good for small/simple reads)
+@fraiseql.type(sql_source="v_user_stats", jsonb_column="data")
 class UserStats:
-    post_count: int  # Pre-computed, indexed
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    post_count: int
+
+# Table-backed projection view: data pre-composed and refreshed by fn_/triggers
+@fraiseql.type(sql_source="tv_user_stats", jsonb_column="data")
+class UserStatsFast:
+    id: ID
+    post_count: int  # Pre-computed in tv_user_stats, indexable
+```
 
 **Solution 4: Reduce Query Scope**
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Before: Fetching too much
+# Before: fetching too much
 query {
   users {  # Gets all 10M users!
     id
@@ -205,7 +210,7 @@ query {
   }
 }
 
-# After: Add filters
+# After: add filters (WHERE operators are generated against the view)
 query {
   users(where: { created_at: { gte: "2026-01-01" } }) {
     id
@@ -213,14 +218,13 @@ query {
     posts { id title }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Prevention
 
-- [ ] Monitor slow queries: `max_query_time > 500ms`
-- [ ] Weekly index review: Check for missing indexes on filtered columns
-- [ ] Query profiling in staging: Profile all new queries before deploying
+- [ ] Monitor slow queries via `pg_stat_statements` (alert if `mean_exec_time > 500ms`)
+- [ ] Weekly index review: check for missing indexes on filtered columns / JSONB expressions
+- [ ] Query profiling in staging: profile new queries with `EXPLAIN ANALYZE` before deploying
 - [ ] Document expected performance: "Query X should run in < 100ms"
 
 ---
@@ -229,54 +233,83 @@ query {
 
 ### Symptom: "Too Many Connections" or "Connection Timeout"
 
+FraiseQL maintains an async connection pool inside the FastAPI app. The effective maximum
+number of database connections is `connection_pool_size + connection_pool_max_overflow`.
+
 ### Diagnosis
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Check active connections
+-- Check active connections
 SELECT COUNT(*) FROM pg_stat_activity;
-SELECT max_conn FROM pg_settings WHERE name = 'max_connections';
+SELECT setting FROM pg_settings WHERE name = 'max_connections';
 
--- Example: 100 max connections, 95 active → Almost exhausted
+-- Example: 100 max connections, 95 active → almost exhausted
 
--- Find slow connections
+-- Find slow / non-idle connections
 SELECT pid, usename, state, query_start, query
 FROM pg_stat_activity
 WHERE state != 'idle'
 ORDER BY query_start;
-
--- MySQL: Check connection count
-SHOW PROCESSLIST;
-SHOW VARIABLES LIKE 'max_connections';
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Solutions
 
 **Solution 1: Increase Pool Size**
 
-```toml
-<!-- Code example in TOML -->
-# FraiseQL.toml
-[database]
-pool_size = 50  # Was 10, increase to 50
-```text
-<!-- Code example in TEXT -->
+Tune the pool through `create_fraiseql_app(...)` kwargs:
 
-**Maximum safe values:**
+```python
+from fraiseql.fastapi import create_fraiseql_app
 
-- PostgreSQL max_connections: Usually 200-1000 (depends on server)
-- MySQL max_connections: Usually 500-10000
-- SQLite: Not applicable (single connection)
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    connection_pool_size=30,        # base connections held open
+    connection_pool_max_overflow=20,  # extra connections under load
+    connection_pool_timeout=30.0,   # seconds to wait for a free connection
+    connection_pool_recycle=3600,   # seconds before recycling idle connections
+)
+```
 
-**Solution 2: Enable Connection Pooling at Database Level**
+Equivalently, via `FraiseQLConfig` (or the `FRAISEQL_` environment variables it reads):
+
+```python
+from fraiseql.fastapi import FraiseQLConfig
+
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    database_pool_size=30,
+    database_max_overflow=20,
+    database_pool_timeout=30,
+    database_pool_recycle=3600,
+)
+```
 
 ```bash
-<!-- Code example in BASH -->
-# PostgreSQL: Use PgBouncer
-sudo apt install pgbouncer
+# Or set them from the environment (FRAISEQL_ prefix, case-insensitive)
+export FRAISEQL_DATABASE_POOL_SIZE=30
+export FRAISEQL_DATABASE_MAX_OVERFLOW=20
+export FRAISEQL_DATABASE_POOL_TIMEOUT=30
+export FRAISEQL_DATABASE_POOL_RECYCLE=3600
+```
 
-# Configure /etc/pgbouncer/pgbouncer.ini
+**Sizing guidance:**
+
+- Keep `pool_size + max_overflow` comfortably below PostgreSQL's `max_connections`
+  (commonly 100-500, depending on the server).
+- Account for **every** app instance/worker: total DB connections = per-instance pool max
+  × number of instances. Three instances with `30 + 20` can open 150 connections.
+
+**Solution 2: Add a Connection Pooler in Front of PostgreSQL**
+
+```bash
+# Use PgBouncer when many app instances would otherwise exhaust max_connections
+sudo apt install pgbouncer
+```
+
+```ini
+; /etc/pgbouncer/pgbouncer.ini
 [databases]
 mydb = host=localhost port=5432 dbname=mydb
 
@@ -284,40 +317,37 @@ mydb = host=localhost port=5432 dbname=mydb
 pool_mode = transaction
 max_client_conn = 1000
 default_pool_size = 25
-```text
-<!-- Code example in TEXT -->
+```
 
 **Solution 3: Kill Slow/Idle Connections**
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Kill connections idle > 5 minutes
+-- Kill connections idle > 5 minutes
 SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
 WHERE state = 'idle'
 AND query_start < now() - interval '5 minutes';
 
--- MySQL: Kill long-running connections
-KILL QUERY process_id;
-```text
-<!-- Code example in TEXT -->
+-- Set a server-side idle timeout instead of killing manually
+ALTER DATABASE mydb SET idle_in_transaction_session_timeout = '60s';
+```
 
-**Solution 4: Set Connection Timeout**
+**Solution 4: Set Connection and Query Timeouts**
 
-```toml
-<!-- Code example in TOML -->
-[database]
-connection_timeout_seconds = 10  # Wait max 10s for connection
-query_timeout_seconds = 30       # Abort query after 30s
-```text
-<!-- Code example in TEXT -->
+`connection_pool_timeout` bounds how long FraiseQL waits for a free pool slot. Bound the
+query itself in PostgreSQL with `statement_timeout`:
+
+```sql
+-- Abort any statement running longer than 30 seconds (per role or per database)
+ALTER ROLE fraiseql_user SET statement_timeout = '30s';
+```
 
 ### Prevention
 
-- [ ] Monitor pool usage: Alert at 80% capacity
-- [ ] Set max_client_conn based on peak load
+- [ ] Monitor pool usage: alert at 80% capacity
+- [ ] Size `pool_size + max_overflow` against `max_connections` and instance count
 - [ ] Regular connection review (weekly)
-- [ ] Implement query timeouts
+- [ ] Implement statement timeouts
 - [ ] Close subscriptions on disconnect
 
 ---
@@ -329,68 +359,59 @@ query_timeout_seconds = 30       # Abort query after 30s
 ### Diagnosis
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Check index bloat
-SELECT schemaname, tablename, indexname, idx_scan
+-- Find unused indexes (candidates for removal) and large indexes
+SELECT schemaname, tablename, indexrelname, idx_scan,
+       pg_size_pretty(pg_relation_size(indexrelid)) AS index_size
 FROM pg_stat_user_indexes
 WHERE idx_scan = 0
 ORDER BY pg_relation_size(indexrelid) DESC;
 
--- MySQL: Check index fragmentation
-SELECT object_schema, object_name, count_read, count_write
-FROM performance_schema.table_io_waits_summary_by_index_usage
-WHERE count_read > 0
-ORDER BY count_read DESC;
-```text
-<!-- Code example in TEXT -->
+-- Estimate table/index bloat (requires the pgstattuple extension)
+CREATE EXTENSION IF NOT EXISTS pgstattuple;
+SELECT * FROM pgstattuple('idx_user_created_at');
+```
 
 ### Solutions
 
-**Solution 1: Reindex (PostgreSQL)**
+**Solution 1: Reindex**
 
 ```sql
-<!-- Code example in SQL -->
--- Reindex single index (requires lock)
+-- Reindex a single index (takes a lock)
 REINDEX INDEX idx_user_created_at;
 
--- Reindex entire table (rebuilds all indexes)
-REINDEX TABLE users;
+-- Reindex an entire table (rebuilds all its indexes)
+REINDEX TABLE tb_user;
 
--- Concurrent reindex (no lock, v12+)
+-- Concurrent reindex (no exclusive lock, PostgreSQL 12+)
 REINDEX INDEX CONCURRENTLY idx_user_created_at;
-```text
-<!-- Code example in TEXT -->
+```
 
-**Solution 2: Optimize Table (MySQL)**
+**Solution 2: VACUUM to Reclaim Dead Tuples**
 
 ```sql
-<!-- Code example in SQL -->
--- Defragment and rebuild indexes
-OPTIMIZE TABLE users;
+-- Reclaim space and update visibility map (does not lock for normal VACUUM)
+VACUUM (ANALYZE) tb_user;
 
--- Analyze statistics
-ANALYZE TABLE users;
-```text
-<!-- Code example in TEXT -->
+-- VACUUM FULL rewrites the table compactly but takes an exclusive lock
+VACUUM FULL tb_user;
+```
 
 **Solution 3: Regular Maintenance Schedule**
 
 ```bash
-<!-- Code example in BASH -->
-# Weekly index maintenance
-0 2 * * 0 FraiseQL-maintenance reindex --tables all
+# Weekly concurrent reindex of a hot table (PostgreSQL 12+)
+0 2 * * 0 psql -d "$DATABASE_URL" -c "REINDEX TABLE CONCURRENTLY tb_user;"
 
-# Monthly full optimization
-0 2 1 * * FraiseQL-maintenance optimize --full
-```text
-<!-- Code example in TEXT -->
+# Daily vacuum + analyze of heavily modified tables
+0 3 * * * psql -d "$DATABASE_URL" -c "VACUUM (ANALYZE) tb_user; VACUUM (ANALYZE) tb_post;"
+```
 
 ### Prevention
 
-- [ ] Schedule weekly index maintenance
-- [ ] Monitor index bloat: Alert if > 20% bloat
-- [ ] Use concurrent indexing operations
-- [ ] Regular ANALYZE to update statistics
+- [ ] Schedule periodic concurrent reindexing of hot tables
+- [ ] Monitor index bloat with `pgstattuple` (alert if > 20% bloat)
+- [ ] Use concurrent indexing operations to avoid downtime
+- [ ] Rely on autovacuum, and run manual `ANALYZE` after large bulk loads
 
 ---
 
@@ -401,70 +422,54 @@ ANALYZE TABLE users;
 ### Diagnosis
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Check when statistics were last updated
-SELECT schemaname, tablename, last_vacuum, last_analyze
+-- Check when statistics were last updated and autovacuum/analyze ran
+SELECT schemaname, tablename, last_vacuum, last_autovacuum,
+       last_analyze, last_autoanalyze, n_dead_tup
 FROM pg_stat_user_tables
-ORDER BY last_analyze;
+ORDER BY last_analyze NULLS FIRST;
 
--- If last_analyze is very old → Update statistics
-
--- MySQL: Check table statistics
-SELECT object_schema, object_name, count_insert, count_update, count_delete
-FROM performance_schema.table_io_waits_summary_by_table
-WHERE count_insert > 10000 OR count_update > 10000
-ORDER BY count_insert DESC;
-```text
-<!-- Code example in TEXT -->
+-- If last_analyze / last_autoanalyze is very old → update statistics
+```
 
 ### Solutions
 
 **Solution 1: Update Statistics (ANALYZE)**
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL
-ANALYZE users;
-ANALYZE;  -- All tables
+ANALYZE tb_user;
+ANALYZE;  -- All tables in the current database
+```
 
--- MySQL
-ANALYZE TABLE users;
-
--- SQL Server
-UPDATE STATISTICS users;
-```text
-<!-- Code example in TEXT -->
-
-**Solution 2: Auto-Vacuum Configuration (PostgreSQL)**
+**Solution 2: Autovacuum Configuration**
 
 ```sql
-<!-- Code example in SQL -->
 -- Check autovacuum settings
 SELECT name, setting FROM pg_settings WHERE name LIKE 'autovacuum%';
 
--- Increase frequency if needed
-ALTER DATABASE mydb SET autovacuum_naptime = '30s';  -- Default 60s
-```text
-<!-- Code example in TEXT -->
+-- Make autovacuum more aggressive globally
+ALTER SYSTEM SET autovacuum_naptime = '30s';  -- Default 60s
+SELECT pg_reload_conf();
+
+-- Or tune a single high-churn table
+ALTER TABLE tb_post SET (autovacuum_analyze_scale_factor = 0.02);
+```
 
 **Solution 3: Schedule Regular ANALYZE**
 
 ```bash
-<!-- Code example in BASH -->
 # Hourly analysis of heavily modified tables
-0 * * * * psql -d $DATABASE -c "ANALYZE users; ANALYZE posts;"
+0 * * * * psql -d "$DATABASE_URL" -c "ANALYZE tb_user; ANALYZE tb_post;"
 
-# Daily full database analysis
-0 2 * * * psql -d $DATABASE -c "ANALYZE;"
-```text
-<!-- Code example in TEXT -->
+# Daily full-database analysis
+0 2 * * * psql -d "$DATABASE_URL" -c "ANALYZE;"
+```
 
 ### Prevention
 
-- [ ] Enable autovacuum (PostgreSQL)
-- [ ] Schedule regular ANALYZE: Daily for OLTP, Hourly for heavily modified tables
-- [ ] Monitor last_analyze timestamp
-- [ ] Alert if statistics > 24 hours old
+- [ ] Keep autovacuum enabled (it is on by default)
+- [ ] Schedule regular `ANALYZE`: daily for OLTP, hourly for heavily modified tables
+- [ ] Monitor `last_analyze` / `last_autoanalyze` timestamps
+- [ ] Alert if statistics are > 24 hours old on a busy table
 
 ---
 
@@ -472,90 +477,92 @@ ALTER DATABASE mydb SET autovacuum_naptime = '30s';  -- Default 60s
 
 ### Symptom: GROUP BY or COUNT(DISTINCT) Queries Taking > 10 Seconds
 
+FraiseQL supports **runtime auto-aggregation**: when a GraphQL query selects aggregate
+fields on a view-backed type, FraiseQL derives `GROUP BY` + aggregate SQL automatically
+(allowed functions: `SUM`, `AVG`, `COUNT`, `MIN`, `MAX`, `ARRAY_AGG`, `STRING_AGG`,
+`BOOL_AND`, `BOOL_OR`, `JSON_AGG`, `JSONB_AGG`). That derived SQL still runs against your
+PostgreSQL views, so the tuning below applies. Functions outside the allowlist (e.g.
+`STDDEV`, `VARIANCE`) must be written by hand in the view SQL.
+
 ### Diagnosis
 
 ```sql
-<!-- Code example in SQL -->
--- Identify aggregation queries
-SELECT query FROM pg_stat_statements
-WHERE query LIKE '%COUNT%' OR query LIKE '%GROUP BY%'
-ORDER BY mean_time DESC LIMIT 5;
+-- Identify aggregation queries (requires pg_stat_statements)
+SELECT query, mean_exec_time
+FROM pg_stat_statements
+WHERE query ILIKE '%count%' OR query ILIKE '%group by%'
+ORDER BY mean_exec_time DESC
+LIMIT 5;
 
--- Check if they use indexes
-EXPLAIN SELECT COUNT(DISTINCT user_id) FROM posts;
+-- Check whether they use indexes
+EXPLAIN ANALYZE SELECT COUNT(DISTINCT fk_user) FROM tb_post;
 -- Look for "Seq Scan" (bad) vs "Index Only Scan" (good)
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Solutions
 
-**Solution 1: Add Index for Aggregation Column**
+**Solution 1: Add Index for the Aggregation Column**
 
 ```sql
-<!-- Code example in SQL -->
--- For: COUNT(DISTINCT user_id)
-CREATE INDEX idx_posts_user_id ON posts(user_id);
+-- For: COUNT(DISTINCT fk_user)
+CREATE INDEX idx_post_user ON tb_post(fk_user);
 
 -- For: GROUP BY status
-CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_order_status ON tb_order(status);
 
--- For: Multiple columns in GROUP BY
-CREATE INDEX idx_user_org_status ON users(organization_id, status);
-```text
-<!-- Code example in TEXT -->
+-- For: multiple GROUP BY columns
+CREATE INDEX idx_user_org_status ON tb_user(fk_organization, status);
+```
 
-**Solution 2: Pre-Compute with Materialized View**
+**Solution 2: Pre-Compute with a Table-Backed Projection View**
+
+Move the aggregation out of the request path. Compute it into a `tv_` table refreshed by a
+`fn_` function or trigger, and expose the `tv_` as the read source:
 
 ```python
-<!-- Code example in Python -->
-# Before: Slow query in every request
-@FraiseQL.query
-def user_stats():
-    # SELECT user_id, COUNT(*) as post_count FROM posts GROUP BY user_id
-    # Takes 10+ seconds on 100M rows!
+import fraiseql
+from fraiseql.types import ID, DateTime
 
-# After: Use table-backed view
-@type
+# Aggregation is pre-computed in tv_user_stats and refreshed on a schedule;
+# reads no longer run COUNT/GROUP BY on every request.
+@fraiseql.type(sql_source="tv_user_stats", jsonb_column="data")
 class UserStats:
-    user_id: ID
-    post_count: int  # Pre-computed, updated hourly
+    id: ID
+    post_count: int   # pre-computed
     updated_at: DateTime
-```text
-<!-- Code example in TEXT -->
+```
 
-**Solution 3: Approximate Aggregations**
-
-For very large datasets where approximate values acceptable:
-
-```python
-<!-- Code example in Python -->
-# Use HyperLogLog instead of COUNT(DISTINCT)
-@type
-class PostStats:
-    unique_users_approx: int  # HyperLogLog count
-    # 5% error but 100x faster
-```text
-<!-- Code example in TEXT -->
-
-**Solution 4: Partition Large Tables**
+You can implement the same idea with a PostgreSQL **materialized view** refreshed
+periodically:
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Partition posts table by date
-CREATE TABLE posts_2026_01 PARTITION OF posts
+CREATE MATERIALIZED VIEW mv_user_post_counts AS
+SELECT fk_user, COUNT(*) AS post_count
+FROM tb_post
+GROUP BY fk_user;
+
+-- Refresh without blocking readers (requires a unique index on the MV)
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_post_counts;
+```
+
+**Solution 3: Partition Large Tables**
+
+```sql
+-- Partition the post table by date
+CREATE TABLE tb_post_2026_01 PARTITION OF tb_post
     FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
 
--- Aggregation on monthly partition is much faster
-SELECT COUNT(*) FROM posts_2026_01;
-```text
-<!-- Code example in TEXT -->
+-- Aggregation on a single monthly partition is much faster (partition pruning)
+SELECT COUNT(*) FROM tb_post WHERE created_at >= '2026-01-01'
+                              AND created_at <  '2026-02-01';
+```
 
 ### Prevention
 
-- [ ] Profile GROUP BY queries before deploying
+- [ ] Profile `GROUP BY` queries before deploying
 - [ ] Create indexes on aggregation columns
-- [ ] Use materialized views for complex aggregations
-- [ ] Monitor query time: Alert if > 5 seconds
+- [ ] Use `tv_` projection tables or materialized views for heavy aggregations
+- [ ] Monitor query time: alert if > 5 seconds
 
 ---
 
@@ -565,89 +572,87 @@ SELECT COUNT(*) FROM posts_2026_01;
 
 ### Diagnosis
 
-```bash
-<!-- Code example in BASH -->
-# Enable FraiseQL query logging
-export RUST_LOG=fraiseql_core=debug
+Turn up FraiseQL's Python logging and count the SQL statements issued for a single request.
 
-# Run problematic query
-# Look for: "Executing SELECT..." repeated for each parent record
-
-# Example: Query 100 users, then 100 queries for posts = 101 queries!
-```text
-<!-- Code example in TEXT -->
-
-**Count queries:**
+```python
+import logging
+logging.getLogger("fraiseql").setLevel(logging.DEBUG)
+```
 
 ```bash
-<!-- Code example in BASH -->
-grep -c "Executing SELECT" logs.txt
-# 101 queries → N+1 problem!
-```text
-<!-- Code example in TEXT -->
+# Run the request, capture the app logs, then count SELECTs
+uvicorn app:app 2>&1 | tee logs.txt
+grep -c -i "select" logs.txt
+# ~101 statements for 100 parents → N+1 problem
+```
 
 ### Solutions
 
-**Solution 1: FraiseQL Auto-Batching**
+**Solution 1: Compose the Nested Data Inside the View**
 
-```graphql
-<!-- Code example in GraphQL -->
-# FraiseQL automatically batches nested queries:
-query {
-  users(first: 100) {
-    id
-    posts(first: 50) {  # Batched automatically!
-      id
-      title
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+The most reliable fix is to build the nested data directly into the `data` JSONB of a
+`v_`/`tv_` view using `jsonb_build_object` / `jsonb_agg`, so one read returns everything:
 
-**Result:** ~2 queries total (users + batched posts)
-
-**Solution 2: Use Table-Backed View with Pre-Fetched Data**
+```sql
+-- v_user_with_posts: posts embedded in the user's data JSONB (one query, no N+1)
+CREATE VIEW v_user_with_posts AS
+SELECT
+    u.id,
+    jsonb_build_object(
+        'id', u.id,
+        'name', u.data->>'name',
+        'posts', COALESCE((
+            SELECT jsonb_agg(jsonb_build_object('id', p.id, 'title', p.data->>'title'))
+            FROM tb_post p
+            WHERE p.fk_user = u.pk_user
+        ), '[]'::jsonb)
+    ) AS data
+FROM tb_user u;
+```
 
 ```python
-<!-- Code example in Python -->
-@type
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_user_with_posts", jsonb_column="data")
 class UserWithPosts:
-    """Denormalized view with posts pre-fetched."""
     id: ID
     name: str
-    posts_json: List[Post]  # Fetched in view definition
-```text
-<!-- Code example in TEXT -->
+    posts: list["Post"]  # fetched in the view definition, no per-row query
+```
 
-**Solution 3: Flatten Query Structure**
+**Solution 2: Batch a Field with a DataLoader**
 
-Instead of:
+For computed/related fields resolved in Python, batch them with `@fraiseql.dataloader_field`
+to collapse N lookups into one:
+
+```python
+import fraiseql
+
+@fraiseql.dataloader_field
+async def author(post: "Post", info) -> "User":
+    # Loaded in a single batched query for all posts in the result set.
+    ...
+```
+
+**Solution 3: Flatten the Query Structure**
+
+If deep nesting is unavoidable on a slow path, split it into separate queries the client
+joins client-side:
 
 ```graphql
-<!-- Code example in GraphQL -->
-query {
-  users { id posts { id comments { id } } }
-}
-```text
-<!-- Code example in TEXT -->
-
-Do separate queries:
-
-```graphql
-<!-- Code example in GraphQL -->
 query { users { id } }
 query { posts { id userId } }
 query { comments { id postId } }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Prevention
 
-- [ ] Monitor query count per request: Alert if > 10 queries per request
+- [ ] Monitor query count per request: alert if > 10 queries per request
 - [ ] Load test with large datasets (1000+ records)
-- [ ] Profile queries in staging: Identify N+1 before deploying
-- [ ] Test queries with `EXPLAIN` to see execution plan
+- [ ] Prefer view-composed nested data over per-field resolvers on hot paths
+- [ ] Use `@fraiseql.dataloader_field` for Python-resolved relations
+- [ ] Test queries with `EXPLAIN ANALYZE` to see the execution plan
 
 ---
 
@@ -658,69 +663,53 @@ query { comments { id postId } }
 ### Diagnosis
 
 ```bash
-<!-- Code example in BASH -->
-# Measure latency to database
+# Measure latency to the database host
 ping -c 10 database-host
-# Normal: 1-10ms
-# High: > 50ms indicates network issue
+# Normal: 1-10ms; High: > 50ms indicates a network issue
 
-# Measure database response time
-time psql -h database-host -d mydb -c "SELECT COUNT(*) FROM users;"
-# Split time into:
-# - Connection time (first line of output)
-# - Query execution time
+# Measure end-to-end database response time
+time psql -h database-host -d mydb -c "SELECT COUNT(*) FROM tb_user;"
 
-# Check network path
+# Inspect the network path
 traceroute database-host
 # Look for high latency at any hop
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Solutions
 
 **Solution 1: Reduce Network Roundtrips**
 
-```python
-<!-- Code example in Python -->
-# Before: Multiple separate queries
-user = await db.query("SELECT * FROM users WHERE id = ?", [user_id])
-posts = await db.query("SELECT * FROM posts WHERE user_id = ?", [user_id])
+Compose related data in the view (see Section 6) so a request makes one roundtrip instead
+of several. Inside views, prefer a single joined `SELECT` over multiple subqueries:
 
-# After: Single joined query
-result = await db.query("""
-    SELECT u.*, p.*
-    FROM users u
-    LEFT JOIN posts p ON u.id = p.user_id
-    WHERE u.id = ?
-""", [user_id])
-```text
-<!-- Code example in TEXT -->
+```sql
+-- One roundtrip: join user and posts in the view's SELECT
+SELECT u.id,
+       jsonb_build_object('user', u.data, 'posts', jsonb_agg(p.data)) AS data
+FROM tb_user u
+LEFT JOIN tb_post p ON p.fk_user = u.pk_user
+WHERE u.id = $1
+GROUP BY u.id, u.data;
+```
 
-**Solution 2: Use Connection Pooling Closer to App**
+**Solution 2: Co-locate the Pooler / Database with the App**
 
 ```bash
-<!-- Code example in BASH -->
-# Deploy PgBouncer/ProxySQL on same host as FraiseQL
-# Reduces network roundtrips from 100ms to 1ms
-```text
-<!-- Code example in TEXT -->
+# Deploy PgBouncer on the same host (or same AZ) as the FastAPI app
+# to cut per-connection roundtrip overhead.
+```
 
 **Solution 3: Cache Frequently Accessed Data**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.caching]
-enabled = true
-ttl_seconds = 300  # Cache query results 5 minutes
-```text
-<!-- Code example in TEXT -->
+Use FraiseQL's PostgreSQL-backed result cache (see Section 9) for read-heavy, slow-changing
+data. Also deploy the database in the same availability zone as the application.
 
 ### Prevention
 
-- [ ] Monitor network latency: Alert if > 50ms
-- [ ] Deploy database close to application (same AZ)
+- [ ] Monitor network latency: alert if > 50ms
+- [ ] Deploy database close to the application (same AZ)
 - [ ] Use connection pooling
-- [ ] Batch queries to reduce roundtrips
+- [ ] Compose nested data in views to reduce roundtrips
 
 ---
 
@@ -731,73 +720,74 @@ ttl_seconds = 300  # Cache query results 5 minutes
 ### Diagnosis
 
 ```bash
-<!-- Code example in BASH -->
-# Monitor memory usage
-top -p <fraiseql_pid>
-# Look at RES (resident set size)
-# Should be stable, not growing
+# Find the uvicorn / app process and watch resident memory
+ps aux | grep uvicorn
+top -p <app_pid>          # watch RES (resident set size) — should be stable
 
-# Check for open file handles
-lsof -p <fraiseql_pid> | wc -l
-# If growing → File handle leak
+# Check for open file handles (growing → handle leak)
+lsof -p <app_pid> | wc -l
+```
 
-# Check for unclosed database connections
+```sql
+-- Check for unclosed database connections from the app role
 SELECT count(*) FROM pg_stat_activity WHERE usename = 'fraiseql_user';
-# Should not grow over time
-
-# Check subscription connections
-SELECT count(*) FROM websocket_connections;
-```text
-<!-- Code example in TEXT -->
+-- Should stay near the configured pool size, not grow unbounded
+```
 
 ### Solutions
 
-**Solution 1: Check for Unclosed Resources**
+**Solution 1: Ensure Resources Are Released**
+
+The CQRS repository borrows pool connections per request and returns them automatically.
+For long-lived async generators (subscriptions), make sure the generator is closed:
 
 ```python
-<!-- Code example in Python -->
-# Ensure subscriptions are closed
-try:
-    async for event in subscription:
-        process_event(event)
-finally:
-    subscription.close()  # Always close
+# Subscriptions are async generators; ensure cleanup on disconnect
+@fraiseql.subscription
+async def task_updates(info, project_id):
+    try:
+        async for task in watch_project_tasks(project_id):
+            yield task
+    finally:
+        # release any external resources you opened in the generator
+        ...
+```
 
-# Ensure database connections returned to pool
-async with pool.acquire() as conn:
-    # Connection automatically returned when block exits
-```text
-<!-- Code example in TEXT -->
+**Solution 2: Bound Concurrency and Query Cost**
 
-**Solution 2: Set Resource Limits**
+Limit query depth/complexity and request load through `FraiseQLConfig` rather than
+unbounded execution:
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.limits]
-max_concurrent_queries = 1000
-max_subscription_connections = 5000
-max_result_size_bytes = 10485760  # 10MB
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.fastapi import FraiseQLConfig
 
-**Solution 3: Regular Memory Profiling**
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    complexity_enabled=True,
+    complexity_max_depth=10,
+    complexity_max_score=1000,
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=60,
+    execution_timeout_ms=30000,
+)
+```
+
+**Solution 3: Profile and Recycle**
 
 ```bash
-<!-- Code example in BASH -->
-# Use memory profiler (if supported)
-cargo profiling memory --duration 60s
+# Profile a Python process with a sampling profiler such as py-spy
+py-spy top --pid <app_pid>
 
-# Restart after 24 hours if needed
-systemctl restart FraiseQL
-```text
-<!-- Code example in TEXT -->
+# As a stop-gap, recycle workers periodically (uvicorn/gunicorn)
+gunicorn app:app -k uvicorn.workers.UvicornWorker --max-requests 10000 --max-requests-jitter 1000
+```
 
 ### Prevention
 
-- [ ] Monitor memory: Alert if growth > 10%/day
-- [ ] Regular service restarts: Daily or weekly
-- [ ] Subscribe to all resource cleanup
-- [ ] Set timeouts on all connections
+- [ ] Monitor memory: alert if growth > 10%/day
+- [ ] Recycle workers periodically (`--max-requests`)
+- [ ] Ensure subscription generators clean up on disconnect
+- [ ] Set complexity, rate-limit, and execution timeouts
 
 ---
 
@@ -805,104 +795,117 @@ systemctl restart FraiseQL
 
 ### Symptom: Query Results Seem Stale or Caching Not Working
 
+FraiseQL ships a PostgreSQL-backed result cache in `fraiseql.caching`. The key pieces:
+
+- `PostgresCache` — a cache backend stored in an `UNLOGGED` PostgreSQL table (shared across
+  app instances, fast, cleared on crash — acceptable for cache data).
+- `ResultCache` + `CacheConfig` — the cache itself and its settings (`enabled`,
+  `default_ttl`, `max_ttl`, `cache_errors`, `key_prefix`). `CacheStats` exposes `hits`,
+  `misses`, and `hit_rate`.
+- `CachedRepository` — wraps the CQRS repository so `db.find(...)` is cached transparently
+  (with per-tenant key isolation), accepting `skip_cache=` and `cache_ttl=` per call.
+- `CascadeRule` + `SchemaAnalyzer` + `setup_auto_cascade_rules` — derive invalidation rules
+  from your GraphQL schema so changing one type invalidates dependent caches.
+- `cached_query` — a decorator for caching the result of an individual resolver.
+
 ### Diagnosis
 
-```bash
-<!-- Code example in BASH -->
-# Check cache configuration
-curl http://localhost:5000/health/cache
-# Returns: cache hits, misses, size
+```python
+# Inspect cache statistics from a ResultCache instance
+print(result_cache.stats.hits, result_cache.stats.misses, result_cache.stats.hit_rate)
+```
 
-# Enable cache logging
-export RUST_LOG=fraiseql_cache=debug
-
-# Run same query twice
-curl -X POST http://localhost:5000/graphql \
-  -d '{"query": "{ users { id } }"}'
-curl -X POST http://localhost:5000/graphql \
-  -d '{"query": "{ users { id } }"}'
-
-# Check logs for "cache hit" vs "cache miss"
-```text
-<!-- Code example in TEXT -->
+```python
+# Turn on cache logging
+import logging
+logging.getLogger("fraiseql.caching").setLevel(logging.DEBUG)
+# Then run the same query twice and look for "Cache hit" vs "Cache miss"
+```
 
 ### Solutions
 
 **Solution 1: Enable Query Caching**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.caching]
-enabled = true
-default_ttl_seconds = 300  # Cache 5 minutes
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.caching import PostgresCache, ResultCache, CacheConfig, CachedRepository
 
-**Solution 2: Invalidate Cache on Mutation**
+# Backend: an UNLOGGED PostgreSQL table shared across instances
+backend = PostgresCache(connection_pool=pool, table_name="fraiseql_cache")
 
-```graphql
-<!-- Code example in GraphQL -->
-mutation {
-  createUser(name: "Alice") @cache(invalidate: ["users"]) {
-    id
-    name
-  }
-}
-```text
-<!-- Code example in TEXT -->
+# Cache with a 5-minute default TTL
+cache = ResultCache(backend, CacheConfig(enabled=True, default_ttl=300, max_ttl=3600))
 
-**Solution 3: Adjust TTL Based on Data Freshness**
+# Wrap the repository so reads are cached transparently
+cached_repo = CachedRepository(base_repository=repo, cache=cache)
+```
+
+**Solution 2: Invalidate the Cache on Writes (Cascade Rules)**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    # Cache for 5 minutes (user data doesn't change often)
-    id: ID
-    name: str
+from fraiseql.caching import setup_auto_cascade_rules
 
-@FraiseQL.type
-class InventoryLevel:
-    # Don't cache (inventory changes constantly)
-    quantity: int = field(cache=False)
-```text
-<!-- Code example in TEXT -->
+# Analyze the schema and register CASCADE invalidation rules so that, e.g.,
+# changing a User invalidates cached Posts that reference it.
+await setup_auto_cascade_rules(schema=schema, cache=cache)
+```
+
+```python
+from fraiseql.caching import CascadeRule
+
+# Or declare a rule explicitly: when "user" changes, invalidate "post" caches.
+rule = CascadeRule(source_domain="user", target_domain="post")
+```
+
+**Solution 3: Tune TTL Per Read or Bypass When Needed**
+
+`CachedRepository.find` accepts a per-call TTL and a cache bypass:
+
+```python
+# Slow-changing reference data: cache longer
+users = await cached_repo.find("v_user", cache_ttl=900)
+
+# Volatile data (e.g. inventory): bypass the cache for a fresh read
+levels = await cached_repo.find("v_inventory_level", skip_cache=True)
+```
+
+> The optional `fraiseql_rs` extension accelerates JSONB transformation on the read path;
+> it complements, but does not replace, the result cache above.
 
 ### Prevention
 
-- [ ] Monitor cache effectiveness: Alert if hit rate < 30%
-- [ ] Set appropriate TTL for each data type
-- [ ] Implement cache invalidation on mutations
-- [ ] Profile cache performance: Expected hit rate?
+- [ ] Monitor cache effectiveness via `CacheStats.hit_rate` (alert if hit rate < 30%)
+- [ ] Set an appropriate TTL per data type (`cache_ttl` / `CacheConfig`)
+- [ ] Register cascade invalidation rules so mutations don't serve stale reads
+- [ ] Profile cache performance against an expected hit rate
 
 ---
 
 ## 10. Production Response Checklist
 
-**When performance issue reported:**
+**When a performance issue is reported:**
 
 1. **Immediately:**
-   - [ ] Check error logs for exceptions
-   - [ ] Verify database connectivity
+   - [ ] Check application logs for exceptions
+   - [ ] Verify database connectivity and pool health
    - [ ] Check if it's a known issue
 
 2. **Within 5 minutes:**
-   - [ ] Identify affected queries
-   - [ ] Check query count: Normal load?
-   - [ ] Run EXPLAIN on slow query
+   - [ ] Identify affected queries (`pg_stat_statements`, app logs)
+   - [ ] Check request rate: normal load?
+   - [ ] Run `EXPLAIN ANALYZE` on the slow view query
    - [ ] Check for missing indexes
 
 3. **Within 15 minutes:**
-   - [ ] Apply temporary mitigation (cache, timeout, index)
+   - [ ] Apply temporary mitigation (cache, statement timeout, index)
    - [ ] Monitor for improvement
-   - [ ] Communicate status to team
+   - [ ] Communicate status to the team
 
 4. **Later:**
    - [ ] Root cause analysis
-   - [ ] Implement permanent fix
+   - [ ] Implement permanent fix (index, view rewrite, projection table, cache rule)
    - [ ] Deploy to staging first
    - [ ] Gradual rollout to production
-   - [ ] Document in runbook
+   - [ ] Document in the runbook
 
 ---
 
@@ -913,15 +916,8 @@ class InventoryLevel:
 - **[Schema Design Best Practices](../guides/schema-design-best-practices.md)** — Designing for performance
 - **[Common Gotchas](../guides/common-gotchas.md)** — Avoid performance pitfalls
 - **[Monitoring & Observability](../guides/monitoring.md)** — Setting up performance metrics
-- **[View Selection Guide](../guides/view-selection-performance-testing.md)** — Testing view performance
+- **[View Selection Guide](../architecture/database/view-selection-guide.md)** — Choosing `v_` vs `tv_` for performance
 
-**Architecture & Database:**
+**Operations:**
 
-- **[Database Targeting](../architecture/database/database-targeting.md)** — Database-specific optimization
-- **[Arrow Plane Architecture](../architecture/database/arrow-plane.md)** — Columnar query optimization
-- **[Observability Architecture](./observability-architecture.md)** — Runtime performance monitoring
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- **[Observability & Monitoring](./observability.md)** — Runtime performance monitoring
