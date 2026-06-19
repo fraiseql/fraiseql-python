@@ -1,1454 +1,987 @@
-<!-- Skip to main content -->
+---
+title: "Full-Stack Blog: FraiseQL v1 Python Backend + React Frontend"
+description: Build a complete blog application with a FraiseQL v1 Python/PostgreSQL backend and a React frontend that consumes its GraphQL endpoint with Apollo Client.
+keywords: ["tutorial", "hands-on", "fullstack", "react", "apollo", "step-by-step"]
+tags: ["documentation", "tutorial"]
 ---
 
-title: Full-Stack Blog Application: Python Schema + React Frontend + FraiseQL Backend
-description: In this comprehensive full-stack tutorial, you'll build a complete Blog Application by:
-keywords: ["project", "hands-on", "schema", "learning", "example", "step-by-step"]
-tags: ["documentation", "reference"]
----
+# Full-Stack Blog: FraiseQL v1 Python Backend + React Frontend
 
-# Full-Stack Blog Application: Python Schema + React Frontend + FraiseQL Backend
-
-**Duration**: 90 minutes
-**Outcome**: Complete full-stack application with Python schema authoring, FraiseQL server, and React frontend
-**Prerequisites**: Python 3.10+, Node.js 18+, PostgreSQL 14+, FraiseQL CLI, Docker & Docker Compose
-**Focus**: End-to-end architecture showing Python authoring, compiled FraiseQL backend, React frontend
+**Duration**: ~75 minutes
+**Outcome**: A working blog with a FraiseQL Python backend on FastAPI and a React frontend talking to it over GraphQL
+**Prerequisites**: Python 3.13+, Node.js 18+, PostgreSQL 14+
+**Focus**: End-to-end flow — Python decorators define the schema, FraiseQL builds and serves it at runtime, React renders the data
 
 ---
 
 ## Overview
 
-In this comprehensive full-stack tutorial, you'll build a complete Blog Application by:
+In this tutorial you will build a blog application in two halves:
 
-1. **Authoring the schema in Python** with FraiseQL decorators
-2. **Compiling to optimized SQL** with the FraiseQL CLI
-3. **Deploying FraiseQL server** as the GraphQL backend (Rust runtime)
-4. **Building a React frontend** that queries the GraphQL API
+1. **Backend** — a [FraiseQL](../index.md) Python app. You define PostgreSQL `tb_`/`v_`/`fn_`
+   objects, declare GraphQL types and resolvers with `@fraiseql` decorators, and serve them
+   with FastAPI. The GraphQL schema is **built in memory at app startup** — there is no
+   compile step, no schema artifact, and no separate server binary.
+2. **Frontend** — a React app that uses **Apollo Client** to query and mutate against the
+   backend's `/graphql` endpoint at `http://localhost:8000/graphql`.
 
-### Architecture Flow
+### How FraiseQL v1 works
+
+FraiseQL v1 is a **runtime GraphQL framework for PostgreSQL**. The data model follows a CQRS split:
+
+- **Reads** come from PostgreSQL **views** (`v_*`) that expose a `data` JSONB column. Query
+  resolvers call `db.find` / `db.find_one` against those views.
+- **Writes** go through PostgreSQL **functions** (`fn_*`). Mutation resolvers call them with
+  `db.execute_function`; all write logic lives in the database.
 
 ```text
-<!-- Code example in TEXT -->
-┌─────────────────────────┐
-│   Developer Workstation │
-├─────────────────────────┤
-│ 1. Write Python Schema  │
-│    @FraiseQL.type       │
-│    @FraiseQL.query      │
-│    @FraiseQL.mutation   │
-└────────┬────────────────┘
-         │ python schema.py export
-         ↓
-┌──────────────────────────┐
-│   schema.json            │
-│ (types + queries + muts) │
-└────────┬─────────────────┘
-         │ FraiseQL-cli compile
-         ↓
-┌──────────────────────────────────┐
-│ schema.compiled.json             │
-│ (schema + SQL + config + security)
-└────────┬──────────────────────────┘
-         │ docker-compose up
-         ↓
-┌──────────────────────────────────┐
-│ Docker Environment               │
-├──────────────────────────────────┤
-│ PostgreSQL (port 5432)           │
-│ FraiseQL Server (port 8000)      │
-│   GraphQL Endpoint: /graphql     │
-│   Health: /health                │
-└────────┬──────────────────────────┘
-         │ HTTP/GraphQL (port 8000)
-         ↓
-┌──────────────────────────────────┐
-│ React Frontend (port 3000)       │
-├──────────────────────────────────┤
-│ Apollo Client                    │
-│ Components:                      │
-│  - PostList                      │
-│  - PostDetail                    │
-│  - CreatePost Form               │
-│  - Comments Section              │
-│  - Like Buttons                  │
-└──────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+React (Apollo Client, :5173)
+        │  HTTP POST /graphql
+        ▼
+FastAPI app (FraiseQL, :8000)        ← schema built in memory at startup
+        │  db.find / db.find_one      (reads)
+        │  db.execute_function        (writes)
+        ▼
+PostgreSQL (:5432)
+   tb_*  write tables  (source of truth)
+   v_*   read views    (expose `data` JSONB)
+   fn_*  functions     (mutation write logic)
+```
 
-### What You'll Build
+### What you'll build
 
-A **Full-Stack Blog Application** supporting:
+A blog supporting:
 
-- **Users**: Create and manage blog authors
-- **Posts**: Create, update, delete blog posts with author relationships
-- **Comments**: Add comments to posts with user relationships
-- **Likes**: Track post likes from users
+- **Users** — blog authors
+- **Posts** — create, update, delete, with an author relationship
+- **Comments** — add comments to posts
+- **Likes** — like and unlike posts
 
-### Key Concepts You'll Learn
+### Key concepts
 
-- **Python → JSON**: Authoring GraphQL schemas in Python
-- **CLI Compilation**: Compiling schema.json to optimized SQL
-- **FraiseQL Server**: Deploying the compiled schema as a GraphQL API
-- **React Integration**: Building UI components with Apollo Client
-- **End-to-End Flow**: From Python code to running browser application
-- **Docker Orchestration**: Managing multi-container services
+- **PostgreSQL-first modeling** — `tb_` tables, `v_` views with `data` JSONB, `fn_` functions
+- **Runtime schema** — `@fraiseql.type` / `@fraiseql.query` / `@fraiseql.mutation` assembled at startup
+- **FastAPI serving** — `create_fraiseql_app(...)` returns a FastAPI app you run with `uvicorn`
+- **React + Apollo Client** — queries, mutations with `Success | Error` unions, loading/error states
 
 ---
 
 ## Part 1: Project Setup
 
-### 1.1 Directory Structure
-
-Create the following project structure:
+### 1.1 Directory structure
 
 ```text
-<!-- Code example in TEXT -->
 fullstack-blog/
 ├── backend/
-│   ├── schema.py                      # Python schema definition
-│   ├── FraiseQL.toml                  # FraiseQL configuration
-│   ├── schema.json                    # Exported schema (generated)
-│   ├── schema.compiled.json           # Compiled schema (generated)
-│   ├── Dockerfile                     # FraiseQL server container
-│   └── requirements.txt               # Python dependencies
-├── frontend/
-│   ├── public/
-│   │   ├── index.html
-│   │   └── favicon.ico
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PostList.jsx
-│   │   │   ├── PostDetail.jsx
-│   │   │   ├── CreatePostForm.jsx
-│   │   │   ├── CommentSection.jsx
-│   │   │   └── LikeButton.jsx
-│   │   ├── pages/
-│   │   │   ├── HomePage.jsx
-│   │   │   └── PostPage.jsx
-│   │   ├── App.jsx
-│   │   ├── index.jsx
-│   │   ├── apollo-client.js
-│   │   └── App.css
-│   ├── package.json
-│   ├── .env.local
-│   ├── vite.config.js                # or webpack config
-│   └── .gitignore
-├── database/
-│   └── schema.sql                     # PostgreSQL DDL
-├── docker-compose.yml                 # Multi-container orchestration
-└── README.md                           # Getting started guide
-```text
-<!-- Code example in TEXT -->
+│   ├── app.py                # FraiseQL types, resolvers, and FastAPI app
+│   ├── schema.sql            # PostgreSQL DDL: tables, views, functions, seed data
+│   └── requirements.txt      # Python dependencies
+└── frontend/
+    ├── index.html
+    ├── src/
+    │   ├── components/
+    │   │   ├── PostList.jsx
+    │   │   ├── PostCard.jsx
+    │   │   ├── PostDetail.jsx
+    │   │   ├── CommentSection.jsx
+    │   │   └── LikeButton.jsx
+    │   ├── apollo-client.js
+    │   ├── queries.js
+    │   ├── App.jsx
+    │   └── main.jsx
+    ├── package.json
+    └── .env.local
+```
 
-### 1.2 Initialize Backend Project
+### 1.2 Initialize the backend
 
 ```bash
-<!-- Code example in BASH -->
-# Create backend directory
 mkdir -p fullstack-blog/backend
 cd fullstack-blog/backend
 
-# Create Python virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
 
-# Install dependencies
 pip install -r requirements.txt
-```text
-<!-- Code example in TEXT -->
+```
 
-### 1.3 Initialize Frontend Project
+`backend/requirements.txt`:
+
+```text
+fraiseql
+uvicorn[standard]
+```
+
+### 1.3 Initialize the frontend
 
 ```bash
-<!-- Code example in BASH -->
-# Create React app (from project root)
+# From the project root
 cd fullstack-blog
 npm create vite@latest frontend -- --template react
 cd frontend
 npm install
 
-# Install Apollo Client and GraphQL
-npm install @apollo/client graphql
-npm install graphql-tag
+# GraphQL client and router
+npm install @apollo/client graphql react-router-dom
 
-# Development server
-npm run dev  # Runs on http://localhost:5173
-```text
-<!-- Code example in TEXT -->
+# Dev server runs on http://localhost:5173
+npm run dev
+```
 
 ---
 
-## Part 2: Database Schema (PostgreSQL)
+## Part 2: PostgreSQL Schema
 
-### 2.1 Creating the PostgreSQL Schema
+FraiseQL v1 reads from views that expose a `data` JSONB column and writes through functions.
+Each entity uses the **trinity** identifier pattern:
 
-Create `database/schema.sql`:
+- `pk_<entity>` — internal `BIGINT` primary key (fast joins, **never exposed** in GraphQL)
+- `id` — public `UUID` (stable, this becomes the GraphQL `id`)
+- (optionally an `identifier` slug — not used here)
+
+Create `backend/schema.sql`:
 
 ```sql
-<!-- Code example in SQL -->
--- Enable UUID and timestamps
+-- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Drop existing objects (development only!)
-DROP VIEW IF EXISTS v_comments CASCADE;
-DROP VIEW IF EXISTS v_posts CASCADE;
-DROP VIEW IF EXISTS v_users CASCADE;
-DROP TABLE IF EXISTS likes CASCADE;
-DROP TABLE IF EXISTS comments CASCADE;
-DROP TABLE IF EXISTS posts CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+-- Reset (development only!)
+DROP VIEW IF EXISTS v_comment CASCADE;
+DROP VIEW IF EXISTS v_post CASCADE;
+DROP VIEW IF EXISTS v_user CASCADE;
+DROP TABLE IF EXISTS tb_like CASCADE;
+DROP TABLE IF EXISTS tb_comment CASCADE;
+DROP TABLE IF EXISTS tb_post CASCADE;
+DROP TABLE IF EXISTS tb_user CASCADE;
 
--- Create users table
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    bio TEXT,
-    avatar_url VARCHAR(500),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+-- ============================================================
+-- Write tables (tb_*): source of truth
+-- ============================================================
+
+CREATE TABLE tb_user (
+    pk_user     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id          UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    name        TEXT NOT NULL,
+    email       TEXT NOT NULL UNIQUE,
+    bio         TEXT,
+    avatar_url  TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Create posts table
-CREATE TABLE posts (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(500) NOT NULL,
-    content TEXT NOT NULL,
-    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    published BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE tb_post (
+    pk_post     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id          UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    fk_author   BIGINT NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
+    title       TEXT NOT NULL,
+    content     TEXT NOT NULL,
+    published   BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Create comments table
-CREATE TABLE comments (
-    id SERIAL PRIMARY KEY,
-    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE tb_comment (
+    pk_comment  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id          UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    fk_post     BIGINT NOT NULL REFERENCES tb_post(pk_post) ON DELETE CASCADE,
+    fk_author   BIGINT NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
+    content     TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Create likes table (many-to-many: users can like posts)
-CREATE TABLE likes (
-    id SERIAL PRIMARY KEY,
-    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(post_id, user_id)  -- Each user can like each post once
+CREATE TABLE tb_like (
+    pk_like     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id          UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    fk_post     BIGINT NOT NULL REFERENCES tb_post(pk_post) ON DELETE CASCADE,
+    fk_user     BIGINT NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (fk_post, fk_user)   -- each user likes each post at most once
 );
 
--- Create indexes for common queries
-CREATE INDEX idx_posts_author_id ON posts(author_id);
-CREATE INDEX idx_posts_published ON posts(published);
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
-CREATE INDEX idx_likes_post_id ON likes(post_id);
-CREATE INDEX idx_likes_user_id ON likes(user_id);
+CREATE INDEX idx_post_author   ON tb_post(fk_author);
+CREATE INDEX idx_post_published ON tb_post(published);
+CREATE INDEX idx_comment_post  ON tb_comment(fk_post);
+CREATE INDEX idx_like_post     ON tb_like(fk_post);
 
--- View: All users
-CREATE VIEW v_users AS
+-- ============================================================
+-- Read views (v_*): every view carries `id` (UUID) + a `data` JSONB.
+-- Never put pk_*/fk_* inside `data`.
+-- ============================================================
+
+CREATE VIEW v_user AS
 SELECT
-    id,
-    name,
-    email,
-    bio,
-    avatar_url,
-    created_at,
-    updated_at
-FROM users
-ORDER BY created_at DESC;
+    u.id,
+    jsonb_build_object(
+        'id', u.id,
+        'name', u.name,
+        'email', u.email,
+        'bio', u.bio,
+        'avatarUrl', u.avatar_url,
+        'createdAt', u.created_at,
+        'updatedAt', u.updated_at
+    ) AS data
+FROM tb_user u;
 
--- View: All posts with author information
-CREATE VIEW v_posts AS
-SELECT
-    p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    p.published,
-    p.created_at,
-    p.updated_at,
-    u.id AS author_id,
-    u.name AS author_name,
-    u.email AS author_email,
-    (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count
-FROM posts p
-JOIN users u ON p.author_id = u.id
-ORDER BY p.created_at DESC;
-
--- View: Single post by ID with author and comments
-CREATE VIEW v_post_detail AS
+CREATE VIEW v_post AS
 SELECT
     p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    p.published,
-    p.created_at,
-    p.updated_at,
-    u.id AS author_id,
-    u.name AS author_name,
-    u.email AS author_email,
-    u.bio AS author_bio,
-    (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
-    (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count
-FROM posts p
-JOIN users u ON p.author_id = u.id;
+    p.published,                                      -- filterable column
+    jsonb_build_object(
+        'id', p.id,
+        'title', p.title,
+        'content', p.content,
+        'published', p.published,
+        'authorName', a.name,
+        'authorEmail', a.email,
+        'likeCount', (SELECT count(*) FROM tb_like l WHERE l.fk_post = p.pk_post),
+        'commentCount', (SELECT count(*) FROM tb_comment c WHERE c.fk_post = p.pk_post),
+        'createdAt', p.created_at,
+        'updatedAt', p.updated_at
+    ) AS data
+FROM tb_post p
+JOIN tb_user a ON a.pk_user = p.fk_author;
 
--- View: Comments with author information
-CREATE VIEW v_comments AS
+CREATE VIEW v_comment AS
 SELECT
     c.id,
-    c.post_id,
-    c.user_id,
-    c.content,
-    c.created_at,
-    u.id AS author_id,
-    u.name AS author_name,
-    u.email AS author_email,
-    u.avatar_url AS author_avatar_url
-FROM comments c
-JOIN users u ON c.user_id = u.id
-ORDER BY c.created_at DESC;
+    p.id AS post_id,                                  -- filterable column
+    jsonb_build_object(
+        'id', c.id,
+        'content', c.content,
+        'authorName', a.name,
+        'authorAvatarUrl', a.avatar_url,
+        'createdAt', c.created_at
+    ) AS data
+FROM tb_comment c
+JOIN tb_post p ON p.pk_post = c.fk_post
+JOIN tb_user a ON a.pk_user = c.fk_author;
 
--- Function: Create a new user
-CREATE FUNCTION fn_create_user(
-    p_name VARCHAR,
-    p_email VARCHAR,
-    p_bio TEXT DEFAULT NULL,
-    p_avatar_url VARCHAR DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    name VARCHAR,
-    email VARCHAR,
-    bio TEXT,
-    avatar_url VARCHAR,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
+-- ============================================================
+-- Functions (fn_*): all write logic. Each takes a single JSONB
+-- argument and returns a JSONB result with a `success` flag.
+-- ============================================================
+
+CREATE FUNCTION fn_create_user(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    new_id UUID;
 BEGIN
-    RETURN QUERY
-    INSERT INTO users (name, email, bio, avatar_url)
-    VALUES (p_name, p_email, p_bio, p_avatar_url)
-    RETURNING users.id, users.name, users.email, users.bio, users.avatar_url, users.created_at, users.updated_at;
+    INSERT INTO tb_user (name, email, bio, avatar_url)
+    VALUES (
+        input->>'name',
+        input->>'email',
+        input->>'bio',
+        input->>'avatarUrl'
+    )
+    RETURNING id INTO new_id;
+
+    RETURN jsonb_build_object('success', true, 'id', new_id);
+EXCEPTION WHEN unique_violation THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Email already in use');
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Update a user
-CREATE FUNCTION fn_update_user(
-    p_id INTEGER,
-    p_name VARCHAR DEFAULT NULL,
-    p_bio TEXT DEFAULT NULL,
-    p_avatar_url VARCHAR DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    name VARCHAR,
-    email VARCHAR,
-    bio TEXT,
-    avatar_url VARCHAR,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
+CREATE FUNCTION fn_create_post(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    author_pk BIGINT;
+    new_id    UUID;
 BEGIN
-    UPDATE users
-    SET
-        name = COALESCE(p_name, name),
-        bio = COALESCE(p_bio, bio),
-        avatar_url = COALESCE(p_avatar_url, avatar_url),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_id;
+    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'authorId')::uuid;
+    IF author_pk IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Author not found');
+    END IF;
 
-    RETURN QUERY
-    SELECT users.id, users.name, users.email, users.bio, users.avatar_url, users.created_at, users.updated_at
-    FROM users
-    WHERE users.id = p_id;
+    INSERT INTO tb_post (fk_author, title, content, published)
+    VALUES (
+        author_pk,
+        input->>'title',
+        input->>'content',
+        COALESCE((input->>'published')::boolean, false)
+    )
+    RETURNING id INTO new_id;
+
+    RETURN jsonb_build_object('success', true, 'id', new_id);
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Create a new post
-CREATE FUNCTION fn_create_post(
-    p_title VARCHAR,
-    p_content TEXT,
-    p_author_id INTEGER,
-    p_published BOOLEAN DEFAULT FALSE
-)
-RETURNS TABLE (
-    id INTEGER,
-    title VARCHAR,
-    content TEXT,
-    author_id INTEGER,
-    published BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
+CREATE FUNCTION fn_update_post(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    target_pk BIGINT;
 BEGIN
-    RETURN QUERY
-    INSERT INTO posts (title, content, author_id, published)
-    VALUES (p_title, p_content, p_author_id, p_published)
-    RETURNING posts.id, posts.title, posts.content, posts.author_id, posts.published, posts.created_at, posts.updated_at;
+    SELECT pk_post INTO target_pk FROM tb_post WHERE id = (input->>'id')::uuid;
+    IF target_pk IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Post not found');
+    END IF;
+
+    UPDATE tb_post
+    SET title      = COALESCE(input->>'title', title),
+        content    = COALESCE(input->>'content', content),
+        published  = COALESCE((input->>'published')::boolean, published),
+        updated_at = now()
+    WHERE pk_post = target_pk;
+
+    RETURN jsonb_build_object('success', true, 'id', input->>'id');
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Update a post
-CREATE FUNCTION fn_update_post(
-    p_id INTEGER,
-    p_title VARCHAR DEFAULT NULL,
-    p_content TEXT DEFAULT NULL,
-    p_published BOOLEAN DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    title VARCHAR,
-    content TEXT,
-    author_id INTEGER,
-    published BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
+CREATE FUNCTION fn_delete_post(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    deleted INT;
 BEGIN
-    UPDATE posts
-    SET
-        title = COALESCE(p_title, title),
-        content = COALESCE(p_content, content),
-        published = COALESCE(p_published, published),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_id;
-
-    RETURN QUERY
-    SELECT posts.id, posts.title, posts.content, posts.author_id, posts.published, posts.created_at, posts.updated_at
-    FROM posts
-    WHERE posts.id = p_id;
+    DELETE FROM tb_post WHERE id = (input->>'id')::uuid;
+    GET DIAGNOSTICS deleted = ROW_COUNT;
+    IF deleted = 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Post not found');
+    END IF;
+    RETURN jsonb_build_object('success', true, 'id', input->>'id');
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Delete a post
-CREATE FUNCTION fn_delete_post(p_id INTEGER)
-RETURNS BOOLEAN AS $$
+CREATE FUNCTION fn_create_comment(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    post_pk   BIGINT;
+    author_pk BIGINT;
+    new_id    UUID;
 BEGIN
-    DELETE FROM posts WHERE id = p_id;
-    RETURN FOUND;
+    SELECT pk_post INTO post_pk   FROM tb_post WHERE id = (input->>'postId')::uuid;
+    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+    IF post_pk IS NULL OR author_pk IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Post or user not found');
+    END IF;
+
+    INSERT INTO tb_comment (fk_post, fk_author, content)
+    VALUES (post_pk, author_pk, input->>'content')
+    RETURNING id INTO new_id;
+
+    RETURN jsonb_build_object('success', true, 'id', new_id);
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Create a comment
-CREATE FUNCTION fn_create_comment(
-    p_post_id INTEGER,
-    p_user_id INTEGER,
-    p_content TEXT
-)
-RETURNS TABLE (
-    id INTEGER,
-    post_id INTEGER,
-    user_id INTEGER,
-    content TEXT,
-    created_at TIMESTAMP WITH TIME ZONE
-) AS $$
+CREATE FUNCTION fn_like_post(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    post_pk BIGINT;
+    user_pk BIGINT;
 BEGIN
-    RETURN QUERY
-    INSERT INTO comments (post_id, user_id, content)
-    VALUES (p_post_id, p_user_id, p_content)
-    RETURNING comments.id, comments.post_id, comments.user_id, comments.content, comments.created_at;
+    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'postId')::uuid;
+    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+    IF post_pk IS NULL OR user_pk IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Post or user not found');
+    END IF;
+
+    INSERT INTO tb_like (fk_post, fk_user)
+    VALUES (post_pk, user_pk)
+    ON CONFLICT (fk_post, fk_user) DO NOTHING;
+
+    RETURN jsonb_build_object('success', true, 'id', input->>'postId');
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Like a post (insert if not exists, or throw error if already liked)
-CREATE FUNCTION fn_like_post(p_post_id INTEGER, p_user_id INTEGER)
-RETURNS TABLE (
-    id INTEGER,
-    post_id INTEGER,
-    user_id INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE
-) AS $$
+CREATE FUNCTION fn_unlike_post(input jsonb)
+RETURNS jsonb AS $$
+DECLARE
+    post_pk BIGINT;
+    user_pk BIGINT;
 BEGIN
-    RETURN QUERY
-    INSERT INTO likes (post_id, user_id)
-    VALUES (p_post_id, p_user_id)
-    ON CONFLICT (post_id, user_id) DO NOTHING
-    RETURNING likes.id, likes.post_id, likes.user_id, likes.created_at;
+    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'postId')::uuid;
+    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+
+    DELETE FROM tb_like WHERE fk_post = post_pk AND fk_user = user_pk;
+
+    RETURN jsonb_build_object('success', true, 'id', input->>'postId');
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: Unlike a post
-CREATE FUNCTION fn_unlike_post(p_post_id INTEGER, p_user_id INTEGER)
-RETURNS BOOLEAN AS $$
-BEGIN
-    DELETE FROM likes WHERE post_id = p_post_id AND user_id = p_user_id;
-    RETURN FOUND;
-END;
-$$ LANGUAGE plpgsql;
+-- ============================================================
+-- Seed data
+-- ============================================================
 
--- Sample data for testing
-INSERT INTO users (name, email, bio, avatar_url) VALUES
-    ('Alice Johnson', 'alice@example.com', 'Full-stack developer and tech writer', 'https://api.example.com/avatars/alice.jpg'),
-    ('Bob Smith', 'bob@example.com', 'DevOps engineer passionate about databases', 'https://api.example.com/avatars/bob.jpg'),
-    ('Carol White', 'carol@example.com', 'Frontend specialist and UX enthusiast', 'https://api.example.com/avatars/carol.jpg');
+INSERT INTO tb_user (name, email, bio, avatar_url) VALUES
+    ('Alice Johnson', 'alice@example.com', 'Full-stack developer and tech writer', NULL),
+    ('Bob Smith',     'bob@example.com',   'DevOps engineer who loves databases',  NULL),
+    ('Carol White',   'carol@example.com', 'Frontend specialist and UX enthusiast', NULL);
 
-INSERT INTO posts (title, content, author_id, published) VALUES
-    ('Getting Started with GraphQL', 'GraphQL is a query language for APIs...', 1, true),
-    ('Database Design Best Practices', 'When designing a database schema...', 2, true),
-    ('React Hooks Deep Dive', 'Hooks allow you to use state and other React features...', 3, true);
+INSERT INTO tb_post (fk_author, title, content, published) VALUES
+    (1, 'Getting Started with GraphQL', 'GraphQL is a query language for APIs...', true),
+    (2, 'Database Design Best Practices', 'When designing a schema...', true),
+    (3, 'React Hooks Deep Dive', 'Hooks let you use state and other features...', true);
 
-INSERT INTO comments (post_id, user_id, content) VALUES
+INSERT INTO tb_comment (fk_post, fk_author, content) VALUES
     (1, 2, 'Great introduction to GraphQL!'),
-    (1, 3, 'This helped me understand queries vs mutations'),
-    (2, 1, 'The normalization section was really clear'),
-    (3, 1, 'Best explanation of useEffect I have seen');
+    (1, 3, 'This clarified queries vs mutations for me'),
+    (2, 1, 'The normalization section was really clear');
 
-INSERT INTO likes (post_id, user_id) VALUES
-    (1, 2), (1, 3),
-    (2, 1), (2, 3),
-    (3, 1);
-```text
-<!-- Code example in TEXT -->
+INSERT INTO tb_like (fk_post, fk_user) VALUES
+    (1, 2), (1, 3), (2, 1), (2, 3), (3, 1);
+```
 
-### 2.2 Loading the Schema
+Load it into a database:
 
 ```bash
-<!-- Code example in BASH -->
-# From project root with PostgreSQL running
-psql -U postgres -d blog_db -f database/schema.sql
-
-# Or with docker-compose (after it's set up):
-docker-compose exec postgres psql -U blog_user -d blog_db -f /docker-entrypoint-initdb.d/schema.sql
-```text
-<!-- Code example in TEXT -->
+createdb blog_db
+psql blog_db -f backend/schema.sql
+```
 
 ---
 
-## Part 3: Python Schema Definition
+## Part 3: FraiseQL Backend (Python)
 
-### 3.1 Backend Dependencies
+This is the whole backend: types, query resolvers, mutation resolvers, and the FastAPI app —
+all in one file, assembled in memory when the app starts.
 
-Create `backend/requirements.txt`:
-
-```text
-<!-- Code example in TEXT -->
-FraiseQL==2.0.0a1
-pydantic==2.5.0
-```text
-<!-- Code example in TEXT -->
-
-### 3.2 Python Schema Definition
-
-Create `backend/schema.py`:
+Create `backend/app.py`:
 
 ```python
-<!-- Code example in Python -->
-"""
-FraiseQL Blog API Schema
+"""FraiseQL blog backend.
 
-This module defines the GraphQL schema for a blog application using Python
-with FraiseQL decorators. The schema is compiled to optimized SQL at build time.
+The GraphQL schema is built in memory at startup from the @fraiseql decorators
+below and served over FastAPI. Reads come from v_* views; writes go through
+fn_* PostgreSQL functions (CQRS).
 """
 
-from typing import Optional
-from FraiseQL import schema
+import os
 from datetime import datetime
 
-# Initialize the FraiseQL schema
-blog_schema = schema.Schema(
-    name="blog-api",
-    version="1.0.0",
-    description="GraphQL Blog API with FraiseQL"
-)
+import uvicorn
 
-# ============================================================================
-# Types
-# ============================================================================
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID
 
-@blog_schema.type(
-    name="User",
-    description="A user account in the blog system"
-)
+# ============================================================
+# Types — each maps to a v_* view and reads from its `data` JSONB
+# ============================================================
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    """User type representing blog authors and commenters."""
-    id: UUID  # UUID v4 for GraphQL ID
+    """A blog author or commenter."""
+
+    id: ID
     name: str
     email: str
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    bio: str | None
+    avatar_url: str | None
     created_at: datetime
     updated_at: datetime
 
 
-@blog_schema.type(
-    name="Post",
-    description="A blog post with author and engagement metrics"
-)
+@fraiseql.type(sql_source="v_post", jsonb_column="data")
 class Post:
-    """Post type representing individual blog articles."""
-    id: UUID  # UUID v4 for GraphQL ID
+    """A blog post with denormalized author and engagement counts."""
+
+    id: ID
     title: str
     content: str
-    author_id: UUID  # UUID v4 for GraphQL ID
     published: bool
+    author_name: str
+    author_email: str
+    like_count: int
+    comment_count: int
     created_at: datetime
     updated_at: datetime
-    # Computed fields
-    author_name: Optional[str] = None
-    author_email: Optional[str] = None
-    like_count: Optional[int] = None
-    comment_count: Optional[int] = None
 
 
-@blog_schema.type(
-    name="Comment",
-    description="A comment on a blog post"
-)
+@fraiseql.type(sql_source="v_comment", jsonb_column="data")
 class Comment:
-    """Comment type for user comments on posts."""
-    id: UUID  # UUID v4 for GraphQL ID
-    post_id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
+    """A comment on a post."""
+
+    id: ID
     content: str
-    created_at: datetime
-    # Author info
-    author_id: Optional[int] = None
-    author_name: Optional[str] = None
-    author_email: Optional[str] = None
-    author_avatar_url: Optional[str] = None
-
-
-@blog_schema.type(
-    name="Like",
-    description="A like on a post"
-)
-class Like:
-    """Like type representing post likes."""
-    id: UUID  # UUID v4 for GraphQL ID
-    post_id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
+    author_name: str
+    author_avatar_url: str | None
     created_at: datetime
 
 
-@blog_schema.type(
-    name="CreateUserInput",
-    kind="INPUT",
-    description="Input for creating a new user"
-)
-class CreateUserInput:
-    """Input type for user creation."""
-    name: str
-    email: str
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+# ============================================================
+# Inputs and result types
+# ============================================================
 
 
-@blog_schema.type(
-    name="UpdateUserInput",
-    kind="INPUT",
-    description="Input for updating a user"
-)
-class UpdateUserInput:
-    """Input type for user updates."""
-    name: Optional[str] = None
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
-
-
-@blog_schema.type(
-    name="CreatePostInput",
-    kind="INPUT",
-    description="Input for creating a new post"
-)
+@fraiseql.input
 class CreatePostInput:
-    """Input type for post creation."""
     title: str
     content: str
-    author_id: UUID  # UUID v4 for GraphQL ID
+    author_id: ID
     published: bool = False
 
 
-@blog_schema.type(
-    name="UpdatePostInput",
-    kind="INPUT",
-    description="Input for updating a post"
-)
+@fraiseql.input
 class UpdatePostInput:
-    """Input type for post updates."""
-    title: Optional[str] = None
-    content: Optional[str] = None
-    published: Optional[bool] = None
+    id: ID
+    title: str | None = None
+    content: str | None = None
+    published: bool | None = None
 
 
-@blog_schema.type(
-    name="CreateCommentInput",
-    kind="INPUT",
-    description="Input for creating a comment"
-)
+@fraiseql.input
 class CreateCommentInput:
-    """Input type for comment creation."""
-    post_id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
+    post_id: ID
+    user_id: ID
     content: str
 
 
-# ============================================================================
-# Queries
-# ============================================================================
+@fraiseql.success
+class PostSuccess:
+    post: Post
 
-@blog_schema.query(
-    name="users",
-    return_type="User",
-    returns_list=True,
-    description="Get all users in the system"
+
+@fraiseql.success
+class CommentSuccess:
+    comment: Comment
+
+
+@fraiseql.success
+class DeleteSuccess:
+    deleted_id: ID
+
+
+@fraiseql.success
+class LikeSuccess:
+    post: Post
+
+
+@fraiseql.error
+class MutationError:
+    message: str
+    code: str = "MUTATION_ERROR"
+
+
+# ============================================================
+# Queries — read from v_* views via the repository
+# ============================================================
+
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    """Get all users."""
+    db = info.context["db"]
+    return await db.find("v_user", "users", info, order_by=[("created_at", "DESC")])
+
+
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    """Get a single user by id."""
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, id=id)
+
+
+@fraiseql.query
+async def posts(info, published_only: bool = True) -> list[Post]:
+    """Get posts, newest first."""
+    db = info.context["db"]
+    where = {"published": {"eq": True}} if published_only else {}
+    return await db.find(
+        "v_post", "posts", info, where=where, order_by=[("created_at", "DESC")]
+    )
+
+
+@fraiseql.query
+async def post(info, id: ID) -> Post | None:
+    """Get a single post by id."""
+    db = info.context["db"]
+    return await db.find_one("v_post", "post", info, id=id)
+
+
+@fraiseql.query
+async def comments(info, post_id: ID) -> list[Comment]:
+    """Get the comments for a post."""
+    db = info.context["db"]
+    return await db.find(
+        "v_comment",
+        "comments",
+        info,
+        where={"post_id": {"eq": post_id}},
+        order_by=[("created_at", "ASC")],
+    )
+
+
+# ============================================================
+# Mutations — call fn_* functions; return a Success | Error union
+# ============================================================
+
+
+@fraiseql.mutation
+async def create_post(info, input: CreatePostInput) -> PostSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_post",
+        {
+            "title": input.title,
+            "content": input.content,
+            "authorId": str(input.author_id),
+            "published": input.published,
+        },
+    )
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not create post"))
+
+    created = await db.find_one("v_post", "post", info, id=result["id"])
+    return PostSuccess(post=created)
+
+
+@fraiseql.mutation
+async def update_post(info, input: UpdatePostInput) -> PostSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_update_post",
+        {
+            "id": str(input.id),
+            "title": input.title,
+            "content": input.content,
+            "published": input.published,
+        },
+    )
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not update post"))
+
+    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    return PostSuccess(post=updated)
+
+
+@fraiseql.mutation
+async def delete_post(info, id: ID) -> DeleteSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function("fn_delete_post", {"id": str(id)})
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not delete post"))
+    return DeleteSuccess(deleted_id=result["id"])
+
+
+@fraiseql.mutation
+async def create_comment(info, input: CreateCommentInput) -> CommentSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_comment",
+        {
+            "postId": str(input.post_id),
+            "userId": str(input.user_id),
+            "content": input.content,
+        },
+    )
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not create comment"))
+
+    created = await db.find_one("v_comment", "comment", info, id=result["id"])
+    return CommentSuccess(comment=created)
+
+
+@fraiseql.mutation
+async def like_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_like_post", {"postId": str(post_id), "userId": str(user_id)}
+    )
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not like post"))
+
+    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    return LikeSuccess(post=updated)
+
+
+@fraiseql.mutation
+async def unlike_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_unlike_post", {"postId": str(post_id), "userId": str(user_id)}
+    )
+    if not result.get("success"):
+        return MutationError(message=result.get("message", "Could not unlike post"))
+
+    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    return LikeSuccess(post=updated)
+
+
+# ============================================================
+# Build the FastAPI app (schema assembled in memory at startup)
+# ============================================================
+
+app = create_fraiseql_app(
+    database_url=os.getenv("DATABASE_URL", "postgresql://localhost/blog_db"),
+    types=[User, Post, Comment],
+    queries=[users, user, posts, post, comments],
+    mutations=[create_post, update_post, delete_post, create_comment, like_post, unlike_post],
+    production=False,  # exposes the GraphQL playground at /graphql
 )
-def get_users(
-    limit: int = 100,
-    offset: int = 0
-) -> list[User]:
-    """
-    Fetch all users with pagination.
 
-    Args:
-        limit: Maximum number of users to return (default: 100)
-        offset: Number of users to skip (default: 0)
-
-    Returns:
-        List of User objects
-    """
-    return []  # Implementation handled by FraiseQL
-
-
-@blog_schema.query(
-    name="user",
-    return_type="User",
-    returns_list=False,
-    nullable=True,
-    description="Get a single user by ID"
-)
-def get_user(user_id: int) -> Optional[User]:
-    """
-    Fetch a single user by ID.
-
-    Args:
-        user_id: The ID of the user to fetch
-
-    Returns:
-        User object or None if not found
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.query(
-    name="posts",
-    return_type="Post",
-    returns_list=True,
-    description="Get all published posts with pagination"
-)
-def get_posts(
-    limit: int = 50,
-    offset: int = 0
-) -> list[Post]:
-    """
-    Fetch all published posts with pagination and author info.
-
-    Args:
-        limit: Maximum number of posts to return (default: 50)
-        offset: Number of posts to skip (default: 0)
-
-    Returns:
-        List of Post objects with author information and engagement metrics
-    """
-    return []  # Implementation handled by FraiseQL
-
-
-@blog_schema.query(
-    name="post",
-    return_type="Post",
-    returns_list=False,
-    nullable=True,
-    description="Get a single post by ID with full details"
-)
-def get_post(post_id: int) -> Optional[Post]:
-    """
-    Fetch a single post by ID with full details.
-
-    Args:
-        post_id: The ID of the post to fetch
-
-    Returns:
-        Post object with author info and engagement metrics, or None if not found
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.query(
-    name="postsByAuthor",
-    return_type="Post",
-    returns_list=True,
-    description="Get all posts by a specific author"
-)
-def get_posts_by_author(
-    author_id: int,
-    limit: int = 50,
-    offset: int = 0
-) -> list[Post]:
-    """
-    Fetch posts by a specific author.
-
-    Args:
-        author_id: The ID of the author
-        limit: Maximum number of posts to return
-        offset: Number of posts to skip
-
-    Returns:
-        List of Post objects by the specified author
-    """
-    return []  # Implementation handled by FraiseQL
-
-
-@blog_schema.query(
-    name="comments",
-    return_type="Comment",
-    returns_list=True,
-    description="Get all comments for a post"
-)
-def get_comments(
-    post_id: int,
-    limit: int = 100,
-    offset: int = 0
-) -> list[Comment]:
-    """
-    Fetch comments for a specific post.
-
-    Args:
-        post_id: The ID of the post
-        limit: Maximum number of comments to return
-        offset: Number of comments to skip
-
-    Returns:
-        List of Comment objects with author information
-    """
-    return []  # Implementation handled by FraiseQL
-
-
-# ============================================================================
-# Mutations
-# ============================================================================
-
-@blog_schema.mutation(
-    name="createUser",
-    return_type="User",
-    returns_list=False,
-    description="Create a new user account"
-)
-def create_user(input_data: CreateUserInput) -> User:
-    """
-    Create a new user account.
-
-    Args:
-        input_data: User creation input
-
-    Returns:
-        The created User object
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="updateUser",
-    return_type="User",
-    returns_list=False,
-    nullable=True,
-    description="Update an existing user"
-)
-def update_user(user_id: int, input_data: UpdateUserInput) -> Optional[User]:
-    """
-    Update an existing user.
-
-    Args:
-        user_id: The ID of the user to update
-        input_data: User update input
-
-    Returns:
-        The updated User object, or None if not found
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="createPost",
-    return_type="Post",
-    returns_list=False,
-    description="Create a new blog post"
-)
-def create_post(input_data: CreatePostInput) -> Post:
-    """
-    Create a new blog post.
-
-    Args:
-        input_data: Post creation input
-
-    Returns:
-        The created Post object
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="updatePost",
-    return_type="Post",
-    returns_list=False,
-    nullable=True,
-    description="Update an existing post"
-)
-def update_post(post_id: int, input_data: UpdatePostInput) -> Optional[Post]:
-    """
-    Update an existing post.
-
-    Args:
-        post_id: The ID of the post to update
-        input_data: Post update input
-
-    Returns:
-        The updated Post object, or None if not found
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="deletePost",
-    return_type="Post",
-    returns_list=False,
-    nullable=True,
-    description="Delete a blog post"
-)
-def delete_post(post_id: int) -> Optional[Post]:
-    """
-    Delete a blog post.
-
-    Args:
-        post_id: The ID of the post to delete
-
-    Returns:
-        The deleted Post object, or None if not found
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="createComment",
-    return_type="Comment",
-    returns_list=False,
-    description="Create a new comment on a post"
-)
-def create_comment(input_data: CreateCommentInput) -> Comment:
-    """
-    Create a new comment on a post.
-
-    Args:
-        input_data: Comment creation input
-
-    Returns:
-        The created Comment object
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="likePost",
-    return_type="Like",
-    returns_list=False,
-    description="Like a blog post"
-)
-def like_post(post_id: int, user_id: int) -> Like:
-    """
-    Like a blog post. Prevents duplicate likes.
-
-    Args:
-        post_id: The ID of the post to like
-        user_id: The ID of the user liking the post
-
-    Returns:
-        The Like object
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-@blog_schema.mutation(
-    name="unlikePost",
-    return_type="Like",
-    returns_list=False,
-    nullable=True,
-    description="Unlike a blog post"
-)
-def unlike_post(post_id: int, user_id: int) -> Optional[Like]:
-    """
-    Remove a like from a blog post.
-
-    Args:
-        post_id: The ID of the post to unlike
-        user_id: The ID of the user removing their like
-
-    Returns:
-        The removed Like object, or None if the like didn't exist
-    """
-    return None  # Implementation handled by FraiseQL
-
-
-# ============================================================================
-# Schema Export
-# ============================================================================
 
 if __name__ == "__main__":
-    import json
-    import sys
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
 
-    # Export schema to JSON
-    try:
-        schema_json = blog_schema.to_json()
+A few things to note:
 
-        # Write to file
-        with open("schema.json", "w") as f:
-            json.dump(schema_json, f, indent=2)
+- `@fraiseql.type(sql_source="v_post", jsonb_column="data")` ties the GraphQL type to a view.
+  FraiseQL reads only the fields the client requested out of the `data` JSONB.
+- Query resolvers receive `info`; `db = info.context["db"]` is the CQRS repository. Its read
+  methods are `db.find(view, field_name, info, **filters)` and
+  `db.find_one(view, field_name, info, id=...)`.
+- Mutations call PostgreSQL functions with `db.execute_function("fn_x", {...})` and return a
+  `Success | Error` union. FraiseQL exposes that union to GraphQL so the client can branch on
+  the result with inline fragments.
+- Snake_case Python fields (`author_name`, `like_count`) are exposed as camelCase in GraphQL
+  (`authorName`, `likeCount`).
 
-        print("✓ Schema exported to schema.json")
-        print(f"  Types: {len(schema_json.get('types', []))}")
-        print(f"  Queries: {len(schema_json.get('queries', []))}")
-        print(f"  Mutations: {len(schema_json.get('mutations', []))}")
+### 3.1 Enable CORS for the React dev server
 
-    except Exception as e:
-        print(f"✗ Error exporting schema: {e}", file=sys.stderr)
-        sys.exit(1)
-```text
-<!-- Code example in TEXT -->
+The browser will call the API from `http://localhost:5173`, a different origin, so the backend
+must allow it. FraiseQL's config exposes CORS fields — enable them through a `FraiseQLConfig`
+passed to `create_fraiseql_app`:
 
-### 3.3 Exporting the Schema
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-```bash
-<!-- Code example in BASH -->
-# From backend directory
-python schema.py
+config = FraiseQLConfig(
+    database_url=os.getenv("DATABASE_URL", "postgresql://localhost/blog_db"),
+    cors_enabled=True,
+    cors_origins=["http://localhost:5173"],
+    cors_methods=["GET", "POST"],
+    cors_headers=["Content-Type", "Authorization"],
+)
 
-# Output:
-# ✓ Schema exported to schema.json
-#   Types: 8
-#   Queries: 6
-#   Mutations: 8
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(
+    config=config,
+    types=[User, Post, Comment],
+    queries=[users, user, posts, post, comments],
+    mutations=[create_post, update_post, delete_post, create_comment, like_post, unlike_post],
+    production=False,
+)
+```
 
-This generates `schema.json` containing all types, queries, and mutations.
+If you prefer, you can skip the FraiseQL CORS config and add standard FastAPI CORS middleware
+to the returned app instead — `create_fraiseql_app` returns a normal FastAPI instance:
 
----
+```python
+from fastapi.middleware.cors import CORSMiddleware
 
-## Part 4: Compile with FraiseQL CLI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+```
 
-### 4.1 FraiseQL Configuration
-
-Create `backend/FraiseQL.toml`:
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL]
-name = "blog-api"
-version = "1.0.0"
-description = "Full-stack blog API with FraiseQL"
-
-[FraiseQL.database]
-adapter = "postgresql"
-host = "localhost"
-port = 5432
-name = "blog_db"
-user = "blog_user"
-password = "blog_password"
-
-[FraiseQL.security]
-# Error handling
-error_sanitization = true
-log_errors = true
-
-# Rate limiting
-[FraiseQL.security.rate_limiting]
-enabled = true
-auth_start_max_requests = 1000
-auth_start_window_secs = 60
-
-# CORS configuration
-[FraiseQL.server]
-port = 8000
-host = "0.0.0.0"
-cors_origins = ["http://localhost:5173", "http://localhost:3000"]
-graphql_path = "/graphql"
-health_path = "/health"
-```text
-<!-- Code example in TEXT -->
-
-### 4.2 Compile the Schema
+### 3.2 Run the backend
 
 ```bash
-<!-- Code example in BASH -->
-# From backend directory
-FraiseQL-cli compile schema.json FraiseQL.toml
+cd backend
+source .venv/bin/activate
+export DATABASE_URL="postgresql://localhost/blog_db"
 
-# Output:
-# ✓ Compilation successful
-#   Schema: blog-api v1.0.0
-#   Types: 8
-#   Queries: 6 (optimized to 4 SQL queries)
-#   Mutations: 8 (optimized to 6 SQL functions)
-#   Output: schema.compiled.json
-```text
-<!-- Code example in TEXT -->
+uvicorn app:app --reload
+# GraphQL playground: http://localhost:8000/graphql
+```
 
-This generates `schema.compiled.json` containing:
-
-- All type definitions
-- Optimized GraphQL queries
-- Mapping to SQL views/functions
-- Security configuration
-- Server configuration
-
----
-
-## Part 5: FraiseQL Server Deployment
-
-### 5.1 Dockerfile
-
-Create `backend/Dockerfile`:
-
-```dockerfile
-<!-- Code example in DOCKERFILE -->
-# FraiseQL server is already compiled to Rust binary
-# We just need to set up the runtime environment
-
-FROM rust:1.75 as builder
-
-WORKDIR /app
-
-# Copy schema
-COPY schema.compiled.json .
-COPY FraiseQL.toml .
-
-# Build FraiseQL server (pre-installed in the environment)
-RUN FraiseQL-server --version
-
-FROM debian:bookworm-slim
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy FraiseQL server binary (pre-built)
-COPY --from=builder /usr/local/bin/FraiseQL-server /usr/local/bin/
-
-# Copy schema and config
-COPY schema.compiled.json .
-COPY FraiseQL.toml .
-
-# Health check
-HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Expose GraphQL API
-EXPOSE 8000
-
-# Start FraiseQL server
-CMD ["FraiseQL-server", "--schema", "schema.compiled.json", "--config", "FraiseQL.toml"]
-```text
-<!-- Code example in TEXT -->
-
-### 5.2 Docker Compose Orchestration
-
-Create `docker-compose.yml` in the project root:
-
-```yaml
-<!-- Code example in YAML -->
-version: '3.9'
-
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: blog-postgres
-    environment:
-      POSTGRES_DB: blog_db
-      POSTGRES_USER: blog_user
-      POSTGRES_PASSWORD: blog_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blog_user -d blog_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  FraiseQL-server:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: blog-FraiseQL
-    environment:
-      DATABASE_URL: postgres://blog_user:blog_password@postgres:5432/blog_db
-      RUST_LOG: info
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    volumes:
-      - ./backend/schema.compiled.json:/app/schema.compiled.json
-      - ./backend/FraiseQL.toml:/app/FraiseQL.toml
-
-volumes:
-  postgres_data:
-```text
-<!-- Code example in TEXT -->
-
-### 5.3 Launching the Backend
+Sanity-check it with curl:
 
 ```bash
-<!-- Code example in BASH -->
-# From project root
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f FraiseQL-server
-
-# Test the GraphQL API
-curl http://localhost:8000/health
-
-# Test health endpoint
-curl http://localhost:8000/graphql -X POST \
+curl http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ users(limit: 10) { id name email } }"}'
-```text
-<!-- Code example in TEXT -->
+  -d '{"query": "{ posts { id title authorName likeCount } }"}'
+```
+
+Expected response:
+
+```json
+{
+  "data": {
+    "posts": [
+      { "id": "…", "title": "Getting Started with GraphQL", "authorName": "Alice Johnson", "likeCount": 2 }
+    ]
+  }
+}
+```
 
 ---
 
-## Part 6: React Frontend Setup
+## Part 4: React Frontend (Apollo Client)
 
-### 6.1 Apollo Client Configuration
+The frontend is a standard React app that talks to the backend with `@apollo/client`.
+
+### 4.1 Apollo Client setup
 
 Create `frontend/src/apollo-client.js`:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
-import { ApolloClient, InMemoryCache, HttpLink, gql } from "@apollo/client";
+import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 
 const httpLink = new HttpLink({
-  uri: process.env.REACT_APP_GRAPHQL_API || "http://localhost:8000/graphql",
-  credentials: "include",
+  uri: import.meta.env.VITE_GRAPHQL_API || "http://localhost:8000/graphql",
 });
 
 const client = new ApolloClient({
   link: httpLink,
   cache: new InMemoryCache(),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: "cache-and-network",
-    },
-  },
 });
 
 export default client;
-```text
-<!-- Code example in TEXT -->
-
-### 6.2 Environment Configuration
+```
 
 Create `frontend/.env.local`:
 
 ```env
-<!-- Code example in ENV -->
-REACT_APP_GRAPHQL_API=http://localhost:8000/graphql
-```text
-<!-- Code example in TEXT -->
+VITE_GRAPHQL_API=http://localhost:8000/graphql
+```
 
-### 6.3 GraphQL Queries & Mutations
+### 4.2 Queries and mutations
 
-Create `frontend/src/queries.js`:
+Create `frontend/src/queries.js`. Note how the mutations select on the `Success | Error`
+union with inline fragments (`... on PostSuccess`, `... on MutationError`):
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 import { gql } from "@apollo/client";
 
-// Queries
+// ---- Queries ----
+
 export const GET_POSTS = gql`
-  query GetPosts($limit: Int, $offset: Int) {
-    posts(limit: $limit, offset: $offset) {
+  query GetPosts($publishedOnly: Boolean) {
+    posts(publishedOnly: $publishedOnly) {
       id
       title
       content
       published
-      createdAt
-      updatedAt
       authorName
-      authorEmail
       likeCount
       commentCount
+      createdAt
     }
   }
 `;
 
 export const GET_POST = gql`
-  query GetPost($postId: Int!) {
-    post(postId: $postId) {
+  query GetPost($id: ID!) {
+    post(id: $id) {
       id
       title
       content
       published
-      createdAt
-      updatedAt
-      authorId
       authorName
       authorEmail
       likeCount
       commentCount
+      createdAt
     }
   }
 `;
 
 export const GET_COMMENTS = gql`
-  query GetComments($postId: Int!, $limit: Int, $offset: Int) {
-    comments(postId: $postId, limit: $limit, offset: $offset) {
+  query GetComments($postId: ID!) {
+    comments(postId: $postId) {
       id
-      postId
-      userId
       content
-      createdAt
-      authorId
       authorName
-      authorEmail
       authorAvatarUrl
-    }
-  }
-`;
-
-export const GET_USERS = gql`
-  query GetUsers($limit: Int, $offset: Int) {
-    users(limit: $limit, offset: $offset) {
-      id
-      name
-      email
-      bio
-      avatarUrl
       createdAt
     }
   }
 `;
 
-// Mutations
+// ---- Mutations (Success | Error unions) ----
+
 export const CREATE_POST = gql`
   mutation CreatePost($input: CreatePostInput!) {
-    createPost(inputData: $input) {
-      id
-      title
-      content
-      published
-      createdAt
-      authorId
-      authorName
-    }
-  }
-`;
-
-export const UPDATE_POST = gql`
-  mutation UpdatePost($postId: Int!, $input: UpdatePostInput!) {
-    updatePost(postId: $postId, inputData: $input) {
-      id
-      title
-      content
-      published
-      updatedAt
-    }
-  }
-`;
-
-export const DELETE_POST = gql`
-  mutation DeletePost($postId: Int!) {
-    deletePost(postId: $postId) {
-      id
-      title
+    createPost(input: $input) {
+      ... on PostSuccess {
+        post {
+          id
+          title
+          published
+          authorName
+        }
+      }
+      ... on MutationError {
+        message
+        code
+      }
     }
   }
 `;
 
 export const CREATE_COMMENT = gql`
   mutation CreateComment($input: CreateCommentInput!) {
-    createComment(inputData: $input) {
-      id
-      postId
-      userId
-      content
-      createdAt
-      authorName
+    createComment(input: $input) {
+      ... on CommentSuccess {
+        comment {
+          id
+          content
+          authorName
+          createdAt
+        }
+      }
+      ... on MutationError {
+        message
+      }
     }
   }
 `;
 
 export const LIKE_POST = gql`
-  mutation LikePost($postId: Int!, $userId: Int!) {
+  mutation LikePost($postId: ID!, $userId: ID!) {
     likePost(postId: $postId, userId: $userId) {
-      id
-      postId
-      userId
-      createdAt
+      ... on LikeSuccess {
+        post {
+          id
+          likeCount
+        }
+      }
+      ... on MutationError {
+        message
+      }
     }
   }
 `;
 
 export const UNLIKE_POST = gql`
-  mutation UnlikePost($postId: Int!, $userId: Int!) {
+  mutation UnlikePost($postId: ID!, $userId: ID!) {
     unlikePost(postId: $postId, userId: $userId) {
-      id
-      postId
-      userId
+      ... on LikeSuccess {
+        post {
+          id
+          likeCount
+        }
+      }
+      ... on MutationError {
+        message
+      }
     }
   }
 `;
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Part 7: React Components
+## Part 5: React Components
 
-### 7.1 PostList Component
+### 5.1 PostList
 
-Create `frontend/src/components/PostList.jsx`:
+Create `frontend/src/components/PostList.jsx`. This shows the loading and error states every
+Apollo query should handle:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 import { useQuery } from "@apollo/client";
 import { GET_POSTS } from "../queries";
 import PostCard from "./PostCard";
-import "./PostList.css";
 
 export default function PostList() {
   const { loading, error, data } = useQuery(GET_POSTS, {
-    variables: { limit: 20, offset: 0 },
+    variables: { publishedOnly: true },
   });
 
-  if (loading) return <div className="loading">Loading posts...</div>;
+  if (loading) return <div className="loading">Loading posts…</div>;
   if (error) return <div className="error">Error: {error.message}</div>;
 
-  const posts = data?.posts || [];
+  const posts = data?.posts ?? [];
 
   return (
     <div className="post-list">
       <h1>Recent Posts</h1>
       {posts.length === 0 ? (
-        <p className="no-posts">No posts yet. Be the first to write one!</p>
+        <p>No posts yet. Be the first to write one!</p>
       ) : (
         <div className="posts-grid">
           {posts.map((post) => (
@@ -1459,789 +992,382 @@ export default function PostList() {
     </div>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 7.2 PostCard Component
+### 5.2 PostCard
 
 Create `frontend/src/components/PostCard.jsx`:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 import { Link } from "react-router-dom";
-import LikeButton from "./LikeButton";
-import "./PostCard.css";
 
 export default function PostCard({ post }) {
   return (
     <div className="post-card">
-      <div className="post-header">
-        <h2>{post.title}</h2>
-        <span className={`status ${post.published ? "published" : "draft"}`}>
-          {post.published ? "Published" : "Draft"}
-        </span>
+      <h2>{post.title}</h2>
+      <p>{post.content.slice(0, 150)}…</p>
+      <div className="post-meta">
+        <span>By {post.authorName}</span>
+        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
       </div>
-
-      <p className="post-content">{post.content.substring(0, 150)}...</p>
-
-      <div className="post-metadata">
-        <span className="author">By {post.authorName}</span>
-        <span className="date">
-          {new Date(post.createdAt).toLocaleDateString()}
-        </span>
-      </div>
-
       <div className="post-footer">
-        <div className="engagement">
-          <span className="likes">❤️ {post.likeCount} likes</span>
-          <span className="comments">💬 {post.commentCount} comments</span>
-        </div>
-        <Link to={`/post/${post.id}`} className="read-more">
-          Read More →
-        </Link>
+        <span>{post.likeCount} likes · {post.commentCount} comments</span>
+        <Link to={`/post/${post.id}`}>Read more →</Link>
       </div>
     </div>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 7.3 PostDetail Component
+### 5.3 PostDetail
 
 Create `frontend/src/components/PostDetail.jsx`:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
-import { useQuery, useMutation } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { useParams } from "react-router-dom";
-import { GET_POST, UPDATE_POST, DELETE_POST } from "../queries";
+import { GET_POST } from "../queries";
 import CommentSection from "./CommentSection";
 import LikeButton from "./LikeButton";
-import "./PostDetail.css";
 
 export default function PostDetail() {
   const { postId } = useParams();
   const { loading, error, data } = useQuery(GET_POST, {
-    variables: { postId: parseInt(postId) },
+    variables: { id: postId },
   });
 
-  const [updatePost] = useMutation(UPDATE_POST);
-  const [deletePost] = useMutation(DELETE_POST);
-
-  if (loading) return <div className="loading">Loading post...</div>;
+  if (loading) return <div className="loading">Loading post…</div>;
   if (error) return <div className="error">Error: {error.message}</div>;
 
   const post = data?.post;
-
   if (!post) return <div className="not-found">Post not found</div>;
 
   return (
-    <div className="post-detail">
-      <div className="post-header-detail">
-        <h1>{post.title}</h1>
-        <div className="post-info">
-          <span className="author">{post.authorName}</span>
-          <span className="date">
-            {new Date(post.createdAt).toLocaleString()}
-          </span>
-        </div>
+    <article className="post-detail">
+      <h1>{post.title}</h1>
+      <div className="post-info">
+        <span>{post.authorName}</span>
+        <span>{new Date(post.createdAt).toLocaleString()}</span>
       </div>
-
-      <div className="post-content-detail">{post.content}</div>
+      <div className="post-body">{post.content}</div>
 
       <div className="post-actions">
         <LikeButton postId={post.id} likeCount={post.likeCount} />
-        <span className="comment-count">
-          💬 {post.commentCount} comments
-        </span>
+        <span>{post.commentCount} comments</span>
       </div>
 
       <CommentSection postId={post.id} />
-    </div>
+    </article>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 7.4 CommentSection Component
+### 5.4 CommentSection
 
-Create `frontend/src/components/CommentSection.jsx`:
+Create `frontend/src/components/CommentSection.jsx`. The submit handler reads the union result
+and surfaces a `MutationError.message` if the backend rejected the write:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 import { useQuery, useMutation } from "@apollo/client";
 import { useState } from "react";
 import { GET_COMMENTS, CREATE_COMMENT } from "../queries";
-import "./CommentSection.css";
+
+// In a real app this comes from your auth/session.
+const CURRENT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function CommentSection({ postId }) {
-  const [commentText, setCommentText] = useState("");
-  const [currentUserId] = useState(1); // In a real app, get from auth
+  const [text, setText] = useState("");
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const { data, loading } = useQuery(GET_COMMENTS, {
-    variables: { postId, limit: 50, offset: 0 },
-  });
+  const { data, loading } = useQuery(GET_COMMENTS, { variables: { postId } });
 
   const [createComment] = useMutation(CREATE_COMMENT, {
     refetchQueries: [{ query: GET_COMMENTS, variables: { postId } }],
   });
 
-  const handleSubmitComment = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!text.trim()) return;
+    setErrorMessage(null);
 
-    await createComment({
+    const { data: result } = await createComment({
       variables: {
-        input: {
-          postId,
-          userId: currentUserId,
-          content: commentText,
-        },
+        input: { postId, userId: CURRENT_USER_ID, content: text },
       },
     });
 
-    setCommentText("");
+    const payload = result.createComment;
+    if (payload.__typename === "MutationError") {
+      setErrorMessage(payload.message);
+      return;
+    }
+    setText("");
   };
 
-  const comments = data?.comments || [];
+  const comments = data?.comments ?? [];
 
   return (
-    <div className="comment-section">
+    <section className="comment-section">
       <h3>Comments ({comments.length})</h3>
 
-      <form onSubmit={handleSubmitComment} className="comment-form">
+      <form onSubmit={handleSubmit} className="comment-form">
         <textarea
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          placeholder="Write a comment..."
-          rows="3"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Write a comment…"
+          rows={3}
         />
-        <button type="submit" disabled={!commentText.trim()}>
+        <button type="submit" disabled={!text.trim()}>
           Post Comment
         </button>
       </form>
 
-      <div className="comments-list">
-        {comments.map((comment) => (
-          <div key={comment.id} className="comment">
-            <div className="comment-header">
-              <strong>{comment.authorName}</strong>
-              <span className="comment-date">
-                {new Date(comment.createdAt).toLocaleString()}
-              </span>
-            </div>
-            <p>{comment.content}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+      {errorMessage && <p className="error">{errorMessage}</p>}
+
+      {loading ? (
+        <p>Loading comments…</p>
+      ) : (
+        <ul className="comments-list">
+          {comments.map((c) => (
+            <li key={c.id}>
+              <strong>{c.authorName}</strong>
+              <span>{new Date(c.createdAt).toLocaleString()}</span>
+              <p>{c.content}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 7.5 LikeButton Component
+### 5.5 LikeButton
 
-Create `frontend/src/components/LikeButton.jsx`:
+Create `frontend/src/components/LikeButton.jsx`. It reads `likeCount` straight off the
+`LikeSuccess.post` returned by the mutation:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 import { useMutation } from "@apollo/client";
 import { useState } from "react";
 import { LIKE_POST, UNLIKE_POST } from "../queries";
-import "./LikeButton.css";
+
+const CURRENT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function LikeButton({ postId, likeCount = 0 }) {
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(likeCount);
-  const [currentUserId] = useState(1); // In a real app, get from auth
 
   const [likePost] = useMutation(LIKE_POST);
   const [unlikePost] = useMutation(UNLIKE_POST);
 
-  const handleToggleLike = async () => {
-    try {
-      if (liked) {
-        await unlikePost({
-          variables: { postId, userId: currentUserId },
-        });
-        setCount(count - 1);
-        setLiked(false);
-      } else {
-        await likePost({
-          variables: { postId, userId: currentUserId },
-        });
-        setCount(count + 1);
-        setLiked(true);
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
+  const toggle = async () => {
+    const mutate = liked ? unlikePost : likePost;
+    const { data } = await mutate({
+      variables: { postId, userId: CURRENT_USER_ID },
+    });
+
+    const payload = liked ? data.unlikePost : data.likePost;
+    if (payload.__typename === "MutationError") {
+      console.error(payload.message);
+      return;
     }
+    setCount(payload.post.likeCount);
+    setLiked(!liked);
   };
 
   return (
-    <button
-      className={`like-button ${liked ? "liked" : ""}`}
-      onClick={handleToggleLike}
-    >
-      ❤️ {count} {count === 1 ? "like" : "likes"}
+    <button className={`like-button ${liked ? "liked" : ""}`} onClick={toggle}>
+      ♥ {count} {count === 1 ? "like" : "likes"}
     </button>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Part 8: Main Application
+## Part 6: Wiring the App Together
 
-### 8.1 App.jsx
+### 6.1 App.jsx
 
 Create `frontend/src/App.jsx`:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { ApolloProvider } from "@apollo/client";
 import client from "./apollo-client";
 import PostList from "./components/PostList";
 import PostDetail from "./components/PostDetail";
-import CreatePostForm from "./components/CreatePostForm";
-import Navigation from "./components/Navigation";
-import "./App.css";
 
 export default function App() {
   return (
     <ApolloProvider client={client}>
       <BrowserRouter>
-        <Navigation />
-        <div className="container">
+        <nav className="navbar">
+          <Link to="/">Blog</Link>
+        </nav>
+        <main className="container">
           <Routes>
             <Route path="/" element={<PostList />} />
             <Route path="/post/:postId" element={<PostDetail />} />
-            <Route path="/create" element={<CreatePostForm />} />
           </Routes>
-        </div>
+        </main>
       </BrowserRouter>
     </ApolloProvider>
   );
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 8.2 package.json Scripts
+### 6.2 main.jsx
 
-Update `frontend/package.json`:
+The Vite template generates this; make sure it renders `App`:
+
+```javascript
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+```
+
+### 6.3 package.json dependencies
+
+After the installs from Part 1, your `frontend/package.json` should include:
 
 ```json
-<!-- Code example in JSON -->
 {
   "name": "blog-frontend",
   "private": true,
-  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint src --ext js,jsx"
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@apollo/client": "^3.9.0",
+    "graphql": "^16.8.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.18.0",
-    "@apollo/client": "^3.8.0",
-    "graphql": "^16.8.0",
-    "graphql-tag": "^2.12.0"
+    "react-router-dom": "^6.22.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
     "vite": "^5.0.0"
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Part 9: Running the Full Stack
+## Part 7: Running the Full Stack
 
-### 9.1 Step-by-Step Launch
+Open two terminals.
+
+**Terminal 1 — backend:**
 
 ```bash
-<!-- Code example in BASH -->
-# 1. Start PostgreSQL and FraiseQL server
-cd fullstack-blog
-docker-compose up -d
+cd fullstack-blog/backend
+source .venv/bin/activate
+export DATABASE_URL="postgresql://localhost/blog_db"
+uvicorn app:app --reload
+# http://localhost:8000/graphql
+```
 
-# Check server is ready
-curl http://localhost:8000/health
+**Terminal 2 — frontend:**
 
-# 2. Start React development server (in new terminal)
-cd frontend
-npm install
+```bash
+cd fullstack-blog/frontend
 npm run dev
+# http://localhost:5173
+```
 
-# Output: Local: http://localhost:5173
+Open <http://localhost:5173> and you should see the seeded posts. Click a post to view its
+detail, like it, and add a comment.
 
-# 3. Open browser and visit http://localhost:5173
-# You should see the blog homepage with posts!
+### End-to-end request flow
+
 ```text
-<!-- Code example in TEXT -->
+1. Browser loads React at http://localhost:5173
+2. ApolloProvider gives components the client pointed at /graphql
+3. PostList runs GetPosts via Apollo Client
+4. Apollo POSTs the query to http://localhost:8000/graphql
+5. FraiseQL resolves `posts` → db.find("v_post", ...) → SELECT data FROM v_post
+6. PostgreSQL returns the `data` JSONB; FraiseQL shapes it to the requested fields
+7. Apollo caches and returns the result; React renders the cards
+```
 
-### 9.2 Full-Stack Test
+A write (creating a comment) follows the same path but the resolver calls
+`db.execute_function("fn_create_comment", {...})`, which runs the insert inside PostgreSQL and
+returns a `Success | Error` payload the component branches on.
+
+---
+
+## Part 8: Troubleshooting
+
+### "Network error" / blocked by CORS in the browser console
+
+The backend must allow the React origin. Enable CORS as shown in [Part 3.1](#31-enable-cors-for-the-react-dev-server)
+(`cors_enabled=True` with `cors_origins=["http://localhost:5173"]`, or FastAPI's
+`CORSMiddleware`). Verify the backend is reachable:
 
 ```bash
-<!-- Code example in BASH -->
-# Test the GraphQL API directly
 curl http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "query { posts(limit: 10) { id title authorName likeCount } }"
-  }'
+  -d '{"query": "{ __typename }"}'
+```
 
-# Expected response:
-# {
-#   "data": {
-#     "posts": [
-#       {
-#         "id": 1,
-#         "title": "Getting Started with GraphQL",
-#         "authorName": "Alice Johnson",
-#         "likeCount": 2
-#       },
-#       ...
-#     ]
-#   }
-# }
-```text
-<!-- Code example in TEXT -->
+### `relation "v_post" does not exist`
 
-### 9.3 Workflow
+The schema wasn't loaded. Re-run it:
 
-1. **User visits <http://localhost:5173>**
-2. **React loads Apollo Client** with FraiseQL endpoint
-3. **React component runs GET_POSTS query**
-4. **Apollo sends GraphQL to <http://localhost:8000/graphql>**
-5. **FraiseQL server compiles query to SQL**
-6. **PostgreSQL executes query**
-7. **Results return through full chain to React**
-8. **Components render with data**
+```bash
+psql blog_db -f backend/schema.sql
+```
 
----
+### A query returns `null` for a field
 
-## Part 10: Complete Example Workflow
+The field name in the GraphQL query must match the camelCase form of the Python field (and the
+key inside the view's `data` JSONB). For example the Python field `author_name` is `authorName`
+in GraphQL and `'authorName'` in `jsonb_build_object(...)`.
 
-### 10.1 Creating a New Post
+### A component shows "Loading…" forever
 
-**Frontend (React):**
+The query is erroring. Always render the `error` branch from `useQuery`:
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
-// User fills form and submits
-const handleCreatePost = async (title, content) => {
-  const result = await createPost({
-    variables: {
-      input: {
-        title,
-        content,
-        author_id: 1,  // Current user
-        published: false,
-      },
-    },
-  });
-  return result.data.createPost;
-};
-```text
-<!-- Code example in TEXT -->
-
-**Execution Path:**
-
-```text
-<!-- Code example in TEXT -->
-React Component
-    ↓ (Apollo sends GraphQL)
-FraiseQL Server (port 8000)
-    ↓ (compiles to SQL)
-fn_create_post('title', 'content', 1, false)
-    ↓ (PostgreSQL function)
-posts table INSERT + RETURNING
-    ↓ (returns new row)
-FraiseQL formats as JSON
-    ↓ (GraphQL response)
-Apollo caches result
-    ↓
-React re-renders with new post
-```text
-<!-- Code example in TEXT -->
-
-### 10.2 Fetching Post with Comments
-
-**React Query:**
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-export const GET_POST_WITH_COMMENTS = gql`
-  query GetPostDetails($postId: Int!) {
-    post(postId: $postId) {
-      id
-      title
-      content
-      likeCount
-      comments(limit: 20) {
-        id
-        content
-        authorName
-      }
-    }
-  }
-`;
-```text
-<!-- Code example in TEXT -->
-
-**Execution Path:**
-
-```text
-<!-- Code example in TEXT -->
-FraiseQL Server receives query
-    ↓
-Looks up "post" query → v_post_detail view
-Looks up "comments" query → v_comments view
-    ↓ (parallel execution)
-v_post_detail WHERE id = 1
-v_comments WHERE post_id = 1 LIMIT 20
-    ↓
-Results combined into single JSON
-    ↓
-React receives nested structure
-    ↓
-CommentSection component maps over comments
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 11: Deployment to Production
-
-### 11.1 Docker Build for Production
-
-```bash
-<!-- Code example in BASH -->
-# Build images for production
-docker-compose build
-
-# Push to registry (optional)
-docker tag blog-FraiseQL-server myregistry/blog-FraiseQL:v1.0
-docker push myregistry/blog-FraiseQL:v1.0
-```text
-<!-- Code example in TEXT -->
-
-### 11.2 Kubernetes Deployment
-
-Create `k8s/deployment.yaml`:
-
-```yaml
-<!-- Code example in YAML -->
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: blog-FraiseQL-server
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: blog-FraiseQL-server
-  template:
-    metadata:
-      labels:
-        app: blog-FraiseQL-server
-    spec:
-      containers:
-      - name: FraiseQL-server
-        image: myregistry/blog-FraiseQL:v1.0
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: blog-secrets
-              key: database-url
-        healthCheck:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: blog-FraiseQL-service
-spec:
-  selector:
-    app: blog-FraiseQL-server
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
-  type: LoadBalancer
-```text
-<!-- Code example in TEXT -->
-
-### 11.3 React Frontend Production Build
-
-```bash
-<!-- Code example in BASH -->
-cd frontend
-npm run build
-# Output: dist/
-
-# Deploy to Vercel, Netlify, or S3
-# Update REACT_APP_GRAPHQL_API to production endpoint
-REACT_APP_GRAPHQL_API=https://api.example.com/graphql npm run build
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 12: Monitoring and Debugging
-
-### 12.1 Health Checks
-
-```bash
-<!-- Code example in BASH -->
-# Check server health
-curl http://localhost:8000/health
-
-# Response (when healthy):
-# {"status": "ok", "version": "1.0.0"}
-```text
-<!-- Code example in TEXT -->
-
-### 12.2 GraphQL Introspection
-
-```bash
-<!-- Code example in BASH -->
-# Get GraphQL schema (for tools like GraphQL Playground)
-curl http://localhost:8000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ __schema { types { name } } }"}'
-```text
-<!-- Code example in TEXT -->
-
-### 12.3 Logs
-
-```bash
-<!-- Code example in BASH -->
-# View FraiseQL server logs
-docker-compose logs -f FraiseQL-server
-
-# View PostgreSQL logs
-docker-compose logs -f postgres
-
-# View React build logs
-npm run dev 2>&1 | tee frontend.log
-```text
-<!-- Code example in TEXT -->
-
-### 12.4 Performance Analysis
-
-```bash
-<!-- Code example in BASH -->
-# Test query performance
-time curl http://localhost:8000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "{ posts(limit: 100) { id title } }"
-  }'
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 13: Troubleshooting Full Stack
-
-### Problem: "Cannot POST /graphql"
-
-**Cause:** FraiseQL server not running or wrong endpoint
-
-**Solution:**
-
-```bash
-<!-- Code example in BASH -->
-docker-compose ps  # Check if FraiseQL-server is running
-curl http://localhost:8000/health  # Test connectivity
-```text
-<!-- Code example in TEXT -->
-
-### Problem: Apollo Client returns "Network error"
-
-**Cause:** CORS not configured or server unreachable
-
-**Solution:**
-
-```bash
-<!-- Code example in BASH -->
-# Check CORS settings in FraiseQL.toml
-# Ensure React app URL is in cors_origins
-curl -H "Origin: http://localhost:5173" http://localhost:8000/health
-```text
-<!-- Code example in TEXT -->
-
-### Problem: "Relation 'v_posts' does not exist"
-
-**Cause:** Database schema not initialized
-
-**Solution:**
-
-```bash
-<!-- Code example in BASH -->
-# Reload database schema
-docker-compose exec postgres psql -U blog_user -d blog_db -f /docker-entrypoint-initdb.d/schema.sql
-```text
-<!-- Code example in TEXT -->
-
-### Problem: React components show "Loading..." indefinitely
-
-**Cause:** GraphQL query failing silently
-
-**Solution:**
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-// Add error handling to Apollo queries
 const { loading, error, data } = useQuery(GET_POSTS);
-
 if (error) {
-  console.error("GraphQL Error:", error);
+  console.error("GraphQL error:", error);
   return <div>Error: {error.message}</div>;
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Part 14: Next Steps
+## Part 9: Next Steps
 
-### Advanced Topics
+- **Authentication** — protect resolvers with `@fraiseql.query(authorizer=...)` and read the
+  user from `info.context["user"]`. Forward the JWT from Apollo Client by adding an auth header
+  to the `HttpLink`. See the [authentication guide](../advanced/authentication.md).
+- **Subscriptions** — stream live updates (new comments, like counts) with
+  `@fraiseql.subscription` over WebSocket. See the [subscriptions docs](../architecture/realtime/subscriptions.md).
+- **Caching** — FraiseQL ships PostgreSQL-backed result caching with cascade invalidation.
+- **Heavy nested reads** — for deeply nested data, project into a table-backed `tv_*` view
+  refreshed by triggers/functions, and point the type's `sql_source` at it.
 
-1. **Authentication & Authorization**
-   - Add JWT token validation
-   - Implement field-level permissions
-   - Audit logging of operations
-
-2. **Caching & Performance**
-   - Enable query result caching
-   - Implement Automatic Persisted Queries (APQ)
-   - Add Redis for distributed caching
-
-3. **Subscriptions & Real-Time**
-   - Implement WebSocket subscriptions
-   - Real-time comment updates
-   - Live like counters
-
-4. **Observability**
-   - Instrument with OpenTelemetry
-   - Distributed tracing across stack
-   - Performance monitoring
-
-5. **Database Optimization**
-   - Add query indexes
-   - Implement materialized views
-   - Connection pooling tuning
-
-### Learning Resources
-
-- **FraiseQL CLI Reference:** `../reference/cli.md`
-- **Schema Design Guide:** `../guid../../docs/architecture/core/schema-design.md`
-- **React & Apollo Best Practices:** `../guides/frontend-integration.md`
-- **Database Design:** `../patterns/database-schema-patterns.md`
-
----
-
-## Part 15: Complete Directory Tree
-
-After following this tutorial, your project structure should be:
-
-```text
-<!-- Code example in TEXT -->
-fullstack-blog/
-├── backend/
-│   ├── schema.py                    # Python schema (authoring)
-│   ├── schema.json                  # Exported schema
-│   ├── schema.compiled.json         # Compiled schema (generated)
-│   ├── FraiseQL.toml                # Server config
-│   ├── Dockerfile                   # Server container
-│   ├── requirements.txt             # Python deps
-│   └── venv/                        # Python virtual env
-├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PostList.jsx
-│   │   │   ├── PostCard.jsx
-│   │   │   ├── PostDetail.jsx
-│   │   │   ├── CreatePostForm.jsx
-│   │   │   ├── CommentSection.jsx
-│   │   │   ├── LikeButton.jsx
-│   │   │   └── Navigation.jsx
-│   │   ├── apollo-client.js         # GraphQL client config
-│   │   ├── queries.js               # GraphQL queries/mutations
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   ├── .env.local                   # API endpoint config
-│   ├── vite.config.js               # Build config
-│   └── .gitignore
-├── database/
-│   └── schema.sql                   # PostgreSQL DDL + views + functions
-├── docker-compose.yml               # Full-stack orchestration
-└── README.md
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Summary
-
-You now have a **complete, production-ready full-stack application**:
-
-- **Backend:** Python schema authoring → FraiseQL compilation → Rust GraphQL server
-- **Frontend:** React components with Apollo Client
-- **Database:** PostgreSQL with optimized views and functions
-- **Deployment:** Docker Compose for local dev, Kubernetes for production
-
-The key insight: **FraiseQL is the compiled GraphQL backend**. You write Python, compile once, and deploy the optimized server. No runtime overhead, pure performance.
-
-### Quick Commands Reference
-
-```bash
-<!-- Code example in BASH -->
-# Backend
-cd backend && python schema.py export              # Export schema
-FraiseQL-cli compile schema.json FraiseQL.toml     # Compile
-docker build -t blog-server .                      # Build container
-
-# Frontend
-cd frontend && npm install && npm run dev          # Dev server
-
-# Full Stack
-docker-compose up -d                               # Start services
-curl http://localhost:8000/health                  # Test health
-open http://localhost:5173                         # Open frontend
-```text
-<!-- Code example in TEXT -->
-
-**Your application is now running at <http://localhost:5173>!**
+The key idea: **you write Python decorators and SQL views/functions; FraiseQL assembles the
+GraphQL schema in memory at startup and serves it over FastAPI**. There is no build step and no
+separate server — `uvicorn app:app` is the whole backend.
 
 ---
 
 ## Feedback
 
-Have questions or improvements? See `/docs/tutorials/README.md` for support channels.
+Have questions or improvements? See [the beginner learning path](./beginner-path.md) for next steps.
 
-**Back to:** [Tutorials Home](./README.md) | [Documentation Home](../README.md)
+**Back to:** [Tutorials: Beginner Path](./beginner-path.md) | [Documentation Home](../index.md)
