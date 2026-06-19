@@ -1,171 +1,184 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL v2 Enterprise Features
+title: FraiseQL Enterprise Features
 description: Enterprise-grade security, compliance, and audit capabilities for production deployments.
 keywords: []
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL v2 Enterprise Features
+# FraiseQL Enterprise Features
 
-Enterprise-grade security, compliance, and audit capabilities for production deployments.
-
-Enterprise-grade runtime security hardening including error sanitization, rate limiting, token protection, and encrypted state management.
+Enterprise-grade runtime security hardening for production PostgreSQL deployments, including error sanitization, rate limiting, token protection, and encrypted state management.
 
 ---
 
-## 🔐 Runtime Security Features
+## Runtime Security Features
 
-Configured via `FraiseQL.toml` with environment variable overrides.
+All runtime security is configured at application startup through
+[`FraiseQLConfig`](https://github.com/fraiseql/fraiseql-python/blob/main/src/fraiseql/fastapi/config.py) — a Pydantic
+`BaseSettings` class — and/or `create_fraiseql_app(...)` keyword arguments.
+Every setting can be overridden by an environment variable prefixed with
+`FRAISEQL_` (for example `FRAISEQL_RATE_LIMIT_ENABLED`). There is no
+configuration file: settings live in code, in `.env`, or in the process
+environment.
+
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    environment="production",
+    rate_limit_enabled=True,
+    complexity_enabled=True,
+    revocation_enabled=True,
+)
+
+app = create_fraiseql_app(types=[...], queries=[...], config=config)
+```
 
 ### Error Sanitization
 
-**Hide implementation details from client errors**, preventing information leakage:
+**Hide implementation details from client errors**, preventing information
+leakage. Setting `environment="production"` (or
+`FRAISEQL_ENVIRONMENT=production`) switches FraiseQL into hardened mode:
 
-- `error_sanitization.enabled` — Enable/disable error message masking
-- `error_sanitization.level` — Control verbosity (internal/user/public)
-- Client receives generic "An error occurred" instead of SQL details
-- Server logs full errors for debugging
+- Clients receive generic error messages instead of SQL, stack traces, or
+  internal identifiers.
+- Full error detail is still written to server logs for debugging.
+- Schema introspection is disabled and the GraphQL playground is turned off
+  automatically in production.
 
-**Example:**
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    environment="production",  # masks internal error detail from clients
+)
+```
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.security.error_sanitization]
-enabled = true
-level = "user"  # Only expose user-friendly messages to clients
-```text
-<!-- Code example in TEXT -->
+```bash
+FRAISEQL_ENVIRONMENT=production
+```
 
 ### Constant-Time Token Comparison
 
 **Prevent timing attacks** on token validation:
 
-- Token comparison uses constant-time algorithm (bitwise operations)
-- Attack duration independent of token position in storage
-- Prevents brute-force attacks via timing analysis
-- Automatic for all authentication tokens
+- Token and credential comparisons use a constant-time algorithm.
+- Verification duration is independent of where a mismatch occurs.
+- Defends against brute-force inference via timing analysis.
+- Applied automatically to all authentication tokens — no configuration
+  needed.
 
-### PKCE State Encryption
+### Token Revocation
 
-**Protect OAuth state parameters** from inspection:
+**Invalidate compromised or logged-out tokens** before their natural
+expiry. Revocation is enabled by default and tunable through `FraiseQLConfig`:
 
-- State parameter encrypted before transmission
-- Prevents state parameter tampering
-- REQUIRED for public clients (SPAs, mobile apps)
-- Configurable encryption algorithm (AES-256 default)
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    revocation_enabled=True,
+    revocation_check_enabled=True,
+    revocation_ttl=86400,          # how long a revocation is retained (seconds)
+    revocation_store_type="redis", # "memory" (default) or "redis"
+)
+```
 
-**Example:**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.security.pkce]
-state_encryption_enabled = true
-encryption_algorithm = "aes-256-gcm"
-```text
-<!-- Code example in TEXT -->
+```bash
+FRAISEQL_REVOCATION_ENABLED=true
+FRAISEQL_REVOCATION_CHECK_ENABLED=true
+FRAISEQL_REVOCATION_TTL=86400
+```
 
 ### Rate Limiting
 
-**Brute-force protection** on authentication endpoints:
+**Brute-force and abuse protection** on the GraphQL endpoint:
 
-- Per-IP rate limiting (configurable window)
-- Per-user rate limiting (account lockout protection)
-- Exponential backoff on repeated failures
-- Configurable thresholds per endpoint
+- Per-minute and per-hour request ceilings.
+- Burst allowance for short traffic spikes.
+- Sliding or fixed time windows.
+- Whitelist/blacklist of client identifiers.
 
-**Example:**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.security.rate_limiting]
-enabled = true
-auth_start_max_requests = 100
-auth_start_window_secs = 60
-auth_verify_max_requests = 50
-auth_verify_window_secs = 60
-```text
-<!-- Code example in TEXT -->
-
-### Audit Logging (v2.0)
-
-**Track secret access** with cryptographic verification:
-
-- Log all authentication events (login, token refresh, failures)
-- Log all data mutations (create, update, delete)
-- HMAC signatures prevent tampering
-- Queryable audit trail for compliance
-
-### Full Configuration Reference
-
-All runtime security features are configured in `FraiseQL.toml` under `[FraiseQL.security]`:
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.security]
-# Error handling
-[FraiseQL.security.error_sanitization]
-enabled = true
-level = "user"  # internal|user|public
-
-# Token security
-[FraiseQL.security.constant_time_comparison]
-enabled = true
-
-# OAuth security
-[FraiseQL.security.pkce]
-state_encryption_enabled = true
-encryption_algorithm = "aes-256-gcm"
-
-# Rate limiting
-[FraiseQL.security.rate_limiting]
-enabled = true
-auth_start_max_requests = 100
-auth_start_window_secs = 60
-auth_verify_max_requests = 50
-auth_verify_window_secs = 60
-
-# Audit logging
-[FraiseQL.security.audit_logging]
-enabled = true
-log_level = "info"
-secret_access_logging = true
-```text
-<!-- Code example in TEXT -->
-
-Environment variable overrides (production):
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=60,
+    rate_limit_requests_per_hour=1000,
+    rate_limit_burst_size=10,
+    rate_limit_window_type="sliding",  # "sliding" or "fixed"
+)
+```
 
 ```bash
-<!-- Code example in BASH -->
-# Rate limiting per environment
-FRAISEQL_RATE_LIMITING_ENABLED=true
-FRAISEQL_RATE_LIMITING_AUTH_START_MAX_REQUESTS=50  # Stricter in prod
+FRAISEQL_RATE_LIMIT_ENABLED=true
+FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=30   # stricter in production
+FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR=500
+```
 
-# Audit logging
-FRAISEQL_AUDIT_LOGGING_ENABLED=true
-FRAISEQL_AUDIT_LOGGING_LEVEL=debug
-```text
-<!-- Code example in TEXT -->
+### Query Complexity Limits
 
-See [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for full configuration management details.
+**Reject expensive or abusive queries** before they reach PostgreSQL:
+
+- Per-query complexity scoring with a configurable maximum.
+- Maximum nesting depth enforcement.
+- Optional per-field complexity multipliers.
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    complexity_enabled=True,
+    complexity_max_score=1000,
+    complexity_max_depth=10,
+)
+```
+
+```bash
+FRAISEQL_COMPLEXITY_ENABLED=true
+FRAISEQL_COMPLEXITY_MAX_SCORE=1000
+FRAISEQL_COMPLEXITY_MAX_DEPTH=10
+```
+
+### Encrypted State and Audit Logging
+
+**Tamper-evident audit trails** with HMAC signatures track authentication
+events and data mutations. Audit logging is implemented as a PostgreSQL
+pattern (immutable log tables plus HMAC signature chains) and is documented in
+detail in [audit-logging.md](./audit-logging.md). OAuth state and other
+sensitive parameters are encrypted before transmission so they cannot be
+inspected or tampered with in transit.
+
+### Configuration Summary
+
+| Concern | `FraiseQLConfig` field(s) | Environment variable |
+|---------|---------------------------|----------------------|
+| Error sanitization | `environment="production"` | `FRAISEQL_ENVIRONMENT` |
+| Token revocation | `revocation_enabled`, `revocation_check_enabled`, `revocation_ttl`, `revocation_store_type` | `FRAISEQL_REVOCATION_*` |
+| Rate limiting | `rate_limit_enabled`, `rate_limit_requests_per_minute`, `rate_limit_requests_per_hour`, `rate_limit_burst_size`, `rate_limit_window_type` | `FRAISEQL_RATE_LIMIT_*` |
+| Query complexity | `complexity_enabled`, `complexity_max_score`, `complexity_max_depth` | `FRAISEQL_COMPLEXITY_*` |
+| Introspection control | `introspection_policy` | `FRAISEQL_INTROSPECTION_POLICY` |
+| CORS | `cors_enabled`, `cors_origins` | `FRAISEQL_CORS_*` |
+| Authentication | `auth_enabled`, `auth_provider` | `FRAISEQL_AUTH_*` |
+
+Constant-time token comparison applies automatically and has no configuration
+flag. See the full field list and defaults in
+[`src/fraiseql/fastapi/config.py`](https://github.com/fraiseql/fraiseql-python/blob/main/src/fraiseql/fastapi/config.py).
 
 ---
 
-## 🔒 Enterprise Features Overview
+## Enterprise Features Overview
 
 ### Access Control
 
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [rbac.md](rbac.md) | Role-Based Access Control | 844 | 60 min |
+| Document | Description |
+|----------|-------------|
+| [rbac.md](./rbac.md) | Role-Based Access Control |
 
-**Topics Covered:**
+**Topics covered:**
 
 - Hierarchical role system
 - Field-level permissions
-- Row-level security
-- Authorization enforcement layers
+- PostgreSQL Row-Level Security (RLS)
+- Authorization enforcement via `Authorizer` and `@fraiseql.query(authorizer=...)`
 - JWT claims integration
 - Dynamic role assignment
 
@@ -173,28 +186,28 @@ See [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for full configuration manage
 
 ### Audit & Compliance
 
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [audit-logging.md](audit-logging.md) | Cryptographic audit trails | 887 | 60 min |
+| Document | Description |
+|----------|-------------|
+| [audit-logging.md](./audit-logging.md) | Cryptographic audit trails |
 
-**Topics Covered:**
+**Topics covered:**
 
-- Immutable audit log
+- Immutable audit log tables
 - HMAC signature chains
 - Tamper detection
-- Audit columns (created_at, updated_at, deleted_at)
-- Compliance with GDPR, SOC2, NIS2
+- Audit columns (`created_at`, `updated_at`, `deleted_at`)
+- Compliance with GDPR, SOC 2, NIS2
 - Retention policies
 
 ---
 
 ### Data Protection
 
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [kms.md](kms.md) | Key Management Service integration | 854 | 50 min |
+| Document | Description |
+|----------|-------------|
+| [kms.md](./kms.md) | Key Management Service integration |
 
-**Topics Covered:**
+**Topics covered:**
 
 - Field-level encryption
 - AWS KMS integration
@@ -205,38 +218,40 @@ See [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for full configuration manage
 
 ---
 
-## 🎯 Quick Start
+## Quick Start
 
-**For Security Engineers:**
+**For security engineers:**
 
-1. Read [rbac.md](rbac.md) for access control design
-2. Review [audit-logging.md](audit-logging.md) for compliance requirements
-3. Configure [kms.md](kms.md) for data encryption
+1. Read [rbac.md](./rbac.md) for access control design.
+2. Review [audit-logging.md](./audit-logging.md) for compliance requirements.
+3. Configure [kms.md](./kms.md) for data encryption.
 
-**For Compliance Teams:**
+**For compliance teams:**
 
-1. Start with [audit-logging.md](audit-logging.md)
-2. Review security profiles in [Specs: Security Compliance](../specs/security-compliance.md)
-3. Understand RBAC enforcement in [rbac.md](rbac.md)
-
----
-
-## 📚 Related Documentation
-
-- **[Security Model](../architecture/security/security-model.md)** — Security model and authentication
-- **[Specs: Security Compliance](../specs/security-compliance.md)** — Security profiles (STANDARD, REGULATED, RESTRICTED)
-- **[Guides: Production Deployment](../guides/production-deployment.md)** — Security hardening checklist
+1. Start with [audit-logging.md](./audit-logging.md).
+2. Review security profiles in [Specs: Security Compliance](../specs/security-compliance.md).
+3. Understand RBAC enforcement in [rbac.md](./rbac.md).
 
 ---
 
-## ✅ Compliance Standards Supported
+## Related Documentation
 
-- **GDPR** — Data protection and privacy
-- **SOC 2** — Security, availability, confidentiality
-- **NIS2** — EU cybersecurity directive
-- **HIPAA** — Healthcare data protection (with proper configuration)
-- **PCI DSS** — Payment card data security (with proper configuration)
+- **[Security Model](../architecture/security/security-model.md)** — Security model and authentication.
+- **[Specs: Security Compliance](../specs/security-compliance.md)** — Security profiles (STANDARD, REGULATED, RESTRICTED).
+- **[Guides: Production Deployment](../guides/production-deployment.md)** — Security hardening checklist.
 
 ---
 
-**Back to:** [Documentation Home](../README.md)
+## Compliance Standards Supported
+
+- **GDPR** — Data protection and privacy.
+- **SOC 2** — Security, availability, confidentiality.
+- **NIS2** — EU cybersecurity directive.
+- **HIPAA** — Healthcare data protection (with proper configuration).
+- **PCI DSS** — Payment card data security (with proper configuration).
+
+---
+
+**Back to:** [Documentation Home](../index.md)
+</content>
+</invoke>
