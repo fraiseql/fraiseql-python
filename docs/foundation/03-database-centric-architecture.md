@@ -1,25 +1,25 @@
-<!-- Skip to main content -->
+---
+title: Database-Centric Architecture
+description: FraiseQL treats the PostgreSQL database as the primary application interface, not as a storage afterthought. This page explains why that choice matters and how it shapes FraiseQL's runtime design.
+keywords: ["design", "query-execution", "cqrs", "jsonb", "postgresql", "graphql", "views", "performance"]
+tags: ["documentation", "foundation"]
 ---
 
-title: 1.3: Database-Centric Architecture
-description: FraiseQL's fundamental design choice is to treat the **database as the primary application interface**, not as a storage afterthought. This topic explains why t
-keywords: ["design", "query-execution", "security", "patterns", "data-planes", "graphql", "scalability", "performance"]
-tags: ["documentation", "reference"]
----
-
-# 1.3: Database-Centric Architecture
+# Database-Centric Architecture
 
 **Audience:** Architects, database teams, developers building data systems
-**Prerequisite:** Topics 1.1 (What is FraiseQL?), 1.2 (Core Concepts)
+**Prerequisite:** [Core Concepts](./02-core-concepts.md)
 **Reading Time:** 20-25 minutes
 
 ---
 
 ## Overview
 
-FraiseQL's fundamental design choice is to treat the **database as the primary application interface**, not as a storage afterthought. This topic explains why this choice matters, how it shapes FraiseQL's architecture, and what implications it has for your systems.
+FraiseQL's fundamental design choice is to treat the **PostgreSQL database as the primary application interface**, not as a storage afterthought. This page explains why this choice matters, how it shapes FraiseQL's architecture, and what implications it has for your systems.
 
-**Core insight:** In FraiseQL, the database schema is not an implementation detail—it's your API definition. The database is the source of truth for data relationships, types, validation, and performance.
+**Core insight:** In FraiseQL, the database schema is not an implementation detail—it is your API definition. PostgreSQL is the source of truth for data relationships, types, validation, and performance.
+
+FraiseQL is a **runtime** framework: you describe your types, queries, and mutations with Python decorators, and the GraphQL schema is built **in memory at application startup** by `create_fraiseql_app` (or `build_fraiseql_schema`). There is no build step and no compiled artifact—the running FastAPI process is the whole story.
 
 ---
 
@@ -30,7 +30,6 @@ FraiseQL's fundamental design choice is to treat the **database as the primary a
 Traditional GraphQL servers are designed to aggregate data from multiple sources:
 
 ```text
-<!-- Code example in TEXT -->
 Client
   ↓ (GraphQL Query)
 GraphQL Server
@@ -42,33 +41,30 @@ GraphQL Server
   └→ Webhook
   ↓
 Client (aggregated response)
-```text
-<!-- Code example in TEXT -->
+```
 
-**Problem:** The server becomes a coordination layer, and you need to write resolvers for every field, cache invalidation logic, N+1 prevention, etc.
+**Problem:** The server becomes a coordination layer, and you need to write resolvers for every field, cache invalidation logic, N+1 prevention, and so on.
 
 ---
 
 ### FraiseQL's Approach: Database-First Architecture
 
-FraiseQL assumes the database is your **primary and usually only data source**:
+FraiseQL assumes PostgreSQL is your **primary and usually only data source**:
 
 ```text
-<!-- Code example in TEXT -->
 Client
   ↓ (GraphQL Query)
-FraiseQL Server
-  ├→ Validate (schema already compiled)
-  ├→ Authorize (rules from schema)
-  └→ Execute (pre-compiled SQL)
+FraiseQL (FastAPI app)
+  ├→ Validate (against the in-memory schema)
+  ├→ Authorize (declarative rules)
+  └→ Execute (read a v_/tv_ view or call an fn_ function)
   ↓
-Database (single source of truth)
+PostgreSQL (single source of truth)
   ↓
 Client (direct result)
-```text
-<!-- Code example in TEXT -->
+```
 
-**Advantage:** Clear data flow, no custom resolvers, deterministic behavior.
+**Advantage:** Clear data flow, minimal custom resolver code, deterministic behavior.
 
 ---
 
@@ -78,15 +74,15 @@ This design choice has profound consequences:
 
 **1. Simplicity**
 
-- No custom resolver code needed
+- Little to no custom resolver code needed
 - Schema definition = API definition
 - What you see in the schema is what you get
 
 **2. Performance**
 
-- Database handles all query optimization
+- PostgreSQL handles query planning and optimization
 - No application-level coordination overhead
-- SQL is optimized at compile time
+- Reads come from purpose-built views; the optional Rust extension (`fraiseql_rs`) accelerates JSON shaping on the hot path
 
 **3. Correctness**
 
@@ -102,7 +98,7 @@ This design choice has profound consequences:
 
 **5. Debuggability**
 
-- Look at the SQL, understand the query
+- Look at the view or function, understand the query
 - No hidden resolver logic
 - Performance bottlenecks are clear (database metrics)
 
@@ -112,11 +108,11 @@ This design choice has profound consequences:
 
 FraiseQL works best when:
 
-✅ Your primary data source is a **relational database** (PostgreSQL, MySQL, etc.)
-✅ Your data has **clear structure and relationships** (not fully unstructured)
-✅ Your API needs to be **performant** (N+1 queries unacceptable)
-✅ Your team has **database expertise** (schemas, views, indexes)
-✅ You value **predictability** over flexibility
+- Your primary data source is **PostgreSQL**
+- Your data has **clear structure and relationships** (not fully unstructured)
+- Your API needs to be **performant** (N+1 queries unacceptable)
+- Your team has **database expertise** (schemas, views, indexes, functions)
+- You value **predictability** over unconstrained flexibility
 
 ---
 
@@ -124,11 +120,11 @@ FraiseQL works best when:
 
 FraiseQL is **not** the right choice when:
 
-❌ Your primary data is **unstructured** (documents, blobs)
-❌ You need to aggregate from **many external APIs** (microservices federation)
-❌ Your schema is **highly dynamic** (must change at runtime)
-❌ You have **deeply nested custom logic** (better in application code)
-❌ You're **just prototyping** (Hasura might be faster)
+- Your primary data is **unstructured** (documents, blobs)
+- You need to aggregate from **many external APIs** (microservices federation)
+- Your schema is **highly dynamic** (must change at runtime per request)
+- You have **deeply nested custom logic** better expressed in application code
+- You're using a non-PostgreSQL database (FraiseQL v1 is PostgreSQL-only)
 
 ---
 
@@ -137,1136 +133,509 @@ FraiseQL is **not** the right choice when:
 ### The Data Hierarchy
 
 ```text
-<!-- Code example in TEXT -->
-Database Schema (DBA responsibility)
+PostgreSQL Schema (DBA responsibility)
     ↓
 FraiseQL Type Definition (Developer responsibility)
     ↓
 GraphQL API (Client interface)
-```text
-<!-- Code example in TEXT -->
+```
 
-Each level maps directly:
+Each level maps directly. Note the identifier discipline: tables use an internal `pk_` BIGINT for fast joins (never exposed), a public `id` UUID for the GraphQL `id`, and an optional human-readable `identifier` slug.
 
-**Database Level:**
+**Database Level (write tables — the source of truth):**
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE tb_user (
-    pk_user BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    username VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    pk_user    BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    id         UUID NOT NULL DEFAULT gen_random_uuid(),
+    username   VARCHAR(255) NOT NULL,
+    email      VARCHAR(255) NOT NULL,
+    is_active  BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE tb_order (
-    pk_order BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-    total DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    pk_order   BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    id         UUID NOT NULL DEFAULT gen_random_uuid(),
+    fk_user    BIGINT NOT NULL REFERENCES tb_user(pk_user),
+    total      NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-**FraiseQL Type Level:**
+**Read View Level (what GraphQL actually queries):**
+
+A read view always exposes a public `id` column (for `WHERE id = $1`) plus a `data` JSONB column built with `jsonb_build_object(...)`. Internal `pk_`/`fk_` keys never appear inside `data`.
+
+```sql
+CREATE VIEW v_user AS
+SELECT
+    u.id,                       -- public UUID, used for lookups
+    jsonb_build_object(
+        'id',        u.id,
+        'username',  u.username,
+        'email',     u.email,
+        'isActive',  u.is_active,
+        'createdAt', u.created_at
+    ) AS data
+FROM tb_user u
+WHERE u.deleted_at IS NULL;     -- only active users
+```
+
+**FraiseQL Type Level (maps the type to its read view):**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    user_id: int              # ← pk_user
-    username: str             # ← username
-    email: str                # ← email
-    is_active: bool           # ← is_active
-    created_at: datetime      # ← created_at
-    updated_at: datetime      # ← updated_at
-    deleted_at: datetime | None # ← deleted_at (soft delete)
-    orders: List[Order]       # ← foreign key relationship
+import fraiseql
+from datetime import datetime
+from fraiseql.types import ID
 
-@FraiseQL.type
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    username: str
+    email: str
+    is_active: bool
+    created_at: datetime
+    orders: list["Order"]          # resolved from the order view
+
+
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
-    order_id: int             # ← pk_order
-    user_id: int              # ← fk_user
-    total: Decimal            # ← total
-    user: User                # ← reverse relationship
-    created_at: datetime      # ← created_at
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    total: float
+    user: User                     # nested read, composed in the view
+    created_at: datetime
+```
 
 **GraphQL API Level:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 type User {
-  userId: Int!
+  id: ID!
   username: String!
   email: String!
   isActive: Boolean!
   createdAt: DateTime!
-  updatedAt: DateTime!
-  deletedAt: DateTime
   orders: [Order!]!
 }
 
 type Order {
-  orderId: Int!
-  userId: Int!
-  total: Decimal!
+  id: ID!
+  total: Float!
   user: User!
   createdAt: DateTime!
 }
 
 query GetUser {
-  user(id: 1) {
-    userId
+  user(id: "550e8400-e29b-41d4-a716-446655440000") {
+    id
     username
     orders {
-      orderId
+      id
       total
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-### Mapping: Tables → Types → Relationships
+### Mapping: Tables → Views → Types
 
-**FraiseQL automatically derives relationships from foreign keys:**
+Foreign keys in the write tables express relationships. You realize those relationships in the **read view** by composing nested JSONB, then point the GraphQL type at that view:
 
 ```sql
-<!-- Code example in SQL -->
--- Database: Foreign key defines relationship
-ALTER TABLE tb_order
-ADD CONSTRAINT fk_order_user
-FOREIGN KEY (fk_user) REFERENCES tb_user(pk_user);
-```text
-<!-- Code example in TEXT -->
-
-**Becomes in FraiseQL:**
+-- A view that pre-composes the order together with its user.
+CREATE VIEW v_order AS
+SELECT
+    o.id,
+    jsonb_build_object(
+        'id',        o.id,
+        'total',     o.total,
+        'createdAt', o.created_at,
+        'user', jsonb_build_object(
+            'id',       u.id,
+            'username', u.username,
+            'email',    u.email
+        )
+    ) AS data
+FROM tb_order o
+JOIN tb_user u ON u.pk_user = o.fk_user;
+```
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    user: User  # Automatically available because of FK
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    total: float
+    user: User                     # available because the view composed it
+```
 
-**No extra configuration needed.** The database structure is the API structure.
+The view structure is the API structure. You shape data once, in SQL, and FraiseQL serves exactly the requested fields out of the `data` JSONB.
 
 ---
 
-## Part 3: The Four-Tier View System
+## Part 3: Read Views — `v_` and `tv_`
 
-FraiseQL uses four types of database views, each optimized for different access patterns and performance characteristics:
+FraiseQL reads come from views whose `data` JSONB column carries the entity payload. There are two flavors, chosen by how the read is materialized:
 
 ### Overview Matrix
 
-| View Type | Prefix | Plane | Storage | Use Case | Latency | Index Type |
-|-----------|--------|-------|---------|----------|---------|-----------|
-| **Logical Read** | `v_*` | JSON | None | Simple queries | 100-500ms | None |
-| **Table-Backed JSON** | `tv_*` | JSON | JSONB tables | Complex nested queries | 50-200ms | JSONB GIN |
-| **Logical Analytics** | `va_*` | Arrow | None | Small analytics <100K | 500ms-5s | None |
-| **Table-Backed Analytics** | `ta_*` | Arrow | Columnar | Large analytics >1M | 50-100ms | BRIN + B-tree |
+| View Type | Prefix | Storage | Use Case | Refresh |
+|-----------|--------|---------|----------|---------|
+| **Logical Read View** | `v_*` | none (computed on read) | simple to moderate queries; real-time data | always live |
+| **Table-Backed Projection** | `tv_*` | a real table holding pre-composed JSONB | heavy nested reads, high read volume | functions/triggers |
 
 ---
 
-### 1. `v_*` Views: Logical Read Views (JSON Plane)
+### 1. `v_*` — Logical Read Views
 
-**Definition:** Database views (no physical storage) optimized for GraphQL transactional access.
+**Definition:** Plain PostgreSQL views (no physical storage) that build a `data` JSONB on every read.
 
 **When to use:**
 
-- Simple queries (1-2 tables involved)
-- Small to medium result sets (<10K rows)
-- Real-time data needed
+- Simple to moderate queries (a handful of joined tables)
+- Small to medium result sets
+- Real-time data needed (the view always reflects current state)
 - Data changes frequently
 
-**Example:**
-
 ```sql
-<!-- Code example in SQL -->
--- Write table (source of truth)
-CREATE TABLE tb_user (
-    pk_user BIGINT PRIMARY KEY,
-    username VARCHAR(255),
-    email VARCHAR(255),
-    created_at TIMESTAMP,
-    deleted_at TIMESTAMP
-);
-
--- Read view (filters soft-deleted records)
 CREATE VIEW v_user AS
 SELECT
-    pk_user AS user_id,
-    username,
-    email,
-    created_at
-FROM tb_user
-WHERE deleted_at IS NULL;  -- Only active users
-```text
-<!-- Code example in TEXT -->
+    u.id,
+    jsonb_build_object(
+        'id',        u.id,
+        'username',  u.username,
+        'email',     u.email,
+        'createdAt', u.created_at
+    ) AS data
+FROM tb_user u
+WHERE u.deleted_at IS NULL;        -- only active users
+```
 
 **Characteristics:**
 
 - **Storage overhead:** 0% (logical view only)
-- **Maintenance:** None (automatic via base table)
-- **Performance:** Database determines (can't be optimized separately)
-- **Staleness:** Real-time (always reflects current state)
-- **Index support:** Uses indexes from base table
-
-**FraiseQL Integration:**
+- **Maintenance:** none (computed from base tables)
+- **Staleness:** real-time
+- **Index support:** uses the base tables' indexes
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     username: str
     email: str
     created_at: datetime
-    # Automatically queries v_user view
-```text
-<!-- Code example in TEXT -->
+```
+
+Queries simply read the view:
+
+```python
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
+
+
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", id=id)
+```
 
 ---
 
-### 2. `tv_*` Views: Table-Backed JSON Views
+### 2. `tv_*` — Table-Backed Projection Views
 
-**Definition:** Materialized JSONB tables with trigger-based refresh for complex nested JSON queries.
+**Definition:** A real table that stores **pre-composed JSONB**, refreshed by functions or triggers. Because the nested structure is already assembled, reads avoid join work at query time.
 
 **When to use:**
 
-- Complex nested structures (User + Orders + Items in one query)
-- High read volume (>1000 QPS)
-- Moderate write volume (<100 writes/sec)
-- Data can be 1-5 seconds stale
-
-**Example:**
+- Complex nested structures (User + Orders + Items in a single payload)
+- High read volume
+- Moderate write volume
+- A small, bounded staleness window is acceptable
 
 ```sql
-<!-- Code example in SQL -->
--- Write table
-CREATE TABLE tb_order (
-    pk_order BIGINT PRIMARY KEY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-    total DECIMAL(10,2),
-    created_at TIMESTAMP
-);
-
--- Materialized JSON view (pre-composed nested data)
+-- A table-backed projection: pre-composed nested JSONB.
 CREATE TABLE tv_order_with_user (
-    pk_order BIGINT PRIMARY KEY REFERENCES tb_order(pk_order) ON DELETE CASCADE,
-    data JSONB NOT NULL,  -- Contains: {orderId, total, user: {userId, username, email}}
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id         UUID PRIMARY KEY,
+    data       JSONB NOT NULL,     -- {id, total, user: {id, username, email}}
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Trigger: Update tv_order_with_user when tb_order or tb_user changes
-CREATE TRIGGER trg_refresh_tv_order_with_user
-AFTER INSERT OR UPDATE ON tb_order
-FOR EACH ROW
-EXECUTE FUNCTION refresh_tv_order_with_user();
+-- GIN index for path lookups inside the JSONB payload.
+CREATE INDEX idx_tv_order_with_user_data ON tv_order_with_user USING GIN(data);
 
--- Trigger function (PostgreSQL)
-CREATE OR REPLACE FUNCTION refresh_tv_order_with_user()
-RETURNS TRIGGER AS $$
+-- Refresh function: rebuild the projection for one order.
+CREATE OR REPLACE FUNCTION fn_refresh_tv_order_with_user(p_order BIGINT)
+RETURNS void AS $$
 BEGIN
-    INSERT INTO tv_order_with_user (pk_order, data)
+    INSERT INTO tv_order_with_user (id, data)
     SELECT
-        o.pk_order,
+        o.id,
         jsonb_build_object(
-            'orderId', o.pk_order,
+            'id',    o.id,
             'total', o.total,
             'user', jsonb_build_object(
-                'userId', u.pk_user,
+                'id',       u.id,
                 'username', u.username,
-                'email', u.email
+                'email',    u.email
             )
         )
     FROM tb_order o
     JOIN tb_user u ON u.pk_user = o.fk_user
-    WHERE o.pk_order = NEW.pk_order
-    ON CONFLICT (pk_order) DO UPDATE
-    SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+    WHERE o.pk_order = p_order
+    ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data, updated_at = now();
 END;
 $$ LANGUAGE plpgsql;
-```text
-<!-- Code example in TEXT -->
+
+-- Trigger keeps the projection current as orders change.
+CREATE TRIGGER trg_refresh_tv_order_with_user
+AFTER INSERT OR UPDATE ON tb_order
+FOR EACH ROW
+EXECUTE FUNCTION fn_refresh_tv_order_with_user();
+```
 
 **Characteristics:**
 
-- **Storage overhead:** 20-50% (JSONB pre-composition)
-- **Maintenance:** Trigger-based refresh (automatic)
-- **Performance:** 50-200ms (pre-composed, no joins at query time)
-- **Staleness:** 1-5 seconds (dependent on trigger frequency)
+- **Storage overhead:** the size of the pre-composed JSONB
+- **Maintenance:** function/trigger-based refresh (automatic)
+- **Performance:** fast reads (no join work at query time)
+- **Staleness:** bounded by the refresh cadence
 - **Index support:** JSONB GIN indexes for path searches
 
-**FraiseQL Integration:**
-
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+@fraiseql.type(sql_source="tv_order_with_user", jsonb_column="data")
 class OrderWithUser:
-    order_id: UUID  # UUID v4 for GraphQL ID
-    total: Decimal
-    user: User  # From pre-composed JSONB
-    # Automatically queries tv_order_with_user view
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    total: float
+    user: User                     # from the pre-composed JSONB
+```
+
+For an in-depth treatment of when to reach for `tv_*` and how to keep projections fresh, see the [tv table pattern](../architecture/database/tv-table-pattern.md) and the [view selection guide](../architecture/database/view-selection-guide.md).
 
 ---
 
-### 3. `va_*` Views: Logical Analytics Views (Arrow Plane)
+## Part 4: PostgreSQL-Specific Strengths
 
-**Definition:** Database views (no physical storage) optimized for Arrow Flight columnar queries.
+FraiseQL v1 targets PostgreSQL exclusively, which lets it lean on capabilities that generic, lowest-common-denominator database layers cannot use. The architecture above is built directly on these:
 
-**When to use:**
-
-- Analytics on small datasets (<100K rows)
-- One-time reports
-- Data can be 5-60 seconds stale
-- Minimal storage overhead acceptable
-
-**Example:**
+**JSONB as the wire format.** Read views build their payload with `jsonb_build_object`, and FraiseQL serves exactly the requested GraphQL fields straight out of that `data` column. JSONB also supports rich indexing and containment operators:
 
 ```sql
-<!-- Code example in SQL -->
--- Read view optimized for columnar extraction
-CREATE VIEW va_user_stats AS
-SELECT
-    pk_user,
-    username,
-    email,
-    COUNT(*) OVER (PARTITION BY EXTRACT(YEAR FROM created_at)) AS users_per_year,
-    EXTRACT(YEAR FROM created_at) AS signup_year,
-    created_at
-FROM tb_user
-WHERE deleted_at IS NULL;
-```text
-<!-- Code example in TEXT -->
+CREATE TABLE tb_event (
+    pk_event   BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    id         UUID NOT NULL DEFAULT gen_random_uuid(),
+    data       JSONB NOT NULL,          -- native JSONB
+    tags       TEXT[] NOT NULL DEFAULT '{}',   -- native array type
+    status     public.event_status NOT NULL    -- custom enum type
+);
 
-**Characteristics:**
-
-- **Storage overhead:** 0% (logical view only)
-- **Maintenance:** None (automatic)
-- **Performance:** 500ms-5s (depends on base table size)
-- **Staleness:** Real-time (always reflects current state)
-- **Arrow compatibility:** Fully compatible with Arrow Flight protocol
-
-**FraiseQL Integration:**
+-- GIN index over the JSONB document for fast containment/path queries.
+CREATE INDEX idx_tb_event_data ON tb_event USING GIN(data);
+```
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.aggregate_query(
-    fact_table=None,  # Uses va_user_stats logical view
-)
-@FraiseQL.query
-def user_stats_by_year() -> list[dict]:
-    """Returns user count by signup year via Arrow Flight."""
-```text
-<!-- Code example in TEXT -->
+import fraiseql
+from fraiseql.types import ID, JSON
+
+
+@fraiseql.type(sql_source="v_event", jsonb_column="data")
+class Event:
+    id: ID
+    data: JSON                     # maps to JSONB
+    tags: list[str]                # maps to a PostgreSQL array
+    status: str                    # maps to a PostgreSQL enum
+```
+
+**CTEs and window functions.** Read views can use common table expressions and window functions to express analytics-style shaping (running totals, rankings, partitioned aggregates) without leaving SQL.
+
+**PostgreSQL functions for all writes.** Mutations call `fn_` functions, so transactional write logic, validation, and complex multi-table updates live in the database where they are atomic. See Part 5.
+
+**`ltree` for hierarchies.** Tree-structured data (categories, org charts, threaded comments) can be modeled with the `ltree` extension and exposed via the `LTree` scalar (`from fraiseql.types import LTree`), with native ancestor/descendant operators.
+
+**Rich indexing.** Beyond B-tree, PostgreSQL offers GIN (JSONB/arrays/full-text), GiST, and BRIN (large append-mostly tables) indexes—pick the right index per access pattern and the read views inherit the benefit.
+
+Because there is a single supported database, FraiseQL never has to abstract these away or emulate them; the SQL you write is the SQL that runs.
 
 ---
 
-### 4. `ta_*` Views: Table-Backed Analytics Views (Arrow Plane)
+## Part 5: CQRS — Reads vs. Writes
 
-**Definition:** Materialized columnar tables with trigger-based refresh for high-performance analytics.
+FraiseQL follows a Command/Query Responsibility Segregation split that maps cleanly onto PostgreSQL primitives.
 
-**When to use:**
+### Reads (Queries)
 
-- Large analytics datasets (>1M rows)
-- High-volume analytics (>100 queries/sec)
-- Aggregations across multiple dimensions
-- Can tolerate 1-5 minute staleness
+`@fraiseql.query` resolvers call `db.find` / `db.find_one` against a `v_*` or `tv_*` view. The view's `data` JSONB is returned and shaped to exactly the requested GraphQL fields.
 
-**The Three-Component Architecture:**
+```python
+@fraiseql.query
+async def orders(info) -> list[Order]:
+    db = info.context["db"]
+    return await db.find("v_order")
+```
 
-#### Component 1: Measures (Direct SQL Columns)
+### Writes (Mutations)
 
-Numeric columns for fast aggregation. **225x faster** than JSONB aggregation.
+`@fraiseql.mutation` resolvers call PostgreSQL `fn_*` functions via `db.execute_function`. The function performs validation and the write inside a transaction, then returns JSONB describing success or failure. **All write business logic lives in PostgreSQL.**
 
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE ta_sales (
-    id BIGSERIAL PRIMARY KEY,
+```python
+import fraiseql
+from fraiseql.types import ID
 
-    -- MEASURES: Direct SQL columns for fast aggregation
-    measure_revenue DECIMAL(10,2) NOT NULL,
-    measure_quantity INT NOT NULL,
-    measure_cost DECIMAL(10,2) NOT NULL,
 
-    -- ... dimensions and filters below
-);
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
 
--- Queries: Direct column access
-SELECT
-    SUM(measure_revenue) AS total_revenue,
-    AVG(measure_quantity) AS avg_qty,
-    COUNT(*) AS transaction_count
-FROM ta_sales
-WHERE created_at >= '2026-01-01';
--- Result: <1ms (1M rows)
-```text
-<!-- Code example in TEXT -->
 
-#### Component 2: Dimensions (JSONB Column)
+@fraiseql.success
+class CreateUserSuccess:
+    user: User                     # @success auto-injects status/message/etc.
 
-Flexible grouping attributes in a single JSON column. No schema migration needed to add new dimensions.
 
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE ta_sales (
-    -- ... measures above
+@fraiseql.error
+class CreateUserError:
+    message: str
+    code: str = "VALIDATION_ERROR"
 
-    -- DIMENSIONS: JSONB column for flexible grouping
-    dimension_data JSONB NOT NULL,
-    -- Contains: {category, product_name, region, customer_segment, ...}
-    -- Schema defined at ETL time, not database schema time
 
-    -- ... filters and timestamps below
-);
-
--- Queries: Extract dimension paths
-SELECT
-    dimension_data->>'category' AS category,
-    dimension_data->>'region' AS region,
-    SUM(measure_revenue) AS total_revenue
-FROM ta_sales
-WHERE created_at >= '2026-01-01'
-GROUP BY
-    dimension_data->>'category',
-    dimension_data->>'region'
-ORDER BY total_revenue DESC;
--- Result: 50-100ms (1M rows), grouping by 2 dimensions
-```text
-<!-- Code example in TEXT -->
-
-**Database-Specific Dimension Extraction:**
-
-PostgreSQL:
-
-```sql
-<!-- Code example in SQL -->
-dimension_data->>'category'              -- JSONB operator
-```text
-<!-- Code example in TEXT -->
-
-MySQL:
-
-```sql
-<!-- Code example in SQL -->
-JSON_UNQUOTE(JSON_EXTRACT(dimension_data, '$.category'))
-```text
-<!-- Code example in TEXT -->
-
-SQLite:
-
-```sql
-<!-- Code example in SQL -->
-json_extract(dimension_data, '$.category')
-```text
-<!-- Code example in TEXT -->
-
-SQL Server:
-
-```sql
-<!-- Code example in SQL -->
-JSON_VALUE(dimension_data, '$.category')
-```text
-<!-- Code example in TEXT -->
-
-#### Component 3: Denormalized Filters (Indexed SQL Columns)
-
-High-selectivity filter columns for fast WHERE clauses.
-
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE ta_sales (
-    -- ... measures and dimensions above
-
-    -- DENORMALIZED FILTERS: Indexed SQL columns for fast WHERE
-    filter_customer_id UUID NOT NULL,
-    filter_product_id UUID NOT NULL,
-    filter_occurred_at TIMESTAMPTZ NOT NULL,
-    filter_status VARCHAR(50) NOT NULL,
-
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes for microsecond filtering
-CREATE INDEX idx_ta_sales_customer ON ta_sales(filter_customer_id);
-CREATE INDEX idx_ta_sales_product ON ta_sales(filter_product_id);
-CREATE INDEX idx_ta_sales_occurred ON ta_sales(filter_occurred_at);
-CREATE INDEX idx_ta_sales_status ON ta_sales(filter_status);
-CREATE INDEX idx_ta_sales_data_gin ON ta_sales USING GIN(dimension_data);
-CREATE INDEX idx_ta_sales_revenue_brin ON ta_sales USING BRIN(measure_revenue);
-```text
-<!-- Code example in TEXT -->
-
-**Query with All Three Components:**
-
-```sql
-<!-- Code example in SQL -->
--- Fast WHERE (filters), GROUP BY (dimensions), aggregation (measures)
-SELECT
-    dimension_data->>'category' AS category,
-    DATE_TRUNC('month', filter_occurred_at)::DATE AS month,
-    COUNT(*) AS transaction_count,
-    SUM(measure_revenue) AS total_revenue,
-    AVG(measure_quantity) AS avg_quantity
-FROM ta_sales
-WHERE
-    filter_customer_id = '550e8400-e29b-41d4-a716-446655440000'  -- Fast index lookup
-    AND filter_occurred_at >= '2026-01-01'                        -- Fast index lookup
-    AND filter_status = 'completed'                               -- Fast index lookup
-GROUP BY
-    dimension_data->>'category',
-    DATE_TRUNC('month', filter_occurred_at)
-HAVING
-    SUM(measure_revenue) > 1000
-ORDER BY month DESC
-LIMIT 100;
-
--- Performance: 30-100ms (100M rows)
-```text
-<!-- Code example in TEXT -->
-
-**Complete Example with Triggers:**
-
-```sql
-<!-- Code example in SQL -->
--- Write table (source of truth)
-CREATE TABLE tb_sales (
-    pk_sale BIGINT PRIMARY KEY,
-    fk_customer UUID NOT NULL,
-    fk_product UUID NOT NULL,
-    revenue DECIMAL(10,2),
-    quantity INT,
-    cost DECIMAL(10,2),
-    status VARCHAR(50),
-    occurred_at TIMESTAMP,
-    created_at TIMESTAMP
-);
-
--- Materialized analytics table (denormalized for speed)
-CREATE TABLE ta_sales (
-    id BIGSERIAL PRIMARY KEY,
-
-    -- Measures (225x faster than JSONB aggregation)
-    measure_revenue DECIMAL(10,2) NOT NULL,
-    measure_quantity INT NOT NULL,
-    measure_cost DECIMAL(10,2) NOT NULL,
-
-    -- Dimensions (flexible, no schema migration)
-    dimension_data JSONB NOT NULL,  -- {category, product_name, region, segment}
-
-    -- Filters (indexed, fast WHERE)
-    filter_customer_id UUID NOT NULL,
-    filter_product_id UUID NOT NULL,
-    filter_occurred_at TIMESTAMPTZ NOT NULL,
-    filter_status VARCHAR(50) NOT NULL,
-
-    -- Timestamps
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    source_updated_at TIMESTAMP  -- Track staleness
-);
-
--- Indexes
-CREATE INDEX idx_ta_sales_customer ON ta_sales(filter_customer_id);
-CREATE INDEX idx_ta_sales_occurred ON ta_sales(filter_occurred_at);
-CREATE INDEX idx_ta_sales_status ON ta_sales(filter_status);
-CREATE INDEX idx_ta_sales_data_gin ON ta_sales USING GIN(dimension_data);
-CREATE INDEX idx_ta_sales_revenue_brin ON ta_sales USING BRIN(measure_revenue);
-
--- Trigger: Populate ta_sales from tb_sales
-CREATE TRIGGER trg_populate_ta_sales
-AFTER INSERT OR UPDATE ON tb_sales
-FOR EACH ROW
-EXECUTE FUNCTION populate_ta_sales();
-
-CREATE OR REPLACE FUNCTION populate_ta_sales()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO ta_sales (
-        measure_revenue, measure_quantity, measure_cost,
-        dimension_data,
-        filter_customer_id, filter_product_id, filter_occurred_at, filter_status,
-        source_updated_at
+@fraiseql.mutation
+async def create_user(
+    info, input: CreateUserInput
+) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user",
+        {"name": input.name, "email": input.email},
     )
-    SELECT
-        NEW.revenue,
-        NEW.quantity,
-        NEW.cost,
-        jsonb_build_object(
-            'category', p.category,
-            'product_name', p.name,
-            'region', c.region,
-            'segment', c.segment
-        ),
-        NEW.fk_customer,
-        NEW.fk_product,
-        NEW.occurred_at,
-        NEW.status,
-        NEW.created_at
-    FROM tb_product p
-    JOIN tb_customer c ON c.fk_customer = NEW.fk_customer
-    WHERE p.pk_product = NEW.fk_product
-    ON CONFLICT (id) DO UPDATE
-    SET
-        measure_revenue = EXCLUDED.measure_revenue,
-        source_updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"))
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+The corresponding PostgreSQL function owns the write:
+
+```sql
+CREATE OR REPLACE FUNCTION fn_create_user(payload JSONB)
+RETURNS JSONB AS $$
+DECLARE
+    v_id UUID;
+BEGIN
+    IF payload->>'email' IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'email is required');
+    END IF;
+
+    INSERT INTO tb_user (username, email)
+    VALUES (payload->>'name', payload->>'email')
+    RETURNING id INTO v_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'user', (SELECT data FROM v_user WHERE id = v_id)
+    );
 END;
 $$ LANGUAGE plpgsql;
-```text
-<!-- Code example in TEXT -->
+```
 
-**Characteristics:**
-
-- **Storage overhead:** 10-30% (columnar format + indexes)
-- **Maintenance:** Trigger-based refresh (<100ms latency)
-- **Performance:** 50-100ms (1M rows), 300-1000ms (100M rows)
-- **Staleness:** 1-5 minutes (dependent on refresh triggers)
-- **Index support:** BRIN indexes (10KB vs 1MB for B-tree), GIN for JSONB
+The schema that wires all of this together is assembled **at application startup, in memory**—there are no generated files to ship or keep in sync.
 
 ---
 
-### Calendar Dimensions: Temporal Performance Optimization
-
-**Problem:** Grouping by temporal buckets (month, quarter, year) requires runtime computation.
-
-```sql
-<!-- Code example in SQL -->
--- Slow: Runtime computation
-SELECT
-    DATE_TRUNC('month', occurred_at) AS month,
-    SUM(measure_revenue) AS revenue
-FROM ta_sales
-GROUP BY DATE_TRUNC('month', occurred_at);
--- Result: 500ms (1M rows)
-```text
-<!-- Code example in TEXT -->
-
-**Solution:** Pre-computed temporal buckets in JSONB.
-
-```sql
-<!-- Code example in SQL -->
--- Fast: Pre-computed extraction
-CREATE TABLE ta_sales_with_calendar (
-    -- ... all columns from ta_sales above
-
-    -- Calendar dimension: Pre-computed temporal buckets
-    calendar_info JSONB NOT NULL,
-    -- Contains: {date: "2026-03-15", week: 11, month: 3, quarter: 1, year: 2026}
-);
-
--- Query: Direct extraction (no computation)
-SELECT
-    calendar_info->>'month' AS month,
-    calendar_info->>'year' AS year,
-    SUM(measure_revenue) AS revenue
-FROM ta_sales_with_calendar
-WHERE calendar_info->>'year' = '2026'
-GROUP BY
-    calendar_info->>'year',
-    calendar_info->>'month'
-ORDER BY calendar_info->>'month';
--- Result: 30ms (1M rows) - 16x faster!
-```text
-<!-- Code example in TEXT -->
-
-**Performance Impact by Rows:**
-
-| Rows | Without Calendar | With Calendar | Speedup |
-|------|------------------|---------------|---------|
-| 100K | 50ms | 5ms | 10x |
-| 1M | 500ms | 30ms | 16x |
-| 10M | 5000ms | 300ms | 16x |
-
-**FraiseQL Automatic Detection:**
-FraiseQL introspects columns ending with `_info` containing `{date, week, month, quarter, year}` and automatically generates optimal SQL:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.fact_table(table_name="ta_sales")
-@FraiseQL.type
-class Sale:
-    measure_revenue: float
-    dimension_data: dict  # {category, product_name, region}
-    calendar_info: dict   # {date, week, month, quarter, year} ← Auto-detected
-    # FraiseQL uses: calendar_info->>'month' (not DATE_TRUNC)
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 4: Multi-Database Support
-
-### The Multi-Database Philosophy
-
-FraiseQL supports multiple database backends with **one schema definition**:
-
-```python
-<!-- Code example in Python -->
-# One schema definition...
-@FraiseQL.type
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
-    email: str
-    orders: List[Order]
-
-# ...works with any supported database
-# - PostgreSQL (primary, most features)
-# - MySQL (secondary, good support)
-# - SQLite (local dev, testing)
-# - SQL Server (enterprise deployments)
-```text
-<!-- Code example in TEXT -->
-
----
-
-### Database Selection Matrix
-
-| Database | Strengths | Typical Use | Analytics | Maturity |
-|----------|-----------|------------|----------|----------|
-| **PostgreSQL** | Full-featured, JSONB, BRIN indexes, window functions | Production primary | ✅ Best | ✅ Full support |
-| **MySQL** | Widely deployed, fast, JSON | Legacy systems, scale-out | ⚠️ Basic JSON | ✅ Full support |
-| **SQLite** | Lightweight, embedded, portable | Local dev, testing, mobile | ⚠️ Limited | ✅ Full support |
-| **SQL Server** | Enterprise Windows, T-SQL, JSON | Enterprise deployments | ⚠️ JSON as NVARCHAR | ✅ Full support |
-
----
-
-### Schema Portability Example
-
-**Same FraiseQL schema:**
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class Product:
-    product_id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    price: Decimal
-    in_stock: bool
-    created_at: datetime
-```text
-<!-- Code example in TEXT -->
-
-**Works on PostgreSQL:**
-
-```sql
-<!-- Code example in SQL -->
--- PostgreSQL
-CREATE TABLE tb_product (
-    pk_product BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(255),
-    price NUMERIC(10, 2),
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text
-<!-- Code example in TEXT -->
-
-**Works on MySQL:**
-
-```sql
-<!-- Code example in SQL -->
--- MySQL
-CREATE TABLE tb_product (
-    pk_product BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255),
-    price DECIMAL(10, 2),
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text
-<!-- Code example in TEXT -->
-
-**Works on SQLite:**
-
-```sql
-<!-- Code example in SQL -->
--- SQLite
-CREATE TABLE tb_product (
-    pk_product BIGINTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    price REAL,
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text
-<!-- Code example in TEXT -->
-
-**Same GraphQL API** ✓
-**Same FraiseQL schema definition** ✓
-**Different database implementations** ✓
-
----
-
-### Database-Specific Features
-
-While the schema is portable, FraiseQL can leverage database-specific features:
-
-**PostgreSQL (Primary, Most Features):**
-
-```sql
-<!-- Code example in SQL -->
--- PostgreSQL-specific: JSONB, arrays, types
-CREATE TABLE tb_events (
-    pk_event BIGINT PRIMARY KEY,
-    data JSONB,  -- PostgreSQL JSONB type
-    tags TEXT[],  -- PostgreSQL array type
-    status public.event_status  -- Custom enum type
-);
-
--- FraiseQL can leverage these
-@FraiseQL.type
-class Event:
-    event_id: UUID  # UUID v4 for GraphQL ID
-    data: JSON  # Maps to JSONB
-    tags: List[str]  # Maps to array
-    status: EventStatus  # Maps to enum
-```text
-<!-- Code example in TEXT -->
-
-**MySQL (Limited Custom Types):**
-
-```sql
-<!-- Code example in SQL -->
--- MySQL: Standard types, JSON as string
-CREATE TABLE tb_events (
-    pk_event BIGINT AUTO_INCREMENT PRIMARY KEY,
-    data JSON,  -- JSON as string
-    tags JSON,  -- Array as JSON string
-    status VARCHAR(50)  -- Enum as string
-);
-```text
-<!-- Code example in TEXT -->
-
-**SQLite (Minimal Types):**
-
-```sql
-<!-- Code example in SQL -->
--- SQLite: TEXT for everything complex
-CREATE TABLE tb_events (
-    pk_event INTEGER PRIMARY KEY,
-    data TEXT,  -- JSON as text
-    tags TEXT,  -- JSON array as text
-    status TEXT  -- Enum as text
-);
-```text
-<!-- Code example in TEXT -->
-
-**FraiseQL handles the differences transparently.**
-
----
-
-## Part 5: Fact Tables for Analytics (tf_*)
-
-### What Are Fact Tables?
-
-Fact tables (`tf_*` prefix) are the **core analytics data structure** in FraiseQL. They denormalize transactional data into a structure optimized for rapid aggregation across multiple dimensions.
-
-**Key principle:** NO JOINS during queries. All dimensional context is denormalized at ETL time.
-
----
-
-### The Three-Component Architecture
-
-```text
-<!-- Code example in TEXT -->
-Fact Table (tf_*)
-├── Measures (SQL Columns) ← 225x faster aggregation
-├── Dimensions (JSONB Column) ← Flexible grouping
-└── Filters (Indexed SQL Columns) ← Fast WHERE clauses
-```text
-<!-- Code example in TEXT -->
-
-This structure enables:
-
-- **Measures:** Direct aggregation (SUM, AVG, COUNT) at database speed
-- **Dimensions:** Flexible grouping without schema changes
-- **Filters:** Instant WHERE clause evaluation via indexes
-
----
-
-### Python Authoring for Analytics
-
-FraiseQL provides decorators for analytics:
-
-```python
-<!-- Code example in Python -->
-from FraiseQL import fact_table, aggregate_query, type as fraiseql_type
-
-# Define fact table
-@fact_table(
-    table_name="tf_sales",
-    measures=[
-        {"name": "revenue", "type": "float", "aggregates": ["sum", "avg"]},
-        {"name": "quantity", "type": "int", "aggregates": ["sum", "avg"]},
-        {"name": "cost", "type": "float", "aggregates": ["sum"]},
-    ],
-    dimension_paths=[
-        {"name": "category", "json_path": "dimension_data->>'category'"},
-        {"name": "product_name", "json_path": "dimension_data->>'product_name'"},
-        {"name": "region", "json_path": "dimension_data->>'region'"},
-    ],
-    denormalized_filters=[
-        {"name": "customer_id", "type": "uuid"},
-        {"name": "product_id", "type": "uuid"},
-        {"name": "occurred_at", "type": "timestamp"},
-        {"name": "status", "type": "string"},
-    ],
-    calendar_dimensions=[
-        {"name": "calendar_info", "type": "date_info"}  # {date, week, month, quarter, year}
-    ],
-)
-@fraiseql_type
-class Sale:
-    """Sales fact table for analytics."""
-    id: UUID  # UUID v4 for GraphQL ID
-    measure_revenue: float
-    measure_quantity: int
-    measure_cost: float
-    dimension_data: dict
-    filter_customer_id: UUID  # UUID v4 for GraphQL ID
-    filter_product_id: UUID  # UUID v4 for GraphQL ID
-    filter_occurred_at: datetime
-    filter_status: str
-    calendar_info: dict
-```text
-<!-- Code example in TEXT -->
-
-**Generated GraphQL Aggregate Query:**
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_aggregate(
-    where: {
-      filter_occurred_at: { _gte: "2026-01-01", _lt: "2026-02-01" }
-      filter_status: "completed"
-    }
-    groupBy: {
-      category: true
-      month: true  # From calendar_info->>'month'
-    }
-    having: {
-      measure_revenue_sum_gt: 1000
-    }
-    orderBy: [{ field: "measure_revenue_sum", direction: DESC }]
-    limit: 100
-  ) {
-    category
-    month
-    count
-    measure_revenue_sum
-    measure_revenue_avg
-    measure_quantity_sum
-    measure_quantity_avg
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 6: Arrow Flight for Streaming Analytics
-
-### Arrow Flight Protocol
-
-FraiseQL uses **Apache Arrow Flight** to stream columnar analytics data directly to clients.
-
-```text
-<!-- Code example in TEXT -->
-Client
-  ↓ (Arrow Flight Request with ticket)
-FraiseQL Arrow Server (gRPC)
-  ├─ Validate query
-  ├─ Authorize access
-  ├─ Execute compiled SQL
-  └─ Stream columnar Arrow batches
-  ↓
-Client (receives Arrow format, zero-copy deserialization)
-```text
-<!-- Code example in TEXT -->
-
-**Performance:**
-
-- **JSON Plane:** 10-20 MB/sec (row-by-row, HTTP)
-- **Arrow Plane:** 100-500 MB/sec (columnar, gRPC)
-- **Speedup:** 5-50x faster for analytics
-
----
-
-### Flight Tickets
-
-Clients request data by submitting a **Flight Ticket**, which encodes the query:
-
-```json
-<!-- Code example in JSON -->
-{
-  "type": "OptimizedView",
-  "view": "ta_sales",
-  "filter": "filter_occurred_at > '2026-01-01' AND filter_status = 'completed'",
-  "orderBy": "calendar_info->>'month' DESC",
-  "limit": 100000,
-  "offset": 0
-}
-```text
-<!-- Code example in TEXT -->
-
-**Ticket Types:**
-
-1. **GraphQLQuery** - Execute GraphQL query, return Arrow
-2. **OptimizedView** - Query pre-optimized ta_* view directly
-3. **BulkExport** - Export entire table as Arrow
-4. **ObserverEvents** - Stream observer change data
-
----
-
-### Arrow Flight Schema Registry
-
-FraiseQL automatically registers Arrow schemas:
-
-```text
-<!-- Code example in TEXT -->
-va_orders: [id (Int64), total (Float64), created_at (Timestamp), customer_name (Utf8)]
-va_users: [id (Int64), email (Utf8), name (Utf8), created_at (Timestamp)]
-ta_orders: [measure_total (Numeric), dimension_data (Utf8), filter_customer_id (Utf8), calendar_info (Utf8)]
-ta_users: [id (Text), email (Text), name (Text), created_at (Timestamp), source_updated_at (Timestamp)]
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Part 7: Architecture Layers
+## Part 6: Architecture Layers
 
 ### The Complete Picture
 
-FraiseQL's database-centric design manifests in four layers:
+FraiseQL's database-centric design manifests in three layers:
 
 ```text
-<!-- Code example in TEXT -->
 ┌─────────────────────────────────────────────┐
-│ Layer 1: AUTHORING (Your Code)              │
-│ Python/TypeScript + @FraiseQL decorators    │
+│ Layer 2: AUTHORING (Your Code)              │
+│ Python + @fraiseql decorators               │
 │                                             │
-│ @FraiseQL.type                              │
+│ @fraiseql.type(sql_source="v_user")         │
 │ class User:                                 │
-│   user_id: int                              │
+│   id: ID                                    │
 │   username: str                             │
 │                                             │
-│ Source: You write this                      │
-│ Output: schema.json                         │
+│ @fraiseql.query / @fraiseql.mutation        │
 └─────────────────────────────────────────────┘
            │
-           │ (FraiseQL-cli compile)
-           │
+           │ create_fraiseql_app(...) builds the
+           │ GraphQL schema in memory at startup
+           ▼
 ┌─────────────────────────────────────────────┐
-│ Layer 2: COMPILATION (Build Time)           │
-│ Validates, optimizes, generates SQL         │
+│ Layer 1: RUNTIME (FastAPI process)          │
 │                                             │
-│ - Validate schema against database          │
-│ - Generate SQL templates                    │
-│ - Optimize queries                          │
-│ - Compile authorization rules               │
-│ - Introspect fact tables & calendar dims    │
-│ - Create Arrow Flight schema registry       │
-│                                             │
-│ Output: schema.compiled.json                │
+│ - Validate the request against the schema   │
+│ - Authorize (declarative rules)             │
+│ - Reads:  db.find / db.find_one on v_/tv_   │
+│ - Writes: db.execute_function on fn_        │
+│ - Shape JSONB to the requested fields       │
+│   (the optional fraiseql_rs extension        │
+│    accelerates this on the hot path)        │
 └─────────────────────────────────────────────┘
-           │
-           │ (deployed to server)
-           │
-┌─────────────────────────────────────────────┐
-│ Layer 3: RUNTIME (Execution)                │
-│ Execute pre-compiled schemas and queries    │
-│                                             │
-│ JSON Plane (GraphQL/HTTP):                  │
-│   - Query v_* views (logical reads)         │
-│   - Query tv_* views (materialized JSON)    │
-│   - Mutation via triggers                   │
-│                                             │
-│ Arrow Plane (Arrow Flight/gRPC):            │
-│   - Stream va_* views (logical analytics)   │
-│   - Stream ta_* views (materialized facts)  │
-│   - Zero-copy columnar delivery             │
-│                                             │
-│ Where databases: PostgreSQL, MySQL,         │
-│ SQLite, SQL Server all supported            │
-└─────────────────────────────────────────────┘
-           │
            │
            ▼
 ┌─────────────────────────────────────────────┐
-│ Layer 0: DATABASE (Source of Truth)         │
-│ Tables, views, functions, constraints       │
+│ Layer 0: POSTGRESQL (Source of Truth)       │
 │                                             │
-│ Write Tables:                               │
-│   - tb_* tables (normalized, DBA-owned)     │
+│ Write side:                                 │
+│   - tb_* normalized tables (DBA-owned)      │
+│   - fn_* functions (mutation write logic)   │
 │                                             │
-│ Read Views:                                 │
-│   - v_* logical views                       │
-│   - tv_* materialized JSON views            │
-│   - va_* logical analytics views            │
-│   - ta_* materialized fact tables           │
-│                                             │
-│ Analytics Foundation:                       │
-│   - tf_* fact tables (if using analytics)   │
-│   - td_* dimension tables (ETL only)        │
+│ Read side:                                  │
+│   - v_*  logical read views                 │
+│   - tv_* table-backed projections           │
 │                                             │
 │ The single source of truth for all data     │
 └─────────────────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
+
+The optional Rust extension (`fraiseql_rs`) is not a separate layer or data plane—it simply speeds up JSON transformation inside Layer 1.
 
 ---
 
-## Part 8: Consequences of Database-Centric Design
+## Part 7: Consequences of Database-Centric Design
 
 ### Immediate Benefits
 
 **1. Clarity**
 
 - What you see is what you get
-- Database schema = API definition
+- Read views and functions define the API surface
 - No hidden resolver logic
 
 **2. Performance**
 
-- Database optimization at compile time
-- N+1 queries eliminated (database handles it)
-- Fact tables enable 100x analytics speedup
-- Deterministic query performance
+- PostgreSQL plans and optimizes queries
+- N+1 reads avoided by composing nested data in views
+- `tv_*` projections turn heavy nested reads into single-row lookups
 
 **3. Consistency**
 
 - Single source of truth
 - No cache invalidation complexity
-- Database constraints enforced
-- ACID transactions guaranteed
+- Database constraints enforced; ACID transactions guaranteed
 
 **4. Security**
 
-- Authorization rules compiled into SQL
-- Row-level security possible
-- Parameterized queries prevent injection
+- All writes flow through `fn_*` functions, validated in the database
+- Row-level security available in PostgreSQL
+- Parameterized queries prevent SQL injection
 
 **5. Debuggability**
 
-- Look at the SQL, understand the query
+- Look at the view or function, understand the query
 - No hidden resolver logic
-- Performance bottlenecks are clear (database metrics)
-- Calendar dimensions and filters explain slow queries
+- Performance bottlenecks are visible in database metrics
 
 ---
 
@@ -1275,32 +644,24 @@ FraiseQL's database-centric design manifests in four layers:
 **1. Schema Must Be Structured**
 
 - Requires clear database design (normalization, keys, constraints)
-- Not suitable for unstructured/document-based data
-- Fact tables require denormalization at ETL time
+- Not suitable for unstructured/document-only data
 
-**2. Database Must Be Primary Data Source**
+**2. PostgreSQL Must Be the Primary Data Source**
 
-- Multi-source federation limited
-- Aggregating multiple APIs requires federation pattern
-- REST/GraphQL/etc. as secondary sources only
+- Multi-source federation is limited
+- External REST/GraphQL sources are secondary at best
 
-**3. Schema Changes Require Recompilation**
+**3. Database Expertise Required**
 
-- Not suitable for dynamic, runtime schema changes
-- Schema must be known at compile time
-- Deployment is required for schema changes
-
-**4. Database Expertise Required**
-
-- Team must understand SQL, indexes, relationships, triggers
-- DBA involvement necessary for analytics (fact tables, calendars)
+- The team must understand SQL, indexes, views, functions, and triggers
+- DBA involvement helps for non-trivial projections
 - Schema design quality directly affects API performance
 
-**5. Analytics Requires ETL Discipline**
+**4. Reads Live in Views, Writes Live in Functions**
 
-- Dimensions must be denormalized at ETL time
-- Calendar dimensions must be pre-computed
-- No joins allowed in analytics queries (enforced by architecture)
+- Read shaping is done in `v_*`/`tv_*` views
+- Write logic is done in `fn_*` functions
+- This discipline is the source of FraiseQL's simplicity—embrace it
 
 ---
 
@@ -1308,83 +669,60 @@ FraiseQL's database-centric design manifests in four layers:
 
 FraiseQL makes a deliberate choice:
 
-**Core assumption:** Your GraphQL API is a **database access interface**, not a general-purpose API aggregator.
+**Core assumption:** Your GraphQL API is a **PostgreSQL access interface**, not a general-purpose API aggregator.
 
 **Implementation:**
 
-- ✅ Transactional queries via `v_*` and `tv_*` views (JSON Plane)
-- ✅ Analytics queries via `va_*` and `ta_*` views (Arrow Plane)
-- ✅ Fact tables (`tf_*`) for high-performance aggregations
-- ✅ Calendar dimensions for temporal performance (10-16x speedup)
-- ✅ Multi-database support (PostgreSQL, MySQL, SQLite, SQL Server)
+- Reads via `v_*` logical views and `tv_*` table-backed projections (JSONB payloads)
+- Writes via `fn_*` PostgreSQL functions called through `db.execute_function`
+- Trinity identifier pattern: hidden `pk_` BIGINT, public `id` UUID, optional `identifier` slug
+- Schema built in memory at app startup—no compile step, no artifacts
 
 **Consequences:**
 
-- ✅ Simpler architecture (no custom resolvers)
-- ✅ Better performance (database optimization + fact tables)
-- ✅ Higher consistency (single source of truth)
-- ✅ Easier debugging (clear SQL + metrics)
-- ❌ Less flexible (cannot easily add external APIs)
-- ❌ Requires database expertise
-- ❌ Schema must be structured
-- ❌ Analytics requires ETL discipline
+- Simpler architecture (little to no custom resolver code)
+- Better performance (database optimization + pre-composed projections)
+- Higher consistency (single source of truth)
+- Easier debugging (clear views/functions + metrics)
+- Less flexible (cannot easily add external APIs)
+- Requires database expertise and a structured schema
 
-**Best for:** Data-centric applications with clear schemas, transactional + analytics needs, and performance requirements.
+**Best for:** Data-centric applications on PostgreSQL with clear schemas and performance requirements.
 
-**Not suitable for:** Heavily federated systems, unstructured data, or dynamic schemas.
+**Not suitable for:** Heavily federated systems, unstructured data, dynamic per-request schemas, or non-PostgreSQL databases.
 
 ---
 
 ## Next Steps
 
-Now you understand FraiseQL's database-centric approach:
+Now that you understand FraiseQL's database-centric approach:
 
-1. **Learn how compilation works** → Topic 2.1 (Compilation Pipeline)
-   - How your schema becomes optimized SQL
-
-2. **Start designing schemas** → Topic 3.1 (Python Schema Authoring)
-   - Write your first FraiseQL schema
-
-3. **Understand specific databases** → Topic 4.1 (PostgreSQL Integration)
-   - Database-specific features and best practices
-
-4. **Learn design principles** → Topic 1.4 (Design Principles)
-   - 5 guiding principles of FraiseQL
+1. **Get hands-on** → [Quickstart](../getting-started/quickstart.md) and [First Hour](../getting-started/first-hour.md)
+2. **Review the vocabulary** → [Concepts Glossary](../core/concepts-glossary.md) and [Naming Patterns](../reference/naming-patterns.md)
+3. **Learn design principles** → [Design Principles](./04-design-principles.md)
+4. **Compare alternatives** → [Comparisons](./05-comparisons.md)
 
 ---
 
 ## Related Topics
 
-- **Topic 1.1:** What is FraiseQL? — High-level positioning
-- **Topic 1.2:** Core Concepts & Terminology — Database vocabulary
-- **Topic 1.4:** Design Principles — 5 guiding principles
-- **Topic 2.1:** Compilation Pipeline — How compilation works
-- **Topic 4.5:** Database Design Patterns — Fact table design details
-- **Topic 4.1:** PostgreSQL Integration — Database-specific guidance
+- [Core Concepts](./02-core-concepts.md) — database vocabulary and the runtime model
+- [Design Principles](./04-design-principles.md) — the guiding principles of FraiseQL
+- [Type System](./09-type-system.md) — scalars and type mapping
+- [Error Handling & Validation](./10-error-handling-validation.md) — success/error result types
+- [Performance Characteristics](./12-performance-characteristics.md) — what to expect at runtime
+- [tv Table Pattern](../architecture/database/tv-table-pattern.md) — designing table-backed projections
+- [View Selection Guide](../architecture/database/view-selection-guide.md) — choosing `v_*` vs `tv_*`
 
 ---
 
 ## Key Takeaways
 
-✅ **FraiseQL treats the database as the primary application interface**
-
-✅ **Four-tier view system optimizes for different access patterns:**
-
-- `v_*` logical reads (JSON, real-time)
-- `tv_*` materialized JSON (complex nested, high volume)
-- `va_*` logical analytics (Arrow, small datasets)
-- `ta_*` materialized facts (Arrow, large datasets, 50-100ms latency)
-
-✅ **Fact tables with three components:**
-
-- Measures (SQL columns, 225x faster aggregation)
-- Dimensions (JSONB, flexible grouping, no migration)
-- Filters (indexed SQL, fast WHERE)
-
-✅ **Calendar dimensions provide 10-16x analytics speedup** (pre-computed temporal buckets)
-
-✅ **Arrow Flight enables 5-50x faster data streaming** (columnar, gRPC, zero-copy)
-
-✅ **Multi-database support** (PostgreSQL, MySQL, SQLite, SQL Server with same schema)
-
-✅ **Trade-off: Simplicity for flexibility** (not suitable for heavily federated systems)
+- **FraiseQL treats PostgreSQL as the primary application interface.**
+- **Two read view types** cover most needs:
+  - `v_*` logical reads (computed on read, real-time)
+  - `tv_*` table-backed projections (pre-composed JSONB, fast nested reads)
+- **All writes go through `fn_*` PostgreSQL functions** called via `db.execute_function`.
+- **The schema is built in memory at startup**—there is no compile step or artifact.
+- **PostgreSQL-only by design**, which lets FraiseQL exploit JSONB, CTEs, functions, `ltree`, and rich indexing directly.
+- **Trade-off: simplicity for unconstrained flexibility** (not suited to heavily federated systems).
