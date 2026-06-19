@@ -1,8 +1,7 @@
-<!-- Skip to main content -->
 ---
 
 title: Caching Specification
-description: Caching in FraiseQL is a **comprehensive, deterministic system** that improves performance while maintaining **absolute data consistency** through automatic inv
+description: Result caching in FraiseQL is a PostgreSQL-backed system that improves performance while maintaining data consistency through TTL expiry and CASCADE invalidation.
 keywords: ["format", "compliance", "protocol", "specification", "standard"]
 tags: ["documentation", "reference"]
 ---
@@ -17,20 +16,25 @@ tags: ["documentation", "reference"]
 
 ## 1. Overview
 
-Caching in FraiseQL is a **comprehensive, deterministic system** that improves performance while maintaining **absolute data consistency** through automatic invalidation. The caching architecture is built on three foundational principles:
+Caching in FraiseQL is a result-caching layer that improves performance while maintaining data consistency. It lives in `fraiseql.caching` and is built on three foundational principles:
 
-1. **Multi-Layer Architecture** — Query caching + APQ response caching + automatic invalidation
-2. **Tenant Isolation** — All cache keys include tenant context, preventing cross-tenant data leakage
-3. **Deterministic Invalidation** — Cache invalidation is compiler-determined, not runtime-dependent
+1. **PostgreSQL-backed** — Cache entries are stored in a PostgreSQL `UNLOGGED` table (no WAL overhead), so the cache is shared across every FastAPI instance pointed at the same database.
+2. **Tenant Isolation** — Cache keys include the tenant context, preventing cross-tenant data leakage.
+3. **CASCADE Invalidation** — Cache invalidation rules are derived from the GraphQL schema at app startup, so mutations on a domain invalidate the caches of types that depend on it.
 
-FraiseQL provides:
+The public API (`from fraiseql.caching import ...`) provides:
 
-- **Query Result Caching** — Cache GraphQL query results at the database level
-- **APQ Response Caching** — Cache persisted query responses with field selection
-- **graphql-cascade Integration** — Automatic cache invalidation based on mutation cascades
-- **Multi-Backend Support** — In-memory (development), PostgreSQL (production), or custom backends
-- **Transparent TTL Management** — Time-to-live policies with complexity-aware tuning
-- **Observable Metrics** — Hit/miss rates, cache sizes, performance tracking
+- **`ResultCache`** — Query-result caching with `get_or_set`, TTL handling, and stats.
+- **`CacheConfig`** — Dataclass configuring `enabled`, TTLs, error caching, and key prefix.
+- **`CacheBackend`** — Protocol every backend implements (`get` / `set` / `delete` / `delete_pattern`).
+- **`PostgresCache`** — Production backend using a PostgreSQL `UNLOGGED` table.
+- **`CacheKeyBuilder`** — Deterministic, tenant-isolated cache-key generation.
+- **`CachedRepository`** — A `FraiseQLRepository` wrapper that transparently caches `find`/`find_one` and invalidates on `execute_function`.
+- **`cached_query`** — A decorator for caching arbitrary async query functions.
+- **`CascadeRule`**, **`SchemaAnalyzer`**, **`setup_auto_cascade_rules`** — Automatic CASCADE-rule generation from the GraphQL schema.
+- **`CacheStats`** — Hit / miss / error counters with a `hit_rate` property.
+
+All of this runs at runtime inside your FastAPI app; there is no build step and no compiled artifact.
 
 ---
 
@@ -38,866 +42,548 @@ FraiseQL provides:
 
 ### 2.1 Overview
 
-Query Result Caching stores the complete result of GraphQL queries in a cache, enabling subsecond response times for repeated queries.
+`ResultCache` stores the result of a query function in a backend, enabling subsecond response times for repeated reads.
 
 **Key Characteristics:**
 
-- Operates at the **GraphQL query level** (after validation, authorization, before database execution)
-- **Deterministic cache keys** based on query, variables, tenant, and complexity
-- **Tenant-isolated** — Impossible to retrieve data from other tenants via cache
-- **Configurable backends** — Memory (default), PostgreSQL, or custom
-- **Optional error caching** — Can cache error responses if configured
+- Operates at the **repository / query-function level** (via `CachedRepository` or `cached_query`).
+- **Deterministic cache keys** built from query name, tenant, filters, ordering, and pagination.
+- **Tenant-isolated** — `tenant_id` is part of every key, so one tenant cannot read another's cached data.
+- **Configurable backends** — `PostgresCache` for shared/production caching, or any object satisfying the `CacheBackend` protocol.
+- **Optional error caching** — Controlled by `CacheConfig.cache_errors`.
 
 ### 2.2 Cache Key Generation
 
 #### Structure
 
+`CacheKeyBuilder.build_key(...)` joins its components with colons. The tenant id (when present) is the second component, immediately after the prefix:
+
 ```text
-<!-- Code example in TEXT -->
-{prefix}:{tenant_id}:{operation_hash}:{variables_hash}:{complexity_hash}
-```text
-<!-- Code example in TEXT -->
+{prefix}:{tenant_id}:{query_name}:{filter parts...}:{order...}:{limit:N}:{offset:N}
+```
 
 **Components:**
 
-- `prefix` — Default: "FraiseQL", configurable per deployment
-- `tenant_id` — Required UUID of the organization/tenant
-- `operation_hash` — SHA-256 hash of the normalized GraphQL query
-- `variables_hash` — SHA-256 hash of sorted variables (prevents same query with different variables from hitting same cache entry)
-- `complexity_hash` — Hash of calculated query complexity (complexity-aware caching)
+- `prefix` — Default: `"fraiseql"` (`CacheConfig.key_prefix`), configurable per deployment.
+- `tenant_id` — Included when present in the repository context (`info.context["tenant_id"]`).
+- `query_name` — The view/query name (e.g. `v_user`); `find_one` appends `:one`.
+- filter / order / pagination parts — Serialized deterministically (filters sorted by field, lists hashed) so the same logical query always maps to the same key.
 
 #### Example
 
 ```text
-<!-- Code example in TEXT -->
-FraiseQL:org_550e8400-e29b-41d4:a7f3e9d2c1b:4f6a8e9d:low
-```text
-<!-- Code example in TEXT -->
+fraiseql:org_550e8400-e29b-41d4:v_user:status:active:limit:20:offset:0
+```
 
 **Tenant Isolation Guarantee:**
-Cache keys are scoped by `tenant_id` at the highest level. Even with cache backend compromise, an attacker cannot retrieve data from tenant A if requesting with tenant B credentials.
+Because `tenant_id` is part of the key, even an attacker who knows the key structure cannot retrieve another tenant's data: a request authenticated as tenant B produces tenant-B keys and only ever reads tenant-B entries.
 
 ### 2.3 Configuration
 
 #### CacheConfig Dataclass
 
+`CacheConfig` is the real dataclass exported from `fraiseql.caching`:
+
 ```python
-<!-- Code example in Python -->
+from dataclasses import dataclass
+
+
 @dataclass
 class CacheConfig:
-    """Query result cache configuration."""
+    """Configuration for result caching."""
 
-    # Enable/disable caching
     enabled: bool = True
-
-    # TTL (time-to-live) policies
     default_ttl: int = 300  # 5 minutes
     max_ttl: int = 3600     # 1 hour
-    min_ttl: int = 0        # No minimum (immediate expiration allowed)
-
-    # Cache size management
-    max_size_bytes: int = 1_000_000_000  # 1 GB default
-    max_entries: int = 100_000            # Max cache entries
-
-    # Error caching
-    cache_errors: bool = False  # Cache error responses?
-    error_ttl: int = 60         # TTL for error responses (60 seconds)
-
-    # Key configuration
-    key_prefix: str = "FraiseQL"
-    include_complexity: bool = True  # Include complexity in cache key
-
-    # Tenant isolation
-    require_tenant_id: bool = True  # Fail if tenant_id not provided
-```text
-<!-- Code example in TEXT -->
+    cache_errors: bool = False
+    key_prefix: str = "fraiseql"
+```
 
 #### Usage
 
+`CacheConfig` configures a `ResultCache`; it is **not** a `create_fraiseql_app` kwarg. Build the cache explicitly and wire it into your repository (see [Section 2.5](#25-repository-integration)):
+
 ```python
-<!-- Code example in Python -->
-from FraiseQL import create_fraiseql_app, CacheConfig
+from fraiseql.caching import CacheConfig, ResultCache, PostgresCache
 
 cache_config = CacheConfig(
     enabled=True,
-    default_ttl=300,        # 5 minutes for normal queries
-    max_ttl=3600,           # Never cache longer than 1 hour
-    cache_errors=False,     # Don't cache errors
-    include_complexity=True # Complexity-aware caching
+    default_ttl=300,     # 5 minutes for normal queries
+    max_ttl=3600,        # Never cache longer than 1 hour
+    cache_errors=False,  # Don't cache errors
+    key_prefix="fraiseql",
 )
 
-app = create_fraiseql_app(
-    schema=schema,
-    cache_config=cache_config
-)
-```text
-<!-- Code example in TEXT -->
+backend = PostgresCache(connection_pool=pool)
+cache = ResultCache(backend=backend, config=cache_config)
+```
 
 ### 2.4 Cache Backends
 
-#### 2.4.1 Memory Backend (Default)
-
-**Location:** `FraiseQL.storage.backends.memory.MemoryCacheBackend`
-
-**Characteristics:**
-
-- Stores cache in process memory (Python dictionary)
-- **Best for:** Development, single-instance deployments
-- **Performance:** Sub-millisecond lookups
-- **Thread-safety:** Protected by asyncio locks
-- **Persistence:** Lost on process restart
-- **Multi-instance:** Not shared between instances
-
-**Configuration:**
+A cache backend is any object implementing the `CacheBackend` protocol:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL.storage.backends import MemoryCacheBackend
+from typing import Any, Protocol
 
-backend = MemoryCacheBackend(
-    max_size_bytes=1_000_000_000,  # 1 GB
-    max_entries=100_000,
-    auto_cleanup_interval=300      # Cleanup every 5 minutes
-)
-```text
-<!-- Code example in TEXT -->
 
-**Automatic Cleanup:**
+class CacheBackend(Protocol):
+    """Protocol for cache backends."""
 
-- Stale entries removed every 5 minutes (configurable)
-- LRU (Least Recently Used) eviction when max_entries exceeded
-- TTL-based expiration for all entries
+    async def get(self, key: str) -> Any | None: ...
+    async def set(self, key: str, value: Any, ttl: int) -> None: ...
+    async def delete(self, key: str) -> bool: ...
+    async def delete_pattern(self, pattern: str) -> int: ...
+```
 
-#### 2.4.2 PostgreSQL Backend (Production)
+#### 2.4.1 PostgreSQL Backend (`PostgresCache`)
 
-**Location:** `FraiseQL.caching.postgres_cache.PostgreSQLCacheBackend`
+**Location:** `fraiseql.caching.PostgresCache`
 
 **Characteristics:**
 
-- Persists cache to PostgreSQL using **UNLOGGED tables** (no WAL overhead)
-- **Best for:** Production multi-instance deployments, data persistence
-- **Performance:** 10-50ms lookups (network latency + query)
-- **Thread-safety:** Transaction isolation via PostgreSQL
-- **Persistence:** Survives process restarts (but lost on database crash)
-- **Multi-instance:** Shared cache across all instances
-- **Scalability:** Horizontal scaling with multiple app instances
+- Persists cache to PostgreSQL using an **UNLOGGED table** (no WAL overhead).
+- **Best for:** Multi-instance deployments — the cache is shared across every FastAPI process on the same database.
+- **Persistence:** Survives process restarts; UNLOGGED tables are cleared on a database crash (acceptable for a cache).
+- **Optional domain versioning:** If the `pg_fraiseql_cache` extension is installed, `PostgresCache` uses domain versions for CASCADE invalidation; otherwise it falls back to TTL-only caching.
 
-**Table Structure:**
+**Construction:**
+
+```python
+from psycopg_pool import AsyncConnectionPool
+
+from fraiseql.caching import PostgresCache
+
+pool = AsyncConnectionPool("postgresql://user:pass@db/mydb")
+
+backend = PostgresCache(
+    connection_pool=pool,
+    table_name="fraiseql_cache",  # default
+    auto_initialize=True,         # create the table on first use
+)
+```
+
+**Table Structure** (created automatically by `PostgresCache` on first use):
 
 ```sql
-<!-- Code example in SQL -->
-CREATE UNLOGGED TABLE fraiseql_cache (
+CREATE UNLOGGED TABLE IF NOT EXISTS fraiseql_cache (
     cache_key TEXT PRIMARY KEY,
     cache_value JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMPTZ NOT NULL,
-    hit_count BIGINT DEFAULT 0
+    expires_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_cache_expires_at ON fraiseql_cache(expires_at);
-CREATE INDEX idx_cache_tenant ON fraiseql_cache(
-    (cache_key LIKE 'FraiseQL:%')  -- Tenant extraction for cleanup
-);
-```text
-<!-- Code example in TEXT -->
-
-**Configuration:**
-
-```python
-<!-- Code example in Python -->
-from FraiseQL.caching.postgres_cache import PostgreSQLCacheBackend
-
-backend = PostgreSQLCacheBackend(
-    connection_string="postgresql://user:pass@db/FraiseQL",
-    table_name="fraiseql_cache",
-    auto_initialize=True,           # Create tables if missing
-    cleanup_interval=300,           # Cleanup every 5 minutes
-    max_cleanup_batch=1000          # Clean up to 1000 expired entries per run
-)
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX IF NOT EXISTS fraiseql_cache_expires_idx
+    ON fraiseql_cache (expires_at);
+```
 
 **UNLOGGED Table Tradeoff:**
 
-- ✅ **Pros:** 7-10x faster than regular tables (no WAL writes)
-- ⚠️ **Cons:** Data lost on database crash (acceptable for cache)
-- **Use case:** Perfect for caches where data loss is not catastrophic
+- **Pros:** Much faster writes than a regular table (no WAL writes).
+- **Cons:** Data lost on a database crash (acceptable for cache data that can be regenerated).
+- **Use case:** Perfect for caches where data loss is not catastrophic.
 
-**Cleanup Process:**
+**Cleanup:** `PostgresCache` exposes `cleanup_expired()` (delete entries past `expires_at`) and `clear_all()`. Call `cleanup_expired()` periodically from a background task:
 
 ```sql
-<!-- Code example in SQL -->
--- Automatic cleanup removes expired entries
+-- Equivalent of PostgresCache.cleanup_expired()
 DELETE FROM fraiseql_cache
-WHERE expires_at < NOW()
-LIMIT 1000;  -- Batch cleanup to avoid long locks
-```text
-<!-- Code example in TEXT -->
+WHERE expires_at < NOW();
+```
 
-#### 2.4.3 Custom Backend
+**Other methods:** `get_stats()` (row counts and size), `exists(key)`, `ping()`, plus CASCADE management (`register_cascade_rule`, `clear_cascade_rules`, `setup_table_trigger`) covered in [Section 4](#4-cascade-invalidation).
 
-**Location:** Extend `FraiseQL.storage.backends.base.BaseCacheBackend`
+#### 2.4.2 Custom Backend
 
-**Implement:**
+Any class satisfying the `CacheBackend` protocol can be used. For example, a Redis-backed implementation:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL.storage.backends.base import BaseCacheBackend
+import json
+from typing import Any
 
-class RedisCacheBackend(BaseCacheBackend):
-    """Example: Redis cache backend."""
 
-    def __init__(self, redis_client, ttl: int = 300):
+class RedisCacheBackend:
+    """Example: Redis cache backend implementing the CacheBackend protocol."""
+
+    def __init__(self, redis_client, default_ttl: int = 300) -> None:
         self.redis = redis_client
-        self.ttl = ttl
+        self.default_ttl = default_ttl
 
     async def get(self, key: str) -> Any | None:
-        """Retrieve value from Redis."""
         value = await self.redis.get(key)
         return json.loads(value) if value else None
 
-    async def set(self, key: str, value: Any, ttl: int = None) -> None:
-        """Store value in Redis with TTL."""
-        ttl = ttl or self.ttl
-        await self.redis.setex(
-            key,
-            ttl,
-            json.dumps(value)
-        )
+    async def set(self, key: str, value: Any, ttl: int) -> None:
+        await self.redis.setex(key, ttl, json.dumps(value))
 
-    async def delete(self, key: str) -> None:
-        """Delete key from Redis."""
-        await self.redis.delete(key)
+    async def delete(self, key: str) -> bool:
+        return bool(await self.redis.delete(key))
 
-    async def clear(self) -> None:
-        """Clear all cache entries."""
-        await self.redis.flushdb()
-```text
-<!-- Code example in TEXT -->
+    async def delete_pattern(self, pattern: str) -> int:
+        keys = [k async for k in self.redis.scan_iter(match=pattern)]
+        return await self.redis.delete(*keys) if keys else 0
+```
 
 **Usage:**
 
 ```python
-<!-- Code example in Python -->
 import redis.asyncio as redis
 
+from fraiseql.caching import CacheConfig, ResultCache
+
 redis_client = redis.from_url("redis://localhost:6379/0")
-backend = RedisCacheBackend(redis_client, ttl=300)
+backend = RedisCacheBackend(redis_client, default_ttl=300)
+cache = ResultCache(backend=backend, config=CacheConfig())
+```
 
-app = create_fraiseql_app(
-    schema=schema,
-    cache_backend=backend
-)
-```text
-<!-- Code example in TEXT -->
+### 2.5 Repository Integration
 
-### 2.5 Cache Invalidation Strategies
-
-#### 2.5.1 Time-Based (TTL) Invalidation
-
-**How it works:** Cache entries automatically expire after TTL seconds.
-
-**Complexity-Aware TTL:**
+`CachedRepository` wraps a `FraiseQLRepository`, transparently caching reads and invalidating on writes.
 
 ```python
-<!-- Code example in Python -->
-def calculate_ttl(query_complexity: float, config: CacheConfig) -> int:
-    """
-    Scale TTL based on query complexity:
-    - Simple queries (< 10): 300 seconds (5 minutes)
-    - Moderate queries (10-50): 180 seconds (3 minutes)
-    - Complex queries (50-200): 60 seconds (1 minute)
-    - Very complex (> 200): 30 seconds (only cache expensive queries briefly)
-    """
-    if query_complexity < 10:
-        return min(config.default_ttl * 2, config.max_ttl)  # 600s
-    elif query_complexity < 50:
-        return config.default_ttl  # 300s
-    elif query_complexity < 200:
-        return config.default_ttl // 2  # 150s
-    else:
-        return 30  # Very expensive queries cached briefly
-```text
-<!-- Code example in TEXT -->
+from fraiseql.caching import CachedRepository, ResultCache, PostgresCache, CacheConfig
 
-**Example:**
+backend = PostgresCache(connection_pool=pool)
+cache = ResultCache(backend=backend, config=CacheConfig(default_ttl=300))
 
-```text
-<!-- Code example in TEXT -->
-GET /graphql?query={users{id name}}
-Cache-Control: max-age=600  # Simple query, cached 10 minutes
+# `base_repo` is the FraiseQLRepository from info.context["db"]
+cached_repo = CachedRepository(base_repository=base_repo, cache=cache)
 
-GET /graphql?query={users{id name posts{id comments{...}}}}
-Cache-Control: max-age=30   # Complex query, cached 30 seconds
-```text
-<!-- Code example in TEXT -->
+# Reads are cached (per-call opt-out + custom TTL available):
+rows = await cached_repo.find("v_user", status="active")
+row = await cached_repo.find_one("v_user", id=user_id, cache_ttl=600)
+fresh = await cached_repo.find("v_user", skip_cache=True)
 
-#### 2.5.2 Manual Invalidation
+# Writes invalidate related cache entries automatically:
+await cached_repo.execute_function("fn_update_user", {"id": user_id, "name": name})
+```
 
-**Direct Cache Invalidation:**
+`find`/`find_one` accept `skip_cache: bool = False` and `cache_ttl: int | None = None`. `execute_function` derives the affected table from the function name (e.g. `fn_update_user` → `user`/`users`) and invalidates the matching key pattern. Any method not overridden is delegated to the underlying repository.
+
+### 2.6 Caching Arbitrary Query Functions
+
+For query functions outside the repository, use the `cached_query` decorator:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL.caching import cache_manager
+from fraiseql.caching import cached_query, ResultCache, CacheConfig
 
-# Invalidate specific query
-await cache_manager.invalidate_key(
-    cache_key="FraiseQL:org_123:a7f3e9d2c1b:4f6a8e9d:low"
-)
+cache = ResultCache(backend=backend, config=CacheConfig())
 
-# Pattern-based invalidation (all queries for a tenant)
-await cache_manager.invalidate_pattern(
-    pattern="FraiseQL:org_123:*"
-)
 
-# Clear entire cache
-await cache_manager.clear_all()
-```text
-<!-- Code example in TEXT -->
+@cached_query(cache, ttl=600)
+async def top_sellers(region: str) -> list[dict]:
+    db = ...  # your FraiseQLRepository
+    return await db.find("v_top_sellers", region=region)
 
-#### 2.5.3 graphql-cascade Integration (Automatic)
 
-**How it works:** Mutations automatically invalidate related query caches via the **cascade** mechanism.
+# Bypass the cache for a single call:
+fresh = await top_sellers(region="emea", skip_cache=True)
+```
 
-**Example Workflow:**
+The decorator auto-generates a key from the function name and arguments, or you can pass `key_func=...` for a custom key.
 
-```graphql
-<!-- Code example in GraphQL -->
-# Original query (cached)
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-    email
-    posts {
-      id
-      title
-    }
-  }
-}
+### 2.7 Cache Invalidation Strategies
 
-# Mutation that updates the user
-mutation UpdateUser($id: ID!, $name: String!) {
-  updateUser(id: $id, name: $name) {
-    success
-    entity {
-      id
-      name
-      email
-    }
-    cascade {
-      invalidations: [
-        { query_name: "GetUser", scope: "EXACT" },
-        { query_name: "users", scope: "PREFIX" },
-        { query_name: "user_profile", scope: "SUFFIX" }
-      ]
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+#### 2.7.1 Time-Based (TTL) Invalidation
 
-**Cascade Invalidation Pattern:**
+**How it works:** Each cache entry is written with a TTL; `expires_at` is set to `NOW() + ttl`. `ResultCache.get_or_set` clamps the requested TTL to `min(ttl or default_ttl, max_ttl)`. Reads only return entries where `expires_at > NOW()`.
 
-| Pattern | Example | Behavior |
-|---------|---------|----------|
-| **EXACT** | `GetUser` | Invalidate only `GetUser` queries |
-| **PREFIX** | `users` | Invalidate `users`, `users_by_role`, etc. |
-| **SUFFIX** | `_profile` | Invalidate `user_profile`, `post_profile`, etc. |
-| **INFIX** | `_list_` | Invalidate `user_list_active`, `role_list_archived`, etc. |
-
-**Implementation:**
+You can vary TTL per query based on how expensive or volatile it is:
 
 ```python
-<!-- Code example in Python -->
-# In your mutation resolver
-@FraiseQL.mutation
-async def update_user(info, id: UUID, name: str):
-    # Update the user in database
-    updated = await db.update_user(id, name=name)
+def choose_ttl(query_cost: int, config: CacheConfig) -> int:
+    """Cheaper / more stable queries can be cached longer."""
+    if query_cost < 10:
+        return min(config.default_ttl * 2, config.max_ttl)  # up to 600s
+    if query_cost < 50:
+        return config.default_ttl                            # 300s
+    if query_cost < 200:
+        return config.default_ttl // 2                       # 150s
+    return 30  # expensive queries cached briefly
 
-    # Build cascade invalidations
-    invalidations = [
-        CacheInvalidation(
-            query_name="GetUser",
-            scope="EXACT",
-            user_id=str(id)
-        ),
-        CacheInvalidation(
-            query_name="users",
-            scope="PREFIX"  # All user list queries
-        )
-    ]
 
-    return {
-        "success": True,
-        "entity": updated,
-        "cascade": {
-            "invalidations": invalidations
-        }
-    }
-```text
-<!-- Code example in TEXT -->
+ttl = choose_ttl(query_cost=5, config=cache.config)
+await cached_repo.find("v_report", cache_ttl=ttl)
+```
 
-### 2.6 Multi-Tenant Cache Isolation
+#### 2.7.2 Manual Invalidation
+
+Invalidate through the `ResultCache` instance:
+
+```python
+# Invalidate a specific key
+await cache.invalidate("fraiseql:org_123:v_user:one:id:550e8400")
+
+# Pattern-based invalidation (all entries for a query/tenant)
+await cache.invalidate_pattern("fraiseql:org_123:v_user:*")
+```
+
+`invalidate` / `invalidate_pattern` delegate to the backend's `delete` / `delete_pattern`. `CacheKeyBuilder.build_mutation_pattern(table_name)` produces a `"{prefix}:{table_name}:*"` pattern for write-side invalidation.
+
+#### 2.7.3 CASCADE Invalidation (Automatic)
+
+Mutations on one domain can invalidate the caches of types that depend on it. CASCADE rules are derived from the GraphQL schema at startup — see [Section 4](#4-cascade-invalidation).
+
+### 2.8 Multi-Tenant Cache Isolation
 
 #### Security Guarantee
 
-Cache keys **always include tenant_id** as the highest-level discriminator:
+`CacheKeyBuilder` places `tenant_id` immediately after the prefix:
 
 ```text
-<!-- Code example in TEXT -->
-{prefix}:{tenant_id}:{operation_hash}:{variables_hash}:{complexity_hash}
-           ^^^^^^^^^^^
-           Cannot retrieve other tenant's data
-```text
-<!-- Code example in TEXT -->
+{prefix}:{tenant_id}:{query_name}:...
+          ^^^^^^^^^^^
+          Cannot retrieve another tenant's data
+```
+
+`CachedRepository` reads `tenant_id` from the repository context (`self._base.context.get("tenant_id")`), which FraiseQL populates from `info.context["tenant_id"]`. Because tenant context flows from the authenticated request, a request as tenant B can only ever build — and therefore read — tenant-B keys.
 
 **Proof of Isolation:**
 
 ```python
-<!-- Code example in Python -->
-# Even if you know cache structure, you cannot access other tenant data
-org_a_key = "FraiseQL:org_a:query_hash:vars_hash:complexity"
-org_b_key = "FraiseQL:org_b:query_hash:vars_hash:complexity"
+# Two tenants, same logical query → different keys → isolated entries
+org_a_key = "fraiseql:org_a:v_user:status:active"
+org_b_key = "fraiseql:org_b:v_user:status:active"
 
-# Different cache entries - completely isolated
-assert await cache.get(org_a_key) != await cache.get(org_b_key)
-
-# If attacker queries as org_b, gets org_b data even if same query
-# No cross-tenant data leakage possible
-```text
-<!-- Code example in TEXT -->
+assert await cache.backend.get(org_a_key) != await cache.backend.get(org_b_key)
+```
 
 #### Multi-Tenant Deployment Pattern
 
+Always source `tenant_id` from the authenticated context, never from client arguments:
+
 ```python
-<!-- Code example in Python -->
-@FraiseQL.query
-async def get_user(info, id: UUID) -> User:
-    """Retrieve user - automatically tenant-scoped."""
-    tenant_id = info.context["tenant_id"]  # From auth token
+import fraiseql
 
-    # Query is automatically cached with tenant_id prefix
-    # Cache key: FraiseQL:{tenant_id}:get_user_hash:...
-    user = await db.find_one(
-        "users",
-        {"id": id, "tenant_id": tenant_id}
-    )
-    return user
-```text
-<!-- Code example in TEXT -->
 
-### 2.7 Performance Characteristics
+@fraiseql.query
+async def users(info) -> list[User]:
+    """List users — automatically tenant-scoped via the repository context."""
+    db = info.context["db"]  # a CachedRepository in production
+    # tenant_id is read from info.context and baked into the cache key
+    return await db.find("v_user")
+```
 
-#### Memory Backend
-
-| Operation | Latency | Throughput |
-|-----------|---------|------------|
-| Cache Hit | < 1ms | 100k+ req/s |
-| Cache Miss | < 1ms | 100k+ req/s |
-| Eviction | 0-5ms | Depends on entry size |
-
-**Memory Overhead:** ~1KB per cache entry (average)
+### 2.9 Performance Characteristics
 
 #### PostgreSQL Backend
 
-| Operation | Latency | Throughput |
-|-----------|---------|------------|
-| Cache Hit | 10-50ms | 5k-10k req/s |
-| Cache Miss | 10-50ms | 5k-10k req/s |
-| Cleanup | 50-200ms | Async, non-blocking |
+| Operation | Notes |
+|-----------|-------|
+| Cache Hit | Single indexed `SELECT` on `cache_key` filtered by `expires_at` |
+| Cache Miss | Same lookup returns nothing; the wrapped query runs, then one `UPSERT` |
+| Cleanup | `cleanup_expired()` deletes rows past `expires_at`; run from a background task |
 
-**Network Latency:** 5-20ms typical (varies by network)
-**Database CPU:** < 5% for moderate workload
+UNLOGGED tables avoid WAL writes, keeping cache writes cheap. Because the table is shared, every FastAPI instance benefits from a warm cache populated by any instance.
 
-### 2.8 Cache Monitoring & Metrics
+### 2.10 Cache Monitoring & Metrics
 
-#### Metrics Collected
+`ResultCache` tracks hits, misses, and errors:
 
 ```python
-<!-- Code example in Python -->
-# Via Prometheus or OpenTelemetry
-fraiseql_cache_hits_total{
-    operation_name="GetUser",
-    complexity="low|moderate|high",
-    tenant_id="org_123"
-}
+stats = cache.get_stats()        # CacheStats
+print(stats.hits, stats.misses, stats.errors)
+print(f"hit rate: {stats.hit_rate:.1f}%")  # 0–100
+cache.reset_stats()
+```
 
-fraiseql_cache_misses_total{
-    operation_name="GetUser",
-    reason="expired|evicted|not_found",
-    tenant_id="org_123"
-}
-
-fraiseql_cache_size_bytes{
-    backend="memory|postgresql",
-    tenant_id="org_123"
-}
-
-fraiseql_cache_evictions_total{
-    backend="memory|postgresql",
-    reason="lru|ttl|manual",
-    tenant_id="org_123"
-}
-```text
-<!-- Code example in TEXT -->
+`PostgresCache.get_stats()` returns backend-level counts (e.g. total/expired entries, size) you can export to Prometheus or OpenTelemetry.
 
 #### Example Monitoring Query
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Cache hit rate by query (last 1 hour)
+-- PostgreSQL: live cache occupancy
 SELECT
-    operation_name,
-    COUNT(*) FILTER (WHERE cache_hit) AS hits,
-    COUNT(*) FILTER (WHERE NOT cache_hit) AS misses,
-    ROUND(
-        100.0 * COUNT(*) FILTER (WHERE cache_hit) / COUNT(*),
-        2
-    ) AS hit_rate_pct
-FROM cache_metrics
-WHERE
-    created_at > NOW() - INTERVAL '1 hour'
-    AND tenant_id = $tenant_id
-GROUP BY operation_name
-ORDER BY hit_rate_pct DESC;
-```text
-<!-- Code example in TEXT -->
+    COUNT(*)                                    AS total_entries,
+    COUNT(*) FILTER (WHERE expires_at <= NOW()) AS expired_entries,
+    pg_size_pretty(pg_total_relation_size('fraiseql_cache')) AS table_size
+FROM fraiseql_cache;
+```
 
 #### Monitoring Dashboard Recommendations
 
-1. **Cache Hit Rate** — Target: > 80% for normal queries
-2. **Cache Evictions** — Alert if > 10% of entries evicted per minute
-3. **Memory Usage** — Alert if approaching max_size_bytes
-4. **TTL Distribution** — Ensure complexity-aware TTL working correctly
-5. **Error Caching Rate** — Monitor if error_ttl too aggressive
+1. **Cache Hit Rate** — Track `CacheStats.hit_rate`; target > 80% for normal queries.
+2. **Expired Backlog** — Ensure `cleanup_expired()` keeps expired rows low.
+3. **Table Size** — Alert if `fraiseql_cache` grows unbounded.
+4. **Error Rate** — Watch `CacheStats.errors`; backend errors degrade to direct execution.
 
 ---
 
-## 3. APQ Response Caching
+## 3. Field Selection
 
-### 3.1 Overview
+FraiseQL shapes each response to exactly the fields the client requested (Rust handles field selection on the hot path). The cache stores the result of a given query/filter combination; field selection is applied when shaping the response, so requesting fewer fields returns a subset of the cached data without a separate cache tier.
 
-APQ Response Caching caches the **HTTP response** of persisted queries, eliminating database execution entirely for identical requests.
+There is no separate "APQ response cache" tier in v1 — `ResultCache` is the single result-caching layer, and persisted queries reuse it.
 
-**Key Difference from Query Caching:**
+---
 
-- **Query Caching:** Caches database result (query execution still happens)
-- **APQ Response Caching:** Caches HTTP response (query execution skipped)
-- **Performance:** APQ response caching is 10-100x faster (no GraphQL parsing, validation, or database)
+## 4. CASCADE Invalidation
 
-### 3.2 Response Cache Key
+### 4.1 Automatic Rule Generation
 
-```text
-<!-- Code example in TEXT -->
-{prefix}:{tenant_id}:{query_hash}:{variables_hash}:{field_selection_hash}
-```text
-<!-- Code example in TEXT -->
-
-**Critical Component: Variables Hash**
+When a GraphQL type references another type (e.g. `Post.author -> User`), a change to `User` should invalidate cached `Post` entries. `SchemaAnalyzer` walks the GraphQL schema and emits these relationships as `CascadeRule`s.
 
 ```python
-<!-- Code example in Python -->
-def compute_variables_hash(variables: dict) -> str:
-    """
-    Variables are included in cache key to prevent data leakage.
+from dataclasses import dataclass
 
-    Example: Same query, different user_id
-    query GetUser($id: ID!) { user(id: $id) { id name } }
 
-    Call 1: variables = {"id": "user_1"}
-    Call 2: variables = {"id": "user_2"}
-
-    Different variables → different cache keys → different responses
-    No data leakage even with same query.
-    """
-    sorted_vars = json.dumps(variables, sort_keys=True)
-    return hashlib.sha256(sorted_vars.encode()).hexdigest()
-```text
-<!-- Code example in TEXT -->
-
-### 3.3 Configuration
-
-```python
-<!-- Code example in Python -->
 @dataclass
-class APQConfig:
-    """APQ response caching configuration."""
+class CascadeRule:
+    """A CASCADE invalidation rule."""
 
-    # Enable APQ response caching
-    cache_responses: bool = True
+    source_domain: str   # domain that triggers invalidation when it changes
+    target_domain: str   # domain whose caches should be invalidated
+    rule_type: str = "invalidate"
+    confidence: float = 1.0
+```
 
-    # APQ response TTL
-    response_ttl: int = 300  # 5 minutes
+### 4.2 Setup at Startup
 
-    # Field selection optimization
-    optimize_field_selection: bool = True  # Only cache requested fields
+`setup_auto_cascade_rules` analyzes the schema and registers every rule on a `PostgresCache`:
 
-    # Maximum cached queries per tenant
-    max_queries_per_tenant: int = 10_000
+```python
+from fraiseql.caching import setup_auto_cascade_rules
 
-    # Maximum response size to cache
-    max_response_size_bytes: int = 1_000_000  # 1 MB
-```text
-<!-- Code example in TEXT -->
 
-### 3.4 Field Selection Optimization
+@app.on_event("startup")
+async def configure_cache_cascade() -> None:
+    # `cache` is a PostgresCache; `schema` is the GraphQL schema
+    registered = await setup_auto_cascade_rules(cache, schema, verbose=True)
+    logger.info("Registered %d CASCADE rules", registered)
+```
 
-**How it works:** When a client requests fewer fields via field selection, the cached response is pruned to match the request.
+For finer control, drive `SchemaAnalyzer` directly:
 
-**Example:**
+```python
+from fraiseql.caching import SchemaAnalyzer
+
+analyzer = SchemaAnalyzer(schema)
+rules = analyzer.analyze_relationships()          # list[CascadeRule]
+deps = analyzer.get_domain_dependencies()         # {domain: {dependencies}}
+
+for rule in rules:
+    await cache.register_cascade_rule(
+        source_domain=rule.source_domain,
+        target_domain=rule.target_domain,
+        rule_type=rule.rule_type,
+    )
+```
+
+### 4.3 Example: Detected Relationships
+
+Given:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# First request (cached): All fields
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-    email
-    phone
-    address
-  }
+type Post {
+  id: ID!
+  title: String!
+  author: User!        # relationship detected
+  comments: [Comment!]!
 }
 
-# Second request: Only id and name
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-  }
+type User {
+  id: ID!
+  name: String!
 }
-```text
-<!-- Code example in TEXT -->
 
-**With field selection optimization:**
+type Comment {
+  id: ID!
+  content: String!
+  author: User!
+}
+```
 
-- First request: Full response cached → `{id, name, email, phone, address}`
-- Second request: Cached response pruned → `{id, name}` extracted from cache
-- Result: Hit same cache entry, but only return requested fields
+`SchemaAnalyzer` produces rules such as:
 
-**Implementation:**
+- `user → post` (when a user changes, invalidate posts)
+- `post → comment` (when a post changes, invalidate comments)
+- `user → comment` (when a user changes, invalidate comments)
 
-```python
-<!-- Code example in Python -->
-def prune_response_fields(cached_response: dict, requested_fields: set) -> dict:
-    """Extract only requested fields from cached response."""
-    def prune_recursive(obj, fields):
-        if isinstance(obj, dict):
-            return {k: v for k, v in obj.items() if k in fields}
-        elif isinstance(obj, list):
-            return [prune_recursive(item, fields) for item in obj]
-        return obj
+Self-references (e.g. `parent: User` on `User`) are skipped, and list relationships are registered with slightly lower confidence than scalar ones.
 
-    return prune_recursive(cached_response, requested_fields)
-```text
-<!-- Code example in TEXT -->
+### 4.4 Database-Level Invalidation (PostgreSQL)
 
----
+CASCADE invalidation is most effective when the database itself signals domain changes. `PostgresCache.setup_table_trigger(...)` installs triggers, and the optional `pg_fraiseql_cache` extension maintains per-tenant domain versions so cache entries can be validated against the current domain version. When the extension is absent, FraiseQL falls back to TTL-only caching plus explicit pattern invalidation.
 
-## 4. graphql-cascade Integration
-
-### 4.1 Automatic Cache Invalidation
-
-The `cascade` field in mutation responses automatically triggers cache invalidation based on **compiler-determined** patterns.
-
-### 4.2 Cascade Invalidation Patterns
-
-```python
-<!-- Code example in Python -->
-@dataclass
-class CacheInvalidation:
-    """Pattern for invalidating cached queries."""
-
-    query_name: str          # Query operation name
-    scope: str               # EXACT, PREFIX, SUFFIX, INFIX
-    user_id: str | None      # Optional: filter by user
-    tenant_id: str | None    # Optional: filter by tenant
-```text
-<!-- Code example in TEXT -->
-
-**Pattern Matching:**
-
-```python
-<!-- Code example in Python -->
-def matches_invalidation(
-    cached_operation_name: str,
-    pattern: CacheInvalidation
-) -> bool:
-    """Check if cached operation matches invalidation pattern."""
-
-    if pattern.scope == "EXACT":
-        return cached_operation_name == pattern.query_name
-
-    elif pattern.scope == "PREFIX":
-        return cached_operation_name.startswith(pattern.query_name)
-
-    elif pattern.scope == "SUFFIX":
-        return cached_operation_name.endswith(pattern.query_name)
-
-    elif pattern.scope == "INFIX":
-        return pattern.query_name in cached_operation_name
-
-    return False
-```text
-<!-- Code example in TEXT -->
-
-### 4.3 Example: User Update Cascade
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.mutation
-async def update_user(info, user_id: UUID, data: dict):
-    """Update user and invalidate all related caches."""
-
-    # Update database
-    user = await db.update_user(user_id, **data)
-
-    # Determine what to invalidate
-    invalidations = []
-
-    if "name" in data or "email" in data:
-        invalidations.append(
-            CacheInvalidation("GetUser", scope="EXACT")
-        )
-
-    if "role" in data:
-        invalidations.append(
-            CacheInvalidation("users", scope="PREFIX")
-        )
-
-    if "deleted_at" in data:
-        invalidations.append(
-            CacheInvalidation("active_users", scope="PREFIX")
-        )
-
-    return {
-        "success": True,
-        "entity": user,
-        "cascade": {
-            "invalidations": invalidations
-        }
-    }
-```text
-<!-- Code example in TEXT -->
-
-### 4.4 Database-Level Cascade (PostgreSQL)
-
-For direct SQL mutations, use triggers to log cascades:
-
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE cache_invalidation_log (
-    id BIGSERIAL PRIMARY KEY,
-    query_pattern TEXT NOT NULL,
-    scope TEXT NOT NULL,  -- EXACT, PREFIX, SUFFIX, INFIX
-    triggered_by TEXT,    -- Mutation that triggered invalidation
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE OR REPLACE FUNCTION log_cache_invalidation()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Log when users table is updated
-    INSERT INTO cache_invalidation_log (query_pattern, scope, triggered_by)
-    VALUES ('GetUser', 'EXACT', TG_OP);
-
-    INSERT INTO cache_invalidation_log (query_pattern, scope, triggered_by)
-    VALUES ('users', 'PREFIX', TG_OP);
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER user_cache_invalidation
-AFTER UPDATE ON tb_user
-FOR EACH ROW
-EXECUTE FUNCTION log_cache_invalidation();
-```text
-<!-- Code example in TEXT -->
+If you prefer to manage triggers yourself, write to your own invalidation log from a `fn_` function or trigger and have a background task drain it into `cache.invalidate_pattern(...)` calls. Always route writes through `fn_` PostgreSQL functions (called via `db.execute_function`) so invalidation has a single chokepoint.
 
 ---
 
 ## 5. Configuration in Production
 
+The cache is constructed in code, not in a config file. Use environment variables to choose TTLs and the database, then build the `PostgresCache` + `ResultCache` during app startup.
+
 ### 5.1 Development Configuration
 
 ```python
-<!-- Code example in Python -->
-# Local development: fast cache, permissive
+from fraiseql.caching import CacheConfig, ResultCache, PostgresCache
+
+# Local development: short TTL, errors cached for debugging
 cache_config = CacheConfig(
     enabled=True,
-    default_ttl=60,         # 1 minute (frequent changes)
-    cache_errors=True,      # Cache errors for debugging
-    backend=MemoryCacheBackend(
-        max_size_bytes=100_000_000  # 100 MB (plenty for dev)
-    )
+    default_ttl=60,     # 1 minute (frequent changes)
+    cache_errors=True,  # cache errors while debugging
 )
-```text
-<!-- Code example in TEXT -->
+backend = PostgresCache(connection_pool=dev_pool)
+cache = ResultCache(backend=backend, config=cache_config)
+```
 
 ### 5.2 Staging Configuration
 
 ```python
-<!-- Code example in Python -->
-# Staging: PostgreSQL cache, moderate TTL
+import os
+
+from fraiseql.caching import CacheConfig, ResultCache, PostgresCache
+from psycopg_pool import AsyncConnectionPool
+
 cache_config = CacheConfig(
     enabled=True,
-    default_ttl=300,        # 5 minutes
-    cache_errors=False,     # Don't cache errors in staging
-    backend=PostgreSQLCacheBackend(
-        connection_string=os.getenv("STAGING_DB_URL")
-    )
+    default_ttl=300,     # 5 minutes
+    cache_errors=False,  # don't cache errors in staging
 )
-```text
-<!-- Code example in TEXT -->
+pool = AsyncConnectionPool(os.environ["STAGING_DB_URL"])
+cache = ResultCache(backend=PostgresCache(pool), config=cache_config)
+```
 
 ### 5.3 Production Configuration
 
 ```python
-<!-- Code example in Python -->
-# Production: optimized PostgreSQL cache
+import os
+
+from fraiseql.caching import CacheConfig, ResultCache, PostgresCache
+from psycopg_pool import AsyncConnectionPool
+
 cache_config = CacheConfig(
     enabled=True,
-    default_ttl=600,        # 10 minutes (conservative)
-    max_ttl=3600,           # Never cache > 1 hour
+    default_ttl=600,     # 10 minutes (conservative)
+    max_ttl=3600,        # never cache longer than 1 hour
     cache_errors=False,
-    include_complexity=True,  # Complexity-aware TTL
-    require_tenant_id=True,   # Fail if tenant_id missing
-    backend=PostgreSQLCacheBackend(
-        connection_string=os.getenv("PROD_DB_URL"),
-        max_size_bytes=10_000_000_000  # 10 GB
-    )
+    key_prefix="fraiseql",
 )
-```text
-<!-- Code example in TEXT -->
+pool = AsyncConnectionPool(os.environ["PROD_DB_URL"])
+cache = ResultCache(backend=PostgresCache(pool), config=cache_config)
+```
 
 ### 5.4 Environment Variables
 
+Drive the values above from your own `FRAISEQL_`-prefixed environment variables (FraiseQL configuration uses the `FRAISEQL_` prefix via `FraiseQLConfig`):
+
 ```bash
-<!-- Code example in BASH -->
 # Development
 FRAISEQL_CACHE_ENABLED=true
 FRAISEQL_CACHE_TTL=60
-FRAISEQL_CACHE_BACKEND=memory
 
 # Staging
 FRAISEQL_CACHE_ENABLED=true
 FRAISEQL_CACHE_TTL=300
-FRAISEQL_CACHE_BACKEND=postgresql
 FRAISEQL_CACHE_DB_URL=postgresql://...
 
 # Production
 FRAISEQL_CACHE_ENABLED=true
 FRAISEQL_CACHE_TTL=600
 FRAISEQL_CACHE_MAX_TTL=3600
-FRAISEQL_CACHE_BACKEND=postgresql
 FRAISEQL_CACHE_DB_URL=postgresql://...
-FRAISEQL_CACHE_SIZE_BYTES=10000000000
-FRAISEQL_CACHE_INCLUDE_COMPLEXITY=true
-```text
-<!-- Code example in TEXT -->
+```
+
+Read these in your startup code and pass them into `CacheConfig` / `PostgresCache`.
 
 ---
 
@@ -906,7 +592,6 @@ FRAISEQL_CACHE_INCLUDE_COMPLEXITY=true
 ### 6.1 Cache Strategy Decision Tree
 
 ```text
-<!-- Code example in TEXT -->
 Is data frequently queried?
 ├─ YES: Cache it
 │   ├─ Is data frequently modified?
@@ -915,40 +600,35 @@ Is data frequently queried?
 │   └─ End: Use caching
 └─ NO: Don't cache
     └─ Monitor to ensure cache isn't wasted
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 6.2 TTL Guidelines
 
 | Data Type | Update Frequency | Recommended TTL | Example |
 |-----------|------------------|-----------------|---------|
 | User Profile | Hours | 600-1800s | User account settings |
-| Product Catalog | Days | 3600-86400s | E-commerce products |
+| Product Catalog | Days | 3600s (capped by max_ttl) | E-commerce products |
 | Real-time Data | Seconds | 30-60s | Stock prices, weather |
-| Derived Data | Minutes | 300-600s | User rankings, aggregates |
-| Reference Data | Never | 86400s | Countries, currencies |
+| Derived Data | Minutes | 300-600s | Rankings, aggregates |
+| Reference Data | Never | 3600s (max_ttl) | Countries, currencies |
 
-### 6.3 Complexity-Aware TTL
+`CacheConfig.max_ttl` (default 3600s) caps every entry, so set it deliberately for very-long-lived data.
+
+### 6.3 Per-Query TTL
 
 ```python
-<!-- Code example in Python -->
-# Don't cache expensive queries for long
-simple_query_ttl = 3600      # 1 hour (cheap, safe)
-complex_query_ttl = 60       # 1 minute (expensive, aggressive invalidation)
-
-# This forces expensive queries to be regenerated frequently
-# Preventing cache from becoming a bottleneck
-```text
-<!-- Code example in TEXT -->
+# Cheap, stable queries → long TTL; expensive/volatile → short TTL
+await cached_repo.find("v_country", cache_ttl=3600)   # reference data
+await cached_repo.find("v_dashboard", cache_ttl=60)   # expensive aggregate
+```
 
 ### 6.4 Monitoring Checklist
 
-- [ ] Cache hit rate > 80% for normal workload
-- [ ] Cache eviction rate < 1% per minute
-- [ ] Memory usage stable (not growing unbounded)
-- [ ] Database cache table size monitored
-- [ ] TTL distribution matches complexity
-- [ ] Invalidation patterns working correctly
+- [ ] `CacheStats.hit_rate` > 80% for normal workload
+- [ ] `cleanup_expired()` keeping the expired backlog small
+- [ ] `fraiseql_cache` table size stable (not growing unbounded)
+- [ ] TTLs match data volatility
+- [ ] CASCADE / invalidation patterns matching mutations
 - [ ] Tenant isolation verified in testing
 
 ---
@@ -957,37 +637,35 @@ complex_query_ttl = 60       # 1 minute (expensive, aggressive invalidation)
 
 ### 7.1 Low Cache Hit Rate
 
-**Symptoms:** Cache hit rate < 60%
+**Symptoms:** `CacheStats.hit_rate` < 60%
 
 **Causes:**
 
-1. Variables changing between requests (same query, different variables)
+1. Filters changing between requests (same view, different filters → different keys)
 2. TTL too short — entries expiring too quickly
-3. Complexity hash changing (reordering fields in query)
-4. Wrong query name in invalidation patterns
+3. Wrong query/table name in invalidation patterns
 
 **Solutions:**
 
-1. Normalize variable order before querying
-2. Increase default_ttl in configuration
-3. Disable include_complexity in CacheConfig
-4. Review invalidation patterns in mutations
+1. Normalize filter inputs before querying
+2. Increase `default_ttl` (and `max_ttl` if it is clamping you)
+3. Review the patterns passed to `invalidate_pattern` and the table names derived by `execute_function`
 
-### 7.2 Memory Exhaustion
+### 7.2 Cache Growth
 
-**Symptoms:** Cache size approaching max_size_bytes, then entries evicted
+**Symptoms:** `fraiseql_cache` table grows unbounded
 
 **Causes:**
 
-1. max_size_bytes too small for workload
-2. TTL too long — entries not expiring
-3. High cardinality in query variables (unbounded cache keys)
+1. `cleanup_expired()` not running
+2. TTLs too long — entries not expiring
+3. High cardinality in query filters (unbounded set of keys)
 
 **Solutions:**
 
-1. Increase max_size_bytes or switch to PostgreSQL backend
-2. Decrease default_ttl
-3. Normalize variables or add parameterization rules
+1. Schedule `cleanup_expired()` from a background task
+2. Decrease `default_ttl` / `max_ttl`
+3. Reduce filter cardinality or cache at a coarser granularity
 
 ### 7.3 Stale Data in Cache
 
@@ -995,15 +673,15 @@ complex_query_ttl = 60       # 1 minute (expensive, aggressive invalidation)
 
 **Causes:**
 
-1. Invalidation patterns not matching mutation
-2. Cascade invalidations not configured
-3. Database update bypassed GraphQL mutation
+1. Invalidation patterns not matching the mutation's table
+2. CASCADE rules not registered at startup
+3. Database update bypassed the `fn_` mutation path
 
 **Solutions:**
 
-1. Review CacheInvalidation scope patterns
-2. Add explicit cache.invalidate() call after DB update
-3. Ensure all writes go through GraphQL mutations
+1. Review the `invalidate_pattern` / `build_mutation_pattern` table names
+2. Call `setup_auto_cascade_rules(cache, schema)` at startup
+3. Ensure all writes go through `fn_` functions invoked via `db.execute_function`
 
 ---
 
@@ -1011,85 +689,77 @@ complex_query_ttl = 60       # 1 minute (expensive, aggressive invalidation)
 
 ### 8.1 Tenant Isolation
 
-✅ **Guaranteed:** Cache keys include tenant_id at highest level
-⚠️ **Verify:** Always pass tenant_id from authenticated context
+**Guaranteed:** Cache keys include `tenant_id` immediately after the prefix.
+**Verify:** Always source `tenant_id` from the authenticated context.
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.query
-async def get_user(info, id: UUID) -> User:
-    # CORRECT: tenant_id from auth context
-    tenant_id = info.context["tenant_id"]  # ✅
+import fraiseql
 
-    # WRONG: user-provided tenant_id
-    tenant_id = info.arguments.get("tenant_id")  # ❌ SECURITY BUG
-```text
-<!-- Code example in TEXT -->
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    # CORRECT: tenant_id comes from info.context (set from the auth token),
+    # which the CachedRepository folds into the cache key.
+    return await db.find("v_user")
+
+    # WRONG: never trust a client-supplied tenant_id for cache scoping.
+```
 
 ### 8.2 Error Caching
 
-⚠️ **Warning:** Caching error responses can leak information
+**Warning:** Caching error responses can leak information.
 
 ```python
-<!-- Code example in Python -->
-# ❌ DON'T cache errors in production
-cache_errors=True  # SECURITY RISK
+from fraiseql.caching import CacheConfig
 
-# ✅ Only cache errors in development
-cache_errors=os.getenv("ENVIRONMENT") == "development"
-```text
-<!-- Code example in TEXT -->
+# Cache errors only in development
+cache_config = CacheConfig(
+    cache_errors=(os.getenv("ENVIRONMENT") == "development"),
+)
+```
 
 ### 8.3 Sensitive Data
 
-🔒 **Best Practice:** Don't cache PII or sensitive data
+**Best Practice:** Don't cache PII or sensitive data. Expose only the public-facing fields in your read views and cache those.
 
 ```python
-<!-- Code example in Python -->
-# ❌ DON'T cache this
-@FraiseQL.query
-async def get_user(info, id: UUID) -> User:
-    """Returns user with sensitive fields."""
-    return await db.find_one("users", {"id": id})
+import fraiseql
 
-# ✅ DO this: Cache only public fields
-@FraiseQL.query
-async def get_user_profile(info, id: UUID) -> UserProfile:
-    """Returns only public profile."""
-    return await db.find_one("user_profiles", {"id": id})
-```text
-<!-- Code example in TEXT -->
+
+# Prefer caching a public-profile view over a full user record:
+@fraiseql.query
+async def user_profile(info, id: ID) -> UserProfile:
+    """Returns only public profile fields from v_user_profile."""
+    db = info.context["db"]
+    return await db.find_one("v_user_profile", id=id)
+```
 
 ---
 
 ## 9. Performance Example
 
-### 9.1 Real-World Benchmark
+### 9.1 Real-World Pattern
 
 **Setup:**
 
-- 100,000 users
-- 10,000 concurrent sessions
-- Memory backend with 5-minute TTL
-- Query: GetUser (moderate complexity)
+- A high-read `v_user` view queried with a small set of common filters
+- `PostgresCache` (UNLOGGED table) shared across multiple FastAPI instances
+- `default_ttl = 300` (5 minutes)
 
-**Results:**
+**Outcome:**
 
-| Metric | Without Cache | With Cache |
-|--------|---------------|-----------|
-| Latency (p95) | 250ms | 15ms |
-| Latency (p99) | 500ms | 25ms |
-| Throughput | 2,000 req/s | 50,000 req/s |
-| Database CPU | 85% | 5% |
-| Memory | 128MB | 800MB |
+- Repeated reads of the same filter combination hit the cache (`CacheStats.hits` climbs).
+- A write through `fn_update_user` invalidates the matching `v_user`/`v_users` patterns, so the next read repopulates the entry.
+- Because the table is shared, a cache warmed by one instance serves every other instance.
 
-**Conclusion:** 25x throughput improvement, 17x latency improvement, at cost of 6x memory.
+Measure your own workload with `cache.get_stats()` and the SQL occupancy query in [Section 2.10](#210-cache-monitoring--metrics) before tuning TTLs.
 
 ---
 
 ## 10. Related Specifications
 
-- **docs/specs/persisted-queries.md** — APQ implementation (uses this caching system)
+- **docs/specs/persisted-queries.md** — Persisted queries (reuse this caching layer)
 - **docs/guides/monitoring.md** — Cache metrics and observability
 - **docs/guides/production-deployment.md** — Cache configuration in production
 - **docs/architecture/core/execution-model.md** — Where caching fits in query execution
@@ -1101,12 +771,11 @@ async def get_user_profile(info, id: UUID) -> UserProfile:
 | Term | Definition |
 |------|-----------|
 | **Cache Hit** | Requested data found in cache |
-| **Cache Miss** | Requested data not in cache, retrieved from database |
-| **TTL (Time-To-Live)** | How long a cache entry remains valid |
-| **LRU (Least Recently Used)** | Eviction policy: remove least recently accessed entries |
+| **Cache Miss** | Requested data not in cache, retrieved from the database |
+| **TTL (Time-To-Live)** | How long a cache entry remains valid (`expires_at`) |
 | **Tenant Isolation** | Guarantee that one tenant cannot access another's cached data |
-| **Invalidation** | Removing or marking cache entries as stale |
-| **Cascade** | Automatic invalidation triggered by mutations |
+| **Invalidation** | Removing cache entries (by key or pattern) so they are recomputed |
+| **CASCADE** | Automatic invalidation of dependent domains' caches when a domain changes |
+| **CascadeRule** | A `source_domain → target_domain` invalidation relationship derived from the schema |
 | **UNLOGGED Table** | PostgreSQL table without write-ahead logging (faster writes, lost on crash) |
-| **APQ** | Automatic Persisted Queries (caches query definitions and responses) |
-| **Complexity** | Measure of query expense (fields + depth + relationships) |
+| **Domain Versioning** | Optional `pg_fraiseql_cache` mechanism that validates entries against per-tenant domain versions |
