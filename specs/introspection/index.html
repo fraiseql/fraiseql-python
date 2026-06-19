@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL provides comprehensive control over GraphQL schema introspection through a three-tier policy system. Schema introspection allows clients to query schema information, which is essential for development tools but poses a security risk in production.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/specs/introspection/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Introspection - FraiseQL Documentation</title>
+        <title>GraphQL Schema Introspection Specification - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introspection
+              GraphQL Schema Introspection Specification
             
           </span>
         </div>
@@ -4713,10 +4715,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#authenticated-policy-default-for-standard" class="md-nav__link">
+  <a href="#authenticated-policy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        AUTHENTICATED Policy (Default for STANDARD)
+        AUTHENTICATED Policy
       
     </span>
   </a>
@@ -4750,6 +4752,428 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security-profiles-and-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Profiles and Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Profiles and Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STANDARD Profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#regulated-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REGULATED Profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restricted-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RESTRICTED Profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#introspection-query-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection Query Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introspection Query Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detected-introspection-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detected Introspection Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detection-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection Behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Responses
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Responses">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disabled-policy-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DISABLED Policy Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticated-policy-error-unauthenticated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AUTHENTICATED Policy Error (Unauthenticated)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticated-policy-error-invalid-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AUTHENTICATED Policy Error (Invalid Token)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-responses-in-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generic Responses in Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-reflection-and-auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Reflection and Auto-Discovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema Reflection and Auto-Discovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgresql-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL Introspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-generation-from-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Generation from Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-introspection-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Introspection API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deployment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-alternatives-to-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client Alternatives to Introspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-introspection-attempts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Introspection Attempts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting Introspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-introspection-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Introspection Policies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Introspection Policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#development-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staging-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staging Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-documentation-without-introspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Documentation Without Introspection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Documentation Without Introspection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-hand-maintained-sdl-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Hand-Maintained SDL Document
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-openapiswagger-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. OpenAPI/Swagger Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-graphql-playground-development-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GraphQL Playground (Development Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-markdown-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Markdown Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4770,13 +5194,6 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: GraphQL Schema Introspection Specification
-description: FraiseQL provides comprehensive control over GraphQL schema introspection through a three-tier policy system. Schema introspection allows clients to query schem
-keywords: ["format", "compliance", "schema", "graphql", "protocol", "specification", "standard"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="graphql-schema-introspection-specification">GraphQL Schema Introspection Specification<a class="headerlink" href="#graphql-schema-introspection-specification" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> Stable
 <strong>Version</strong>: 1.0
@@ -4793,27 +5210,20 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <hr />
 <h2 id="introspection-policies">Introspection Policies<a class="headerlink" href="#introspection-policies" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides three introspection policies to balance developer experience with security.</p>
+<p>FraiseQL provides three introspection policies to balance developer experience with security. The policy is a real <code>FraiseQLConfig</code> field, <code>introspection_policy</code>, of type <code>IntrospectionPolicy</code>.</p>
 <h3 id="disabled-policy-production">DISABLED Policy (Production)<a class="headerlink" href="#disabled-policy-production" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import FraiseQLConfig
-from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    introspection_policy=IntrospectionPolicy.DISABLED,
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Environment Variable</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>export FRAISEQL_INTROSPECTION_POLICY=disabled
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
+</code></pre></div>
 <p><strong>Behavior</strong>:</p>
 <ul>
 <li>❌ No introspection queries allowed</li>
@@ -4825,32 +5235,24 @@ from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
 <li>✅ Suitable for production/public APIs</li>
 </ul>
 <p><strong>Client Request</strong> (rejected):</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  __schema {
-    types {
-      name
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__schema</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">types</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">name</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Server Response</strong>:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "GraphQL introspection is disabled",
-    "extensions": {
-      "code": "INTROSPECTION_DISABLED"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL introspection is disabled&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INTROSPECTION_DISABLED&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Use Cases</strong>:</p>
 <ul>
 <li>Production GraphQL APIs</li>
@@ -4866,24 +5268,16 @@ from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
 <li>Blocks query complexity analysis via introspection</li>
 <li>Prevents automated attack tool operation</li>
 </ul>
-<h3 id="authenticated-policy-default-for-standard">AUTHENTICATED Policy (Default for STANDARD)<a class="headerlink" href="#authenticated-policy-default-for-standard" title="Permanent link">&para;</a></h3>
+<h3 id="authenticated-policy">AUTHENTICATED Policy<a class="headerlink" href="#authenticated-policy" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    introspection_policy=IntrospectionPolicy.AUTHENTICATED,
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Environment Variable</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>export FRAISEQL_INTROSPECTION_POLICY=authenticated
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>authenticated
+</code></pre></div>
 <p><strong>Behavior</strong>:</p>
 <ul>
 <li>✅ Introspection allowed only for authenticated users</li>
@@ -4893,73 +5287,57 @@ from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
 <li>✅ Production API consumed by internal/trusted clients</li>
 </ul>
 <p><strong>Client Request</strong> (unauthenticated):</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  __type(name: "User") {
-    name
-    fields { name }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Server Response</strong> (unauthenticated):</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Authentication required for introspection",
-    "extensions": {
-      "code": "AUTHENTICATION_REQUIRED",
-      "introspection_policy": "authenticated"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Authentication required for introspection&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AUTHENTICATION_REQUIRED&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;introspection_policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;authenticated&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Client Request</strong> (authenticated):</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</p>
-<p>query {
-  __type(name: "User") {
-    name
-    fields {
-      name
-      type { kind name }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="err">Authorization:</span><span class="w"> </span><span class="err">Bearer</span><span class="w"> </span><span class="err">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</span>
 
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">name</span>
+<span class="w">      </span><span class="n">type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">kind</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Server Response</strong> (authenticated - success):</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "data": {
-    "__type": {
-      "name": "User",
-      "fields": [
-        {"name": "id", "type": {"kind": "SCALAR", "name": "ID"}},
-        {"name": "name", "type": {"kind": "SCALAR", "name": "String"}},
-        {"name": "email", "type": {"kind": "SCALAR", "name": "String"}}
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;__type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SCALAR&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ID&quot;</span><span class="p">}},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SCALAR&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;String&quot;</span><span class="p">}},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SCALAR&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;String&quot;</span><span class="p">}}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Use Cases</strong>:</p>
 <ul>
 <li>Staging environments</li>
 <li>Internal company APIs</li>
 <li>APIs with trusted internal clients</li>
 <li>Development APIs requiring authentication</li>
-<li>Regulatory compliance (STANDARD profile)</li>
 <li>GraphQL playgrounds for internal tools</li>
 </ul>
 <p><strong>Security Characteristics</strong>:</p>
@@ -4971,129 +5349,102 @@ from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
 </ul>
 <h3 id="public-policy-development-only">PUBLIC Policy (Development Only)<a class="headerlink" href="#public-policy-development-only" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    introspection_policy=IntrospectionPolicy.PUBLIC,
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>PUBLIC</code> is the default value of <code>introspection_policy</code>, but it is automatically downgraded to <code>DISABLED</code> when <code>environment="production"</code> unless you set it explicitly.</p>
 <p><strong>Environment Variable</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>export FRAISEQL_INTROSPECTION_POLICY=public
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>public
+</code></pre></div>
 <p><strong>Behavior</strong>:</p>
 <ul>
 <li>✅ Introspection allowed for all clients</li>
 <li>✅ No authentication required</li>
 <li>✅ Full schema disclosure</li>
-<li>✅ Developer-friendly (supports IDE tooling, Apollo Studio, etc.)</li>
+<li>✅ Developer-friendly (supports IDE tooling, the GraphQL playground, etc.)</li>
 </ul>
 <p><strong>Client Request</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  __schema {
-    queryType { name }
-    types {
-      name
-      kind
-      fields { name }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__schema</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">queryType</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">types</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">name</span>
+<span class="w">      </span><span class="n">kind</span>
+<span class="w">      </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Server Response</strong> (success):</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "data": {
-    "__schema": {
-      "queryType": {"name": "Query"},
-      "types": [
-        {
-          "name": "String",
-          "kind": "SCALAR",
-          "fields": null
-        },
-        {
-          "name": "Query",
-          "kind": "OBJECT",
-          "fields": [
-            {"name": "user"},
-            {"name": "users"},
-            {"name": "posts"}
-          ]
-        }
-        // ... more types ...
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;__schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;queryType&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query&quot;</span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;types&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SCALAR&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OBJECT&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;users&quot;</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;posts&quot;</span><span class="p">}</span>
+<span class="w">          </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Use Cases</strong>:</p>
 <ul>
 <li>Local development</li>
 <li>CI/CD test environments</li>
 <li>Public/open source APIs</li>
 <li>Learning and tutorial projects</li>
-<li>GraphQL Federation (requires introspection for entity resolution)</li>
 </ul>
 <p>⚠️ <strong>Warning</strong>: Never use PUBLIC policy in production environments!</p>
 <hr />
 <h2 id="environment-based-auto-configuration">Environment-Based Auto-Configuration<a class="headerlink" href="#environment-based-auto-configuration" title="Permanent link">&para;</a></h2>
-<p>FraiseQL automatically sets introspection policy based on deployment environment:</p>
+<p>FraiseQL adjusts the effective introspection policy based on the configured <code>environment</code>. The <code>FraiseQLConfig</code> field validators downgrade <code>introspection_policy</code> to <code>DISABLED</code> and disable <code>enable_playground</code> when <code>environment="production"</code> (unless you override them explicitly).</p>
 <p><strong>Automatic Policy Selection</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import FraiseQLConfig</p>
-<h1 id="development-environment">Development environment<a class="headerlink" href="#development-environment" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    environment="development",  # Auto: IntrospectionPolicy.PUBLIC
-)</p>
-<h1 id="staging-environment">Staging environment<a class="headerlink" href="#staging-environment" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    environment="staging",      # Auto: IntrospectionPolicy.AUTHENTICATED
-)</p>
-<h1 id="production-environment">Production environment<a class="headerlink" href="#production-environment" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_db",
-    environment="production",   # Auto: IntrospectionPolicy.DISABLED
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
+<span class="c1"># Development environment</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;development&quot;</span><span class="p">,</span>  <span class="c1"># introspection_policy stays PUBLIC (default)</span>
+<span class="p">)</span>
+
+<span class="c1"># Production environment</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>   <span class="c1"># introspection_policy auto-downgraded to DISABLED</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The supported <code>environment</code> values are <code>"development"</code>, <code>"production"</code>, and <code>"testing"</code>.</p>
 <p><strong>Environment Variables</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="automatic-policy-based-on-environment">Automatic policy based on environment<a class="headerlink" href="#automatic-policy-based-on-environment" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_ENVIRONMENT=production  # Auto-sets: INTROSPECTION_POLICY=disabled</p>
-<h1 id="manual-override-takes-precedence">Manual override (takes precedence)<a class="headerlink" href="#manual-override-takes-precedence" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_INTROSPECTION_POLICY=disabled
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Automatic policy downgrade in production</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production<span class="w">  </span><span class="c1"># auto-disables introspection + playground</span>
 
+<span class="c1"># Manual override (takes precedence)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
+</code></pre></div>
 <p><strong>Default Behavior</strong>:</p>
 <ul>
-<li>Development: PUBLIC</li>
-<li>Staging: AUTHENTICATED</li>
-<li>Production: DISABLED</li>
+<li>Development: PUBLIC (the default <code>introspection_policy</code>)</li>
+<li>Production: DISABLED (auto-downgraded unless set explicitly)</li>
 <li>Testing: PUBLIC (for test suites)</li>
 </ul>
 <hr />
 <h2 id="security-profiles-and-introspection">Security Profiles and Introspection<a class="headerlink" href="#security-profiles-and-introspection" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's pre-configured security profiles automatically set appropriate introspection policies:</p>
+<p>FraiseQL ships pre-configured security profiles (<code>fraiseql.security.profiles.definitions</code>) that bundle an appropriate introspection policy together with other hardening defaults. Profiles are descriptive configuration metadata: read the desired <code>introspection_policy</code> from a profile and pass it to <code>FraiseQLConfig</code>.</p>
 <h3 id="standard-profile">STANDARD Profile<a class="headerlink" href="#standard-profile" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Introspection Policy: <strong>AUTHENTICATED</strong></li>
@@ -5120,33 +5471,35 @@ from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
 <li>Suitable for: Government systems, critical infrastructure, military</li>
 </ul>
 <p><strong>Usage</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.security.profiles.definitions import get_profile</p>
-<h1 id="standard-authenticated-introspection">STANDARD: AUTHENTICATED introspection<a class="headerlink" href="#standard-authenticated-introspection" title="Permanent link">&para;</a></h1>
-<p>profile = get_profile("standard")
-config = FraiseQLConfig(
-    security_profile=profile,
-    database_url="postgresql://localhost/fraiseql_db",
-)</p>
-<h1 id="automatic-introspection_policyauthenticated">Automatic: introspection_policy=AUTHENTICATED<a class="headerlink" href="#automatic-introspection_policyauthenticated" title="Permanent link">&para;</a></h1>
-<h1 id="regulated-disabled-introspection">REGULATED: DISABLED introspection<a class="headerlink" href="#regulated-disabled-introspection" title="Permanent link">&para;</a></h1>
-<p>profile = get_profile("regulated")
-config = FraiseQLConfig(
-    security_profile=profile,
-    database_url="postgresql://localhost/fraiseql_db",
-)</p>
-<h1 id="automatic-introspection_policydisabled">Automatic: introspection_policy=DISABLED<a class="headerlink" href="#automatic-introspection_policydisabled" title="Permanent link">&para;</a></h1>
-<h1 id="restricted-disabled-introspection">RESTRICTED: DISABLED introspection<a class="headerlink" href="#restricted-disabled-introspection" title="Permanent link">&para;</a></h1>
-<p>profile = get_profile("restricted")
-config = FraiseQLConfig(
-    security_profile=profile,
-    database_url="postgresql://localhost/fraiseql_db",
-)</p>
-<h1 id="automatic-introspection_policydisabled_1">Automatic: introspection_policy=DISABLED<a class="headerlink" href="#automatic-introspection_policydisabled_1" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles.definitions</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
 
+<span class="c1"># STANDARD: AUTHENTICATED introspection</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">&quot;standard&quot;</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>  <span class="c1"># from the standard profile</span>
+<span class="p">)</span>
+
+<span class="c1"># REGULATED / RESTRICTED: DISABLED introspection</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">&quot;regulated&quot;</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">,</span>  <span class="c1"># from the regulated/restricted profile</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The <code>SecurityProfileConfig</code> returned by <code>get_profile(...)</code> exposes <code>introspection_policy</code> (among other fields), so you can read it programmatically:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles.definitions</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
+
+<span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">&quot;restricted&quot;</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">introspection_policy</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="introspection-query-detection">Introspection Query Detection<a class="headerlink" href="#introspection-query-detection" title="Permanent link">&para;</a></h2>
 <p>FraiseQL detects introspection queries using pattern matching on reserved GraphQL field names.</p>
@@ -5155,258 +5508,210 @@ config = FraiseQLConfig(
 <ul>
 <li><strong><code>__schema</code></strong> - Schema type</li>
 </ul>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    __schema { types { name } }
-  }
-  ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__schema</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
 <li><strong><code>__type</code></strong> - Specific type inspection</li>
 </ul>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    __type(name: "User") { name fields { name } }
-  }
-  ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
 <li><strong><code>__typename</code></strong> - Type name of objects</li>
 </ul>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    users {
-      __typename
-      id
-      name
-    }
-  }
-  ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">__typename</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
 <li><strong><code>__directive</code></strong> - Directive inspection</li>
 </ul>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    __schema {
-      directives { name args { name } }
-    }
-  }
-  ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__schema</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">directives</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">args</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="detection-behavior">Detection Behavior<a class="headerlink" href="#detection-behavior" title="Permanent link">&para;</a></h3>
 <p><strong>Case Insensitive</strong>: Detection is case-insensitive</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="all-of-these-are-detected-and-blocked">All of these are detected and blocked:<a class="headerlink" href="#all-of-these-are-detected-and-blocked" title="Permanent link">&para;</a></h1>
-<p>query { __schema { ... } }
-query { __SCHEMA { ... } }
-query { __Schema { ... } }
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c"># All of these are detected and blocked:</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__schema</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="n">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__SCHEMA</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="n">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__Schema</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+</code></pre></div>
 <p><strong>Mixed Queries</strong>: Introspection combined with regular queries is blocked</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="blocked-contains-introspection">Blocked (contains introspection)<a class="headerlink" href="#blocked-contains-introspection" title="Permanent link">&para;</a></h1>
-<p>query {
-  users { id name }
-  __type(name: "User") { name }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c"># Blocked (contains introspection)</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Implementation Detail</strong>: Pattern matching is performed with case-lowering before comparison, as a pragmatic security measure.</p>
 <hr />
 <h2 id="error-responses">Error Responses<a class="headerlink" href="#error-responses" title="Permanent link">&para;</a></h2>
 <p>When introspection is blocked, FraiseQL returns standardized error responses.</p>
 <h3 id="disabled-policy-error">DISABLED Policy Error<a class="headerlink" href="#disabled-policy-error" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "GraphQL introspection is disabled",
-    "extensions": {
-      "code": "INTROSPECTION_DISABLED",
-      "policy": "disabled"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL introspection is disabled&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INTROSPECTION_DISABLED&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;disabled&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="authenticated-policy-error-unauthenticated">AUTHENTICATED Policy Error (Unauthenticated)<a class="headerlink" href="#authenticated-policy-error-unauthenticated" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Authentication required to access schema information",
-    "extensions": {
-      "code": "AUTHENTICATION_REQUIRED",
-      "policy": "authenticated"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Authentication required to access schema information&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AUTHENTICATION_REQUIRED&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;authenticated&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="authenticated-policy-error-invalid-token">AUTHENTICATED Policy Error (Invalid Token)<a class="headerlink" href="#authenticated-policy-error-invalid-token" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Invalid authentication token",
-    "extensions": {
-      "code": "INVALID_TOKEN",
-      "policy": "authenticated"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Invalid authentication token&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INVALID_TOKEN&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;authenticated&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="generic-responses-in-production">Generic Responses in Production<a class="headerlink" href="#generic-responses-in-production" title="Permanent link">&para;</a></h3>
 <p>In production environments, error messages are intentionally generic to avoid leaking configuration details:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Introspection is not available",
-    "extensions": {
-      "code": "INTROSPECTION_NOT_AVAILABLE"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Introspection is not available&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INTROSPECTION_NOT_AVAILABLE&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="schema-reflection-and-auto-discovery">Schema Reflection and Auto-Discovery<a class="headerlink" href="#schema-reflection-and-auto-discovery" title="Permanent link">&para;</a></h2>
-<p>Beyond security policies, FraiseQL provides tools to reflect on and export schema information programmatically.</p>
+<p>Beyond security policies, FraiseQL provides tools to reflect on schema information programmatically and to discover GraphQL types from your PostgreSQL database at runtime.</p>
 <h3 id="postgresql-introspection">PostgreSQL Introspection<a class="headerlink" href="#postgresql-introspection" title="Permanent link">&para;</a></h3>
 <p><strong>Auto-Discovery from Database</strong>:</p>
-<p>FraiseQL can automatically discover GraphQL types from PostgreSQL database schema:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.introspection.postgres_introspector import PostgresIntrospector</p>
-<p>introspector = PostgresIntrospector(
-    database_url="postgresql://localhost/fraiseql_db"
-)</p>
-<h1 id="discover-all-views">Discover all views<a class="headerlink" href="#discover-all-views" title="Permanent link">&para;</a></h1>
-<p>views = introspector.discover_views(pattern="v_%")  # Views starting with "v_"</p>
-<h1 id="returns-viewmetadata-viewmetadata">Returns: [ViewMetadata, ViewMetadata, ...]<a class="headerlink" href="#returns-viewmetadata-viewmetadata" title="Permanent link">&para;</a></h1>
-<h1 id="get-view-details">Get view details<a class="headerlink" href="#get-view-details" title="Permanent link">&para;</a></h1>
-<p>for view in views:
-    print(f"View: {view.name}")
-    for column in view.columns:
-        print(f"  {column.name}: {column.pg_type} (nullable: {column.nullable})")
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL can discover GraphQL read views from a PostgreSQL database. <code>PostgresIntrospector</code> takes an async connection pool (a <code>psycopg_pool.AsyncConnectionPool</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">psycopg_pool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.introspection.postgres_introspector</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresIntrospector</span>
 
+<span class="n">pool</span> <span class="o">=</span> <span class="n">psycopg_pool</span><span class="o">.</span><span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">)</span>
+<span class="n">introspector</span> <span class="o">=</span> <span class="n">PostgresIntrospector</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
+
+<span class="c1"># Discover all read views</span>
+<span class="n">views</span> <span class="o">=</span> <span class="k">await</span> <span class="n">introspector</span><span class="o">.</span><span class="n">discover_views</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;v_%&quot;</span><span class="p">)</span>  <span class="c1"># Views starting with &quot;v_&quot;</span>
+<span class="c1"># Returns: [ViewMetadata, ViewMetadata, ...]</span>
+
+<span class="c1"># Get view details</span>
+<span class="k">for</span> <span class="n">view</span> <span class="ow">in</span> <span class="n">views</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;View: </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">column</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">column</span><span class="o">.</span><span class="n">pg_type</span><span class="si">}</span><span class="s2"> (nullable: </span><span class="si">{</span><span class="n">column</span><span class="o">.</span><span class="n">nullable</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</code></pre></div>
 <p><strong>Pattern Matching</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="like-pattern-sql-wildcards">LIKE pattern (SQL wildcards)<a class="headerlink" href="#like-pattern-sql-wildcards" title="Permanent link">&para;</a></h1>
-<p>views = introspector.discover_views(pattern="v_%")      # "v_*" pattern</p>
-<h1 id="regular-expression">Regular expression<a class="headerlink" href="#regular-expression" title="Permanent link">&para;</a></h1>
-<p>views = introspector.discover_views(
-    pattern="^v_(user|post)s?$",
-    use_regex=True
-)</p>
-<h1 id="schema-filtering">Schema filtering<a class="headerlink" href="#schema-filtering" title="Permanent link">&para;</a></h1>
-<p>views = introspector.discover_views(
-    pattern="%",
-    schemas=["public", "staging"]  # Only these schemas
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># LIKE pattern (SQL wildcards)</span>
+<span class="n">views</span> <span class="o">=</span> <span class="k">await</span> <span class="n">introspector</span><span class="o">.</span><span class="n">discover_views</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;v_%&quot;</span><span class="p">)</span>      <span class="c1"># &quot;v_*&quot; pattern</span>
 
+<span class="c1"># Regular expression</span>
+<span class="n">views</span> <span class="o">=</span> <span class="k">await</span> <span class="n">introspector</span><span class="o">.</span><span class="n">discover_views</span><span class="p">(</span>
+    <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;^v_(user|post)s?$&quot;</span><span class="p">,</span>
+    <span class="n">use_regex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Schema filtering</span>
+<span class="n">views</span> <span class="o">=</span> <span class="k">await</span> <span class="n">introspector</span><span class="o">.</span><span class="n">discover_views</span><span class="p">(</span>
+    <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;%&quot;</span><span class="p">,</span>
+    <span class="n">schemas</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;staging&quot;</span><span class="p">],</span>  <span class="c1"># Only these schemas</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Metadata Extraction</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>view = views[0]</p>
-<h1 id="view-information">View information<a class="headerlink" href="#view-information" title="Permanent link">&para;</a></h1>
-<p>print(f"View Name: {view.name}")
-print(f"OID: {view.oid}")
-print(f"Owner: {view.owner}")
-print(f"Comment: {view.comment}")  # From PostgreSQL comment</p>
-<h1 id="column-information">Column information<a class="headerlink" href="#column-information" title="Permanent link">&para;</a></h1>
-<p>for col in view.columns:
-    print(f"  {col.name}")
-    print(f"    Type: {col.pg_type}")
-    print(f"    Nullable: {col.nullable}")
-    print(f"    Default: {col.default_value}")
-    print(f"    Comment: {col.comment}")
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="n">view</span> <span class="o">=</span> <span class="n">views</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
+<span class="c1"># View information</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;View Name: </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OID: </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">oid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Owner: </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Comment: </span><span class="si">{</span><span class="n">view</span><span class="o">.</span><span class="n">comment</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># From PostgreSQL comment</span>
+
+<span class="c1"># Column information</span>
+<span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Type: </span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">pg_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Nullable: </span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">nullable</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Default: </span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">default_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    Comment: </span><span class="si">{</span><span class="n">col</span><span class="o">.</span><span class="n">comment</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="type-generation-from-database">Type Generation from Database<a class="headerlink" href="#type-generation-from-database" title="Permanent link">&para;</a></h3>
 <p><strong>Automatic Type Creation</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.introspection.type_generator import TypeGenerator</p>
-<p>generator = TypeGenerator(
-    database_url="postgresql://localhost/fraiseql_db"
-)</p>
-<h1 id="generate-python-type-from-database-view">Generate Python type from database view<a class="headerlink" href="#generate-python-type-from-database-view" title="Permanent link">&para;</a></h1>
-<p>User = generator.generate_type_from_view(
-    view_name="v_users",
-    type_name="User",
-    type_comment="User information from database"
-)</p>
-<h1 id="generated-type-is-ready-to-use-with-fraiseql-decorators">Generated type is ready to use with @FraiseQL decorators<a class="headerlink" href="#generated-type-is-ready-to-use-with-fraiseql-decorators" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-async def get_user(id: ID) -&gt; User | None:
-    # ... resolver implementation ...
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>TypeGenerator</code> builds a <code>@fraiseql.type</code> class from a discovered view. It is constructed with an optional <code>TypeMapper</code>, and <code>generate_type_class(...)</code> is an async method:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.introspection.type_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeGenerator</span>
 
+<span class="n">generator</span> <span class="o">=</span> <span class="n">TypeGenerator</span><span class="p">()</span>
+
+<span class="c1"># Generate a GraphQL type class from a database view</span>
+<span class="n">User</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate_type_class</span><span class="p">(</span><span class="n">view</span><span class="p">)</span>
+
+<span class="c1"># The generated class is decorated with @fraiseql.type and ready to use</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="type-introspection-api">Type Introspection API<a class="headerlink" href="#type-introspection-api" title="Permanent link">&para;</a></h3>
 <p><strong>Runtime Type Inspection</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.utils.introspection import describe_type</p>
-<p>@FraiseQL.type
-class User:
-    id: ID
-    name: str
-    email: str | None = None</p>
-<h1 id="describe-type-at-runtime">Describe type at runtime<a class="headerlink" href="#describe-type-at-runtime" title="Permanent link">&para;</a></h1>
-<p>description = describe_type(User)</p>
-<h1 id="returns">Returns:<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h1>
-<h1 id="_1">{<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<h1 id="typename-user">"typename": "User",<a class="headerlink" href="#typename-user" title="Permanent link">&para;</a></h1>
-<h1 id="is_input-false">"is_input": False,<a class="headerlink" href="#is_input-false" title="Permanent link">&para;</a></h1>
-<h1 id="is_output-true">"is_output": True,<a class="headerlink" href="#is_output-true" title="Permanent link">&para;</a></h1>
-<h1 id="is_frozen-false">"is_frozen": False,<a class="headerlink" href="#is_frozen-false" title="Permanent link">&para;</a></h1>
-<h1 id="kw_only-false">"kw_only": False,<a class="headerlink" href="#kw_only-false" title="Permanent link">&para;</a></h1>
-<h1 id="fields">"fields": {<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h1>
-<h1 id="id-type-id-required-true-description-none">"id": {"type": "ID", "required": True, "description": None},<a class="headerlink" href="#id-type-id-required-true-description-none" title="Permanent link">&para;</a></h1>
-<h1 id="name-type-string-required-true-description-none">"name": {"type": "String", "required": True, "description": None},<a class="headerlink" href="#name-type-string-required-true-description-none" title="Permanent link">&para;</a></h1>
-<h1 False_="False," None="None" _String_="&quot;String&quot;," _description_:="&quot;description&quot;:" _required_:="&quot;required&quot;:" _type_:="&quot;type&quot;:" id="email">"email":<a class="headerlink" href="#email" title="Permanent link">&para;</a></h1>
-<h1 id="_2">}<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h1>
-<h1 id="_3">}<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h1>
-<h1 id="access-field-information">Access field information<a class="headerlink" href="#access-field-information" title="Permanent link">&para;</a></h1>
-<p>for field_name, field_info in description["fields"].items():
-    print(f"{field_name}: {field_info['type']} (required: {field_info['required']})")
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.utils.introspection</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># Describe type at runtime</span>
+<span class="n">description</span> <span class="o">=</span> <span class="n">describe_type</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
+<span class="c1"># Returns:</span>
+<span class="c1"># {</span>
+<span class="c1">#   &quot;typename&quot;: &quot;User&quot;,</span>
+<span class="c1">#   &quot;is_input&quot;: False,</span>
+<span class="c1">#   &quot;is_output&quot;: True,</span>
+<span class="c1">#   &quot;is_frozen&quot;: False,</span>
+<span class="c1">#   &quot;kw_only&quot;: False,</span>
+<span class="c1">#   &quot;fields&quot;: {</span>
+<span class="c1">#     &quot;id&quot;: {&quot;type&quot;: &quot;ID&quot;, &quot;required&quot;: True, &quot;description&quot;: None},</span>
+<span class="c1">#     &quot;name&quot;: {&quot;type&quot;: &quot;String&quot;, &quot;required&quot;: True, &quot;description&quot;: None},</span>
+<span class="c1">#     &quot;email&quot;: {&quot;type&quot;: &quot;String&quot;, &quot;required&quot;: False, &quot;description&quot;: None}</span>
+<span class="c1">#   }</span>
+<span class="c1"># }</span>
+
+<span class="c1"># Access field information</span>
+<span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field_info</span> <span class="ow">in</span> <span class="n">description</span><span class="p">[</span><span class="s2">&quot;fields&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">field_info</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (required: </span><span class="si">{</span><span class="n">field_info</span><span class="p">[</span><span class="s1">&#39;required&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="production-best-practices">Production Best Practices<a class="headerlink" href="#production-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="deployment-checklist">Deployment Checklist<a class="headerlink" href="#deployment-checklist" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Introspection Policy</strong>: Set to <code>DISABLED</code> in production</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Introspection Policy</strong>: Set <code>introspection_policy=IntrospectionPolicy.DISABLED</code> in production</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Environment Variable</strong>: <code>FRAISEQL_INTROSPECTION_POLICY=disabled</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Alternative Documentation</strong>: Provide API documentation via OpenAPI/Swagger or documentation site</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Playground</strong>: Disable the GraphQL playground (<code>enable_playground=False</code>, auto-disabled in production)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Alternative Documentation</strong>: Provide API documentation via OpenAPI/Swagger or a documentation site</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Monitoring</strong>: Enable logging of introspection denial attempts</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Rate Limiting</strong>: Apply rate limits to prevent DoS attempts</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Security Headers</strong>: Include CSP and other headers</li>
@@ -5417,345 +5722,281 @@ class User:
 <p>When introspection is disabled, clients need alternative ways to discover the schema:</p>
 <p><strong>1. Automatic Persisted Queries (APQ)</strong></p>
 <ul>
-<li>Queries pre-registered at build time</li>
-<li>Client sends only hash, not full query</li>
+<li>Queries pre-registered with the server</li>
+<li>Client sends only a hash, not the full query</li>
 <li>No introspection needed</li>
 <li>See: <a href="../persisted-queries/">Persisted Queries Specification</a></li>
 </ul>
-<p><strong>2. Static Schema Export</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="export-schema-at-build-time">Export schema at build time<a class="headerlink" href="#export-schema-at-build-time" title="Permanent link">&para;</a></h1>
-<p>FraiseQL schema export --format graphql --output schema.graphql
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>2. Hand-Maintained Schema Document</strong></p>
+<ul>
+<li>Keep a checked-in copy of the GraphQL SDL in your repository</li>
+<li>Update it as part of each release</li>
+<li>Distribute it to client teams for code generation</li>
+</ul>
 <p><strong>3. API Documentation Site</strong></p>
 <ul>
-<li>Host schema documentation on separate website</li>
-<li>Markdown, HTML, or interactive explorer</li>
+<li>Host schema documentation on a separate website</li>
+<li>Markdown, HTML, or an interactive explorer</li>
 <li>Updated with each release</li>
 </ul>
 <p><strong>4. GraphQL Code Generation</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="generate-typescript-types-from-schema-during-build">Generate TypeScript types from schema (during build)<a class="headerlink" href="#generate-typescript-types-from-schema-during-build" title="Permanent link">&para;</a></h1>
-<p>graphql-codegen --config codegen.yml
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Generate TypeScript types from a checked-in SDL document (during build)</span>
+graphql-codegen<span class="w"> </span>--config<span class="w"> </span>codegen.yml
+</code></pre></div>
 <h3 id="monitoring-introspection-attempts">Monitoring Introspection Attempts<a class="headerlink" href="#monitoring-introspection-attempts" title="Permanent link">&para;</a></h3>
 <p><strong>Security Event Logging</strong>:</p>
-<p>Enable security logging to track introspection attempts:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.audit.security_logger import SecurityLogger</p>
-<p>logger = SecurityLogger(
-    log_file="/var/log/FraiseQL-security.log",
-    log_stdout=True,
-)
-```text</p>
-<!-- Code example in TEXT -->
+<p>Enable security logging to track introspection attempts using <code>SecurityLogger</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit.security_logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityLogger</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">SecurityLogger</span><span class="p">(</span>
+    <span class="n">log_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">log_file_path</span><span class="o">=</span><span class="s2">&quot;/var/log/fraiseql-security.log&quot;</span><span class="p">,</span>
+    <span class="n">log_to_stdout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Log Example</strong>:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2025-01-11T10:30:45Z",
-  "event_type": "QUERY_REJECTED",
-  "severity": "WARNING",
-  "ip_address": "192.0.2.1",
-  "reason": "GraphQL introspection is disabled",
-  "request_id": "req-abc123",
-  "metadata": {
-    "query_contains": "__schema",
-    "policy": "disabled"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-01-11T10:30:45Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;QUERY_REJECTED&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;severity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;192.0.2.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL introspection is disabled&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;request_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req-abc123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;query_contains&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;__schema&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;policy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;disabled&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>WAF Integration</strong> (CrowdSec):</p>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<h1 id="deploy-waf-rule-to-block-introspection-attempts">Deploy WAF rule to block introspection attempts<a class="headerlink" href="#deploy-waf-rule-to-block-introspection-attempts" title="Permanent link">&para;</a></h1>
-<p>type: trigger
-name: FraiseQL/graphql-introspection
-description: "Detect GraphQL introspection queries"
-filter: |
-  evt.Meta.log_type == 'nginx' &amp;&amp;
-  (evt.Parsed.request contains '__schema' ||
-   evt.Parsed.request contains '__type')
-blackhole: 1h
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Deploy WAF rule to block introspection attempts</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trigger</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql/graphql-introspection</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Detect</span><span class="nv"> </span><span class="s">GraphQL</span><span class="nv"> </span><span class="s">introspection</span><span class="nv"> </span><span class="s">queries&quot;</span>
+<span class="nt">filter</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">  </span><span class="no">evt.Meta.log_type == &#39;nginx&#39; &amp;&amp;</span>
+<span class="w">  </span><span class="no">(evt.Parsed.request contains &#39;__schema&#39; ||</span>
+<span class="w">   </span><span class="no">evt.Parsed.request contains &#39;__type&#39;)</span>
+<span class="nt">blackhole</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
+</code></pre></div>
 <h3 id="rate-limiting-introspection">Rate Limiting Introspection<a class="headerlink" href="#rate-limiting-introspection" title="Permanent link">&para;</a></h3>
-<p>If introspection is AUTHENTICATED, rate-limit it:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>rate_limit_config = RateLimitConfig(
-    strategies={
-        # Introspection queries allowed but heavily rate-limited
-        "introspection": {
-            "limit": 5,           # 5 introspection queries/minute
-            "window": 60,
-            "per": "user",        # Per authenticated user
-        },
-        "query": {
-            "limit": 100,         # Regular queries higher limit
-            "window": 60,
-        },
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
+<p>If introspection is AUTHENTICATED, rate-limit it via <code>RateLimitConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware.rate_limiter</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimitConfig</span>
 
+<span class="n">rate_limit_config</span> <span class="o">=</span> <span class="n">RateLimitConfig</span><span class="p">(</span>
+    <span class="n">strategies</span><span class="o">=</span><span class="p">{</span>
+        <span class="c1"># Introspection queries allowed but heavily rate-limited</span>
+        <span class="s2">&quot;introspection&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>           <span class="c1"># 5 introspection queries/minute</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+            <span class="s2">&quot;per&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>        <span class="c1"># Per authenticated user</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>         <span class="c1"># Regular queries higher limit</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="testing-introspection-policies">Testing Introspection Policies<a class="headerlink" href="#testing-introspection-policies" title="Permanent link">&para;</a></h2>
 <h3 id="test-cases">Test Cases<a class="headerlink" href="#test-cases" title="Permanent link">&para;</a></h3>
 <p><strong>DISABLED Policy - All Requests Blocked</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import pytest
-from FraiseQL import FraiseQLConfig
-from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
-<p>@pytest.mark.asyncio
-async def test_introspection_disabled_blocks_schema_query():
-    config = FraiseQLConfig(
-        database_url="postgresql://test_db",
-        introspection_policy=IntrospectionPolicy.DISABLED,
-    )</p>
-<div class="highlight"><pre><span></span><code>query = &quot;query { __schema { types { name } } }&quot;
-result = await schema.execute(query, context_value={})
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
-assert result.errors
-assert any(&quot;introspection&quot; in str(e).lower() for e in result.errors)
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_introspection_disabled_blocks_schema_query</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/test_db&quot;</span><span class="p">,</span>
+        <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;query { __schema { types { name } } }&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context_value</span><span class="o">=</span><span class="p">{})</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span>
+    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="s2">&quot;introspection&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>AUTHENTICATED Policy - Auth Required</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@pytest.mark.asyncio
-async def test_introspection_authenticated_requires_auth():
-    config = FraiseQLConfig(
-        introspection_policy=IntrospectionPolicy.AUTHENTICATED,
-    )</p>
-<div class="highlight"><pre><span></span><code># Unauthenticated request
-query = &quot;query { __type(name: \&quot;User\&quot;) { name } }&quot;
-result = await schema.execute(query, context_value={})
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_introspection_authenticated_requires_auth</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/test_db&quot;</span><span class="p">,</span>
+        <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>
+    <span class="p">)</span>
 
-assert result.errors
-assert &quot;authentication&quot; in str(result.errors[0]).lower()
+    <span class="c1"># Unauthenticated request</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;query { __type(name: </span><span class="se">\&quot;</span><span class="s2">User</span><span class="se">\&quot;</span><span class="s2">) { name } }&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context_value</span><span class="o">=</span><span class="p">{})</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span>
+    <span class="k">assert</span> <span class="s2">&quot;authentication&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_introspection_authenticated_succeeds_with_auth</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/test_db&quot;</span><span class="p">,</span>
+        <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Authenticated request</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;query { __type(name: </span><span class="se">\&quot;</span><span class="s2">User</span><span class="se">\&quot;</span><span class="s2">) { name } }&quot;</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-123&quot;</span><span class="p">}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context_value</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;__type&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;User&quot;</span>
 </code></pre></div>
-<p>@pytest.mark.asyncio
-async def test_introspection_authenticated_succeeds_with_auth():
-    config = FraiseQLConfig(
-        introspection_policy=IntrospectionPolicy.AUTHENTICATED,
-    )</p>
-<div class="highlight"><pre><span></span><code># Authenticated request
-query = &quot;query { __type(name: \&quot;User\&quot;) { name } }&quot;
-context = {&quot;user_id&quot;: &quot;user-123&quot;}
-result = await schema.execute(query, context_value=context)
-
-assert not result.errors
-assert result.data[&quot;__type&quot;][&quot;name&quot;] == &quot;User&quot;
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>PUBLIC Policy - All Allowed</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@pytest.mark.asyncio
-async def test_introspection_public_allows_all():
-    config = FraiseQLConfig(
-        introspection_policy=IntrospectionPolicy.PUBLIC,
-    )</p>
-<div class="highlight"><pre><span></span><code>query = &quot;query { __schema { types { name } } }&quot;
-result = await schema.execute(query, context_value={})
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_introspection_public_allows_all</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/test_db&quot;</span><span class="p">,</span>
+        <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
+    <span class="p">)</span>
 
-assert not result.errors
-assert result.data[&quot;__schema&quot;][&quot;types&quot;]
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;query { __schema { types { name } } }&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context_value</span><span class="o">=</span><span class="p">{})</span>
+
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;__schema&quot;</span><span class="p">][</span><span class="s2">&quot;types&quot;</span><span class="p">]</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="integration-tests">Integration Tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@pytest.mark.asyncio
-async def test_introspection_mixed_query_rejected():
-    """Introspection combined with regular query should be rejected."""
-    config = FraiseQLConfig(
-        introspection_policy=IntrospectionPolicy.DISABLED,
-    )</p>
-<div class="highlight"><pre><span></span><code>query = &quot;&quot;&quot;
-query {
-  users { id name }
-  __type(name: &quot;User&quot;) { name }
-}
-&quot;&quot;&quot;
-result = await schema.execute(query)
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_introspection_mixed_query_rejected</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Introspection combined with regular query should be rejected.&quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/test_db&quot;</span><span class="p">,</span>
+        <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">,</span>
+    <span class="p">)</span>
 
-assert result.errors
-assert &quot;introspection&quot; in str(result.errors[0]).lower()
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    query {</span>
+<span class="s2">      users { id name }</span>
+<span class="s2">      __type(name: &quot;User&quot;) { name }</span>
+<span class="s2">    }</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span>
+    <span class="k">assert</span> <span class="s2">&quot;introspection&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
 <h2 id="configuration-examples">Configuration Examples<a class="headerlink" href="#configuration-examples" title="Permanent link">&para;</a></h2>
-<h3 id="development-environment_1">Development Environment<a class="headerlink" href="#development-environment_1" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="configdevelopmentpy">config/development.py<a class="headerlink" href="#configdevelopmentpy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL import FraiseQLConfig
-from FraiseQL.security.profiles.definitions import IntrospectionPolicy</p>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://localhost/fraiseql_dev",
-    environment="development",
-    introspection_policy=IntrospectionPolicy.PUBLIC,  # Explicit is better
-    # OR:
-    # security_profile=get_profile("standard"),  # Auto: AUTHENTICATED
-)
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="development-environment">Development Environment<a class="headerlink" href="#development-environment" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># config/development.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_dev&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;development&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>  <span class="c1"># Explicit is better</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Environment Variables</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FRAISEQL_ENVIRONMENT=development
-FRAISEQL_INTROSPECTION_POLICY=public
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>development
+<span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>public
+</code></pre></div>
+<h3 id="staging-environment">Staging Environment<a class="headerlink" href="#staging-environment" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># config/staging.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
-<h3 id="staging-environment_1">Staging Environment<a class="headerlink" href="#staging-environment_1" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="configstagingpy">config/staging.py<a class="headerlink" href="#configstagingpy" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    database_url="postgresql://pg-staging/fraiseql_db",
-    environment="staging",
-    introspection_policy=IntrospectionPolicy.AUTHENTICATED,
-    # OR:
-    # security_profile=get_profile("regulated"),  # Auto: DISABLED + enhanced audit
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://pg-staging/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;development&quot;</span><span class="p">,</span>  <span class="c1"># staging runs with development semantics</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Environment Variables</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FRAISEQL_ENVIRONMENT=staging
-FRAISEQL_INTROSPECTION_POLICY=authenticated
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>development
+<span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>authenticated
+</code></pre></div>
+<h3 id="production-environment">Production Environment<a class="headerlink" href="#production-environment" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># config/production.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
-<h3 id="production-environment_1">Production Environment<a class="headerlink" href="#production-environment_1" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="configproductionpy">config/production.py<a class="headerlink" href="#configproductionpy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL.security.profiles.definitions import get_profile</p>
-<h1 id="maximum-security-profile">Maximum security profile<a class="headerlink" href="#maximum-security-profile" title="Permanent link">&para;</a></h1>
-<p>profile = get_profile("restricted")  # Auto: DISABLED introspection
-config = FraiseQLConfig(
-    database_url="postgresql://pg-prod/fraiseql_db",
-    environment="production",
-    security_profile=profile,
-    # OR explicit:
-    # introspection_policy=IntrospectionPolicy.DISABLED,
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://pg-prod/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span><span class="p">,</span>
+    <span class="n">enable_playground</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Environment Variables</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FRAISEQL_ENVIRONMENT=production
-FRAISEQL_INTROSPECTION_POLICY=disabled
-FRAISEQL_SECURITY_PROFILE=restricted
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
+<span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
+</code></pre></div>
 <hr />
 <h2 id="api-documentation-without-introspection">API Documentation Without Introspection<a class="headerlink" href="#api-documentation-without-introspection" title="Permanent link">&para;</a></h2>
 <p>When introspection is disabled, provide schema documentation through these alternatives:</p>
-<h3 id="1-static-schema-export">1. Static Schema Export<a class="headerlink" href="#1-static-schema-export" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="export-schema-at-build-time_1">Export schema at build time<a class="headerlink" href="#export-schema-at-build-time_1" title="Permanent link">&para;</a></h1>
-<p>FraiseQL schema export \
-  --format graphql \
-  --output ./schema.graphql</p>
-<h1 id="upload-to-documentation-site">Upload to documentation site<a class="headerlink" href="#upload-to-documentation-site" title="Permanent link">&para;</a></h1>
-<h1 id="schema-version-matches-app-version">Schema version matches app version<a class="headerlink" href="#schema-version-matches-app-version" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="1-hand-maintained-sdl-document">1. Hand-Maintained SDL Document<a class="headerlink" href="#1-hand-maintained-sdl-document" title="Permanent link">&para;</a></h3>
+<p>Keep a checked-in copy of the GraphQL SDL in your repository and update it on each release. Client teams consume that document for code generation instead of live introspection.</p>
 <h3 id="2-openapiswagger-documentation">2. OpenAPI/Swagger Documentation<a class="headerlink" href="#2-openapiswagger-documentation" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="convert-graphql-schema-to-openapi">Convert GraphQL schema to OpenAPI<a class="headerlink" href="#convert-graphql-schema-to-openapi" title="Permanent link">&para;</a></h1>
-<p>graphql-to-openapi \
-  --input schema.graphql \
-  --output api-docs.json
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Convert a checked-in GraphQL SDL document to OpenAPI</span>
+graphql-to-openapi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--input<span class="w"> </span>schema.graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>api-docs.json
+</code></pre></div>
+<h3 id="3-graphql-playground-development-only">3. GraphQL Playground (Development Only)<a class="headerlink" href="#3-graphql-playground-development-only" title="Permanent link">&para;</a></h3>
+<p>In development, FraiseQL serves a GraphQL IDE so you can explore the schema interactively:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span><span class="p">,</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
 
-<h3 id="3-apollo-studio">3. Apollo Studio<a class="headerlink" href="#3-apollo-studio" title="Permanent link">&para;</a></h3>
-<p>Apollo Server integration provides a Sandbox editor with SDL (Schema Definition Language):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.fastapi import create_fraiseql_app</p>
-<p>app = create_fraiseql_app(
-    schema,
-    config=config,
-    # Apollo Sandbox available even with introspection disabled
-    sandbox_enabled=True,  # Requires static schema upload
-)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;development&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
+    <span class="n">enable_playground</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>           <span class="c1"># GraphQL IDE enabled in development</span>
+    <span class="n">playground_tool</span><span class="o">=</span><span class="s2">&quot;graphiql&quot;</span><span class="p">,</span>       <span class="c1"># or &quot;apollo-sandbox&quot;</span>
+<span class="p">)</span>
 
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_db&quot;</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The playground is automatically disabled in production.</p>
 <h3 id="4-markdown-documentation">4. Markdown Documentation<a class="headerlink" href="#4-markdown-documentation" title="Permanent link">&para;</a></h3>
 <p>Maintain hand-written documentation:</p>
-<p>```markdown</p>
-<!-- Code example in MARKDOWN -->
-<h1 id="graphql-api">GraphQL API<a class="headerlink" href="#graphql-api" title="Permanent link">&para;</a></h1>
-<h2 id="query-users">Query: users<a class="headerlink" href="#query-users" title="Permanent link">&para;</a></h2>
-<p>Returns a list of users.</p>
-<p><strong>Arguments:</strong>
-- <code>limit: Int!</code> - Maximum number of users
-- <code>offset: Int</code> - Skip first N users</p>
-<p><strong>Return Type:</strong> <code>[User!]!</code></p>
-<p><strong>Example:</strong>
-```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(limit: 10) {
-    id
-    name
-    email
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="gh"># GraphQL API</span>
 
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="gu">## Query: users</span>
 
+Returns a list of users.
+
+<span class="gs">**Arguments:**</span>
+<span class="k">-</span><span class="w"> </span><span class="sb">`limit: Int!`</span> - Maximum number of users
+<span class="k">-</span><span class="w"> </span><span class="sb">`offset: Int`</span> - Skip first N users
+
+<span class="gs">**Return Type:**</span> <span class="sb">`[User!]!`</span>
+
+<span class="gs">**Example:**</span>
+
+    query {
+      users(limit: 10) {
+        id
+        name
+        email
+      }
+    }
+</code></pre></div>
 <hr />
 <h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
 <p>FraiseQL's three-tier introspection policy system provides flexible security for different deployment environments. By using DISABLED introspection in production and AUTHENTICATED or PUBLIC in development, you achieve both security (preventing schema reconnaissance) and usability (allowing development tools to function).</p>
 <p><strong>Key Takeaways</strong>:</p>
 <ul>
 <li>✅ Use DISABLED in production (prevents schema exposure)</li>
-<li>✅ Use AUTHENTICATED in staging (requires authentication)</li>
+<li>✅ Use AUTHENTICATED for trusted internal access (requires authentication)</li>
 <li>✅ Use PUBLIC in development (full schema access)</li>
-<li>✅ Implement security profiles for bundled settings</li>
-<li>✅ Provide alternative documentation (schema export, OpenAPI)</li>
+<li>✅ Use security profiles to choose bundled introspection settings</li>
+<li>✅ Provide alternative documentation (SDL document, OpenAPI)</li>
 <li>✅ Monitor introspection denial attempts via security logging</li>
 <li>✅ Rate-limit introspection queries to prevent abuse</li>
 </ul>
@@ -5765,6 +6006,9 @@ FRAISEQL_SECURITY_PROFILE=restricted
 
 
 
+
+  
+  
 
 
 

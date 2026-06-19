@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Result caching in FraiseQL is a PostgreSQL-backed system that improves performance while maintaining data consistency through TTL expiry and CASCADE invalidation.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/specs/caching/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Caching - FraiseQL Documentation</title>
+        <title>Caching Specification - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Caching
+              Caching Specification
             
           </span>
         </div>
@@ -4786,10 +4788,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#241-memory-backend-default" class="md-nav__link">
+  <a href="#241-postgresql-backend-postgrescache" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.4.1 Memory Backend (Default)
+        2.4.1 PostgreSQL Backend (PostgresCache)
       
     </span>
   </a>
@@ -4797,21 +4799,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#242-postgresql-backend-production" class="md-nav__link">
+  <a href="#242-custom-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.4.2 PostgreSQL Backend (Production)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#243-custom-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4.3 Custom Backend
+        2.4.2 Custom Backend
       
     </span>
   </a>
@@ -4824,22 +4815,44 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#25-cache-invalidation-strategies" class="md-nav__link">
+  <a href="#25-repository-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.5 Cache Invalidation Strategies
+        2.5 Repository Integration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2.5 Cache Invalidation Strategies">
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-caching-arbitrary-query-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 Caching Arbitrary Query Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#27-cache-invalidation-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7 Cache Invalidation Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.7 Cache Invalidation Strategies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#251-time-based-ttl-invalidation" class="md-nav__link">
+  <a href="#271-time-based-ttl-invalidation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.5.1 Time-Based (TTL) Invalidation
+        2.7.1 Time-Based (TTL) Invalidation
       
     </span>
   </a>
@@ -4847,10 +4860,127 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#252-manual-invalidation" class="md-nav__link">
+  <a href="#272-manual-invalidation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.5.2 Manual Invalidation
+        2.7.2 Manual Invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#273-cascade-invalidation-automatic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.7.3 CASCADE Invalidation (Automatic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#28-multi-tenant-cache-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.8 Multi-Tenant Cache Isolation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.8 Multi-Tenant Cache Isolation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security-guarantee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Guarantee
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-tenant-deployment-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Tenant Deployment Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#29-performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.9 Performance Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.9 Performance Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgresql-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL Backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#210-cache-monitoring-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.10 Cache Monitoring &amp; Metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.10 Cache Monitoring &amp; Metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-monitoring-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Monitoring Query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-dashboard-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Dashboard Recommendations
       
     </span>
   </a>
@@ -4864,6 +4994,350 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-field-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Field Selection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cascade-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. CASCADE Invalidation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. CASCADE Invalidation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-automatic-rule-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Automatic Rule Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-setup-at-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Setup at Startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-example-detected-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Example: Detected Relationships
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-database-level-invalidation-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 Database-Level Invalidation (PostgreSQL)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-configuration-in-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Configuration in Production
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Configuration in Production">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-development-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Development Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-staging-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Staging Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-production-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Production Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-cache-strategy-decision-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Cache Strategy Decision Tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-ttl-guidelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 TTL Guidelines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-per-query-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Per-Query TTL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-monitoring-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Monitoring Checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-low-cache-hit-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Low Cache Hit Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-cache-growth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Cache Growth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-stale-data-in-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Stale Data in Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-tenant-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Tenant Isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-error-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Error Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-sensitive-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Sensitive Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-performance-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Performance Example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Performance Example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-real-world-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Real-World Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-related-specifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Related Specifications
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#glossary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Glossary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4887,883 +5361,474 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Caching Specification
-description: Caching in FraiseQL is a <strong>comprehensive, deterministic system</strong> that improves performance while maintaining <strong>absolute data consistency</strong> through automatic inv
-keywords: ["format", "compliance", "protocol", "specification", "standard"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="caching-specification">Caching Specification<a class="headerlink" href="#caching-specification" title="Permanent link">&para;</a></h1>
 <p><strong>Version:</strong> 1.0
 <strong>Status:</strong> Draft
 <strong>Audience:</strong> Database architects, schema designers, API developers, operations engineers</p>
 <hr />
 <h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
-<p>Caching in FraiseQL is a <strong>comprehensive, deterministic system</strong> that improves performance while maintaining <strong>absolute data consistency</strong> through automatic invalidation. The caching architecture is built on three foundational principles:</p>
+<p>Caching in FraiseQL is a result-caching layer that improves performance while maintaining data consistency. It lives in <code>fraiseql.caching</code> and is built on three foundational principles:</p>
 <ol>
-<li><strong>Multi-Layer Architecture</strong> — Query caching + APQ response caching + automatic invalidation</li>
-<li><strong>Tenant Isolation</strong> — All cache keys include tenant context, preventing cross-tenant data leakage</li>
-<li><strong>Deterministic Invalidation</strong> — Cache invalidation is compiler-determined, not runtime-dependent</li>
+<li><strong>PostgreSQL-backed</strong> — Cache entries are stored in a PostgreSQL <code>UNLOGGED</code> table (no WAL overhead), so the cache is shared across every FastAPI instance pointed at the same database.</li>
+<li><strong>Tenant Isolation</strong> — Cache keys include the tenant context, preventing cross-tenant data leakage.</li>
+<li><strong>CASCADE Invalidation</strong> — Cache invalidation rules are derived from the GraphQL schema at app startup, so mutations on a domain invalidate the caches of types that depend on it.</li>
 </ol>
-<p>FraiseQL provides:</p>
+<p>The public API (<code>from fraiseql.caching import ...</code>) provides:</p>
 <ul>
-<li><strong>Query Result Caching</strong> — Cache GraphQL query results at the database level</li>
-<li><strong>APQ Response Caching</strong> — Cache persisted query responses with field selection</li>
-<li><strong>graphql-cascade Integration</strong> — Automatic cache invalidation based on mutation cascades</li>
-<li><strong>Multi-Backend Support</strong> — In-memory (development), PostgreSQL (production), or custom backends</li>
-<li><strong>Transparent TTL Management</strong> — Time-to-live policies with complexity-aware tuning</li>
-<li><strong>Observable Metrics</strong> — Hit/miss rates, cache sizes, performance tracking</li>
+<li><strong><code>ResultCache</code></strong> — Query-result caching with <code>get_or_set</code>, TTL handling, and stats.</li>
+<li><strong><code>CacheConfig</code></strong> — Dataclass configuring <code>enabled</code>, TTLs, error caching, and key prefix.</li>
+<li><strong><code>CacheBackend</code></strong> — Protocol every backend implements (<code>get</code> / <code>set</code> / <code>delete</code> / <code>delete_pattern</code>).</li>
+<li><strong><code>PostgresCache</code></strong> — Production backend using a PostgreSQL <code>UNLOGGED</code> table.</li>
+<li><strong><code>CacheKeyBuilder</code></strong> — Deterministic, tenant-isolated cache-key generation.</li>
+<li><strong><code>CachedRepository</code></strong> — A <code>FraiseQLRepository</code> wrapper that transparently caches <code>find</code>/<code>find_one</code> and invalidates on <code>execute_function</code>.</li>
+<li><strong><code>cached_query</code></strong> — A decorator for caching arbitrary async query functions.</li>
+<li><strong><code>CascadeRule</code></strong>, <strong><code>SchemaAnalyzer</code></strong>, <strong><code>setup_auto_cascade_rules</code></strong> — Automatic CASCADE-rule generation from the GraphQL schema.</li>
+<li><strong><code>CacheStats</code></strong> — Hit / miss / error counters with a <code>hit_rate</code> property.</li>
 </ul>
+<p>All of this runs at runtime inside your FastAPI app; there is no build step and no compiled artifact.</p>
 <hr />
 <h2 id="2-query-result-caching">2. Query Result Caching<a class="headerlink" href="#2-query-result-caching" title="Permanent link">&para;</a></h2>
 <h3 id="21-overview">2.1 Overview<a class="headerlink" href="#21-overview" title="Permanent link">&para;</a></h3>
-<p>Query Result Caching stores the complete result of GraphQL queries in a cache, enabling subsecond response times for repeated queries.</p>
+<p><code>ResultCache</code> stores the result of a query function in a backend, enabling subsecond response times for repeated reads.</p>
 <p><strong>Key Characteristics:</strong></p>
 <ul>
-<li>Operates at the <strong>GraphQL query level</strong> (after validation, authorization, before database execution)</li>
-<li><strong>Deterministic cache keys</strong> based on query, variables, tenant, and complexity</li>
-<li><strong>Tenant-isolated</strong> — Impossible to retrieve data from other tenants via cache</li>
-<li><strong>Configurable backends</strong> — Memory (default), PostgreSQL, or custom</li>
-<li><strong>Optional error caching</strong> — Can cache error responses if configured</li>
+<li>Operates at the <strong>repository / query-function level</strong> (via <code>CachedRepository</code> or <code>cached_query</code>).</li>
+<li><strong>Deterministic cache keys</strong> built from query name, tenant, filters, ordering, and pagination.</li>
+<li><strong>Tenant-isolated</strong> — <code>tenant_id</code> is part of every key, so one tenant cannot read another's cached data.</li>
+<li><strong>Configurable backends</strong> — <code>PostgresCache</code> for shared/production caching, or any object satisfying the <code>CacheBackend</code> protocol.</li>
+<li><strong>Optional error caching</strong> — Controlled by <code>CacheConfig.cache_errors</code>.</li>
 </ul>
 <h3 id="22-cache-key-generation">2.2 Cache Key Generation<a class="headerlink" href="#22-cache-key-generation" title="Permanent link">&para;</a></h3>
 <h4 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>{prefix}:{tenant_id}:{operation_hash}:{variables_hash}:{complexity_hash}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><code>CacheKeyBuilder.build_key(...)</code> joins its components with colons. The tenant id (when present) is the second component, immediately after the prefix:</p>
+<div class="highlight"><pre><span></span><code>{prefix}:{tenant_id}:{query_name}:{filter parts...}:{order...}:{limit:N}:{offset:N}
+</code></pre></div>
 <p><strong>Components:</strong></p>
 <ul>
-<li><code>prefix</code> — Default: "FraiseQL", configurable per deployment</li>
-<li><code>tenant_id</code> — Required UUID of the organization/tenant</li>
-<li><code>operation_hash</code> — SHA-256 hash of the normalized GraphQL query</li>
-<li><code>variables_hash</code> — SHA-256 hash of sorted variables (prevents same query with different variables from hitting same cache entry)</li>
-<li><code>complexity_hash</code> — Hash of calculated query complexity (complexity-aware caching)</li>
+<li><code>prefix</code> — Default: <code>"fraiseql"</code> (<code>CacheConfig.key_prefix</code>), configurable per deployment.</li>
+<li><code>tenant_id</code> — Included when present in the repository context (<code>info.context["tenant_id"]</code>).</li>
+<li><code>query_name</code> — The view/query name (e.g. <code>v_user</code>); <code>find_one</code> appends <code>:one</code>.</li>
+<li>filter / order / pagination parts — Serialized deterministically (filters sorted by field, lists hashed) so the same logical query always maps to the same key.</li>
 </ul>
 <h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL:org_550e8400-e29b-41d4:a7f3e9d2c1b:4f6a8e9d:low
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>fraiseql:org_550e8400-e29b-41d4:v_user:status:active:limit:20:offset:0
+</code></pre></div>
 <p><strong>Tenant Isolation Guarantee:</strong>
-Cache keys are scoped by <code>tenant_id</code> at the highest level. Even with cache backend compromise, an attacker cannot retrieve data from tenant A if requesting with tenant B credentials.</p>
+Because <code>tenant_id</code> is part of the key, even an attacker who knows the key structure cannot retrieve another tenant's data: a request authenticated as tenant B produces tenant-B keys and only ever reads tenant-B entries.</p>
 <h3 id="23-configuration">2.3 Configuration<a class="headerlink" href="#23-configuration" title="Permanent link">&para;</a></h3>
 <h4 id="cacheconfig-dataclass">CacheConfig Dataclass<a class="headerlink" href="#cacheconfig-dataclass" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@dataclass
-class CacheConfig:
-    """Query result cache configuration."""</p>
-<div class="highlight"><pre><span></span><code># Enable/disable caching
-enabled: bool = True
+<p><code>CacheConfig</code> is the real dataclass exported from <code>fraiseql.caching</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
-# TTL (time-to-live) policies
-default_ttl: int = 300  # 5 minutes
-max_ttl: int = 3600     # 1 hour
-min_ttl: int = 0        # No minimum (immediate expiration allowed)
 
-# Cache size management
-max_size_bytes: int = 1_000_000_000  # 1 GB default
-max_entries: int = 100_000            # Max cache entries
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CacheConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for result caching.&quot;&quot;&quot;</span>
 
-# Error caching
-cache_errors: bool = False  # Cache error responses?
-error_ttl: int = 60         # TTL for error responses (60 seconds)
-
-# Key configuration
-key_prefix: str = &quot;FraiseQL&quot;
-include_complexity: bool = True  # Include complexity in cache key
-
-# Tenant isolation
-require_tenant_id: bool = True  # Fail if tenant_id not provided
+    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">default_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># 5 minutes</span>
+    <span class="n">max_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span>     <span class="c1"># 1 hour</span>
+    <span class="n">cache_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">key_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;fraiseql&quot;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h4 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import create_fraiseql_app, CacheConfig</p>
-<p>cache_config = CacheConfig(
-    enabled=True,
-    default_ttl=300,        # 5 minutes for normal queries
-    max_ttl=3600,           # Never cache longer than 1 hour
-    cache_errors=False,     # Don't cache errors
-    include_complexity=True # Complexity-aware caching
-)</p>
-<p>app = create_fraiseql_app(
-    schema=schema,
-    cache_config=cache_config
-)
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>CacheConfig</code> configures a <code>ResultCache</code>; it is <strong>not</strong> a <code>create_fraiseql_app</code> kwarg. Build the cache explicitly and wire it into your repository (see <a href="#25-repository-integration">Section 2.5</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
 
+<span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>     <span class="c1"># 5 minutes for normal queries</span>
+    <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>        <span class="c1"># Never cache longer than 1 hour</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Don&#39;t cache errors</span>
+    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="24-cache-backends">2.4 Cache Backends<a class="headerlink" href="#24-cache-backends" title="Permanent link">&para;</a></h3>
-<h4 id="241-memory-backend-default">2.4.1 Memory Backend (Default)<a class="headerlink" href="#241-memory-backend-default" title="Permanent link">&para;</a></h4>
-<p><strong>Location:</strong> <code>FraiseQL.storage.backends.memory.MemoryCacheBackend</code></p>
+<p>A cache backend is any object implementing the <code>CacheBackend</code> protocol:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CacheBackend</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for cache backends.&quot;&quot;&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<h4 id="241-postgresql-backend-postgrescache">2.4.1 PostgreSQL Backend (<code>PostgresCache</code>)<a class="headerlink" href="#241-postgresql-backend-postgrescache" title="Permanent link">&para;</a></h4>
+<p><strong>Location:</strong> <code>fraiseql.caching.PostgresCache</code></p>
 <p><strong>Characteristics:</strong></p>
 <ul>
-<li>Stores cache in process memory (Python dictionary)</li>
-<li><strong>Best for:</strong> Development, single-instance deployments</li>
-<li><strong>Performance:</strong> Sub-millisecond lookups</li>
-<li><strong>Thread-safety:</strong> Protected by asyncio locks</li>
-<li><strong>Persistence:</strong> Lost on process restart</li>
-<li><strong>Multi-instance:</strong> Not shared between instances</li>
+<li>Persists cache to PostgreSQL using an <strong>UNLOGGED table</strong> (no WAL overhead).</li>
+<li><strong>Best for:</strong> Multi-instance deployments — the cache is shared across every FastAPI process on the same database.</li>
+<li><strong>Persistence:</strong> Survives process restarts; UNLOGGED tables are cleared on a database crash (acceptable for a cache).</li>
+<li><strong>Optional domain versioning:</strong> If the <code>pg_fraiseql_cache</code> extension is installed, <code>PostgresCache</code> uses domain versions for CASCADE invalidation; otherwise it falls back to TTL-only caching.</li>
 </ul>
-<p><strong>Configuration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.storage.backends import MemoryCacheBackend</p>
-<p>backend = MemoryCacheBackend(
-    max_size_bytes=1_000_000_000,  # 1 GB
-    max_entries=100_000,
-    auto_cleanup_interval=300      # Cleanup every 5 minutes
-)
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Construction:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
 
-<p><strong>Automatic Cleanup:</strong></p>
-<ul>
-<li>Stale entries removed every 5 minutes (configurable)</li>
-<li>LRU (Least Recently Used) eviction when max_entries exceeded</li>
-<li>TTL-based expiration for all entries</li>
-</ul>
-<h4 id="242-postgresql-backend-production">2.4.2 PostgreSQL Backend (Production)<a class="headerlink" href="#242-postgresql-backend-production" title="Permanent link">&para;</a></h4>
-<p><strong>Location:</strong> <code>FraiseQL.caching.postgres_cache.PostgreSQLCacheBackend</code></p>
-<p><strong>Characteristics:</strong></p>
-<ul>
-<li>Persists cache to PostgreSQL using <strong>UNLOGGED tables</strong> (no WAL overhead)</li>
-<li><strong>Best for:</strong> Production multi-instance deployments, data persistence</li>
-<li><strong>Performance:</strong> 10-50ms lookups (network latency + query)</li>
-<li><strong>Thread-safety:</strong> Transaction isolation via PostgreSQL</li>
-<li><strong>Persistence:</strong> Survives process restarts (but lost on database crash)</li>
-<li><strong>Multi-instance:</strong> Shared cache across all instances</li>
-<li><strong>Scalability:</strong> Horizontal scaling with multiple app instances</li>
-</ul>
-<p><strong>Table Structure:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE UNLOGGED TABLE fraiseql_cache (
-    cache_key TEXT PRIMARY KEY,
-    cache_value JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMPTZ NOT NULL,
-    hit_count BIGINT DEFAULT 0
-);</p>
-<p>CREATE INDEX idx_cache_expires_at ON fraiseql_cache(expires_at);
-CREATE INDEX idx_cache_tenant ON fraiseql_cache(
-    (cache_key LIKE 'FraiseQL:%')  -- Tenant extraction for cleanup
-);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span>
 
-<p><strong>Configuration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.caching.postgres_cache import PostgreSQLCacheBackend</p>
-<p>backend = PostgreSQLCacheBackend(
-    connection_string="postgresql://user:pass@db/FraiseQL",
-    table_name="fraiseql_cache",
-    auto_initialize=True,           # Create tables if missing
-    cleanup_interval=300,           # Cleanup every 5 minutes
-    max_cleanup_batch=1000          # Clean up to 1000 expired entries per run
-)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://user:pass@db/mydb&quot;</span><span class="p">)</span>
 
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span>
+    <span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">,</span>  <span class="c1"># default</span>
+    <span class="n">auto_initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>         <span class="c1"># create the table on first use</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Table Structure</strong> (created automatically by <code>PostgresCache</code> on first use):</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">UNLOGGED</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">cache_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cache_value</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">expires_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">fraiseql_cache_expires_idx</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="w"> </span><span class="p">(</span><span class="n">expires_at</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>UNLOGGED Table Tradeoff:</strong></p>
 <ul>
-<li>✅ <strong>Pros:</strong> 7-10x faster than regular tables (no WAL writes)</li>
-<li>⚠️ <strong>Cons:</strong> Data lost on database crash (acceptable for cache)</li>
-<li><strong>Use case:</strong> Perfect for caches where data loss is not catastrophic</li>
+<li><strong>Pros:</strong> Much faster writes than a regular table (no WAL writes).</li>
+<li><strong>Cons:</strong> Data lost on a database crash (acceptable for cache data that can be regenerated).</li>
+<li><strong>Use case:</strong> Perfect for caches where data loss is not catastrophic.</li>
 </ul>
-<p><strong>Cleanup Process:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Automatic cleanup removes expired entries
-DELETE FROM fraiseql_cache
-WHERE expires_at &lt; NOW()
-LIMIT 1000;  -- Batch cleanup to avoid long locks
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="243-custom-backend">2.4.3 Custom Backend<a class="headerlink" href="#243-custom-backend" title="Permanent link">&para;</a></h4>
-<p><strong>Location:</strong> Extend <code>FraiseQL.storage.backends.base.BaseCacheBackend</code></p>
-<p><strong>Implement:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.storage.backends.base import BaseCacheBackend</p>
-<p>class RedisCacheBackend(BaseCacheBackend):
-    """Example: Redis cache backend."""</p>
-<div class="highlight"><pre><span></span><code>def __init__(self, redis_client, ttl: int = 300):
-    self.redis = redis_client
-    self.ttl = ttl
-
-async def get(self, key: str) -&gt; Any | None:
-    &quot;&quot;&quot;Retrieve value from Redis.&quot;&quot;&quot;
-    value = await self.redis.get(key)
-    return json.loads(value) if value else None
-
-async def set(self, key: str, value: Any, ttl: int = None) -&gt; None:
-    &quot;&quot;&quot;Store value in Redis with TTL.&quot;&quot;&quot;
-    ttl = ttl or self.ttl
-    await self.redis.setex(
-        key,
-        ttl,
-        json.dumps(value)
-    )
-
-async def delete(self, key: str) -&gt; None:
-    &quot;&quot;&quot;Delete key from Redis.&quot;&quot;&quot;
-    await self.redis.delete(key)
-
-async def clear(self) -&gt; None:
-    &quot;&quot;&quot;Clear all cache entries.&quot;&quot;&quot;
-    await self.redis.flushdb()
+<p><strong>Cleanup:</strong> <code>PostgresCache</code> exposes <code>cleanup_expired()</code> (delete entries past <code>expires_at</code>) and <code>clear_all()</code>. Call <code>cleanup_expired()</code> periodically from a background task:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Equivalent of PostgresCache.cleanup_expired()</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_cache</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">expires_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Other methods:</strong> <code>get_stats()</code> (row counts and size), <code>exists(key)</code>, <code>ping()</code>, plus CASCADE management (<code>register_cascade_rule</code>, <code>clear_cascade_rules</code>, <code>setup_table_trigger</code>) covered in <a href="#4-cascade-invalidation">Section 4</a>.</p>
+<h4 id="242-custom-backend">2.4.2 Custom Backend<a class="headerlink" href="#242-custom-backend" title="Permanent link">&para;</a></h4>
+<p>Any class satisfying the <code>CacheBackend</code> protocol can be used. For example, a Redis-backed implementation:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RedisCacheBackend</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Example: Redis cache backend implementing the CacheBackend protocol.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_client</span><span class="p">,</span> <span class="n">default_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_ttl</span> <span class="o">=</span> <span class="n">default_ttl</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">async</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">scan_iter</span><span class="p">(</span><span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">keys</span><span class="p">)</span> <span class="k">if</span> <span class="n">keys</span> <span class="k">else</span> <span class="mi">0</span>
+</code></pre></div>
 <p><strong>Usage:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import redis.asyncio as redis</p>
-<p>redis_client = redis.from_url("redis://localhost:6379/0")
-backend = RedisCacheBackend(redis_client, ttl=300)</p>
-<p>app = create_fraiseql_app(
-    schema=schema,
-    cache_backend=backend
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
 
-<h3 id="25-cache-invalidation-strategies">2.5 Cache Invalidation Strategies<a class="headerlink" href="#25-cache-invalidation-strategies" title="Permanent link">&para;</a></h3>
-<h4 id="251-time-based-ttl-invalidation">2.5.1 Time-Based (TTL) Invalidation<a class="headerlink" href="#251-time-based-ttl-invalidation" title="Permanent link">&para;</a></h4>
-<p><strong>How it works:</strong> Cache entries automatically expire after TTL seconds.</p>
-<p><strong>Complexity-Aware TTL:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def calculate_ttl(query_complexity: float, config: CacheConfig) -&gt; int:
-    """
-    Scale TTL based on query complexity:
-    - Simple queries (&lt; 10): 300 seconds (5 minutes)
-    - Moderate queries (10-50): 180 seconds (3 minutes)
-    - Complex queries (50-200): 60 seconds (1 minute)
-    - Very complex (&gt; 200): 30 seconds (only cache expensive queries briefly)
-    """
-    if query_complexity &lt; 10:
-        return min(config.default_ttl * 2, config.max_ttl)  # 600s
-    elif query_complexity &lt; 50:
-        return config.default_ttl  # 300s
-    elif query_complexity &lt; 200:
-        return config.default_ttl // 2  # 150s
-    else:
-        return 30  # Very expensive queries cached briefly
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span>
 
-<p><strong>Example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GET /graphql?query={users{id name}}
-Cache-Control: max-age=600  # Simple query, cached 10 minutes</p>
-<p>GET /graphql?query={users{id name posts{id comments{...}}}}
-Cache-Control: max-age=30   # Complex query, cached 30 seconds
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="252-manual-invalidation">2.5.2 Manual Invalidation<a class="headerlink" href="#252-manual-invalidation" title="Permanent link">&para;</a></h4>
-<p><strong>Direct Cache Invalidation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.caching import cache_manager</p>
-<h1 id="invalidate-specific-query">Invalidate specific query<a class="headerlink" href="#invalidate-specific-query" title="Permanent link">&para;</a></h1>
-<p>await cache_manager.invalidate_key(
-    cache_key="FraiseQL:org_123:a7f3e9d2c1b:4f6a8e9d:low"
-)</p>
-<h1 id="pattern-based-invalidation-all-queries-for-a-tenant">Pattern-based invalidation (all queries for a tenant)<a class="headerlink" href="#pattern-based-invalidation-all-queries-for-a-tenant" title="Permanent link">&para;</a></h1>
-<p>await cache_manager.invalidate_pattern(
-    pattern="FraiseQL:org_123:*"
-)</p>
-<h1 id="clear-entire-cache">Clear entire cache<a class="headerlink" href="#clear-entire-cache" title="Permanent link">&para;</a></h1>
-<p>await cache_manager.clear_all()
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="253-graphql-cascade-integration-automatic">2.5.3 graphql-cascade Integration (Automatic)<a class="headerlink" href="#253-graphql-cascade-integration-automatic" title="Permanent link">&para;</a></h4>
-<p><strong>How it works:</strong> Mutations automatically invalidate related query caches via the <strong>cascade</strong> mechanism.</p>
-<p><strong>Example Workflow:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="original-query-cached">Original query (cached)<a class="headerlink" href="#original-query-cached" title="Permanent link">&para;</a></h1>
-<p>query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-    email
-    posts {
-      id
-      title
-    }
-  }
-}</p>
-<h1 id="mutation-that-updates-the-user">Mutation that updates the user<a class="headerlink" href="#mutation-that-updates-the-user" title="Permanent link">&para;</a></h1>
-<p>mutation UpdateUser($id: ID!, $name: String!) {
-  updateUser(id: $id, name: $name) {
-    success
-    entity {
-      id
-      name
-      email
-    }
-    cascade {
-      invalidations: [
-        { query_name: "GetUser", scope: "EXACT" },
-        { query_name: "users", scope: "PREFIX" },
-        { query_name: "user_profile", scope: "SUFFIX" }
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Cascade Invalidation Pattern:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Pattern</th>
-<th>Example</th>
-<th>Behavior</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>EXACT</strong></td>
-<td><code>GetUser</code></td>
-<td>Invalidate only <code>GetUser</code> queries</td>
-</tr>
-<tr>
-<td><strong>PREFIX</strong></td>
-<td><code>users</code></td>
-<td>Invalidate <code>users</code>, <code>users_by_role</code>, etc.</td>
-</tr>
-<tr>
-<td><strong>SUFFIX</strong></td>
-<td><code>_profile</code></td>
-<td>Invalidate <code>user_profile</code>, <code>post_profile</code>, etc.</td>
-</tr>
-<tr>
-<td><strong>INFIX</strong></td>
-<td><code>_list_</code></td>
-<td>Invalidate <code>user_list_active</code>, <code>role_list_archived</code>, etc.</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Implementation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="in-your-mutation-resolver">In your mutation resolver<a class="headerlink" href="#in-your-mutation-resolver" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation
-async def update_user(info, id: UUID, name: str):
-    # Update the user in database
-    updated = await db.update_user(id, name=name)</p>
-<div class="highlight"><pre><span></span><code># Build cascade invalidations
-invalidations = [
-    CacheInvalidation(
-        query_name=&quot;GetUser&quot;,
-        scope=&quot;EXACT&quot;,
-        user_id=str(id)
-    ),
-    CacheInvalidation(
-        query_name=&quot;users&quot;,
-        scope=&quot;PREFIX&quot;  # All user list queries
-    )
-]
-
-return {
-    &quot;success&quot;: True,
-    &quot;entity&quot;: updated,
-    &quot;cascade&quot;: {
-        &quot;invalidations&quot;: invalidations
-    }
-}
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">RedisCacheBackend</span><span class="p">(</span><span class="n">redis_client</span><span class="p">,</span> <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">())</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="25-repository-integration">2.5 Repository Integration<a class="headerlink" href="#25-repository-integration" title="Permanent link">&para;</a></h3>
+<p><code>CachedRepository</code> wraps a <code>FraiseQLRepository</code>, transparently caching reads and invalidating on writes.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CachedRepository</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">CacheConfig</span>
 
-<h3 id="26-multi-tenant-cache-isolation">2.6 Multi-Tenant Cache Isolation<a class="headerlink" href="#26-multi-tenant-cache-isolation" title="Permanent link">&para;</a></h3>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">))</span>
+
+<span class="c1"># `base_repo` is the FraiseQLRepository from info.context[&quot;db&quot;]</span>
+<span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+
+<span class="c1"># Reads are cached (per-call opt-out + custom TTL available):</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
+<span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Writes invalidate related cache entries automatically:</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
+</code></pre></div>
+<p><code>find</code>/<code>find_one</code> accept <code>skip_cache: bool = False</code> and <code>cache_ttl: int | None = None</code>. <code>execute_function</code> derives the affected table from the function name (e.g. <code>fn_update_user</code> → <code>user</code>/<code>users</code>) and invalidates the matching key pattern. Any method not overridden is delegated to the underlying repository.</p>
+<h3 id="26-caching-arbitrary-query-functions">2.6 Caching Arbitrary Query Functions<a class="headerlink" href="#26-caching-arbitrary-query-functions" title="Permanent link">&para;</a></h3>
+<p>For query functions outside the repository, use the <code>cached_query</code> decorator:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_query</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span>
+
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">())</span>
+
+
+<span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">top_sellers</span><span class="p">(</span><span class="n">region</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># your FraiseQLRepository</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_top_sellers&quot;</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+
+
+<span class="c1"># Bypass the cache for a single call:</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">top_sellers</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="s2">&quot;emea&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>The decorator auto-generates a key from the function name and arguments, or you can pass <code>key_func=...</code> for a custom key.</p>
+<h3 id="27-cache-invalidation-strategies">2.7 Cache Invalidation Strategies<a class="headerlink" href="#27-cache-invalidation-strategies" title="Permanent link">&para;</a></h3>
+<h4 id="271-time-based-ttl-invalidation">2.7.1 Time-Based (TTL) Invalidation<a class="headerlink" href="#271-time-based-ttl-invalidation" title="Permanent link">&para;</a></h4>
+<p><strong>How it works:</strong> Each cache entry is written with a TTL; <code>expires_at</code> is set to <code>NOW() + ttl</code>. <code>ResultCache.get_or_set</code> clamps the requested TTL to <code>min(ttl or default_ttl, max_ttl)</code>. Reads only return entries where <code>expires_at &gt; NOW()</code>.</p>
+<p>You can vary TTL per query based on how expensive or volatile it is:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">choose_ttl</span><span class="p">(</span><span class="n">query_cost</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">CacheConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cheaper / more stable queries can be cached longer.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">query_cost</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">default_ttl</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_ttl</span><span class="p">)</span>  <span class="c1"># up to 600s</span>
+    <span class="k">if</span> <span class="n">query_cost</span> <span class="o">&lt;</span> <span class="mi">50</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">default_ttl</span>                            <span class="c1"># 300s</span>
+    <span class="k">if</span> <span class="n">query_cost</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">config</span><span class="o">.</span><span class="n">default_ttl</span> <span class="o">//</span> <span class="mi">2</span>                       <span class="c1"># 150s</span>
+    <span class="k">return</span> <span class="mi">30</span>  <span class="c1"># expensive queries cached briefly</span>
+
+
+<span class="n">ttl</span> <span class="o">=</span> <span class="n">choose_ttl</span><span class="p">(</span><span class="n">query_cost</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_report&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="n">ttl</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="272-manual-invalidation">2.7.2 Manual Invalidation<a class="headerlink" href="#272-manual-invalidation" title="Permanent link">&para;</a></h4>
+<p>Invalidate through the <code>ResultCache</code> instance:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Invalidate a specific key</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;fraiseql:org_123:v_user:one:id:550e8400&quot;</span><span class="p">)</span>
+
+<span class="c1"># Pattern-based invalidation (all entries for a query/tenant)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="s2">&quot;fraiseql:org_123:v_user:*&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><code>invalidate</code> / <code>invalidate_pattern</code> delegate to the backend's <code>delete</code> / <code>delete_pattern</code>. <code>CacheKeyBuilder.build_mutation_pattern(table_name)</code> produces a <code>"{prefix}:{table_name}:*"</code> pattern for write-side invalidation.</p>
+<h4 id="273-cascade-invalidation-automatic">2.7.3 CASCADE Invalidation (Automatic)<a class="headerlink" href="#273-cascade-invalidation-automatic" title="Permanent link">&para;</a></h4>
+<p>Mutations on one domain can invalidate the caches of types that depend on it. CASCADE rules are derived from the GraphQL schema at startup — see <a href="#4-cascade-invalidation">Section 4</a>.</p>
+<h3 id="28-multi-tenant-cache-isolation">2.8 Multi-Tenant Cache Isolation<a class="headerlink" href="#28-multi-tenant-cache-isolation" title="Permanent link">&para;</a></h3>
 <h4 id="security-guarantee">Security Guarantee<a class="headerlink" href="#security-guarantee" title="Permanent link">&para;</a></h4>
-<p>Cache keys <strong>always include tenant_id</strong> as the highest-level discriminator:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>{prefix}:{tenant_id}:{operation_hash}:{variables_hash}:{complexity_hash}
-           <sup>^</sup><sup>^</sup><sup>^</sup>^^
-           Cannot retrieve other tenant's data
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Proof of Isolation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="even-if-you-know-cache-structure-you-cannot-access-other-tenant-data">Even if you know cache structure, you cannot access other tenant data<a class="headerlink" href="#even-if-you-know-cache-structure-you-cannot-access-other-tenant-data" title="Permanent link">&para;</a></h1>
-<p>org_a_key = "FraiseQL:org_a:query_hash:vars_hash:complexity"
-org_b_key = "FraiseQL:org_b:query_hash:vars_hash:complexity"</p>
-<h1 id="different-cache-entries-completely-isolated">Different cache entries - completely isolated<a class="headerlink" href="#different-cache-entries-completely-isolated" title="Permanent link">&para;</a></h1>
-<p>assert await cache.get(org_a_key) != await cache.get(org_b_key)</p>
-<h1 id="if-attacker-queries-as-org_b-gets-org_b-data-even-if-same-query">If attacker queries as org_b, gets org_b data even if same query<a class="headerlink" href="#if-attacker-queries-as-org_b-gets-org_b-data-even-if-same-query" title="Permanent link">&para;</a></h1>
-<h1 id="no-cross-tenant-data-leakage-possible">No cross-tenant data leakage possible<a class="headerlink" href="#no-cross-tenant-data-leakage-possible" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="multi-tenant-deployment-pattern">Multi-Tenant Deployment Pattern<a class="headerlink" href="#multi-tenant-deployment-pattern" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query
-async def get_user(info, id: UUID) -&gt; User:
-    """Retrieve user - automatically tenant-scoped."""
-    tenant_id = info.context["tenant_id"]  # From auth token</p>
-<div class="highlight"><pre><span></span><code># Query is automatically cached with tenant_id prefix
-# Cache key: FraiseQL:{tenant_id}:get_user_hash:...
-user = await db.find_one(
-    &quot;users&quot;,
-    {&quot;id&quot;: id, &quot;tenant_id&quot;: tenant_id}
-)
-return user
+<p><code>CacheKeyBuilder</code> places <code>tenant_id</code> immediately after the prefix:</p>
+<div class="highlight"><pre><span></span><code>{prefix}:{tenant_id}:{query_name}:...
+          ^^^^^^^^^^^
+          Cannot retrieve another tenant&#39;s data
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><code>CachedRepository</code> reads <code>tenant_id</code> from the repository context (<code>self._base.context.get("tenant_id")</code>), which FraiseQL populates from <code>info.context["tenant_id"]</code>. Because tenant context flows from the authenticated request, a request as tenant B can only ever build — and therefore read — tenant-B keys.</p>
+<p><strong>Proof of Isolation:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Two tenants, same logical query → different keys → isolated entries</span>
+<span class="n">org_a_key</span> <span class="o">=</span> <span class="s2">&quot;fraiseql:org_a:v_user:status:active&quot;</span>
+<span class="n">org_b_key</span> <span class="o">=</span> <span class="s2">&quot;fraiseql:org_b:v_user:status:active&quot;</span>
 
-<h3 id="27-performance-characteristics">2.7 Performance Characteristics<a class="headerlink" href="#27-performance-characteristics" title="Permanent link">&para;</a></h3>
-<h4 id="memory-backend">Memory Backend<a class="headerlink" href="#memory-backend" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Operation</th>
-<th>Latency</th>
-<th>Throughput</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Cache Hit</td>
-<td>&lt; 1ms</td>
-<td>100k+ req/s</td>
-</tr>
-<tr>
-<td>Cache Miss</td>
-<td>&lt; 1ms</td>
-<td>100k+ req/s</td>
-</tr>
-<tr>
-<td>Eviction</td>
-<td>0-5ms</td>
-<td>Depends on entry size</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Memory Overhead:</strong> ~1KB per cache entry (average)</p>
+<span class="k">assert</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">org_a_key</span><span class="p">)</span> <span class="o">!=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">org_b_key</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="multi-tenant-deployment-pattern">Multi-Tenant Deployment Pattern<a class="headerlink" href="#multi-tenant-deployment-pattern" title="Permanent link">&para;</a></h4>
+<p>Always source <code>tenant_id</code> from the authenticated context, never from client arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List users — automatically tenant-scoped via the repository context.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>  <span class="c1"># a CachedRepository in production</span>
+    <span class="c1"># tenant_id is read from info.context and baked into the cache key</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="29-performance-characteristics">2.9 Performance Characteristics<a class="headerlink" href="#29-performance-characteristics" title="Permanent link">&para;</a></h3>
 <h4 id="postgresql-backend">PostgreSQL Backend<a class="headerlink" href="#postgresql-backend" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
 <th>Operation</th>
-<th>Latency</th>
-<th>Throughput</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Cache Hit</td>
-<td>10-50ms</td>
-<td>5k-10k req/s</td>
+<td>Single indexed <code>SELECT</code> on <code>cache_key</code> filtered by <code>expires_at</code></td>
 </tr>
 <tr>
 <td>Cache Miss</td>
-<td>10-50ms</td>
-<td>5k-10k req/s</td>
+<td>Same lookup returns nothing; the wrapped query runs, then one <code>UPSERT</code></td>
 </tr>
 <tr>
 <td>Cleanup</td>
-<td>50-200ms</td>
-<td>Async, non-blocking</td>
+<td><code>cleanup_expired()</code> deletes rows past <code>expires_at</code>; run from a background task</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Network Latency:</strong> 5-20ms typical (varies by network)
-<strong>Database CPU:</strong> &lt; 5% for moderate workload</p>
-<h3 id="28-cache-monitoring-metrics">2.8 Cache Monitoring &amp; Metrics<a class="headerlink" href="#28-cache-monitoring-metrics" title="Permanent link">&para;</a></h3>
-<h4 id="metrics-collected">Metrics Collected<a class="headerlink" href="#metrics-collected" title="Permanent link">&para;</a></h4>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="via-prometheus-or-opentelemetry">Via Prometheus or OpenTelemetry<a class="headerlink" href="#via-prometheus-or-opentelemetry" title="Permanent link">&para;</a></h1>
-<p>fraiseql_cache_hits_total{
-    operation_name="GetUser",
-    complexity="low|moderate|high",
-    tenant_id="org_123"
-}</p>
-<p>fraiseql_cache_misses_total{
-    operation_name="GetUser",
-    reason="expired|evicted|not_found",
-    tenant_id="org_123"
-}</p>
-<p>fraiseql_cache_size_bytes{
-    backend="memory|postgresql",
-    tenant_id="org_123"
-}</p>
-<p>fraiseql_cache_evictions_total{
-    backend="memory|postgresql",
-    reason="lru|ttl|manual",
-    tenant_id="org_123"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>UNLOGGED tables avoid WAL writes, keeping cache writes cheap. Because the table is shared, every FastAPI instance benefits from a warm cache populated by any instance.</p>
+<h3 id="210-cache-monitoring-metrics">2.10 Cache Monitoring &amp; Metrics<a class="headerlink" href="#210-cache-monitoring-metrics" title="Permanent link">&para;</a></h3>
+<p><code>ResultCache</code> tracks hits, misses, and errors:</p>
+<div class="highlight"><pre><span></span><code><span class="n">stats</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>        <span class="c1"># CacheStats</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>  <span class="c1"># 0–100</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
+</code></pre></div>
+<p><code>PostgresCache.get_stats()</code> returns backend-level counts (e.g. total/expired entries, size) you can export to Prometheus or OpenTelemetry.</p>
 <h4 id="example-monitoring-query">Example Monitoring Query<a class="headerlink" href="#example-monitoring-query" title="Permanent link">&para;</a></h4>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Cache hit rate by query (last 1 hour)
-SELECT
-    operation_name,
-    COUNT(<em>) FILTER (WHERE cache_hit) AS hits,
-    COUNT(</em>) FILTER (WHERE NOT cache_hit) AS misses,
-    ROUND(
-        100.0 * COUNT(<em>) FILTER (WHERE cache_hit) / COUNT(</em>),
-        2
-    ) AS hit_rate_pct
-FROM cache_metrics
-WHERE
-    created_at &gt; NOW() - INTERVAL '1 hour'
-    AND tenant_id = $tenant_id
-GROUP BY operation_name
-ORDER BY hit_rate_pct DESC;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1">-- PostgreSQL: live cache occupancy</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                    </span><span class="k">AS</span><span class="w"> </span><span class="n">total_entries</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">expires_at</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">expired_entries</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">table_size</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">;</span>
+</code></pre></div>
 <h4 id="monitoring-dashboard-recommendations">Monitoring Dashboard Recommendations<a class="headerlink" href="#monitoring-dashboard-recommendations" title="Permanent link">&para;</a></h4>
 <ol>
-<li><strong>Cache Hit Rate</strong> — Target: &gt; 80% for normal queries</li>
-<li><strong>Cache Evictions</strong> — Alert if &gt; 10% of entries evicted per minute</li>
-<li><strong>Memory Usage</strong> — Alert if approaching max_size_bytes</li>
-<li><strong>TTL Distribution</strong> — Ensure complexity-aware TTL working correctly</li>
-<li><strong>Error Caching Rate</strong> — Monitor if error_ttl too aggressive</li>
+<li><strong>Cache Hit Rate</strong> — Track <code>CacheStats.hit_rate</code>; target &gt; 80% for normal queries.</li>
+<li><strong>Expired Backlog</strong> — Ensure <code>cleanup_expired()</code> keeps expired rows low.</li>
+<li><strong>Table Size</strong> — Alert if <code>fraiseql_cache</code> grows unbounded.</li>
+<li><strong>Error Rate</strong> — Watch <code>CacheStats.errors</code>; backend errors degrade to direct execution.</li>
 </ol>
 <hr />
-<h2 id="3-apq-response-caching">3. APQ Response Caching<a class="headerlink" href="#3-apq-response-caching" title="Permanent link">&para;</a></h2>
-<h3 id="31-overview">3.1 Overview<a class="headerlink" href="#31-overview" title="Permanent link">&para;</a></h3>
-<p>APQ Response Caching caches the <strong>HTTP response</strong> of persisted queries, eliminating database execution entirely for identical requests.</p>
-<p><strong>Key Difference from Query Caching:</strong></p>
-<ul>
-<li><strong>Query Caching:</strong> Caches database result (query execution still happens)</li>
-<li><strong>APQ Response Caching:</strong> Caches HTTP response (query execution skipped)</li>
-<li><strong>Performance:</strong> APQ response caching is 10-100x faster (no GraphQL parsing, validation, or database)</li>
-</ul>
-<h3 id="32-response-cache-key">3.2 Response Cache Key<a class="headerlink" href="#32-response-cache-key" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>{prefix}:{tenant_id}:{query_hash}:{variables_hash}:{field_selection_hash}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Critical Component: Variables Hash</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def compute_variables_hash(variables: dict) -&gt; str:
-    """
-    Variables are included in cache key to prevent data leakage.</p>
-<div class="highlight"><pre><span></span><code>Example: Same query, different user_id
-query GetUser($id: ID!) { user(id: $id) { id name } }
-
-Call 1: variables = {&quot;id&quot;: &quot;user_1&quot;}
-Call 2: variables = {&quot;id&quot;: &quot;user_2&quot;}
-
-Different variables → different cache keys → different responses
-No data leakage even with same query.
-&quot;&quot;&quot;
-sorted_vars = json.dumps(variables, sort_keys=True)
-return hashlib.sha256(sorted_vars.encode()).hexdigest()
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="33-configuration">3.3 Configuration<a class="headerlink" href="#33-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@dataclass
-class APQConfig:
-    """APQ response caching configuration."""</p>
-<div class="highlight"><pre><span></span><code># Enable APQ response caching
-cache_responses: bool = True
-
-# APQ response TTL
-response_ttl: int = 300  # 5 minutes
-
-# Field selection optimization
-optimize_field_selection: bool = True  # Only cache requested fields
-
-# Maximum cached queries per tenant
-max_queries_per_tenant: int = 10_000
-
-# Maximum response size to cache
-max_response_size_bytes: int = 1_000_000  # 1 MB
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="34-field-selection-optimization">3.4 Field Selection Optimization<a class="headerlink" href="#34-field-selection-optimization" title="Permanent link">&para;</a></h3>
-<p><strong>How it works:</strong> When a client requests fewer fields via field selection, the cached response is pruned to match the request.</p>
-<p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="first-request-cached-all-fields">First request (cached): All fields<a class="headerlink" href="#first-request-cached-all-fields" title="Permanent link">&para;</a></h1>
-<p>query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-    email
-    phone
-    address
-  }
-}</p>
-<h1 id="second-request-only-id-and-name">Second request: Only id and name<a class="headerlink" href="#second-request-only-id-and-name" title="Permanent link">&para;</a></h1>
-<p>query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>With field selection optimization:</strong></p>
-<ul>
-<li>First request: Full response cached → <code>{id, name, email, phone, address}</code></li>
-<li>Second request: Cached response pruned → <code>{id, name}</code> extracted from cache</li>
-<li>Result: Hit same cache entry, but only return requested fields</li>
-</ul>
-<p><strong>Implementation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def prune_response_fields(cached_response: dict, requested_fields: set) -&gt; dict:
-    """Extract only requested fields from cached response."""
-    def prune_recursive(obj, fields):
-        if isinstance(obj, dict):
-            return {k: v for k, v in obj.items() if k in fields}
-        elif isinstance(obj, list):
-            return [prune_recursive(item, fields) for item in obj]
-        return obj</p>
-<div class="highlight"><pre><span></span><code>return prune_recursive(cached_response, requested_fields)
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="3-field-selection">3. Field Selection<a class="headerlink" href="#3-field-selection" title="Permanent link">&para;</a></h2>
+<p>FraiseQL shapes each response to exactly the fields the client requested (Rust handles field selection on the hot path). The cache stores the result of a given query/filter combination; field selection is applied when shaping the response, so requesting fewer fields returns a subset of the cached data without a separate cache tier.</p>
+<p>There is no separate "APQ response cache" tier in v1 — <code>ResultCache</code> is the single result-caching layer, and persisted queries reuse it.</p>
 <hr />
-<h2 id="4-graphql-cascade-integration">4. graphql-cascade Integration<a class="headerlink" href="#4-graphql-cascade-integration" title="Permanent link">&para;</a></h2>
-<h3 id="41-automatic-cache-invalidation">4.1 Automatic Cache Invalidation<a class="headerlink" href="#41-automatic-cache-invalidation" title="Permanent link">&para;</a></h3>
-<p>The <code>cascade</code> field in mutation responses automatically triggers cache invalidation based on <strong>compiler-determined</strong> patterns.</p>
-<h3 id="42-cascade-invalidation-patterns">4.2 Cascade Invalidation Patterns<a class="headerlink" href="#42-cascade-invalidation-patterns" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@dataclass
-class CacheInvalidation:
-    """Pattern for invalidating cached queries."""</p>
-<div class="highlight"><pre><span></span><code>query_name: str          # Query operation name
-scope: str               # EXACT, PREFIX, SUFFIX, INFIX
-user_id: str | None      # Optional: filter by user
-tenant_id: str | None    # Optional: filter by tenant
+<h2 id="4-cascade-invalidation">4. CASCADE Invalidation<a class="headerlink" href="#4-cascade-invalidation" title="Permanent link">&para;</a></h2>
+<h3 id="41-automatic-rule-generation">4.1 Automatic Rule Generation<a class="headerlink" href="#41-automatic-rule-generation" title="Permanent link">&para;</a></h3>
+<p>When a GraphQL type references another type (e.g. <code>Post.author -&gt; User</code>), a change to <code>User</code> should invalidate cached <code>Post</code> entries. <code>SchemaAnalyzer</code> walks the GraphQL schema and emits these relationships as <code>CascadeRule</code>s.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CascadeRule</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A CASCADE invalidation rule.&quot;&quot;&quot;</span>
+
+    <span class="n">source_domain</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># domain that triggers invalidation when it changes</span>
+    <span class="n">target_domain</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># domain whose caches should be invalidated</span>
+    <span class="n">rule_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;invalidate&quot;</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="42-setup-at-startup">4.2 Setup at Startup<a class="headerlink" href="#42-setup-at-startup" title="Permanent link">&para;</a></h3>
+<p><code>setup_auto_cascade_rules</code> analyzes the schema and registers every rule on a <code>PostgresCache</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
 
-<p><strong>Pattern Matching:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def matches_invalidation(
-    cached_operation_name: str,
-    pattern: CacheInvalidation
-) -&gt; bool:
-    """Check if cached operation matches invalidation pattern."""</p>
-<div class="highlight"><pre><span></span><code>if pattern.scope == &quot;EXACT&quot;:
-    return cached_operation_name == pattern.query_name
 
-elif pattern.scope == &quot;PREFIX&quot;:
-    return cached_operation_name.startswith(pattern.query_name)
-
-elif pattern.scope == &quot;SUFFIX&quot;:
-    return cached_operation_name.endswith(pattern.query_name)
-
-elif pattern.scope == &quot;INFIX&quot;:
-    return pattern.query_name in cached_operation_name
-
-return False
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">configure_cache_cascade</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># `cache` is a PostgresCache; `schema` is the GraphQL schema</span>
+    <span class="n">registered</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered </span><span class="si">%d</span><span class="s2"> CASCADE rules&quot;</span><span class="p">,</span> <span class="n">registered</span><span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>For finer control, drive <code>SchemaAnalyzer</code> directly:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">SchemaAnalyzer</span>
 
-<h3 id="43-example-user-update-cascade">4.3 Example: User Update Cascade<a class="headerlink" href="#43-example-user-update-cascade" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.mutation
-async def update_user(info, user_id: UUID, data: dict):
-    """Update user and invalidate all related caches."""</p>
-<div class="highlight"><pre><span></span><code># Update database
-user = await db.update_user(user_id, **data)
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">SchemaAnalyzer</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
+<span class="n">rules</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_relationships</span><span class="p">()</span>          <span class="c1"># list[CascadeRule]</span>
+<span class="n">deps</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">get_domain_dependencies</span><span class="p">()</span>         <span class="c1"># {domain: {dependencies}}</span>
 
-# Determine what to invalidate
-invalidations = []
-
-if &quot;name&quot; in data or &quot;email&quot; in data:
-    invalidations.append(
-        CacheInvalidation(&quot;GetUser&quot;, scope=&quot;EXACT&quot;)
-    )
-
-if &quot;role&quot; in data:
-    invalidations.append(
-        CacheInvalidation(&quot;users&quot;, scope=&quot;PREFIX&quot;)
-    )
-
-if &quot;deleted_at&quot; in data:
-    invalidations.append(
-        CacheInvalidation(&quot;active_users&quot;, scope=&quot;PREFIX&quot;)
-    )
-
-return {
-    &quot;success&quot;: True,
-    &quot;entity&quot;: user,
-    &quot;cascade&quot;: {
-        &quot;invalidations&quot;: invalidations
-    }
-}
+<span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span>
+        <span class="n">source_domain</span><span class="o">=</span><span class="n">rule</span><span class="o">.</span><span class="n">source_domain</span><span class="p">,</span>
+        <span class="n">target_domain</span><span class="o">=</span><span class="n">rule</span><span class="o">.</span><span class="n">target_domain</span><span class="p">,</span>
+        <span class="n">rule_type</span><span class="o">=</span><span class="n">rule</span><span class="o">.</span><span class="n">rule_type</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="43-example-detected-relationships">4.3 Example: Detected Relationships<a class="headerlink" href="#43-example-detected-relationships" title="Permanent link">&para;</a></h3>
+<p>Given:</p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">Post</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">title</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">        </span><span class="c"># relationship detected</span>
+<span class="w">  </span><span class="nl">comments</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Comment</span><span class="err">!]!</span>
+<span class="p">}</span>
 
-<h3 id="44-database-level-cascade-postgresql">4.4 Database-Level Cascade (PostgreSQL)<a class="headerlink" href="#44-database-level-cascade-postgresql" title="Permanent link">&para;</a></h3>
-<p>For direct SQL mutations, use triggers to log cascades:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE cache_invalidation_log (
-    id BIGSERIAL PRIMARY KEY,
-    query_pattern TEXT NOT NULL,
-    scope TEXT NOT NULL,  -- EXACT, PREFIX, SUFFIX, INFIX
-    triggered_by TEXT,    -- Mutation that triggered invalidation
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>CREATE OR REPLACE FUNCTION log_cache_invalidation()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Log when users table is updated
-    INSERT INTO cache_invalidation_log (query_pattern, scope, triggered_by)
-    VALUES ('GetUser', 'EXACT', TG_OP);</p>
-<div class="highlight"><pre><span></span><code>INSERT INTO cache_invalidation_log (query_pattern, scope, triggered_by)
-VALUES (&#39;users&#39;, &#39;PREFIX&#39;, TG_OP);
+<span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="p">}</span>
 
-RETURN NEW;
+<span class="k">type</span><span class="w"> </span><span class="err">Comment</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">content</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span>
+<span class="p">}</span>
 </code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER user_cache_invalidation
-AFTER UPDATE ON tb_user
-FOR EACH ROW
-EXECUTE FUNCTION log_cache_invalidation();
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><code>SchemaAnalyzer</code> produces rules such as:</p>
+<ul>
+<li><code>user → post</code> (when a user changes, invalidate posts)</li>
+<li><code>post → comment</code> (when a post changes, invalidate comments)</li>
+<li><code>user → comment</code> (when a user changes, invalidate comments)</li>
+</ul>
+<p>Self-references (e.g. <code>parent: User</code> on <code>User</code>) are skipped, and list relationships are registered with slightly lower confidence than scalar ones.</p>
+<h3 id="44-database-level-invalidation-postgresql">4.4 Database-Level Invalidation (PostgreSQL)<a class="headerlink" href="#44-database-level-invalidation-postgresql" title="Permanent link">&para;</a></h3>
+<p>CASCADE invalidation is most effective when the database itself signals domain changes. <code>PostgresCache.setup_table_trigger(...)</code> installs triggers, and the optional <code>pg_fraiseql_cache</code> extension maintains per-tenant domain versions so cache entries can be validated against the current domain version. When the extension is absent, FraiseQL falls back to TTL-only caching plus explicit pattern invalidation.</p>
+<p>If you prefer to manage triggers yourself, write to your own invalidation log from a <code>fn_</code> function or trigger and have a background task drain it into <code>cache.invalidate_pattern(...)</code> calls. Always route writes through <code>fn_</code> PostgreSQL functions (called via <code>db.execute_function</code>) so invalidation has a single chokepoint.</p>
 <hr />
 <h2 id="5-configuration-in-production">5. Configuration in Production<a class="headerlink" href="#5-configuration-in-production" title="Permanent link">&para;</a></h2>
+<p>The cache is constructed in code, not in a config file. Use environment variables to choose TTLs and the database, then build the <code>PostgresCache</code> + <code>ResultCache</code> during app startup.</p>
 <h3 id="51-development-configuration">5.1 Development Configuration<a class="headerlink" href="#51-development-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="local-development-fast-cache-permissive">Local development: fast cache, permissive<a class="headerlink" href="#local-development-fast-cache-permissive" title="Permanent link">&para;</a></h1>
-<p>cache_config = CacheConfig(
-    enabled=True,
-    default_ttl=60,         # 1 minute (frequent changes)
-    cache_errors=True,      # Cache errors for debugging
-    backend=MemoryCacheBackend(
-        max_size_bytes=100_000_000  # 100 MB (plenty for dev)
-    )
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
 
+<span class="c1"># Local development: short TTL, errors cached for debugging</span>
+<span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>     <span class="c1"># 1 minute (frequent changes)</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># cache errors while debugging</span>
+<span class="p">)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">dev_pool</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="52-staging-configuration">5.2 Staging Configuration<a class="headerlink" href="#52-staging-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="staging-postgresql-cache-moderate-ttl">Staging: PostgreSQL cache, moderate TTL<a class="headerlink" href="#staging-postgresql-cache-moderate-ttl" title="Permanent link">&para;</a></h1>
-<p>cache_config = CacheConfig(
-    enabled=True,
-    default_ttl=300,        # 5 minutes
-    cache_errors=False,     # Don't cache errors in staging
-    backend=PostgreSQLCacheBackend(
-        connection_string=os.getenv("STAGING_DB_URL")
-    )
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>     <span class="c1"># 5 minutes</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># don&#39;t cache errors in staging</span>
+<span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;STAGING_DB_URL&quot;</span><span class="p">])</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">),</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="53-production-configuration">5.3 Production Configuration<a class="headerlink" href="#53-production-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="production-optimized-postgresql-cache">Production: optimized PostgreSQL cache<a class="headerlink" href="#production-optimized-postgresql-cache" title="Permanent link">&para;</a></h1>
-<p>cache_config = CacheConfig(
-    enabled=True,
-    default_ttl=600,        # 10 minutes (conservative)
-    max_ttl=3600,           # Never cache &gt; 1 hour
-    cache_errors=False,
-    include_complexity=True,  # Complexity-aware TTL
-    require_tenant_id=True,   # Fail if tenant_id missing
-    backend=PostgreSQLCacheBackend(
-        connection_string=os.getenv("PROD_DB_URL"),
-        max_size_bytes=10_000_000_000  # 10 GB
-    )
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">PostgresCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>     <span class="c1"># 10 minutes (conservative)</span>
+    <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>        <span class="c1"># never cache longer than 1 hour</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PROD_DB_URL&quot;</span><span class="p">])</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">),</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="54-environment-variables">5.4 Environment Variables<a class="headerlink" href="#54-environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_CACHE_ENABLED=true
-FRAISEQL_CACHE_TTL=60
-FRAISEQL_CACHE_BACKEND=memory</p>
-<h1 id="staging">Staging<a class="headerlink" href="#staging" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_CACHE_ENABLED=true
-FRAISEQL_CACHE_TTL=300
-FRAISEQL_CACHE_BACKEND=postgresql
-FRAISEQL_CACHE_DB_URL=postgresql://...</p>
-<h1 id="production">Production<a class="headerlink" href="#production" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_CACHE_ENABLED=true
-FRAISEQL_CACHE_TTL=600
-FRAISEQL_CACHE_MAX_TTL=3600
-FRAISEQL_CACHE_BACKEND=postgresql
-FRAISEQL_CACHE_DB_URL=postgresql://...
-FRAISEQL_CACHE_SIZE_BYTES=10000000000
-FRAISEQL_CACHE_INCLUDE_COMPLEXITY=true
-```text</p>
-<!-- Code example in TEXT -->
+<p>Drive the values above from your own <code>FRAISEQL_</code>-prefixed environment variables (FraiseQL configuration uses the <code>FRAISEQL_</code> prefix via <code>FraiseQLConfig</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Development</span>
+<span class="nv">FRAISEQL_CACHE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">60</span>
 
+<span class="c1"># Staging</span>
+<span class="nv">FRAISEQL_CACHE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">300</span>
+<span class="nv">FRAISEQL_CACHE_DB_URL</span><span class="o">=</span>postgresql://...
+
+<span class="c1"># Production</span>
+<span class="nv">FRAISEQL_CACHE_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">600</span>
+<span class="nv">FRAISEQL_CACHE_MAX_TTL</span><span class="o">=</span><span class="m">3600</span>
+<span class="nv">FRAISEQL_CACHE_DB_URL</span><span class="o">=</span>postgresql://...
+</code></pre></div>
+<p>Read these in your startup code and pass them into <code>CacheConfig</code> / <code>PostgresCache</code>.</p>
 <hr />
 <h2 id="6-best-practices">6. Best Practices<a class="headerlink" href="#6-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="61-cache-strategy-decision-tree">6.1 Cache Strategy Decision Tree<a class="headerlink" href="#61-cache-strategy-decision-tree" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Is data frequently queried?
+<div class="highlight"><pre><span></span><code>Is data frequently queried?
 ├─ YES: Cache it
 │   ├─ Is data frequently modified?
 │   │   ├─ YES: Shorter TTL (60-300 seconds)
 │   │   └─ NO: Longer TTL (300-3600 seconds)
 │   └─ End: Use caching
-└─ NO: Don't cache
-    └─ Monitor to ensure cache isn't wasted
-```text</p>
-<!-- Code example in TEXT -->
-
+└─ NO: Don&#39;t cache
+    └─ Monitor to ensure cache isn&#39;t wasted
+</code></pre></div>
 <h3 id="62-ttl-guidelines">6.2 TTL Guidelines<a class="headerlink" href="#62-ttl-guidelines" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -5784,7 +5849,7 @@ FRAISEQL_CACHE_INCLUDE_COMPLEXITY=true
 <tr>
 <td>Product Catalog</td>
 <td>Days</td>
-<td>3600-86400s</td>
+<td>3600s (capped by max_ttl)</td>
 <td>E-commerce products</td>
 </tr>
 <tr>
@@ -5797,180 +5862,133 @@ FRAISEQL_CACHE_INCLUDE_COMPLEXITY=true
 <td>Derived Data</td>
 <td>Minutes</td>
 <td>300-600s</td>
-<td>User rankings, aggregates</td>
+<td>Rankings, aggregates</td>
 </tr>
 <tr>
 <td>Reference Data</td>
 <td>Never</td>
-<td>86400s</td>
+<td>3600s (max_ttl)</td>
 <td>Countries, currencies</td>
 </tr>
 </tbody>
 </table>
-<h3 id="63-complexity-aware-ttl">6.3 Complexity-Aware TTL<a class="headerlink" href="#63-complexity-aware-ttl" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="dont-cache-expensive-queries-for-long">Don't cache expensive queries for long<a class="headerlink" href="#dont-cache-expensive-queries-for-long" title="Permanent link">&para;</a></h1>
-<p>simple_query_ttl = 3600      # 1 hour (cheap, safe)
-complex_query_ttl = 60       # 1 minute (expensive, aggressive invalidation)</p>
-<h1 id="this-forces-expensive-queries-to-be-regenerated-frequently">This forces expensive queries to be regenerated frequently<a class="headerlink" href="#this-forces-expensive-queries-to-be-regenerated-frequently" title="Permanent link">&para;</a></h1>
-<h1 id="preventing-cache-from-becoming-a-bottleneck">Preventing cache from becoming a bottleneck<a class="headerlink" href="#preventing-cache-from-becoming-a-bottleneck" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p><code>CacheConfig.max_ttl</code> (default 3600s) caps every entry, so set it deliberately for very-long-lived data.</p>
+<h3 id="63-per-query-ttl">6.3 Per-Query TTL<a class="headerlink" href="#63-per-query-ttl" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Cheap, stable queries → long TTL; expensive/volatile → short TTL</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_country&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>   <span class="c1"># reference data</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_dashboard&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>   <span class="c1"># expensive aggregate</span>
+</code></pre></div>
 <h3 id="64-monitoring-checklist">6.4 Monitoring Checklist<a class="headerlink" href="#64-monitoring-checklist" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache hit rate &gt; 80% for normal workload</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Cache eviction rate &lt; 1% per minute</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Memory usage stable (not growing unbounded)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database cache table size monitored</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> TTL distribution matches complexity</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Invalidation patterns working correctly</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>CacheStats.hit_rate</code> &gt; 80% for normal workload</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>cleanup_expired()</code> keeping the expired backlog small</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>fraiseql_cache</code> table size stable (not growing unbounded)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> TTLs match data volatility</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> CASCADE / invalidation patterns matching mutations</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Tenant isolation verified in testing</li>
 </ul>
 <hr />
 <h2 id="7-troubleshooting">7. Troubleshooting<a class="headerlink" href="#7-troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="71-low-cache-hit-rate">7.1 Low Cache Hit Rate<a class="headerlink" href="#71-low-cache-hit-rate" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong> Cache hit rate &lt; 60%</p>
+<p><strong>Symptoms:</strong> <code>CacheStats.hit_rate</code> &lt; 60%</p>
 <p><strong>Causes:</strong></p>
 <ol>
-<li>Variables changing between requests (same query, different variables)</li>
+<li>Filters changing between requests (same view, different filters → different keys)</li>
 <li>TTL too short — entries expiring too quickly</li>
-<li>Complexity hash changing (reordering fields in query)</li>
-<li>Wrong query name in invalidation patterns</li>
+<li>Wrong query/table name in invalidation patterns</li>
 </ol>
 <p><strong>Solutions:</strong></p>
 <ol>
-<li>Normalize variable order before querying</li>
-<li>Increase default_ttl in configuration</li>
-<li>Disable include_complexity in CacheConfig</li>
-<li>Review invalidation patterns in mutations</li>
+<li>Normalize filter inputs before querying</li>
+<li>Increase <code>default_ttl</code> (and <code>max_ttl</code> if it is clamping you)</li>
+<li>Review the patterns passed to <code>invalidate_pattern</code> and the table names derived by <code>execute_function</code></li>
 </ol>
-<h3 id="72-memory-exhaustion">7.2 Memory Exhaustion<a class="headerlink" href="#72-memory-exhaustion" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong> Cache size approaching max_size_bytes, then entries evicted</p>
+<h3 id="72-cache-growth">7.2 Cache Growth<a class="headerlink" href="#72-cache-growth" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms:</strong> <code>fraiseql_cache</code> table grows unbounded</p>
 <p><strong>Causes:</strong></p>
 <ol>
-<li>max_size_bytes too small for workload</li>
-<li>TTL too long — entries not expiring</li>
-<li>High cardinality in query variables (unbounded cache keys)</li>
+<li><code>cleanup_expired()</code> not running</li>
+<li>TTLs too long — entries not expiring</li>
+<li>High cardinality in query filters (unbounded set of keys)</li>
 </ol>
 <p><strong>Solutions:</strong></p>
 <ol>
-<li>Increase max_size_bytes or switch to PostgreSQL backend</li>
-<li>Decrease default_ttl</li>
-<li>Normalize variables or add parameterization rules</li>
+<li>Schedule <code>cleanup_expired()</code> from a background task</li>
+<li>Decrease <code>default_ttl</code> / <code>max_ttl</code></li>
+<li>Reduce filter cardinality or cache at a coarser granularity</li>
 </ol>
 <h3 id="73-stale-data-in-cache">7.3 Stale Data in Cache<a class="headerlink" href="#73-stale-data-in-cache" title="Permanent link">&para;</a></h3>
 <p><strong>Symptoms:</strong> Old data served even after updates</p>
 <p><strong>Causes:</strong></p>
 <ol>
-<li>Invalidation patterns not matching mutation</li>
-<li>Cascade invalidations not configured</li>
-<li>Database update bypassed GraphQL mutation</li>
+<li>Invalidation patterns not matching the mutation's table</li>
+<li>CASCADE rules not registered at startup</li>
+<li>Database update bypassed the <code>fn_</code> mutation path</li>
 </ol>
 <p><strong>Solutions:</strong></p>
 <ol>
-<li>Review CacheInvalidation scope patterns</li>
-<li>Add explicit cache.invalidate() call after DB update</li>
-<li>Ensure all writes go through GraphQL mutations</li>
+<li>Review the <code>invalidate_pattern</code> / <code>build_mutation_pattern</code> table names</li>
+<li>Call <code>setup_auto_cascade_rules(cache, schema)</code> at startup</li>
+<li>Ensure all writes go through <code>fn_</code> functions invoked via <code>db.execute_function</code></li>
 </ol>
 <hr />
 <h2 id="8-security-considerations">8. Security Considerations<a class="headerlink" href="#8-security-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="81-tenant-isolation">8.1 Tenant Isolation<a class="headerlink" href="#81-tenant-isolation" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>Guaranteed:</strong> Cache keys include tenant_id at highest level
-⚠️ <strong>Verify:</strong> Always pass tenant_id from authenticated context</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query
-async def get_user(info, id: UUID) -&gt; User:
-    # CORRECT: tenant_id from auth context
-    tenant_id = info.context["tenant_id"]  # ✅</p>
-<div class="highlight"><pre><span></span><code># WRONG: user-provided tenant_id
-tenant_id = info.arguments.get(&quot;tenant_id&quot;)  # ❌ SECURITY BUG
+<p><strong>Guaranteed:</strong> Cache keys include <code>tenant_id</code> immediately after the prefix.
+<strong>Verify:</strong> Always source <code>tenant_id</code> from the authenticated context.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="c1"># CORRECT: tenant_id comes from info.context (set from the auth token),</span>
+    <span class="c1"># which the CachedRepository folds into the cache key.</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+
+    <span class="c1"># WRONG: never trust a client-supplied tenant_id for cache scoping.</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="82-error-caching">8.2 Error Caching<a class="headerlink" href="#82-error-caching" title="Permanent link">&para;</a></h3>
-<p>⚠️ <strong>Warning:</strong> Caching error responses can leak information</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="dont-cache-errors-in-production">❌ DON'T cache errors in production<a class="headerlink" href="#dont-cache-errors-in-production" title="Permanent link">&para;</a></h1>
-<p>cache_errors=True  # SECURITY RISK</p>
-<h1 id="only-cache-errors-in-development">✅ Only cache errors in development<a class="headerlink" href="#only-cache-errors-in-development" title="Permanent link">&para;</a></h1>
-<p>cache_errors=os.getenv("ENVIRONMENT") == "development"
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Warning:</strong> Caching error responses can leak information.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span>
 
+<span class="c1"># Cache errors only in development</span>
+<span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ENVIRONMENT&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;development&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
 <h3 id="83-sensitive-data">8.3 Sensitive Data<a class="headerlink" href="#83-sensitive-data" title="Permanent link">&para;</a></h3>
-<p>🔒 <strong>Best Practice:</strong> Don't cache PII or sensitive data</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="dont-cache-this">❌ DON'T cache this<a class="headerlink" href="#dont-cache-this" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-async def get_user(info, id: UUID) -&gt; User:
-    """Returns user with sensitive fields."""
-    return await db.find_one("users", {"id": id})</p>
-<h1 id="do-this-cache-only-public-fields">✅ DO this: Cache only public fields<a class="headerlink" href="#do-this-cache-only-public-fields" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-async def get_user_profile(info, id: UUID) -&gt; UserProfile:
-    """Returns only public profile."""
-    return await db.find_one("user_profiles", {"id": id})
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Best Practice:</strong> Don't cache PII or sensitive data. Expose only the public-facing fields in your read views and cache those.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+
+<span class="c1"># Prefer caching a public-profile view over a full user record:</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_profile</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserProfile</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns only public profile fields from v_user_profile.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user_profile&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="9-performance-example">9. Performance Example<a class="headerlink" href="#9-performance-example" title="Permanent link">&para;</a></h2>
-<h3 id="91-real-world-benchmark">9.1 Real-World Benchmark<a class="headerlink" href="#91-real-world-benchmark" title="Permanent link">&para;</a></h3>
+<h3 id="91-real-world-pattern">9.1 Real-World Pattern<a class="headerlink" href="#91-real-world-pattern" title="Permanent link">&para;</a></h3>
 <p><strong>Setup:</strong></p>
 <ul>
-<li>100,000 users</li>
-<li>10,000 concurrent sessions</li>
-<li>Memory backend with 5-minute TTL</li>
-<li>Query: GetUser (moderate complexity)</li>
+<li>A high-read <code>v_user</code> view queried with a small set of common filters</li>
+<li><code>PostgresCache</code> (UNLOGGED table) shared across multiple FastAPI instances</li>
+<li><code>default_ttl = 300</code> (5 minutes)</li>
 </ul>
-<p><strong>Results:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Metric</th>
-<th>Without Cache</th>
-<th>With Cache</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Latency (p95)</td>
-<td>250ms</td>
-<td>15ms</td>
-</tr>
-<tr>
-<td>Latency (p99)</td>
-<td>500ms</td>
-<td>25ms</td>
-</tr>
-<tr>
-<td>Throughput</td>
-<td>2,000 req/s</td>
-<td>50,000 req/s</td>
-</tr>
-<tr>
-<td>Database CPU</td>
-<td>85%</td>
-<td>5%</td>
-</tr>
-<tr>
-<td>Memory</td>
-<td>128MB</td>
-<td>800MB</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Conclusion:</strong> 25x throughput improvement, 17x latency improvement, at cost of 6x memory.</p>
+<p><strong>Outcome:</strong></p>
+<ul>
+<li>Repeated reads of the same filter combination hit the cache (<code>CacheStats.hits</code> climbs).</li>
+<li>A write through <code>fn_update_user</code> invalidates the matching <code>v_user</code>/<code>v_users</code> patterns, so the next read repopulates the entry.</li>
+<li>Because the table is shared, a cache warmed by one instance serves every other instance.</li>
+</ul>
+<p>Measure your own workload with <code>cache.get_stats()</code> and the SQL occupancy query in <a href="#210-cache-monitoring--metrics">Section 2.10</a> before tuning TTLs.</p>
 <hr />
 <h2 id="10-related-specifications">10. Related Specifications<a class="headerlink" href="#10-related-specifications" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>docs/specs/persisted-queries.md</strong> — APQ implementation (uses this caching system)</li>
+<li><strong>docs/specs/persisted-queries.md</strong> — Persisted queries (reuse this caching layer)</li>
 <li><strong>docs/guides/monitoring.md</strong> — Cache metrics and observability</li>
 <li><strong>docs/guides/production-deployment.md</strong> — Cache configuration in production</li>
 <li><strong>docs/architecture/core/execution-model.md</strong> — Where caching fits in query execution</li>
@@ -5991,15 +6009,11 @@ async def get_user_profile(info, id: UUID) -&gt; UserProfile:
 </tr>
 <tr>
 <td><strong>Cache Miss</strong></td>
-<td>Requested data not in cache, retrieved from database</td>
+<td>Requested data not in cache, retrieved from the database</td>
 </tr>
 <tr>
 <td><strong>TTL (Time-To-Live)</strong></td>
-<td>How long a cache entry remains valid</td>
-</tr>
-<tr>
-<td><strong>LRU (Least Recently Used)</strong></td>
-<td>Eviction policy: remove least recently accessed entries</td>
+<td>How long a cache entry remains valid (<code>expires_at</code>)</td>
 </tr>
 <tr>
 <td><strong>Tenant Isolation</strong></td>
@@ -6007,23 +6021,23 @@ async def get_user_profile(info, id: UUID) -&gt; UserProfile:
 </tr>
 <tr>
 <td><strong>Invalidation</strong></td>
-<td>Removing or marking cache entries as stale</td>
+<td>Removing cache entries (by key or pattern) so they are recomputed</td>
 </tr>
 <tr>
-<td><strong>Cascade</strong></td>
-<td>Automatic invalidation triggered by mutations</td>
+<td><strong>CASCADE</strong></td>
+<td>Automatic invalidation of dependent domains' caches when a domain changes</td>
+</tr>
+<tr>
+<td><strong>CascadeRule</strong></td>
+<td>A <code>source_domain → target_domain</code> invalidation relationship derived from the schema</td>
 </tr>
 <tr>
 <td><strong>UNLOGGED Table</strong></td>
 <td>PostgreSQL table without write-ahead logging (faster writes, lost on crash)</td>
 </tr>
 <tr>
-<td><strong>APQ</strong></td>
-<td>Automatic Persisted Queries (caches query definitions and responses)</td>
-</tr>
-<tr>
-<td><strong>Complexity</strong></td>
-<td>Measure of query expense (fields + depth + relationships)</td>
+<td><strong>Domain Versioning</strong></td>
+<td>Optional <code>pg_fraiseql_cache</code> mechanism that validates entries against per-tenant domain versions</td>
 </tr>
 </tbody>
 </table>
@@ -6033,6 +6047,9 @@ async def get_user_profile(info, id: UUID) -&gt; UserProfile:
 
 
 
+
+  
+  
 
 
 

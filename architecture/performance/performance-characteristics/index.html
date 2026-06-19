@@ -1941,10 +1941,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#14-federated-query-latency" class="md-nav__link">
+  <a href="#14-cross-database-query-latency-foreign-data-wrappers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.4 Federated Query Latency
+        1.4 Cross-Database Query Latency (Foreign Data Wrappers)
       
     </span>
   </a>
@@ -5457,10 +5457,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#14-federated-query-latency" class="md-nav__link">
+  <a href="#14-cross-database-query-latency-foreign-data-wrappers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.4 Federated Query Latency
+        1.4 Cross-Database Query Latency (Foreign Data Wrappers)
       
     </span>
   </a>
@@ -6093,14 +6093,12 @@ tags: ["documentation", "reference"]</p>
 <li><strong>Memory overhead</strong>: &lt;100MB per 1000 concurrent users</li>
 <li><strong>Cache efficiency</strong>: 85%+ hit rate (with proper TTL)</li>
 </ul>
-<p><strong>Core principle</strong>: Performance is engineered, not emergent. Compiled execution plans + database-level optimization = predictable results.</p>
+<p><strong>Core principle</strong>: Performance is engineered, not emergent. Pushing work into PostgreSQL (<code>v_</code>/<code>tv_</code> views, <code>fn_</code> functions) + database-level optimization = predictable results.</p>
 <hr />
 <h2 id="1-query-performance-baseline">1. Query Performance Baseline<a class="headerlink" href="#1-query-performance-baseline" title="Permanent link">&para;</a></h2>
 <h3 id="11-benchmark-methodology">1.1 Benchmark Methodology<a class="headerlink" href="#11-benchmark-methodology" title="Permanent link">&para;</a></h3>
 <p>All benchmarks measure wall-clock time from request arrival to response start:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Request arrives
+<div class="highlight"><pre><span></span><code>Request arrives
   ↓ (measure start)
 Parse &amp; validate
 Authorization check
@@ -6109,9 +6107,7 @@ Database execution
 Response transformation
   ↓ (measure end)
 Response sent
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Benchmark conditions:</strong></p>
 <ul>
 <li>Single instance (1 CPU)</li>
@@ -6123,15 +6119,11 @@ Response sent
 </ul>
 <h3 id="12-simple-query-latency">1.2 Simple Query Latency<a class="headerlink" href="#12-simple-query-latency" title="Permanent link">&para;</a></h3>
 <p><strong>Query: SELECT id, name FROM users</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Warm cache hit:     5ms ± 1ms   (cached response)
+<div class="highlight"><pre><span></span><code>Warm cache hit:     5ms ± 1ms   (cached response)
 Cold cache:        12ms ± 2ms   (query + parse + respond)
 Database time:      5ms ± 1ms   (SELECT execution)
 Overhead:           7ms         (parsing, auth, response)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Breakdown:</strong></p>
 <ul>
 <li>Parsing &amp; validation: 0.5ms</li>
@@ -6173,15 +6165,11 @@ Overhead:           7ms         (parsing, auth, response)
 </table>
 <h3 id="13-complex-query-latency">1.3 Complex Query Latency<a class="headerlink" href="#13-complex-query-latency" title="Permanent link">&para;</a></h3>
 <p><strong>Query: SELECT posts with author, comments, and nested author (5 fields, 3 joins)</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Warm cache hit:     15ms ± 2ms   (cached response)
+<div class="highlight"><pre><span></span><code>Warm cache hit:     15ms ± 2ms   (cached response)
 Cold cache:         45ms ± 5ms   (query + joins + respond)
 Database time:      35ms ± 3ms   (JOINs + aggregation)
 Overhead:          10ms         (parsing, auth, response)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Breakdown:</strong></p>
 <ul>
 <li>Parsing &amp; validation: 0.5ms</li>
@@ -6221,84 +6209,68 @@ Overhead:          10ms         (parsing, auth, response)
 </tr>
 </tbody>
 </table>
-<h3 id="14-federated-query-latency">1.4 Federated Query Latency<a class="headerlink" href="#14-federated-query-latency" title="Permanent link">&para;</a></h3>
-<p><strong>Query: SELECT posts with external author from federation</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Warm local cache:    5ms     (federated query cached)
-Cold local cache:   100ms ± 10ms (local + federation)
+<h3 id="14-cross-database-query-latency-foreign-data-wrappers">1.4 Cross-Database Query Latency (Foreign Data Wrappers)<a class="headerlink" href="#14-cross-database-query-latency-foreign-data-wrappers" title="Permanent link">&para;</a></h3>
+<p>FraiseQL serves a single PostgreSQL database. To read data that lives in another
+PostgreSQL instance, you expose it through a <strong>foreign data wrapper (FDW)</strong> inside
+your <code>v_</code>/<code>tv_</code> view SQL — the remote join happens in PostgreSQL, not in FraiseQL.</p>
+<p><strong>Query: SELECT posts with author resolved through a <code>postgres_fdw</code> foreign table</strong></p>
+<div class="highlight"><pre><span></span><code>Warm local cache:     5ms     (result cached)
+Cold local cache:   100ms ± 10ms (local + FDW round-trip)
   ├─ Local query:    12ms
-  ├─ Federation:     80ms (HTTP round-trip to subgraph)
+  ├─ FDW fetch:      80ms (network round-trip to remote PostgreSQL)
   └─ Response:        8ms
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Breakdown:</strong></p>
 <ul>
 <li>Local query: 12ms</li>
-<li>HTTP overhead: 5ms (connection + headers)</li>
-<li>Remote database: 60ms (on remote subgraph)</li>
-<li>HTTP overhead: 5ms (response + parsing)</li>
+<li>FDW connection overhead: 5ms (connection + setup)</li>
+<li>Remote PostgreSQL: 60ms (executed on the remote server)</li>
+<li>FDW transfer overhead: 5ms (fetch + decode)</li>
 <li>Response transformation: 8ms</li>
 </ul>
-<p><strong>Federation strategies impact:</strong></p>
+<p><strong>FDW access pattern impact:</strong></p>
 <table>
 <thead>
 <tr>
-<th>Strategy</th>
+<th>Pattern</th>
 <th>Latency</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>HTTP (standard)</td>
+<td><code>postgres_fdw</code> (remote PostgreSQL)</td>
 <td>80ms</td>
-<td>Works with any subgraph</td>
+<td>Network round-trip per remote scan</td>
 </tr>
 <tr>
-<td>PostgreSQL FDW</td>
+<td><code>postgres_fdw</code> with predicate pushdown</td>
+<td>25ms</td>
+<td>Filters evaluated on the remote server</td>
+</tr>
+<tr>
+<td>Materialized <code>tv_</code> projection (refreshed from FDW)</td>
 <td>15ms</td>
-<td>Same-database optimization</td>
-</tr>
-<tr>
-<td>SQL Server Linked Servers</td>
-<td>18ms</td>
-<td>Same-database optimization</td>
-</tr>
-<tr>
-<td>MySQL FEDERATED</td>
-<td>20ms</td>
-<td>Same-database optimization</td>
+<td>No round-trip on the read path</td>
 </tr>
 </tbody>
 </table>
 <h3 id="15-pagination-impact">1.5 Pagination Impact<a class="headerlink" href="#15-pagination-impact" title="Permanent link">&para;</a></h3>
 <p><strong>OFFSET/LIMIT (avoid for scale):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Offset 0, Limit 20:        12ms
+<div class="highlight"><pre><span></span><code>Offset 0, Limit 20:        12ms
 Offset 1000, Limit 20:     45ms   (must scan 1000 rows)
 Offset 100000, Limit 20:  500ms   (must scan 100K rows)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Keyset pagination (recommended):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>First page (no cursor):     12ms
+<div class="highlight"><pre><span></span><code>First page (no cursor):     12ms
 Middle page (with cursor):  12ms   (same latency)
 Last page (with cursor):    12ms   (same latency)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="2-mutation-performance">2. Mutation Performance<a class="headerlink" href="#2-mutation-performance" title="Permanent link">&para;</a></h2>
 <h3 id="21-simple-mutation-latency">2.1 Simple Mutation Latency<a class="headerlink" href="#21-simple-mutation-latency" title="Permanent link">&para;</a></h3>
 <p><strong>Mutation: INSERT new user</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Transaction start:     1ms
+<div class="highlight"><pre><span></span><code>Transaction start:     1ms
 Validate input:        1ms
 Authorization check:   1ms
 Database INSERT:      10ms
@@ -6306,9 +6278,7 @@ Event publish:         2ms
 Response transform:    2ms
 ────────────────────────
 Total:                17ms
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Latency percentiles:</strong></p>
 <table>
 <thead>
@@ -6334,9 +6304,7 @@ Total:                17ms
 </table>
 <h3 id="22-complex-mutation-latency">2.2 Complex Mutation Latency<a class="headerlink" href="#22-complex-mutation-latency" title="Permanent link">&para;</a></h3>
 <p><strong>Mutation: Create post with 3 comments and notify 100 subscribers</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Transaction start:       1ms
+<div class="highlight"><pre><span></span><code>Transaction start:       1ms
 Validate input:          2ms
 Authorization check:     2ms
 Database operations:    40ms (1 INSERT + 3 INSERTs + 1 SELECT)
@@ -6345,9 +6313,7 @@ Cache invalidation:     5ms (4 cache entries)
 Response transform:     5ms
 ────────────────────────
 Total:                 65ms
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Impact of concurrent mutations:</strong></p>
 <table>
 <thead>
@@ -6381,42 +6347,31 @@ Total:                 65ms
 </tbody>
 </table>
 <p><strong>Deadlock handling:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Deadlock detected:     1ms (detect)
+<div class="highlight"><pre><span></span><code>Deadlock detected:     1ms (detect)
 Rollback transaction:  2ms (abort work)
 Sleep + backoff:      50ms (exponential backoff)
 Retry:               17ms (retry)
 ────────────────────────
 Total on deadlock:    70ms (retry succeeds)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="23-batch-mutation-latency">2.3 Batch Mutation Latency<a class="headerlink" href="#23-batch-mutation-latency" title="Permanent link">&para;</a></h3>
 <p><strong>Mutation: Create 1000 users in single transaction</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Timing (1000 INSERT statements):</p>
-<ul>
-<li>Transaction start: 1ms</li>
-<li>Validate all inputs: 50ms</li>
-<li>Database batch INSERT: 100ms</li>
-<li>Events publish: 20ms (1000 events)</li>
-<li>Response: 10ms
+<div class="highlight"><pre><span></span><code>Timing (1000 INSERT statements):
+
+- Transaction start: 1ms
+- Validate all inputs: 50ms
+- Database batch INSERT: 100ms
+- Events publish: 20ms (1000 events)
+- Response: 10ms
 ─────────────────────────
 Total: 181ms
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Rate:</strong> 1000 users / 181ms = <strong>5,500 users/second</strong></p>
 <hr />
 <h2 id="3-subscription-performance">3. Subscription Performance<a class="headerlink" href="#3-subscription-performance" title="Permanent link">&para;</a></h2>
 <h3 id="31-subscription-event-latency">3.1 Subscription Event Latency<a class="headerlink" href="#31-subscription-event-latency" title="Permanent link">&para;</a></h3>
 <p>From database event to client notification:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database change occurs:
+<div class="highlight"><pre><span></span><code>Database change occurs:
   ↓
 Trigger fires:              1ms
 Event published:            2ms (NOTIFY)
@@ -6427,9 +6382,7 @@ Response transformation:     3ms
 Sent to client:             2ms (WebSocket send)
 ─────────────────────────────
 Total latency:             26ms (p50)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Latency percentiles:</strong></p>
 <table>
 <thead>
@@ -6464,15 +6417,11 @@ Total latency:             26ms (p50)
 </table>
 <h3 id="32-subscription-throughput">3.2 Subscription Throughput<a class="headerlink" href="#32-subscription-throughput" title="Permanent link">&para;</a></h3>
 <p><strong>Maximum events per second per instance:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Single subscription:       1000 events/second
+<div class="highlight"><pre><span></span><code>Single subscription:       1000 events/second
 10 subscriptions:         5000 events/second (load distributed)
 100 subscriptions:       10,000 events/second (approaching limit)
 1000 subscriptions:       8,000 events/second (backpressure, buffering)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Resource usage per 1000 events/second:</strong></p>
 <ul>
 <li>CPU: 10% (single core)</li>
@@ -6481,38 +6430,32 @@ Total latency:             26ms (p50)
 </ul>
 <h3 id="33-subscription-backpressure">3.3 Subscription Backpressure<a class="headerlink" href="#33-subscription-backpressure" title="Permanent link">&para;</a></h3>
 <p>When production rate &gt; consumption rate:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Events produced:   1000/sec
+<div class="highlight"><pre><span></span><code>Events produced:   1000/sec
 Events consumed:    500/sec (slow client)
-Buffer buildup:    +500/sec</p>
-<p>Buffer capacity: 1000 events per subscription
-Time to overflow: 1000 / 500 = 2 seconds</p>
-<p>At overflow:
+Buffer buildup:    +500/sec
+
+Buffer capacity: 1000 events per subscription
+Time to overflow: 1000 / 500 = 2 seconds
+
+At overflow:
 → Connection terminated (E_SUB_BUFFER_OVERFLOW_601)
 → Client reconnects
 → Subscription re-established
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="4-cache-performance">4. Cache Performance<a class="headerlink" href="#4-cache-performance" title="Permanent link">&para;</a></h2>
 <h3 id="41-cache-hit-rate-impact">4.1 Cache Hit Rate Impact<a class="headerlink" href="#41-cache-hit-rate-impact" title="Permanent link">&para;</a></h3>
 <p><strong>Scenario: Query same posts repeatedly (5-minute cache TTL)</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Hit rate vs latency:</p>
-<ul>
-<li>0% hit rate:   50ms average (always query database)</li>
-<li>50% hit rate:  30ms average (half from cache)</li>
-<li>75% hit rate:  18ms average</li>
-<li>90% hit rate:   8ms average (mostly cached)</li>
-<li>95% hit rate:   7ms average</li>
-</ul>
-<p>Cache key: {operation_name}:{variable_hash}:{user_id}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Hit rate vs latency:
 
+- 0% hit rate:   50ms average (always query database)
+- 50% hit rate:  30ms average (half from cache)
+- 75% hit rate:  18ms average
+- 90% hit rate:   8ms average (mostly cached)
+- 95% hit rate:   7ms average
+
+Cache key: {operation_name}:{variable_hash}:{user_id}
+</code></pre></div>
 <p><strong>Typical hit rates by query type:</strong></p>
 <table>
 <thead>
@@ -6542,17 +6485,16 @@ Time to overflow: 1000 / 500 = 2 seconds</p>
 </table>
 <h3 id="42-cache-invalidation-performance">4.2 Cache Invalidation Performance<a class="headerlink" href="#42-cache-invalidation-performance" title="Permanent link">&para;</a></h3>
 <p>When data changes:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Mutation committed:          1ms
-Cache invalidation triggered:  1ms (add to queue)
-Process invalidation queue:    5ms (batch 100 entries)
-Invalidate entries:           2ms (remove from Redis)
+<div class="highlight"><pre><span></span><code>Mutation committed:          1ms
+Cache invalidation triggered:  1ms (cascade rule lookup)
+Process invalidation:          5ms (batch 100 entries)
+Invalidate entries:           2ms (delete cached results)
 ────────────────────────────
 Total cache latency impact:   9ms
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
+<p>Invalidation is driven by cascade rules (<code>CascadeRule</code>, <code>setup_auto_cascade_rules</code>):
+a mutation that touches a table invalidates the cached results derived from the
+views that depend on it.</p>
 <p><strong>Cache backends comparison:</strong></p>
 <table>
 <thead>
@@ -6560,36 +6502,27 @@ Total cache latency impact:   9ms
 <th>Backend</th>
 <th>Hit Latency</th>
 <th>Invalidation</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>In-memory</td>
+<td>In-memory (<code>ResultCache</code>)</td>
 <td>&lt;1ms</td>
 <td>0.1ms</td>
+<td>Per-instance, not shared</td>
 </tr>
 <tr>
-<td>Redis</td>
+<td>PostgreSQL (<code>PostgresCache</code>)</td>
 <td>2-5ms</td>
 <td>1-2ms</td>
-</tr>
-<tr>
-<td>Memcached</td>
-<td>2-5ms</td>
-<td>1-2ms</td>
-</tr>
-<tr>
-<td>DynamoDB</td>
-<td>10-20ms</td>
-<td>5-10ms</td>
+<td>Shared across instances, survives restarts</td>
 </tr>
 </tbody>
 </table>
 <h3 id="43-cache-size-vs-hit-rate">4.3 Cache Size vs Hit Rate<a class="headerlink" href="#43-cache-size-vs-hit-rate" title="Permanent link">&para;</a></h3>
 <p><strong>Scenario: 100K unique queries, varying cache size</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Cache size    Hit rate    Miss latency    Memory
+<div class="highlight"><pre><span></span><code>Cache size    Hit rate    Miss latency    Memory
 ─────────────────────────────────────────────
 100MB         45%         25ms            -
 500MB         65%         20ms            -
@@ -6597,41 +6530,34 @@ Total cache latency impact:   9ms
 2GB           82%         15ms            -
 5GB           88%         12ms            -
 10GB          92%         10ms            -
-20GB+         95%         8ms             -</p>
-<p>Diminishing returns after 10GB (80% of queries cached)
-```text</p>
-<!-- Code example in TEXT -->
+20GB+         95%         8ms             -
 
+Diminishing returns after 10GB (80% of queries cached)
+</code></pre></div>
 <hr />
 <h2 id="5-database-level-performance">5. Database-Level Performance<a class="headerlink" href="#5-database-level-performance" title="Permanent link">&para;</a></h2>
 <h3 id="51-query-plan-optimization">5.1 Query Plan Optimization<a class="headerlink" href="#51-query-plan-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>Before optimization (first run):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT p.<em>, u.</em>
-FROM tb_post p
-JOIN tb_user u ON p.author_id = u.pk_user
-WHERE p.published = true
-ORDER BY p.created_at DESC
-LIMIT 20</p>
-<p>Execution: 50ms
-  - Full table scan: 40ms (10K rows)
-  - Sort: 10ms
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">author_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span>
 
+<span class="n">Execution</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="n">ms</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="k">Full</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">scan</span><span class="p">:</span><span class="w"> </span><span class="mi">40</span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="n">K</span><span class="w"> </span><span class="k">rows</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Sort</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="n">ms</span>
+</code></pre></div>
 <p><strong>After query optimization (with index):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE INDEX idx_post_published_created ON tb_post(published, created_at DESC);</p>
-<p>Execution: 15ms
-  - Index scan: 2ms (using index)
-  - Sort: 0ms (already sorted by index)
-  - Join: 10ms (20 rows joining)
-  - Return: 3ms
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_published_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">published</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
 
+<span class="n">Execution</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="n">ms</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="k">Index</span><span class="w"> </span><span class="n">scan</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="k">using</span><span class="w"> </span><span class="k">index</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Sort</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="n">already</span><span class="w"> </span><span class="n">sorted</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="k">index</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="k">Join</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="n">ms</span><span class="w"> </span><span class="p">(</span><span class="mi">20</span><span class="w"> </span><span class="k">rows</span><span class="w"> </span><span class="n">joining</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="k">Return</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="n">ms</span>
+</code></pre></div>
 <p><strong>Optimization impact: 50ms → 15ms (3.3x faster)</strong></p>
 <h3 id="52-index-utilization">5.2 Index Utilization<a class="headerlink" href="#52-index-utilization" title="Permanent link">&para;</a></h3>
 <p><strong>Query performance with vs without indexes:</strong></p>
@@ -6673,78 +6599,60 @@ LIMIT 20</p>
 </table>
 <h3 id="53-connection-pool-performance">5.3 Connection Pool Performance<a class="headerlink" href="#53-connection-pool-performance" title="Permanent link">&para;</a></h3>
 <p><strong>Connection pool resource usage:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Pool size: 50
+<div class="highlight"><pre><span></span><code>Pool size: 50
 Active connections: 43
 Idle connections: 5
 Waiting for connection: 0
-Connection wait time: &lt;1ms (p95)</p>
-<p>Under load (100 concurrent requests):
+Connection wait time: &lt;1ms (p95)
+
+Under load (100 concurrent requests):
 Active connections: 50 (100% utilized)
 Waiting requests: 10 (10% of requests queueing)
-Connection wait time: 5ms (p95)</p>
-<p>If pool exhausted (101+ concurrent requests):
+Connection wait time: 5ms (p95)
+
+If pool exhausted (101+ concurrent requests):
 Active: 50
 Waiting: 51+
 Connection timeout: 5 seconds
 Requests fail with E_DB_CONNECTION_TIMEOUT_307
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Pool sizing recommendation:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>pool_size = (concurrent_users / 10) + 10
+<div class="highlight"><pre><span></span><code>pool_size = (concurrent_users / 10) + 10
 Example: 1000 concurrent users → pool_size = 110
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="54-transaction-performance">5.4 Transaction Performance<a class="headerlink" href="#54-transaction-performance" title="Permanent link">&para;</a></h3>
 <p><strong>Transaction overhead analysis:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Simple query (SELECT):
+<div class="highlight"><pre><span></span><code>Simple query (SELECT):
   - No transaction: 10ms
-  - With transaction: 12ms (2ms overhead)</p>
-<p>INSERT operation:
+  - With transaction: 12ms (2ms overhead)
+
+INSERT operation:
   - Without transaction: 10ms (auto-committed)
-  - Explicit transaction: 11ms (minimal overhead)</p>
-<p>Complex transaction (5 operations):
+  - Explicit transaction: 11ms (minimal overhead)
+
+Complex transaction (5 operations):
   - Sequential without transaction: 50ms (5 × 10ms)
   - Atomic transaction: 52ms (minimal overhead)
   - Deadlock + retry: 70ms (includes backoff)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="6-throughput-benchmarks">6. Throughput Benchmarks<a class="headerlink" href="#6-throughput-benchmarks" title="Permanent link">&para;</a></h2>
 <h3 id="61-requests-per-second">6.1 Requests Per Second<a class="headerlink" href="#61-requests-per-second" title="Permanent link">&para;</a></h3>
 <p><strong>Single instance (1 CPU, 4GB RAM):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Simple query:       5,000 req/sec
+<div class="highlight"><pre><span></span><code>Simple query:       5,000 req/sec
 Complex query:      1,000 req/sec
 Mutation:            500 req/sec
 Mixed workload:     2,000 req/sec
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Multi-instance cluster (10 instances):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Simple query:      50,000 req/sec
+<div class="highlight"><pre><span></span><code>Simple query:      50,000 req/sec
 Complex query:     10,000 req/sec
 Mutation:           5,000 req/sec
 Mixed workload:    20,000 req/sec
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="62-throughput-vs-latency-trade-off">6.2 Throughput vs Latency Trade-off<a class="headerlink" href="#62-throughput-vs-latency-trade-off" title="Permanent link">&para;</a></h3>
 <p><strong>As load increases:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Load (req/sec)  | Avg Latency | P95 Latency | P99 Latency | Status
+<div class="highlight"><pre><span></span><code>Load (req/sec)  | Avg Latency | P95 Latency | P99 Latency | Status
 ────────────────────────────────────────────────────────────────
 500             | 5ms         | 8ms         | 12ms        | ✅ Healthy
 1000            | 8ms         | 15ms        | 25ms        | ✅ Good
@@ -6752,303 +6660,254 @@ Mixed workload:    20,000 req/sec
 3000            | 25ms        | 75ms        | 150ms       | ⚠️ Degrading
 4000            | 50ms        | 150ms       | 300ms       | ⚠️ Poor
 5000+           | 100ms+      | 300ms+      | 1000ms+     | ❌ Unacceptable
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Recommendation: Keep p95 latency &lt; 200ms</strong></p>
 <hr />
 <h2 id="7-memory-characteristics">7. Memory Characteristics<a class="headerlink" href="#7-memory-characteristics" title="Permanent link">&para;</a></h2>
 <h3 id="71-memory-usage-at-rest">7.1 Memory Usage at Rest<a class="headerlink" href="#71-memory-usage-at-rest" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Minimum runtime:            50MB
-With compiled schema (1000 types): 150MB
-Query execution buffer:      10MB
-Cache layer (Redis adapter): 20MB
+<p>The GraphQL schema is built <strong>in memory at app startup</strong> (no compiled artifact on
+disk); the figure below is that in-memory/runtime schema footprint.</p>
+<div class="highlight"><pre><span></span><code>Minimum runtime:                    50MB
+In-memory schema (1000 types):     150MB
+Query execution buffer:             10MB
+Result cache layer:                 20MB
 ────────────────────────
-Baseline per instance:      230MB
-```text</p>
-<!-- Code example in TEXT -->
-
+Baseline per instance:             230MB
+</code></pre></div>
 <h3 id="72-memory-usage-per-operation">7.2 Memory Usage Per Operation<a class="headerlink" href="#72-memory-usage-per-operation" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Simple query:      &lt;1MB
+<div class="highlight"><pre><span></span><code>Simple query:      &lt;1MB
 Complex query:     2-5MB (JSONB construction)
 Mutation:          1-2MB
 Subscription:      0.5MB (event buffer per subscription)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Memory per concurrent user:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Idle subscription (no queries):    50KB
+<div class="highlight"><pre><span></span><code>Idle subscription (no queries):    50KB
 Active (processing query):         500KB
 Peak (during complex query):       2MB
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Scaling memory for concurrent users:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>1000 concurrent users: 230MB + (1000 × 50KB) = 280MB
+<div class="highlight"><pre><span></span><code>1000 concurrent users: 230MB + (1000 × 50KB) = 280MB
 10,000 concurrent users: 230MB + (10000 × 50KB) = 730MB
 100,000 concurrent users: 230MB + (100000 × 50KB) = 5.2GB
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="73-memory-efficiency">7.3 Memory Efficiency<a class="headerlink" href="#73-memory-efficiency" title="Permanent link">&para;</a></h3>
 <p><strong>GC (garbage collection) impact:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Default GC (Rust): &lt;1ms pause (negligible)
-Gen2 collection: &lt;10ms pause (rare)
-Memory leaks: None (Rust memory safety)</p>
-<p>Comparison (Java):
-GC pause: 10-100ms (noticeable)
-Memory leaks possible
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>FraiseQL runs on CPython, so memory is reclaimed by reference counting plus the
+cyclic garbage collector. The hot-path JSON transformation runs in the optional
+<code>fraiseql_rs</code> Rust extension, which allocates and frees its own buffers outside the
+Python heap and so does not add GC pressure for that work.</p>
+<div class="highlight"><pre><span></span><code>Reference counting:   immediate (objects freed as refs drop)
+Cyclic GC pass:        &lt;10ms pause (rare, only for reference cycles)
+Rust hot-path buffers: freed deterministically (no GC pressure)
+</code></pre></div>
 <hr />
 <h2 id="8-optimization-strategies">8. Optimization Strategies<a class="headerlink" href="#8-optimization-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="81-query-optimization">8.1 Query Optimization<a class="headerlink" href="#81-query-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>1. Add selective filters:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Before:
+<div class="highlight"><pre><span></span><code>Before:
 SELECT * FROM users
 → Scans 10M rows, returns 20
-→ 500ms</p>
-<p>After:
-SELECT * FROM users WHERE created_at &gt; NOW() - INTERVAL '7 days'
+→ 500ms
+
+After:
+SELECT * FROM users WHERE created_at &gt; NOW() - INTERVAL &#39;7 days&#39;
 → Scans 100K rows (index), returns 20
 → 50ms (10x faster)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>2. Use keyset pagination:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Before:
+<div class="highlight"><pre><span></span><code>Before:
 SELECT * FROM users OFFSET 1,000,000 LIMIT 20
 → Scans 1M rows, returns 20
-→ 1000ms</p>
-<p>After:
-SELECT * FROM users WHERE id &gt; 'cursor-value' LIMIT 20
+→ 1000ms
+
+After:
+SELECT * FROM users WHERE id &gt; &#39;cursor-value&#39; LIMIT 20
 → Index seek, returns 20
 → 10ms (100x faster)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>3. Denormalize frequently joined data:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Before (3 JOINs):
-SELECT p.<em>, a.name, c.</em>, r.rating FROM post p
+<div class="highlight"><pre><span></span><code>Before (3 JOINs):
+SELECT p.*, a.name, c.*, r.rating FROM post p
   JOIN author a ON p.author_id = a.id
   JOIN comment c ON p.id = c.post_id
   JOIN rating r ON p.id = r.post_id
-→ 50ms</p>
-<p>After (materialized view):
+→ 50ms
+
+After (materialized view):
 SELECT * FROM v_post_enriched
 → Pre-joined JSONB
 → 15ms (3x faster)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="82-mutation-optimization">8.2 Mutation Optimization<a class="headerlink" href="#82-mutation-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>1. Batch operations:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Before (1000 individual mutations):
+<div class="highlight"><pre><span></span><code>Before (1000 individual mutations):
 for i in 1..1000:
   createUser(...)
-→ 1000 × 20ms = 20 seconds</p>
-<p>After (batch mutation):
+→ 1000 × 20ms = 20 seconds
+
+After (batch mutation):
 createUsersBatch([...1000 users...])
 → 200ms (100x faster)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>2. Defer non-critical operations:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Before (all in transaction):</p>
-<ol>
-<li>Create user (2ms)</li>
-<li>Send welcome email (500ms) ← Slow!</li>
-<li>Log audit event (10ms)
-→ Total: 512ms</li>
-</ol>
-<p>After (async):</p>
-<ol>
-<li>Create user (2ms)</li>
-<li>Commit ✓</li>
-<li>Queue email (async)</li>
-<li>Log audit event (async)
-→ Total: 2ms (256x faster)
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Before (all in transaction):
 
+1. Create user (2ms)
+2. Send welcome email (500ms) ← Slow!
+3. Log audit event (10ms)
+→ Total: 512ms
+
+After (async):
+
+1. Create user (2ms)
+2. Commit ✓
+3. Queue email (async)
+4. Log audit event (async)
+→ Total: 2ms (256x faster)
+</code></pre></div>
 <h3 id="83-cache-optimization">8.3 Cache Optimization<a class="headerlink" href="#83-cache-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>1. Adjust TTL based on data freshness:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Static data (product catalog):   TTL = 1 hour
+<div class="highlight"><pre><span></span><code>Static data (product catalog):   TTL = 1 hour
 User-specific data:              TTL = 5 minutes
 Real-time data (current user):   TTL = 30 seconds
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>2. Pre-warm cache on startup:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL.cache.preload([
-    "GetPopularProducts",
-    "GetTrendingPosts",
-    "GetRecommendations"
-])</p>
-<p>Result: 95%+ hit rate from moment 1
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># ResultCache.warm_cache takes (query_name, filters) tuples plus the function</span>
+<span class="c1"># used to execute them, and seeds the cache before the first request.</span>
+<span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">warm_cache</span><span class="p">(</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;popular_products&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s2">&quot;trending_posts&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s2">&quot;recommendations&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="p">],</span>
+    <span class="n">query_func</span><span class="o">=</span><span class="n">run_query</span><span class="p">,</span>
+<span class="p">)</span>
 
+<span class="c1"># Result: 95%+ hit rate from the first request</span>
+</code></pre></div>
 <p><strong>3. Monitor cache efficiency:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>@FraiseQL.metric(name="cache_efficiency")
-def track_cache():
-    hit_rate = cache_hits / (cache_hits + cache_misses)
-    if hit_rate &lt; 0.80:
-        alert("Cache hit rate below 80%")
-```text</p>
-<!-- Code example in TEXT -->
+<p>Enable the Prometheus endpoint with <code>setup_metrics</code>, then update a standard
+<code>prometheus_client</code> gauge with your hit rate:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gauge</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">setup_metrics</span>
+
+<span class="c1"># Adds the /metrics endpoint and request metrics to the FastAPI app</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+
+<span class="n">cache_efficiency</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
+    <span class="s2">&quot;fraiseql_cache_efficiency&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result-cache hit rate&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">track_cache</span><span class="p">(</span><span class="n">cache_hits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cache_misses</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="n">cache_hits</span> <span class="o">+</span> <span class="n">cache_misses</span>
+    <span class="n">hit_rate</span> <span class="o">=</span> <span class="n">cache_hits</span> <span class="o">/</span> <span class="n">total</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="n">cache_efficiency</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">hit_rate</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hit_rate</span> <span class="o">&lt;</span> <span class="mf">0.80</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Cache hit rate below 80</span><span class="si">%%</span><span class="s2">: </span><span class="si">%.2f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">hit_rate</span><span class="p">)</span>
+</code></pre></div>
+<p>Alert on <code>fraiseql_cache_efficiency &lt; 0.80</code> from your Prometheus/Alertmanager setup.</p>
 <hr />
 <h2 id="9-scaling-strategies">9. Scaling Strategies<a class="headerlink" href="#9-scaling-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="91-vertical-scaling-single-instance">9.1 Vertical Scaling (Single Instance)<a class="headerlink" href="#91-vertical-scaling-single-instance" title="Permanent link">&para;</a></h3>
 <p><strong>CPU cores impact:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>1 core:   2,000 req/sec
+<div class="highlight"><pre><span></span><code>1 core:   2,000 req/sec
 2 cores:  4,000 req/sec (linear scaling up to 4 cores)
 4 cores:  7,000 req/sec (sublinear due to coordination overhead)
 8 cores: 10,000 req/sec (coordination overhead dominates)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Memory impact:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>4GB:   2,000 concurrent users
+<div class="highlight"><pre><span></span><code>4GB:   2,000 concurrent users
 8GB:   5,000 concurrent users
 16GB: 12,000 concurrent users
 32GB: 25,000 concurrent users
 64GB: 50,000 concurrent users
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="92-horizontal-scaling-multiple-instances">9.2 Horizontal Scaling (Multiple Instances)<a class="headerlink" href="#92-horizontal-scaling-multiple-instances" title="Permanent link">&para;</a></h3>
 <p><strong>Cluster with N instances (stateless):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Throughput scales linearly:</p>
-<p>1 instance:  2,000 req/sec
+<div class="highlight"><pre><span></span><code>Throughput scales linearly:
+
+1 instance:  2,000 req/sec
 2 instances: 4,000 req/sec
 10 instances: 20,000 req/sec
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Database becomes bottleneck:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database can handle:  10,000 req/sec (PostgreSQL)</p>
-<p>Cluster can send:     20,000 req/sec (10 instances)</p>
-<p>Result: Database is bottleneck at 10+ instances
-Solution: Database replication (read replicas)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Database can handle:  10,000 req/sec (PostgreSQL)
 
+Cluster can send:     20,000 req/sec (10 instances)
+
+Result: Database is bottleneck at 10+ instances
+Solution: Database replication (read replicas)
+</code></pre></div>
 <h3 id="93-database-scaling">9.3 Database Scaling<a class="headerlink" href="#93-database-scaling" title="Permanent link">&para;</a></h3>
 <p><strong>Read replicas for queries:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Master database:        Handles mutations
-Read replicas (5 copies): Handle queries</p>
-<p>Distribution:</p>
-<ul>
-<li>Mutations: All to master (10%)</li>
-<li>Queries: Distributed to 5 read replicas (90%)</li>
-</ul>
-<p>Result: Can scale queries 5x beyond master capacity
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Master database:        Handles mutations
+Read replicas (5 copies): Handle queries
 
+Distribution:
+
+- Mutations: All to master (10%)
+- Queries: Distributed to 5 read replicas (90%)
+
+Result: Can scale queries 5x beyond master capacity
+</code></pre></div>
 <p><strong>Sharding for very large datasets:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Shard by user_id:</p>
-<ul>
-<li>User 1-100K:   Shard A</li>
-<li>User 100K-200K: Shard B</li>
-<li>User 200K-300K: Shard C</li>
-</ul>
-<p>Each shard can independently scale
-Total capacity = sum of all shards
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Shard by user_id:
 
+- User 1-100K:   Shard A
+- User 100K-200K: Shard B
+- User 200K-300K: Shard C
+
+Each shard can independently scale
+Total capacity = sum of all shards
+</code></pre></div>
 <hr />
 <h2 id="10-performance-monitoring">10. Performance Monitoring<a class="headerlink" href="#10-performance-monitoring" title="Permanent link">&para;</a></h2>
 <h3 id="101-key-metrics-to-track">10.1 Key Metrics to Track<a class="headerlink" href="#101-key-metrics-to-track" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query latency:
+<div class="highlight"><pre><span></span><code>Query latency:
   - p50 (typical): target &lt;50ms
   - p95 (most users): target &lt;200ms
-  - p99 (outliers): target &lt;500ms</p>
-<p>Error rate:
+  - p99 (outliers): target &lt;500ms
+
+Error rate:
   - Queries: target &lt;0.1%
   - Mutations: target &lt;0.5%
-  - Subscriptions: target &lt;1%</p>
-<p>Cache efficiency:
+  - Subscriptions: target &lt;1%
+
+Cache efficiency:
   - Hit rate: target &gt;80%
-  - Invalidation rate: track trends</p>
-<p>Database:
+  - Invalidation rate: track trends
+
+Database:
   - Connection pool utilization: target &lt;80%
   - Query time: track trends
-  - Deadlock rate: target &lt;0.1%</p>
-<p>Infrastructure:
+  - Deadlock rate: target &lt;0.1%
+
+Infrastructure:
   - CPU utilization: target 60-80%
   - Memory utilization: target &lt;80%
   - Network: track trends
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="102-performance-alerts">10.2 Performance Alerts<a class="headerlink" href="#102-performance-alerts" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Alert: High query latency
+<div class="highlight"><pre><span></span><code>Alert: High query latency
   Condition: p95 latency &gt; 200ms for 5 minutes
-  Action: Investigate slow queries, check database</p>
-<p>Alert: Cache hit rate dropping
+  Action: Investigate slow queries, check database
+
+Alert: Cache hit rate dropping
   Condition: Hit rate &lt; 70% for 10 minutes
-  Action: Check cache backend, review TTLs</p>
-<p>Alert: High error rate
+  Action: Check cache backend, review TTLs
+
+Alert: High error rate
   Condition: Error rate &gt; 1% for 5 minutes
-  Action: Check error logs, database health</p>
-<p>Alert: Connection pool exhausted
+  Action: Check error logs, database health
+
+Alert: Connection pool exhausted
   Condition: Connection utilization &gt; 95% for 2 minutes
   Action: Increase pool size or add instances
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="103-performance-dashboard">10.3 Performance Dashboard<a class="headerlink" href="#103-performance-dashboard" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌────────────────────────────────────────────────┐
+<div class="highlight"><pre><span></span><code>┌────────────────────────────────────────────────┐
 │ FraiseQL Performance Dashboard                  │
 ├────────────────────────────────────────────────┤
 │                                                  │
@@ -7066,56 +6925,35 @@ Total capacity = sum of all shards
 │ 3. NestedFetch: 85ms    Waiting: 0             │
 │                                                  │
 └────────────────────────────────────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="11-performance-tuning-guide">11. Performance Tuning Guide<a class="headerlink" href="#11-performance-tuning-guide" title="Permanent link">&para;</a></h2>
 <h3 id="111-systematic-tuning-process">11.1 Systematic Tuning Process<a class="headerlink" href="#111-systematic-tuning-process" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>1. Establish baseline
+   - Measure current p50, p95, p99 latency
+   - Measure throughput (req/sec)
+   - Measure error rate
 
-<ol>
-<li>Establish baseline</li>
-<li>Measure current p50, p95, p99 latency</li>
-<li>Measure throughput (req/sec)</li>
-<li>
-<p>Measure error rate</p>
-</li>
-<li>
-<p>Identify bottleneck</p>
-</li>
-<li>Is it overhead (parsing, auth)? → Optimize code</li>
-<li>Is it database? → Add indexes, optimize queries</li>
-<li>Is it network? → Reduce payload, enable compression</li>
-<li>
-<p>Is it memory? → Reduce cache size, GC tuning</p>
-</li>
-<li>
-<p>Apply optimization</p>
-</li>
-<li>Test on staging</li>
-<li>Measure impact</li>
-<li>
-<p>Roll out gradually</p>
-</li>
-<li>
-<p>Validate improvement</p>
-</li>
-<li>Confirm p50/p95/p99 improved</li>
-<li>Check error rate unchanged</li>
-<li>
-<p>Monitor for regressions</p>
-</li>
-<li>
-<p>Repeat</p>
-</li>
-<li>New bottleneck emerges</li>
-<li>Go back to step 2
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
+2. Identify bottleneck
+   - Is it overhead (parsing, auth)? → Optimize code
+   - Is it database? → Add indexes, optimize queries
+   - Is it network? → Reduce payload, enable compression
+   - Is it memory? → Reduce cache size, GC tuning
 
+3. Apply optimization
+   - Test on staging
+   - Measure impact
+   - Roll out gradually
+
+4. Validate improvement
+   - Confirm p50/p95/p99 improved
+   - Check error rate unchanged
+   - Monitor for regressions
+
+5. Repeat
+   - New bottleneck emerges
+   - Go back to step 2
+</code></pre></div>
 <h3 id="112-common-tuning-mistakes">11.2 Common Tuning Mistakes<a class="headerlink" href="#112-common-tuning-mistakes" title="Permanent link">&para;</a></h3>
 <p><strong>❌ DON'T:</strong></p>
 <ul>
@@ -7140,94 +6978,76 @@ Total capacity = sum of all shards
 <hr />
 <h2 id="12-performance-targets">12. Performance Targets<a class="headerlink" href="#12-performance-targets" title="Permanent link">&para;</a></h2>
 <h3 id="121-sla-targets">12.1 SLA Targets<a class="headerlink" href="#121-sla-targets" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query SLA:
+<div class="highlight"><pre><span></span><code>Query SLA:
   p99 latency: &lt;500ms
   Error rate: &lt;0.1%
-  Availability: 99.99%</p>
-<p>Mutation SLA:
+  Availability: 99.99%
+
+Mutation SLA:
   p99 latency: &lt;1 second
   Error rate: &lt;0.5%
-  Availability: 99.95%</p>
-<p>Subscription SLA:
+  Availability: 99.95%
+
+Subscription SLA:
   Event delivery: &lt;100ms (p99)
   Reliability: 99.9%
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="122-performance-budget">12.2 Performance Budget<a class="headerlink" href="#122-performance-budget" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Per query, target allocation:</p>
-<p>Simple query (20 ms budget):
+<div class="highlight"><pre><span></span><code>Per query, target allocation:
+
+Simple query (20 ms budget):
   ├─ Parsing &amp; validation: 0.5ms (2.5%)
   ├─ Authorization: 1ms (5%)
   ├─ Database: 15ms (75%)
   ├─ Response: 3ms (15%)
-  └─ Buffer: 0.5ms</p>
-<p>Complex query (100ms budget):
+  └─ Buffer: 0.5ms
+
+Complex query (100ms budget):
   ├─ Parsing &amp; validation: 1ms (1%)
   ├─ Authorization: 2ms (2%)
   ├─ Database: 80ms (80%)
   ├─ Response: 15ms (15%)
-  └─ Buffer: 2ms</p>
-<p>If database takes &gt;80% of budget, optimize queries first
-```text</p>
-<!-- Code example in TEXT -->
+  └─ Buffer: 2ms
 
+If database takes &gt;80% of budget, optimize queries first
+</code></pre></div>
 <hr />
 <h2 id="13-case-studies">13. Case Studies<a class="headerlink" href="#13-case-studies" title="Permanent link">&para;</a></h2>
 <h3 id="131-case-study-e-commerce-platform">13.1 Case Study: E-Commerce Platform<a class="headerlink" href="#131-case-study-e-commerce-platform" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: 10,000 concurrent users, p95 latency degraded to 800ms</p>
 <p><strong>Investigation:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Traces showed database queries taking 700ms
+<div class="highlight"><pre><span></span><code>Traces showed database queries taking 700ms
 Database analysis: Full table scans on product filters
 Root cause: Missing index on product_category column
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Solution:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>CREATE INDEX idx_product_category ON tb_product(category);</p>
-<p>Result:
+<div class="highlight"><pre><span></span><code>CREATE INDEX idx_product_category ON tb_product(category);
+
+Result:
   Before: 800ms (p95)
   After:  120ms (p95)
   Improvement: 6.7x faster
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="132-case-study-multi-tenant-saas">13.2 Case Study: Multi-Tenant SaaS<a class="headerlink" href="#132-case-study-multi-tenant-saas" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: Cache hit rate declining from 85% to 40%</p>
 <p><strong>Investigation:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Problem: Each customer queries different data
+<div class="highlight"><pre><span></span><code>Problem: Each customer queries different data
 Cache key included user_id
-As customer base grew, each user's queries unique
+As customer base grew, each user&#39;s queries unique
 Cache hit rate = (repeated_queries / total_queries)
 Declining as customer base grew
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Solution:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Identified most popular queries across all customers
+<div class="highlight"><pre><span></span><code>Identified most popular queries across all customers
 Pre-warm cache with these queries
 Added customer education on query patterns
 Result: Hit rate improved to 75% (acceptable for use case)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <p><strong>Document Version</strong>: 1.0.0
 <strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>FraiseQL's performance is engineered through compile-time optimization, deterministic execution, and strategic caching. Predictable performance at scale is achievable.</p>
+<strong>Status</strong>: Complete specification</p>
+<p>FraiseQL's performance is engineered by pushing work into PostgreSQL (<code>v_</code>/<code>tv_</code> views and <code>fn_</code> functions), shaping responses on the hot path, and caching results with cascade invalidation. Predictable performance at scale is achievable.</p>
 
 
 

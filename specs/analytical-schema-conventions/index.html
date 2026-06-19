@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="This document defines naming conventions and patterns for analytical tables in FraiseQL.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/specs/analytical-schema-conventions/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Analytical schema conventions - FraiseQL Documentation</title>
+        <title>Analytical Schema Conventions - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Analytical schema conventions
+              Analytical Schema Conventions
             
           </span>
         </div>
@@ -4835,10 +4837,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fact-table-binding" class="md-nav__link">
+  <a href="#exposing-a-fact-table-through-a-read-view" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fact Table Binding
+        Exposing a Fact Table Through a Read View
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime-auto-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Auto-Aggregation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-aggregating-in-the-view-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Aggregating in the View (PostgreSQL)
       
     </span>
   </a>
@@ -4847,6 +4871,56 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DO ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dont" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DON'T ❌
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-specifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Specifications
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4870,13 +4944,6 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Analytical Schema Conventions
-description: This document defines naming conventions and patterns for analytical tables in FraiseQL.
-keywords: ["format", "compliance", "schema", "protocol", "specification", "standard"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="analytical-schema-conventions">Analytical Schema Conventions<a class="headerlink" href="#analytical-schema-conventions" title="Permanent link">&para;</a></h1>
 <p><strong>Version:</strong> 1.0
 <strong>Status:</strong> Complete
@@ -4902,26 +4969,22 @@ tags: ["documentation", "reference"]</p>
 <li><code>tf_payments</code> - Payment records</li>
 </ul>
 <p><strong>Structure</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tf_sales (
-    id BIGSERIAL PRIMARY KEY,
-    -- Measures (SQL columns)
-    revenue DECIMAL(10,2) NOT NULL,
-    quantity INT NOT NULL,
-    cost DECIMAL(10,2) NOT NULL,
-    -- Dimensions (JSONB)
-    dimensions JSONB NOT NULL,
-    -- Denormalized filters (indexed)
-    customer_id UUID NOT NULL,
-    product_id UUID NOT NULL,
-    occurred_at TIMESTAMPTZ NOT NULL,
-    -- Timestamps
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">BIGSERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Measures (SQL columns)</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cost</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Dimensions (JSONB)</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Denormalized filters (indexed)</span>
+<span class="w">    </span><span class="n">customer_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">product_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">occurred_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Timestamps</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+</code></pre></div>
 <h3 id="pre-aggregated-fact-tables-different-granularity">Pre-Aggregated Fact Tables (Different Granularity)<a class="headerlink" href="#pre-aggregated-fact-tables-different-granularity" title="Permanent link">&para;</a></h3>
 <p><strong>Important</strong>: Pre-aggregated tables are just <strong>fact tables at a different granularity</strong>. Use <code>tf_</code> prefix with a descriptive suffix indicating the granularity.</p>
 <p><strong>Pattern</strong>: <code>tf_&lt;domain&gt;_&lt;granularity&gt;</code> or <code>tf_&lt;domain&gt;_by_&lt;dimension&gt;</code>
@@ -4934,25 +4997,21 @@ tags: ["documentation", "reference"]</p>
 <li><code>tf_api_requests_hourly</code> - Hourly API usage</li>
 </ul>
 <p><strong>Structure</strong> (identical to fact tables):</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Pre-aggregated fact table at daily granularity
-CREATE TABLE tf_sales_daily (
-    id BIGSERIAL PRIMARY KEY,
-    day DATE NOT NULL UNIQUE,  -- Granularity dimension
-    -- Pre-aggregated measures
-    revenue DECIMAL(10,2) NOT NULL,      -- SUM(revenue)
-    quantity INT NOT NULL,               -- SUM(quantity)
-    transaction_count INT NOT NULL,      -- COUNT(*)
-    -- Dimensions (same JSONB pattern as tf_sales)
-    dimensions JSONB NOT NULL,
-    -- Timestamps
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Note</strong>: The legacy <code>ta_</code> prefix is deprecated. Use <code>tf_</code> for all fact tables regardless of granularity.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Pre-aggregated fact table at daily granularity</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tf_sales_daily</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">BIGSERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">day</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Granularity dimension</span>
+<span class="w">    </span><span class="c1">-- Pre-aggregated measures</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- SUM(revenue)</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">               </span><span class="c1">-- SUM(quantity)</span>
+<span class="w">    </span><span class="n">transaction_count</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- COUNT(*)</span>
+<span class="w">    </span><span class="c1">-- Dimensions (same JSONB pattern as tf_sales)</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Timestamps</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+</code></pre></div>
+<p><strong>Note</strong>: Use <code>tf_</code> for all fact tables regardless of granularity. Expose them to GraphQL through a <code>v_</code>/<code>tv_</code> read view (with an <code>id</code> column and a <code>data</code> JSONB column) so they follow the standard query-source conventions.</p>
 <h3 id="dimension-tables-td_">Dimension Tables (td_)<a class="headerlink" href="#dimension-tables-td_" title="Permanent link">&para;</a></h3>
 <p><strong>Prefix</strong>: <code>td_</code> (table dimension)
 <strong>Pattern</strong>: <code>td_&lt;noun&gt;</code>
@@ -4966,20 +5025,16 @@ CREATE TABLE tf_sales_daily (
 <li><code>td_categories</code> - Category taxonomy</li>
 </ul>
 <p><strong>Structure</strong> (regular table, not fact pattern):</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE td_products (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    -- No data JSONB column needed
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">td_products</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">category</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- No data JSONB column needed</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+</code></pre></div>
 <hr />
 <h2 id="column-naming-conventions">Column Naming Conventions<a class="headerlink" href="#column-naming-conventions" title="Permanent link">&para;</a></h2>
 <h3 id="measures-sql-columns">Measures (SQL Columns)<a class="headerlink" href="#measures-sql-columns" title="Permanent link">&para;</a></h3>
@@ -5001,48 +5056,37 @@ CREATE TABLE tf_sales_daily (
 <li>Be specific (<code>revenue</code> not <code>amount</code>, <code>quantity</code> not <code>count</code>)</li>
 </ul>
 <h3 id="dimensions-jsonb-paths">Dimensions (JSONB Paths)<a class="headerlink" href="#dimensions-jsonb-paths" title="Permanent link">&para;</a></h3>
-<p><strong>Column Name</strong>: <code>data</code> (default, configurable)
+<p><strong>Column Name</strong>: <code>dimensions</code> on the fact table (surfaced to GraphQL through the view's <code>data</code> JSONB)
 <strong>Path Pattern</strong>: Snake_case keys in JSONB</p>
 <p><strong>Examples</strong>:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "category": "Electronics",
-  "region": "North America",
-  "product_type": "Laptop",
-  "customer_segment": "Enterprise",
-  "payment_method": "Credit Card",
-  "shipping_method": "Express"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Electronics&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;region&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;North America&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;product_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Laptop&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;customer_segment&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Enterprise&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payment_method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Credit Card&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;shipping_method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Express&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Nested Paths</strong>:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "customer": {
-    "segment": "Enterprise",
-    "industry": "Technology"
-  },
-  "product": {
-    "category": "Electronics",
-    "subcategory": "Computers"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;customer&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;segment&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Enterprise&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;industry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Technology&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;product&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Electronics&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subcategory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Computers&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Access Pattern</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Top-level
-dimensions-&gt;&gt;'category'</p>
-<p>-- Nested
-dimensions#&gt;&gt;'{customer,segment}'
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Top-level</span>
+<span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span>
 
+<span class="c1">-- Nested</span>
+<span class="n">dimensions</span><span class="o">#&gt;&gt;</span><span class="s1">&#39;{customer,segment}&#39;</span>
+</code></pre></div>
 <h3 id="denormalized-filters-indexed-sql-columns">Denormalized Filters (Indexed SQL Columns)<a class="headerlink" href="#denormalized-filters-indexed-sql-columns" title="Permanent link">&para;</a></h3>
 <p><strong>Pattern</strong>: Foreign key or frequently-filtered attribute
 <strong>Purpose</strong>: Fast WHERE filtering (avoid JSONB for high-selectivity filters)</p>
@@ -5055,15 +5099,12 @@ dimensions#&gt;&gt;'{customer,segment}'
 <li><code>priority INT</code> - Priority level</li>
 </ul>
 <p><strong>Why Denormalized?</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- ✅ FAST: Indexed SQL column
-WHERE customer_id = 'uuid-123'  -- Uses B-tree index</p>
-<p>-- ❌ SLOW: JSONB filter
-WHERE dimensions-&gt;&gt;'customer_id' = 'uuid-123'  -- GIN index slower for exact match
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- ✅ FAST: Indexed SQL column</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span><span class="w">  </span><span class="c1">-- Uses B-tree index</span>
 
+<span class="c1">-- ❌ SLOW: JSONB filter</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span><span class="w">  </span><span class="c1">-- GIN index slower for exact match</span>
+</code></pre></div>
 <hr />
 <h2 id="etl-responsibility">ETL Responsibility<a class="headerlink" href="#etl-responsibility" title="Permanent link">&para;</a></h2>
 <p><strong>Critical</strong>: FraiseQL does NOT manage ETL. DBA/data team handles:</p>
@@ -5074,65 +5115,59 @@ WHERE dimensions-&gt;&gt;'customer_id' = 'uuid-123'  -- GIN index slower for exa
 <li><strong>Refreshing aggregate tables</strong> via scheduled jobs</li>
 </ol>
 <p><strong>Example ETL Flow</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Step 1: Staging table receives raw data
-INSERT INTO staging_sales (transaction_id, product_id, customer_id, revenue)
-VALUES ('txn-001', 'prod-123', 'cust-456', 99.99);</p>
-<p>-- Step 2: ETL enriches and denormalizes
-INSERT INTO tf_sales (
-    id, revenue, quantity, cost,
-    dimensions,  -- ← Denormalized from td_products, td_customers
-    customer_id, product_id, occurred_at
-)
-SELECT
-    gen_random_uuid(),
-    s.revenue, s.quantity, s.cost,
-    jsonb_build_object(
-        'product_category', p.category,
-        'product_name', p.name,
-        'customer_segment', c.segment,
-        'customer_region', c.region
-    ) AS dimensions,  -- ← Denormalization happens here
-    s.customer_id, s.product_id, s.occurred_at
-FROM staging_sales s
-JOIN td_products p ON s.product_id = p.id  -- ← ETL time join
-JOIN td_customers c ON s.customer_id = c.id;</p>
-<p>-- Step 3: Clean staging
-TRUNCATE staging_sales;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Step 1: Staging table receives raw data</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">staging_sales</span><span class="w"> </span><span class="p">(</span><span class="n">transaction_id</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;txn-001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;prod-123&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cust-456&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">.</span><span class="mi">99</span><span class="p">);</span>
 
+<span class="c1">-- Step 2: ETL enriches and denormalizes</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="p">,</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ← Denormalized from td_products, td_customers</span>
+<span class="w">    </span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">cost</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;product_category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;customer_segment&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">segment</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;customer_region&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">region</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">dimensions</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ← Denormalization happens here</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">staging_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">td_products</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">product_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w">  </span><span class="c1">-- ← ETL time join</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">td_customers</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+
+<span class="c1">-- Step 3: Clean staging</span>
+<span class="k">TRUNCATE</span><span class="w"> </span><span class="n">staging_sales</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="index-recommendations">Index Recommendations<a class="headerlink" href="#index-recommendations" title="Permanent link">&para;</a></h2>
 <h3 id="fact-tables">Fact Tables<a class="headerlink" href="#fact-tables" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Denormalized filter columns (B-tree)
-CREATE INDEX idx_sales_customer ON tf_sales(customer_id);
-CREATE INDEX idx_sales_product ON tf_sales(product_id);
-CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
-CREATE INDEX idx_sales_status ON tf_sales(status);</p>
-<p>-- JSONB dimensions (GIN, PostgreSQL only)
-CREATE INDEX idx_sales_dimensions_gin ON tf_sales USING GIN(dimensions);</p>
-<p>-- Specific JSONB path (faster than GIN for exact lookups)
-CREATE INDEX idx_sales_category ON tf_sales ((dimensions-&gt;&gt;'category'));</p>
-<p>-- Composite indexes for common query patterns
-CREATE INDEX idx_sales_customer_occurred
-    ON tf_sales(customer_id, occurred_at DESC);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Denormalized filter columns (B-tree)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_customer</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">customer_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_product</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">product_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_occurred</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
 
+<span class="c1">-- JSONB dimensions (GIN, PostgreSQL only)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_dimensions_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">dimensions</span><span class="p">);</span>
+
+<span class="c1">-- Specific JSONB path (faster than GIN for exact lookups)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_category</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">((</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">));</span>
+
+<span class="c1">-- Composite indexes for common query patterns</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_customer_occurred</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+</code></pre></div>
 <h3 id="pre-aggregated-fact-tables">Pre-Aggregated Fact Tables<a class="headerlink" href="#pre-aggregated-fact-tables" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Granularity dimension (unique)
-CREATE UNIQUE INDEX idx_sales_daily_day ON tf_sales_daily(day);</p>
-<p>-- JSONB dimensions (if still grouping within aggregates)
-CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensions);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Granularity dimension (unique)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_daily_day</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales_daily</span><span class="p">(</span><span class="k">day</span><span class="p">);</span>
 
+<span class="c1">-- JSONB dimensions (if still grouping within aggregates)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_daily_dimensions_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales_daily</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">dimensions</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Don't Over-Index</strong>:</p>
 <ul>
 <li>Every index slows INSERT/UPDATE</li>
@@ -5141,83 +5176,93 @@ CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensio
 </ul>
 <hr />
 <h2 id="fraiseql-schema-definition">FraiseQL Schema Definition<a class="headerlink" href="#fraiseql-schema-definition" title="Permanent link">&para;</a></h2>
-<h3 id="fact-table-binding">Fact Table Binding<a class="headerlink" href="#fact-table-binding" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import schema, type, query, ID</p>
-<p>@schema.type
-class Sales:
-    id: ID
-    # Measures (SQL columns)
-    revenue: float
-    quantity: int
-    cost: float
-    # Dimensions (from dimensions JSONB)
-    category: str            # dimensions-&gt;&gt;'category'
-    region: str              # dimensions-&gt;&gt;'region'
-    product_name: str        # dimensions-&gt;&gt;'product_name'
-    customer_segment: str    # dimensions-&gt;&gt;'customer_segment'
-    # Denormalized filters
-    customer_id: UUID  # UUID v4 for GraphQL ID
-    product_id: UUID  # UUID v4 for GraphQL ID
-    occurred_at: str</p>
-<p>@schema.query
-def sales_aggregate(
-    where: "SalesWhereInput" = None,
-    groupBy: "SalesGroupByInput" = None,
-    having: "SalesHavingInput" = None
-) -&gt; list["SalesAggregate"]:
-    """Auto-generated aggregate query."""
-    pass</p>
-<h1 id="mark-as-fact-table">Mark as fact table<a class="headerlink" href="#mark-as-fact-table" title="Permanent link">&para;</a></h1>
-<p>schema.bind("Sales", "view", "tf_sales", fact_table=True)
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="exposing-a-fact-table-through-a-read-view">Exposing a Fact Table Through a Read View<a class="headerlink" href="#exposing-a-fact-table-through-a-read-view" title="Permanent link">&para;</a></h3>
+<p>FraiseQL queries fact tables through a <code>v_</code>/<code>tv_</code> read view, never the <code>tf_</code> table
+directly. The view exposes a public <code>id</code> column plus a <code>data</code> JSONB column built with
+<code>jsonb_build_object(...)</code>, alongside any measure and dimension columns you want to
+aggregate. Define that view in SQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">cost</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">product_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">         </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="w">     </span><span class="k">AS</span><span class="w"> </span><span class="n">product_name</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_segment&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_segment</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;cost&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">cost</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;region&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;customer_segment&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_segment&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;occurred_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
+<p>Then bind a <code>@fraiseql.type</code> to that view and write a <code>@fraiseql.query</code> resolver that
+reads it through the CQRS repository:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
 
-<h3 id="compiler-behavior">Compiler Behavior<a class="headerlink" href="#compiler-behavior" title="Permanent link">&para;</a></h3>
-<p>When <code>fact_table=True</code>:</p>
-<ol>
-<li><strong>Introspect Table</strong>: Detect measures, <code>data</code> column, filters</li>
-<li><strong>Generate Aggregate Types</strong>:</li>
-<li><code>SalesAggregate</code> - Result type with grouped dimensions + aggregated measures</li>
-<li><code>SalesGroupByInput</code> - Dimension paths + temporal buckets</li>
-<li><code>SalesHavingInput</code> - Aggregate filters</li>
-<li><strong>Generate Query</strong>: <code>sales_aggregate(where, groupBy, having)</code></li>
-</ol>
-<h3 id="generated-graphql-postgresql">Generated GraphQL (PostgreSQL)<a class="headerlink" href="#generated-graphql-postgresql" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type SalesAggregate {
-  # Grouped dimensions (from dimensions JSONB)
-  category: String
-  region: String
-  product_name: String
-  occurred_at_day: Date
-  occurred_at_month: Date</p>
-<p># Aggregated measures (from SQL columns)
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  quantity_sum: Int
-  quantity_avg: Int
-}</p>
-<p>input SalesGroupByInput {
-  category: Boolean
-  region: Boolean
-  product_name: Boolean
-  customer_segment: Boolean
-  occurred_at_day: Boolean
-  occurred_at_week: Boolean
-  occurred_at_month: Boolean
-}</p>
-<p>input SalesHavingInput {
-  revenue_sum_gt: Float
-  revenue_avg_gte: Float
-  count_eq: Int
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sales&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sales</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="c1"># Measures (SQL columns)</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">cost</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="c1"># Dimensions (from dimensions JSONB, surfaced as view columns)</span>
+    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># dimensions-&gt;&gt;&#39;category&#39;</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># dimensions-&gt;&gt;&#39;region&#39;</span>
+    <span class="n">product_name</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># dimensions-&gt;&gt;&#39;product_name&#39;</span>
+    <span class="n">customer_segment</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># dimensions-&gt;&gt;&#39;customer_segment&#39;</span>
+    <span class="c1"># Denormalized filters</span>
+    <span class="n">customer_id</span><span class="p">:</span> <span class="n">UUID</span>
+    <span class="n">product_id</span><span class="p">:</span> <span class="n">UUID</span>
+    <span class="n">occurred_at</span><span class="p">:</span> <span class="nb">str</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sales</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Sales</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read sales rows from the v_sales view.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_sales&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="runtime-auto-aggregation">Runtime Auto-Aggregation<a class="headerlink" href="#runtime-auto-aggregation" title="Permanent link">&para;</a></h3>
+<p>There is no compile step and no <code>fact_table=True</code> flag. When a GraphQL query selects
+aggregate fields on a view-backed type, FraiseQL derives the <code>GROUP BY</code> and aggregate
+SQL <strong>at runtime</strong> and executes it directly against your <code>v_</code>/<code>tv_</code> view.</p>
+<p>The runtime auto-aggregation allowlist is:</p>
+<p><code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MIN</code>, <code>MAX</code>, <code>ARRAY_AGG</code>, <code>STRING_AGG</code>, <code>BOOL_AND</code>,
+<code>BOOL_OR</code>, <code>JSON_AGG</code>, <code>JSONB_AGG</code>.</p>
+<p><code>STDDEV</code> and <code>VARIANCE</code> are <strong>not</strong> runtime-derived. If you need them, compute them with
+raw SQL inside the view (they are valid PostgreSQL aggregates). The same applies to any
+<code>GROUP BY</code> / <code>HAVING</code> / <code>FILTER (WHERE …)</code> shaping you want baked into the read view.</p>
+<h3 id="pre-aggregating-in-the-view-postgresql">Pre-Aggregating in the View (PostgreSQL)<a class="headerlink" href="#pre-aggregating-in-the-view-postgresql" title="Permanent link">&para;</a></h3>
+<p>For rollups, write the <code>GROUP BY</code> directly in the view SQL — temporal bucketing with
+<code>DATE_TRUNC</code>, <code>HAVING</code> filters on aggregates, and grouping on dimension columns are all
+standard PostgreSQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_by_day</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">date</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">              </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w">                </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                             </span><span class="k">AS</span><span class="w"> </span><span class="n">transaction_count</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w">                         </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w">                         </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span><span class="w">                        </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity_sum</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="do">DO ✅<a class="headerlink" href="#do" title="Permanent link">&para;</a></h3>
@@ -5225,10 +5270,11 @@ def sales_aggregate(
 <li>Use <code>tf_</code> prefix for all fact tables (any granularity)</li>
 <li>Use <code>td_</code> prefix for dimension tables (ETL reference data)</li>
 <li>Store measures as SQL columns (fast aggregation)</li>
-<li>Store dimensions in <code>data</code> JSONB (flexibility)</li>
+<li>Store dimensions in the <code>dimensions</code> JSONB column (flexibility)</li>
+<li>Expose fact tables to GraphQL through a <code>v_</code>/<code>tv_</code> read view (with an <code>id</code> and a <code>data</code> JSONB column)</li>
 <li>Index denormalized filter columns</li>
-<li>Create pre-aggregated fact tables for common query patterns</li>
-<li>Use temporal bucketing for time-series analysis</li>
+<li>Create pre-aggregated fact tables (or pre-aggregating views) for common query patterns</li>
+<li>Use temporal bucketing (<code>DATE_TRUNC</code>) for time-series analysis</li>
 <li>Name pre-aggregated tables clearly: <code>tf_sales_daily</code>, <code>tf_events_monthly</code></li>
 </ul>
 <h3 id="dont">DON'T ❌<a class="headerlink" href="#dont" title="Permanent link">&para;</a></h3>
@@ -5254,6 +5300,9 @@ def sales_aggregate(
 
 
 
+
+  
+  
 
 
 

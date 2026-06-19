@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL provides a comprehensive observability model covering three pillars - metrics, logs, and traces - for PostgreSQL-backed GraphQL APIs running on FastAPI.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/observability/observability-model/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Observability Model - FraiseQL Documentation</title>
+        <title>FraiseQL Observability Model: Metrics, Logging, and Tracing - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting" class="md-skip">
+        <a href="#fraiseql-observability-model-metrics-logging-and-tracing" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Observability Model
+              FraiseQL Observability Model: Metrics, Logging, and Tracing
             
           </span>
         </div>
@@ -1839,10 +1841,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#13-custom-metrics-application-defined" class="md-nav__link">
+  <a href="#13-custom-business-metrics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.3 Custom Metrics (Application-Defined)
+        1.3 Custom Business Metrics
       
     </span>
   </a>
@@ -1850,10 +1852,471 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#14-metric-export-formats" class="md-nav__link">
+  <a href="#14-metric-export-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.4 Metric Export Formats
+        1.4 Metric Export Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-querying-metrics-in-prometheus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Querying Metrics in Prometheus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-structured-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Structured Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Structured Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-log-levels-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Log Levels &amp; Categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-security-audit-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Security Audit Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-example-log-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Example Log Entries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-distributed-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Distributed Tracing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Distributed Tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-trace-context-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Trace Context Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-w3c-trace-context-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 W3C Trace Context Headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-span-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Span Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sampling-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Sampling Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-trace-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Trace Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-alerting-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Alerting Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Alerting Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-example-prometheus-alert-rules-alertsyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Example Prometheus Alert Rules (alerts.yml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-application-specific-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Application-Specific Alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-alert-routing-notification-alertmanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Alert Routing &amp; Notification (Alertmanager)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-health-checks-readiness-probes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Health Checks &amp; Readiness Probes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Health Checks &amp; Readiness Probes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-built-in-health-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Built-in Health Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-composable-health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Composable Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-kubernetes-probes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Kubernetes Probes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-query-performance-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Query Performance Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Query Performance Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-pg_stat_statements-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 pg_stat_statements Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-analyzing-slow-queries-with-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Analyzing Slow Queries with EXPLAIN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-slow-query-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Slow Query Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-observability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Observability Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Observability Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-putting-it-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Putting It Together
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-dashboard-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Dashboard Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Dashboard Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-grafana-dashboard-query-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Grafana Dashboard: Query Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-grafana-dashboard-system-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Grafana Dashboard: System Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Troubleshooting Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-using-traces-to-debug-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Using Traces to Debug Slow Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-using-logs-to-debug-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Using Logs to Debug Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-observability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Observability Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-using-traces-effectively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Using Traces Effectively
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-interpreting-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Interpreting Alerts
       
     </span>
   </a>
@@ -4868,10 +5331,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#13-custom-metrics-application-defined" class="md-nav__link">
+  <a href="#13-custom-business-metrics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.3 Custom Metrics (Application-Defined)
+        1.3 Custom Business Metrics
       
     </span>
   </a>
@@ -4879,10 +5342,471 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#14-metric-export-formats" class="md-nav__link">
+  <a href="#14-metric-export-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.4 Metric Export Formats
+        1.4 Metric Export Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-querying-metrics-in-prometheus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Querying Metrics in Prometheus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-structured-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Structured Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Structured Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-log-levels-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Log Levels &amp; Categories
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-security-audit-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Security Audit Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-example-log-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Example Log Entries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-distributed-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Distributed Tracing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Distributed Tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-trace-context-propagation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Trace Context Propagation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-w3c-trace-context-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 W3C Trace Context Headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-span-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Span Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-sampling-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Sampling Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-trace-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Trace Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-alerting-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Alerting Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Alerting Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-example-prometheus-alert-rules-alertsyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Example Prometheus Alert Rules (alerts.yml)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-application-specific-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Application-Specific Alerts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-alert-routing-notification-alertmanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Alert Routing &amp; Notification (Alertmanager)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-health-checks-readiness-probes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Health Checks &amp; Readiness Probes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Health Checks &amp; Readiness Probes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-built-in-health-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Built-in Health Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-composable-health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Composable Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-kubernetes-probes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Kubernetes Probes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-query-performance-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Query Performance Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Query Performance Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-pg_stat_statements-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 pg_stat_statements Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-analyzing-slow-queries-with-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Analyzing Slow Queries with EXPLAIN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-slow-query-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Slow Query Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-observability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Observability Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Observability Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-putting-it-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Putting It Together
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-configuration-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Configuration Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-dashboard-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Dashboard Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Dashboard Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-grafana-dashboard-query-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Grafana Dashboard: Query Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-grafana-dashboard-system-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Grafana Dashboard: System Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-troubleshooting-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Troubleshooting Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Troubleshooting Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-using-traces-to-debug-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Using Traces to Debug Slow Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-using-logs-to-debug-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Using Logs to Debug Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-observability-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Observability Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-using-traces-effectively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Using Traces Effectively
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-interpreting-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Interpreting Alerts
       
     </span>
   </a>
@@ -4914,1391 +5838,744 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting
-description: FraiseQL provides a <strong>comprehensive observability model</strong> covering three pillars:
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting">FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting<a class="headerlink" href="#fraiseql-observability-model-comprehensive-monitoring-tracing-and-alerting" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> January 2026
-<strong>Status:</strong> Complete System Specification
-<strong>Audience:</strong> Operations engineers, SRE teams, platform architects, application developers</p>
+<h1 id="fraiseql-observability-model-metrics-logging-and-tracing">FraiseQL Observability Model: Metrics, Logging, and Tracing<a class="headerlink" href="#fraiseql-observability-model-metrics-logging-and-tracing" title="Permanent link">&para;</a></h1>
+<p><strong>Audience:</strong> Operations engineers, SRE teams, platform architects, application developers</p>
 <hr />
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides a <strong>comprehensive observability model</strong> covering three pillars:</p>
+<p>FraiseQL provides observability across three pillars:</p>
 <ol>
-<li><strong>Metrics</strong> — Quantitative measurements (queries/second, latency, errors)</li>
-<li><strong>Logs</strong> — Structured event records (per-request, debug, errors)</li>
-<li><strong>Traces</strong> — Distributed request flow (end-to-end execution path)</li>
+<li><strong>Metrics</strong> — Quantitative measurements (queries/second, latency, errors) exposed in Prometheus format.</li>
+<li><strong>Logs</strong> — Structured event records (per-request, debug, errors), including security audit events.</li>
+<li><strong>Traces</strong> — Distributed request flow via OpenTelemetry (end-to-end execution path).</li>
 </ol>
-<p>All observability data includes <strong>rich context</strong> (user ID, query plan, authorization rules, database engine, cache status) enabling root-cause analysis without excessive debugging.</p>
-<p><strong>Core principle</strong>: Observable by default. Every operation produces telemetry; zero configuration needed for basic observability.</p>
+<p>All observability is built into the FastAPI application FraiseQL serves. You opt in with a few setup calls:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span><span class="p">,</span> <span class="n">MetricsConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_tracing</span><span class="p">,</span> <span class="n">TracingConfig</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span><span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Core principle</strong>: Observable by default. Metrics, health endpoints, and tracing hooks are part of the framework; you wire them in once and they instrument every operation.</p>
 <hr />
 <h2 id="1-metrics-framework">1. Metrics Framework<a class="headerlink" href="#1-metrics-framework" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a Prometheus integration in <code>fraiseql.monitoring</code>. Calling
+<code>setup_metrics(app, config)</code> adds the metrics middleware and a <code>/metrics</code>
+endpoint (default path) that serves the standard Prometheus exposition format.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span><span class="p">,</span> <span class="n">MetricsConfig</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">MetricsConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>        <span class="c1"># prefix for every metric name</span>
+        <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span>     <span class="c1"># Prometheus scrape endpoint</span>
+        <span class="n">exclude_paths</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span> <span class="s2">&quot;/ready&quot;</span><span class="p">},</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>setup_metrics</code> returns a <code>FraiseQLMetrics</code> instance. You can retrieve the
+global instance later with <code>get_metrics()</code>.</p>
 <h3 id="11-metric-categories">1.1 Metric Categories<a class="headerlink" href="#11-metric-categories" title="Permanent link">&para;</a></h3>
-<p>FraiseQL produces metrics across five dimensions:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─────────────────────────┐
-│ Operation Metrics       │ Queries/second, mutations/second, subscriptions active
+<p>The built-in <code>FraiseQLMetrics</code> collector covers these dimensions:</p>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────┐
+│ Operation Metrics       │ GraphQL queries/mutations counted by type &amp; name
 ├─────────────────────────┤
-│ Latency Metrics         │ Query duration, mutation duration, database query time
+│ Latency Metrics         │ Query/mutation/DB-query duration histograms
 ├─────────────────────────┤
-│ Error Metrics           │ Error rate by code, error category distribution
+│ Error Metrics           │ Errors by error_type, error_code, operation
 ├─────────────────────────┤
-│ Resource Metrics        │ Database connections, query memory, cache size
+│ Resource Metrics        │ Active/idle/total DB connections, response time
 ├─────────────────────────┤
-│ Business Metrics        │ Custom defined by application (user signups, revenue)
+│ Business Metrics        │ Custom prometheus_client Counters/Gauges you define
 └─────────────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="12-core-metrics-always-available">1.2 Core Metrics (Always Available)<a class="headerlink" href="#12-core-metrics-always-available" title="Permanent link">&para;</a></h3>
-<p><strong>1.2.1 Query Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_query_requests_total
-  {
-    operation_name="GetUserPosts",
-    status="success",     # success, error, timeout
-    error_code="",        # Empty if success
-    database="postgresql",
-    cache_hit=true
-  }
-  5000  # 5000 queries in this time window</p>
-<p>fraiseql_query_duration_seconds
-  {
-    operation_name="GetUserPosts",
-    quantile="p50"  # p50, p95, p99, p99.9
-  }
-  0.045  # 45ms</p>
-<p>fraiseql_query_duration_seconds
-  {
-    operation_name="GetUserPosts",
-    quantile="p99"
-  }
-  0.250  # 250ms</p>
-<p>fraiseql_query_database_time_seconds
-  {
-    operation_name="GetUserPosts"
-  }
-  0.035  # Database query took 35ms out of 45ms total</p>
-<p>fraiseql_query_rows_returned
-  {
-    operation_name="GetUserPosts"
-  }
-  1500  # Average rows per query
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>With <code>namespace="fraiseql"</code> (the default), the collector emits the following
+series.</p>
+<p><strong>1.2.1 GraphQL Query Metrics</strong></p>
+<div class="highlight"><pre><span></span><code>fraiseql_graphql_queries_total{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 5000
+fraiseql_graphql_query_duration_seconds_bucket{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;,le=&quot;0.05&quot;} 4500
+fraiseql_graphql_query_duration_seconds_sum{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 225
+fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 5000
+fraiseql_graphql_queries_success{operation_type=&quot;query&quot;} 4980
+fraiseql_graphql_queries_errors{operation_type=&quot;query&quot;} 20
+</code></pre></div>
 <p><strong>1.2.2 Mutation Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_mutation_requests_total
-  {
-    operation_name="CreatePost",
-    status="success",
-    database="postgresql"
-  }
-  250  # 250 mutations this window</p>
-<p>fraiseql_mutation_duration_seconds
-  {
-    operation_name="CreatePost",
-    quantile="p95"
-  }
-  0.150  # 150ms</p>
-<p>fraiseql_mutation_rows_affected
-  {
-    operation_name="CreatePost"
-  }
-  1  # Rows modified</p>
-<p>fraiseql_mutation_deadlock_retries
-  {
-    operation_name="UpdatePost"
-  }
-  12  # 12 deadlock retries in this window
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>1.2.3 Subscription Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_subscriptions_active
-  {
-    subscription_name="OnPostCreated",
-    database="postgresql"
-  }
-  450  # 450 active subscriptions</p>
-<p>fraiseql_subscription_events_published
-  {
-    subscription_name="OnPostCreated",
-    status="delivered"  # delivered, dropped, failed
-  }
-  15000  # 15K events delivered this window</p>
-<p>fraiseql_subscription_event_delay_seconds
-  {
-    subscription_name="OnPostCreated",
-    quantile="p95"
-  }
-  0.050  # 50ms event delay p95</p>
-<p>fraiseql_subscription_buffer_utilization
-  {
-    subscription_name="OnPostCreated"
-  }
-  0.45  # 45% of buffer used (1000 event capacity)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>1.2.4 Authorization Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_authorization_checks_total
-  {
-    result="allowed",    # allowed, denied
-    rule_type="owner_only"
-  }
-  45000  # 45K authorization checks</p>
-<p>fraiseql_authorization_duration_seconds
-  {
-    rule_type="owner_only",
-    quantile="p95"
-  }
-  0.005  # 5ms for authorization check</p>
-<p>fraiseql_authorization_denials
-  {
-    reason="insufficient_role",  # insufficient_role, row_level_denied
-    rule_type="admin_only"
-  }
-  15  # 15 denials this window
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>1.2.5 Cache Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_cache_requests_total
-  {
-    result="hit",    # hit, miss, expire
-    operation_name="GetUserPosts"
-  }
-  3500  # 3500 cache hits</p>
-<p>fraiseql_cache_requests_total
-  {
-    result="miss",
-    operation_name="GetUserPosts"
-  }
-  500   # 500 cache misses (87% hit rate)</p>
-<p>fraiseql_cache_size_bytes
-  {
-    cache_backend="redis"
-  }
-  536870912  # 512MB used</p>
-<p>fraiseql_cache_ttl_max_seconds
-  {}
-  300  # Max TTL 5 minutes
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>1.2.6 Database Connection Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_db_connections_active
-  {
-    database="postgresql",
-    pool_size=50
-  }
-  43  # 43 connections active</p>
-<p>fraiseql_db_connection_wait_time_seconds
-  {
-    database="postgresql",
-    quantile="p95"
-  }
-  0.001  # 1ms max wait for connection</p>
-<p>fraiseql_db_query_rows_scanned
-  {
-    operation_name="GetUserPosts"
-  }
-  1000  # Scanned 1000 rows to return 20</p>
-<p>fraiseql_db_indexes_used
-  {
-    operation_name="GetUserPosts",
-    index="idx_post_published"
-  }
-  1  # Index was used (1 = yes)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>1.2.7 Error Metrics</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_errors_total
-  {
-    error_code="E_DB_QUERY_TIMEOUT_302",
-    category="DATABASE_ERROR"
-  }
-  25  # 25 timeout errors this window</p>
-<p>fraiseql_errors_total
-  {
-    error_code="E_AUTH_PERMISSION_401",
-    category="AUTHORIZATION_ERROR"
-  }
-  500  # 500 authorization denials</p>
-<p>fraiseql_errors_total
-  {
-    error_code="E_VALIDATION_INVALID_TYPE_103",
-    category="VALIDATION_ERROR"
-  }
-  80   # 80 input validation errors
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="13-custom-metrics-application-defined">1.3 Custom Metrics (Application-Defined)<a class="headerlink" href="#13-custom-metrics-application-defined" title="Permanent link">&para;</a></h3>
-<p>Applications can define custom business metrics:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    id: ID
-    email: str</p>
-<div class="highlight"><pre><span></span><code>@FraiseQL.metric(name=&quot;user_created&quot;, type=&quot;counter&quot;)
-def track_creation(self):
-    &quot;&quot;&quot;Track when users are created&quot;&quot;&quot;
-    # Automatically incremented on mutation
+<div class="highlight"><pre><span></span><code>fraiseql_graphql_mutations_total{mutation_name=&quot;create_user&quot;} 250
+fraiseql_graphql_mutation_duration_seconds_sum{mutation_name=&quot;create_user&quot;} 37.5
+fraiseql_graphql_mutation_duration_seconds_count{mutation_name=&quot;create_user&quot;} 250
+fraiseql_graphql_mutations_success{mutation_name=&quot;create_user&quot;,result_type=&quot;CreateUserSuccess&quot;} 240
+fraiseql_graphql_mutations_errors{mutation_name=&quot;create_user&quot;,error_type=&quot;CreateUserError&quot;} 10
 </code></pre></div>
-<p>@FraiseQL.type
-class Order:
-    id: ID
-    total: float</p>
-<div class="highlight"><pre><span></span><code>@FraiseQL.metric(name=&quot;order_revenue&quot;, type=&quot;gauge&quot;, value_field=&quot;total&quot;)
-def track_revenue(self):
-    &quot;&quot;&quot;Track total order revenue&quot;&quot;&quot;
-    # Value automatically updated
+<p><strong>1.2.3 Database Metrics</strong></p>
+<div class="highlight"><pre><span></span><code>fraiseql_db_connections_active 43
+fraiseql_db_connections_idle 5
+fraiseql_db_connections_total 50
+
+fraiseql_db_queries_total{query_type=&quot;select&quot;,table_name=&quot;v_user&quot;} 5000
+fraiseql_db_query_duration_seconds_sum{query_type=&quot;select&quot;} 175
+fraiseql_db_query_duration_seconds_count{query_type=&quot;select&quot;} 5000
 </code></pre></div>
-<p>@FraiseQL.resolver
-def custom_metric_handler():
-    """Define custom metrics for business logic"""
-    FraiseQL.metrics.gauge(
-        name="active_users",
-        value=count_active_users()
-    )
-    FraiseQL.metrics.gauge(
-        name="pending_orders",
-        value=count_pending_orders()
-    )
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>1.2.4 Cache Metrics</strong></p>
+<p>These reflect FraiseQL's PostgreSQL-backed result cache
+(<code>fraiseql.caching</code>), labelled by <code>cache_type</code>:</p>
+<div class="highlight"><pre><span></span><code>fraiseql_cache_hits_total{cache_type=&quot;result&quot;} 3500
+fraiseql_cache_misses_total{cache_type=&quot;result&quot;} 500   # ~87% hit rate
+</code></pre></div>
+<p><strong>1.2.5 Error Metrics</strong></p>
+<div class="highlight"><pre><span></span><code>fraiseql_errors_total{error_type=&quot;QueryTimeout&quot;,error_code=&quot;DB_TIMEOUT&quot;,operation=&quot;users&quot;} 25
+fraiseql_errors_total{error_type=&quot;PermissionError&quot;,error_code=&quot;FORBIDDEN&quot;,operation=&quot;admin_panel&quot;} 500
+fraiseql_errors_total{error_type=&quot;ValidationError&quot;,error_code=&quot;INVALID_TYPE&quot;,operation=&quot;create_user&quot;} 80
+</code></pre></div>
+<p><strong>1.2.6 HTTP &amp; Response Time Metrics</strong></p>
+<p>The metrics middleware records request-level series for every non-excluded path:</p>
+<div class="highlight"><pre><span></span><code>fraiseql_http_requests_total{method=&quot;POST&quot;,endpoint=&quot;/graphql&quot;,status=&quot;200&quot;} 8500
+fraiseql_http_request_duration_seconds_sum{method=&quot;POST&quot;,endpoint=&quot;/graphql&quot;} 382.5
+fraiseql_http_request_duration_seconds_count{method=&quot;POST&quot;,endpoint=&quot;/graphql&quot;} 8500
+fraiseql_response_time_seconds_sum 382.5
+fraiseql_response_time_seconds_count 8500
+</code></pre></div>
+<h3 id="13-custom-business-metrics">1.3 Custom Business Metrics<a class="headerlink" href="#13-custom-business-metrics" title="Permanent link">&para;</a></h3>
+<p>There is no metric decorator. Custom business metrics use standard
+<code>prometheus_client</code> objects that you define once and update inside your
+resolvers. Register them against the same registry the collector uses, or
+the default registry, so they are scraped from the <code>/metrics</code> endpoint.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Gauge</span>
 
-<p><strong>Custom metric example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>fraiseql_custom_user_created
-  {}
-  1250  # 1250 users created</p>
-<p>fraiseql_custom_order_revenue
-  {
-    currency="USD"
-  }
-  450000.50  # $450K in orders
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Define business metrics once, at module scope.</span>
+<span class="n">USERS_CREATED</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
+    <span class="s2">&quot;app_users_created_total&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Number of users created&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">ORDER_REVENUE</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
+    <span class="s2">&quot;app_order_revenue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Total order revenue in USD&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
-<h3 id="14-metric-export-formats">1.4 Metric Export Formats<a class="headerlink" href="#14-metric-export-formats" title="Permanent link">&para;</a></h3>
-<p><strong>Prometheus format (default):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<h1 id="help-fraiseql_query_requests_total-total-queries-executed">HELP fraiseql_query_requests_total Total queries executed<a class="headerlink" href="#help-fraiseql_query_requests_total-total-queries-executed" title="Permanent link">&para;</a></h1>
-<h1 id="type-fraiseql_query_requests_total-counter">TYPE fraiseql_query_requests_total counter<a class="headerlink" href="#type-fraiseql_query_requests_total-counter" title="Permanent link">&para;</a></h1>
-<p>fraiseql_query_requests_total{operation_name="GetUserPosts",status="success"} 5000</p>
-<h1 id="help-fraiseql_query_duration_seconds-query-execution-duration">HELP fraiseql_query_duration_seconds Query execution duration<a class="headerlink" href="#help-fraiseql_query_duration_seconds-query-execution-duration" title="Permanent link">&para;</a></h1>
-<h1 id="type-fraiseql_query_duration_seconds-histogram">TYPE fraiseql_query_duration_seconds histogram<a class="headerlink" href="#type-fraiseql_query_duration_seconds-histogram" title="Permanent link">&para;</a></h1>
-<p>fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.01"} 500
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.05"} 4500
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.1"} 4800
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="+Inf"} 5000
-fraiseql_query_duration_seconds_sum{operation_name="GetUserPosts"} 225
-fraiseql_query_duration_seconds_count{operation_name="GetUserPosts"} 5000
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
 
-<p><strong>JSON export:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "metrics": [
-    {
-      "name": "fraiseql_query_requests_total",
-      "value": 5000,
-      "labels": {
-        "operation_name": "GetUserPosts",
-        "status": "success"
-      },
-      "timestamp": "2026-01-15T10:30:45Z"
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
+    <span class="n">USERS_CREATED</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>                       <span class="c1"># update business metric</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<p>For computed fields, attach a resolver with <code>@fraiseql.field</code> and update a
+gauge inside it:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
 
-<p><strong>CloudWatch format (AWS):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "MetricData": [
-    {
-      "MetricName": "FraiseQLQueryRequests",
-      "Dimensions": [
-        {"Name": "OperationName", "Value": "GetUserPosts"}
-      ],
-      "Value": 5000,
-      "Unit": "Count"
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">revenue_bucket</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">ORDER_REVENUE</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;high&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total</span> <span class="o">&gt;</span> <span class="mi">10_000</span> <span class="k">else</span> <span class="s2">&quot;normal&quot;</span>
+</code></pre></div>
+<p>Custom metrics appear in the same Prometheus output:</p>
+<div class="highlight"><pre><span></span><code>app_users_created_total 1250
+app_order_revenue 450000.5
+</code></pre></div>
+<h3 id="14-metric-export-format">1.4 Metric Export Format<a class="headerlink" href="#14-metric-export-format" title="Permanent link">&para;</a></h3>
+<p>The <code>/metrics</code> endpoint serves the standard Prometheus text exposition format
+produced by <code>prometheus_client.generate_latest</code>:</p>
+<div class="highlight"><pre><span></span><code># HELP fraiseql_graphql_queries_total Total number of GraphQL queries
+# TYPE fraiseql_graphql_queries_total counter
+fraiseql_graphql_queries_total{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 5000
 
-<h3 id="15-metric-aggregation-queries">1.5 Metric Aggregation &amp; Queries<a class="headerlink" href="#15-metric-aggregation-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Prometheus queries:</strong></p>
-<p>```promql</p>
-<!-- Code example in PROMQL -->
-<h1 id="average-query-latency">Average query latency<a class="headerlink" href="#average-query-latency" title="Permanent link">&para;</a></h1>
-<p>rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m])</p>
-<h1 id="query-error-rate">Query error rate<a class="headerlink" href="#query-error-rate" title="Permanent link">&para;</a></h1>
-<p>rate(fraiseql_query_requests_total{status="error"}[5m]) / rate(fraiseql_query_requests_total[5m])</p>
-<h1 id="cache-hit-rate">Cache hit rate<a class="headerlink" href="#cache-hit-rate" title="Permanent link">&para;</a></h1>
-<p>rate(fraiseql_cache_requests_total{result="hit"}[5m]) / rate(fraiseql_cache_requests_total[5m])</p>
-<h1 id="p99-query-latency">P99 query latency<a class="headerlink" href="#p99-query-latency" title="Permanent link">&para;</a></h1>
-<p>histogram_quantile(0.99, rate(fraiseql_query_duration_seconds_bucket[5m]))</p>
-<h1 id="top-queries-by-latency">Top queries by latency<a class="headerlink" href="#top-queries-by-latency" title="Permanent link">&para;</a></h1>
-<p>topk(5, rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m]))
-```text</p>
-<!-- Code example in TEXT -->
+# HELP fraiseql_graphql_query_duration_seconds GraphQL query execution time in seconds
+# TYPE fraiseql_graphql_query_duration_seconds histogram
+fraiseql_graphql_query_duration_seconds_bucket{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;,le=&quot;0.01&quot;} 500
+fraiseql_graphql_query_duration_seconds_bucket{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;,le=&quot;0.05&quot;} 4500
+fraiseql_graphql_query_duration_seconds_bucket{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;,le=&quot;0.1&quot;} 4800
+fraiseql_graphql_query_duration_seconds_bucket{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;,le=&quot;+Inf&quot;} 5000
+fraiseql_graphql_query_duration_seconds_sum{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 225
+fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 5000
+</code></pre></div>
+<p>Other backends (CloudWatch, Datadog, OTLP) consume these metrics by pointing
+their respective Prometheus-scrape integrations at the <code>/metrics</code> endpoint.</p>
+<h3 id="15-querying-metrics-in-prometheus">1.5 Querying Metrics in Prometheus<a class="headerlink" href="#15-querying-metrics-in-prometheus" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Average query latency</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
+<span class="c1"># Query error rate</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_queries_errors</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_queries_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+
+<span class="c1"># Cache hit rate</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_cache_hits_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_cache_hits_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_cache_misses_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+
+<span class="c1"># P99 query latency</span>
+<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.99</span><span class="p">,</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+
+<span class="c1"># Top queries by latency</span>
+<span class="k">topk</span><span class="o">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+</code></pre></div>
 <hr />
 <h2 id="2-structured-logging">2. Structured Logging<a class="headerlink" href="#2-structured-logging" title="Permanent link">&para;</a></h2>
+<p>FraiseQL uses Python's standard <code>logging</code>. Application code logs through the
+<code>fraiseql.*</code> logger hierarchy, and security-relevant events go through the
+dedicated audit logger in <code>fraiseql.audit</code>.</p>
 <h3 id="21-log-levels-categories">2.1 Log Levels &amp; Categories<a class="headerlink" href="#21-log-levels-categories" title="Permanent link">&para;</a></h3>
-<p>FraiseQL produces structured logs at multiple levels:</p>
 <table>
 <thead>
 <tr>
 <th>Level</th>
 <th>Usage</th>
-<th>Frequency</th>
-<th>Retention</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>DEBUG</strong></td>
 <td>Development, detailed flow</td>
-<td>High</td>
-<td>24 hours</td>
 </tr>
 <tr>
 <td><strong>INFO</strong></td>
-<td>Significant events</td>
-<td>Medium</td>
-<td>7 days</td>
+<td>Significant events (query/mutation completion)</td>
 </tr>
 <tr>
-<td><strong>WARN</strong></td>
+<td><strong>WARNING</strong></td>
 <td>Unusual but handled situations</td>
-<td>Low</td>
-<td>30 days</td>
 </tr>
 <tr>
 <td><strong>ERROR</strong></td>
 <td>Failed operations</td>
-<td>Low</td>
-<td>90 days</td>
 </tr>
 <tr>
-<td><strong>FATAL</strong></td>
+<td><strong>CRITICAL</strong></td>
 <td>System failures</td>
-<td>Very low</td>
-<td>1 year</td>
 </tr>
 </tbody>
 </table>
-<h3 id="22-log-entry-format">2.2 Log Entry Format<a class="headerlink" href="#22-log-entry-format" title="Permanent link">&para;</a></h3>
-<p>All logs are structured JSON with consistent schema:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.123Z",
-  "level": "info",
-  "logger": "FraiseQL.query",
-  "message": "Query executed successfully",
-  "context": {
-    "request_id": "req-abc123",
-    "trace_id": "trace-xyz789",
-    "user_id": "user-456",
-    "organization_id": "org-123"
-  },
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "success",
-    "duration_ms": 45
-  },
-  "database": {
-    "engine": "postgresql",
-    "query_time_ms": 35,
-    "rows_affected": 20,
-    "connection_id": "conn-789"
-  },
-  "cache": {
-    "hit": true,
-    "ttl_seconds": 300
-  },
-  "authorization": {
-    "allowed": true,
-    "rules_evaluated": 3,
-    "time_ms": 2
-  },
-  "error": null,
-  "metadata": {
-    "version": "2.0.0",
-    "environment": "production"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p>Configure levels through standard Python logging or <code>FRAISEQL_</code>-prefixed
+environment variables. Retention is a property of your log pipeline (e.g.
+Loki, CloudWatch), not the framework.</p>
+<h3 id="22-security-audit-logging">2.2 Security Audit Logging<a class="headerlink" href="#22-security-audit-logging" title="Permanent link">&para;</a></h3>
+<p><code>fraiseql.audit</code> provides a structured <code>SecurityLogger</code> for security events.
+Events are typed via <code>SecurityEventType</code> and severities via
+<code>SecurityEventSeverity</code>, then serialized to structured JSON.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SecurityLogger</span><span class="p">,</span>
+    <span class="n">SecurityEvent</span><span class="p">,</span>
+    <span class="n">SecurityEventType</span><span class="p">,</span>
+    <span class="n">SecurityEventSeverity</span><span class="p">,</span>
+    <span class="n">set_security_logger</span><span class="p">,</span>
+<span class="p">)</span>
 
-<h3 id="23-query-execution-logs">2.3 Query Execution Logs<a class="headerlink" href="#23-query-execution-logs" title="Permanent link">&para;</a></h3>
-<p><strong>Query start (DEBUG):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "debug",
-  "message": "Query execution started",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts"
-  },
-  "parameters": {
-    "userId": "user-456",
-    "limit": 20
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">security</span> <span class="o">=</span> <span class="n">SecurityLogger</span><span class="p">(</span><span class="n">log_to_stdout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_to_file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">set_security_logger</span><span class="p">(</span><span class="n">security</span><span class="p">)</span>
 
-<p><strong>Query completion (INFO):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.045Z",
-  "level": "info",
-  "message": "Query executed successfully",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "success",
-    "duration_ms": 45
-  },
-  "database": {
-    "query_time_ms": 35,
-    "rows_affected": 20
-  },
-  "cache": {
-    "hit": false,
-    "cached": true,
-    "ttl_seconds": 300
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Convenience helpers exist for common events:</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_auth_failure</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s2">&quot;invalid_password&quot;</span><span class="p">,</span> <span class="n">attempted_username</span><span class="o">=</span><span class="s2">&quot;user-456&quot;</span><span class="p">)</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_authorization_denied</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-456&quot;</span><span class="p">,</span>
+    <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;AdminPanel.api_keys&quot;</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;read&quot;</span><span class="p">,</span>
+    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;insufficient_role&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
-<p><strong>Query timeout (ERROR):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "error",
-  "message": "Query timeout",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "timeout",
-    "duration_ms": 30000
-  },
-  "error": {
-    "code": "E_DB_QUERY_TIMEOUT_302",
-    "message": "Query execution exceeded 30 second timeout",
-    "retryable": true
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="24-mutation-execution-logs">2.4 Mutation Execution Logs<a class="headerlink" href="#24-mutation-execution-logs" title="Permanent link">&para;</a></h3>
-<p><strong>Mutation start (DEBUG):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "debug",
-  "message": "Mutation execution started",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost"
-  },
-  "input": {
-    "title": "New Post",
-    "content": "Content preview..."
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Mutation committed (INFO):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.050Z",
-  "level": "info",
-  "message": "Mutation committed",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost",
-    "status": "success",
-    "duration_ms": 50
-  },
-  "database": {
-    "rows_affected": 1,
-    "transaction_duration_ms": 48
-  },
-  "events": {
-    "published": ["post_created"],
-    "subscribers": 127
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Mutation rolled back (ERROR):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.050Z",
-  "level": "error",
-  "message": "Mutation rolled back due to constraint violation",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost",
-    "status": "rolled_back",
-    "duration_ms": 50
-  },
-  "error": {
-    "code": "E_VALIDATION_DUPLICATE_VALUE_107",
-    "message": "Post with title 'New Post' already exists",
-    "retryable": false
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="25-authorization-logs">2.5 Authorization Logs<a class="headerlink" href="#25-authorization-logs" title="Permanent link">&para;</a></h3>
-<p><strong>Authorization allowed (DEBUG):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.002Z",
-  "level": "debug",
-  "message": "Authorization check passed",
-  "authorization": {
-    "result": "allowed",
-    "rule": "owner_or_admin",
-    "field": "User.email",
-    "user_id": "user-456",
-    "resource_owner": "user-456",
-    "duration_ms": 1
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Authorization denied (WARN):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.002Z",
-  "level": "warn",
-  "message": "Authorization check failed",
-  "authorization": {
-    "result": "denied",
-    "rule": "admin_only",
-    "field": "AdminPanel.api_keys",
-    "user_id": "user-456",
-    "user_roles": ["user"],
-    "required_role": "admin",
-    "duration_ms": 2
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="26-error-logs">2.6 Error Logs<a class="headerlink" href="#26-error-logs" title="Permanent link">&para;</a></h3>
-<p><strong>All errors include:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "error": {
-    "code": "E_DB_QUERY_TIMEOUT_302",
-    "category": "DATABASE_ERROR",
-    "message": "Query exceeded timeout",
-    "severity": "error",
-    "retryable": true,
-    "remediable": false,
-    "trace": [
-      "FraiseQL.runtime.execute_query:123",
-      "FraiseQL.db.query:456",
-      "tokio.timeout:789"
-    ]
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="27-log-filtering-sampling">2.7 Log Filtering &amp; Sampling<a class="headerlink" href="#27-log-filtering-sampling" title="Permanent link">&para;</a></h3>
-<p><strong>Debug log sampling (production):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="by-default-debug-logs-are-sampled-1-in-100">By default, DEBUG logs are sampled (1 in 100)<a class="headerlink" href="#by-default-debug-logs-are-sampled-1-in-100" title="Permanent link">&para;</a></h1>
-<p>FraiseQL.logging.configure({
-    "debug_sampling": {
-        "enabled": True,
-        "rate": 0.01,  # 1% of debug logs
-        "always_sample_errors": True  # Always log errors
-    }
-})
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Dynamic log levels:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="change-log-level-without-restart">Change log level without restart<a class="headerlink" href="#change-log-level-without-restart" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:8000/admin/logging \
-  -d '{
-    "logger": "FraiseQL.query",
-    "level": "debug"
-  }'</p>
-<h1 id="result-fraiseqlquery-logs-now-at-debug-level">Result: FraiseQL.query logs now at DEBUG level<a class="headerlink" href="#result-fraiseqlquery-logs-now-at-debug-level" title="Permanent link">&para;</a></h1>
-<h1 id="reverts-after-1-hour-or-on-restart">Reverts after 1 hour or on restart<a class="headerlink" href="#reverts-after-1-hour-or-on-restart" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Or emit a fully structured event:</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+    <span class="n">SecurityEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">SecurityEventType</span><span class="o">.</span><span class="n">QUERY_COMPLEXITY_EXCEEDED</span><span class="p">,</span>
+        <span class="n">severity</span><span class="o">=</span><span class="n">SecurityEventSeverity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-456&quot;</span><span class="p">,</span>
+        <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;searchUsers&quot;</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;depth_limit&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Available <code>SecurityEventType</code> values cover authentication (<code>AUTH_SUCCESS</code>,
+<code>AUTH_FAILURE</code>, <code>AUTH_TOKEN_EXPIRED</code>, ...), authorization (<code>AUTHZ_DENIED</code>,
+<code>AUTHZ_FIELD_DENIED</code>, <code>AUTHZ_PERMISSION_DENIED</code>, <code>AUTHZ_ROLE_DENIED</code>), rate
+limiting, CSRF, query security (<code>QUERY_COMPLEXITY_EXCEEDED</code>,
+<code>QUERY_DEPTH_EXCEEDED</code>, <code>QUERY_TIMEOUT</code>, <code>QUERY_MALICIOUS_PATTERN</code>), data
+access, configuration, and system events.</p>
+<h3 id="23-example-log-entries">2.3 Example Log Entries<a class="headerlink" href="#23-example-log-entries" title="Permanent link">&para;</a></h3>
+<p>Security events are serialized as structured JSON:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-15T10:30:45.002Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;authz.role_denied&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;severity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;warning&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AdminPanel.api_keys&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;insufficient_role&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>A typical application query log entry (your own logger):</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-15T10:30:45.045Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fraiseql.query&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query executed successfully&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;query&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;users&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;engine&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;query_time_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">35</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rows_returned&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>A query timeout (ERROR):</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-15T10:30:45.000Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fraiseql.query&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query timeout&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;query&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;users&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30000</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DB_QUERY_TIMEOUT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="3-distributed-tracing">3. Distributed Tracing<a class="headerlink" href="#3-distributed-tracing" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships an OpenTelemetry integration in <code>fraiseql.tracing</code>. Calling
+<code>setup_tracing(app, config)</code> instruments the FastAPI app and (when the
+OpenTelemetry packages are installed) auto-instruments the psycopg driver so
+database spans nest under request spans.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_tracing</span><span class="p">,</span> <span class="n">TracingConfig</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+
+<span class="n">setup_tracing</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">TracingConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+        <span class="n">service_version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+        <span class="n">deployment_environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+        <span class="n">sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>                       <span class="c1"># 10% of traces</span>
+        <span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span><span class="p">,</span>                  <span class="c1"># otlp, jaeger, or zipkin</span>
+        <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;http://otel-collector:4317&quot;</span><span class="p">,</span>
+        <span class="n">exclude_paths</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;/health&quot;</span><span class="p">,</span> <span class="s2">&quot;/ready&quot;</span><span class="p">,</span> <span class="s2">&quot;/metrics&quot;</span><span class="p">},</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>setup_tracing</code> returns a <code>FraiseQLTracer</code>; retrieve it later with
+<code>get_tracer()</code>. Helper functions <code>trace_graphql_operation</code> and
+<code>trace_database_query</code> create spans around specific operations.</p>
 <h3 id="31-trace-context-propagation">3.1 Trace Context Propagation<a class="headerlink" href="#31-trace-context-propagation" title="Permanent link">&para;</a></h3>
-<p>Every request includes <strong>trace context</strong> for distributed tracing:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "span_id": "00f067aa0ba902b7",
-  "parent_span_id": "00f067aa0ba902b7",
-  "trace_flags": "01"  // Sampled
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Context propagation:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client Request
-  ↓ (contains trace_id)
-FraiseQL API
-  ├─ Creates span: "query.execution"
-  │  ├─ Creates span: "authorization.check"
-  │  ├─ Creates span: "database.query"
-  │  │  └─ Includes trace_id in database driver
-  │  └─ Creates span: "response.transform"
-  └─ Returns response with trace_id
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Tracing follows the OpenTelemetry / W3C Trace Context model. Inbound
+requests carrying a <code>traceparent</code> header continue the existing trace; the
+psycopg instrumentation links database spans to the GraphQL operation span.</p>
+<div class="highlight"><pre><span></span><code>Client Request
+  ↓ (traceparent header)
+FraiseQL FastAPI app
+  ├─ Span: graphql.operation
+  │  ├─ Span: authorization
+  │  ├─ Span: database.query   (auto-instrumented psycopg)
+  │  └─ Span: response.transform
+  └─ Returns response (trace continues downstream)
+</code></pre></div>
 <h3 id="32-w3c-trace-context-headers">3.2 W3C Trace Context Headers<a class="headerlink" href="#32-w3c-trace-context-headers" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses W3C standard for trace propagation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>HTTP Request:
-traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+<div class="highlight"><pre><span></span><code>traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 tracestate: congo=t61rcWpm35YzTP60
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Header format:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>traceparent: version-trace_id-parent_span_id-trace_flags
+</code></pre></div>
+<p>Header format:</p>
+<div class="highlight"><pre><span></span><code>traceparent: version-trace_id-parent_span_id-trace_flags
 00         = version 0 (W3C spec v1)
 4bf92...   = trace ID (16 bytes hex)
 00f067...  = parent span ID (8 bytes hex)
 01         = trace flags (01 = sampled)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="33-span-hierarchy">3.3 Span Hierarchy<a class="headerlink" href="#33-span-hierarchy" title="Permanent link">&para;</a></h3>
-<p>Every query generates trace spans:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Span: query.execution (root)
-├─ start: 2026-01-15T10:30:45.000Z
-├─ end: 2026-01-15T10:30:45.045Z
+<p>A typical GraphQL query produces a span tree like:</p>
+<div class="highlight"><pre><span></span><code>Span: graphql.operation (root)
 ├─ duration: 45ms
 ├─ attributes:
-│  ├─ operation_name: "GetUserPosts"
-│  ├─ user_id: "user-456"
-│  └─ status: "success"
-│
-├─ Span: validation (child)
-│  ├─ start: 2026-01-15T10:30:45.000Z
-│  ├─ end: 2026-01-15T10:30:45.002Z
-│  ├─ duration: 2ms
-│  └─ attributes:
-│     └─ valid: true
+│  ├─ graphql.operation.name: &quot;users&quot;
+│  └─ graphql.operation.type: &quot;query&quot;
 │
 ├─ Span: authorization (child)
-│  ├─ start: 2026-01-15T10:30:45.002Z
-│  ├─ end: 2026-01-15T10:30:45.005Z
 │  ├─ duration: 3ms
 │  └─ attributes:
-│     ├─ allowed: true
-│     └─ rules_evaluated: 2
+│     └─ allowed: true
 │
-├─ Span: database.query (child)
-│  ├─ start: 2026-01-15T10:30:45.005Z
-│  ├─ end: 2026-01-15T10:30:45.040Z
+├─ Span: database.query (child, psycopg auto-instrumented)
 │  ├─ duration: 35ms
 │  └─ attributes:
-│     ├─ database: "postgresql"
-│     ├─ statement: "SELECT ... FROM v_post WHERE ..."
-│     ├─ rows: 20
-│     └─ status: "success"
+│     ├─ db.system: &quot;postgresql&quot;
+│     ├─ db.statement: &quot;SELECT data FROM v_user WHERE ...&quot;
+│     └─ db.rows: 20
 │
 └─ Span: response.transform (child)
-   ├─ start: 2026-01-15T10:30:45.040Z
-   ├─ end: 2026-01-15T10:30:45.045Z
    ├─ duration: 5ms
    └─ attributes:
-      ├─ format: "json"
-      └─ size_bytes: 5120
-```text</p>
-<!-- Code example in TEXT -->
+      └─ format: &quot;json&quot;
+</code></pre></div>
+<h3 id="34-sampling-strategy">3.4 Sampling Strategy<a class="headerlink" href="#34-sampling-strategy" title="Permanent link">&para;</a></h3>
+<p><code>sample_rate</code> controls head-based sampling (0.0–1.0). A value of <code>0.1</code> samples
+10% of traces; <code>1.0</code> samples everything. For lower-traffic, error-focused
+visibility, run a high sample rate in staging and a lower one in production,
+then rely on metrics and logs to surface anomalies.</p>
+<div class="highlight"><pre><span></span><code><span class="n">TracingConfig</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>   <span class="c1"># 10% in production</span>
+<span class="n">TracingConfig</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>   <span class="c1"># 100% in staging / debugging</span>
+</code></pre></div>
+<h3 id="35-trace-export">3.5 Trace Export<a class="headerlink" href="#35-trace-export" title="Permanent link">&para;</a></h3>
+<p>The exporter is selected by <code>export_format</code> (<code>"otlp"</code>, <code>"jaeger"</code>, or
+<code>"zipkin"</code>) and pointed at your collector with <code>export_endpoint</code>. OTLP is the
+recommended transport; from an OpenTelemetry Collector you can fan out to
+Jaeger, Tempo, Datadog, or any OTLP-compatible backend.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># OTLP (recommended) → OpenTelemetry Collector</span>
+<span class="n">TracingConfig</span><span class="p">(</span><span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span><span class="p">,</span> <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;http://otel-collector:4317&quot;</span><span class="p">)</span>
 
-<h3 id="34-span-attributes-events">3.4 Span Attributes (Events)<a class="headerlink" href="#34-span-attributes-events" title="Permanent link">&para;</a></h3>
-<p>Each span records attributes about the operation:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "spans": [
-    {
-      "name": "database.query",
-      "attributes": {
-        "database.system": "postgresql",
-        "database.connection.pool.name": "default",
-        "database.connection.state": "in_use",
-        "db.statement": "SELECT * FROM v_post WHERE ...",
-        "db.rows_returned": 20,
-        "db.rows_scanned": 1000,
-        "db.execution_time_ms": 35,
-        "db.prepared_statement": true,
-        "db.indexes_used": ["idx_post_published"],
-        "db.cache_hit": false
-      }
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="35-sampling-strategy">3.5 Sampling Strategy<a class="headerlink" href="#35-sampling-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Adaptive sampling based on error rate:</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// By default: Sample 1% of traces (cost reduction)
-if error_rate &gt; 0.01 {  // If &gt;1% error rate
-    sampling_rate = 0.10;  // Sample 10% (more visibility)
-}</p>
-<p>if error_rate &gt; 0.05 {  // If &gt;5% error rate
-    sampling_rate = 1.0;   // Sample 100% (full debugging)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Request context sampling:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="sample-100-of-requests-with-errors">Sample 100% of requests with errors<a class="headerlink" href="#sample-100-of-requests-with-errors" title="Permanent link">&para;</a></h1>
-<p>if response.status == "error":
-    trace.sample_rate = 1.0</p>
-<h1 id="sample-100-of-slow-requests">Sample 100% of slow requests<a class="headerlink" href="#sample-100-of-slow-requests" title="Permanent link">&para;</a></h1>
-<p>elif response.duration_ms &gt; timeout_threshold:
-    trace.sample_rate = 1.0</p>
-<h1 id="sample-100-if-user-opt-in">Sample 100% if user opt-in<a class="headerlink" href="#sample-100-if-user-opt-in" title="Permanent link">&para;</a></h1>
-<p>elif user.prefer_full_tracing:
-    trace.sample_rate = 1.0</p>
-<h1 id="default-sample-1">Default: Sample 1%<a class="headerlink" href="#default-sample-1" title="Permanent link">&para;</a></h1>
-<p>else:
-    trace.sample_rate = 0.01
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="36-trace-export">3.6 Trace Export<a class="headerlink" href="#36-trace-export" title="Permanent link">&para;</a></h3>
-<p><strong>Jaeger format (default):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "spans": [
-    {
-      "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
-      "spanID": "00f067aa0ba902b7",
-      "operationName": "query.execution",
-      "startTime": 1642252245000000,
-      "duration": 45000,
-      "tags": {
-        "operation_name": "GetUserPosts",
-        "user_id": "user-456"
-      },
-      "logs": [
-        {
-          "timestamp": 1642252245005000,
-          "fields": [
-            {"key": "event", "value": "authorization_passed"}
-          ]
-        }
-      ]
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>OpenTelemetry format:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>{
-  "resourceSpans": [
-    {
-      "resource": {
-        "attributes": [
-          {"key": "service.name", "value": {"stringValue": "FraiseQL"}},
-          {"key": "service.version", "value": {"stringValue": "2.0.0"}}
-        ]
-      },
-      "scopeSpans": [
-        {
-          "span": [
-            {
-              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-              "spanId": "00f067aa0ba902b7",
-              "name": "query.execution",
-              "startTimeUnixNano": 1642252245000000000,
-              "endTimeUnixNano": 1642252245045000000
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Direct to Jaeger</span>
+<span class="n">TracingConfig</span><span class="p">(</span><span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;jaeger&quot;</span><span class="p">,</span> <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;jaeger-agent:6831&quot;</span><span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="4-alerting-rules">4. Alerting Rules<a class="headerlink" href="#4-alerting-rules" title="Permanent link">&para;</a></h2>
-<h3 id="41-pre-built-alert-templates">4.1 Pre-Built Alert Templates<a class="headerlink" href="#41-pre-built-alert-templates" title="Permanent link">&para;</a></h3>
-<p>FraiseQL includes pre-built Prometheus alert rules:</p>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>groups:
-  - name: FraiseQL.alerts
-    interval: 30s
-    rules:
-      - alert: QueryLatencyHigh
-        expr: histogram_quantile(0.95, fraiseql_query_duration_seconds_bucket) &gt; 1.0
-        for: 5m
-        annotations:
-          summary: "Query latency high (p95 &gt; 1s)"
-          description: "Queries taking &gt; 1s on average"</p>
-<div class="highlight"><pre><span></span><code>  - alert: QueryErrorRateHigh
-    expr: rate(fraiseql_query_requests_total{status=&quot;error&quot;}[5m]) &gt; 0.01
-    for: 5m
-    annotations:
-      summary: &quot;Query error rate &gt; 1%&quot;
+<p>FraiseQL has no alert decorator or built-in alert engine. Alerting is done the
+standard Prometheus way: write alerting rules over the metrics exposed at
+<code>/metrics</code>, and route them with Alertmanager.</p>
+<h3 id="41-example-prometheus-alert-rules-alertsyml">4.1 Example Prometheus Alert Rules (<code>alerts.yml</code>)<a class="headerlink" href="#41-example-prometheus-alert-rules-alertsyml" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">groups</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql.alerts</span>
+<span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QueryLatencyHigh</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">histogram_quantile(0.95, rate(fraiseql_graphql_query_duration_seconds_bucket[5m])) &gt; 1.0</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">high</span><span class="nv"> </span><span class="s">(p95</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1s)&quot;</span>
 
-  - alert: MutationDeadlockHigh
-    expr: rate(fraiseql_mutation_deadlock_retries[5m]) &gt; 10
-    for: 5m
-    annotations:
-      summary: &quot;High deadlock rate on mutations&quot;
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QueryErrorRateHigh</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(fraiseql_graphql_queries_errors[5m]) / rate(fraiseql_graphql_queries_total[5m]) &gt; 0.01</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Query</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">1%&quot;</span>
 
-  - alert: CacheHitRateLow
-    expr: rate(fraiseql_cache_requests_total{result=&quot;hit&quot;}[5m]) / rate(fraiseql_cache_requests_total[5m]) &lt; 0.5
-    for: 10m
-    annotations:
-      summary: &quot;Cache hit rate below 50%&quot;
-      remediation: &quot;Check cache configuration or TTL&quot;
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CacheHitRateLow</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(fraiseql_cache_hits_total[5m]) / (rate(fraiseql_cache_hits_total[5m]) + rate(fraiseql_cache_misses_total[5m])) &lt; 0.5</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">below</span><span class="nv"> </span><span class="s">50%&quot;</span>
+<span class="w">          </span><span class="nt">remediation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Review</span><span class="nv"> </span><span class="s">cache</span><span class="nv"> </span><span class="s">TTLs</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">invalidation</span><span class="nv"> </span><span class="s">rules&quot;</span>
 
-  - alert: DatabaseConnectionPoolExhausted
-    expr: fraiseql_db_connections_active / fraiseql_db_pool_size &gt; 0.9
-    for: 2m
-    annotations:
-      summary: &quot;Database connection pool 90% utilized&quot;
-      remediation: &quot;Increase pool size or check for connection leaks&quot;
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabaseConnectionPoolExhausted</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql_db_connections_active / fraiseql_db_connections_total &gt; 0.9</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Database</span><span class="nv"> </span><span class="s">connection</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">90%</span><span class="nv"> </span><span class="s">utilized&quot;</span>
+<span class="w">          </span><span class="nt">remediation</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Increase</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">size</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">check</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">connection</span><span class="nv"> </span><span class="s">leaks&quot;</span>
 
-  - alert: SubscriptionBufferNearCapacity
-    expr: fraiseql_subscription_buffer_utilization &gt; 0.8
-    for: 5m
-    annotations:
-      summary: &quot;Subscription buffer &gt; 80% utilized&quot;
-      remediation: &quot;Check subscription delivery speed&quot;
-
-  - alert: AuthorizationDenialHigh
-    expr: rate(fraiseql_authorization_denials[5m]) &gt; 100
-    for: 5m
-    annotations:
-      summary: &quot;High authorization denial rate&quot;
-
-  - alert: DatabaseQueryTimeout
-    expr: rate(fraiseql_errors_total{error_code=&quot;E_DB_QUERY_TIMEOUT_302&quot;}[5m]) &gt; 5
-    for: 5m
-    annotations:
-      summary: &quot;Database queries timing out&quot;
-      remediation: &quot;Optimize slow queries or increase timeout&quot;
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ErrorRateHigh</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(fraiseql_errors_total[5m]) &gt; 5</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Elevated</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate&quot;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="42-custom-alerts">4.2 Custom Alerts<a class="headerlink" href="#42-custom-alerts" title="Permanent link">&para;</a></h3>
-<p>Applications can define custom alerts:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.alert
-def high_order_value(context):
-    """Alert if single order exceeds threshold"""
-    return {
-        "condition": f"order.total &gt; 10000",
-        "for": "immediately",
-        "message": f"High-value order: ${context.order.total}"
-    }</p>
-<p>@FraiseQL.alert
-def slow_query_detection(context):
-    """Alert on slow queries"""
-    return {
-        "condition": f"context.operation.duration_ms &gt; 5000",
-        "for": "5m",
-        "message": f"Query {context.operation.name} taking {context.operation.duration_ms}ms"
-    }
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="43-alert-routing-notification">4.3 Alert Routing &amp; Notification<a class="headerlink" href="#43-alert-routing-notification" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<h1 id="alertmanager-configuration">AlertManager configuration<a class="headerlink" href="#alertmanager-configuration" title="Permanent link">&para;</a></h1>
-<p>route:
-  receiver: default
-  routes:
-    # Critical: Database down → PagerDuty
-    - match:
-        severity: critical
-      receiver: pagerduty</p>
-<div class="highlight"><pre><span></span><code># High: Performance degradation → Slack
-- match:
-    severity: high
-  receiver: slack_eng
-
-# Medium: Warnings → Email
-- match:
-    severity: medium
-  receiver: email
+<h3 id="42-application-specific-alerts">4.2 Application-Specific Alerts<a class="headerlink" href="#42-application-specific-alerts" title="Permanent link">&para;</a></h3>
+<p>Define alerts over your own business metrics (Section 1.3) the same way:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">groups</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app.business.alerts</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NoUserSignups</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(app_users_created_total[1h]) == 0</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;No</span><span class="nv"> </span><span class="s">user</span><span class="nv"> </span><span class="s">signups</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">hour&quot;</span>
 </code></pre></div>
-<p>receivers:
-  - name: pagerduty
-    pagerduty_configs:
-      - routing_key: secret
-  - name: slack_eng
-    slack_configs:
-      - api_url: "https://hooks.slack.com/..."
-  - name: email
-    email_configs:
-      - to: alerts@company.com
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="43-alert-routing-notification-alertmanager">4.3 Alert Routing &amp; Notification (Alertmanager)<a class="headerlink" href="#43-alert-routing-notification-alertmanager" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">route</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">routes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pagerduty</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="nv">high</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slack_eng</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="nv">medium</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">email</span>
 
+<span class="nt">receivers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pagerduty</span>
+<span class="w">    </span><span class="nt">pagerduty_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">routing_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;secret&gt;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slack_eng</span>
+<span class="w">    </span><span class="nt">slack_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">api_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://hooks.slack.com/...&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">email</span>
+<span class="w">    </span><span class="nt">email_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alerts@company.com</span>
+</code></pre></div>
 <hr />
 <h2 id="5-health-checks-readiness-probes">5. Health Checks &amp; Readiness Probes<a class="headerlink" href="#5-health-checks-readiness-probes" title="Permanent link">&para;</a></h2>
-<h3 id="51-health-check-endpoints">5.1 Health Check Endpoints<a class="headerlink" href="#51-health-check-endpoints" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="liveness-probe-is-runtime-alive">Liveness probe (is runtime alive?)<a class="headerlink" href="#liveness-probe-is-runtime-alive" title="Permanent link">&para;</a></h1>
-<p>GET /health/live
-200 OK {"status": "alive"}</p>
-<h1 id="readiness-probe-can-runtime-serve-traffic">Readiness probe (can runtime serve traffic?)<a class="headerlink" href="#readiness-probe-can-runtime-serve-traffic" title="Permanent link">&para;</a></h1>
-<p>GET /health/ready
-200 OK {
-  "status": "ready",
-  "database": "connected",
-  "cache": "connected",
-  "auth_provider": "connected"
-}</p>
-<h1 id="detailed-health-status">Detailed health status<a class="headerlink" href="#detailed-health-status" title="Permanent link">&para;</a></h1>
-<p>GET /health
-200 OK {
-  "status": "healthy",
-  "components": {
-    "runtime": {"status": "up", "version": "2.0.0"},
-    "database": {"status": "up", "latency_ms": 2},
-    "cache": {"status": "up", "hit_rate": 0.87},
-    "auth_provider": {"status": "up"},
-    "subscription_manager": {"status": "up", "active_subscriptions": 450}
-  },
-  "uptime_seconds": 86400,
-  "start_time": "2026-01-14T10:30:45Z"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p>The FastAPI app created by <code>create_fraiseql_app</code> exposes two endpoints out of
+the box: <code>/health</code> (liveness) and <code>/ready</code> (readiness).</p>
+<h3 id="51-built-in-health-endpoints">5.1 Built-in Health Endpoints<a class="headerlink" href="#51-built-in-health-endpoints" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code># Liveness probe (is the process alive?)
+GET /health
+200 OK {&quot;status&quot;: &quot;healthy&quot;, &quot;service&quot;: &quot;fraiseql&quot;}
 
-<h3 id="52-kubernetes-probes">5.2 Kubernetes Probes<a class="headerlink" href="#52-kubernetes-probes" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: FraiseQL
-spec:
-  template:
-    spec:
-      containers:
-      - name: FraiseQL
-        livenessProbe:
-          httpGet:
-            path: /health/live
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 2
-          failureThreshold: 3</p>
-<div class="highlight"><pre><span></span><code>    readinessProbe:
-      httpGet:
-        path: /health/ready
-        port: 8000
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 2
-      failureThreshold: 2
+# Readiness probe (can it serve traffic?)
+GET /ready
+200 OK {
+  &quot;status&quot;: &quot;ready&quot;,
+  &quot;checks&quot;: {&quot;database&quot;: &quot;ok&quot;, &quot;schema&quot;: &quot;ok&quot;}
+}
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><code>/ready</code> validates that the database pool is reachable (a simple query test)
+and that the GraphQL schema is loaded; it returns <code>503 Service Unavailable</code>
+when the app is not ready.</p>
+<h3 id="52-composable-health-checks">5.2 Composable Health Checks<a class="headerlink" href="#52-composable-health-checks" title="Permanent link">&para;</a></h3>
+<p>For richer checks, compose your own with <code>HealthCheck</code> from
+<code>fraiseql.monitoring</code>, using the pre-built check functions:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">HealthCheck</span><span class="p">,</span>
+    <span class="n">CheckResult</span><span class="p">,</span>
+    <span class="n">HealthStatus</span><span class="p">,</span>
+    <span class="n">check_database</span><span class="p">,</span>
+    <span class="n">check_pool_stats</span><span class="p">,</span>
+<span class="p">)</span>
 
+<span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">check_database</span><span class="p">(</span><span class="n">pool</span><span class="p">))</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">check_pool_stats</span><span class="p">(</span><span class="n">pool</span><span class="p">))</span>
+
+<span class="c1"># Add a custom check:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_external_api</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CheckResult</span><span class="p">:</span>
+    <span class="n">ok</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ping_dependency</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">CheckResult</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;external_api&quot;</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">HealthStatus</span><span class="o">.</span><span class="n">HEALTHY</span> <span class="k">if</span> <span class="n">ok</span> <span class="k">else</span> <span class="n">HealthStatus</span><span class="o">.</span><span class="n">UNHEALTHY</span><span class="p">,</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;reachable&quot;</span> <span class="k">if</span> <span class="n">ok</span> <span class="k">else</span> <span class="s2">&quot;unreachable&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;external_api&quot;</span><span class="p">,</span> <span class="n">check_external_api</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
+<span class="c1"># {&quot;status&quot;: &quot;healthy&quot;, &quot;checks&quot;: {&quot;database&quot;: {...}, &quot;pool&quot;: {...}, ...}}</span>
+</code></pre></div>
+<h3 id="53-kubernetes-probes">5.3 Kubernetes Probes<a class="headerlink" href="#53-kubernetes-probes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">          </span><span class="nt">livenessProbe</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">            </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">            </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">            </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">            </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">          </span><span class="nt">readinessProbe</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ready</span>
+<span class="w">              </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">            </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">            </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">            </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">            </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
 <hr />
-<h2 id="6-performance-profiling">6. Performance Profiling<a class="headerlink" href="#6-performance-profiling" title="Permanent link">&para;</a></h2>
-<h3 id="61-built-in-profiler">6.1 Built-in Profiler<a class="headerlink" href="#61-built-in-profiler" title="Permanent link">&para;</a></h3>
-<p>FraiseQL includes built-in CPU and memory profiling:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="profile-cpu-30-seconds">Profile CPU (30 seconds)<a class="headerlink" href="#profile-cpu-30-seconds" title="Permanent link">&para;</a></h1>
-<p>GET /debug/pprof/profile?seconds=30</p>
-<h1 id="profile-memory">Profile memory<a class="headerlink" href="#profile-memory" title="Permanent link">&para;</a></h1>
-<p>GET /debug/pprof/heap</p>
-<h1 id="profile-goroutines">Profile goroutines<a class="headerlink" href="#profile-goroutines" title="Permanent link">&para;</a></h1>
-<p>GET /debug/pprof/goroutine</p>
-<h1 id="download-as-pprof-format">Download as pprof format<a class="headerlink" href="#download-as-pprof-format" title="Permanent link">&para;</a></h1>
-<p>curl http://localhost:8000/debug/pprof/profile &gt; cpu.prof
-go tool pprof cpu.prof
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="6-query-performance-analysis">6. Query Performance Analysis<a class="headerlink" href="#6-query-performance-analysis" title="Permanent link">&para;</a></h2>
+<p>FraiseQL exposes PostgreSQL's own query statistics through
+<code>QueryStatsCollector</code>, which reads <code>pg_stat_statements</code>. There is no built-in
+process profiler; performance analysis leans on PostgreSQL's tooling.</p>
+<h3 id="61-pg_stat_statements-integration">6.1 pg_stat_statements Integration<a class="headerlink" href="#61-pg_stat_statements-integration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_query_stats</span><span class="p">,</span> <span class="n">get_query_stats_collector</span>
 
-<h3 id="62-query-execution-plan-analysis">6.2 Query Execution Plan Analysis<a class="headerlink" href="#62-query-execution-plan-analysis" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="analyze-query-plan">Analyze query plan<a class="headerlink" href="#analyze-query-plan" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:8000/debug/analyze \
-  -d '{
-    "query": "query GetPosts { posts { id title } }"
-  }'</p>
-<p>Response:
-{
-  "query_plan": {
-    "sql": "SELECT ... FROM v_post",
-    "estimated_cost": 100,
-    "estimated_rows": 1000,
-    "indexes": ["idx_post_published"],
-    "joins": 0,
-    "nested_queries": 0
-  },
-  "recommendation": "Query is well-optimized"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="63-slow-query-log">6.3 Slow Query Log<a class="headerlink" href="#63-slow-query-log" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "warn",
-  "message": "Slow query detected",
-  "operation": {
-    "name": "ComplexUserSearch",
-    "duration_ms": 5234
-  },
-  "database": {
-    "query": "SELECT ... FROM v_user JOIN v_profile ...",
-    "rows_scanned": 50000,
-    "rows_returned": 10,
-    "indexes_not_used": ["idx_user_email"],
-    "suggestion": "Add WHERE clause to filter by email first"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">collector</span> <span class="o">=</span> <span class="n">init_query_stats</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;total_exec_time&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">query_preview</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">  calls=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">calls</span><span class="si">}</span><span class="s2">  mean_ms=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">mean_exec_time_ms</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Each <code>QueryStatsSnapshot</code> includes <code>calls</code>, <code>total_exec_time_ms</code>,
+<code>mean_exec_time_ms</code>, <code>min</code>/<code>max</code> exec time, <code>rows_returned</code>, shared block
+hits/reads, and <code>cache_hit_ratio</code>. The collector degrades gracefully
+(returns empty results) when the <code>pg_stat_statements</code> extension is not
+installed.</p>
+<h3 id="62-analyzing-slow-queries-with-explain">6.2 Analyzing Slow Queries with EXPLAIN<a class="headerlink" href="#62-analyzing-slow-queries-with-explain" title="Permanent link">&para;</a></h3>
+<p>Because every read resolves to a <code>v_</code>/<code>tv_</code> view, use PostgreSQL's
+<code>EXPLAIN (ANALYZE, BUFFERS)</code> directly on the generated SQL to find missing
+indexes:</p>
+<div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span><span class="w"> </span><span class="n">BUFFERS</span><span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>If the plan shows a sequential scan over a large table, add an index on the
+underlying write table:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="63-slow-query-logging">6.3 Slow Query Logging<a class="headerlink" href="#63-slow-query-logging" title="Permanent link">&para;</a></h3>
+<p>Combine the <code>QueryStatsCollector</code> output with a Prometheus alert on
+<code>fraiseql_db_query_duration_seconds</code> to catch regressions, and enable
+PostgreSQL's <code>log_min_duration_statement</code> to capture slow statements at the
+database level.</p>
 <hr />
 <h2 id="7-observability-configuration">7. Observability Configuration<a class="headerlink" href="#7-observability-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="71-configuration-options">7.1 Configuration Options<a class="headerlink" href="#71-configuration-options" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>FraiseQL.observability.configure({
-    # Metrics
-    "metrics": {
-        "enabled": True,
-        "export_interval_seconds": 60,
-        "format": "prometheus",
-        "include_high_cardinality": False,  # Limit label combinations
-    },</p>
-<div class="highlight"><pre><span></span><code># Logging
-&quot;logging&quot;: {
-    &quot;level&quot;: &quot;info&quot;,
-    &quot;format&quot;: &quot;json&quot;,
-    &quot;debug_sampling&quot;: {
-        &quot;enabled&quot;: True,
-        &quot;rate&quot;: 0.01,  # 1% of debug logs
-    },
-    &quot;slow_query_threshold_ms&quot;: 1000,
-},
+<h3 id="71-putting-it-together">7.1 Putting It Together<a class="headerlink" href="#71-putting-it-together" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">init_query_stats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_tracing</span><span class="p">,</span> <span class="n">TracingConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityLogger</span><span class="p">,</span> <span class="n">set_security_logger</span>
 
-# Tracing
-&quot;tracing&quot;: {
-    &quot;enabled&quot;: True,
-    &quot;sample_rate&quot;: 0.01,  # 1% of requests
-    &quot;export_interval_seconds&quot;: 60,
-    &quot;exporters&quot;: [&quot;jaeger&quot;, &quot;datadog&quot;],
-},
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
-# Health checks
-&quot;health_checks&quot;: {
-    &quot;enabled&quot;: True,
-    &quot;check_interval_seconds&quot;: 30,
-    &quot;database_timeout_ms&quot;: 2000,
-    &quot;cache_timeout_ms&quot;: 500,
-},
+<span class="c1"># Metrics → /metrics endpoint</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span> <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span><span class="p">))</span>
 
-# Profiling
-&quot;profiling&quot;: {
-    &quot;enabled&quot;: True,  # In non-production only
-    &quot;cpu_sample_rate&quot;: 0.01,
-    &quot;memory_sample_rate&quot;: 0.1,
-},
+<span class="c1"># Tracing → OTLP collector</span>
+<span class="n">setup_tracing</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">TracingConfig</span><span class="p">(</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+        <span class="n">sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span><span class="p">,</span>
+        <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;http://otel-collector:4317&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Security audit logging</span>
+<span class="n">set_security_logger</span><span class="p">(</span><span class="n">SecurityLogger</span><span class="p">(</span><span class="n">log_to_stdout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">log_to_file</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+<span class="c1"># Query stats (requires pg_stat_statements)</span>
+<span class="n">init_query_stats</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
 </code></pre></div>
-<p>})
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="72-configuration-reference">7.2 Configuration Reference<a class="headerlink" href="#72-configuration-reference" title="Permanent link">&para;</a></h3>
+<p><code>MetricsConfig</code> fields: <code>enabled</code>, <code>namespace</code> (default <code>"fraiseql"</code>),
+<code>metrics_path</code> (default <code>"/metrics"</code>), <code>buckets</code> (histogram boundaries),
+<code>exclude_paths</code>, <code>labels</code>.</p>
+<p><code>TracingConfig</code> fields: <code>enabled</code>, <code>service_name</code>, <code>service_version</code>,
+<code>deployment_environment</code>, <code>sample_rate</code>, <code>export_format</code>
+(<code>otlp</code>/<code>jaeger</code>/<code>zipkin</code>), <code>export_endpoint</code>, <code>export_timeout_ms</code>,
+<code>propagate_traces</code>, <code>exclude_paths</code>, <code>attributes</code>.</p>
+<h3 id="73-environment-variables">7.3 Environment Variables<a class="headerlink" href="#73-environment-variables" title="Permanent link">&para;</a></h3>
+<p>Application-level toggles use the <code>FRAISEQL_</code> prefix and your own logging
+configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Set the root logging level</span>
+<span class="nv">FRAISEQL_LOG_LEVEL</span><span class="o">=</span>debug
 
-<h3 id="72-environment-variables">7.2 Environment Variables<a class="headerlink" href="#72-environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="enable-debug-logging">Enable debug logging<a class="headerlink" href="#enable-debug-logging" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_LOG_LEVEL=debug</p>
-<h1 id="set-trace-sample-rate">Set trace sample rate<a class="headerlink" href="#set-trace-sample-rate" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_TRACE_SAMPLE_RATE=0.1</p>
-<h1 id="disable-metrics-cost-reduction">Disable metrics (cost reduction)<a class="headerlink" href="#disable-metrics-cost-reduction" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_METRICS_ENABLED=false</p>
-<h1 id="set-slow-query-threshold">Set slow query threshold<a class="headerlink" href="#set-slow-query-threshold" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_SLOW_QUERY_THRESHOLD_MS=5000</p>
-<h1 id="export-metrics-to-datadog">Export metrics to Datadog<a class="headerlink" href="#export-metrics-to-datadog" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_METRICS_EXPORTER=datadog
-DD_AGENT_HOST=localhost
-DD_AGENT_PORT=8125</p>
-<h1 id="export-traces-to-jaeger">Export traces to Jaeger<a class="headerlink" href="#export-traces-to-jaeger" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_TRACE_EXPORTER=jaeger
-JAEGER_AGENT_HOST=localhost
-JAEGER_AGENT_PORT=6831
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Path for the security audit log file</span>
+<span class="nv">FRAISEQL_SECURITY_LOG_PATH</span><span class="o">=</span>/var/log/fraiseql/security_events.log
+</code></pre></div>
+<p>OpenTelemetry exporters also honor the standard <code>OTEL_*</code> environment
+variables (e.g. <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>) when the OpenTelemetry SDK is
+installed.</p>
 <hr />
 <h2 id="8-dashboard-examples">8. Dashboard Examples<a class="headerlink" href="#8-dashboard-examples" title="Permanent link">&para;</a></h2>
 <h3 id="81-grafana-dashboard-query-performance">8.1 Grafana Dashboard: Query Performance<a class="headerlink" href="#81-grafana-dashboard-query-performance" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌──────────────────────────────────────────────────────────┐
-│ FraiseQL Query Performance Dashboard                      │
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────────────┐
+│ FraiseQL Query Performance Dashboard                       │
 ├──────────────────────────────────────────────────────────┤
 │                                                            │
-│  Queries/sec ↑ 8500    Errors ↑ 0.2%    Cache Hit ↑ 87%  │
+│  Queries/sec ↑ 8500    Errors ↑ 0.2%    Cache Hit ↑ 87%   │
 │                                                            │
-│  ┌─────────────────────┐  ┌──────────────────────────┐   │
-│  │ Query Latency (p95) │  │ Top Slow Queries         │   │
-│  │ ████░░░░░░  245ms   │  │ 1. ComplexSearch: 5.2s   │   │
-│  └─────────────────────┘  │ 2. JoinedQuery: 3.1s     │   │
-│                            │ 3. NestedFetch: 2.8s     │   │
-│  ┌─────────────────────┐  │ 4. TimeSeriesAgg: 2.1s   │   │
-│  │ Cache Hit Rate      │  │ 5. UserAnalytics: 1.9s   │   │
-│  │ ██████████ 87%      │  └──────────────────────────┘   │
-│  └─────────────────────┘                                  │
-│                                                            │
-│  Error Distribution        Database Connection Pool       │
-│  ├─ Validation: 45%        Active:     43/50              │
-│  ├─ Authorization: 30%      Waiting:    2                 │
-│  ├─ Database: 20%           Idle:       5                 │
-│  └─ Other: 5%               Utilization: 86%              │
+│  ┌─────────────────────┐  ┌──────────────────────────┐    │
+│  │ Query Latency (p95) │  │ Top Slow Queries         │    │
+│  │ ████░░░░░░  245ms    │  │ 1. complex_search: 5.2s  │    │
+│  └─────────────────────┘  │ 2. joined_query:   3.1s  │    │
+│                           │ 3. nested_fetch:   2.8s  │    │
+│  ┌─────────────────────┐  └──────────────────────────┘    │
+│  │ Cache Hit Rate      │                                  │
+│  │ ██████████ 87%      │   DB Connection Pool             │
+│  └─────────────────────┘   Active: 43 / 50  (86%)         │
 │                                                            │
 └──────────────────────────────────────────────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
+<p>These panels are driven by the PromQL queries in Section 1.5 against the
+<code>fraiseql_*</code> series.</p>
 <h3 id="82-grafana-dashboard-system-health">8.2 Grafana Dashboard: System Health<a class="headerlink" href="#82-grafana-dashboard-system-health" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌──────────────────────────────────────────────────────────┐
-│ FraiseQL System Health Dashboard                          │
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────────────┐
+│ FraiseQL System Health Dashboard                           │
 ├──────────────────────────────────────────────────────────┤
 │                                                            │
-│  Uptime: 28d 15h  Database Latency: 2.1ms  Memory: 512MB │
+│  DB Latency: 2.1ms   Active conns: 43/50   Errors/s: 0.1  │
 │                                                            │
-│  ┌─────────────────────┐  ┌──────────────────────────┐   │
-│  │ Request Rate        │  │ Active Subscriptions     │   │
-│  │ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██   │  │ ▁▁▁▂▂▂▃▃▃▄▄▄▅▅▅▆▆▆▇▇  │   │
-│  │ 10K req/s           │  │ 450 active               │   │
-│  └─────────────────────┘  └──────────────────────────┘   │
-│                                                            │
-│  Authorization Latency      Cache Backend Status         │
-│  │ owner_only: 2.1ms        Redis: ✅ Connected          │
-│  │ role_based: 3.5ms        Size: 512MB / 1GB            │
-│  │ custom_rule: 8.2ms       Hit Rate: 87%                │
+│  ┌─────────────────────┐  ┌──────────────────────────┐    │
+│  │ Request Rate        │  │ Error Rate by Operation  │    │
+│  │ 10K req/s           │  │ create_user:  0.4%       │    │
+│  └─────────────────────┘  │ users:        0.1%       │    │
+│                           └──────────────────────────┘    │
+│  Cache Hit Rate: 87%                                       │
 │                                                            │
 └──────────────────────────────────────────────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="9-troubleshooting-guide">9. Troubleshooting Guide<a class="headerlink" href="#9-troubleshooting-guide" title="Permanent link">&para;</a></h2>
 <h3 id="91-using-traces-to-debug-slow-queries">9.1 Using Traces to Debug Slow Queries<a class="headerlink" href="#91-using-traces-to-debug-slow-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Query taking 5 seconds</p>
-<p><strong>Solution:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Problem</strong>: A query is taking ~5 seconds.</p>
+<div class="highlight"><pre><span></span><code>1. Inspect the trace span tree for graphql.operation (5000ms):
+   ├─ authorization:      3ms     ✓ fast
+   ├─ database.query:  4990ms     ✗ SLOW
+   └─ response.transform: 5ms     ✓ fast
 
-<ol>
-<li>
-<p>Check trace span: query.execution (5000ms)
-   ├─ validation: 2ms ✓ Fast
-   ├─ authorization: 3ms ✓ Fast
-   ├─ database.query: 4990ms ✗ SLOW
-   └─ response.transform: 5ms ✓ Fast</p>
-</li>
-<li>
-<p>Database query is the culprit. Check database span:</p>
-</li>
-<li>Database: PostgreSQL</li>
-<li>Statement: SELECT ... FROM v_user WHERE ...</li>
-<li>Rows scanned: 500,000</li>
-<li>Rows returned: 100</li>
-<li>
-<p>Indexes used: None</p>
-</li>
-<li>
-<p>Recommendation: Add index on filter column
-   CREATE INDEX idx_user_status ON tb_user(status);</p>
-</li>
-<li>
-<p>After fix: Trace shows 35ms total (100x faster!)
-```text</p>
-</li>
-</ol>
-<!-- Code example in TEXT -->
+2. The database span is the culprit. Check its attributes:
+   - db.system: postgresql
+   - db.statement: SELECT data FROM v_user WHERE ...
+   - db.rows: 100   (but the scan touched far more)
 
+3. Run EXPLAIN (ANALYZE, BUFFERS) on that statement; if it&#39;s a seq scan,
+   add an index on the underlying tb_ table:
+   CREATE INDEX idx_user_status ON tb_user (status);
+
+4. Re-trace: the database span drops to ~35ms.
+</code></pre></div>
 <h3 id="92-using-logs-to-debug-authorization">9.2 Using Logs to Debug Authorization<a class="headerlink" href="#92-using-logs-to-debug-authorization" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Some users can't access field</p>
-<p><strong>Solution:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Problem</strong>: Some users can't access a field.</p>
+<div class="highlight"><pre><span></span><code>1. Find the security audit event:
+   event_type: &quot;authz.role_denied&quot;
+   user_id:    &quot;user-456&quot;
+   resource:   &quot;AdminPanel.api_keys&quot;
+   reason:     &quot;insufficient_role&quot;
 
-<ol>
-<li>
-<p>Find error log:
-   "Authorization check failed"
-   "rule": "owner_or_admin"
-   "user_id": "user-456"
-   "result": "denied"</p>
-</li>
-<li>
-<p>Check if user is owner or admin:
-   SELECT user_id, roles FROM tb_user WHERE id = 'user-456'
-   → roles = ['user'] (not admin)</p>
-</li>
-<li>
-<p>Check if user is resource owner:
-   SELECT author_id FROM tb_post WHERE id = 'post-789'
-   → author_id = 'user-123' (not user-456)</p>
-</li>
-<li>
-<p>Conclusion: User denied correctly
-   Recommendation: User must be owner or admin
-```text</p>
-</li>
-</ol>
-<!-- Code example in TEXT -->
+2. Verify the user&#39;s roles (PostgreSQL or your auth provider):
+   roles = [&#39;user&#39;]   (not &#39;admin&#39;)
 
+3. Verify ownership for owner-or-admin rules:
+   SELECT fk_author FROM tb_post WHERE id = &#39;post-789&#39;;
+   → owner is a different user
+
+4. Conclusion: the denial is correct. The user must hold the required role
+   or own the resource.
+</code></pre></div>
 <hr />
 <h2 id="10-best-practices">10. Best Practices<a class="headerlink" href="#10-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="101-observability-configuration">10.1 Observability Configuration<a class="headerlink" href="#101-observability-configuration" title="Permanent link">&para;</a></h3>
 <ul>
-<li>✅ Enable all metrics in production</li>
-<li>✅ Use sampling for traces (1-10% by default)</li>
-<li>✅ Sample debug logs (1% by default)</li>
-<li>✅ Set appropriate alert thresholds</li>
-<li>✅ Monitor cache hit rates</li>
-<li>✅ Track query latency p95/p99</li>
-<li>✅ Track mutation deadlock rates</li>
-<li>✅ Monitor subscription buffer utilization</li>
+<li>Call <code>setup_metrics(app, ...)</code> and scrape <code>/metrics</code> in every environment.</li>
+<li>Sample traces (10% in production, higher in staging) to control cost.</li>
+<li>Emit security events through <code>SecurityLogger</code> for an auditable trail.</li>
+<li>Set Prometheus alert thresholds that match your SLOs.</li>
+<li>Track query latency p95/p99 and the cache hit rate.</li>
+<li>Wire <code>/health</code> and <code>/ready</code> into your liveness/readiness probes.</li>
 </ul>
 <h3 id="102-using-traces-effectively">10.2 Using Traces Effectively<a class="headerlink" href="#102-using-traces-effectively" title="Permanent link">&para;</a></h3>
 <ul>
-<li>✅ Use traces to identify bottlenecks (query vs auth vs database)</li>
-<li>✅ Compare traces of slow vs fast queries</li>
-<li>✅ Look for unexpected database calls in response transform</li>
-<li>✅ Check span duration breakdown</li>
-<li>✅ Use custom span attributes for context</li>
+<li>Use the span tree to localize bottlenecks (auth vs. database vs. transform).</li>
+<li>Compare traces of slow vs. fast requests for the same operation.</li>
+<li>Watch for unexpected database spans inside response transformation.</li>
+<li>Add custom span attributes for request context where it aids debugging.</li>
 </ul>
 <h3 id="103-interpreting-alerts">10.3 Interpreting Alerts<a class="headerlink" href="#103-interpreting-alerts" title="Permanent link">&para;</a></h3>
 <ul>
-<li>⚠️ High query latency → Check slow query log, optimize queries</li>
-<li>⚠️ High error rate → Check error logs for patterns</li>
-<li>⚠️ Low cache hit rate → Increase cache size or TTL</li>
-<li>⚠️ Connection pool near capacity → Increase pool size or profile for leaks</li>
-<li>⚠️ High deadlock rate → Add indexes or review transaction logic</li>
+<li>High query latency → inspect <code>pg_stat_statements</code>, run <code>EXPLAIN</code>, add indexes.</li>
+<li>High error rate → group <code>fraiseql_errors_total</code> by <code>error_code</code>.</li>
+<li>Low cache hit rate → review cache TTLs / invalidation rules.</li>
+<li>Connection pool near capacity → raise pool size or hunt for leaks.</li>
 </ul>
 <hr />
-<p><strong>Document Version</strong>: 1.0.0
-<strong>Last Updated</strong>: January 2026
-<strong>Status</strong>: Complete specification for framework v2.x</p>
-<p>FraiseQL's observability model provides complete visibility into system behavior through metrics, logs, and traces. Every operation is observable; no special configuration needed.</p>
+<p>FraiseQL's observability model provides visibility into system behavior
+through Prometheus metrics, structured and security-audit logs, and
+OpenTelemetry traces — all served from the same FastAPI application, backed
+by PostgreSQL.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
