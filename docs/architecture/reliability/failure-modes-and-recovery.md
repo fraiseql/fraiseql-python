@@ -1,1354 +1,767 @@
-<!-- Skip to main content -->
 ---
-
 title: Failure Modes and Recovery
-description: This document specifies how FraiseQL fails and recovers. Understanding failure modes enables operators to design resilient deployments and understand recovery t
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+description: How a FraiseQL v1 deployment fails and recovers, covering the FastAPI process, the PostgreSQL connection pool, query execution, caching, and authentication.
+keywords: ["reliability", "recovery", "postgresql", "connection pool", "operations"]
 tags: ["documentation", "reference"]
 ---
 
 # Failure Modes and Recovery
 
-**Version:** 1.0
-**Status:** Complete
-**Date:** January 11, 2026
 **Audience:** Operations engineers, SREs, infrastructure architects, security teams
 
 ---
 
 ## 1. Overview
 
-This document specifies how FraiseQL fails and recovers. Understanding failure modes enables operators to design resilient deployments and understand recovery time objectives (RTO) and recovery point objectives (RPO).
+This document describes how a FraiseQL v1 deployment fails and recovers. FraiseQL v1
+is a Python runtime GraphQL framework that runs as a FastAPI/ASGI application in front
+of a single PostgreSQL database. Understanding the failure modes of each part — the
+application process, the database connection pool, query execution, caching, and
+authentication — helps operators design resilient deployments.
+
+A note on scope: FraiseQL itself is a single application process. It does **not**
+provide built-in multi-instance coordination, automatic failover, or read-replica
+routing. Those are deployment and PostgreSQL concerns. Where this document discusses
+clustering, load balancing, or failover, treat it as **optional deployment guidance**,
+not a feature FraiseQL manages on your behalf.
 
 ### 1.1 Design Philosophy
 
 > **Fail fast, recover gracefully.**
 
-When FraiseQL encounters failure, it:
+When FraiseQL encounters a failure, it:
 
-1. **Detects** the failure immediately
-2. **Stops processing** (no partial/corrupt state)
-3. **Reports** error to client
-4. **Recovers** automatically where possible
-5. **Notifies** operations team for manual intervention if needed
+1. **Detects** the failure as early as possible
+2. **Stops processing** the affected request (no partial or corrupt state)
+3. **Reports** a structured error to the client
+4. **Recovers** automatically where the underlying mechanism allows (for example,
+   reconnecting a dropped database connection)
+5. **Surfaces** the error in logs and metrics so operations can intervene if needed
 
 ### 1.2 Recovery Time Objectives (RTO)
 
-| Component | RTO | Automatic | Manual |
-|-----------|-----|-----------|--------|
-| **Single FraiseQL instance** | < 30 seconds | ✅ Restart | N/A |
-| **FraiseQL cluster (n instances)** | < 5 seconds | ✅ Failover | N/A |
-| **Database connection** | < 5 seconds | ✅ Reconnect | N/A |
-| **Entire database** | 5-60 minutes | ❌ No | ✅ DBA |
-| **Cache backend** | < 5 seconds | ✅ Miss → DB | N/A |
-| **Federation subgraph** | < 30 seconds | ✅ Retry | ✅ escalate |
-| **Authentication provider** | 5-30 minutes | ❌ No | ✅ Escalate |
+The figures below are **deployment-dependent guidance**, not guarantees made by
+FraiseQL. Actual recovery time depends on your container orchestrator, load balancer,
+PostgreSQL configuration, and network. Measure them in your own environment.
+
+| Component | Typical RTO | Recovery mechanism |
+|-----------|-------------|--------------------|
+| **Single FraiseQL process** | seconds to a minute | Orchestrator/supervisor restarts the process |
+| **Database connection** | seconds | Pool reconnects on next use |
+| **Connection pool exhaustion** | depends on query duration | Waiting requests proceed as connections free up |
+| **Cache backend** | seconds | Bypass cache, read from database |
+| **Entire database** | minutes (operational) | DBA restart / restore / replica promotion |
+| **Authentication provider** | minutes (operational) | Provider recovery |
 
 ### 1.3 Recovery Point Objectives (RPO)
 
-| Component | RPO | Data Loss |
+| Component | RPO | Data loss |
 |-----------|-----|-----------|
-| **Committed mutations** | 0 (durable) | None |
-| **In-flight mutations** | Transaction boundary | None (atomic) |
-| **Cache entries** | Variable (TTL) | Query re-execution needed |
-| **Subscription events** | Variable (buffer TTL) | Events may be missed |
-| **Federation caches** | < 1 second | Stale reads possible |
+| **Committed mutations** | 0 (durable in PostgreSQL) | None |
+| **In-flight mutations** | Transaction boundary | None (atomic — commits or rolls back) |
+| **Cache entries** | Variable (TTL) | None — query re-executes against the database |
+| **Subscription events** | Per connection | Events that occur while a client is disconnected are not delivered to that client unless your view/source captures them |
 
 ---
 
 ## 2. Failure Modes by Component
 
-### 2.1 FraiseQL Runtime Failures
+### 2.1 FraiseQL Process Failures
 
 #### 2.1.1 Application Crash (Process Dies)
 
-**When:** Runtime panic, OOM, segfault, kill -9
+**When:** Unhandled exception at startup, OOM kill, `SIGKILL`, host failure.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Immediate: All in-flight requests fail
-Response: Connection reset / 502 Bad Gateway
-Error: E_INTERNAL_UNKNOWN_ERROR_703
-```text
-<!-- Code example in TEXT -->
+- All in-flight requests on that process fail.
+- Clients see a connection reset, or a 502/503 from a load balancer.
 
-**Detection:** Load balancer health check fails (TCP connection refused)
+**Detection:** A health check (or the load balancer's TCP probe) fails because the
+process is no longer accepting connections.
 
 **Recovery:**
 
-- **Automatic:** Kubernetes restarts pod / systemd restarts service
-- **RTO:** 5-30 seconds (depends on restart mechanism)
-- **Data Impact:** None (database not affected)
+- **Automatic (if configured):** Your supervisor restarts it — systemd restarts the
+  service, or Kubernetes restarts the pod.
+- **Data impact:** None. PostgreSQL holds all durable state; an in-flight mutation
+  either committed before the crash or was rolled back by PostgreSQL when the
+  connection dropped.
 
-**During Recovery:**
-
-```text
-<!-- Code example in TEXT -->
-T0: Process dies
-T1-2s: Load balancer detects unhealthy
-T3-5s: Requests rerouted to healthy instances
-T5-30s: New instance starts up
-T30s+: Instance healthy, accepts traffic
-```text
-<!-- Code example in TEXT -->
+A single-process deployment is unavailable for the duration of the restart. If you run
+multiple FraiseQL processes behind a load balancer (optional deployment topology),
+traffic continues on the surviving processes while the failed one restarts. FraiseQL
+does not coordinate this — your load balancer does.
 
 #### 2.1.2 Memory Exhaustion (OOM)
 
-**When:** Query result too large, memory leak, cache fills
+**When:** A query returns an unexpectedly large result set, a memory leak accumulates,
+or the cache grows unbounded.
 
-**Client Impact:**
+**Client impact:** Requests slow down, then the process is OOM-killed and behaves as in
+2.1.1.
 
-```text
-<!-- Code example in TEXT -->
-Gradual: Queries become slower
-Then: Connection timeouts / 503 Service Unavailable
-Error: E_EXEC_LIMIT_EXCEEDED_405 or E_INTERNAL_PANIC_701
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Monitoring: Memory usage > 90%
-- Automatic: Queries rejected if < 100MB free
+**Detection:** Memory usage trends toward the container/VM limit.
 
 **Recovery:**
 
-- **Automatic:** Kill process, restart
-- **Manual:** Reduce query complexity, add cache tuning
-- **RTO:** 5-30 seconds
-- **Prevention:** Set memory limits (container/VM)
+- **Automatic:** The OOM-killed process is restarted by your supervisor.
+- **Manual:** Reduce result-set sizes (paginate, add filters), bound cache size, raise
+  the memory limit.
+- **Prevention:** Set container/VM memory limits, paginate large reads, and put TTL and
+  size bounds on any cache.
 
 #### 2.1.3 CPU Saturation
 
-**When:** High query volume, expensive queries, denial of service
+**When:** High request volume or expensive queries saturate available CPU.
 
-**Client Impact:**
+**Client impact:** Latency rises; under sustained saturation, requests may time out.
 
-```text
-<!-- Code example in TEXT -->
-Gradual: Query latency increases (p99 > 30s)
-Then: Query timeouts / slow client requests
-Error: E_DB_POSTGRES_QUERY_TIMEOUT_302
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Monitoring: CPU usage > 90%
-- Automatic: Query timeout enforcement
+**Detection:** CPU usage approaches 100%; p99 latency climbs.
 
 **Recovery:**
 
-- **Automatic:** Queries rejected if CPU utilization > 95%
-- **Manual:** Scale out to more instances
-- **RTO:** Immediate (no restart needed, queries queue)
-- **Prevention:** Rate limiting, query complexity limits
+- **Manual:** Run more FraiseQL processes (horizontal scale-out behind a load
+  balancer), or optimize the hot queries.
+- **Prevention:** Rate limiting, statement timeouts, and bounding query complexity.
 
-#### 2.1.4 Goroutine Leak / Resource Leak
+#### 2.1.4 Resource Leak (Connections / Tasks)
 
-**When:** Unbounded connection pool growth, subscription client leaks
+**When:** Connections or background tasks (for example, abandoned WebSocket
+subscriptions) accumulate over time.
 
-**Client Impact:**
+**Client impact:** Memory and file-descriptor usage grow slowly, eventually leading to
+an OOM crash (2.1.2) or refused connections.
 
-```text
-<!-- Code example in TEXT -->
-Slow: Memory gradually increases over hours/days
-Then: OOM crash (see 2.1.2)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Monitoring: Goroutine count increasing over time
-- Manual: pprof profiling
+**Detection:** Steadily rising open-connection or task counts over hours or days.
 
 **Recovery:**
 
-- **Manual:** Rolling restart of instances
-- **RTO:** 5-30 seconds per instance
-- **Prevention:** Connection limits, goroutine limits, monitoring
+- **Manual:** Restart the affected process.
+- **Prevention:** Bound the connection pool, set keep-alive/idle timeouts on WebSocket
+  subscriptions, and monitor connection and task counts.
 
 ---
 
 ### 2.2 Database Connection Failures
 
+FraiseQL uses `psycopg_pool.AsyncConnectionPool` for PostgreSQL connections. The pool
+manages a bounded set of connections, hands them to requests, and reconnects when a
+connection is found to be broken.
+
 #### 2.2.1 Connection Timeout
 
-**When:** Database unreachable, network partition, DNS failure
+**When:** PostgreSQL is unreachable — network partition, DNS failure, the server is not
+yet up.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Immediate: Query returns error
-Response: HTTP 504 Gateway Timeout (after 5s wait)
-Error: E_DB_POSTGRES_CONNECTION_FAILED_300
-Retryable: YES
-```text
-<!-- Code example in TEXT -->
+- The query fails after the pool's connection timeout elapses.
+- The client receives an error; the operation is retryable.
 
-**Detection:**
-
-- Automatic: Connection attempt fails with timeout
-- Monitoring: Connection time > threshold
+**Detection:** The connection attempt fails or times out.
 
 **Recovery:**
 
-- **Automatic:** Retry connection after backoff (1s, 2s, 4s, 8s)
-- **Client:** Retry with exponential backoff
-- **RTO:** < 30 seconds (depends on retry strategy)
+- **Automatic:** The next request attempts a fresh connection. A client that retries
+  with backoff will succeed once PostgreSQL is reachable again.
+- **Client guidance:** Retry with exponential backoff.
 
-**Connection Pool State:**
-
-```text
-<!-- Code example in TEXT -->
-Before: 10/20 connections in use
-Error: Connection attempt fails
-After: Connection returned to pool marked stale
-Next query: Reconnection attempted
-```text
-<!-- Code example in TEXT -->
+**Connection pool state:** When a connection attempt fails, the pool discards the
+broken connection rather than handing it out. The next acquisition opens a new one.
 
 #### 2.2.2 Connection Pool Exhaustion
 
-**When:** More queries than pool size, slow query victims
+**When:** More concurrent queries arrive than the pool has connections, often because
+slow queries hold connections longer than expected.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Immediate: Connection request blocks
-After 5s: Query times out
-Response: HTTP 504 Gateway Timeout
-Error: E_DB_CONNECTION_POOL_EXHAUSTED_301
-Retryable: YES (with backoff)
-```text
-<!-- Code example in TEXT -->
+- A query that needs a connection waits until one is free.
+- If none frees within the pool's wait timeout, the request fails (retryable with
+  backoff).
 
-**Detection:**
-
-- Automatic: Pool size < available connections
-- Monitoring: Active connections > 90% of pool
+**Detection:** Active connections sit at the pool maximum; requests spend time waiting
+to acquire a connection.
 
 **Recovery:**
 
-- **Automatic:** Increase pool size (if below max)
-- **Automatic:** Wait for active queries to complete
-- **Manual:** Scale out to more instances
-- **RTO:** Depends on query duration (typically <30s)
+- **Automatic:** Waiting requests proceed as in-flight queries finish and return their
+  connections to the pool.
+- **Manual:** Raise the pool maximum (within PostgreSQL's `max_connections`), speed up
+  slow queries, or run more FraiseQL processes.
 
-**Pool Configuration:**
+**Pool sizing considerations:**
 
 ```text
-<!-- Code example in TEXT -->
-min_connections: 5
-max_connections: 20
-queue_timeout: 5000ms  // How long to wait
+min_size:        minimum connections kept open
+max_size:        maximum connections the pool will open
+acquisition wait: how long a request waits for a free connection before failing
+```
 
-If 20 queries active + 5 queued:
-  Query 26 waits 5s then times out
-```text
-<!-- Code example in TEXT -->
+The product of `max_size` across all FraiseQL processes must stay within PostgreSQL's
+`max_connections`. Oversizing the pool moves the bottleneck onto the database; consider
+a server-side pooler such as PgBouncer for high process counts.
 
 #### 2.2.3 Connection Closed by Database
 
-**When:** Database restarts, network interruption, auth failure
+**When:** PostgreSQL closes a connection mid-use — server restart, idle-connection
+reaping, an administrative `pg_terminate_backend`, or a transient network drop.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Request: Executing query
-Error: Connection closed mid-query
-Response: Partial/stale data or error
-Error: E_DB_POSTGRES_CONNECTION_FAILED_300
-Retryable: YES (connection reopened)
-```text
-<!-- Code example in TEXT -->
+- The in-flight query fails with a connection error (retryable).
+- A read can be retried on a fresh connection. A mutation that had not committed is
+  rolled back by PostgreSQL; the client must re-issue it.
 
-**Detection:**
-
-- Automatic: Network error reading response
-- Automatic: Connection marked unhealthy
+**Detection:** A network/connection error occurs while reading the response; the pool
+marks the connection broken.
 
 **Recovery:**
 
-- **Automatic:** Reopen connection
-- **Automatic:** Retry query on new connection
-- **Max retries:** 3 attempts
-- **RTO:** < 10 seconds
+- **Automatic:** The pool opens a replacement connection on the next acquisition.
+- **Client guidance:** Retry the operation. For mutations, ensure the operation is
+  idempotent or check whether it committed before retrying.
 
 #### 2.2.4 Database Restart
 
-**When:** Planned maintenance, crash, failover
+**When:** Planned maintenance, a crash, or a failover.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-During restart: All connections fail
-Error: E_DB_POSTGRES_CONNECTION_FAILED_300
-Duration: 10 seconds (pg restart) to 5 minutes (recovery)
-Requests: Queued and retry
-Queries: Some fail, some succeed after restart
-```text
-<!-- Code example in TEXT -->
+- During the restart, every connection fails and new connections are refused.
+- Queries error until PostgreSQL is back and the pool reconnects.
 
-**Detection:**
-
-- Automatic: Connection attempts fail
-- Monitoring: Database not responding
+**Detection:** Connection attempts fail; database health checks fail.
 
 **Recovery:**
 
-- **Automatic:** Retry connection exponentially
-- **All queries:** Fail initially, queued for retry
-- **RTO:** 10 seconds - 5 minutes (database dependent)
-- **Data Impact:** None (durable state persisted)
-
-**During Database Restart:**
-
-```text
-<!-- Code example in TEXT -->
-T0: Database starts shutdown
-T1-5s: In-flight queries error
-T5s: All connections fail
-T5-20s: Database restart process
-T20s: Database comes online
-T20-30s: Connections re-established
-T30s+: Queries succeed again
-```text
-<!-- Code example in TEXT -->
+- **Automatic (from FraiseQL's side):** Once PostgreSQL accepts connections again, the
+  pool opens fresh connections and queries succeed.
+- **RTO:** From a few seconds (clean restart) to several minutes (crash recovery or
+  failover) — this is governed by PostgreSQL, not FraiseQL.
+- **Data impact:** None for committed writes; PostgreSQL persists them durably.
 
 ---
 
 ### 2.3 Database Execution Failures
 
-#### 2.3.1 Query Timeout
+These are errors PostgreSQL returns for a query or function call. FraiseQL surfaces them
+as structured GraphQL errors. See [Error Handling Model](./error-handling-model.md) for
+how errors are shaped and classified.
 
-**When:** Slow query, missing index, resource contention
+#### 2.3.1 Statement / Query Timeout
 
-**Client Impact:**
+**When:** A slow query, a missing index, or resource contention causes execution to
+exceed the configured `statement_timeout`.
 
-```text
-<!-- Code example in TEXT -->
-Waiting: Client waits for result (up to 30s default)
-Timeout: Query killed by database
-Response: HTTP 504 Gateway Timeout
-Error: E_DB_POSTGRES_QUERY_TIMEOUT_302
-Retryable: YES (with better query)
-```text
-<!-- Code example in TEXT -->
+**Client impact:**
 
-**Detection:**
+- PostgreSQL cancels the statement; the client receives a timeout error (retryable
+  after narrowing the query).
 
-- Automatic: Query execution > timeout threshold
-- Monitoring: p99 query time > SLO
+**Detection:** Execution exceeds the timeout; p99 query time breaches your SLO.
 
 **Recovery:**
 
-- **Automatic:** Kill query, return error
-- **Client:** Retry with fewer results (add filter/limit)
-- **Manual:** Add index, optimize query
-- **RTO:** Immediate (query terminated)
-- **Data Impact:** None (query doesn't write)
+- **Automatic:** The statement is cancelled and the error returned. No data is written
+  by a cancelled read.
+- **Client guidance:** Retry with a tighter filter or smaller `LIMIT`.
+- **Manual:** Add an index, optimize the underlying `v_`/`tv_` view, or raise the
+  timeout.
+
+Set a `statement_timeout` (per-session or globally) so a runaway query cannot hold a
+connection indefinitely and starve the pool.
 
 #### 2.3.2 Deadlock
 
-**When:** Concurrent mutations conflicting
+**When:** Two concurrent transactions acquire locks in conflicting orders.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Execution: Queries start conflicting
-Deadlock detected: One query victim selected
-Response: HTTP 502 Bad Gateway
-Error: E_DB_POSTGRES_DEADLOCK_303
-Retryable: YES (automatic on retry)
-```text
-<!-- Code example in TEXT -->
+- PostgreSQL detects the cycle, cancels one transaction as the victim, and returns a
+  serialization/deadlock error (retryable).
 
-**Detection:**
-
-- Automatic: Database detects and kills one query
-- Monitoring: Deadlock count increasing
+**Detection:** PostgreSQL's deadlock detector fires; the deadlock count rises in
+metrics.
 
 **Recovery:**
 
-- **Automatic:** Runtime retries query automatically (up to 3x)
-- **If persists:** Returns error, client retries
-- **RTO:** < 1 second per retry
-- **Data Impact:** First query's changes persist, second rolls back
+- **Automatic:** The victim transaction is rolled back; the winner commits.
+- **Client guidance:** Retry the victim transaction. Because writes go through `fn_`
+  PostgreSQL functions, keep those functions short and acquire locks in a consistent
+  order to minimize deadlocks.
 
-**Deadlock Scenario:**
+**Deadlock scenario:**
 
-```text
-<!-- Code example in TEXT -->
-Client A: UPDATE users SET balance -= 100 WHERE id = 1
-         UPDATE orders SET total += 100 WHERE user_id = 1
+```sql
+-- Transaction A
+UPDATE tb_user  SET balance = balance - 100 WHERE id = '...';
+UPDATE tb_order SET total   = total   + 100 WHERE fk_user = '...';
 
-Client B: UPDATE orders SET total -= 50 WHERE user_id = 1
-         UPDATE users SET balance += 50 WHERE id = 1
+-- Transaction B (opposite lock order)
+UPDATE tb_order SET total   = total   -  50 WHERE fk_user = '...';
+UPDATE tb_user  SET balance = balance +  50 WHERE id = '...';
+```
 
-Database: Detects circular dependency
-         Kills Client B's transaction
-         Client B retries and succeeds
-```text
-<!-- Code example in TEXT -->
+PostgreSQL detects the circular wait, cancels one transaction, and that transaction
+retries and succeeds.
 
 #### 2.3.3 Constraint Violation
 
-**When:** Unique constraint, foreign key, check constraint
+**When:** A unique, foreign-key, or check constraint rejects a write inside a `fn_`
+function.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Execution: Constraint violation during INSERT/UPDATE
-Response: HTTP 400 Bad Request
-Error: E_DB_MYSQL_CONSTRAINT_VIOLATION_304
-Retryable: NO
-```text
-<!-- Code example in TEXT -->
+- The write is rejected; the mutation returns an error result. Not retryable without
+  changing the data.
 
-**Detection:**
-
-- Automatic: Database rejects write
-- User-actionable: Clear error message
+**Detection:** PostgreSQL rejects the write; the `fn_` function returns a failure
+payload that maps to your `@fraiseql.error` type.
 
 **Recovery:**
 
-- **Client:** Fix data (use different email, valid user_id, etc.)
-- **Retry:** Retry with corrected data
-- **RTO:** User must fix (not automatic)
+- **Client guidance:** Correct the input (use a different email, a valid foreign key,
+  etc.) and re-submit.
 
-**No Recovery Needed:**
+**No automatic recovery:**
 
 ```text
-<!-- Code example in TEXT -->
-Mutation { createUser(email: "taken@example.com") { id } }
-→ Error: Unique constraint violation on email
-→ User should: Use different email
-→ Automatic retry: Will fail identically
-```text
-<!-- Code example in TEXT -->
+mutation { createUser(input: { email: "taken@example.com" }) { ... } }
+→ Unique constraint violation on email
+→ Client should: use a different email
+→ Retrying the same input fails identically
+```
 
 #### 2.3.4 Out of Memory (Database)
 
-**When:** Query result too large, insufficient RAM
+**When:** A query (large sort, hash join, or aggregate) needs more memory than
+PostgreSQL has available.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Execution: Query consumes too much memory
-Response: HTTP 503 Service Unavailable
-Error: E_DB_SQLSERVER_OUT_OF_MEMORY_307
-Retryable: YES (reduce query size)
-```text
-<!-- Code example in TEXT -->
+- The query fails; the client receives an error (retryable after reducing query size).
 
-**Detection:**
-
-- Monitoring: Database memory > 90%
-- Automatic: Query killed before consuming all memory
+**Detection:** PostgreSQL memory pressure; the statement fails before exhausting the
+host.
 
 **Recovery:**
 
-- **Client:** Retry with pagination (smaller batch size)
-- **Manual:** Add WHERE filter, reduce JOIN complexity
-- **Manual:** Increase database RAM
-- **RTO:** Immediate (query killed)
+- **Client guidance:** Paginate, add a `WHERE` filter, or simplify joins.
+- **Manual:** Tune `work_mem`, optimize the view, or add memory to the database host.
 
 #### 2.3.5 Disk Full
 
-**When:** Database cannot write (INSERT/UPDATE fails)
+**When:** The database volume fills and PostgreSQL can no longer write.
 
-**Client Impact:**
+**Client impact:**
 
-```text
-<!-- Code example in TEXT -->
-Execution: Database cannot allocate space
-Response: HTTP 503 Service Unavailable
-Error: E_DB_MYSQL_DISK_FULL_308
-Retryable: YES (after manual intervention)
-```text
-<!-- Code example in TEXT -->
+- Writes fail with an error; reads generally continue to work.
 
-**Detection:**
-
-- Monitoring: Disk usage > 95%
-- Automatic: Database rejects writes
+**Detection:** Disk usage crosses your alert threshold; PostgreSQL rejects writes.
 
 **Recovery:**
 
-- **Manual:** DBA frees disk space
-- **RTO:** 5-30 minutes (operational)
-- **Data Impact:** Writes fail until space available
-- **Reads:** Unaffected (can still query)
+- **Manual:** A DBA frees space (rotate WAL/logs, prune data, grow the volume).
+- **RTO:** Operational — minutes, depending on the fix.
+- **Data impact:** Writes fail until space is available; committed data is intact.
 
 ---
 
-### 2.4 Cache Backend Failures
+### 2.4 Cache Failures
 
-#### 2.4.1 Cache Server Down
+Caching in FraiseQL is an optional optimization. When a cache backend is unavailable or
+returns nothing useful, FraiseQL falls back to executing the query against PostgreSQL —
+correctness is preserved, only latency changes.
 
-**When:** Redis/Memcached instance crashes
+#### 2.4.1 Cache Backend Down
 
-**Client Impact:**
+**When:** An external cache (for example, Redis) is unreachable.
 
-```text
-<!-- Code example in TEXT -->
-Query: Cache miss (server unavailable)
-Result: Query executes against database
-Latency: Slower than cached (depends on query)
-Error: None (graceful degradation)
-```text
-<!-- Code example in TEXT -->
+**Client impact:**
 
-**Detection:**
+- Reads miss the cache and execute against the database. Higher latency, but correct
+  results.
 
-- Automatic: Cache connection fails
-- Monitoring: Cache server not responding
+**Detection:** Cache connection failures; the backend stops responding.
 
 **Recovery:**
 
-- **Automatic:** Cache marked unavailable, queries bypass cache
-- **Automatic:** Cache reconnection attempted
-- **RTO:** < 5 seconds (cache warming starts)
-- **Data Impact:** None (queries still work, slower)
+- **Automatic:** Requests bypass the cache and read from the database. When the cache
+  returns, it repopulates on subsequent reads.
+- **Data impact:** None — the database is the source of truth.
 
-**Graceful Degradation:**
-
-```text
-<!-- Code example in TEXT -->
-Before cache failure:
-  Query: 50ms (cache hit)
-
-During cache failure:
-  Query: 200-500ms (database direct)
-
-After cache recovery:
-  Query: 50ms again (cache warming in progress)
-```text
-<!-- Code example in TEXT -->
-
-#### 2.4.2 Cache Corruption
-
-**When:** Stale/invalid data in cache
-
-**Client Impact:**
+**Graceful degradation:**
 
 ```text
-<!-- Code example in TEXT -->
-Query: Cache returns invalid data
-Result: Inconsistent response to client
-Monitoring: Data inconsistency detected
-```text
-<!-- Code example in TEXT -->
+Cache available:    fast path (cache hit)
+Cache unavailable:  slower path (database read), results still correct
+Cache recovers:     cache warms again on subsequent reads
+```
 
-**Detection:**
+#### 2.4.2 Stale or Invalid Cache Entry
 
-- Monitoring: Hash validation fails
-- Automatic: Data type mismatch
+**When:** A cached entry no longer reflects the committed database state, or fails a
+validation check.
+
+**Client impact:**
+
+- A brief stale read is possible until the entry is invalidated or expires.
+
+**Detection:** TTL expiry, explicit invalidation on the relevant write, or a validation
+mismatch.
 
 **Recovery:**
 
-- **Automatic:** Invalidate entry, fetch from database
-- **Automatic:** Rebuild cache from fresh data
-- **RTO:** < 1 second
-- **Data Impact:** Brief stale read possible
+- **Automatic:** Invalidate the entry and fetch fresh data from the database.
 
-#### 2.4.3 Cache Too Full
+See [Consistency Model](./consistency-model.md) for the guarantees and the windows in
+which a stale read can occur.
 
-**When:** Memory limit reached
+#### 2.4.3 Cache At Capacity
 
-**Client Impact:**
+**When:** The cache reaches its memory limit.
 
-```text
-<!-- Code example in TEXT -->
-Write: Cannot add new entries to cache
-Behavior: Entries evicted (LRU policy)
-Result: More cache misses, slower queries
-Error: None (automatic eviction)
-```text
-<!-- Code example in TEXT -->
+**Client impact:**
 
-**Detection:**
-
-- Monitoring: Cache memory > 90%
-- Automatic: Eviction triggered
+- Entries are evicted (typically LRU), producing more misses and slightly slower
+  queries. No errors.
 
 **Recovery:**
 
-- **Automatic:** LRU entries evicted
-- **Manual:** Increase cache memory
-- **RTO:** Immediate (queries work, but slower)
+- **Automatic:** Eviction keeps the cache within bounds.
+- **Manual:** Raise the cache size limit or tighten TTLs.
 
 ---
 
-### 2.5 Authentication Provider Failures
+### 2.5 Authentication Failures
 
 #### 2.5.1 Auth Provider Unreachable
 
-**When:** OIDC provider down, Auth0 down, corporate SSO down
+**When:** An external identity provider (OIDC issuer, Auth0, corporate SSO) is down.
 
-**Client Impact:**
+**Client impact:** Depends on the token model:
 
-```text
-<!-- Code example in TEXT -->
-Request: No valid token
-Recovery: Request uses cached/local auth
-Behavior: Depends on auth provider type
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: Token validation request fails
-- Monitoring: Auth provider not responding
-
-**Recovery Strategy (depends on provider):**
-
-**Scenario A: JWT Token (self-contained)**
+**Self-contained JWT (signature verified with a cached public key):**
 
 ```text
-<!-- Code example in TEXT -->
-Token validation: Cached public key used
-Auth provider unreachable: Token still validated locally
-Impact: NONE (JWT self-contained)
-RTO: 0 (no recovery needed)
-```text
-<!-- Code example in TEXT -->
+The provider being unreachable does not block validation; the cached
+public key (JWKS) still verifies signatures locally. Impact: minimal,
+until the signing keys rotate and the cached JWKS becomes stale.
+```
 
-**Scenario B: OAuth2 Token (external validation)**
+**Tokens requiring a live call to the provider (introspection):**
 
 ```text
-<!-- Code example in TEXT -->
-Token validation: HTTP request to provider fails
-Behavior: Option 1: Cache last 5min, allow
-         Option 2: Deny all access
-Impact: Depends on policy (typically DENY)
-RTO: Until provider recovers (5-30 min)
-```text
-<!-- Code example in TEXT -->
+Validation makes an HTTP call to the provider, which fails.
+Policy decides the behaviour: deny new requests (fail closed,
+recommended) or briefly accept on a short-lived cache (fail open).
+Impact lasts until the provider recovers.
+```
 
-**Recommended:** Use JWT tokens for resilience.
+**Recommendation:** Prefer self-contained JWTs with cached JWKS for resilience against
+provider outages.
 
-#### 2.5.2 Token Expiration During Execution
+#### 2.5.2 Token Expiry During Execution
 
-**When:** Long-running query, token expires mid-execution
+**When:** A long-running request's token expires after authorization but before the
+request completes.
 
-**Client Impact:**
+**Client impact:** The request completes normally — authorization is evaluated at the
+start of the request, not mid-execution.
 
-```text
-<!-- Code example in TEXT -->
-Auth check: Passed (token valid at start)
-Execution: Query runs normally
-Result: Query completes successfully
-Token expiry: Ignored (already authenticated)
-```text
-<!-- Code example in TEXT -->
+**Recovery:** None needed for the in-flight request. The client must refresh its token
+before the next request.
 
-**Detection:** Not detected (query already authorized)
+#### 2.5.3 Invalid Token
 
-**Recovery:** None needed (query completes)
+**When:** A token is malformed, expired, or its signature does not verify.
 
----
+**Client impact:** The request is rejected with `401 Unauthorized`. Not retryable
+without re-authenticating.
 
-### 2.6 Federation Failures
+**Recovery:** The client re-authenticates to obtain a fresh token.
 
-#### 2.6.1 Subgraph Unavailable
+#### 2.5.4 Stale Authorization Context
 
-**When:** Federated subgraph is down or unreachable
+**When:** A user's roles or permissions change after their token was issued.
 
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Query: Needs federated entity
-Attempt: HTTP request to subgraph fails
-Response: HTTP 504 Gateway Timeout (after 5s wait)
-Error: E_FED_SUBGRAPH_UNAVAILABLE_502
-Retryable: YES
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: HTTP connection fails
-- Monitoring: Subgraph health check fails
+**Client impact:** Until the token is refreshed, authorization is evaluated against the
+permissions baked into the (still-valid) token, which may allow or deny incorrectly.
 
 **Recovery:**
 
-- **Automatic:** Retry with exponential backoff (1s, 2s, 4s)
-- **Automatic:** Fallback to stale cache (if available)
-- **Max retries:** 3 attempts × 5s = 15s total wait
-- **RTO:** < 30 seconds
-- **Fallback:** Return stale federated data if cached
+- Shorten token lifetimes so changes take effect sooner.
+- Revoke and re-issue tokens for an immediate change.
 
-**During Subgraph Outage:**
+#### 2.5.5 Row-Level Security (RLS) Denial
 
-```text
-<!-- Code example in TEXT -->
-Request 1 (T0): Subgraph unavailable
-  → Retry 1 (T1s): Still unavailable
-  → Retry 2 (T3s): Still unavailable
-  → Return error after 15s total wait
+**When:** A PostgreSQL row-level security policy prevents access to rows the caller is
+not entitled to.
 
-Request 2 (T0): Parallel requests
-  → Same retry loop
-  → Shared cache prevents redundant retries
-```text
-<!-- Code example in TEXT -->
+**Client impact:** The query returns no rows for the disallowed data (or an explicit
+authorization error). This is an intentional security boundary, not a fault. Not
+retryable — the caller lacks permission.
 
-#### 2.6.2 Entity Resolution Timeout
-
-**When:** Subgraph responds slowly
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Query: Needs federated entity
-Wait: 5s timeout
-Response: HTTP 504 Gateway Timeout
-Error: E_FED_SUBGRAPH_TIMEOUT_503
-Retryable: YES
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: HTTP request > timeout threshold
-- Monitoring: Subgraph response time > SLO
-
-**Recovery:**
-
-- **Automatic:** Retry with backoff
-- **Client:** Retry entire query
-- **Manual:** Optimize subgraph query, scale out
-- **RTO:** < 30 seconds (with retries)
-
-#### 2.6.3 Entity Type Mismatch
-
-**When:** Subgraph returns unexpected entity type
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Query: Expects User { name, email }
-Subgraph: Returns { name, org_id } (wrong shape)
-Error: Type validation fails
-Response: HTTP 500 Internal Server Error
-Error: E_FED_TYPE_MISMATCH_504
-Retryable: NO
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: Schema validation fails
-- Monitoring: Type mismatches detected
-
-**Recovery:**
-
-- **Manual:** Fix subgraph schema
-- **RTO:** Depends on schema update process (5-30 min)
-- **Interim:** Disable federation for this entity type
-
----
-
-### 2.7 Subscription Failures
-
-#### 2.7.1 WebSocket Connection Lost
-
-**When:** Network interruption, client disconnect, server restart
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Subscription: Active WebSocket
-Event: Network failure
-Connection: Closed
-Response: Close frame sent to client (code 1006)
-Error: E_SUB_CONNECTION_CLOSED_604
-Retryable: YES (reconnect)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: Socket close detected
-- Automatic: Keep-alive timeout (60s)
-
-**Recovery:**
-
-- **Client:** Reconnect and resubscribe
-- **RTO:** < 5 seconds (reconnect + resubscribe)
-- **Events during outage:** Buffered in `tb_entity_change_log`
-- **Replay:** Client can query from last sequence_number
-
-**Recovery Sequence:**
-
-```text
-<!-- Code example in TEXT -->
-T0: Connection lost
-T1-5s: Client detects and reconnects
-T5s: New subscription established
-T5+: Resume receiving events from buffer
-```text
-<!-- Code example in TEXT -->
-
-#### 2.7.2 Event Buffer Overflow
-
-**When:** Too many events, subscriber is slow
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Events: Accumulating faster than delivery
-Buffer: Fills up (default: 1000 events)
-Response: Error sent to subscriber
-Error: E_SUB_BUFFER_OVERFLOW_603
-Retryable: YES (reconnect and replay from sequence)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Monitoring: Buffer usage > 90%
-- Automatic: Overflow detected
-
-**Recovery:**
-
-- **Client:** Reconnect and replay from last sequence number
-- **Automatic:** Filter events (add WHERE clause) to reduce volume
-- **Manual:** Increase buffer size
-- **RTO:** < 10 seconds (reconnect)
-
-#### 2.7.3 Event Delivery Failure (Webhooks)
-
-**When:** Webhook endpoint returns error or is slow
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Event: Needs delivery to webhook
-Request: HTTP POST to endpoint
-Response: 500 error or timeout
-Behavior: Automatic retry with backoff
-Attempts: Up to 5 retries over 10 minutes
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: HTTP response code >= 400
-- Monitoring: Webhook delivery failures
-
-**Recovery:**
-
-- **Automatic:** Retry with exponential backoff
-  - Attempt 1: Immediately
-  - Attempt 2: After 1s
-  - Attempt 3: After 5s
-  - Attempt 4: After 30s
-  - Attempt 5: After 5 minutes
-- **Final failure:** Event logged, Webhook marked unhealthy
-- **RTO:** 10 minutes until all retries exhausted
-
----
-
-### 2.8 Authorization/Security Failures
-
-#### 2.8.1 Auth Token Invalid
-
-**When:** Malformed, expired, or tampered token
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Request: Includes invalid token
-Auth: Validation fails
-Response: HTTP 401 Unauthorized
-Error: E_AUTH_INVALID_TOKEN_201
-Retryable: NO (user must re-authenticate)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: Token signature invalid
-- Automatic: Token expiration date passed
-
-**Recovery:**
-
-- **Client:** Re-authenticate to get new token
-- **RTO:** Depends on auth flow (typically < 1 minute)
-
-#### 2.8.2 Auth Context Stale
-
-**When:** User role/permissions changed after token issued
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Request: Token valid but permissions changed
-Authorization: Evaluated against stale role
-Result: May allow/deny incorrectly
-Probability: Low (permissions don't change frequently)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Monitoring: Authorization denials after known permission grant
-- Manual: Security audit
-
-**Recovery:**
-
-- **Automatic:** Re-fetch auth context on periodic basis (TTL)
-- **Manual:** Revoke and re-issue tokens
-- **RTO:** 0-1 hour (depends on token refresh interval)
-
-#### 2.8.3 RLS Policy Violation
-
-**When:** Row-level security policy prevents access
-
-**Client Impact:**
-
-```text
-<!-- Code example in TEXT -->
-Query: Attempts cross-tenant access
-RLS: Policy prevents unauthorized access
-Response: Query returns empty or error
-Error: E_AUTH_ROW_LEVEL_SECURITY_DENIED_204 (if explicit)
-Retryable: NO (user doesn't have permission)
-```text
-<!-- Code example in TEXT -->
-
-**Detection:**
-
-- Automatic: RLS policy evaluation
-- Monitoring: RLS denials by policy
-
-**Recovery:**
-
-- **No automatic recovery** (intentional security boundary)
-- **Manual:** DBA grants access or user requests permission
-- **RTO:** Depends on access request process
+**Recovery:** None automatic. A privileged operator must grant access if appropriate.
 
 ---
 
 ## 3. Cascading Failures
 
-### 3.1 Database Down → Everything Down
+### 3.1 Database Down → Reads and Writes Fail
 
 ```text
-<!-- Code example in TEXT -->
-T0: Primary database becomes unavailable
-T1: All queries start failing
-T2: Cache still works (if recently populated)
-T3: Subscriptions: Events not captured
-T4: Federation: Dependent services affected
-T5-30min: RTO depends on failover setup
-```text
-<!-- Code example in TEXT -->
+PostgreSQL becomes unavailable
+→ Queries and mutations fail (no connection)
+→ A warm cache may still serve some reads until entries expire
+→ RTO is governed by your PostgreSQL recovery/failover, not FraiseQL
+```
 
-### 3.2 Cache Down → Database Load Spikes
+### 3.2 Cache Down → Database Load Increases
 
 ```text
-<!-- Code example in TEXT -->
-T0: Cache server fails
-T1: All queries bypass cache
-T2: Database CPU/memory spike
-T3: Database becomes slow
-T4: Queries timeout
-T5+: Potential database failure if resources exhausted
-```text
-<!-- Code example in TEXT -->
+Cache backend fails
+→ All reads bypass the cache and hit the database directly
+→ Database CPU and I/O rise
+→ Without statement timeouts and pool bounds, slow queries can pile up
+Mitigation: keep statement_timeout and a bounded pool so the database
+degrades gracefully rather than collapsing.
+```
 
-### 3.3 Authentication Provider Down → All Writes Blocked
+### 3.3 Auth Provider Down → New Sessions Blocked
 
 ```text
-<!-- Code example in TEXT -->
-T0: Auth provider unreachable
-T1: New token validation fails (OAuth2 tokens)
-T2: New user requests return 401
-T3: Existing queries continue (token already valid)
-T4: Eventually: All tokens expire, all users blocked
-```text
-<!-- Code example in TEXT -->
-
-### 3.4 Subscription Event Buffer Full → All Events Dropped
-
-```text
-<!-- Code example in TEXT -->
-T0: Event throughput increases
-T1: Buffer fills to capacity
-T2: New events cannot be stored
-T3: Subscribers miss events
-T4: Clients must replay from last sequence_number
-```text
-<!-- Code example in TEXT -->
+Provider becomes unreachable
+→ Self-contained JWTs continue to validate against cached keys
+→ Flows that need a live provider call (login, introspection) fail
+→ Existing valid tokens keep working until they expire
+```
 
 ---
 
 ## 4. Failure Recovery Procedures
 
-### 4.1 Single Instance Crash
+### 4.1 Process Crash
 
-**Automatic (no human intervention):**
+**Automatic (with a supervisor configured):**
 
 ```text
-<!-- Code example in TEXT -->
+1. The FraiseQL process crashes.
+2. systemd / Kubernetes detects the unhealthy process.
+3. It starts a replacement process.
+4. The replacement re-establishes its PostgreSQL pool on first use.
+5. Traffic resumes (immediately on surviving processes if you run several
+   behind a load balancer; after restart for a single-process deployment).
 
-1. Instance crashes
-2. Kubernetes detects unhealthy pod (10-30s)
-3. Spins up new pod
-4. New pod joins load balancer
-5. Existing connections fail (clients retry)
-6. New requests route to new pod
-
-Total time: 30-60 seconds
-Human intervention: None
-Data loss: None
-```text
-<!-- Code example in TEXT -->
+Data loss: none (PostgreSQL holds durable state).
+```
 
 **Manual verification:**
 
 ```bash
-<!-- Code example in BASH -->
-# Check pod logs for crash reason
-kubectl logs pod-name
+# Inspect logs for the crash cause
+kubectl logs <pod-name>      # or: journalctl -u <service>
 
-# If OOM: Increase memory limits
-# If out of disk: Clean up logs/cache
-# If panic: File bug report
-```text
-<!-- Code example in TEXT -->
+# If OOM:           raise the memory limit or bound result sizes / cache
+# If disk pressure: clear logs / temporary files
+# If a bug:         capture the traceback and file an issue
+```
 
-### 4.2 Database Connection Lost
+### 4.2 Database Connection Lost (Transient)
 
 **Automatic:**
 
 ```text
-<!-- Code example in TEXT -->
+1. A query fails with a connection error.
+2. The pool discards the broken connection.
+3. The pool opens a fresh connection on the next acquisition.
+4. The retried query succeeds.
+5. Clients see a brief latency spike.
 
-1. Query fails with connection error
-2. Runtime closes stale connection
-3. Reopens connection (exponential backoff)
-4. Retries query on new connection
-5. Client sees temporary latency spike
+Data loss: none.
+```
 
-Total time: 2-10 seconds
-Human intervention: None (check database logs)
-Data loss: None
-```text
-<!-- Code example in TEXT -->
+### 4.3 Database Unavailable (Operational Recovery)
 
-### 4.3 Database Unavailable (Recovery)
-
-**Steps:**
+This is a PostgreSQL operations procedure; FraiseQL simply reconnects once the database
+is healthy.
 
 ```text
-<!-- Code example in TEXT -->
+1. Monitoring detects PostgreSQL is not responding.
+2. Page the on-call DBA.
+3. Investigate database and network logs.
+4. Recover:
+   a. Crashed server   → restart PostgreSQL.
+   b. Network issue    → restore connectivity.
+   c. HA setup         → promote a replica (your HA tooling, not FraiseQL).
+5. Verify with test queries; watch replication lag if applicable.
+6. Ramp traffic back up and monitor.
 
-1. Monitor: Detect database not responding (< 5 seconds)
-2. Alert: Page on-call DBA
-3. Investigate: Check database logs, network connectivity
-4. Recovery:
-   a. If crashed: Restart database server
-   b. If network: Restore network connectivity
-   c. If failed: Promote replica (if HA setup)
-5. Verify: Run queries, check replication lag
-6. Monitor: Watch for issues, gradual traffic increase
+Data loss: none for committed writes (durable in PostgreSQL).
+```
 
-Total time: 5-30 minutes (depends on issue)
-Human intervention: Required
-Data loss: None (if durability persisted)
-```text
-<!-- Code example in TEXT -->
-
-### 4.4 Complete Data Center Failure
-
-**Steps (assume multi-datacenter setup):**
-
-```text
-<!-- Code example in TEXT -->
-
-1. Monitor: Detect all instances/database in region down
-2. Alert: Page incident commander
-3. Failover:
-   a. Update DNS to point to secondary region
-   b. Promote secondary database (if replication lag acceptable)
-   c. OR: Route to standby region
-4. Verify: Monitor traffic, error rates
-5. Recovery:
-   a. Restore primary region
-   b. Rebuild replication to primary
-   c. Failback (if needed)
-6. Monitor: Watch for issues
-
-Total time: 2-5 minutes (automatic DNS) + manual investigation
-Human intervention: Required
-Data loss: Depends on replication lag (typically < 1 second)
-```text
-<!-- Code example in TEXT -->
+Multi-region, replica promotion, and DNS failover are deployment topologies you build
+and operate around FraiseQL; FraiseQL does not perform them. RPO in those scenarios
+depends on your replication configuration.
 
 ---
 
 ## 5. Resilience Design Patterns
 
-### 5.1 Circuit Breaker Pattern
+These are patterns to apply in your deployment and client code. FraiseQL does not
+implement them for you unless noted.
 
-Used for subgraph/external service calls:
+### 5.1 Retry with Exponential Backoff
 
-```text
-<!-- Code example in TEXT -->
-State 1: CLOSED (normal)
-  - Requests pass through
-  - If error rate > threshold: transition to OPEN
-
-State 2: OPEN (circuit broken)
-  - Requests fail immediately (no wait)
-  - Error: E_FED_SUBGRAPH_UNAVAILABLE
-  - Duration: 30 seconds
-
-State 3: HALF_OPEN (testing recovery)
-  - Allow 1 request through
-  - If succeeds: transition to CLOSED
-  - If fails: transition back to OPEN
-
-Example:
-  Error rate: 50% failures
-  Threshold: 10% failures
-  → Transition to OPEN
-  → Requests fail immediately
-  → 30s later: Try 1 request (HALF_OPEN)
-  → Succeeds: Transition to CLOSED, resume normal
-```text
-<!-- Code example in TEXT -->
-
-### 5.2 Bulkhead Pattern
-
-Isolate resources to prevent cascading failure:
+For transient failures (connection drops, deadlocks, statement timeouts), clients
+should retry with increasing, jittered delays:
 
 ```text
-<!-- Code example in TEXT -->
-Pool 1: Queries (max 100 concurrent)
-Pool 2: Mutations (max 50 concurrent)
-Pool 3: Subscriptions (max 1000 concurrent)
+Attempt 1: immediate
+Attempt 2: ~1s  + jitter
+Attempt 3: ~2s  + jitter
+Attempt 4: ~4s  + jitter
+Attempt 5: ~8s  + jitter
 
-If Pool 1 exhausted:
-  - Queries queue or fail
-  - Mutations: Still work (own pool)
-  - Subscriptions: Still work (own pool)
+Jitter avoids a thundering herd; bound the total wait so clients fail in
+reasonable time. Only retry operations that are safe to repeat (idempotent
+reads, or mutations you can deduplicate).
+```
 
-Prevents: One type of query from starving others
-```text
-<!-- Code example in TEXT -->
+### 5.2 Bounded Pools and Timeouts
 
-### 5.3 Retry with Exponential Backoff
-
-For transient failures:
+Keep failures contained:
 
 ```text
-<!-- Code example in TEXT -->
-Attempt 1: Immediate
-Attempt 2: Wait 1s + random(0-100ms)
-Attempt 3: Wait 2s + random(0-100ms)
-Attempt 4: Wait 4s + random(0-100ms)
-Attempt 5: Wait 8s + random(0-100ms)
-Max attempts: 5 (total wait: ~15 seconds)
+- Bound the connection pool (max_size) so a spike cannot open unbounded
+  connections against PostgreSQL.
+- Set statement_timeout so a runaway query cannot hold a connection forever.
+- Set request/keep-alive timeouts so abandoned clients release resources.
+```
 
-Benefits:
-  - Avoids thundering herd
-  - Gives system time to recover
-  - Client waits reasonably (15s)
-  - Success rate increases 90% → 99%+
-```text
-<!-- Code example in TEXT -->
+### 5.3 Graceful Degradation
 
-### 5.4 Graceful Degradation
-
-Accept reduced functionality under load:
+Prefer reduced functionality over a hard outage:
 
 ```text
-<!-- Code example in TEXT -->
-Normal load:
-  - All features: queries, mutations, subscriptions
-  - Latency: < 500ms p99
-
-High load (>80% capacity):
-  - Disable: Subscriptions (keep for emergency)
-  - Keep: Queries, mutations, auth
-  - Latency: < 2s p99
-
-Critical load (>95% capacity):
-  - Disable: Mutations, subscriptions
-  - Keep: Read queries only
-  - Latency: < 5s p99
-
-Extreme load (>99% capacity):
-  - Disable: Most features
-  - Keep: Critical read queries only
-  - Return: 503 Service Unavailable for others
-
-Benefit: Service remains available, not crashed
-```text
-<!-- Code example in TEXT -->
+- When the cache is down, serve from the database (slower, still correct).
+- Under heavy load, shed expensive operations before essential reads.
+- Return clear, retryable errors rather than hanging the client.
+```
 
 ---
 
-## 6. Failure Testing (Chaos Engineering)
+## 6. Failure Testing
 
-### 6.1 Injected Failures
-
-Use to test resilience:
-
-```text
-<!-- Code example in TEXT -->
-# Kill 1 instance (of 3)
-chaos kill -pod 1
-
-Expected:
-  - Requests to pod 1: Fail (< 1s)
-  - Requests reroute to pods 2-3
-  - No cascading failure
-  - System still healthy
-
-# Increase latency on database
-chaos network-delay database +500ms
-
-Expected:
-  - Query latency increases
-  - Queries eventually timeout (after 30s)
-  - Retries backoff
-  - System recovers when latency drops
-
-# Fill cache
-chaos fill-cache 95%
-
-Expected:
-  - Cache evicts LRU entries
-  - More cache misses
-  - Database load increases
-  - Queries slower but not failing
-
-# Drop 10% of packets
-chaos drop-packets 10%
-
-Expected:
-  - Some requests fail
-  - Retry logic engages
-  - Eventually succeed (after retries)
-  - End-to-end latency increases
-```text
-<!-- Code example in TEXT -->
-
-### 6.2 Failure Acceptance Criteria
-
-After injected failure:
+Validate these failure modes against a real deployment. FraiseQL's repository includes
+chaos and regression tests under `tests/chaos/` and `tests/regression/`; complement
+them with infrastructure-level fault injection in your environment:
 
 ```text
-<!-- Code example in TEXT -->
-✅ PASS if:
-  - No data corruption
-  - No data loss (for writes)
-  - Requests eventually succeed (or fail gracefully)
-  - System recovers when failure removed
-  - Alerts triggered appropriately
-  - No cascading failures to other systems
+- Kill a FraiseQL process              → confirm the supervisor restarts it,
+                                          and (if clustered) traffic continues.
+- Restart PostgreSQL                    → confirm the pool reconnects and
+                                          queries resume; no committed-write loss.
+- Add latency to the database           → confirm statement_timeout fires and
+                                          clients receive retryable errors.
+- Take the cache offline                → confirm reads fall back to the database.
+- Saturate the connection pool          → confirm requests wait, then fail with a
+                                          retryable error rather than hanging forever.
+```
 
-❌ FAIL if:
-  - Data corrupted
-  - Data lost
-  - System deadlocked
-  - Cascading failure
-  - No alerts triggered
-  - Recovery time > RTO target
+**Acceptance criteria after an injected failure:**
+
 ```text
-<!-- Code example in TEXT -->
+PASS if:
+  - No data corruption.
+  - No loss of committed writes.
+  - Requests eventually succeed, or fail with a clear, retryable error.
+  - The system recovers once the fault is removed.
+  - Alerts fire appropriately.
+
+FAIL if:
+  - Data is corrupted or committed writes are lost.
+  - The process hangs instead of returning an error.
+  - Recovery does not happen after the fault is removed.
+```
 
 ---
 
 ## 7. SLO and Error Budgets
 
-### 7.1 Availability SLO
+Service-level objectives are properties of your deployment, not guarantees FraiseQL
+makes. Define them against the behaviour you can observe and control.
+
+### 7.1 Availability SLO (example)
 
 ```text
-<!-- Code example in TEXT -->
-Target: 99.9% availability (three nines)
-Definition: Successfully responding to queries
-Time unit: Calendar month
-Calculation: Uptime / Total time
+Target:      99.9% availability over a calendar month
+Definition:  fraction of requests answered successfully (or with a clean,
+             retryable error) within the latency SLO
+Budget:      99.9% of ~30 days ≈ 43 minutes of allowed downtime per month
+```
 
-99.9% of 30 days = 43 minutes downtime/month
-
-Within budget:
-  - 30 minutes unplanned outage ✅
-  - 13 minutes planned maintenance ✅
-
-Over budget:
-  - 50 minutes unplanned outage ❌
-  - Budget exhausted, any additional downtime violates SLO
-```text
-<!-- Code example in TEXT -->
-
-### 7.2 Error Budget Usage
+### 7.2 Error Budget (example)
 
 ```text
-<!-- Code example in TEXT -->
-Month: January (31 days, 44,640 minutes)
-Budget: 43.2 minutes (99.9% SLO)
+Monthly budget (99.9%):  ~43 minutes
+Each incident consumes part of the budget; when it is exhausted, prioritise
+reliability work over new features until the budget recovers.
+```
 
-Week 1: 5 min downtime → 38.2 min remaining
-Week 2: 10 min downtime → 28.2 min remaining
-Week 3: 8 min downtime → 20.2 min remaining
-Week 4: 12 min downtime → 8.2 min remaining
+Tie SLOs to your monitoring. See
+[Performance Characteristics](../../foundation/12-performance-characteristics.md) for
+latency expectations to base your SLOs on.
 
-If Week 4 has additional 2 min outage:
-  - Error budget exhausted (10.2 > 8.2)
-  - SLO violated for January
-  - Requires incident review, not just bug fix
-```text
-<!-- Code example in TEXT -->
+---
+
+## 8. Subscriptions and Failure
+
+FraiseQL subscriptions are delivered over a WebSocket and are scoped to a single
+connection on a single process. They are **not** backed by a distributed event system,
+and FraiseQL does not coordinate subscription state across processes.
+
+**WebSocket connection lost** — network interruption, client disconnect, or the
+process the connection lived on restarting:
+
+- That connection's active subscriptions end. Any in-flight delivery stops.
+- The client should reconnect and resubscribe. On a multi-process deployment the
+  reconnect may land on a different process; that is transparent to the client because
+  each subscription is independent and re-established from scratch.
+- Events that occur while the client is disconnected are not replayed unless your
+  underlying source captures them (for example, a change-log table the subscription
+  reads from on reconnect). FraiseQL does not buffer per-client event history on your
+  behalf.
+
+**Process restart** drops every subscription on that process; affected clients
+reconnect and resubscribe. There is no automatic migration of subscription state
+between processes.
+
+See [Subscriptions](../realtime/subscriptions.md) for the subscription model and
+[Versioning Strategy](./versioning-strategy.md) for how schema changes affect
+long-lived clients.
 
 ---
 
 ## Summary
 
-**FraiseQL failure characteristics:**
+A FraiseQL v1 deployment fails safely:
 
-✅ **Fast detection:** Failures detected < 5 seconds
-✅ **Automatic recovery:** Most failures handled automatically
-✅ **Graceful degradation:** Reduced functionality, not complete outage
-✅ **Data safety:** No data loss for committed writes
-✅ **Clear error codes:** Clients know what failed and why
-✅ **Observable:** Traceability via trace IDs and structured logs
+- **Durable writes:** committed mutations survive process and database restarts;
+  in-flight mutations are atomic — they commit or roll back.
+- **Self-healing connections:** the `psycopg_pool` connection pool discards broken
+  connections and reconnects automatically.
+- **Graceful cache fallback:** an unavailable cache costs latency, not correctness.
+- **Clear errors:** failures surface as structured, classifiable errors so clients know
+  whether to retry.
 
-**Key RTO targets:**
+What FraiseQL does **not** do for you: it does not provide automatic failover,
+read-replica routing, multi-instance coordination, or distributed subscriptions.
+Clustering, load balancing, PostgreSQL high availability, and multi-region failover are
+deployment topologies you operate around FraiseQL.
 
-- Single instance crash: 30-60 seconds
-- Database connection: < 10 seconds
-- Cache failure: < 5 seconds
-- Database unavailable: 5-30 minutes (operational)
-- Complete region failure: 2-5 minutes (DNS + failover)
-
-**Golden rule:** FraiseQL fails safely, recovers gracefully, and provides sufficient observability to debug issues.
-
----
-
-*End of Failure Modes and Recovery*
+**Golden rule:** FraiseQL fails safely, reconnects to PostgreSQL automatically, and
+surfaces enough detail to diagnose what happened — but durability, availability, and
+failover beyond a single process are properties of how you deploy it.
