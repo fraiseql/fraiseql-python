@@ -1,412 +1,274 @@
-<!-- Skip to main content -->
 ---
-
 title: Aggregation Model
-description: FraiseQL v2 supports **database-native aggregations** through compile-time schema analysis and runtime SQL generation. All aggregations execute server-side in t
+description: FraiseQL v1 derives GROUP BY and aggregate SQL at runtime from the GraphQL field selection, executing server-side against your PostgreSQL v_/tv_ views.
 keywords: ["design", "scalability", "performance", "patterns", "security"]
 tags: ["documentation", "reference"]
 ---
 
 # Aggregation Model
 
-**Version:** 1.0
-**Status:** Complete
-**Audience:** Compiler developers, runtime engineers, SDK users
-**Date:** January 12, 2026
+**Status:** Stable
+**Audience:** Runtime engineers, SDK users, DBAs
+**Database:** PostgreSQL
 
 ---
 
 ## Overview
 
-FraiseQL v2 supports **database-native aggregations** through compile-time schema analysis and runtime SQL generation. All aggregations execute server-side in the database, leveraging native SQL performance.
+FraiseQL v1 supports **runtime auto-aggregation**. When a GraphQL query selects
+aggregate fields on a view-backed type, FraiseQL inspects the field selection and
+derives the corresponding `GROUP BY` + aggregate SQL **at request time**, then
+executes it server-side against your PostgreSQL `v_`/`tv_` view. The aggregation
+logic lives in `_derive_auto_aggregation` / `_parse_aggregation_expr` in
+`src/fraiseql/db.py`.
 
-**Key Principle**: No joins. All dimensions must be denormalized into the `data` JSONB column at ETL time.
+There is no compiler and no build step: nothing is generated ahead of time. The
+GraphQL field selection drives the SQL, and PostgreSQL does the heavy lifting.
+
+**Key principle**: aggregation happens inside the database. You model the
+measures and dimensions in a `v_`/`tv_` view, and FraiseQL pushes the grouping
+and aggregate functions down to that view.
+
+You define the type with a normal `@fraiseql.type` decorator pointing at the
+view:
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_sales", jsonb_column="data")
+class Sales:
+    id: ID
+    category: str
+    region: str
+    revenue: float
+```
+
+When you run a query that selects aggregate fields, FraiseQL builds the
+`GROUP BY` query for you. You can always fall back to writing the aggregation
+directly in the view's SQL if you need full control.
 
 ---
 
 ## Aggregate Functions
 
-### Supported Functions (All Databases)
+FraiseQL derives the following PostgreSQL aggregate functions from the field
+selection:
 
-**Basic Aggregates**:
+- `COUNT(*)` — count all rows
+- `COUNT(field)` — count non-null values in a field
+- `COUNT(DISTINCT field)` — count unique values
+- `SUM(field)` — sum of values
+- `AVG(field)` — average of values
+- `MIN(field)` — minimum value
+- `MAX(field)` — maximum value
+- `STDDEV(field)` — standard deviation
+- `VARIANCE(field)` — variance
 
-- `COUNT(*)` - Count all rows
-- `COUNT(field)` - Count non-null values in field
-- `COUNT(DISTINCT field)` - Count unique values
-- `SUM(field)` - Sum all values
-- `AVG(field)` - Average of values
-- `MIN(field)` - Minimum value
-- `MAX(field)` - Maximum value
+These are standard PostgreSQL aggregates. Any aggregate expression PostgreSQL
+understands can also be written by hand inside a `v_`/`tv_` view if you need
+something beyond the derived set.
 
-**Example**:
+**Example** — an aggregate query expressed directly in SQL:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
     COUNT(*) AS total_count,
     COUNT(DISTINCT customer_id) AS unique_customers,
     SUM(revenue) AS total_revenue,
     AVG(revenue) AS avg_revenue,
     MIN(revenue) AS min_revenue,
-    MAX(revenue) AS max_revenue
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
-
-### Database-Specific Extensions
-
-**PostgreSQL**:
-
-- `STDDEV(field)` - Standard deviation
-- `VARIANCE(field)` - Variance
-- `PERCENTILE_CONT(fraction)` - Continuous percentile
-- `PERCENTILE_DISC(fraction)` - Discrete percentile
-
-**MySQL**:
-
-- `GROUP_CONCAT(field)` - Concatenate values with delimiter
-- `STDDEV(field)` - Standard deviation (limited support)
-
-**SQLite**:
-
-- Limited to basic functions only (COUNT, SUM, AVG, MIN, MAX)
-
-**SQL Server**:
-
-- `STDEV(field)` / `STDEVP(field)` - Standard deviation (sample/population)
-- `VAR(field)` / `VARP(field)` - Variance (sample/population)
+    MAX(revenue) AS max_revenue,
+    STDDEV(revenue) AS revenue_stddev,
+    VARIANCE(revenue) AS revenue_variance
+FROM v_sales;
+```
 
 ---
 
 ## GROUP BY Semantics
 
-### Compilation Strategy
+### How auto-aggregation works at runtime
 
-When the compiler encounters a fact table (marked with `fact_table=True` in schema):
+When a GraphQL query selects aggregate fields on a view-backed type, FraiseQL:
 
-1. **Introspect Table Structure**:
-   - Identify measure columns (numeric types: INT, BIGINT, DECIMAL, FLOAT)
-   - Detect `data` JSONB column for dimensions
-   - Identify denormalized filter columns (indexed SQL columns)
+1. **Parses the field selection**: it identifies which selected fields are
+   dimensions (grouping keys) and which are aggregate expressions (e.g.
+   `SUM(revenue)`).
 
-2. **Generate GroupByExecutionPlan**:
-   - GROUP BY clause with JSONB extraction for dimensions
-   - Aggregate function calls on measure columns
-   - Optional HAVING filters on aggregated results
-   - Optional temporal bucketing (DATE_TRUNC, DATE_FORMAT, strftime)
+2. **Derives the `GROUP BY`**: dimensions become the `GROUP BY` keys. JSONB
+   dimensions are extracted with `data->>'field'`; native SQL columns declared
+   as native dimensions use direct column references (see
+   [Native Dimensions](#native-dimensions)).
 
-3. **Validate**:
-   - Grouping columns exist in table structure
-   - Measure columns are numeric types
-   - JSONB paths are valid for database target
+3. **Builds the aggregate SELECT**: each aggregate field becomes an aggregate
+   function call on the underlying measure column or JSONB measure path.
 
-### Runtime Execution
+4. **Executes server-side**: the derived SQL runs against your PostgreSQL view
+   and returns aggregated rows.
 
-1. Parse GraphQL GROUP BY request
-2. Generate SELECT statement with:
-   - GROUP BY clause extracting JSONB dimensions
-   - Aggregate functions on SQL measure columns
-   - Optional HAVING filters
-   - Optional temporal bucketing
-3. Lower to database-specific SQL dialect
-4. Execute on database (server-side aggregation)
-5. Return aggregated results
+The function names are validated against an allowlist before SQL is built, so a
+field selection can never inject an arbitrary function.
 
-**Example**:
+**Example**
 
 GraphQL:
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
-  sales_aggregate(
-    groupBy: { category: true, region: true }
-  ) {
+  sales {
     category
     region
-    revenue_sum
+    revenueSum
     count
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Generated SQL (PostgreSQL):
+Derived SQL (PostgreSQL):
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
     data->>'category' AS category,
     data->>'region' AS region,
-    SUM(revenue) AS revenue_sum,
+    SUM((data->>'revenue')::numeric) AS revenue_sum,
     COUNT(*) AS count
-FROM tf_sales
+FROM v_sales
 GROUP BY data->>'category', data->>'region';
-```text
-<!-- Code example in TEXT -->
+```
+
+If you prefer, you can encapsulate exactly the same shape inside a `tv_` view
+and have FraiseQL read pre-aggregated rows directly.
 
 ---
 
 ## HAVING Clause
 
-The HAVING clause filters aggregated results after GROUP BY.
-
-### Compilation
-
-1. **Validate**: Ensure HAVING references only aggregated fields or grouping keys
-2. **Generate**: Post-aggregation WHERE clause
-3. **Lower**: Database-specific HAVING syntax
-
-### Example
-
-GraphQL:
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_aggregate(
-    groupBy: { category: true },
-    having: { revenue_sum_gte: 10000 }
-  ) {
-    category
-    revenue_sum
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-Generated SQL (PostgreSQL):
+The `HAVING` clause filters aggregated results after `GROUP BY`. Express it
+inside the view's SQL, where it filters on aggregate expressions or grouping
+keys.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
     data->>'category' AS category,
-    SUM(revenue) AS revenue_sum
-FROM tf_sales
+    SUM((data->>'revenue')::numeric) AS revenue_sum
+FROM v_sales
 GROUP BY data->>'category'
-HAVING SUM(revenue) >= $1;
--- Parameters: [10000]
-```text
-<!-- Code example in TEXT -->
+HAVING SUM((data->>'revenue')::numeric) >= 10000;
+```
+
+`HAVING` references only aggregated fields or grouping keys — the same rule
+PostgreSQL enforces.
 
 ---
 
 ## Temporal Bucketing
 
-Temporal bucketing groups timestamps into intervals (day, week, month, etc.).
-
-### Database-Specific Functions
-
-**PostgreSQL**:
+Group timestamps into intervals (day, week, month, quarter, year) using
+PostgreSQL's `DATE_TRUNC`. Bucket inside the view's SQL so the truncated value
+becomes a stable grouping key.
 
 ```sql
-<!-- Code example in SQL -->
-DATE_TRUNC('day', occurred_at)    -- Day bucket
-DATE_TRUNC('week', occurred_at)   -- Week bucket
-DATE_TRUNC('month', occurred_at)  -- Month bucket
+DATE_TRUNC('day', occurred_at)     -- Day bucket
+DATE_TRUNC('week', occurred_at)    -- Week bucket
+DATE_TRUNC('month', occurred_at)   -- Month bucket
 DATE_TRUNC('quarter', occurred_at) -- Quarter bucket
-DATE_TRUNC('year', occurred_at)   -- Year bucket
-```text
-<!-- Code example in TEXT -->
+DATE_TRUNC('year', occurred_at)    -- Year bucket
+```
 
-**MySQL**:
-
-```sql
-<!-- Code example in SQL -->
-DATE_FORMAT(occurred_at, '%Y-%m-%d')      -- Day bucket
-DATE_FORMAT(occurred_at, '%Y-%m')         -- Month bucket
-DATE_FORMAT(occurred_at, '%Y')            -- Year bucket
-```text
-<!-- Code example in TEXT -->
-
-**SQLite**:
+**Example** — a per-day revenue view:
 
 ```sql
-<!-- Code example in SQL -->
-strftime('%Y-%m-%d', occurred_at)  -- Day bucket
-strftime('%Y-%m', occurred_at)     -- Month bucket
-strftime('%Y', occurred_at)        -- Year bucket
-```text
-<!-- Code example in TEXT -->
-
-**SQL Server**:
-
-```sql
-<!-- Code example in SQL -->
-DATEPART(day, occurred_at)     -- Day component
-DATEPART(week, occurred_at)    -- Week component
-DATEPART(month, occurred_at)   -- Month component
-DATEPART(quarter, occurred_at) -- Quarter component
-DATEPART(year, occurred_at)    -- Year component
-```text
-<!-- Code example in TEXT -->
-
-### Supported Buckets
-
-- `second` - PostgreSQL only
-- `minute` - PostgreSQL, SQL Server
-- `hour` - PostgreSQL, SQL Server
-- `day` - All databases
-- `week` - All databases
-- `month` - All databases
-- `quarter` - PostgreSQL, SQL Server
-- `year` - All databases
-
-### Example
-
-GraphQL:
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_aggregate(
-    groupBy: { occurred_at_day: true }
-  ) {
-    occurred_at_day
-    revenue_sum
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-Generated SQL (PostgreSQL):
-
-```sql
-<!-- Code example in SQL -->
 SELECT
     DATE_TRUNC('day', occurred_at) AS occurred_at_day,
     SUM(revenue) AS revenue_sum
-FROM tf_sales
+FROM v_sales
 GROUP BY DATE_TRUNC('day', occurred_at)
 ORDER BY occurred_at_day;
-```text
-<!-- Code example in TEXT -->
+```
+
+For richer temporal grouping (week-of-year, fiscal periods, holiday flags),
+materialize the buckets as columns in your view or a calendar table — see
+[Calendar Dimensions](./calendar-dimensions.md).
 
 ---
 
 ## Conditional Aggregates
 
-Conditional aggregates apply filters to individual aggregate functions.
-
-### PostgreSQL (FILTER Clause)
-
-PostgreSQL supports the native `FILTER (WHERE ...)` syntax:
+Conditional aggregates apply a filter to an individual aggregate function.
+PostgreSQL's native `FILTER (WHERE ...)` clause expresses these cleanly inside a
+view:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
     COUNT(*) AS total_orders,
     SUM(revenue) FILTER (WHERE data->>'status' = 'completed') AS completed_revenue,
     SUM(revenue) FILTER (WHERE data->>'status' = 'cancelled') AS cancelled_revenue
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
+FROM v_sales;
+```
 
-### MySQL/SQLite/SQL Server (CASE WHEN Emulation)
-
-Other databases emulate with CASE WHEN:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    COUNT(*) AS total_orders,
-    SUM(CASE WHEN data->>'status' = 'completed' THEN revenue ELSE 0 END) AS completed_revenue,
-    SUM(CASE WHEN data->>'status' = 'cancelled' THEN revenue ELSE 0 END) AS cancelled_revenue
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
-
-### GraphQL API
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_aggregate {
-    count
-    revenue_sum
-    completed_revenue: revenue_sum(
-      filter: { status: { _eq: "completed" } }
-    )
-    cancelled_revenue: revenue_sum(
-      filter: { status: { _eq: "cancelled" } }
-    )
-  }
-}
-```text
-<!-- Code example in TEXT -->
+You can expose each filtered aggregate as a separate column in the view, then
+select them as ordinary fields in GraphQL.
 
 ---
 
 ## Performance Characteristics
 
-### SQL Column Aggregation
+### Aggregate typed columns where you can
 
-**10-100x faster than JSONB aggregation**:
-
-- Direct access to typed numeric columns
-- B-tree indexes on measure columns
-- Database native aggregation optimizations
-
-**Example**:
+Aggregating a typed numeric column is far faster than parsing values out of
+JSONB on every row. Where a measure is queried often, keep it as a real column
+in the view (or in the underlying `tv_` projection table) rather than reaching
+into `data`:
 
 ```sql
-<!-- Code example in SQL -->
--- ✅ FAST: SQL column aggregation
-SELECT SUM(revenue) FROM tf_sales;
--- Execution time: 0.2ms (1M rows)
+-- Fast: aggregating a typed column
+SELECT SUM(revenue) FROM v_sales;
+-- ~0.2 ms over 1M rows
 
--- ❌ SLOW: JSONB aggregation (if measures were in JSONB)
-SELECT SUM((data->>'revenue')::numeric) FROM tf_sales;
--- Execution time: 45ms (1M rows)
--- 225x slower!
-```text
-<!-- Code example in TEXT -->
+-- Slower: parsing the measure out of JSONB on every row
+SELECT SUM((data->>'revenue')::numeric) FROM v_sales;
+-- ~45 ms over 1M rows
+```
 
-### Indexed Measures
+### Index measures used in aggregations
 
-For common aggregation queries, create indexes on measure columns:
+For frequent aggregations with selective filters, index the measure columns of
+the backing table:
 
 ```sql
-<!-- Code example in SQL -->
-CREATE INDEX idx_sales_revenue ON tf_sales(revenue);
-CREATE INDEX idx_sales_quantity ON tf_sales(quantity);
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_sales_revenue ON tv_sales(revenue);
+CREATE INDEX idx_sales_quantity ON tv_sales(quantity);
+```
 
-**Result**: Near-instantaneous aggregations for queries with selective filters.
+### JSONB dimensions
 
-### JSONB Dimensions
-
-JSONB extraction for GROUP BY is slower than SQL columns, but provides flexibility:
+Grouping by a JSONB path is slower than grouping by a typed column, but it is
+flexible. A GIN index on the `data` column helps:
 
 ```sql
-<!-- Code example in SQL -->
--- Moderate speed: JSONB extraction for grouping
-SELECT
-    data->>'category' AS category,
-    SUM(revenue) AS revenue_sum
-FROM tf_sales
-GROUP BY data->>'category';
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_sales_data_gin ON tv_sales USING GIN(data);
+```
 
-**Optimization**: Use GIN index on `data` column (PostgreSQL):
-
-```sql
-<!-- Code example in SQL -->
-CREATE INDEX idx_sales_data_gin ON tf_sales USING GIN(data);
-```text
-<!-- Code example in TEXT -->
+When a dimension is hot, prefer promoting it to a native column and declaring it
+as a native dimension (next section).
 
 ---
 
 ## Native Dimensions
 
-When a view mixes native SQL columns (e.g. `period_date DATE`, `category_id UUID`) with a JSONB `data` column, native columns can be declared as **native dimensions** to avoid JSONB extraction overhead.
+When a view mixes native SQL columns (e.g. `period_date DATE`,
+`category_id UUID`) with a JSONB `data` column, native columns can be declared
+as **native dimensions** so auto-aggregation groups on the real column instead
+of extracting it from JSONB.
 
 ### Problem
 
-By default, all dimension columns in auto-aggregation are extracted from JSONB:
+By default, dimension columns are extracted from JSONB. If `period_date` is
+really a column, that is both slower (the btree index on the column can't be
+used) and, for ordering, incorrect — `ORDER BY "data" -> 'period_date'`
+references the raw `data` column, which is not in `GROUP BY`, and PostgreSQL
+rejects the query:
 
 ```sql
 -- Default: extracts from JSONB even though period_date is a real column
@@ -416,14 +278,10 @@ GROUP BY "data"->>'period_date'
 ORDER BY "data" -> 'period_date'
 ```
 
-This has two issues:
-
-1. **Performance**: btree indexes on native columns cannot be used
-2. **Correctness**: `ORDER BY "data" -> 'period_date'` references the raw `data` column, which is not in `GROUP BY` — PostgreSQL rejects the query
-
 ### Solution
 
-Declare native columns in the `native_dimensions` key of the aggregation metadata:
+Declare the native columns in the `native_dimensions` key of the aggregation
+metadata:
 
 ```python
 register_type_for_view(
@@ -437,7 +295,8 @@ register_type_for_view(
 )
 ```
 
-FraiseQL generates correct SQL using column references instead of JSONB extraction:
+FraiseQL then groups and orders on the native columns directly, using column
+references and a table alias instead of JSONB extraction:
 
 ```sql
 -- Native dimensions: uses column refs and table alias
@@ -452,53 +311,55 @@ GROUP BY t."period_date", t."category_id", "data"->'dimensions'->>'subcategory'
 ORDER BY t."period_date"
 ```
 
-### Mixed Grouping
+### Mixed grouping
 
-Native and JSONB dimensions coexist in the same query. Native dimensions use `t."col"`, JSONB dimensions use `"data"->>'field'`. The table automatically receives an `AS t` alias when native dimensions are present.
+Native and JSONB dimensions coexist in the same query. Native dimensions use
+`t."col"`, JSONB dimensions use `"data"->>'field'`. The table automatically
+receives an `AS t` alias when native dimensions are present.
 
-### Backward Compatibility
+### Backward compatibility
 
-Existing metadata without `native_dimensions` behaves identically. The key is optional and defaults to an empty list.
+Existing metadata without `native_dimensions` behaves identically. The key is
+optional and defaults to an empty list.
 
 ---
 
 ## No Joins Principle
 
-**Critical**: FraiseQL does not support joins. All dimensional data must be denormalized into the `data` JSONB column at ETL time.
-
-**Example**:
+FraiseQL reads from a single view per query — it does not join across types at
+read time. All dimensional data should already be present in the view, either as
+native columns or denormalized into the `data` JSONB column. Do the joins once,
+inside the view's SQL (or in the process that refreshes a `tv_` projection),
+not per request.
 
 ```sql
-<!-- Code example in SQL -->
--- ❌ NOT SUPPORTED: Joining dimension tables
+-- The view does the join once, server-side
+CREATE VIEW v_sales AS
 SELECT
+    s.id,
     s.revenue,
-    p.category
-FROM tf_sales s
-JOIN td_products p ON s.product_id = p.id;
+    p.category AS product_category,
+    jsonb_build_object(
+        'revenue', s.revenue,
+        'product_category', p.category
+    ) AS data
+FROM tb_sales s
+JOIN tb_products p ON p.pk_product = s.fk_product;
+```
 
--- ✅ CORRECT: Denormalized dimensions in JSONB
-SELECT
-    revenue,
-    data->>'product_category' AS category
-FROM tf_sales;
--- Category was denormalized at ETL time by DBA/data team
-```text
-<!-- Code example in TEXT -->
+GraphQL queries then aggregate over `v_sales` without any further joins.
 
-**ETL Responsibility**:
-
-- FraiseQL provides GraphQL query interface over existing tables
-- DBA/data team creates ETL pipelines to populate `tf_` tables
-- Dimensional data is denormalized from `td_` tables into `tf_` tables' `data` column
+**Data-modeling responsibility**: the DBA / data team designs the `v_`/`tv_`
+views and any ETL or refresh process that keeps a `tv_` projection up to date.
+FraiseQL provides the runtime GraphQL interface and the auto-aggregation on top.
 
 ---
 
-## Related Specifications
+## Related Documentation
 
-- **Fact-Dimension Pattern** (`fact-dimension-pattern.md`) - Fact table structure and patterns
-- **Aggregation Operators** (`../specs/aggregation-operators.md`) - Complete operator reference by database
-- **Capability Manifest** (`../specs/capability-manifest.md`) - Database-specific operator availability
-- **Window Functions** (`window-functions.md`) - Phase 5 analytical functions
-
----
+- [Fact-Dimension Pattern](./fact-dimension-pattern.md) — fact and dimension table design for analytics views
+- [Calendar Dimensions](./calendar-dimensions.md) — temporal dimensions and calendar tables
+- [Window Functions](./window-functions.md) — ranking and running totals as raw-SQL view patterns
+- [View Selection Guide](../database/view-selection-guide.md) — choosing between `v_` and `tv_` views
+- [Aggregation Operators](../../specs/aggregation-operators.md) — operator reference
+- [Schema Conventions](../../specs/schema-conventions.md) — naming and schema conventions
