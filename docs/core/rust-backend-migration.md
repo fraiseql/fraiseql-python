@@ -894,5 +894,4 @@ After successful migration, you should see:
 
 ---
 
-**Migration Complete**: This guide covers the complete transition from psycopg to the exclusive Rust backend in FraiseQL v1.9+.</content>
-<parameter name="filePath">docs/core/rust-backend-migration.md
+**Migration Complete**: This guide covers the complete transition from psycopg to the exclusive Rust backend in FraiseQL v1.9+.
