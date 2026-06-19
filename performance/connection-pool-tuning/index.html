@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Connection pooling is essential for GraphQL API performance. A properly tuned connection pool can improve throughput by 2-3x and reduce latency variance.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/performance/connection-pool-tuning/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Connection pool tuning - FraiseQL Documentation</title>
+        <title>Connection Pool Tuning Guide - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Connection pool tuning
+              Connection Pool Tuning Guide
             
           </span>
         </div>
@@ -4845,6 +4847,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-fraiseql-configures-the-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How FraiseQL Configures the Pool
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How FraiseQL Configures the Pool">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuring-via-fraiseqlconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring via FraiseQLConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-via-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring via environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#current-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4967,6 +5008,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#stay-under-postgresql-max_connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stay under PostgreSQL max_connections
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4985,17 +5037,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#key-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#health-signals" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5007,10 +5048,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-to-monitor" class="md-nav__link">
+  <a href="#diagnose-with-pg_stat_activity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How to Monitor
+        Diagnose with pg_stat_activity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-side-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application-side monitoring
       
     </span>
   </a>
@@ -5035,10 +5087,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-pre-warm-the-pool" class="md-nav__link">
+  <a href="#1-keep-connections-warm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Pre-warm the Pool
+        1. Keep connections warm
       
     </span>
   </a>
@@ -5046,10 +5098,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-connection-recycling" class="md-nav__link">
+  <a href="#2-recycle-idle-connections" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Connection Recycling
+        2. Recycle idle connections
       
     </span>
   </a>
@@ -5057,10 +5109,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-tune-idle-timeout" class="md-nav__link">
+  <a href="#3-share-one-pool-across-the-whole-app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Tune Idle Timeout
+        3. Share one pool across the whole app
       
     </span>
   </a>
@@ -5068,10 +5120,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-use-connection-pooling-in-client-code" class="md-nav__link">
+  <a href="#4-reduce-how-long-each-query-holds-a-connection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Use Connection Pooling in Client Code
+        4. Reduce how long each query holds a connection
       
     </span>
   </a>
@@ -5080,6 +5132,100 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-pgbouncer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using PgBouncer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem-too-many-connections-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem: "Too many connections" Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problem-high-latency-with-low-cpu-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem: High Latency with Low CPU Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#problem-connections-stuck-idle-in-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem: Connections Stuck "idle in transaction"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5103,19 +5249,84 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Connection Pool Tuning Guide
-description: Connection pooling is essential for GraphQL API performance. A properly tuned connection pool can improve throughput by 2-3x and reduce latency variance.
-keywords: []
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="connection-pool-tuning-guide">Connection Pool Tuning Guide<a class="headerlink" href="#connection-pool-tuning-guide" title="Permanent link">&para;</a></h1>
-<p><strong>Version</strong>: 2.0.0-a1
-<strong>Framework</strong>: deadpool-postgres (async connection pool)
+<p><strong>Framework</strong>: FraiseQL (Python, FastAPI) over psycopg's async connection pool
 <strong>Impact</strong>: Critical for production performance</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Connection pooling is essential for GraphQL API performance. A properly tuned connection pool can improve throughput by 2-3x and reduce latency variance.</p>
+<p>FraiseQL uses <a href="https://www.psycopg.org/psycopg3/">psycopg</a>'s <code>AsyncConnectionPool</code> to manage PostgreSQL connections. The pool is created once at application startup and shared across every GraphQL request, so connections are reused instead of being opened and closed per request.</p>
+<h2 id="how-fraiseql-configures-the-pool">How FraiseQL Configures the Pool<a class="headerlink" href="#how-fraiseql-configures-the-pool" title="Permanent link">&para;</a></h2>
+<p>You configure the pool through <code>create_fraiseql_app(...)</code> keyword arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>        <span class="c1"># base connections</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># extra connections under burst load</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>   <span class="c1"># seconds to wait for a free connection</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>   <span class="c1"># seconds before an idle connection is recycled</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>These kwargs map onto fields of <code>FraiseQLConfig</code>, which can also be set directly or via <code>FRAISEQL_</code>-prefixed environment variables:</p>
+<table>
+<thead>
+<tr>
+<th><code>create_fraiseql_app</code> kwarg</th>
+<th><code>FraiseQLConfig</code> field</th>
+<th>Environment variable</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connection_pool_size</code></td>
+<td><code>database_pool_size</code></td>
+<td><code>FRAISEQL_DATABASE_POOL_SIZE</code></td>
+<td>20 (10 in dev)</td>
+</tr>
+<tr>
+<td><code>connection_pool_max_overflow</code></td>
+<td><code>database_max_overflow</code></td>
+<td><code>FRAISEQL_DATABASE_MAX_OVERFLOW</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>connection_pool_timeout</code></td>
+<td><code>database_pool_timeout</code></td>
+<td><code>FRAISEQL_DATABASE_POOL_TIMEOUT</code></td>
+<td>30</td>
+</tr>
+<tr>
+<td><code>connection_pool_recycle</code></td>
+<td><code>database_pool_recycle</code></td>
+<td><code>FRAISEQL_DATABASE_POOL_RECYCLE</code></td>
+<td>3600</td>
+</tr>
+</tbody>
+</table>
+<p>Internally, the psycopg pool's <code>max_size</code> is <code>database_pool_size + database_max_overflow</code>. The pool keeps a small number of connections warm and grows up to <code>max_size</code> under load.</p>
+<h3 id="configuring-via-fraiseqlconfig">Configuring via <code>FraiseQLConfig</code><a class="headerlink" href="#configuring-via-fraiseqlconfig" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="configuring-via-environment-variables">Configuring via environment variables<a class="headerlink" href="#configuring-via-environment-variables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">10</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_TIMEOUT</span><span class="o">=</span><span class="m">30</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_RECYCLE</span><span class="o">=</span><span class="m">3600</span>
+</code></pre></div>
 <h2 id="current-configuration">Current Configuration<a class="headerlink" href="#current-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="default-settings">Default Settings<a class="headerlink" href="#default-settings" title="Permanent link">&para;</a></h3>
 <table>
@@ -5128,40 +5339,45 @@ tags: ["documentation", "reference"]</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Max Connections</strong></td>
+<td><strong>Pool size</strong></td>
+<td>20 (10 in dev)</td>
+<td>Base connections kept available</td>
+</tr>
+<tr>
+<td><strong>Max overflow</strong></td>
 <td>10</td>
-<td>Good for small-medium apps</td>
+<td>Extra connections allowed under burst load</td>
+</tr>
+<tr>
+<td><strong>Max connections</strong></td>
+<td><code>pool_size + max_overflow</code></td>
+<td>Effective psycopg <code>max_size</code></td>
+</tr>
+<tr>
+<td><strong>Acquire timeout</strong></td>
+<td>30s</td>
+<td>Wait time for a free connection before erroring</td>
+</tr>
+<tr>
+<td><strong>Recycle</strong></td>
+<td>3600s</td>
+<td>Idle connections recycled after 1 hour</td>
 </tr>
 <tr>
 <td><strong>Initialization</strong></td>
-<td>Lazy</td>
-<td>Connections created on-demand</td>
-</tr>
-<tr>
-<td><strong>Recycling</strong></td>
-<td>Fast</td>
-<td>Connections reused immediately</td>
-</tr>
-<tr>
-<td><strong>Idle Timeout</strong></td>
-<td>900s</td>
-<td>Connections dropped after 15 minutes idle</td>
+<td>Eager warm-up</td>
+<td>A few connections opened at startup</td>
 </tr>
 </tbody>
 </table>
 <h3 id="what-this-means">What This Means<a class="headerlink" href="#what-this-means" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Behavior:</p>
-<ol>
-<li>Server starts with 0 connections</li>
-<li>First request creates 1 connection</li>
-<li>Pool grows to max_size (10) as needed</li>
-<li>Unused connections closed after 15 minutes
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Behavior:
 
+1. App startup opens a small number of warm connections
+2. The pool grows toward max_size (pool_size + max_overflow) as needed
+3. Requests acquire a connection, run their query, and return it
+4. Idle connections are recycled after database_pool_recycle seconds
+</code></pre></div>
 <h2 id="tuning-by-workload">Tuning by Workload<a class="headerlink" href="#tuning-by-workload" title="Permanent link">&para;</a></h2>
 <h3 id="small-applications-development-low-traffic">Small Applications (Development, Low Traffic)<a class="headerlink" href="#small-applications-development-low-traffic" title="Permanent link">&para;</a></h3>
 <p><strong>Characteristics</strong>:</p>
@@ -5171,15 +5387,13 @@ tags: ["documentation", "reference"]</p>
 <li>Single server deployment</li>
 </ul>
 <p><strong>Configuration</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    5  // Small pool is sufficient
-).await?;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>          <span class="c1"># small pool is sufficient</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Expected Metrics</strong>:</p>
 <ul>
 <li>Pool utilization: 20-40%</li>
@@ -5194,15 +5408,13 @@ tags: ["documentation", "reference"]</p>
 <li>Single or dual server</li>
 </ul>
 <p><strong>Configuration</strong> (Recommended):</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    20  // Default 10 is often too small
-).await?;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>         <span class="c1"># default 10 in dev is often too small</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Expected Metrics</strong>:</p>
 <ul>
 <li>Pool utilization: 40-70%</li>
@@ -5217,15 +5429,19 @@ tags: ["documentation", "reference"]</p>
 <li>Multiple servers (load balanced)</li>
 </ul>
 <p><strong>Configuration</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    50 + num_cpus::get() as usize  // Scale with CPU cores
-).await?;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
+<span class="c1"># Scale the base pool with CPU cores, leave headroom in overflow</span>
+<span class="n">cores</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">4</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">50</span> <span class="o">+</span> <span class="n">cores</span><span class="p">,</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Expected Metrics</strong>:</p>
 <ul>
 <li>Pool utilization: 50-80%</li>
@@ -5235,45 +5451,35 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h2 id="tuning-for-concurrency">Tuning for Concurrency<a class="headerlink" href="#tuning-for-concurrency" title="Permanent link">&para;</a></h2>
 <h3 id="rule-of-thumb">Rule of Thumb<a class="headerlink" href="#rule-of-thumb" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>max_pool_size = (core_count × 2) + effective_spindle_count</p>
-<p>For typical cloud VMs:</p>
-<ul>
-<li>2 cores:  5 connections</li>
-<li>4 cores:  10 connections (default)</li>
-<li>8 cores:  20 connections</li>
-<li>16 cores: 35 connections</li>
-<li>32 cores: 65 connections
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>max_connections = pool_size + max_overflow ≈ (core_count × 2) + effective_spindle_count
 
+For typical cloud VMs:
+
+- 2 cores:  5 connections
+- 4 cores:  10 connections (dev default)
+- 8 cores:  20 connections (prod default)
+- 16 cores: 35 connections
+- 32 cores: 65 connections
+</code></pre></div>
 <h3 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h3>
 <p>Each connection:</p>
 <ul>
 <li>Occupies ~1-2 MB of database memory</li>
-<li>Requires PostgreSQL backend process (~5-10 MB)</li>
+<li>Requires a PostgreSQL backend process (~5-10 MB)</li>
 <li>Handles one query at a time</li>
 </ul>
-<p>Too small pool → Requests queue, latency increases
-Too large pool → Wasted memory, database may struggle</p>
-<h2 id="monitoring-pool-health">Monitoring Pool Health<a class="headerlink" href="#monitoring-pool-health" title="Permanent link">&para;</a></h2>
-<h3 id="key-metrics">Key Metrics<a class="headerlink" href="#key-metrics" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let metrics = adapter.pool_metrics();</p>
-<p>println!("Total connections:  {}", metrics.total_connections);
-println!("Idle connections:   {}", metrics.idle_connections);
-println!("Active connections: {}", metrics.active_connections);
-println!("Waiting requests:   {}", metrics.waiting_requests);</p>
-<p>// Calculate utilization
-let utilization = (metrics.active_connections as f64
-    / metrics.total_connections as f64) * 100.0;
-println!("Pool utilization: {:.1}%", utilization);
-```text</p>
-<!-- Code example in TEXT -->
+<p>Too small a pool → Requests queue, latency increases
+Too large a pool → Wasted memory, database may struggle</p>
+<h3 id="stay-under-postgresql-max_connections">Stay under PostgreSQL <code>max_connections</code><a class="headerlink" href="#stay-under-postgresql-max_connections" title="Permanent link">&para;</a></h3>
+<p>The total connections opened across all FraiseQL instances must stay comfortably below PostgreSQL's <code>max_connections</code> (default 100). Reserve headroom for superuser sessions, migrations, and other clients.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check the server limit</span>
+<span class="k">SHOW</span><span class="w"> </span><span class="n">max_connections</span><span class="p">;</span>
 
+<span class="c1">-- Reserve some connections for superusers</span>
+<span class="k">SHOW</span><span class="w"> </span><span class="n">superuser_reserved_connections</span><span class="p">;</span>
+</code></pre></div>
+<p>If you run <code>N</code> application instances, then <code>N × (pool_size + max_overflow)</code> must be less than <code>max_connections - superuser_reserved_connections</code>. When that ceiling is too low for your fleet, put a connection pooler (PgBouncer) in front of PostgreSQL instead of raising <code>max_connections</code> indefinitely.</p>
+<h2 id="monitoring-pool-health">Monitoring Pool Health<a class="headerlink" href="#monitoring-pool-health" title="Permanent link">&para;</a></h2>
 <h3 id="health-signals">Health Signals<a class="headerlink" href="#health-signals" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -5311,326 +5517,182 @@ println!("Pool utilization: {:.1}%", utilization);
 </tr>
 </tbody>
 </table>
-<h3 id="how-to-monitor">How to Monitor<a class="headerlink" href="#how-to-monitor" title="Permanent link">&para;</a></h3>
-<p><strong>Option 1: Debug Logging</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Add monitoring to your GraphQL handler
-async fn handle_graphql(req: GraphQLRequest) -&gt; Result<String> {
-    let before = Instant::now();
-    let metrics_before = executor.adapter.pool_metrics();</p>
-<div class="highlight"><pre><span></span><code>let result = executor.execute(&amp;req.query, &amp;req.variables).await?;
-
-let metrics_after = executor.adapter.pool_metrics();
-let elapsed = before.elapsed();
-
-if elapsed.as_millis() &gt; 100 {
-    eprintln!(
-        &quot;Slow query ({:.1}ms): active={}, waiting={}&quot;,
-        elapsed.as_secs_f64() * 1000.0,
-        metrics_after.active_connections,
-        metrics_after.waiting_requests
-    );
-}
-
-Ok(result)
+<h3 id="diagnose-with-pg_stat_activity">Diagnose with <code>pg_stat_activity</code><a class="headerlink" href="#diagnose-with-pg_stat_activity" title="Permanent link">&para;</a></h3>
+<p>PostgreSQL exposes live connection state in <code>pg_stat_activity</code>. Use it to see how many backends your application is actually holding and what they are doing.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Count connections per state for your application</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">datname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;mydb&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">state</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Find long-running or idle-in-transaction connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">wait_event_type</span><span class="p">,</span><span class="w"> </span><span class="n">wait_event</span><span class="p">,</span>
+<span class="w">       </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state_change</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">time_in_state</span><span class="p">,</span>
+<span class="w">       </span><span class="k">left</span><span class="p">(</span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">query</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">datname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;mydb&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">time_in_state</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+<p>If you see many <code>idle in transaction</code> connections, an application code path is holding a connection without committing — that starves the pool. If <code>active</code> connections are pinned at <code>max_size</code> while requests queue, the pool is too small for the load.</p>
+<h3 id="application-side-monitoring">Application-side monitoring<a class="headerlink" href="#application-side-monitoring" title="Permanent link">&para;</a></h3>
+<p>The psycopg <code>AsyncConnectionPool</code> exposes runtime statistics. The FraiseQL app holds a single shared pool; you can read its stats for dashboards:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
-<p><strong>Option 2: Prometheus Metrics</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Export pool metrics to Prometheus
-prometheus::histogram_timer!("pool_acquisition_time_ms", {
-    executor.adapter.execute_query(query).await?
-});</p>
-<p>prometheus::gauge!("pool_active_connections",
-    executor.adapter.pool_metrics().active_connections as i64);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">pool</span> <span class="o">=</span> <span class="n">get_db_pool</span><span class="p">()</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>  <span class="c1"># psycopg pool statistics dict</span>
 
-<p><strong>Option 3: Structured Logging</strong></p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Log pool state with every query
-tracing::info!(
-    pool_metrics = ?executor.adapter.pool_metrics(),
-    query_latency_ms = ?elapsed.as_millis(),
-    "GraphQL query executed"
-);
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Useful keys include:</span>
+<span class="c1">#   pool_size              - connections currently in the pool</span>
+<span class="c1">#   pool_available         - idle connections ready to hand out</span>
+<span class="c1">#   requests_waiting       - requests queued for a connection</span>
+<span class="c1">#   requests_wait_ms       - cumulative time spent waiting</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+</code></pre></div>
+<p>Export these into Prometheus, structured logs, or your APM of choice. A persistently non-zero <code>requests_waiting</code> is the clearest signal that the pool is undersized.</p>
 <h2 id="optimization-techniques">Optimization Techniques<a class="headerlink" href="#optimization-techniques" title="Permanent link">&para;</a></h2>
-<h3 id="1-pre-warm-the-pool">1. Pre-warm the Pool<a class="headerlink" href="#1-pre-warm-the-pool" title="Permanent link">&para;</a></h3>
-<p>Initialize connections on startup:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>async fn initialize_adapter(connection_string: &amp;str) -&gt; Result<PostgresAdapter> {
-    let adapter = PostgresAdapter::with_pool_size(connection_string, 20).await?;</p>
-<div class="highlight"><pre><span></span><code>// Pre-warm by creating initial connections
-for _ in 0..5 {
-    adapter.health_check().await?;
-}
-
-println!(&quot;Pool initialized with 5 connections&quot;);
-Ok(adapter)
+<h3 id="1-keep-connections-warm">1. Keep connections warm<a class="headerlink" href="#1-keep-connections-warm" title="Permanent link">&para;</a></h3>
+<p>FraiseQL keeps a small number of connections open at startup so the first requests do not pay a cold-start penalty. For latency-sensitive services, raise the base <code>connection_pool_size</code> so the pool rarely has to open new connections under load.</p>
+<p><strong>Benefit</strong>: Eliminates cold-start latency spikes.</p>
+<h3 id="2-recycle-idle-connections">2. Recycle idle connections<a class="headerlink" href="#2-recycle-idle-connections" title="Permanent link">&para;</a></h3>
+<p><code>connection_pool_recycle</code> (default 3600s) caps how long an idle connection lives before it is replaced. This guards against connections that have been silently dropped by the database, a firewall, or PgBouncer.</p>
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># recycle idle connections every 5 minutes</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Benefit</strong>: Avoids using connections the server has already closed.</p>
+<h3 id="3-share-one-pool-across-the-whole-app">3. Share one pool across the whole app<a class="headerlink" href="#3-share-one-pool-across-the-whole-app" title="Permanent link">&para;</a></h3>
+<p>FraiseQL creates exactly one pool per application and shares it across all GraphQL requests. Do not create additional pools or open ad-hoc connections per request — that defeats pooling and exhausts PostgreSQL backends.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ GOOD - one app, one shared pool</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
 
-<p><strong>Benefit</strong>: Eliminates cold-start latency spike</p>
-<h3 id="2-connection-recycling">2. Connection Recycling<a class="headerlink" href="#2-connection-recycling" title="Permanent link">&para;</a></h3>
-<p>Fast recycling is already enabled. Verify:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>cfg.manager = Some(ManagerConfig {
-    recycling_method: RecyclingMethod::Fast,  // Reuse immediately
-});
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Benefit</strong>: Faster connection reuse, lower latency</p>
-<h3 id="3-tune-idle-timeout">3. Tune Idle Timeout<a class="headerlink" href="#3-tune-idle-timeout" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Default: 900 seconds (15 minutes)
-// Reduces unnecessary cleanup for long-lived connections
-cfg.manager = Some(ManagerConfig {
-    recycling_method: RecyclingMethod::Fast,
-});</p>
-<p>// For high-churn workloads, reduce timeout:
-// cfg.manager = Some(ManagerConfig {
-//     idle_timeout: Some(Duration::from_secs(300)),  // 5 minutes
-// });
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Benefit</strong>: Reduces idle connection overhead</p>
-<h3 id="4-use-connection-pooling-in-client-code">4. Use Connection Pooling in Client Code<a class="headerlink" href="#4-use-connection-pooling-in-client-code" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// ✅ GOOD - Use single adapter instance
-let adapter = Arc::new(PostgresAdapter::new(connection_string).await?);</p>
-<h1 id="tokiomain">[tokio::main]<a class="headerlink" href="#tokiomain" title="Permanent link">&para;</a></h1>
-<p>async fn main() {
-    // Share adapter across handlers
-    let adapter = adapter.clone();</p>
-<div class="highlight"><pre><span></span><code>for _ in 0..100 {
-    let adapter = adapter.clone();
-    tokio::spawn(async move {
-        adapter.execute_query(query).await
-    });
-}
+<span class="c1"># ❌ BAD - opening a fresh connection per request bypasses the pool</span>
+<span class="c1"># import psycopg</span>
+<span class="c1"># async def handler():</span>
+<span class="c1">#     conn = await psycopg.AsyncConnection.connect(&quot;postgresql://localhost/mydb&quot;)</span>
+<span class="c1">#     ...</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="4-reduce-how-long-each-query-holds-a-connection">4. Reduce how long each query holds a connection<a class="headerlink" href="#4-reduce-how-long-each-query-holds-a-connection" title="Permanent link">&para;</a></h3>
+<p>A connection is held for the duration of a query. Faster queries return connections sooner, so the same pool serves more traffic.</p>
+<ul>
+<li>Push field selection into the <code>v_</code>/<code>tv_</code> view <code>data</code> JSONB so only requested fields are read.</li>
+<li>Add indexes that support your <code>WHERE</code> clauses and joins.</li>
+<li>Avoid <code>idle in transaction</code> by keeping transactions short.</li>
+</ul>
+<p><strong>Benefit</strong>: Higher effective throughput from the same pool size.</p>
+<h2 id="using-pgbouncer">Using PgBouncer<a class="headerlink" href="#using-pgbouncer" title="Permanent link">&para;</a></h2>
+<p>When you run many application instances, raising each pool's size eventually exhausts PostgreSQL's <code>max_connections</code>. <a href="https://www.pgbouncer.org/">PgBouncer</a> sits between FraiseQL and PostgreSQL and multiplexes many client connections onto a small set of server connections.</p>
+<p>Recommended setup:</p>
+<ul>
+<li>Run PgBouncer in <strong>transaction pooling</strong> mode for GraphQL workloads (a server connection is assigned per transaction, not per client session).</li>
+<li>Point <code>database_url</code> at PgBouncer's listen address instead of PostgreSQL directly.</li>
+<li>Keep FraiseQL's <code>connection_pool_size</code> modest per instance, since PgBouncer absorbs the burst.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1"># pgbouncer.ini</span>
+<span class="k">[databases]</span>
+<span class="na">mydb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">host=127.0.0.1 port=5432 dbname=mydb</span>
 
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// ❌ BAD - Create new pool per request
-async fn handle_request() {
-    // Creates new connection pool each time!
-    let adapter = PostgresAdapter::new(connection_string).await?;
-    adapter.execute_query(query).await
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="5-batch-queries-when-possible">5. Batch Queries When Possible<a class="headerlink" href="#5-batch-queries-when-possible" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// ❌ SLOW - Each query gets different connection
-for user_id in user_ids {
-    let result = adapter.execute_where_query(
-        "v_user",
-        Some(&amp;where_clause),
-        None,
-        None
-    ).await?;
-    process_result(result);
-}</p>
-<p>// ✅ FAST - Batch reduces connection churn
-let results = futures::future::join_all(
-    user_ids.iter().map(|id| {
-        let clause = build_clause(id);
-        adapter.execute_where_query("v_user", Some(&amp;clause), None, None)
-    })
-).await;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Benefit</strong>: Reduces connection acquisition overhead</p>
+<span class="k">[pgbouncer]</span>
+<span class="na">pool_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">transaction</span>
+<span class="na">max_client_conn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">1000</span>
+<span class="na">default_pool_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">25</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Point FraiseQL at PgBouncer (default port 6432)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost:6432/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>In transaction pooling mode, avoid features that require session state across statements (for example, server-side prepared statements that outlive a transaction). psycopg's defaults work well behind PgBouncer for FraiseQL's per-transaction CQRS access pattern.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="problem-too-many-connections-error">Problem: "Too many connections" Error<a class="headerlink" href="#problem-too-many-connections-error" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom</strong>: Queries fail with connection pool exhaustion</p>
-<p><strong>Cause</strong>: Pool size too small for load</p>
+<p><strong>Symptom</strong>: PostgreSQL rejects connections with <code>FATAL: sorry, too many clients already</code>, or pool acquisition times out.</p>
+<p><strong>Cause</strong>: The combined pool size across all instances exceeds PostgreSQL <code>max_connections</code>, or the pool is too small for the load.</p>
 <p><strong>Solutions</strong>:</p>
 <ol>
-<li><strong>Increase pool size</strong>:</li>
+<li><strong>Right-size the pool</strong> for a single instance:</li>
 </ol>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// From 10 to 30
-   let adapter = PostgresAdapter::with_pool_size(
-       connection_string,
-       30
-   ).await?;
-   ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <ol>
-<li><strong>Reduce query latency</strong> (queries hold connections longer if slow):</li>
+<li><strong>Reduce query latency</strong> (slow queries hold connections longer):</li>
 </ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Enable SQL projection (already done) ✅
-   Add database indexes
-   Optimize WHERE clauses
-   ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>Add database indexes
+Optimize WHERE clauses
+Keep field selection inside view JSONB
+</code></pre></div>
 <ol>
-<li><strong>Load balance</strong> across multiple servers:</li>
+<li><strong>Add PgBouncer</strong> so many instances share a small set of server connections (see above), rather than raising <code>max_connections</code> without limit.</li>
 </ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Server A: 8 connections
-   Server B: 8 connections
-   Total: 16 connections to database
-   (vs 16 from single server)
-   ```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="problem-high-latency-with-low-cpu-usage">Problem: High Latency with Low CPU Usage<a class="headerlink" href="#problem-high-latency-with-low-cpu-usage" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom</strong>: p95 latency &gt; 100ms even with low CPU</p>
-<p><strong>Cause</strong>: Connections are the bottleneck</p>
-<p><strong>Solution</strong>: Check pool metrics</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let metrics = adapter.pool_metrics();
-if metrics.waiting_requests &gt; 0 {
-    // Requests are waiting for connections
-    // Increase pool size
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="problem-connection-leaks-pool-never-shrinks">Problem: Connection Leaks (Pool Never Shrinks)<a class="headerlink" href="#problem-connection-leaks-pool-never-shrinks" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom</strong>: <code>total_connections</code> keeps growing</p>
-<p><strong>Cause</strong>: Connections not being returned to pool (bug in code)</p>
-<p><strong>Solution</strong>: Ensure <code>DatabaseAdapter</code> calls are awaited properly</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// ❌ WRONG - Connection held indefinitely
-let result = adapter.execute_query(query);  // Not awaited!</p>
-<p>// ✅ CORRECT - Connection returned after await
-let result = adapter.execute_query(query).await?;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h2>
-<h3 id="creating-custom-pool-configuration">Creating Custom Pool Configuration<a class="headerlink" href="#creating-custom-pool-configuration" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod};</p>
-<p>pub async fn create_adapter_with_config(
-    connection_string: &amp;str,
-    max_connections: usize,
-) -&gt; Result<PostgresAdapter> {
-    let mut cfg = Config::new();
-    cfg.url = Some(connection_string.to_string());</p>
-<div class="highlight"><pre><span></span><code>cfg.manager = Some(ManagerConfig {
-    recycling_method: RecyclingMethod::Fast,
-});
-
-cfg.pool = Some(deadpool_postgres::PoolConfig::new(max_connections));
-
-let pool = cfg.create_pool(
-    Some(deadpool_postgres::Runtime::Tokio1),
-    tokio_postgres::NoTls
-)?;
-
-Ok(PostgresAdapter::from_pool(pool))
+<p><strong>Symptom</strong>: p95 latency &gt; 100ms even with low CPU.</p>
+<p><strong>Cause</strong>: Connections are the bottleneck — requests are queuing for a free connection.</p>
+<p><strong>Solution</strong>: Check whether requests are waiting on the pool and whether backends are pinned:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">datname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;mydb&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">state</span><span class="p">;</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="benchmarking-pool-performance">Benchmarking Pool Performance<a class="headerlink" href="#benchmarking-pool-performance" title="Permanent link">&para;</a></h2>
-<h3 id="simple-benchmark">Simple Benchmark<a class="headerlink" href="#simple-benchmark" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<h1 id="tokiotest">[tokio::test]<a class="headerlink" href="#tokiotest" title="Permanent link">&para;</a></h1>
-<p>async fn bench_pool_acquisition() {
-    let adapter = PostgresAdapter::with_pool_size(
-        "postgresql://...",
-        20
-    ).await.unwrap();</p>
-<div class="highlight"><pre><span></span><code>let iterations = 1000;
-let start = Instant::now();
-
-for _ in 0..iterations {
-    let _ = adapter.health_check().await;
-}
-
-let elapsed = start.elapsed();
-let per_acquisition = elapsed.as_micros() / iterations;
-
-println!(&quot;Connection acquisition: {}µs&quot;, per_acquisition);
-assert!(per_acquisition &lt; 1000, &quot;Should be &lt; 1ms&quot;);
+<p>If <code>active</code> is pinned at <code>max_size</code> and your app reports non-zero <code>requests_waiting</code>, increase <code>connection_pool_size</code> (and/or <code>connection_pool_max_overflow</code>).</p>
+<h3 id="problem-connections-stuck-idle-in-transaction">Problem: Connections Stuck "idle in transaction"<a class="headerlink" href="#problem-connections-stuck-idle-in-transaction" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom</strong>: <code>pg_stat_activity</code> shows many <code>idle in transaction</code> backends and the pool drains.</p>
+<p><strong>Cause</strong>: A code path opens a transaction and does not commit or roll back promptly.</p>
+<p><strong>Solution</strong>: Ensure repository calls are awaited and transactions are short. FraiseQL's repository commits per operation; custom <code>fn_</code> calls and manual transactions must complete promptly so connections return to the pool.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Find the offenders</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state_change</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">idle_for</span><span class="p">,</span><span class="w"> </span><span class="k">left</span><span class="p">(</span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">query</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">datname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;mydb&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle in transaction&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">idle_for</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="expected-results">Expected Results<a class="headerlink" href="#expected-results" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Pool size: 10
-Acquisition time: 10-50µs (when connection available)
-Acquisition time: 100-500µs (when creating new connection)
-```text</p>
-<!-- Code example in TEXT -->
-
 <h2 id="production-checklist">Production Checklist<a class="headerlink" href="#production-checklist" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pool size configured based on core count</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pre-warming enabled on startup</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitoring/logging in place</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Health check passes on startup</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load testing confirms pool is adequate</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Alerts configured for pool exhaustion</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Idle timeout appropriate for workload</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Connection recycling fast method enabled</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pool size configured based on core count and instance count</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>pool_size + max_overflow × instance_count</code> stays under PostgreSQL <code>max_connections</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> PgBouncer (transaction pooling) used when running many instances</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Connection recycle interval appropriate for your network/firewall</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>pg_stat_activity</code> and pool stats monitored / alerted on</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load testing confirms the pool is adequate</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Alerts configured for pool exhaustion and <code>idle in transaction</code></li>
 </ul>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Measure your workload</strong>: Monitor pool metrics</li>
-<li><strong>Profile queries</strong>: Identify slow queries</li>
-<li><strong>Optimize</strong>: Use SQL projection (already done)</li>
-<li><strong>Re-tune</strong>: Adjust pool size based on metrics</li>
-<li><strong>Monitor production</strong>: Track pool health</li>
+<li><strong>Measure your workload</strong>: Watch <code>pg_stat_activity</code> and psycopg pool stats under real traffic.</li>
+<li><strong>Profile queries</strong>: Identify slow queries that hold connections too long.</li>
+<li><strong>Optimize</strong>: Push field selection into view JSONB and add indexes.</li>
+<li><strong>Re-tune</strong>: Adjust <code>connection_pool_size</code> / <code>connection_pool_max_overflow</code> based on metrics.</li>
+<li><strong>Scale out</strong>: Add PgBouncer before raising PostgreSQL <code>max_connections</code>.</li>
 </ol>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="./projection-optimization.md">SQL Projection Optimization</a> - Reduce query latency</li>
-<li><a href="./projection-baseline-results.md">Performance Baselines</a> - Benchmark data</li>
-<li><a href="../architecture/">Architecture</a> - How database connections work</li>
+<li><a href="../performance-guide/">Performance Guide</a> - End-to-end performance tuning</li>
+<li><a href="../caching/">Caching</a> - PostgreSQL-backed result caching</li>
+<li><a href="../../architecture/request-flow/">Request Flow</a> - How a request acquires a connection</li>
 </ul>
 <hr />
-<p><strong>Last Updated</strong>: 2026-01-31
-<strong>Framework</strong>: deadpool-postgres v0.14+</p>
+<p><strong>Last Updated</strong>: 2026-06-19
+<strong>Framework</strong>: FraiseQL over psycopg <code>AsyncConnectionPool</code></p>
 
 
 
 
 
 
+
+  
+  
 
 
 

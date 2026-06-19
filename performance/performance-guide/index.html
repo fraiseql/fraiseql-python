@@ -4857,10 +4857,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#claim-2-4x-faster-than-traditional-graphql-frameworks" class="md-nav__link">
+  <a href="#claim-fast-typical-query-latency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Claim: "2-4x faster than traditional GraphQL frameworks"
+        Claim: "Fast typical-query latency"
       
     </span>
   </a>
@@ -5045,41 +5045,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#baseline-comparisons" class="md-nav__link">
+  <a href="#design-notes-why-postgresql-first-is-fast" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Baseline Comparisons
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Baseline Comparisons">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#framework-comparison-real-measurements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Framework Comparison (Real Measurements)
+        Design Notes: Why PostgreSQL-First Is Fast
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#database-only-comparison" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#caching" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database-Only Comparison
+        Caching
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5111,6 +5094,17 @@
     <span class="md-ellipsis">
       
         PostgreSQL Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing
       
     </span>
   </a>
@@ -5206,68 +5200,67 @@
 <h1 id="fraiseql-performance-guide">FraiseQL Performance Guide<a class="headerlink" href="#fraiseql-performance-guide" title="Permanent link">&para;</a></h1>
 <p>🟡 <strong>Production</strong> - Performance expectations, methodology, and optimization guidance.</p>
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL delivers <strong>sub-10ms response times</strong> for typical GraphQL queries through an exclusive Rust pipeline that eliminates Python string operations. This guide provides realistic performance expectations, methodology details, and guidance on when performance optimizations matter.</p>
+<p>FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It delivers fast response times for typical GraphQL queries by pushing data shaping into PostgreSQL (views return a <code>data</code> JSONB column) and serving that JSON over FastAPI. An optional Rust extension (<code>fraiseql_rs</code>) accelerates JSON transformation on the hot path — field selection, camelCase conversion, and <code>__typename</code> injection — so most queries avoid heavy Python string work.</p>
+<p>This guide provides realistic performance expectations, methodology details, and guidance on when performance optimizations matter.</p>
 <p><strong>Key Takeaways:</strong></p>
 <ul>
 <li><strong>Typical queries</strong>: 5-25ms response time (including database)</li>
-<li><strong>Optimized queries</strong>: 0.5-5ms response time (with all optimizations active)</li>
-<li><strong>Cache hit rates</strong>: 85-95% in production applications</li>
-<li><strong>Speedup vs alternatives</strong>: 2-4x faster than traditional GraphQL frameworks</li>
-<li><strong>Architecture</strong>: PostgreSQL → Rust Pipeline → HTTP (zero Python string operations)</li>
+<li><strong>Optimized queries</strong>: 0.5-5ms response time (with caching and table views active)</li>
+<li><strong>Cache hit rates</strong>: 85-95% in production applications with stable query patterns</li>
+<li><strong>Architecture</strong>: PostgreSQL (<code>v_</code>/<code>tv_</code> views → <code>data</code> JSONB) → FastAPI, with optional <code>fraiseql_rs</code> JSON acceleration</li>
 </ul>
 <hr />
 <h2 id="performance-claims-methodology">Performance Claims &amp; Methodology<a class="headerlink" href="#performance-claims-methodology" title="Permanent link">&para;</a></h2>
-<h3 id="claim-2-4x-faster-than-traditional-graphql-frameworks">Claim: "2-4x faster than traditional GraphQL frameworks"<a class="headerlink" href="#claim-2-4x-faster-than-traditional-graphql-frameworks" title="Permanent link">&para;</a></h3>
-<p><strong>What this means</strong>: FraiseQL is 2-4x faster than frameworks like Strawberry, Hasura, or PostGraphile for typical workloads, with end-to-end optimizations including APQ caching, field projection, and exclusive Rust pipeline transformation.</p>
+<h3 id="claim-fast-typical-query-latency">Claim: "Fast typical-query latency"<a class="headerlink" href="#claim-fast-typical-query-latency" title="Permanent link">&para;</a></h3>
+<p><strong>What this means</strong>: FraiseQL keeps end-to-end latency low for typical workloads because PostgreSQL does the joins and JSON composition once (in a <code>v_</code>/<code>tv_</code> view), and FraiseQL streams the resulting <code>data</code> JSONB to the client with minimal transformation.</p>
 <p><strong>Methodology</strong>:</p>
 <ul>
-<li><strong>Baseline comparison</strong>: Measured against Strawberry GraphQL (Python ORM) and Hasura (PostgreSQL GraphQL)</li>
 <li><strong>Test queries</strong>: Simple user lookup, nested user+posts, filtered searches</li>
-<li><strong>Dataset</strong>: 10k-100k records in PostgreSQL 15</li>
+<li><strong>Dataset</strong>: 10k-100k records in PostgreSQL 15+</li>
 <li><strong>Hardware</strong>: Standard cloud instances (4 CPU, 8GB RAM)</li>
-<li><strong>Measurement</strong>: End-to-end response time including database queries</li>
+<li><strong>Measurement</strong>: End-to-end response time including the database query</li>
 </ul>
 <p><strong>Realistic expectations</strong>:</p>
 <ul>
-<li><strong>Simple queries</strong> (single table): 2-3x faster</li>
-<li><strong>Complex queries</strong> (joins, aggregations): 3-4x faster</li>
-<li><strong>Cached queries</strong>: 4-10x faster (due to APQ optimization)</li>
-<li><strong>All queries</strong>: Use exclusive Rust pipeline (PostgreSQL → Rust → HTTP)</li>
+<li><strong>Simple queries</strong> (single view): a few milliseconds plus database time</li>
+<li><strong>Complex queries</strong> (nested data via <code>tv_</code> projection views): comparable, because the view is pre-composed</li>
+<li><strong>Cached queries</strong>: sub-millisecond when served from APQ and/or result cache</li>
+<li><strong>JSON transformation</strong>: handled by <code>fraiseql_rs</code> when available (Python fallback otherwise)</li>
 </ul>
 <p><strong>When this matters</strong>: High-throughput APIs (&gt;100 req/sec) where small latency improvements compound.</p>
 <hr />
 <h3 id="claim-sub-millisecond-cached-responses-05-2ms">Claim: "Sub-millisecond cached responses (0.5-2ms)"<a class="headerlink" href="#claim-sub-millisecond-cached-responses-05-2ms" title="Permanent link">&para;</a></h3>
-<p><strong>What this means</strong>: Cached GraphQL queries return in 0.5-2ms when all optimization layers are active.</p>
+<p><strong>What this means</strong>: Cached GraphQL queries return in roughly 0.5-2ms when the response is served from cache and JSON transformation is accelerated.</p>
 <p><strong>Methodology</strong>:</p>
 <ul>
-<li><strong>APQ caching</strong>: SHA-256 hash lookup with PostgreSQL storage backend</li>
-<li><strong>Rust pipeline</strong>: Direct database JSONB → Rust transformation → HTTP response (no Python string operations)</li>
-<li><strong>Field projection</strong>: Optional filtering of requested GraphQL fields</li>
+<li><strong>APQ (Automatic Persisted Queries)</strong>: SHA-256 hash lookup; the persisted query is recognized without re-parsing the full document</li>
+<li><strong>Result cache</strong> (<code>fraiseql.caching</code>): cached query results keyed by query + variables, optionally backed by PostgreSQL</li>
+<li><strong>JSON transformation</strong>: database <code>data</code> JSONB → field-selected response, accelerated by <code>fraiseql_rs</code></li>
 <li><strong>Measurement</strong>: Time from GraphQL request to HTTP response (excluding network latency)</li>
 </ul>
 <p><strong>Realistic expectations</strong>:</p>
 <ul>
-<li><strong>Cache hit</strong>: 0.5-2ms (Rust pipeline + APQ)</li>
-<li><strong>Cache miss</strong>: 5-25ms (includes database query)</li>
-<li><strong>Cache hit rate</strong>: 85-95% in production applications</li>
+<li><strong>Cache hit</strong>: 0.5-2ms</li>
+<li><strong>Cache miss</strong>: 5-25ms (includes the database query)</li>
+<li><strong>Cache hit rate</strong>: 85-95% in production applications with stable queries</li>
 </ul>
 <p><strong>Conditions</strong>:</p>
 <ul>
 <li>PostgreSQL 15+ with proper indexing</li>
-<li>APQ storage backend configured (PostgreSQL recommended)</li>
-<li>Query complexity score &lt; 100</li>
-<li>Response size &lt; 50KB</li>
-<li>Exclusive Rust pipeline active (automatic in v1.0.0+)</li>
+<li>APQ enabled (<code>apq_mode="optional"</code> or <code>"required"</code>); PostgreSQL storage backend recommended for multi-instance deployments</li>
+<li>Result cache configured for the hot queries</li>
+<li>Query complexity within configured limits</li>
+<li>Response size modest (&lt; ~50KB)</li>
 </ul>
 <hr />
 <h3 id="claim-85-95-cache-hit-rates-in-production-applications">Claim: "85-95% cache hit rates in production applications"<a class="headerlink" href="#claim-85-95-cache-hit-rates-in-production-applications" title="Permanent link">&para;</a></h3>
-<p><strong>What this means</strong>: Well-designed applications achieve 85-95% APQ cache hit rates with the exclusive Rust pipeline.</p>
+<p><strong>What this means</strong>: Well-designed applications with stable query shapes achieve 85-95% APQ hit rates.</p>
 <p><strong>Methodology</strong>:</p>
 <ul>
-<li><strong>Client configuration</strong>: Apollo Client with persisted queries enabled</li>
-<li><strong>Query patterns</strong>: Stable query structure (no dynamic field selection)</li>
-<li><strong>Cache TTL</strong>: 1-24 hours depending on data freshness requirements</li>
-<li><strong>Measurement</strong>: Cache hits / (cache hits + cache misses) over 24-hour period</li>
+<li><strong>Client configuration</strong>: a GraphQL client with persisted queries enabled (e.g. Apollo Client)</li>
+<li><strong>Query patterns</strong>: stable query structure (no dynamic field selection)</li>
+<li><strong>Cache TTL</strong>: 1-24 hours depending on data-freshness requirements</li>
+<li><strong>Measurement</strong>: cache hits / (cache hits + cache misses) over a 24-hour period</li>
 </ul>
 <p><strong>Realistic expectations</strong>:</p>
 <ul>
@@ -5281,30 +5274,29 @@
 <li>Client-side query deduplication</li>
 <li>Cache TTL settings</li>
 <li>Query complexity (simple queries cache better)</li>
-<li>Rust pipeline compatibility (automatic)</li>
 </ul>
 <hr />
 <h3 id="claim-005-05ms-table-view-responses">Claim: "0.05-0.5ms table view responses"<a class="headerlink" href="#claim-005-05ms-table-view-responses" title="Permanent link">&para;</a></h3>
-<p><strong>What this means</strong>: Table views (<code>tv_*</code>) provide instant responses for complex queries, processed through the exclusive Rust pipeline.</p>
+<p><strong>What this means</strong>: Table-backed projection views (<code>tv_*</code>) hold pre-composed <code>data</code> JSONB, so reads that would otherwise require multi-table JOINs become a single indexed lookup.</p>
 <p><strong>Methodology</strong>:</p>
 <ul>
-<li><strong>Table views</strong>: Denormalized tables with pre-computed data</li>
-<li><strong>Comparison</strong>: Traditional JOIN queries vs table view lookups</li>
+<li><strong>Table views</strong>: real tables holding pre-composed JSONB, refreshed by functions/triggers</li>
+<li><strong>Comparison</strong>: traditional JOIN-at-query-time vs <code>tv_</code> lookup</li>
 <li><strong>Dataset</strong>: 10k users with 50k posts (average 5 posts/user)</li>
-<li><strong>Measurement</strong>: Database query time only (EXPLAIN ANALYZE)</li>
+<li><strong>Measurement</strong>: database query time only (<code>EXPLAIN ANALYZE</code>)</li>
 </ul>
 <p><strong>Realistic expectations</strong>:</p>
 <ul>
-<li><strong>Table view lookup</strong>: 0.05-0.5ms</li>
+<li><strong><code>tv_</code> lookup</strong>: 0.05-0.5ms (single indexed row read of pre-composed JSONB)</li>
 <li><strong>Traditional JOIN</strong>: 5-50ms (depends on data size)</li>
 <li><strong>Speedup</strong>: 10-100x faster for complex nested queries</li>
-<li><strong>Rust pipeline</strong>: Automatic camelCase transformation and __typename injection</li>
+<li><strong>JSON transformation</strong>: camelCase conversion and <code>__typename</code> injection handled on the hot path (accelerated by <code>fraiseql_rs</code>)</li>
 </ul>
 <p><strong>When this applies</strong>:</p>
 <ul>
 <li>Read-heavy workloads with stable data relationships</li>
 <li>Queries with fixed nesting patterns</li>
-<li>Applications where data freshness is less critical than speed</li>
+<li>Applications where data freshness can tolerate the <code>tv_</code> refresh cadence</li>
 </ul>
 <hr />
 <h2 id="typical-vs-optimal-scenarios">Typical vs Optimal Scenarios<a class="headerlink" href="#typical-vs-optimal-scenarios" title="Permanent link">&para;</a></h2>
@@ -5316,18 +5308,34 @@
 <li>Cached queries: 0.5-2ms</li>
 </ul>
 <p><strong>Configuration</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Standard production setup</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="c1"># Standard production setup</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>APQ and complexity limits are configured via <code>FraiseQLConfig</code> (or <code>FRAISEQL_</code> environment variables):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
-    <span class="n">field_projection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">apq_mode</span><span class="o">=</span><span class="s2">&quot;optional&quot;</span><span class="p">,</span>                 <span class="c1"># accept persisted-query hashes</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>    <span class="c1"># share APQ across instances</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>                       <span class="c1"># result-cache TTL (seconds)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance Characteristics</strong>:</p>
 <ul>
 <li>Cache hit rate: 85-95%</li>
-<li>Database load: Moderate (most queries cached)</li>
+<li>Database load: moderate (most queries cached)</li>
 <li>Memory usage: 200-500MB per instance</li>
 <li>CPU usage: 20-40% under normal load</li>
 </ul>
@@ -5339,34 +5347,42 @@
 <li>Cached queries: 0.2-1ms</li>
 </ul>
 <p><strong>Configuration</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Maximum performance setup</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+
+<span class="c1"># Maximum performance setup</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">apq_mode</span><span class="o">=</span><span class="s2">&quot;required&quot;</span><span class="p">,</span>                 <span class="c1"># only accept persisted queries</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
-    <span class="n">field_projection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>            <span class="c1"># reject expensive queries earlier</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance Characteristics</strong>:</p>
 <ul>
 <li>Cache hit rate: 95%+</li>
-<li>Database load: Low (extensive caching)</li>
+<li>Database load: low (extensive caching, <code>tv_</code> projection views)</li>
 <li>Memory usage: 500MB-1GB per instance</li>
 <li>CPU usage: 10-30% under normal load</li>
 </ul>
 <hr />
 <h2 id="query-complexity-impact">Query Complexity Impact<a class="headerlink" href="#query-complexity-impact" title="Permanent link">&para;</a></h2>
 <h3 id="complexity-scoring">Complexity Scoring<a class="headerlink" href="#complexity-scoring" title="Permanent link">&para;</a></h3>
-<p>FraiseQL calculates query complexity to prevent expensive operations:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Complexity calculation</span>
-<span class="n">complexity</span> <span class="o">=</span> <span class="n">field_count</span> <span class="o">+</span> <span class="p">(</span><span class="n">list_size</span> <span class="o">*</span> <span class="n">nested_fields</span><span class="p">)</span> <span class="o">+</span> <span class="n">multipliers</span>
+<p>FraiseQL calculates query complexity to reject expensive operations before they hit PostgreSQL. The scorer combines field count, nesting depth, list sizes, and per-field multipliers; it is controlled by <code>complexity_*</code> settings on <code>FraiseQLConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="c1"># Example multipliers</span>
-<span class="n">field_multipliers</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>      <span class="c1"># Text search operations</span>
-    <span class="s2">&quot;aggregate&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># COUNT, SUM, AVG operations</span>
-    <span class="s2">&quot;sort&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>        <span class="c1"># ORDER BY clauses</span>
-<span class="p">}</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">complexity_default_list_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">complexity_field_multipliers</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>      <span class="c1"># text search operations</span>
+        <span class="s2">&quot;aggregate&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># COUNT, SUM, AVG operations</span>
+        <span class="s2">&quot;sort&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>        <span class="c1"># ORDER BY clauses</span>
+    <span class="p">},</span>
+<span class="p">)</span>
 </code></pre></div>
 <h3 id="performance-by-complexity">Performance by Complexity<a class="headerlink" href="#performance-by-complexity" title="Permanent link">&para;</a></h3>
 <table>
@@ -5415,27 +5431,25 @@
 <p><strong>Low Complexity (1-50)</strong>:</p>
 <ul>
 <li>Focus on caching (APQ + result caching)</li>
-<li>Field projection for reduced data transfer</li>
-<li>Table views for instant responses</li>
+<li>Use <code>tv_</code> table views for instant responses</li>
 </ul>
 <p><strong>Medium Complexity (51-200)</strong>:</p>
 <ul>
-<li>Table views for nested relationships</li>
-<li>Database indexing optimization</li>
-<li>Query result caching</li>
-<li>Field projection optimization</li>
+<li><code>tv_</code> table views for nested relationships</li>
+<li>Index the columns your views filter and sort on</li>
+<li>Result caching via <code>fraiseql.caching</code></li>
 </ul>
 <p><strong>High Complexity (201-500)</strong>:</p>
 <ul>
-<li>Materialized views for aggregations</li>
-<li>Background computation</li>
-<li>Result caching with short TTL</li>
-<li>Minimize JSONB size in table views</li>
+<li>Materialized views or <code>tv_</code> projection tables for aggregations</li>
+<li>Pre-compute heavy aggregates in the view, refresh on a schedule</li>
+<li>Result caching with a short TTL</li>
+<li>Keep the JSONB payload in <code>tv_</code> rows lean</li>
 </ul>
 <hr />
 <h2 id="when-performance-matters">When Performance Matters<a class="headerlink" href="#when-performance-matters" title="Permanent link">&para;</a></h2>
 <h3 id="performance-critical-scenarios">🚀 Performance-Critical Scenarios<a class="headerlink" href="#performance-critical-scenarios" title="Permanent link">&para;</a></h3>
-<p><strong>Choose FraiseQL when you need</strong>:</p>
+<p><strong>Reach for the optimizations above when you need</strong>:</p>
 <ol>
 <li><strong>High-throughput APIs</strong> (&gt;500 req/sec per instance)</li>
 <li>Small latency improvements compound significantly</li>
@@ -5445,35 +5459,28 @@
 <li>
 <p><strong>Real-time applications</strong> (chat, gaming, live dashboards)</p>
 </li>
-<li>Sub-10ms response times enable real-time UX</li>
+<li>Low response times enable real-time UX</li>
 <li>
-<p>WebSocket connections with frequent GraphQL subscriptions</p>
+<p>WebSocket subscriptions via <code>@fraiseql.subscription</code></p>
 </li>
 <li>
 <p><strong>Mobile applications</strong> (limited bandwidth, battery)</p>
 </li>
-<li>70% bandwidth reduction with APQ</li>
+<li>APQ cuts request payload size for repeated queries</li>
 <li>
 <p>Faster responses improve mobile UX</p>
 </li>
 <li>
-<p><strong>Microservices orchestration</strong></p>
+<p><strong>Aggregation-heavy reads</strong></p>
 </li>
-<li>Single database reduces network hops</li>
-<li>
-<p>Faster aggregation of data from multiple services</p>
-</li>
-<li>
-<p><strong>Cost optimization</strong></p>
-</li>
-<li>Save $300-3,000/month vs Redis + Sentry</li>
-<li>Fewer services to manage and monitor</li>
+<li>Pre-compose nested data in <code>tv_</code> views instead of joining at query time</li>
+<li>Runtime auto-aggregation derives <code>GROUP BY</code> SQL from the requested fields</li>
 </ol>
 <h3 id="performance-neutral-scenarios">📊 Performance-Neutral Scenarios<a class="headerlink" href="#performance-neutral-scenarios" title="Permanent link">&para;</a></h3>
-<p><strong>FraiseQL works well for</strong>:</p>
+<p><strong>FraiseQL works well without heavy tuning for</strong>:</p>
 <ol>
 <li><strong>CRUD applications</strong> (admin panels, CMS)</li>
-<li>Standard 5-25ms response times acceptable</li>
+<li>Standard 5-25ms response times are acceptable</li>
 <li>
 <p>Developer productivity benefits outweigh raw performance</p>
 </li>
@@ -5487,118 +5494,109 @@
 <li>
 <p><strong>Prototyping/MVPs</strong></p>
 </li>
-<li>Fast time-to-market (1-2 weeks)</li>
+<li>Fast time-to-market</li>
 <li>Good enough performance for early users</li>
 </ol>
 <h3 id="performance-challenging-scenarios">⚠️ Performance-Challenging Scenarios<a class="headerlink" href="#performance-challenging-scenarios" title="Permanent link">&para;</a></h3>
-<p><strong>Consider alternatives when</strong>:</p>
+<p><strong>Consider specialized infrastructure when</strong>:</p>
 <ol>
-<li><strong>Ultra-low latency</strong> (&lt; 1ms required)</li>
-<li>Custom C/Rust services for extreme performance</li>
+<li><strong>Ultra-low latency</strong> (&lt; 1ms required end-to-end)</li>
+<li>Dedicated C/Rust services for extreme cases</li>
 <li>
-<p>Specialized databases (Redis, ClickHouse)</p>
+<p>In-memory stores for the hottest paths</p>
 </li>
 <li>
 <p><strong>Massive scale</strong> (&gt; 10,000 req/sec)</p>
 </li>
-<li>Distributed databases (CockroachDB, Yugabyte)</li>
+<li>Read replicas and horizontal scaling of the FastAPI app</li>
 <li>
-<p>Service mesh architectures</p>
+<p>PgBouncer in front of PostgreSQL</p>
 </li>
 <li>
-<p><strong>Complex computations</strong></p>
+<p><strong>Heavy analytical computations</strong></p>
 </li>
-<li>External compute services (Spark, Ray)</li>
-<li>Specialized databases for analytics</li>
+<li>External compute (Spark, Ray) feeding a <code>tv_</code> table</li>
+<li>Pre-aggregate into projection tables on a schedule</li>
 </ol>
 <hr />
-<h2 id="baseline-comparisons">Baseline Comparisons<a class="headerlink" href="#baseline-comparisons" title="Permanent link">&para;</a></h2>
-<h3 id="framework-comparison-real-measurements">Framework Comparison (Real Measurements)<a class="headerlink" href="#framework-comparison-real-measurements" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Framework</th>
-<th>Simple Query</th>
-<th>Complex Query</th>
-<th>Setup Time</th>
-<th>Maintenance</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>FraiseQL</strong></td>
-<td><strong>5-15ms</strong></td>
-<td><strong>15-50ms</strong></td>
-<td><strong>1-2 weeks</strong></td>
-<td><strong>Low</strong></td>
-</tr>
-<tr>
-<td>Strawberry + SQLAlchemy</td>
-<td>50-100ms</td>
-<td>200-400ms</td>
-<td>2-4 weeks</td>
-<td>Medium</td>
-</tr>
-<tr>
-<td>Hasura</td>
-<td>25-75ms</td>
-<td>150-300ms</td>
-<td>1 week</td>
-<td>Low</td>
-</tr>
-<tr>
-<td>PostGraphile</td>
-<td>50-100ms</td>
-<td>200-400ms</td>
-<td>2-3 weeks</td>
-<td>Medium</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Test conditions</strong>:</p>
+<h2 id="design-notes-why-postgresql-first-is-fast">Design Notes: Why PostgreSQL-First Is Fast<a class="headerlink" href="#design-notes-why-postgresql-first-is-fast" title="Permanent link">&para;</a></h2>
+<p>FraiseQL's performance comes from where the work happens, not from a runtime translation layer:</p>
 <ul>
-<li>PostgreSQL 15, 10k records</li>
-<li>Standard cloud instance (4 CPU, 8GB RAM)</li>
-<li>Connection pooling enabled</li>
-<li>Proper indexing</li>
+<li><strong>Composition in the database.</strong> A read view (<code>v_</code>) builds the response shape with <code>jsonb_build_object(...)</code>, so the GraphQL response is essentially a single <code>data</code> JSONB column. No ORM hydration, no N+1 join walking in Python.</li>
+<li><strong>Projection tables for heavy reads.</strong> A <code>tv_</code> table holds pre-composed JSONB, refreshed by functions/triggers. Expensive nested reads collapse to one indexed row lookup.</li>
+<li><strong>JSONB + GIN.</strong> Filtering inside the JSONB payload is backed by PostgreSQL's native JSONB operators and GIN indexes (see Indexing below).</li>
+<li><strong>Minimal Python on the hot path.</strong> Field selection, camelCase conversion, and <code>__typename</code> injection are applied to the JSONB before it goes out; <code>fraiseql_rs</code> accelerates this transformation when the extension is installed, with a pure-Python fallback otherwise.</li>
+<li><strong>Caching layers.</strong> APQ avoids re-parsing persisted queries, and the <code>fraiseql.caching</code> result cache returns prior results without touching PostgreSQL.</li>
 </ul>
-<h3 id="database-only-comparison">Database-Only Comparison<a class="headerlink" href="#database-only-comparison" title="Permanent link">&para;</a></h3>
+<p>There is no compile step and no separate query engine — the schema is assembled in memory at app startup and served by FastAPI.</p>
+<hr />
+<h2 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a PostgreSQL-backed result cache in <code>fraiseql.caching</code>. The public API:</p>
 <table>
 <thead>
 <tr>
-<th>Approach</th>
-<th>Response Time</th>
-<th>Development Time</th>
-<th>Flexibility</th>
+<th>Object</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>FraiseQL (Database-first)</strong></td>
-<td><strong>5-25ms</strong></td>
-<td><strong>1-2 weeks</strong></td>
-<td><strong>High</strong></td>
+<td><code>PostgresCache</code></td>
+<td>Cache backend that stores results in a PostgreSQL table</td>
 </tr>
 <tr>
-<td>Stored Procedures</td>
-<td>5-15ms</td>
-<td>3-6 weeks</td>
-<td>Low</td>
+<td><code>ResultCache</code></td>
+<td>Result-caching engine (<code>get_or_set</code>, key building, stats)</td>
 </tr>
 <tr>
-<td>ORM (SQLAlchemy)</td>
-<td>25-100ms</td>
-<td>1-2 weeks</td>
-<td>High</td>
+<td><code>CacheConfig</code></td>
+<td>TTL / prefix / error-caching settings for <code>ResultCache</code></td>
 </tr>
 <tr>
-<td>Raw SQL</td>
-<td>5-50ms</td>
-<td>2-4 weeks</td>
-<td>Medium</td>
+<td><code>CachedRepository</code></td>
+<td>Wraps the CQRS repository to cache <code>find</code>/<code>find_one</code> reads</td>
+</tr>
+<tr>
+<td><code>cached_query</code></td>
+<td>Decorator to cache a resolver's result</td>
+</tr>
+<tr>
+<td><code>CascadeRule</code> / <code>setup_auto_cascade_rules</code></td>
+<td>Invalidate dependent cache entries on writes</td>
+</tr>
+<tr>
+<td><code>SchemaAnalyzer</code></td>
+<td>Derives cascade rules from your schema</td>
+</tr>
+<tr>
+<td><code>CacheKeyBuilder</code>, <code>CacheStats</code>, <code>CacheBackend</code></td>
+<td>Key generation, hit/miss stats, backend protocol</td>
 </tr>
 </tbody>
 </table>
+<p>Minimal setup using the PostgreSQL backend and a result cache:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CachedRepository</span><span class="p">,</span>
+    <span class="n">CacheConfig</span><span class="p">,</span>
+    <span class="n">PostgresCache</span><span class="p">,</span>
+    <span class="n">ResultCache</span><span class="p">,</span>
+    <span class="n">cached_query</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">)</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
+
+
+<span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">expensive_report</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Report</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_report&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>To cache repository reads transparently, wrap the repository with <code>CachedRepository</code>. To keep cached data fresh, register <code>CascadeRule</code>s (or call <code>setup_auto_cascade_rules</code>) so that a write through a <code>fn_</code> mutation invalidates the cache entries it affects.</p>
 <hr />
 <h2 id="hardware-configuration-impact">Hardware &amp; Configuration Impact<a class="headerlink" href="#hardware-configuration-impact" title="Permanent link">&para;</a></h2>
 <h3 id="recommended-hardware">Recommended Hardware<a class="headerlink" href="#recommended-hardware" title="Permanent link">&para;</a></h3>
@@ -5613,52 +5611,76 @@
 <li>4-8 CPU cores</li>
 <li>8-16GB RAM</li>
 <li>Fast SSD storage</li>
-<li>10-100GB storage for APQ cache</li>
+<li>Storage for the result cache / APQ table in PostgreSQL</li>
 </ul>
 <h3 id="postgresql-configuration">PostgreSQL Configuration<a class="headerlink" href="#postgresql-configuration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Recommended for FraiseQL</span>
-<span class="n">shared_buffers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="n">MB</span><span class="w">          </span><span class="c1">-- 25% of RAM</span>
-<span class="n">effective_cache_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">GB</span><span class="w">       </span><span class="c1">-- 75% of RAM</span>
-<span class="n">work_mem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span><span class="n">MB</span><span class="w">                  </span><span class="c1">-- Per-connection sort memory</span>
-<span class="n">max_connections</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w">            </span><span class="c1">-- Connection pool size</span>
-<span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5000</span><span class="w">         </span><span class="c1">-- Prevent long queries</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Recommended starting points for FraiseQL (tune per workload)</span>
+<span class="n">shared_buffers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="n">MB</span><span class="w">           </span><span class="c1">-- ~25% of RAM</span>
+<span class="n">effective_cache_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="n">GB</span><span class="w">       </span><span class="c1">-- ~75% of RAM</span>
+<span class="n">work_mem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span><span class="n">MB</span><span class="w">                  </span><span class="c1">-- per-operation sort/hash memory</span>
+<span class="n">max_connections</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w">            </span><span class="c1">-- size with the connection pool in mind</span>
+<span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5000</span><span class="w">         </span><span class="c1">-- prevent runaway queries (ms)</span>
 </code></pre></div>
+<h3 id="indexing">Indexing<a class="headerlink" href="#indexing" title="Permanent link">&para;</a></h3>
+<p>Index the columns your <code>v_</code>/<code>tv_</code> views filter, join, and sort on. For JSONB filtering, use GIN indexes:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- B-tree on the public id used for WHERE id = $1</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_v_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+
+<span class="c1">-- GIN index on the JSONB data column for containment / key lookups</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_v_user_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="n">jsonb_path_ops</span><span class="p">);</span>
+
+<span class="c1">-- Expression index on a frequently filtered JSONB key</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_v_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">));</span>
+</code></pre></div>
+<p>Use <code>jsonb_path_ops</code> GIN indexes for <code>@&gt;</code> containment queries; use a default GIN index when you also need key-existence operators. Expression indexes on extracted scalars (<code>data -&gt;&gt; 'key'</code>) are best when you filter on a single field.</p>
 <h3 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Recommended settings</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>        <span class="c1"># 20% of max_connections</span>
-    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>     <span class="c1"># Burst capacity</span>
-    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>    <span class="c1"># Fail fast</span>
+<p><code>create_fraiseql_app</code> accepts pool settings directly:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>         <span class="c1"># base connections</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="c1"># burst capacity</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>     <span class="c1"># seconds to wait for a connection</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>    <span class="c1"># recycle idle connections (seconds)</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>The same values map to <code>FraiseQLConfig</code> fields (<code>database_pool_size</code>, <code>database_max_overflow</code>, <code>database_pool_timeout</code>, <code>database_pool_recycle</code>) if you build the config explicitly. Keep the pool size well under PostgreSQL's <code>max_connections</code>, and put PgBouncer in front when running many app instances.</p>
 <hr />
 <h2 id="monitoring-troubleshooting">Monitoring &amp; Troubleshooting<a class="headerlink" href="#monitoring-troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="key-metrics-to-monitor">Key Metrics to Monitor<a class="headerlink" href="#key-metrics-to-monitor" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Response Time Percentiles</strong> (p50, p95, p99)</li>
-<li><strong>APQ Cache Hit Rate</strong> (target: &gt;85%)</li>
+<li><strong>Cache Hit Rate</strong> (APQ + result cache; target: &gt;85%)</li>
 <li><strong>Database Connection Pool Utilization</strong> (&lt;80%)</li>
 <li><strong>Query Complexity Distribution</strong></li>
 <li><strong>Memory Usage Trends</strong></li>
 </ol>
 <h3 id="common-performance-issues">Common Performance Issues<a class="headerlink" href="#common-performance-issues" title="Permanent link">&para;</a></h3>
-<p><strong>Slow Queries (50-200ms)</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Check for missing indexes</span>
+<p><strong>Slow Queries (50-200ms)</strong> — inspect the underlying view with <code>EXPLAIN ANALYZE</code> and check for missing indexes:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Inspect the plan for a slow read view</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span><span class="w"> </span><span class="n">BUFFERS</span><span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="p">;</span>
+
+<span class="c1">-- Look for tables/views lacking useful statistics or indexes</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span><span class="p">,</span><span class="w"> </span><span class="n">attname</span><span class="p">,</span><span class="w"> </span><span class="n">n_distinct</span><span class="p">,</span><span class="w"> </span><span class="n">correlation</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stats</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">tablename</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;v_%&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">tablename</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;tb_%&#39;</span><span class="p">;</span>
 </code></pre></div>
+<p>If a <code>v_</code> view does expensive JOINs at query time, consider promoting it to a <code>tv_</code> projection table refreshed by triggers.</p>
 <p><strong>Low Cache Hit Rate (&lt;80%)</strong>:</p>
 <ul>
-<li>Review query patterns for stability</li>
-<li>Increase cache TTL</li>
-<li>Implement query deduplication</li>
+<li>Review query patterns for stability (persist queries client-side)</li>
+<li>Increase cache TTL where data freshness allows</li>
+<li>Implement query deduplication on the client</li>
 </ul>
 <p><strong>High Memory Usage</strong>:</p>
 <ul>
-<li>Reduce complexity limits</li>
-<li>Implement pagination</li>
-<li>Monitor for memory leaks</li>
+<li>Reduce complexity limits (<code>complexity_max_score</code> / <code>complexity_max_depth</code>)</li>
+<li>Implement pagination on large result sets</li>
+<li>Trim the JSONB payload composed by your views</li>
 </ul>
 <hr />
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
@@ -5667,8 +5689,7 @@
 <li><a href="../caching/">Caching Guide</a> - Application-level caching strategies</li>
 </ul>
 <hr />
-<p><em>Performance Guide - Exclusive Rust Pipeline Architecture</em>
-<em>Last updated: October 2025</em></p>
+<p><em>Performance Guide - PostgreSQL-first runtime architecture with optional <code>fraiseql_rs</code> JSON acceleration</em></p>
 
 
 
