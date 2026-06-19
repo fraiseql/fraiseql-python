@@ -1,39 +1,41 @@
-<!-- Skip to main content -->
 ---
-
 title: Consistency Model
-description: FraiseQL provides **strict serializable consistency** within a single database instance and **causal consistency** across federated instances. This document spe
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+description: FraiseQL v1 inherits PostgreSQL's strict serializable consistency. This document specifies the consistency guarantees clients can rely on.
+keywords: ["consistency", "acid", "isolation", "postgresql", "transactions"]
 tags: ["documentation", "reference"]
 ---
 
 # Consistency Model
 
-**Version:** 1.0
-**Status:** Complete
-**Date:** January 11, 2026
+**Status:** Stable
 **Audience:** Architects, database engineers, enterprise evaluators
 
 ---
 
 ## 1. Overview
 
-FraiseQL provides **strict serializable consistency** within a single database instance and **causal consistency** across federated instances. This document specifies the consistency guarantees clients can rely on.
+FraiseQL v1 is a Python runtime GraphQL framework backed by a **single PostgreSQL
+database**. Its consistency guarantees are exactly PostgreSQL's consistency
+guarantees: FraiseQL does not add a consistency layer of its own, and it does not
+weaken what PostgreSQL provides.
 
 ### 1.1 Core Principle
 
-> **What the database guarantees, FraiseQL guarantees.**
+> **What PostgreSQL guarantees, FraiseQL guarantees.**
 
-FraiseQL does not weaken database consistency. If the database provides serializable transactions, FraiseQL preserves that. If the database provides eventual consistency, FraiseQL preserves that.
+FraiseQL queries call PostgreSQL read views (`v_`/`tv_`) and mutations call
+PostgreSQL functions (`fn_`). Every statement runs inside a PostgreSQL transaction,
+so the ACID and isolation properties you configure on the database are the
+properties your GraphQL API exposes.
 
-### 1.2 Consistency Levels Supported
+### 1.2 Consistency Foundation
 
-| Database | Consistency Level | Isolation | Multi-Version | TTL |
-|----------|-------------------|-----------|---------------|-----|
-| **PostgreSQL** | Serializable | ✅ Full ACID | ✅ MVCC | N/A |
-| **MySQL** | Serializable | ✅ Full ACID | ✅ InnoDB MVCC | N/A |
-| **SQL Server** | Serializable | ✅ Full ACID | ✅ Snapshot | N/A |
-| **SQLite** | Serializable | ✅ Full ACID | ⚠️ Limited | N/A |
+| Property | PostgreSQL Mechanism |
+|----------|----------------------|
+| Atomicity | Transactional `BEGIN`/`COMMIT`, all-or-nothing |
+| Consistency (logical) | Constraints, foreign keys, check constraints |
+| Isolation | MVCC, Read Committed by default, Serializable available |
+| Durability | Write-ahead logging (WAL) |
 
 ---
 
@@ -41,40 +43,46 @@ FraiseQL does not weaken database consistency. If the database provides serializ
 
 ### 2.1 ACID Transaction Guarantees
 
-FraiseQL queries and mutations respect the database's ACID properties:
+FraiseQL queries and mutations respect PostgreSQL's ACID properties.
 
 #### 2.1.1 Atomicity
 
-**What it means:** Mutation either fully succeeds or fully fails. No partial updates.
+**What it means:** A mutation either fully succeeds or fully fails. No partial
+updates.
 
-**Scope:** Single mutation operation
+**Scope:** A single mutation, which executes one `fn_` PostgreSQL function inside
+one transaction.
 
-- Mutation: `createUser(name: "Bob", email: "bob@example.com")`
-- All side effects apply, or none apply
-- No partial state visible to other queries
+- All side effects of the function apply, or none apply.
+- No partial state is visible to other queries.
 
 **Guarantee:**
 
-```python
-<!-- Code example in Python -->
-# Before mutation
-SELECT COUNT(*) FROM users  # 100
+```sql
+-- Before mutation
+SELECT COUNT(*) FROM tb_user;  -- 100
+```
 
-# Mutation fails (email constraint violation)
+```graphql
+# Mutation fails (email uniqueness constraint violation)
 mutation {
-  createUser(name: "Bob", email: "duplicate@example.com") { id }
+  createUser(input: { name: "Bob", email: "duplicate@example.com" }) {
+    ... on CreateUserSuccess { user { id } }
+    ... on CreateUserError { message code }
+  }
 }
+```
 
-# After mutation
-SELECT COUNT(*) FROM users  # Still 100 (no partial insert)
-```text
-<!-- Code example in TEXT -->
+```sql
+-- After mutation
+SELECT COUNT(*) FROM tb_user;  -- Still 100 (no partial insert)
+```
 
 #### 2.1.2 Consistency (Logical)
 
 **What it means:** Database integrity constraints are never violated.
 
-**Scope:** All queries, mutations, subscriptions
+**Scope:** All queries, mutations, and subscriptions.
 
 - Foreign key constraints enforced
 - Unique constraints enforced
@@ -83,95 +91,96 @@ SELECT COUNT(*) FROM users  # Still 100 (no partial insert)
 
 **Guarantee:**
 
-```python
-<!-- Code example in Python -->
-# Foreign key constraint: order.user_id → user.id
-# This mutation will fail (invalid user_id):
+```graphql
+# Foreign key constraint: tb_order.fk_user → tb_user.pk_user
+# This mutation fails because the referenced user does not exist:
 mutation {
-  createOrder(user_id: 9999, amount: 100) { id }  # Returns error
+  createOrder(input: { userId: "00000000-0000-0000-0000-000000009999", amount: 100 }) {
+    ... on CreateOrderSuccess { order { id } }
+    ... on CreateOrderError { message code }
+  }
 }
-
-# After error, database state is unchanged
-```text
-<!-- Code example in TEXT -->
+# After the error, database state is unchanged.
+```
 
 #### 2.1.3 Isolation
 
-**What it means:** Concurrent operations don't interfere with each other.
+**What it means:** Concurrent operations do not interfere with each other beyond
+what the configured isolation level permits.
 
 **Isolation levels** (in order of strictness):
 
-| Level | Dirty Reads | Non-Repeatable | Phantom | Implementation |
-|-------|-------------|----------------|---------|-----------------|
-| **Read Uncommitted** | ❌ Not in FraiseQL | - | - | - |
-| **Read Committed** | ✅ Prevented | ⚠️ Possible | ⚠️ Possible | PostgreSQL default |
-| **Repeatable Read** | ✅ Prevented | ✅ Prevented | ⚠️ Possible | MySQL default |
-| **Serializable** | ✅ Prevented | ✅ Prevented | ✅ Prevented | ✅ FraiseQL default |
+| Level | Dirty Reads | Non-Repeatable | Phantom | Notes |
+|-------|-------------|----------------|---------|-------|
+| **Read Uncommitted** | Prevented | Possible | Possible | PostgreSQL treats this as Read Committed |
+| **Read Committed** | Prevented | Possible | Possible | PostgreSQL default |
+| **Repeatable Read** | Prevented | Prevented | Prevented (PostgreSQL) | Snapshot isolation |
+| **Serializable** | Prevented | Prevented | Prevented | Serializable Snapshot Isolation (SSI) |
 
-**FraiseQL isolation guarantee:** Queries and mutations operate at **Serializable** isolation level.
+**FraiseQL isolation:** Each request runs at PostgreSQL's configured isolation
+level (Read Committed by default). If your `fn_` functions or session require
+stronger guarantees, set `SET TRANSACTION ISOLATION LEVEL SERIALIZABLE` (or
+configure it on the connection) inside the database; FraiseQL faithfully reflects
+whatever PostgreSQL is configured to enforce.
 
-```python
-<!-- Code example in Python -->
-# Two concurrent mutations (serializable isolation)
+```graphql
+# Two concurrent mutations updating the same row
 # Client A:
-mutation {
-  updateUser(id: 1, name: "Alice Update 1") { name }
-}
+mutation { updateUser(input: { id: "...", name: "Alice Update 1" }) {
+  ... on UpdateUserSuccess { user { name } }
+} }
 
 # Client B:
-mutation {
-  updateUser(id: 1, name: "Alice Update 2") { name }
-}
+mutation { updateUser(input: { id: "...", name: "Alice Update 2" }) {
+  ... on UpdateUserSuccess { user { name } }
+} }
 
-# Result: One succeeds, one fails (conflict detected)
-# Never: Both succeed with mixed updates
-```text
-<!-- Code example in TEXT -->
+# Under Serializable isolation: one commits, the other fails with a
+# serialization conflict and can be retried. Under Read Committed:
+# the second write overwrites the first (last-writer-wins).
+```
 
 #### 2.1.4 Durability
 
-**What it means:** Once mutation succeeds, it persists even after failure.
+**What it means:** Once a mutation succeeds, the change persists even after a
+crash.
 
-**Scope:** Confirmed mutations
+**Scope:** Confirmed mutations.
 
-- Mutation returns success response (in GraphQL `data` field, not `errors`)
-- Database has written change to durable storage
-- Change survives server restart, power loss, etc.
+- The mutation returns a success result (in the GraphQL `data` field, not `errors`).
+- PostgreSQL has flushed the change to durable storage via the WAL.
+- The change survives a server restart or power loss.
 
 **Guarantee:**
 
-```python
-<!-- Code example in Python -->
+```graphql
 # Mutation succeeds (returns in data field)
 mutation {
-  createUser(name: "Bob") { id }
-  # Response received by client with data: { createUser: { id: 123 } }
+  createUser(input: { name: "Bob", email: "bob@example.com" }) {
+    ... on CreateUserSuccess { user { id } }
+  }
 }
+# The client receives data: { createUser: { user: { id: "..." } } }
 
-# Server crashes immediately after
-# Database restart: Change still there
-
-# Later query:
-query {
-  user(id: 123) { name }  # Returns "Bob"
-}
-```text
-<!-- Code example in TEXT -->
+# The server crashes immediately afterward.
+# After PostgreSQL restarts, the change is still present:
+query { user(id: "...") { name } }  # Returns "Bob"
+```
 
 **Non-guarantee:**
 
-```python
-<!-- Code example in Python -->
-# Mutation fails (returns in errors field)
+```graphql
+# Mutation fails (returns in the errors field or as a typed error union)
 mutation {
-  createUser(name: "Alice", email: "duplicate@example.com") { id }
-  # Response received with errors: [...], data: null
+  createUser(input: { name: "Alice", email: "duplicate@example.com" }) {
+    ... on CreateUserError { message }
+  }
 }
+# data: null on the field / typed error returned
 
-# Server crashes
-# Database restart: Change was never applied (not durable)
-```text
-<!-- Code example in TEXT -->
+# If the server crashes now, the change was never applied
+# (it was never committed, so there is nothing to be durable).
+```
 
 ---
 
@@ -179,660 +188,399 @@ mutation {
 
 ### 3.1 Read-After-Write Consistency (RAW)
 
-**What it means:** After a write succeeds, subsequent reads see the write.
+**What it means:** After a write commits, subsequent reads see the write.
 
-**Scope:** Same client connection
+**Scope:** A single PostgreSQL primary.
 
-```python
-<!-- Code example in Python -->
-# Write succeeds
+```graphql
+# Write commits
 mutation {
-  updateUser(id: 1, name: "Alice") { name }
-  # Response: data: { updateUser: { name: "Alice" } }
+  updateUser(input: { id: "...", name: "Alice" }) {
+    ... on UpdateUserSuccess { user { name } }
+  }
 }
 
-# Subsequent read sees the write
-query {
-  user(id: 1) { name }  # Returns "Alice"
-}
-```text
-<!-- Code example in TEXT -->
+# A subsequent read sees the write
+query { user(id: "...") { name } }  # Returns "Alice"
+```
 
-**Strong guarantee:** Applies at all times, for all clients.
+**Guarantee:** Against a single PostgreSQL primary, read-after-write is
+immediate. A committed write is visible to every later read of that primary.
 
 ### 3.2 Read-Your-Writes Consistency (RYW)
 
-**What it means:** Client always sees results of its own writes, even if different server processes handle the requests.
+**What it means:** A client always sees the results of its own committed writes.
 
-**Scope:** Same authenticated user
+**Scope:** A single PostgreSQL primary.
 
-```python
-<!-- Code example in Python -->
-# Request 1: Write to Server A
-mutation {
-  updateUserProfile(name: "NewName") { name }
-}
+```graphql
+# Request 1: write
+mutation { updateUserProfile(input: { name: "NewName" }) {
+  ... on UpdateUserSuccess { user { name } }
+} }
 
-# Request 2: Read from Server B (different process)
-query {
-  me { name }  # Returns "NewName"
-}
-```text
-<!-- Code example in TEXT -->
+# Request 2: read (any FraiseQL worker, same database)
+query { me { name } }  # Returns "NewName"
+```
 
-**Implementation:** Achieved via:
-
-- Database replication (all writes go to primary)
-- Session affinity (client sticky to server)
-- Causal token tracking (server sends version, client tracks)
+Because every FraiseQL worker reads from the same PostgreSQL primary, multiple
+application processes do not break read-your-writes: the database is the single
+source of truth.
 
 ### 3.3 Monotonic Reads
 
-**What it means:** Client never sees a version of data earlier than a previous read.
+**What it means:** A client never sees a version of data earlier than a previous
+read.
 
-**Scope:** Same client over time
+**Scope:** A single PostgreSQL primary.
 
-```python
-<!-- Code example in Python -->
-# Read 1: User has 5 posts
-query { user(id: 1) { posts { count } } }
-# Returns: 5
+```graphql
+# Read 1: user has 5 posts
+query { user(id: "...") { posts { totalCount } } }  # Returns 5
 
-# Wait 1 second, some other client adds a post
+# Another client adds a post.
 
-# Read 2: User still sees 5 posts (at worst)
-query { user(id: 1) { posts { count } } }
-# Returns: >= 5 (5 or 6, never less than 5)
-```text
-<!-- Code example in TEXT -->
+# Read 2: still at least 5
+query { user(id: "...") { posts { totalCount } } }  # Returns >= 5, never < 5
+```
 
-**Strong guarantee:** FraiseQL never shows older versions of data.
+Against a single primary, committed data does not disappear, so reads are
+monotonic by construction.
 
-### 3.4 Consistent Prefix Reads
+### 3.4 Read Replicas (Deployment Note)
 
-**What it means:** Client sees causally-consistent sequence of updates, not out-of-order.
+PostgreSQL supports streaming **read replicas** as a deployment option. Replicas
+apply WAL asynchronously and therefore lag the primary, so reads served by a
+replica are **eventually consistent** with respect to recent writes on the
+primary.
 
-**Scope:** Related data across reads
+This is a property of your PostgreSQL deployment, **not a FraiseQL feature**:
 
-```python
-<!-- Code example in Python -->
-# Event 1: Create order (id: 100)
-mutation { createOrder(user_id: 1, amount: 100) { id } }
-
-# Event 2: Create order update (status: shipped)
-mutation { updateOrder(id: 100, status: "shipped") { status } }
-
-# Client reads:
-query { order(id: 100) { status } }
-# Never sees: order doesn't exist yet (would be out-of-order)
-# Always sees: order with status = "shipped" (or not created yet)
-```text
-<!-- Code example in TEXT -->
+- FraiseQL connects to whatever `database_url` you give it via a single
+  `psycopg_pool.AsyncConnectionPool`. It does **not** route queries to replicas,
+  split reads from writes, or perform automatic failover.
+- If you point FraiseQL at a replica, reads can be stale relative to the primary.
+  If you point it at the primary (the common single-node setup), all of the
+  read-consistency guarantees in 3.1-3.3 hold.
+- Read/write splitting and failover are handled below FraiseQL, for example by a
+  connection proxy (PgBouncer, pgpool) or your infrastructure, and are out of
+  scope for the framework.
 
 ---
 
 ## 4. Write Consistency
 
-### 4.1 Serializable Writes
+### 4.1 Serialized Writes
 
-**What it means:** Concurrent writes are serialized (don't interleave).
+**What it means:** Concurrent writes to the same row do not interleave; PostgreSQL
+serializes them.
 
-**Scope:** All mutations
+**Scope:** All mutations.
 
-```python
-<!-- Code example in Python -->
-# Concurrent mutations on same row
-# Client A: UPDATE user SET balance = balance - 100 WHERE id = 1
-# Client B: UPDATE user SET balance = balance - 50 WHERE id = 1
-
+```graphql
+# Concurrent mutations on the same row, each implemented by a fn_ function:
+#   fn_debit_balance: UPDATE tb_user SET balance = balance - $1 WHERE id = $2
+# Client A: debit 100
+# Client B: debit 50
 # Initial balance: 1000
 
-# Result: One succeeds first, second uses updated value
-# Possible: A succeeds (900), B succeeds (850) ✅
-# Never: Both use original (900 and 950) ❌
-```text
-<!-- Code example in TEXT -->
+# PostgreSQL row locks serialize the two updates:
+# Possible: A then B -> 900 then 850
+# Never: both read 1000 independently -> 900 and 950
+```
 
-### 4.2 Transaction Isolation for Multi-Statement
+### 4.2 Multi-Statement Atomicity
 
-**What it means:** Multi-statement mutations are atomic.
+**What it means:** A mutation's PostgreSQL function may perform many statements;
+they all commit together or all roll back.
 
-**Scope:** Multiple queries within single mutation (future feature)
+**Scope:** A single `fn_` function call.
 
-```python
-<!-- Code example in Python -->
-mutation {
-  # Statement 1
-  createOrder(user_id: 1) { id }
-  # Statement 2
-  updateUser(id: 1, balance: balance - 100) { balance }
-  # Statement 3
-  createAuditLog(action: "order_created") { id }
+```sql
+-- Inside fn_create_order, all statements share one transaction:
+CREATE FUNCTION fn_create_order(p_input jsonb) RETURNS jsonb AS $$
+BEGIN
+  INSERT INTO tb_order (...) VALUES (...);          -- statement 1
+  UPDATE tb_user SET balance = balance - ... ;      -- statement 2
+  INSERT INTO tb_audit_log (...) VALUES (...);      -- statement 3
+  RETURN jsonb_build_object('success', true, ...);
+END;
+$$ LANGUAGE plpgsql;
+```
 
-  # All succeed or all fail together
-  # No partial state visible
-}
-```text
-<!-- Code example in TEXT -->
+If any statement raises, the entire function rolls back and the mutation returns a
+typed error. No partial state is ever visible.
 
 ### 4.3 Write Conflicts
 
-**What it means:** Conflicting writes are detected and one fails.
+**What it means:** Conflicting concurrent writes are detected and one of them
+fails, so it can be retried.
 
-**Scope:** Concurrent modifications
+**Scope:** Concurrent modifications, when using optimistic concurrency.
 
-```python
-<!-- Code example in Python -->
-# Client A: updateUser(id: 1, name: "Alice", version: 5)
-# Client B: updateUser(id: 1, name: "Bob", version: 5)
+```sql
+-- Optimistic concurrency inside fn_update_user using a version column:
+UPDATE tb_user
+SET name = p_name, version = version + 1
+WHERE id = p_id AND version = p_expected_version;
+-- 0 rows affected => caller's version was stale => return a conflict error
+```
 
-# Both use same version (5)
-# Result: A succeeds (version → 6), B fails with conflict error
-```text
-<!-- Code example in TEXT -->
+```graphql
+# Client A: updateUser(id, name: "Alice", expectedVersion: 5)
+# Client B: updateUser(id, name: "Bob",   expectedVersion: 5)
+# A commits first (version -> 6). B's UPDATE matches 0 rows and
+# returns a typed conflict error.
+```
 
----
-
-## 5. Multi-Database Consistency (Federation)
-
-### 5.1 Causal Consistency Guarantee
-
-When FraiseQL fetches federated entities from multiple databases, it provides **causal consistency**:
-
-**Definition:** If operation A causally affects operation B, every observer sees A before B.
-
-**Example:**
-
-```python
-<!-- Code example in Python -->
-# Database 1: Users
-# Database 2: Orders
-
-# Operation A: Create order in Database 2
-mutation {
-  createOrder(user_id: 1) { id }  # → order_123
-}
-
-# Operation B: Query user + their orders (from both databases)
-query {
-  user(id: 1) {
-    name
-    orders { id }  # Includes order_123
-  }
-}
-
-# Causal guarantee:
-# - Client always sees order_123 in the user's orders
-# - Never sees state before order was created
-# - Even if databases are replicas with lag
-```text
-<!-- Code example in TEXT -->
-
-### 5.2 Consistency Across Databases
-
-**Single-Database Query (Strict Serializable):**
-
-```text
-<!-- Code example in TEXT -->
-Database: PostgreSQL
-Consistency: Serializable ACID
-Latency: <10ms
-```text
-<!-- Code example in TEXT -->
-
-**Federated Query (Causal Consistent):**
-
-```text
-<!-- Code example in TEXT -->
-Database 1: PostgreSQL (Users)
-Database 2: MySQL (Orders)
-Consistency: Causal
-Latency: <100ms (slower due to coordination)
-```text
-<!-- Code example in TEXT -->
-
-**Trade-off:** Federation sacrifices strict serializability for scalability.
-
-### 5.3 No Cross-Database Transactions
-
-**Important:** FraiseQL does NOT provide distributed transactions across federated databases.
-
-```python
-<!-- Code example in Python -->
-# This does NOT have cross-database atomicity:
-mutation {
-  createUser(name: "Alice") { id }  # Database 1
-  createOrder(user_id: NEW_ID) { id }  # Database 2
-}
-
-# Why: Distributed 2-phase commit is too expensive
-# If operation fails: Rollback may be partial
-
-# Instead: Client should handle failure
-if not mutation_succeeded:
-  client should retry both or roll back manually
-```text
-<!-- Code example in TEXT -->
-
-### 5.4 Federation via Database Linking (Optimized)
-
-When using database-level federation (FDW, Linked Servers), consistency is **stricter**:
-
-```python
-<!-- Code example in Python -->
-# PostgreSQL FDW federation
-# Both databases: PostgreSQL
-Consistency: Serializable ACID (via FDW)
-
-# vs HTTP federation
-# Any databases, via HTTP
-Consistency: Causal
-```text
-<!-- Code example in TEXT -->
+Optimistic concurrency is a pattern you implement inside your `fn_` functions; see
+[Error Handling Model](./error-handling-model.md) for how conflicts surface as
+typed errors.
 
 ---
 
-## 6. Subscription Consistency
+## 5. Subscription Consistency
 
-### 6.1 Event Ordering Guarantees
+### 5.1 Event Ordering Guarantees
 
-Subscriptions provide **per-entity ordering** of events:
+Subscriptions provide **per-entity ordering** of events.
 
-```python
-<!-- Code example in Python -->
-# Subscription: orderUpdated(where: { id: 100 })
-orderUpdated { id, status, timestamp }
+```graphql
+# Subscription on a single order
+subscription { orderUpdated(id: "...") { id status timestamp } }
+```
 
-# Events for same entity are ordered:
-Event 1: status = "pending" (timestamp: T1)
-Event 2: status = "shipped" (timestamp: T2)
-Event 3: status = "delivered" (timestamp: T3)
-
-# Client always sees events in this order
-# Never: Event 3 before Event 1
 ```text
-<!-- Code example in TEXT -->
+Events for the same entity are ordered:
+  Event 1: status = "pending"   (timestamp: T1)
+  Event 2: status = "shipped"   (timestamp: T2)
+  Event 3: status = "delivered" (timestamp: T3)
 
-### 6.2 Event Delivery Consistency
+The client always sees them in this order; never Event 3 before Event 1.
+```
 
-**At-least-once delivery:**
+### 5.2 Event Delivery
 
-- Events are delivered at least once
-- Client may receive duplicates (same event twice)
-- Client should be idempotent
+Delivery is **at-least-once**:
 
-```python
-<!-- Code example in Python -->
-# Same event delivered twice (network retry)
-{
-  "event_id": "evt_12345",
-  "data": { "id": 100, "status": "shipped" }
-}
-{
-  "event_id": "evt_12345",  # Same ID
-  "data": { "id": 100, "status": "shipped" }
-}
+- Each event is delivered at least once.
+- A client may receive a duplicate (for example after a network retry).
+- Clients should be idempotent and de-duplicate by event identifier.
 
-# Client should check event_id and skip duplicates
+```json
+{ "eventId": "evt_12345", "data": { "id": "...", "status": "shipped" } }
+{ "eventId": "evt_12345", "data": { "id": "...", "status": "shipped" } }
+```
+
+The client checks `eventId` and skips events it has already processed.
+
+### 5.3 No Cross-Entity Ordering
+
+Events from different entities may arrive out of order:
+
 ```text
-<!-- Code example in TEXT -->
+Database timeline:
+  T1: Order A updated -> Event 1
+  T2: User B updated  -> Event 2
+  T3: Order C updated -> Event 3
 
-### 6.3 No Cross-Entity Ordering
+A client subscribed to multiple entities may receive: Event 2, Event 3, Event 1.
+Events are per-entity ordered, not globally ordered.
+```
 
-Events from different entities may arrive out-of-order:
-
-```python
-<!-- Code example in Python -->
-# Subscription: orderUpdated + userUpdated
-
-# Database timeline:
-T1: Order 100 updated → Event A
-T2: User 5 updated → Event B
-T3: Order 200 updated → Event C
-
-# Client may receive:
-Event B, Event C, Event A  # Out of original order!
-
-# Why: Events are per-entity ordered, not globally ordered
-```text
-<!-- Code example in TEXT -->
+See [Subscriptions](../realtime/subscriptions.md) for the full subscription model.
 
 ---
 
-## 7. Caching Consistency
+## 6. Caching Consistency
 
-### 7.1 Cache Invalidation on Write
+### 6.1 Cache Invalidation on Write
 
-When a mutation succeeds, all related cache entries are invalidated:
+When a mutation commits, related cache entries are invalidated so subsequent reads
+reflect the new state.
 
-```python
-<!-- Code example in Python -->
-# Initial query (cached)
-query { user(id: 1) { name posts { id } } }
-# Cache key: user:1, user:1:posts
-# Cached result: name="Alice", posts=[100, 101]
+```graphql
+# Initial query, result cached
+query { user(id: "...") { name posts { id } } }
+# Cached: name="Alice", posts=[...]
 
 # Mutation
-mutation { updateUser(id: 1, name: "Bob") { name } }
+mutation { updateUser(input: { id: "...", name: "Bob" }) {
+  ... on UpdateUserSuccess { user { name } }
+} }
+# Related cache entries for that user are invalidated.
 
-# Automatic cache invalidation:
-# - user:1 invalidated ✓
-# - user:1:posts invalidated ✓
-# - related:user:1 queries invalidated ✓
+# Next query reads fresh data from PostgreSQL
+query { user(id: "...") { name } }  # name="Bob"
+```
 
-# Next query (cache miss, fresh from database)
-query { user(id: 1) { name } }
-# Cache hit: name="Bob"
+### 6.2 Cache TTL (Time-to-Live)
+
+Cached results may carry a maximum age. A result younger than its TTL is served
+from cache; once it expires, the next read re-fetches from PostgreSQL.
+
 ```text
-<!-- Code example in TEXT -->
+Cache entry max age: 60 seconds
+  age < 60s  -> served from cache
+  age >= 60s -> stale, re-fetched from the database
+```
 
-### 7.2 Cache TTL (Time-to-Live)
+### 6.3 Cache Coherence
 
-Some queries use stale-cache-acceptable-time (SCAT):
-
-```python
-<!-- Code example in Python -->
-# Query cached for 60 seconds max
-query @cacheControl(maxAge: 60) {
-  products { id name }
-}
-
-# Fresh if: query < 60s old
-# Stale if: query > 60s old, re-fetch from database
-```text
-<!-- Code example in TEXT -->
-
-### 7.3 Cache Coherence
-
-**Strong cache coherence:** All clients see consistent cache results.
-
-- Cache invalidations are broadcast
-- All servers invalidate same keys
-- No stale data persists across servers
+In a single-node deployment, the cache is invalidated on write, so reads after a
+committed mutation observe the new value. In a multi-worker deployment, configure
+a shared cache backend so invalidations are visible to all workers; otherwise each
+worker maintains its own cache and stale entries persist only until their TTL
+expires.
 
 ---
 
-## 8. Consistency Under Failures
+## 7. Consistency Under Failures
 
-### 8.1 Database Unavailable
+### 7.1 Database Unavailable
 
-**Query:** Returns error, no partial data
+**Query:** Returns an error, no partial data.
 
-```python
-<!-- Code example in Python -->
-query { user(id: 1) { name } }
-# Database is down
-# Returns: ERROR, data: null
-```text
-<!-- Code example in TEXT -->
+```graphql
+query { user(id: "...") { name } }
+# PostgreSQL is unreachable -> error; data is null.
+```
 
-**Mutation:** Returns error, no changes applied
+**Mutation:** Returns an error, no changes applied.
 
-```python
-<!-- Code example in Python -->
-mutation { updateUser(id: 1, name: "Bob") { name } }
-# Database is down
-# Returns: ERROR, data: null
-# Database unchanged
-```text
-<!-- Code example in TEXT -->
+```graphql
+mutation { updateUser(input: { id: "...", name: "Bob" }) { ... } }
+# PostgreSQL is unreachable -> error; the database is unchanged.
+```
 
-### 8.2 Connection Lost Mid-Query
+### 7.2 Connection Lost Mid-Request
 
-**Before response sent:** Client sees error, no data
-**After response sent:** Data is consistent (database committed)
+- **Before the response is sent:** The client sees an error; if the transaction
+  did not commit, no data changed.
+- **After the response is sent:** The data is consistent because PostgreSQL has
+  already committed.
 
-### 8.3 Server Crash
+### 7.3 Server Crash
 
-**Durable mutations:** Persisted to database (ACID durability)
-**Cache:** Invalidated on restart (refreshed from database)
-**In-flight requests:** Clients receive errors, must retry
+- **Committed mutations:** Persisted by PostgreSQL (WAL durability).
+- **Cache:** Rebuilt from PostgreSQL after restart.
+- **In-flight requests:** Clients receive errors and should retry.
+
+See [Failure Modes and Recovery](./failure-modes-and-recovery.md) for detailed
+recovery procedures.
 
 ---
 
-## 9. Eventual Consistency (Not Provided)
+## 8. Strong Consistency by Default
 
-**Important:** FraiseQL does NOT provide eventual consistency by default.
+Against a single PostgreSQL primary, FraiseQL is **immediately consistent**: a
+committed write is visible to the very next read.
 
-```python
-<!-- Code example in Python -->
-# This is NOT eventually consistent:
-mutation { updateUser(id: 1, name: "Alice") }
-query { user(id: 1) { name } }  # Sees "Alice" immediately
+```graphql
+mutation { updateUser(input: { id: "...", name: "Alice" }) { ... } }
+query { user(id: "...") { name } }  # Sees "Alice" immediately
+```
 
-# FraiseQL always returns immediately-consistent results
-```text
-<!-- Code example in TEXT -->
-
-**If you need eventual consistency:** Use event-driven architecture with subscriptions + external systems.
-
----
-
-## 10. Consistency Levels by Operation
-
-| Operation | Consistency | Isolation | Write Atomicity | Read Freshness |
-|-----------|-------------|-----------|-----------------|-----------------|
-| **Query** | Serializable | Serializable | N/A | Immediate |
-| **Mutation** | Serializable | Serializable | Atomic | Immediate |
-| **Subscription** | Per-entity ordered | Serializable | N/A | At-least-once |
-| **Federated Query** | Causal | Serializable per DB | N/A | Causal |
-| **Federated Mutation** | Causal | Serializable per DB | Per-DB atomic | Causal |
-| **Cached Query** | Within TTL | Serializable | N/A | Max TTL stale |
+If you need eventual consistency for a particular workload (for example fan-out to
+external systems or read offloading to replicas), build it explicitly with
+subscriptions plus downstream services, or with a replica deployment as described
+in section 3.4. FraiseQL itself does not silently relax consistency.
 
 ---
 
-## 11. Consistency Configuration
+## 9. Consistency Levels by Operation
 
-### 11.1 Per-Query Consistency Control
-
-```python
-<!-- Code example in Python -->
-query @consistency(level: "serializable") {
-  user(id: 1) { name }
-}
-
-# Levels:
-# - "serializable" (default): Strongest consistency
-# - "causal" (federation): Weaker but faster
-# - "eventual" (future): Weakest but fastest
-```text
-<!-- Code example in TEXT -->
-
-### 11.2 Per-Mutation Consistency Control
-
-```python
-<!-- Code example in Python -->
-mutation @consistency(level: "serializable", timeout: 30000) {
-  updateUser(id: 1, name: "Bob") { name }
-}
-
-# Options:
-# - timeout: Max time to wait for lock (ms)
-# - retry: Auto-retry on conflict (true/false)
-```text
-<!-- Code example in TEXT -->
+| Operation | Consistency (single primary) | Isolation | Write Atomicity | Read Freshness |
+|-----------|------------------------------|-----------|-----------------|----------------|
+| **Query** | Strong | PostgreSQL level | N/A | Immediate |
+| **Mutation** | Strong | PostgreSQL level | Atomic (per `fn_`) | Immediate |
+| **Subscription** | Per-entity ordered | PostgreSQL level | N/A | At-least-once |
+| **Cached Query** | Within TTL | PostgreSQL level | N/A | At most TTL stale |
+| **Replica Read** | Eventual (replica lag) | PostgreSQL level | N/A | Lag-bounded |
 
 ---
 
-## 12. Consistency Guarantees by Database
+## 10. Consistency Anti-Patterns
 
-### 12.1 PostgreSQL
+### 10.1 Assuming Stale Reads Against the Primary
 
-**Consistency Level:** Serializable ACID
-**Mechanism:** Serializable Snapshot Isolation (SSI)
-**Guarantee:**
-
-```text
-<!-- Code example in TEXT -->
-✅ Serializable isolation
-✅ MVCC (Multi-Version Concurrency Control)
-✅ Write-ahead logging (durability)
-✅ Atomic transactions
-```text
-<!-- Code example in TEXT -->
-
-### 12.2 MySQL (InnoDB)
-
-**Consistency Level:** Repeatable Read (default) → Serializable (FraiseQL default)
-**Mechanism:** MVCC + Gap locks
-**Guarantee:**
-
-```text
-<!-- Code example in TEXT -->
-✅ Serializable isolation (with locks)
-✅ MVCC
-✅ Binary logging (durability)
-✅ Atomic transactions
-```text
-<!-- Code example in TEXT -->
-
-### 12.3 SQL Server
-
-**Consistency Level:** Serializable ACID
-**Mechanism:** Snapshot isolation + row versioning
-**Guarantee:**
-
-```text
-<!-- Code example in TEXT -->
-✅ Serializable isolation
-✅ Snapshot isolation available
-✅ Write-ahead logging (durability)
-✅ Atomic transactions
-```text
-<!-- Code example in TEXT -->
-
-### 12.4 SQLite
-
-**Consistency Level:** Serializable ACID
-**Mechanism:** Write-ahead logging + locking
-**Guarantee:**
-
-```text
-<!-- Code example in TEXT -->
-⚠️ Limited MVCC (single file)
-✅ Atomic transactions
-✅ Durability
-❌ Limited concurrency (file-level locking)
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 13. Consistency Anti-Patterns
-
-### 13.1 Assuming Eventual Consistency
-
-**❌ WRONG:**
+**Wrong:**
 
 ```python
-<!-- Code example in Python -->
-# This is NOT eventually consistent!
-mutation { updateUser(id: 1, name: "Alice") }
-time.sleep(1)
-result = query { user(id: 1) { name } }
-# Assuming result might be stale
+# This is NOT necessary against a single primary.
+mutation { updateUser(input: { id: "...", name: "Alice" }) { ... } }
+time.sleep(1)  # waiting for "propagation"
+result = query { user(id: "...") { name } }
+```
 
-# Result: Always sees "Alice" immediately
-```text
-<!-- Code example in TEXT -->
-
-**✅ RIGHT:**
+**Right:**
 
 ```python
-<!-- Code example in Python -->
-mutation { updateUser(id: 1, name: "Alice") }
-# Result: Always consistent immediately, no need to wait
-result = query { user(id: 1) { name } }  # Sees "Alice"
-```text
-<!-- Code example in TEXT -->
+mutation { updateUser(input: { id: "...", name: "Alice" }) { ... } }
+result = query { user(id: "...") { name } }  # Sees "Alice" immediately
+```
 
-### 13.2 Assuming Cross-Database Transactions
+### 10.2 Assuming Global Event Ordering
 
-**❌ WRONG:**
+**Wrong:**
 
-```python
-<!-- Code example in Python -->
-mutation {
-  createUser(name: "Alice") { id }  # Database 1
-  createOrder(user_id: NEW_ID) { id }  # Database 2
-}
-
-# Assuming both succeed or both fail
-# Actually: May partially succeed
-```text
-<!-- Code example in TEXT -->
-
-**✅ RIGHT:**
-
-```python
-<!-- Code example in Python -->
-# Handle failure manually
-try {
-  user = mutation { createUser(name: "Alice") { id } }
-  order = mutation { createOrder(user_id: user.id) { id } }
-} catch error {
-  # May have created user but not order
-  # Client should rollback/compensate
-}
-```text
-<!-- Code example in TEXT -->
-
-### 13.3 Assuming Global Event Ordering
-
-**❌ WRONG:**
-
-```python
-<!-- Code example in Python -->
+```graphql
 subscription {
-  orderUpdated { id, status }
-  userUpdated { name }
+  orderUpdated { id status }
+  userUpdated { id name }
 }
+# Assuming events arrive in global timestamp order.
+```
 
-# Assuming events are globally ordered by timestamp
-# Actually: Only per-entity ordered
-```text
-<!-- Code example in TEXT -->
+**Right:**
 
-**✅ RIGHT:**
+```graphql
+subscription { orderUpdated { id status timestamp } }
+```
 
 ```python
-<!-- Code example in Python -->
-subscription {
-  orderUpdated { id, status, timestamp }
-}
-
-# Use timestamp to order events in client
+# Order events on the client using their timestamps.
 events.sort(key=lambda e: e["timestamp"])
-```text
-<!-- Code example in TEXT -->
+```
 
----
+### 10.3 Expecting FraiseQL to Route to Replicas
 
-## 14. Consistency SLA (Service Level Agreement)
+**Wrong:** Assuming FraiseQL load-balances reads across replicas or fails over
+automatically.
 
-| Metric | Target | Measured |
-|--------|--------|----------|
-| **Serializable consistency** | 99.99% | All mutations |
-| **Read-after-write latency** | <10ms | p99 |
-| **ACID durability** | 100% | Confirmed mutations |
-| **Causal consistency (federation)** | 99.9% | Federated queries |
-| **Cache coherence** | 99.99% | Cross-server caches |
+**Right:** FraiseQL connects to one `database_url`. Read/write splitting,
+failover, and replica routing belong to your PostgreSQL deployment or a connection
+proxy in front of it.
 
 ---
 
 ## Summary
 
-**FraiseQL consistency model:**
+FraiseQL v1 consistency model:
 
-✅ **Single database:** Serializable ACID (strict)
-✅ **Federated:** Causal consistency (weaker but scalable)
-✅ **Subscriptions:** Per-entity ordered (eventual delivery)
-✅ **Caching:** Strong cache coherence
-✅ **Durability:** Write-ahead logging
-✅ **Atomicity:** All-or-nothing mutations
+- **Single PostgreSQL primary:** strong, immediately consistent reads after
+  committed writes.
+- **Isolation:** whatever PostgreSQL is configured to enforce (Read Committed by
+  default, Serializable available).
+- **Mutations:** atomic per `fn_` function; all-or-nothing.
+- **Durability:** PostgreSQL write-ahead logging.
+- **Subscriptions:** per-entity ordered, at-least-once delivery.
+- **Caching:** invalidated on write, otherwise bounded by TTL.
+- **Replicas/failover:** a PostgreSQL deployment concern, not a FraiseQL feature.
 
-**Golden rule:** What the database guarantees, FraiseQL guarantees. Nothing more, nothing less.
+**Golden rule:** What PostgreSQL guarantees, FraiseQL guarantees. Nothing more,
+nothing less.
 
 ---
 
-*End of Consistency Model*
+## Related Documents
+
+- [Error Handling Model](./error-handling-model.md)
+- [Failure Modes and Recovery](./failure-modes-and-recovery.md)
+- [Versioning Strategy](./versioning-strategy.md)
+- [Subscriptions](../realtime/subscriptions.md)
+- [View Selection Guide](../database/view-selection-guide.md)
+- [Performance Characteristics](../../foundation/12-performance-characteristics.md)
+- [Schema Conventions](../../specs/schema-conventions.md)
+</content>
+</invoke>
