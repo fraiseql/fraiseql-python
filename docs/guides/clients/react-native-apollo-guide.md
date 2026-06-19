@@ -768,8 +768,3 @@ cd android && ./gradlew bundleRelease
 - [React Native Official Docs](https://reactnative.dev/)
 - [Apollo Client for React Native](https://www.apollographql.com/docs/react/)
 - [React Native AsyncStorage](https://react-native-async-storage.github.io/async-storage/)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

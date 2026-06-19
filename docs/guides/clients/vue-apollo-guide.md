@@ -878,7 +878,6 @@ const user = computed(() => result.value?.user);
 
 **Related Guides:**
 
-- **[Full-Stack TypeScript + Vue Example](../../examples/fullstack-typescript-vue.md)**
 - **[React + Apollo Guide](./react-apollo-guide.md)** - For comparison
 - **[Real-Time Patterns](../patterns.md)** - Subscription architecture
 - **[Authentication & Authorization](../authorization-quick-start.md)** - Securing queries
@@ -887,8 +886,3 @@ const user = computed(() => result.value?.user);
 
 - [Vue Apollo Docs](https://vue-apollo.netlify.app/)
 - [Apollo Client for Vue GitHub](https://github.com/vuejs/apollo)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

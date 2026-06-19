@@ -837,8 +837,3 @@ describe('UserList Error Handling', () => {
 
 - [Official Apollo Client Docs](https://www.apollographql.com/docs/react/)
 - [Apollo Client GitHub](https://github.com/apollographql/apollo-client)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

@@ -883,7 +883,6 @@ flutter build appbundle --release
 
 **Related Guides:**
 
-- **[Full-Stack Go + Flutter Example](../../examples/fullstack-go-flutter.md)**
 - **[React Native Guide](./react-native-apollo-guide.md)** - Mobile web alternative
 - **[Real-Time Patterns](../patterns.md)** - Subscription architecture
 - **[Authentication & Authorization](../authorization-quick-start.md)** - Securing queries
@@ -893,8 +892,3 @@ flutter build appbundle --release
 - [Flutter GraphQL Pub Package](https://pub.dev/packages/graphql_flutter)
 - [GraphQL Flutter GitHub](https://github.com/zino-app/graphql-flutter)
 - [Flutter Official Docs](https://flutter.dev/docs)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
