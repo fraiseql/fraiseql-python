@@ -1,65 +1,76 @@
 <!-- Skip to main content -->
 ---
 
-title: FraiseQL v2 Guides
-description: Practical how-to guides for operators, developers, and DevOps teams.
+title: FraiseQL Guides
+description: Practical how-to guides for developers, DevOps, and DBAs building PostgreSQL-backed GraphQL APIs with FraiseQL.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL v2 Guides
+# FraiseQL Guides
 
-Practical how-to guides for operators, developers, and DevOps teams.
+Practical how-to guides for developers, DevOps teams, and DBAs building PostgreSQL-backed GraphQL APIs with FraiseQL. FraiseQL is a Python runtime framework: you define types, queries, and mutations with decorators, and the schema is built in memory at app startup and served over FastAPI.
 
 ---
 
 ## 🚀 Getting Started
 
-- **[Language Generators](language-generators.md)** — Schema authoring in Python, TypeScript, Go, Java, PHP
-- **[Patterns](patterns.md)** — Common schema design patterns and best practices
+- **[Understanding FraiseQL in 10 Minutes](understanding-fraiseql.md)** — Core concepts: the CQRS read/write split, views, and `fn_` functions
+- **[Common Patterns](patterns.md)** — Real-world schema design patterns and solutions
+- **[Trinity Pattern Guide](trinity-pattern-guide.md)** — The `pk_`/`id`/`identifier` identifier pattern
 
 ## 🎯 Evaluation & Decision Making
 
 **Before you start building:**
 
 - **[Choosing FraiseQL](choosing-fraiseql.md)** — Is FraiseQL right for your project? Use case analysis and decision matrix
-- **[Consistency Model](consistency-model.md)** — Understand FraiseQL's CAP theorem choice (CP: Consistency + Partition Tolerance)
+- **[Decision Matrices](decision-matrices.md)** — Comparison tables for common architectural choices
+- **[Consistency Model](consistency-model.md)** — FraiseQL's CAP theorem positioning (CP: Consistency + Partition Tolerance)
 
 ## 🛠️ Development Guides
 
-### Development
-
-- **[Testing Strategy](testing-strategy.md)** — Unit, integration, E2E, and performance testing
 - **[Developer Guide](development/developer-guide.md)** — Development environment setup
+- **[Schema Design Best Practices](schema-design-best-practices.md)** — Designing tables, views, and types
+- **[DDL Generation Guide](ddl-generation-guide.md)** — Creating table-backed (`tv_`) views
+- **[Database Schema Migration Guide](database-migration-guide.md)** — Evolving your PostgreSQL schema safely
+- **[Mutation SQL Requirements](mutation-sql-requirements.md)** — Writing `fn_` functions for mutations
+- **[Filtering Guide](filtering.md)** — WHERE operators and query filters
+- **[Nested Array Filtering](nested-array-filtering.md)** — Filtering inside nested JSONB arrays
+- **[Error Handling Patterns](error-handling-patterns.md)** — Success/error union results and error shaping
+- **[Advanced Features](advanced-features.md)** — Less common features and techniques
+
+## 🔐 Authorization
+
+- **[Authorization & RBAC Quick Start](authorization-quick-start.md)** — Field- and operation-level authorization in 5 minutes
+
+## ⚡ Performance
+
+- **[Performance Guide](performance-guide.md)** — End-to-end performance practices
+- **[Performance & Optimization Guide](performance-optimization.md)** — Tuning queries, views, and caching
+- **[Analytics Patterns](analytics-patterns.md)** — Runtime auto-aggregation and analytical query patterns
+- **[Cascade Best Practices](cascade-best-practices.md)** — Cache cascade invalidation rules
+- **[Migrating to Cascade](migrating-to-cascade.md)** — Adopting cascade-based cache invalidation
 
 ## 📊 Operations & Monitoring
 
-- **[Deployment Guide](../deployment/)** — Deploy FraiseQL (local, Docker, Kubernetes)
-- **[Production Deployment](production-deployment.md)** — Enterprise-scale Kubernetes deployments
-- **[Monitoring](monitoring.md)** — Prometheus metrics and OpenTelemetry tracing
-- **[Observability](observability.md)** — Logging, tracing, and metrics best practices
+- **[Production Deployment Guide](production-deployment.md)** — Deploying the FastAPI app to production
+- **[Production Security Checklist](production-security-checklist.md)** — Pre-launch security review
+- **[Monitoring & Observability](monitoring.md)** — Prometheus metrics and OpenTelemetry tracing
+- **[Observability Guide](observability.md)** — Logging, tracing, and metrics best practices
 
-## 🔔 Event-Driven Architecture
+## 🔌 Integrations
 
-- **[Observers & Webhooks](observers.md)** — Event-driven actions on database changes
-- **[DDL Generation Guide](ddl-generation-guide.md)** — Generate schema from existing databases
+- **[Client Implementation Guides](clients/README.md)** — Querying FraiseQL from React, Vue, Flutter, React Native, and Node.js
+- **[LangChain Integration](langchain-integration.md)** — Using FraiseQL with LangChain
+- **[Integrations Overview](../integrations/README.md)** — Authentication providers and monitoring integrations
 
-## 🔗 Integrations
+## 🩺 Troubleshooting
 
-See [Integrations Guide](../integrations/) for:
-
-- **Federation** — Multi-database composition with SAGA patterns
-- **Authentication** — Auth0, Google, Keycloak, SCRAM setup
-- **Arrow Flight** — High-performance analytics integration
-- **Monitoring** — Grafana dashboards and alerting
-
-## 📚 Analytics & View Selection
-
-- **[Analytics Patterns](analytics-patterns.md)** — Common analytical query patterns
-- **[Arrow Flight Integration](../integrations/arrow-flight/)** — High-performance analytics and BI tool integration
-- **[View Selection Quick Reference](view-selection-quick-reference.md)** — Quick guide to view patterns
-- **[View Selection Performance Testing](view-selection-performance-testing.md)** — Benchmark view selection strategies
-- **[View Selection Migration Checklist](view-selection-migration-checklist.md)** — Migrate existing views to FraiseQL patterns
+- **[Troubleshooting Guide](troubleshooting.md)** — General troubleshooting
+- **[Troubleshooting Decision Tree](troubleshooting-decision-tree.md)** — Diagnose issues by symptom
+- **[Troubleshooting Mutations](troubleshooting-mutations.md)** — Debugging `fn_`-backed mutations
+- **[Common Gotchas & Pitfalls](common-gotchas.md)** — Frequent surprises and how to avoid them
+- **[Common Mistakes](common-mistakes.md)** — Anti-patterns in FraiseQL implementations
 
 ---
 
@@ -68,14 +79,17 @@ See [Integrations Guide](../integrations/) for:
 **I want to...**
 
 - **Evaluate if FraiseQL is right for me** → [Choosing FraiseQL](choosing-fraiseql.md)
+- **Understand the core model** → [Understanding FraiseQL in 10 Minutes](understanding-fraiseql.md)
 - **Understand consistency guarantees** → [Consistency Model](consistency-model.md)
-- **Get started quickly** → [Language Generators](language-generators.md)
-- **Design a schema** → [Patterns](patterns.md)
+- **Design a schema** → [Schema Design Best Practices](schema-design-best-practices.md)
+- **Write a mutation** → [Mutation SQL Requirements](mutation-sql-requirements.md)
+- **Filter query results** → [Filtering Guide](filtering.md)
+- **Add authorization** → [Authorization Quick Start](authorization-quick-start.md)
+- **Tune performance** → [Performance & Optimization Guide](performance-optimization.md)
 - **Deploy to production** → [Production Deployment](production-deployment.md)
-- **Set up monitoring** → [Monitoring](monitoring.md)
-- **Test my code** → [Testing Strategy](testing-strategy.md)
+- **Set up monitoring** → [Monitoring & Observability](monitoring.md)
 - **Integrate with Auth0** → [Auth0 Setup](../integrations/authentication/setup-auth0.md)
-- **Set up federation** → [Federation Guide](../integrations/federation/guide.md)
+- **Query from a frontend** → [Client Implementation Guides](clients/README.md)
 
 ---
 
@@ -93,16 +107,14 @@ See [Integrations Guide](../integrations/) for:
 
 All guides in this directory follow a consistent metadata format for discoverability and context:
 
-```markdown
-<!-- Code example in MARKDOWN -->
+```text
 | Metadata | Values | Example |
 |----------|--------|---------|
 | **Status** | ✅ Production Ready, ⚠️ Beta, 📝 Draft | ✅ Production Ready |
 | **Audience** | Developers, DevOps, DBAs, Architects, SREs | Developers, Architects |
 | **Reading Time** | Estimated minutes | 10-15 minutes |
 | **Last Updated** | YYYY-MM-DD | 2026-02-05 |
-```text
-<!-- Code example in TEXT -->
+```
 
 **What these mean:**
 
@@ -123,7 +135,3 @@ All guides in this directory follow a consistent metadata format for discoverabi
   - Quick starts (5-10 minutes)
   - Detailed guides (15-30 minutes)
   - Deep dives (30+ minutes)
-
----
-
-**Back to:** [Documentation Home](../README.md)

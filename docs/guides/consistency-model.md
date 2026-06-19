@@ -1,791 +1,252 @@
-<!-- Skip to main content -->
+---
+title: Consistency Model in FraiseQL
+description: How FraiseQL gives you strong consistency on a single PostgreSQL database — MVCC, transactions, read-your-writes, RLS, and the CQRS read/write split.
+keywords: ["consistency", "transactions", "mvcc", "postgresql", "cqrs", "rls"]
+tags: ["documentation", "guide"]
 ---
 
-title: Consistency Model: CAP Theorem in FraiseQL
-description: - CAP theorem fundamentals (Consistency, Availability, Partition Tolerance)
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]
----
+# Consistency Model in FraiseQL
 
-# Consistency Model: CAP Theorem in FraiseQL
-
-**Status:** ✅ Production Ready
+**Status:** Production Ready
 **Audience:** Architects, Developers
-**Reading Time:** 12-15 minutes
-**Last Updated:** 2026-02-05
+**Reading Time:** 10-12 minutes
 
 ## Prerequisites
 
 **Required Knowledge:**
 
-- CAP theorem fundamentals (Consistency, Availability, Partition Tolerance)
-- Distributed systems concepts
-- ACID properties and transactions
-- Eventual vs strong consistency
-- Network partition failure modes
-- Database replication and synchronization
-- Multi-region deployment patterns
-- FraiseQL federation architecture
+- ACID properties and database transactions
+- PostgreSQL MVCC (Multi-Version Concurrency Control) basics
+- Transaction isolation levels (Read Committed, Repeatable Read, Serializable)
+- The FraiseQL CQRS split: read views (`v_`/`tv_`) and write functions (`fn_`)
+- Row-Level Security (RLS) for multi-tenancy
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later (for federation scenarios)
-- Your chosen SDK language
-- PostgreSQL, MySQL, SQLite, or SQL Server (with appropriate replication tools)
-- Monitoring tools to detect network partitions
-- Logging infrastructure for debugging consistency issues
+- FraiseQL v1
+- PostgreSQL 14+
 
-**Required Infrastructure:**
+## Where Consistency Comes From
 
-- Multiple FraiseQL instances (for federation scenario discussion)
-- Primary database + replica/standby setup
-- Network monitoring tools
-- Load balancer or DNS for failover
-- Optional: multi-region deployment infrastructure
-
-**Optional but Recommended:**
-
-- Database replication tools (PostgreSQL replication, MySQL binlog)
-- Network failure simulation tools (chaos engineering)
-- Distributed transaction coordinator (if needed)
-- Consistency verification tools
-
-**Time Estimate:** 30-45 minutes to understand model, 1-2 hours for production implementation planning
-
-## The Choice: CP (Consistency + Partition Tolerance)
-
-FraiseQL makes a deliberate architectural choice based on the CAP theorem:
+FraiseQL is a **single-database** framework: every query and mutation runs against **one PostgreSQL database**. There is no cross-database replication, no federation, and no distributed transaction coordinator to reason about. As a result, FraiseQL's consistency guarantees are exactly **PostgreSQL's guarantees** — strong, ACID, MVCC-based — with no extra machinery to weaken them.
 
 | Guarantee | Provided? | How |
 |-----------|-----------|-----|
-| **Strong Consistency** | ✅ Yes | ACID within database, causal across federation |
-| **Partition Tolerance** | ✅ Yes | Handles network splits between subgraphs |
-| **High Availability** | ❌ No | Fails gracefully instead of serving stale data |
+| **ACID transactions** | Yes | Each mutation runs inside a single PostgreSQL transaction |
+| **Strong read consistency** | Yes | MVCC snapshots; no dirty or non-repeatable reads inside a transaction |
+| **Read-your-writes** | Yes (within a transaction) | A write and a subsequent read in the same transaction see the same snapshot |
+| **Tenant isolation** | Yes | Row-Level Security policies driven by session GUCs |
 
-**You can't have all three.** FraiseQL chooses Consistency and Partition Tolerance, sacrificing Availability.
-
----
-
-## Why This Choice?
-
-### The CAP Theorem Reality
-
-When a network partition occurs between services, you must choose:
-
-**Diagram:** System architecture visualization
-
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
-
-ServiceA: "Service A\n(DB primary)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-NetworkDown: "🔴 Network Partition" {
-  shape: box
-  style.fill: "#ffccbc"
-  style.border: "3px solid #d32f2f"
-}
-
-ServiceB: "Service B\n(DB replica)" {
-  shape: box
-  style.fill: "#ffebee"
-}
-
-CPChoice: "CP Mode:\nRefuse Service" {
-  shape: box
-  style.fill: "#bbdefb"
-}
-
-APChoice: "AP Mode:\nServe Stale Data" {
-  shape: box
-  style.fill: "#fff9c4"
-}
-
-CPBenefit: "✅ Correct data\n❌ No availability" {
-  shape: box
-  style.fill: "#e1f5fe"
-}
-
-APBenefit: "✅ Available\n❌ Possibly wrong" {
-  shape: box
-  style.fill: "#fffde7"
-}
-
-ServiceA -> NetworkDown
-NetworkDown -> ServiceB
-ServiceB -> CPChoice
-ServiceB -> APChoice
-CPChoice -> CPBenefit
-APChoice -> APBenefit
-```text
-<!-- Code example in TEXT -->
-
-**Your choice:**
-
-1. **CP Mode** (FraiseQL): Refuse to serve Service B until network recovers → Consistency guaranteed
-2. **AP Mode**: Service B serves best-guess data → Available but risky
-
-### FraiseQL's Answer: CP
-
-**Refuse to serve wrong data.**
-
-If Service B's database can't confirm consistency with Service A, FraiseQL returns an error instead of a guess. This costs **availability** but guarantees **correctness**.
-
-**Why?** Because the cost of wrong data is catastrophic in enterprise systems:
-
-- Banking: Double-charging or money loss
-- Healthcare: Incorrect medication dosing
-- Inventory: Overselling products you don't have
-- Financial reporting: Regulatory violations
-
-**The philosophy**: Better to fail loudly than to silently corrupt data.
+Because there is exactly one source of truth, you never have to ask "which replica did I read from?" or "have my writes propagated yet?" — those questions belong to multi-database systems, not to FraiseQL v1.
 
 ---
 
-## Mutations: Synchronous Execution
+## The CQRS Split and What It Means for Consistency
 
-### How Mutations Work
+FraiseQL separates **reads** from **writes**, but both sides hit the same PostgreSQL database, so they stay consistent:
 
-**Diagram: Query Execution** - 8-stage runtime model with authorization and field masking
+- **Reads (`@fraiseql.query`)** call `db.find` / `db.find_one` against `v_`/`tv_` views. A `v_` view is a plain `SELECT` that builds a `data` JSONB column — it always reflects the latest committed state of the underlying `tb_` tables. A `tv_` view is a table-backed projection refreshed by functions/triggers in the same database.
+- **Writes (`@fraiseql.mutation`)** call `fn_` PostgreSQL functions via `db.execute_function`. The function performs validation plus the write inside a transaction and returns a JSONB success/failure payload.
 
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
+```python
+import fraiseql
+from fraiseql.types import ID
 
-Client: "Client sends mutation\n(blocking)" {
-  shape: box
-  style.fill: "#e3f2fd"
-}
+@fraiseql.query
+async def user(info, id: ID) -> "User | None":
+    db = info.context["db"]
+    return await db.find_one("v_user", id=id)   # reads latest committed state
 
-Receive: "FraiseQL Server\nreceives request" {
-  shape: box
-  style.fill: "#f3e5f5"
-}
+@fraiseql.mutation
+async def update_user(info, input: "UpdateUserInput") -> "UpdateUserSuccess | UpdateUserError":
+    db = info.context["db"]
+    result = await db.execute_function("fn_update_user", {"id": input.id, "name": input.name})
+    if not result.get("success"):
+        return UpdateUserError(message=result.get("message", "failed"))
+    return UpdateUserSuccess(user=User(**result["user"]))
+```
 
-Validate: "Validation\n(schema, auth)" {
-  shape: box
-  style.fill: "#f1f8e9"
-}
+**Key point:** Because a `v_` view reads directly from the same tables the `fn_` function wrote to, a query issued *after* a mutation commits observes that mutation's effects. There is no replication lag to wait out.
 
-Lock: "Acquire distributed\nlocks (if federation)" {
-  shape: box
-  style.fill: "#fff3e0"
-}
+---
 
-SAGA: "Execute SAGA" {
-  shape: box
-  style.fill: "#ffe0b2"
-}
+## Mutations Are Synchronous and Transactional
 
-Step1: "Step 1: Local DB\nmutation" {
-  shape: box
-  style.fill: "#ffccbc"
-}
-
-Step2: "Step 2: Remote\nservice mutation" {
-  shape: box
-  style.fill: "#ffccbc"
-}
-
-Compensation: "Compensation logic\non failure" {
-  shape: box
-  style.fill: "#ffccbc"
-}
-
-Success: "✅ Success\n(commit)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-Failure: "❌ Error\n(rollback)" {
-  shape: box
-  style.fill: "#ffebee"
-}
-
-Return: "Return result\nto client" {
-  shape: box
-  style.fill: "#e1f5fe"
-}
-
-Client -> Receive
-Receive -> Validate
-Validate -> Lock
-Lock -> SAGA
-SAGA -> Step1
-SAGA -> Step2
-SAGA -> Compensation: "If failure"
-Step1 -> Success
-Step2 -> Success
-Compensation -> Failure
-Success -> Return
-Failure -> Return
-
-note: "⏱️ Client waits 100-500ms\n(blocking until complete,\nnever queued/maybe)"
-```text
-<!-- Code example in TEXT -->
-
-**Key point**: The client blocks until the mutation completes. There's no "queued, we'll process later" response.
-
-### Example
+When a client sends a mutation, FraiseQL executes the `fn_` function inside a PostgreSQL transaction and **blocks until it commits or rolls back**. The client receives the final result — never a "queued, check back later" acknowledgement.
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation CreateOrder($input: CreateOrderInput!) {
   createOrder(input: $input) {
     id
     status
-    items { id, quantity }
+    items { id quantity }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**What happens**:
+What happens inside PostgreSQL:
 
-1. FraiseQL validates order
-2. Reserves inventory in one database
-3. Calls payment service via federation
-4. If payment fails: rolls back inventory (SAGA compensation)
-5. Returns complete result or error to client
+1. FraiseQL opens a transaction and sets session GUCs (tenant, user) with `SET LOCAL`.
+2. The `fn_create_order` function validates input, reserves inventory, and writes the order — all in the same transaction.
+3. On success, the transaction commits atomically and the result is returned.
+4. On any error, the transaction rolls back; no partial state is left behind.
 
-**Never**: "Order created, payment processing in background, check back later"
+This is the classic ACID guarantee: **all-or-nothing**. The atomicity that older versions of this page attributed to a distributed "SAGA" is, in v1, simply the atomicity of a single PostgreSQL transaction — write your multi-step logic inside one `fn_` function and it either fully applies or fully rolls back.
 
 ---
 
-## Observations: Asynchronous Side Effects
+## Isolation: What You See Inside a Transaction
 
-### NATS JetStream ≠ Eventual Consistency Mutations
-
-FraiseQL uses NATS JetStream for **side effects**, not **core mutations**:
-
-```text
-<!-- Code example in TEXT -->
-Mutation (synchronous, blocking)
-    ├─ Database: updateUser(...) ✅ completes
-    └─ Returns to client immediately
-
-Side Effects (asynchronous, via NATS)
-    ├─ Webhook: Discord notification → queued
-    ├─ Cache: Invalidate user cache → queued
-    ├─ Events: Publish user.updated → published
-    └─ Background jobs: process in Redis queue
-```text
-<!-- Code example in TEXT -->
-
-**The mutation completes synchronously.**
-
-**The side effects happen asynchronously.**
-
-### Guarantees for Observations
-
-| Feature | Guarantee |
-|---------|-----------|
-| **Webhook delivery** | At-least-once (may retry) |
-| **Event publishing** | Durable (persisted in JetStream) |
-| **Cache invalidation** | Best-effort (failures go to DLQ) |
-| **Event ordering** | Per-entity ordered, not globally |
-
-**Example**:
-
-```graphql
-<!-- Code example in GraphQL -->
-mutation DeleteUser($id: ID!) {
-  deleteUser(id: $id) {
-    id
-    deletedAt
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Timeline**:
-
-- `T+0ms`: Mutation executes (synchronous)
-- `T+10ms`: Client receives response (user deleted)
-- `T+50ms`: Webhook queued to NATS
-- `T+200ms`: Discord webhook dispatched
-- `T+500ms`: Cache invalidation completes
-
-If the webhook fails, it retries. If it permanently fails, it goes to Dead Letter Queue. **But the mutation already succeeded.**
-
----
-
-## Federation: Distributed Transactions via SAGA
-
-### SAGA Pattern Implementation
-
-When mutations span multiple services:
-
-```text
-<!-- Code example in TEXT -->
-Mutation on Service A and Service B
-         │
-         ├─ Acquire locks on both databases
-         │
-         ├─ Execute mutation on Service A
-         │  └─ Store result in SAGA store
-         │
-         ├─ Execute mutation on Service B
-         │  └─ If fails: COMPENSATION phase
-         │
-         └─ Compensation (if needed)
-            ├─ Undo Service B change (if it succeeded)
-            ├─ Undo Service A change
-            └─ Return error to client
-```text
-<!-- Code example in TEXT -->
-
-### Example: Multi-Service Mutation
-
-```graphql
-<!-- Code example in GraphQL -->
-mutation TransferInventory(
-  $productId: ID!
-  $fromWarehouse: ID!
-  $toWarehouse: ID!
-  $quantity: Int!
-) {
-  moveInventory(
-    productId: $productId
-    from: $fromWarehouse
-    to: $toWarehouse
-    quantity: $quantity
-  ) {
-    success
-    fromBalance
-    toBalance
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Step-by-step execution**:
-
-1. Acquire locks on both warehouse databases
-2. Decrement inventory at `fromWarehouse`
-3. Call `toWarehouse` service to increment
-4. If step 3 fails:
-   - **Compensation**: Re-increment `fromWarehouse` (undo step 2)
-   - Return error to client
-5. If both succeed: commit, return success to client
-
-**Result**: Either both services updated, or neither. No partial states.
-
----
-
-## When CP is Right ✅
-
-### Use FraiseQL if
-
-| Domain | Why |
-|--------|-----|
-| **Banking/Payments** | Double-charging or lost transactions are unacceptable |
-| **Inventory Management** | Overselling lost inventory costs money |
-| **Healthcare** | Incorrect patient data causes harm |
-| **Financial Reporting** | Stale data violates regulations (SOX, GDPR) |
-| **Enterprise SaaS** | Customers expect data consistency guarantees |
-| **Regulated Industries** | Audit trails require certainty |
-| **Multi-tenant Systems** | One tenant's data can't bleed into another's |
-
----
-
-## When CP is Wrong ❌
-
-### Don't use FraiseQL if
-
-| Domain | Why | Better Choice |
-|--------|-----|---|
-| **Real-time Analytics** | 5-10s lag acceptable | DynamoDB, Cassandra |
-| **Social Media** | Like counts approximated | DynamoDB, Cassandra |
-| **IoT / Time Series** | Some data points acceptable | InfluxDB, TimescaleDB |
-| **User Presence** | Eventual sync (30s) ok | Redis, Firebase |
-| **Chat / Messaging** | Message reordering acceptable | Message broker (Kafka) |
-| **Trending Topics** | Slightly stale data ok | Elasticsearch |
-| **Session Storage** | Temporary data, relaxed consistency | Redis |
-
----
-
-## Consistency Guarantees Explained
-
-### Within a Single Database
-
-**Isolation Level**: Serializable (ACID guarantees)
+PostgreSQL's default isolation level is **Read Committed**: each statement sees a fresh snapshot of committed data. For stronger guarantees you can run your `fn_` function under a stricter level:
 
 ```sql
-<!-- Code example in SQL -->
--- FraiseQL uses serializable transactions
--- Equivalent to:
-BEGIN ISOLATION LEVEL SERIALIZABLE;
-UPDATE users SET name = 'Alice' WHERE id = 1;
-SELECT * FROM users WHERE id = 1;  -- Sees 'Alice'
-COMMIT;
-```text
-<!-- Code example in TEXT -->
+-- Inside fn_transfer_inventory, enforce repeatable reads for the duration:
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-**Guarantee**: No dirty reads, no phantom reads, no lost updates.
+-- Or, for full serializability when correctness is critical:
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+UPDATE tb_inventory SET qty = qty - $1 WHERE fk_warehouse = $2;
+SELECT qty FROM tb_inventory WHERE fk_warehouse = $2;  -- sees the decremented value
+```
 
-### Across Federated Services
+| Isolation level | Prevents | Use when |
+|-----------------|----------|----------|
+| **Read Committed** (default) | Dirty reads | General CRUD, the common case |
+| **Repeatable Read** | Dirty + non-repeatable reads | Multi-statement reads that must agree |
+| **Serializable** | All anomalies, incl. write skew | Financial/inventory invariants |
 
-**Isolation Level**: Causal consistency (not strict serializability)
-
-```text
-<!-- Code example in TEXT -->
-Service A executes mutation
-    ↓
-Service B waits for result
-    ↓
-Service B can see the effects of Service A's mutation
-    ↓
-But Service A can't retroactively see what Service B did
-```text
-<!-- Code example in TEXT -->
-
-**Guarantee**: Ordered causality, not global ordering.
-
-**Example**: You can't have this scenario:
-
-```text
-<!-- Code example in TEXT -->
-Time T1: Service A changes User.name → "Alice"
-Time T2: Service B reads User.name → gets "Bob" (stale)
-Time T3: Service B returns response to client
-```text
-<!-- Code example in TEXT -->
-
-Because SAGA ensures T1's effects are visible in T2.
+**Read-your-writes:** Within a single transaction, a read after a write always sees that write — that is MVCC working on one snapshot. Across separate requests, a query sees every mutation that has already **committed**.
 
 ---
 
-## Multi-Tenant Isolation
+## Multi-Tenant Isolation via Row-Level Security
 
-### Tenant Data Must Not Cross
+Tenant isolation in FraiseQL v1 is enforced by **PostgreSQL Row-Level Security**, not by application-level filtering you have to remember to apply. The flow is:
 
-FraiseQL enforces strict per-tenant data scoping:
+1. The request carries `tenant_id` in `info.context`.
+2. FraiseQL's CQRS repository issues `SET LOCAL app.tenant_id = …` per transaction.
+3. Your RLS policies read `current_setting('app.tenant_id')` and scope every row automatically.
 
-```graphql
-<!-- Code example in GraphQL -->
-# Configured at schema compile time
-query users(tenantId: ID!) {
-  users(where: { tenantId: { _eq: $tenantId } }) {
-    id
-    name
-  }
-}
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Enable RLS on the write table
+ALTER TABLE tb_order ENABLE ROW LEVEL SECURITY;
 
-**Guarantee**: No query can accidentally leak Tenant A's data to Tenant B.
+-- Every read/write is automatically scoped to the current tenant
+CREATE POLICY tenant_isolation ON tb_order
+  USING (fk_tenant = current_setting('app.tenant_id')::uuid);
+```
 
-**How**: Field-level authorization + WHERE filter compilation.
+Reads can additionally pass `mandatory_filters` to belt-and-braces the scope:
 
----
+```python
+@fraiseql.query
+async def orders(info) -> list["Order"]:
+    db = info.context["db"]
+    return await db.find("v_order", mandatory_filters={"tenant_id": info.context["tenant_id"]})
+```
 
-## What About Eventual Consistency?
-
-### FraiseQL Does NOT Provide It
-
-You cannot do:
-
-```graphql
-<!-- Code example in GraphQL -->
-mutation UpdateUser($id: ID!, $name: String!) {
-  updateUser(id: $id, name: $name) {
-    id
-    status  # "accepted" or "queued"
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-And then:
-
-```graphql
-<!-- Code example in GraphQL -->
-subscription onUserUpdate($id: ID!) {
-  userUpdated(id: $id) {
-    id
-    name
-    status  # "completed"
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Why not?** Because:
-
-1. It's complex to implement correctly
-2. Enterprise users don't want it
-3. We prioritize certainty over speed
-
-### If You Need Eventual Consistency
-
-Use a system designed for it:
-
-- **DynamoDB** (AWS) → eventually consistent reads
-- **Cassandra** → eventual consistency by design
-- **Event sourcing** → with CQRS pattern
-
-Or implement it yourself:
-
-- Queue mutations to async processor
-- Return job ID immediately
-- Client polls status endpoint
+**Guarantee:** No query can leak Tenant A's rows to Tenant B — the database enforces it, and the GUC is reset per transaction so it cannot bleed across requests.
 
 ---
 
-## Performance Implications
+## Caching and Consistency
 
-### Latency Tradeoff
+FraiseQL's optional caching layer (`src/fraiseql/caching/`) keeps cached results consistent with the database through **cascade invalidation**, not a separate event bus.
 
-```text
-<!-- Code example in TEXT -->
-FraiseQL (CP)         100-500ms per mutation
-  ├─ Validation: 5ms
-  ├─ SAGA execution: 50-400ms (database dependent)
-  └─ Network: 10-50ms
+- `ResultCache` / `CachedRepository` store query results keyed by their SQL and arguments.
+- `CascadeRule` (and `setup_auto_cascade_rules` / `SchemaAnalyzer`) describe which cache entries a given write invalidates, so a mutation drops the now-stale entries.
+- The cache is PostgreSQL-backed (`PostgresCache`), so it lives in the same database as your data.
 
-Eventual Consistency  <10ms mutation response
-  ├─ ACK: 1-2ms
-  ├─ Actual processing: later
-  └─ Client waits for subscription
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.caching import CachedRepository, CascadeRule, cached_query
+```
 
-**FraiseQL is slower for individual mutations.**
-
-**But you get certainty.**
-
-### Throughput
-
-| Scenario | FraiseQL | DynamoDB |
-|----------|----------|----------|
-| Simple query | 1,000 req/s | 10,000+ req/s |
-| Complex federation mutation | 100 concurrent transactions | N/A (not designed for this) |
-| Highly read-heavy | 5,000 req/s | 50,000 req/s |
-| Write-heavy with consistency | 1,000 writes/s | Can't guarantee consistency |
-
-**FraiseQL prioritizes correctness over raw throughput.**
+When a `fn_` mutation changes a table, the configured cascade rules invalidate the dependent cached queries, so the next read re-fetches fresh data. There is no CDC stream, no message broker, and no eventual-consistency window introduced by the cache — invalidation happens as part of serving the write. See [Cascade Best Practices](./cascade-best-practices.md) for how to define rules.
 
 ---
 
-## Decision Tree: Is FraiseQL Right for Me?
+## When FraiseQL's Consistency Model Fits
 
-```text
-<!-- Code example in TEXT -->
+| Domain | Why it fits |
+|--------|-------------|
+| **Banking / Payments** | Atomic transactions prevent double-charges and lost writes |
+| **Inventory Management** | Serializable transactions prevent overselling |
+| **Healthcare** | ACID guarantees keep patient records correct |
+| **Financial Reporting** | Strong consistency satisfies audit requirements |
+| **Multi-tenant SaaS** | RLS guarantees one tenant's data never bleeds into another's |
 
-1. Do mutations need to complete before returning to client?
-   YES → Continue
-   NO → Use eventual consistency system
-
-2. Can stale data cause problems?
-   YES → Continue
-   NO → Use AP system (DynamoDB, Cassandra)
-
-3. Do you need strong ACID compliance?
-   YES → Continue
-   NO → Simpler systems work
-
-4. Do you need to distribute transactions across services?
-   YES → FraiseQL is ideal (SAGA + federation)
-   NO → Any GraphQL engine works
-
-5. Can you tolerate 100-500ms mutation latency?
-   YES → FraiseQL is perfect
-   NO → Use eventual consistency system
-```text
-<!-- Code example in TEXT -->
-
-**If you answer YES to questions 1-5, use FraiseQL.**
-
----
-
-## FAQ
-
-### Q: Why doesn't FraiseQL queue mutations and return immediately?
-
-**A**: Because that would require:
-
-1. Subscriptions (WebSocket) for client status polling
-2. Event sourcing for tracking mutation progress
-3. Eventual consistency guarantees (we don't provide this)
-
-It's simpler and more reliable to execute synchronously.
-
-### Q: Can I use FraiseQL with async mutations?
-
-**A**: Not natively. But you can:
-
-- Return immediately with a job ID
-- Implement a separate job status endpoint
-- Use webhooks for notifications
-
-See [Federation Guide](../integrations/federation/guide.md) and [SAGA Transactions](../integrations/federation/sagas.md) for implementation patterns.
-
-### Q: What happens if a SAGA step fails?
-
-**A**: Automatic compensation:
-
-1. FraiseQL rolls back all previous steps in reverse order
-2. Releases locks
-3. Returns error to client
-
-The mutation either succeeds completely or fails cleanly. No partial states.
-
-### Q: Is FraiseQL slower than other GraphQL engines?
-
-**A**: Depends what you measure:
-
-- **Individual mutation latency**: Yes, slightly slower (blocking for consistency)
-- **Complex join queries**: No, faster (compile-time optimization)
-- **Federation queries**: Yes, slower (SAGA coordination overhead)
-- **Data accuracy**: Much faster (no stale data surprises)
-
-### Q: Can I use FraiseQL for real-time features?
-
-**A**: Depends:
-
-- **Real-time presence**: No (eventual consistency is fine)
-- **Real-time data updates**: Yes (WebSocket subscriptions work)
-- **Real-time notifications**: Yes (webhooks + CDC)
-- **Real-time analytics**: No (strong consistency unnecessary)
+If your workload genuinely tolerates stale reads at massive scale (approximate like-counts, presence indicators, high-volume time-series), a purpose-built eventually-consistent store may suit those *specific* features better — but for the transactional core of an application, single-database PostgreSQL consistency is exactly what you want, and what FraiseQL gives you.
 
 ---
 
 ## Troubleshooting
 
-### "Mutation taking too long (>1 second)"
+### "A read right after a mutation shows old data"
 
-**Cause:** Synchronous consistency requirement means mutations wait for database locks and replication.
+**Cause:** The reading query ran in a *different* transaction that started before the mutation committed, or it hit a cached entry that was not invalidated.
 
-**Diagnosis:**
+**Fix:**
 
-1. Check database performance: `EXPLAIN ANALYZE` on mutation query
-2. Check network latency between services: `ping federation-subgraph`
-3. Monitor database locks: `SELECT * FROM pg_locks;`
+1. Confirm the mutation actually committed (check the `fn_` function's returned `success` payload).
+2. If using the cache, verify a `CascadeRule` covers the mutated table — see [Cascade Best Practices](./cascade-best-practices.md).
+3. Run reads after the mutation response is received, not concurrently.
 
-**Solutions:**
+### "Lost update / two mutations overwrite each other"
 
-- Add database indexes on frequently mutated columns
-- Scale database horizontally (more replicas for read distribution)
-- For federation, consider async job pattern (see pattern guide)
-- Verify network is low-latency between datacenters
+**Cause:** Concurrent transactions under Read Committed both read the old value before writing.
 
-### "Stale data in replicas during failover"
+**Fix:**
 
-**Cause:** Strong consistency only within single primary. Replicas lag during network partitions.
+- Raise the `fn_` function to `SERIALIZABLE` (or `REPEATABLE READ`) and retry on serialization failures.
+- Use `SELECT … FOR UPDATE` inside the function to lock the rows you intend to modify.
+- Add a version column and check it in the `UPDATE … WHERE version = $expected` clause (optimistic locking).
 
-**Diagnosis:**
+### "Tenant data leaked across tenants"
 
-1. Check replication lag: PostgreSQL `SELECT now() - pg_last_xact_replay_timestamp();`
-2. Monitor partition detection: Check FraiseQL logs for "partition detected"
-3. Verify replica freshness before routing queries
+**Cause:** RLS is not enabled on the table, or the policy does not read `current_setting('app.tenant_id')`.
 
-**Solutions:**
+**Fix:**
 
-- Route all writes to primary, reads can use replicas with acceptable lag
-- Set up automatic replica promotion (e.g., Patroni, Pg-failover)
-- Monitor replication lag continuously (set alerts at >5s lag)
-- Document acceptable stale-data window for your use case
+1. Confirm `ALTER TABLE … ENABLE ROW LEVEL SECURITY` and a policy exist on every tenant-scoped table.
+2. Verify `info.context` carries `tenant_id` so FraiseQL emits `SET LOCAL app.tenant_id`.
+3. Add `mandatory_filters={"tenant_id": …}` on sensitive reads as defense-in-depth.
 
-### "Federation query returns partial data"
+### "High lock contention on hot rows"
 
-**Cause:** SAGA coordination timeout or subgraph unavailability.
+**Cause:** Many simultaneous mutations target the same row.
 
 **Diagnosis:**
 
-1. Check SAGA logs for "compensation triggered"
-2. Verify all subgraphs are responding: `curl http://subgraph:8000/health`
-3. Check network connectivity: `ping subgraph-service`
-4. Review query timeout settings in FraiseQL.toml
+```sql
+SELECT * FROM pg_locks WHERE NOT granted;
+```
 
-**Solutions:**
+**Fix:**
 
-- Increase SAGA timeout (default 30s may be too aggressive): `saga_timeout_secs = 60`
-- Verify all subgraphs are reachable and responsive
-- Check if subgraph database is slow (may need optimization)
-- Consider splitting complex federation queries into separate requests
-
-### "Different data visible in federation subgraphs"
-
-**Cause:** Each subgraph uses its own database. Mutations haven't fully replicated yet.
-
-**Diagnosis:**
-
-1. Query same entity from multiple subgraphs: `{ user(id: "X") { id } }`
-2. Check replication lag between databases
-3. Verify transaction order in audit logs
-
-**Solutions:**
-
-- This is expected during normal operation (strong consistency within each subgraph)
-- For critical consistency, ensure application waits for replication
-- Use federation readiness checks to detect lag
-- Consider using `@requires` directive to create implicit ordering dependencies
-
-### "High lock contention on frequently updated records"
-
-**Cause:** Multiple simultaneous mutations on same entity cause database locks.
-
-**Diagnosis:**
-
-1. Find locked rows: `SELECT * FROM pg_locks WHERE NOT granted;`
-2. Identify blocking queries: `SELECT * FROM pg_stat_statements WHERE calls > 1000;`
-3. Monitor lock wait times in application logs
-
-**Solutions:**
-
-- Add database indexes on WHERE clauses in mutations
-- Reduce mutation frequency if possible (batch updates)
-- Consider partitioning frequently updated tables
-- Implement optimistic locking if conflict is acceptable
-
-### "Partition tolerance: system becomes unavailable instead of serving stale data"
-
-**This is expected behavior.** FraiseQL chooses consistency over availability.
-
-**Diagnosis:**
-
-1. Confirm this is intentional choice for your use case
-2. If not acceptable, you need different architecture
-
-**Solutions:**
-
-- If high availability is critical, implement caching layer (Redis) for reads during partition
-- Use circuit breakers to detect partitions early
-- Implement graceful degradation (serve cached data with disclaimer)
-- Document expected outage windows for users
+- Add indexes on the columns your `fn_` functions filter on.
+- Batch updates where possible to reduce transaction count.
+- Consider partitioning frequently updated tables.
 
 ---
 
 ## See Also
 
-**Related Architecture Guides:**
+**Architecture:**
 
-- **[Federation Guide](../integrations/federation/guide.md)** — Multi-database federation with consistency guarantees
-- **[SAGA Pattern Details](../integrations/federation/sagas.md)** — Distributed transaction coordination and compensation
-- **[Execution Semantics](../architecture/core/execution-semantics.md)** — Query, mutation, and subscription execution guarantees
+- [CQRS Design](../architecture/cqrs-design.md) — the read-view / write-function split this model builds on
 
-**Operational Guides:**
+**Operational:**
 
-- **[Production Deployment](./production-deployment.md)** — Scaling FraiseQL for consistency requirements
-- **[Monitoring & Observability](./monitoring.md)** — Detecting consistency violations in production
-- **[Performance Tuning](../operations/performance-tuning-runbook.md)** — Optimizing for consistency targets
-- **[Distributed Tracing](../operations/distributed-tracing.md)** — Tracking transaction causality
+- [Production Deployment](./production-deployment.md) — running the FastAPI app in production
+- [Monitoring & Observability](./monitoring.md) — detecting lock contention and slow transactions
+- [Performance Tuning](../operations/performance-tuning-runbook.md) — optimizing transactions and views
 
-**Testing & Validation:**
+**Related Guides:**
 
-- **[Testing Strategy](./testing-strategy.md)** — Testing consistency guarantees
-
-**Related Concepts:**
-
-- **[Common Patterns](./patterns.md)** — Real-world patterns built on consistency model
-- **[Authorization & RBAC](./authorization-quick-start.md)** — Row-level consistency with permissions
-- **[Common Gotchas](./common-gotchas.md)** — Consistency pitfalls and solutions
+- [Cascade Best Practices](./cascade-best-practices.md) — keeping cached results consistent
+- [Authorization Quick Start](./authorization-quick-start.md) — RLS and field-level authorization
+- [Common Gotchas](./common-gotchas.md) — consistency pitfalls and solutions
 
 **Troubleshooting:**
 
-- **[Troubleshooting Decision Tree](./troubleshooting-decision-tree.md)** — Route to correct guide for consistency issues
-- **[Troubleshooting Guide](../troubleshooting.md)** — FAQ and solutions
+- [Troubleshooting Guide](./troubleshooting.md) — FAQ and solutions
