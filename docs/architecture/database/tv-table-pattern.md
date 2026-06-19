@@ -537,7 +537,6 @@ See `/home/lionel/code/FraiseQL/examples/sql/postgres/` for complete DDL example
 
 ## See Also
 
-- [ta_* Table Pattern (Arrow Plane)](./ta-table-pattern.md)
 - [View Selection Guide](./view-selection-guide.md)
 - [Schema Conventions](../../specs/schema-conventions.md)
 - [FraiseQL Database Architecture](../../architecture/)
