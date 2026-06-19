@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Build a scalable analytics and business-intelligence platform with FraiseQL using PostgreSQL fact/dimension modelling, view-backed reads, and runtime auto-aggregation.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/patterns/analytics-olap-platform/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Analytics OLAP Platform - FraiseQL Documentation</title>
+        <title>Analytics Platform with OLAP - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Analytics OLAP Platform
+              Analytics Platform with OLAP
             
           </span>
         </div>
@@ -3417,10 +3419,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture-overview" class="md-nav__link">
+  <a href="#how-fraiseql-fits-olap" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Overview
+        How FraiseQL Fits OLAP
       
     </span>
   </a>
@@ -3428,22 +3430,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#schema-design-fraiseql-fact-tables-denormalized-olap" class="md-nav__link">
+  <a href="#runtime-auto-aggregation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema Design: FraiseQL Fact Tables (Denormalized OLAP)
+        Runtime Auto-Aggregation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Schema Design: FraiseQL Fact Tables (Denormalized OLAP)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-design-fact-and-dimension-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Design: Fact and Dimension Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema Design: Fact and Dimension Tables">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fact-tables-tf_events" class="md-nav__link">
+  <a href="#fact-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fact Tables (tf_events)
+        Fact Table
       
     </span>
   </a>
@@ -3451,10 +3464,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#aggregate-tables-pre-computed" class="md-nav__link">
+  <a href="#dimension-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Aggregate Tables (Pre-Computed)
+        Dimension Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calendar-date-dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calendar / Date Dimension
       
     </span>
   </a>
@@ -3467,10 +3491,182 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fraiseql-olap-schema" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL OLAP Schema
+        Read Views
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Read Views">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tv_-projection-tables-for-heavy-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tv_ Projection Tables for Heavy Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregation-patterns-in-view-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregation Patterns in View SQL
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Aggregation Patterns in View SQL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-bucketing-with-date_trunc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Bucketing with DATE_TRUNC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional-aggregates-with-filter-where" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional Aggregates with FILTER (WHERE …)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cohort-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cohort Retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-the-analytics-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the Analytics API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-computed-aggregate-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Computed Aggregate Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partition-pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partition Pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#materialized-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Materialized Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-time-metrics-with-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-Time Metrics with Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-analytical-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Analytical Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4981,10 +5177,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture-overview" class="md-nav__link">
+  <a href="#how-fraiseql-fits-olap" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Overview
+        How FraiseQL Fits OLAP
       
     </span>
   </a>
@@ -4992,22 +5188,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#schema-design-fraiseql-fact-tables-denormalized-olap" class="md-nav__link">
+  <a href="#runtime-auto-aggregation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema Design: FraiseQL Fact Tables (Denormalized OLAP)
+        Runtime Auto-Aggregation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Schema Design: FraiseQL Fact Tables (Denormalized OLAP)">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-design-fact-and-dimension-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Design: Fact and Dimension Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema Design: Fact and Dimension Tables">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fact-tables-tf_events" class="md-nav__link">
+  <a href="#fact-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fact Tables (tf_events)
+        Fact Table
       
     </span>
   </a>
@@ -5015,10 +5222,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#aggregate-tables-pre-computed" class="md-nav__link">
+  <a href="#dimension-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Aggregate Tables (Pre-Computed)
+        Dimension Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calendar-date-dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calendar / Date Dimension
       
     </span>
   </a>
@@ -5031,10 +5249,182 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fraiseql-olap-schema" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL OLAP Schema
+        Read Views
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Read Views">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tv_-projection-tables-for-heavy-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tv_ Projection Tables for Heavy Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregation-patterns-in-view-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregation Patterns in View SQL
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Aggregation Patterns in View SQL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-bucketing-with-date_trunc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time Bucketing with DATE_TRUNC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional-aggregates-with-filter-where" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional Aggregates with FILTER (WHERE …)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cohort-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cohort Retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-the-analytics-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the Analytics API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-computed-aggregate-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Computed Aggregate Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partition-pruning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partition Pruning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#materialized-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Materialized Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-time-metrics-with-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-Time Metrics with Subscriptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-analytical-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Analytical Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -5061,810 +5451,521 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Analytics Platform with OLAP
-description: Complete guide to building a scalable analytics and business intelligence platform using FraiseQL with OLAP (Online Analytical Processing) patterns.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="analytics-platform-with-olap">Analytics Platform with OLAP<a class="headerlink" href="#analytics-platform-with-olap" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
-<strong>Complexity:</strong> ⭐⭐⭐⭐ (Advanced)
+<p><strong>Status:</strong> Production Ready
+<strong>Complexity:</strong> Advanced
 <strong>Audience:</strong> Data engineers, analytics architects, BI developers
-<strong>Reading Time:</strong> 30-35 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>Complete guide to building a scalable analytics and business intelligence platform using FraiseQL with OLAP (Online Analytical Processing) patterns.</p>
+<strong>Reading Time:</strong> 30-35 minutes</p>
+<p>This guide shows how to build an OLAP-style analytics and business-intelligence
+platform on top of FraiseQL. Everything here is <strong>PostgreSQL-only</strong> and runs at
+<strong>application runtime</strong> — there is no compile step, no columnar engine, and no
+separate analytics server. You model your analytics in PostgreSQL (fact and
+dimension tables you maintain via ETL, plus <code>v_</code>/<code>tv_</code> read views), and FraiseQL
+serves them as a GraphQL API. When a query selects dimensions and measures,
+FraiseQL derives the <code>GROUP BY</code> + aggregate SQL automatically at runtime.</p>
 <hr />
-<h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<p><strong>Diagram: Analytics Pattern</strong> - Denormalized fact table design with JSONB dimensions</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>Sources: "Data Sources" {
-  shape: box
-  style.fill: "#e3f2fd"
-  children: [
-    AppDB: "Application\nDatabases"
-    APIs: "APIs"
-    ThirdParty: "Third-Party\nServices"
-  ]
-}</p>
-<p>Warehouse: "Data Warehouse (PostgreSQL)" {
-  shape: box
-  style.fill: "#f3e5f5"
-  children: [
-    Fact: "Fact Tables\n(Events - billions of rows)"
-    Dim: "Dimension Tables\n(Reference data)"
-    Agg: "Aggregate Tables\n(Pre-computed)"
-  ]
-}</p>
-<p>Server: "FraiseQL Server (OLAP Mode)" {
-  shape: box
-  style.fill: "#fff3e0"
-  children: [
-    Exec: "Executes analytical queries"
-    Scale: "Handles aggregations at scale"
-    Export: "Supports Arrow Flight for bulk exports"
-  ]
-}</p>
-<p>Consumers: "Data Consumers" {
-  shape: box
-  style.fill: "#c8e6c9"
-  children: [
-    Dashboard: "📊 Dashboards\n(React)"
-    Reports: "📄 Reports\n(PDF)"
-    Exports: "📥 Exports\n(Excel)"
-    RealTime: "🔴 Real-time\n(WebSocket)"
-  ]
-}</p>
-<p>Sources -&gt; Warehouse: "ETL/ELT"
-Warehouse -&gt; Server: "GraphQL OLAP queries"
-Server -&gt; Consumers: "Results"
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="schema-design-fraiseql-fact-tables-denormalized-olap">Schema Design: FraiseQL Fact Tables (Denormalized OLAP)<a class="headerlink" href="#schema-design-fraiseql-fact-tables-denormalized-olap" title="Permanent link">&para;</a></h2>
-<p>FraiseQL uses a <strong>denormalized fact table pattern</strong> optimized for fast analytics without expensive joins:</p>
-<p><strong>Diagram: Analytics Pattern</strong> - Denormalized fact table design with JSONB dimensions</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: right</p>
-<p>FactTable: "tf_events\n(Fact Table)" {
-  shape: box
-  style.fill: "#fff59d"
-  style.border: "3px solid #f57f17"
-  children: [
-    Measures: "Measures (SQL columns)\nrevenue, quantity, sessions"
-    Dimensions: "Dimensions (JSONB)\nuser, product, category, region"
-    Filters: "Filters (Indexed)\nuser_id, occurred_at"
-  ]
-}</p>
-<p>Benefits: "✅ No expensive joins\n✅ Flexible dimensions\n✅ Fast GROUP BY" {
-  shape: box
-  style.fill: "#c8e6c9"
-}</p>
-<p>FactTable -&gt; Benefits
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Why FraiseQL's Pattern?</strong></p>
+<h2 id="how-fraiseql-fits-olap">How FraiseQL Fits OLAP<a class="headerlink" href="#how-fraiseql-fits-olap" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Aspect</th>
-<th>Traditional Star Schema</th>
-<th>FraiseQL Fact Tables</th>
+<th>Concern</th>
+<th>Where it lives</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Structure</strong></td>
-<td>Fact table + multiple dimension tables</td>
-<td>Single denormalized fact table</td>
+<td>Raw events / fact rows</td>
+<td>PostgreSQL tables you load via ETL (e.g. <code>tb_event</code>)</td>
 </tr>
 <tr>
-<td><strong>Joins</strong></td>
-<td>Multiple expensive joins per query</td>
-<td>No joins needed</td>
+<td>Reference / dimension data</td>
+<td>PostgreSQL dimension tables (e.g. <code>tb_dim_product</code>)</td>
 </tr>
 <tr>
-<td><strong>Dimensions</strong></td>
-<td>Fixed schema columns</td>
-<td>JSONB with flexible schema</td>
+<td>Read model exposed to GraphQL</td>
+<td><code>v_</code> views (logical) or <code>tv_</code> projection tables (pre-composed)</td>
 </tr>
 <tr>
-<td><strong>Query Speed</strong></td>
-<td>Slower (N joins)</td>
-<td>Faster (no joins)</td>
+<td>Aggregation (<code>GROUP BY</code> + <code>SUM</code>/<code>AVG</code>/…)</td>
+<td>Derived at <strong>runtime</strong> by FraiseQL from the selected fields</td>
 </tr>
 <tr>
-<td><strong>Schema Flexibility</strong></td>
-<td>Hard to add dimensions</td>
-<td>Easy (JSONB expansion)</td>
+<td>Heavy pre-computed rollups</td>
+<td>Aggregate tables / materialized views you refresh on a schedule</td>
 </tr>
 </tbody>
 </table>
+<p>FraiseQL's reads always go through a view (or <code>tv_</code> projection table) that exposes
+a public <code>id</code> column and a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>.
+The internal <code>pk_*</code>/<code>fk_*</code> BIGINT keys used for fast joins are <strong>never</strong> exposed and
+<strong>never</strong> placed inside <code>data</code>.</p>
 <hr />
-<h3 id="fact-tables-tf_events">Fact Tables (tf_events)<a class="headerlink" href="#fact-tables-tf_events" title="Permanent link">&para;</a></h3>
-<p>FraiseQL fact tables follow a three-part structure:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Fact table with measures, JSONB dimensions, and indexed filters
-CREATE TABLE tf_events (
-  -- Row identifier
-  event_id BIGSERIAL PRIMARY KEY,</p>
-<p>-- MEASURES: Numeric columns for fast aggregation
-  revenue DECIMAL(12, 2),
-  quantity INT,
-  cost DECIMAL(12, 2),
-  sessions INT,</p>
-<p>-- DIMENSIONS: JSONB for flexible GROUP BY
-  -- Contains: user_category, product, region, country, utm_source, etc.
-  data JSONB NOT NULL,</p>
-<p>-- FILTERS: Indexed denormalized columns for fast WHERE
-  user_id UUID NOT NULL,
-  occurred_at TIMESTAMP NOT NULL,</p>
-<p>-- Temporal partitioning
-  event_date DATE NOT NULL,  -- Partition key</p>
-<p>-- Audit columns
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>-- Indexes for query performance
-  INDEX idx_event_date (event_date),
-  INDEX idx_user_id (user_id),
-  INDEX idx_occurred_at (occurred_at),
-  INDEX idx_data GIN (data)
-) PARTITION BY RANGE (event_date);</p>
-<p>-- Create monthly partitions
-CREATE TABLE tf_events_2024_01 PARTITION OF tf_events
-  FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-CREATE TABLE tf_events_2024_02 PARTITION OF tf_events
-  FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
--- ... continue for each month
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="runtime-auto-aggregation">Runtime Auto-Aggregation<a class="headerlink" href="#runtime-auto-aggregation" title="Permanent link">&para;</a></h2>
+<p>This is the core OLAP capability. When a GraphQL query against a view-backed type
+selects aggregate fields, FraiseQL builds the <code>GROUP BY</code> and the aggregate
+expressions for you at runtime — no compiler, no plan artifacts, no special
+decorator. The supported PostgreSQL aggregates are:</p>
+<p><code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>, <code>STDDEV</code>, <code>VARIANCE</code></p>
+<p>You declare which measures a view-backed type can aggregate, and which fields act
+as group-by dimensions, when you register the type for its view:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">Date</span>
 
-<p><strong>Key components:</strong></p>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_event&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single analytics event, read from v_event.&quot;&quot;&quot;</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">event_date</span><span class="p">:</span> <span class="n">Date</span>
+    <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">device_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">sessions</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
+
+<span class="c1"># Declare the aggregations FraiseQL may derive at runtime for this view.</span>
+<span class="n">register_type_for_view</span><span class="p">(</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_event&quot;</span><span class="p">,</span>
+    <span class="n">aggregation</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;group_by&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;event_date&quot;</span><span class="p">,</span> <span class="s2">&quot;product_id&quot;</span><span class="p">,</span> <span class="s2">&quot;category&quot;</span><span class="p">,</span> <span class="s2">&quot;region&quot;</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;measures&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;revenue&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SUM&quot;</span><span class="p">,</span> <span class="s2">&quot;AVG&quot;</span><span class="p">,</span> <span class="s2">&quot;MIN&quot;</span><span class="p">,</span> <span class="s2">&quot;MAX&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SUM&quot;</span><span class="p">,</span> <span class="s2">&quot;AVG&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;sessions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SUM&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;COUNT&quot;</span><span class="p">],</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>A GraphQL query then picks the dimensions and measures it wants, and FraiseQL
+derives the SQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">RevenueByProduct</span><span class="p">(</span><span class="nv">$start</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!,</span><span class="w"> </span><span class="nv">$end</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">events</span><span class="p">(</span>
+<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eventDate</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="nv">$start</span><span class="p">,</span><span class="w"> </span><span class="n">lte</span><span class="p">:</span><span class="w"> </span><span class="nv">$end</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">groupBy</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="no">PRODUCT_ID</span><span class="p">,</span><span class="w"> </span><span class="no">CATEGORY</span><span class="p">]</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">productId</span>
+<span class="w">    </span><span class="n">category</span>
+<span class="w">    </span><span class="n">revenueSum</span>
+<span class="w">    </span><span class="n">revenueAvg</span>
+<span class="w">    </span><span class="n">quantitySum</span>
+<span class="w">    </span><span class="n">count</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>FraiseQL's repository (<code>_derive_auto_aggregation</code> / <code>_parse_aggregation_expr</code> in
+<code>db.py</code>) turns the selected dimensions into a <code>GROUP BY</code> clause and the selected
+measures into the matching aggregate expressions, then executes the query against
+<code>v_event</code>. The <code>where</code> clause maps to a parameterized <code>WHERE</code> on the view.</p>
+<blockquote>
+<p>All aggregation is plain PostgreSQL. Anything you can express with <code>GROUP BY</code>,
+<code>HAVING</code>, <code>FILTER (WHERE …)</code>, and window functions can be embedded in the view
+SQL; FraiseQL's auto-aggregation handles the common dimension/measure rollups
+on top of that.</p>
+</blockquote>
+<hr />
+<h2 id="schema-design-fact-and-dimension-tables">Schema Design: Fact and Dimension Tables<a class="headerlink" href="#schema-design-fact-and-dimension-tables" title="Permanent link">&para;</a></h2>
+<p>The classic OLAP modelling pattern works directly in PostgreSQL. You maintain the
+fact and dimension tables through your own ETL/load process, and FraiseQL reads
+them through views.</p>
+<h3 id="fact-table">Fact Table<a class="headerlink" href="#fact-table" title="Permanent link">&para;</a></h3>
+<p>A fact table holds the numeric measures plus the foreign keys (or denormalized
+dimension values) needed to slice them.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_event</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">             </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+
+<span class="w">    </span><span class="c1">-- Measures: numeric columns for fast aggregation</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w">        </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w">       </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cost</span><span class="w">           </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">sessions</span><span class="w">       </span><span class="nb">INT</span><span class="p">,</span>
+
+<span class="w">    </span><span class="c1">-- Dimensions: foreign keys to dimension tables + flexible JSONB attributes</span>
+<span class="w">    </span><span class="n">fk_product</span><span class="w">     </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="p">(</span><span class="n">pk_product</span><span class="p">),</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_dim_user</span><span class="w"> </span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">    </span><span class="n">attributes</span><span class="w">     </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span><span class="w">  </span><span class="c1">-- utm_source, device, etc.</span>
+
+<span class="w">    </span><span class="c1">-- Filters: indexed columns for fast WHERE / time-range scans</span>
+<span class="w">    </span><span class="n">occurred_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">event_date</span><span class="w">     </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- partition key</span>
+<span class="p">)</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">RANGE</span><span class="w"> </span><span class="p">(</span><span class="n">event_date</span><span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2026_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2026_02</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-03-01&#39;</span><span class="p">);</span>
+<span class="c1">-- ... one partition per period</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_event_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span><span class="n">event_date</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_event_occurred_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span><span class="n">occurred_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_event_attributes</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="n">attributes</span><span class="p">);</span>
+</code></pre></div>
+<p>Notes on the columns:</p>
 <ol>
-<li><strong>Measures</strong> (numeric columns):</li>
-<li><code>revenue</code>, <code>quantity</code>, <code>cost</code>, <code>sessions</code></li>
-<li>Used in <code>SUM()</code>, <code>AVG()</code>, <code>COUNT()</code> aggregations</li>
-<li>
-<p>Keep these as direct SQL columns for performance</p>
-</li>
-<li>
-<p><strong>Dimensions</strong> (JSONB column):</p>
-</li>
-<li>Single <code>data</code> JSONB column containing flexible schema</li>
-<li>Paths like <code>data-&gt;&gt;'user_category'</code>, <code>data-&gt;&gt;'product'</code>, <code>data-&gt;&gt;'region'</code></li>
-<li>Easy to add new dimensions without schema migration</li>
-<li>
-<p>Query with operators: <code>-&gt;&gt;</code> (text), <code>-&gt;</code> (JSON), <code>@&gt;</code> (contains)</p>
-</li>
-<li>
-<p><strong>Filters</strong> (indexed columns):</p>
-</li>
-<li><code>user_id</code>, <code>occurred_at</code> - denormalized for fast WHERE</li>
-<li>Must be indexed: <code>INDEX idx_user_id (user_id)</code></li>
-<li>
-<p>Avoid searching these values in JSONB (slow)</p>
-</li>
-<li>
-<p><strong>Temporal structure</strong>:</p>
-</li>
-<li>Partition by <code>event_date</code> (monthly or daily)</li>
-<li>Improves query speed for time-range filters</li>
-<li>Enables archival of old partitions</li>
+<li><strong>Measures</strong> (<code>revenue</code>, <code>quantity</code>, <code>cost</code>, <code>sessions</code>): keep these as direct
+   numeric columns so <code>SUM</code>/<code>AVG</code>/<code>COUNT</code> stay fast.</li>
+<li><strong>Dimensions</strong>: model stable, frequently-joined dimensions as foreign keys to
+   dimension tables; keep sparse or fast-evolving attributes in a <code>JSONB</code> column
+   so you can add slices without a schema migration.</li>
+<li><strong>Filters</strong>: index the columns you filter on most (<code>event_date</code>,
+   <code>occurred_at</code>). Avoid hot WHERE predicates that have to dig into JSONB.</li>
+<li><strong>Partitioning</strong>: range-partition by <code>event_date</code> so time-range queries only
+   scan the relevant partitions, and old partitions can be detached/archived.</li>
 </ol>
-<h3 id="aggregate-tables-pre-computed">Aggregate Tables (Pre-Computed)<a class="headerlink" href="#aggregate-tables-pre-computed" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Daily aggregates (updated nightly)
-CREATE TABLE agg_daily_metrics (
-  date DATE NOT NULL,
-  product_id UUID NOT NULL,
-  country VARCHAR(2) NOT NULL,
-  metric_name VARCHAR(50) NOT NULL,
-  metric_value DECIMAL(15, 2),
-  event_count INT,
-  unique_users INT,
-  PRIMARY KEY (date, product_id, country, metric_name),</p>
-<p>INDEX idx_date (date),
-  INDEX idx_product_id (product_id),
-  INDEX idx_country (country)
-);</p>
-<p>-- Hourly rolling aggregates (updated every hour)
-CREATE TABLE agg_hourly_metrics (
-  hour_timestamp TIMESTAMP NOT NULL,
-  product_id UUID NOT NULL,
-  source VARCHAR(100),
-  event_count INT,
-  revenue DECIMAL(12, 2),
-  unique_users INT,
-  PRIMARY KEY (hour_timestamp, product_id, source),</p>
-<p>INDEX idx_timestamp (hour_timestamp),
-  INDEX idx_product_id (product_id)
-);</p>
-<p>-- Cohort Analysis Table
-CREATE TABLE agg_cohorts (
-  cohort_date DATE NOT NULL,
-  days_since_signup INT NOT NULL,
-  cohort_size INT,
-  retention_rate DECIMAL(5, 2),
-  revenue DECIMAL(12, 2),
-  PRIMARY KEY (cohort_date, days_since_signup)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="dimension-tables">Dimension Tables<a class="headerlink" href="#dimension-tables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_product</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">identifier</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">            </span><span class="c1">-- optional human-readable slug</span>
+<span class="w">    </span><span class="n">product_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">category</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">region</span><span class="w">       </span><span class="nb">TEXT</span>
+<span class="p">);</span>
 
-<hr />
-<h2 id="fraiseql-olap-schema">FraiseQL OLAP Schema<a class="headerlink" href="#fraiseql-olap-schema" title="Permanent link">&para;</a></h2>
-<p>FraiseQL uses a <strong>fact table pattern</strong> with measures (SQL columns) and dimensions (JSONB):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="analytics_schemapy">analytics_schema.py<a class="headerlink" href="#analytics_schemapy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL import types
-from decimal import Decimal
-from datetime import datetime, date</p>
-<p>@types.fact_table(
-    table_name="tf_events",
-    measures=["revenue", "quantity", "sessions"],
-    dimension_column="data",
-    dimension_paths=[
-        {"name": "product_id", "json_path": "data-&gt;&gt;'product_id'", "data_type": "text"},
-        {"name": "category", "json_path": "data-&gt;&gt;'category'", "data_type": "text"},
-        {"name": "region", "json_path": "data-&gt;&gt;'region'", "data_type": "text"},
-        {"name": "source", "json_path": "data-&gt;&gt;'source'", "data_type": "text"},
-        {"name": "device_type", "json_path": "data-&gt;&gt;'device_type'", "data_type": "text"},
-    ]
-)
-@types.object
-class Event:
-    """Event fact table - denormalized for fast analytics"""
-    event_id: UUID  # UUID v4 for GraphQL ID
-    event_date: date
-    event_timestamp: datetime</p>
-<div class="highlight"><pre><span></span><code># MEASURES: Numeric columns for fast SUM/AVG/COUNT aggregation
-revenue: Decimal | None              # NULL for non-purchase events
-quantity: int | None                 # NULL for non-sale events
-sessions: int | None                 # Session count
-
-# DIMENSIONS: JSONB for flexible GROUP BY
-# Includes: product_id, category, region, source, device_type
-dimensions: dict                     # data JSONB column
-
-# FILTERS: Indexed denormalized columns for fast WHERE clauses
-user_id: str                         # Indexed for fast filtering
-occurred_at: datetime                # Indexed for time-range queries
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_dim_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">signup_date</span><span class="w">  </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">country</span><span class="w">      </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Schema mapping:</strong></p>
-<ul>
-<li><code>revenue</code>, <code>quantity</code>, <code>sessions</code> → <strong>Measures</strong> (direct columns, fast aggregation)</li>
-<li><code>dimensions</code> dict (JSONB column <code>data</code>) → <strong>Dimensions</strong> (flexible, no joins needed)</li>
-<li><code>user_id</code>, <code>occurred_at</code> → <strong>Filters</strong> (indexed for WHERE performance)</li>
-</ul>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@types.object
-class MetricResult:
-    """Metric aggregation result"""
-    dimension_value: str
-    event_count: int
-    revenue: Decimal
-    unique_users: int
-    conversion_rate: Decimal</p>
-<p>@types.object
-class CohortResult:
-    """Cohort analysis result"""
-    cohort_date: date
-    days_since_signup: int
-    cohort_size: int
-    retention_rate: Decimal
-    revenue: Decimal</p>
-<p>@types.object
-class Query:
-    # Time-series metrics
-    def daily_revenue(
-        self,
-        start_date: date,
-        end_date: date,
-        product_id: str | None = None,
-        country: str | None = None
-    ) -&gt; list[dict]:
-        """Daily revenue over time period"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>def hourly_events(
-    self,
-    date: date,
-    event_type: str | None = None
-) -&gt; list[dict]:
-    &quot;&quot;&quot;Hourly event breakdown for a day&quot;&quot;&quot;
-    pass
-
-# Segmentation queries
-def revenue_by_product(
-    self,
-    start_date: date,
-    end_date: date,
-    limit: int = 50
-) -&gt; list[MetricResult]:
-    &quot;&quot;&quot;Revenue segmented by product&quot;&quot;&quot;
-    pass
-
-def conversion_by_source(
-    self,
-    start_date: date,
-    end_date: date
-) -&gt; list[MetricResult]:
-    &quot;&quot;&quot;Conversion rate by traffic source&quot;&quot;&quot;
-    pass
-
-def customer_lifetime_value_distribution(
-    self,
-    country: str | None = None
-) -&gt; list[dict]:
-    &quot;&quot;&quot;Distribution of customer lifetime values&quot;&quot;&quot;
-    pass
-
-# Cohort analysis
-def retention_cohort(
-    self,
-    cohort_start: date,
-    cohort_end: date,
-    max_days: int = 90
-) -&gt; list[CohortResult]:
-    &quot;&quot;&quot;User retention by signup cohort&quot;&quot;&quot;
-    pass
-
-# Funnel analysis
-def conversion_funnel(
-    self,
-    start_date: date,
-    end_date: date,
-    steps: list[str]  # [&#39;view&#39;, &#39;add_to_cart&#39;, &#39;purchase&#39;]
-) -&gt; list[dict]:
-    &quot;&quot;&quot;Funnel conversion analysis&quot;&quot;&quot;
-    pass
-
-# Real-time metrics
-def realtime_metrics(self) -&gt; dict:
-    &quot;&quot;&quot;Current real-time metrics (last 1 hour)&quot;&quot;&quot;
-    pass
-
-# Drill-down queries
-def product_details(
-    self,
-    product_id: str,
-    start_date: date,
-    end_date: date
-) -&gt; dict:
-    &quot;&quot;&quot;Deep-dive into single product performance&quot;&quot;&quot;
-    pass
+<h3 id="calendar-date-dimension">Calendar / Date Dimension<a class="headerlink" href="#calendar-date-dimension" title="Permanent link">&para;</a></h3>
+<p>A date dimension is useful for fiscal periods, week numbers, and holiday flags.
+Compute the calendar attributes in your table or view SQL — they are a
+DBA/ETL responsibility, not something FraiseQL auto-detects.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_dim_date</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_date</span><span class="w">     </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">date_value</span><span class="w">  </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="k">year</span><span class="w">        </span><span class="nb">INT</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">quarter</span><span class="w">     </span><span class="nb">INT</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">month</span><span class="w">       </span><span class="nb">INT</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">week</span><span class="w">        </span><span class="nb">INT</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">day_of_week</span><span class="w"> </span><span class="nb">INT</span><span class="w">  </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_weekend</span><span class="w">  </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_holiday</span><span class="w">  </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">false</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
-<h2 id="complex-olap-queries">Complex OLAP Queries<a class="headerlink" href="#complex-olap-queries" title="Permanent link">&para;</a></h2>
-<h3 id="daily-revenue-trend">Daily Revenue Trend<a class="headerlink" href="#daily-revenue-trend" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query DailyRevenue($startDate: Date!, $endDate: Date!, $productId: ID) {
-  dailyRevenue(startDate: $startDate, endDate: $endDate, productId: $productId) {
-    date
-    revenue
-    orders
-    average_order_value
-    unique_customers
-    returning_customer_percentage
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Corresponding SQL (generated by FraiseQL):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-  event_date as date,
-  SUM(revenue) as revenue,
-  COUNT(DISTINCT order_id) as orders,
-  AVG(revenue) as average_order_value,
-  COUNT(DISTINCT user_id) as unique_customers,
-  ROUND(
-    SUM(CASE WHEN is_returning THEN 1 ELSE 0 END)::NUMERIC / COUNT(DISTINCT user_id) * 100,
-    2
-  ) as returning_customer_percentage
-FROM events
-WHERE event_date BETWEEN $1 AND $2
-  AND event_type = 'purchase'
-  AND (product_id = $3 OR $3 IS NULL)
-GROUP BY event_date
-ORDER BY event_date DESC;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="cohort-retention-analysis">Cohort Retention Analysis<a class="headerlink" href="#cohort-retention-analysis" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query RetentionCohort($cohortStart: Date!, $cohortEnd: Date!, $maxDays: Int!) {
-  retentionCohort(cohortStart: $cohortStart, cohortEnd: $cohortEnd, maxDays: $maxDays) {
-    cohortDate
-    daysSinceSilgnup
-    cohortSize
-    retentionRate
-    revenue
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQL (complex multi-CTE query):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>WITH cohort_users AS (
-  SELECT
-    DATE_TRUNC('month', signup_date)::DATE as cohort_date,
-    user_id
-  FROM dim_users
-  WHERE signup_date BETWEEN $1 AND $2
-),
-user_activities AS (
-  SELECT
-    cu.cohort_date,
-    cu.user_id,
-    EXTRACT(DAY FROM e.event_date - cu.cohort_date)::INT as days_since_signup,
-    SUM(e.revenue) as daily_revenue
-  FROM cohort_users cu
-  JOIN events e ON cu.user_id = e.user_id
-  WHERE e.event_date &gt;= cu.cohort_date
-  GROUP BY cu.cohort_date, cu.user_id, EXTRACT(DAY FROM e.event_date - cu.cohort_date)
-)
-SELECT
-  cohort_date,
-  days_since_signup,
-  COUNT(DISTINCT CASE WHEN days_since_signup = 0 THEN user_id END) as cohort_size,
-  ROUND(
-    COUNT(DISTINCT user_id)::NUMERIC /
-    COUNT(DISTINCT CASE WHEN days_since_signup = 0 THEN user_id END) * 100,
-    2
-  ) as retention_rate,
-  COALESCE(SUM(daily_revenue), 0) as revenue
-FROM user_activities
-WHERE days_since_signup BETWEEN 0 AND $3
-GROUP BY cohort_date, days_since_signup
-ORDER BY cohort_date, days_since_signup;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="funnel-conversion-analysis">Funnel Conversion Analysis<a class="headerlink" href="#funnel-conversion-analysis" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query ConversionFunnel(
-  $startDate: Date!
-  $endDate: Date!
-  $steps: [String!]!
-) {
-  conversionFunnel(startDate: $startDate, endDate: $endDate, steps: $steps) {
-    step
-    users
-    dropoff
-    conversionRate
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="performance-optimization-strategies">Performance Optimization Strategies<a class="headerlink" href="#performance-optimization-strategies" title="Permanent link">&para;</a></h2>
-<h3 id="1-pre-computed-aggregates">1. Pre-Computed Aggregates<a class="headerlink" href="#1-pre-computed-aggregates" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Refresh aggregates nightly
-CREATE OR REPLACE FUNCTION refresh_daily_aggregates()
-RETURNS void AS $$
-BEGIN
-  DELETE FROM agg_daily_metrics
-  WHERE date &gt;= CURRENT_DATE - INTERVAL '1 day';</p>
-<p>INSERT INTO agg_daily_metrics
-  SELECT
-    event_date,
-    product_id,
-    country,
-    'revenue' as metric_name,
-    SUM(revenue) as metric_value,
-    COUNT(<em>) as event_count,
-    COUNT(DISTINCT user_id) as unique_users
-  FROM events
-  WHERE event_date &gt;= CURRENT_DATE - INTERVAL '30 days'
-  GROUP BY event_date, product_id, country
-  UNION ALL
-  SELECT
-    event_date,
-    product_id,
-    country,
-    'events' as metric_name,
-    COUNT(</em>),
-    COUNT(*),
-    COUNT(DISTINCT user_id)
-  FROM events
-  WHERE event_date &gt;= CURRENT_DATE - INTERVAL '30 days'
-  GROUP BY event_date, product_id, country;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Schedule with cron (pg_cron extension)
-SELECT cron.schedule('refresh_daily_aggregates', '0 2 * * *', 'SELECT refresh_daily_aggregates()');
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-partition-pruning">2. Partition Pruning<a class="headerlink" href="#2-partition-pruning" title="Permanent link">&para;</a></h3>
-<p>Queries are automatically optimized by date:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Only scans relevant partitions
-SELECT * FROM events
-WHERE event_date BETWEEN '2024-06-01' AND '2024-06-30';
--- ↑ Only queries events_2024_06 partition
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="3-materialized-views">3. Materialized Views<a class="headerlink" href="#3-materialized-views" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Fast views for common queries
-CREATE MATERIALIZED VIEW mv_top_products_by_revenue AS
-SELECT
-  p.product_id,
-  p.product_name,
-  SUM(e.revenue) as total_revenue,
-  COUNT(DISTINCT e.user_id) as unique_customers,
-  COUNT(*) as event_count
-FROM events e
-JOIN dim_products p ON e.product_id = p.product_id
-WHERE e.event_date &gt;= CURRENT_DATE - INTERVAL '30 days'
-GROUP BY p.product_id, p.product_name
-ORDER BY total_revenue DESC
-LIMIT 100;</p>
-<p>-- Refresh hourly
-SELECT cron.schedule('refresh_mv_top_products', '0 * * * *', 'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_top_products_by_revenue');</p>
-<p>CREATE INDEX idx_mv_top_products_revenue ON mv_top_products_by_revenue(total_revenue DESC);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="4-columnar-storage-citustimescale-extension">4. Columnar Storage (Citus/Timescale Extension)<a class="headerlink" href="#4-columnar-storage-citustimescale-extension" title="Permanent link">&para;</a></h3>
-<p>For very large fact tables:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create hypertable (TimescaleDB)
-CREATE TABLE events (
-  event_timestamp TIMESTAMP NOT NULL,
-  user_id UUID,
-  event_type VARCHAR(50),
-  revenue DECIMAL(12, 2)
-) WITH (timescaledb.compress);</p>
-<p>-- Compress old data automatically
-SELECT add_compression_policy('events', INTERVAL '7 days');
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="real-time-subscriptions">Real-Time Subscriptions<a class="headerlink" href="#real-time-subscriptions" title="Permanent link">&para;</a></h2>
-<h3 id="live-metrics-dashboard">Live Metrics Dashboard<a class="headerlink" href="#live-metrics-dashboard" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>subscription RealtimeMetrics {
-  realtimeMetrics {
-    timestamp
-    events_per_minute
-    revenue_per_minute
-    active_users
-    top_event_type
-    top_country
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Implementation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@types.subscription
-class Subscription:
-    def realtime_metrics(self) -&gt; dict:
-        """Stream updates every 10 seconds"""
-        # Queries the last 1-hour aggregates
-        # Emits when new data arrives
-        pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="export-capabilities">Export Capabilities<a class="headerlink" href="#export-capabilities" title="Permanent link">&para;</a></h2>
-<h3 id="csv-export">CSV Export<a class="headerlink" href="#csv-export" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query ExportDailyRevenue($startDate: Date!, $endDate: Date!) {
-  exportDailyRevenue(startDate: $startDate, endDate: $endDate, format: CSV) {
-    url  # Pre-signed S3 URL
-    size_bytes
-    created_at
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="arrow-flight-export-bulk-data">Arrow Flight Export (Bulk Data)<a class="headerlink" href="#arrow-flight-export-bulk-data" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query ExportArrowFlight($startDate: Date!, $endDate: Date!) {
-  exportArrowFlight(startDate: $startDate, endDate: $endDate) {
-    arrow_endpoint  # Arrow Flight server endpoint
-    query_id
-    row_count
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Client Usage:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import pyarrow.flight as flight
-import pandas as pd</p>
-<h1 id="connect-to-arrow-flight-server">Connect to Arrow Flight server<a class="headerlink" href="#connect-to-arrow-flight-server" title="Permanent link">&para;</a></h1>
-<p>client = flight.connect(('localhost', 5005))</p>
-<h1 id="fetch-large-dataset">Fetch large dataset<a class="headerlink" href="#fetch-large-dataset" title="Permanent link">&para;</a></h1>
-<p>flight_descriptor = flight.FlightDescriptor.for_command(
-    query_id.encode('utf-8')
-)
-reader = client.do_get(flight_descriptor)</p>
-<h1 id="read-into-pandas">Read into pandas<a class="headerlink" href="#read-into-pandas" title="Permanent link">&para;</a></h1>
-<p>table = reader.read_all()
-df = table.to_pandas()</p>
-<h1 id="write-to-parquet">Write to Parquet<a class="headerlink" href="#write-to-parquet" title="Permanent link">&para;</a></h1>
-<p>df.to_parquet('export.parquet')
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="dashboard-implementation-react">Dashboard Implementation (React)<a class="headerlink" href="#dashboard-implementation-react" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useQuery, gql } from '@apollo/client';
-import { LineChart, PieChart } from 'recharts';</p>
-<p>const DAILY_REVENUE = gql<code>query DailyRevenue($startDate: Date!, $endDate: Date!) {
-    dailyRevenue(startDate: $startDate, endDate: $endDate) {
-      date
-      revenue
-      orders
-    }
-  }</code>;</p>
-<p>export function AnalyticsDashboard() {
-  const [dateRange, setDateRange] = useState({
-    start: subDays(new Date(), 30),
-    end: new Date(),
-  });</p>
-<p>const { data, loading } = useQuery(DAILY_REVENUE, {
-    variables: {
-      startDate: format(dateRange.start, 'yyyy-MM-dd'),
-      endDate: format(dateRange.end, 'yyyy-MM-dd'),
-    },
-    fetchPolicy: 'cache-and-network',
-  });</p>
-<p>if (loading) return <div>Loading...</div>;</p>
-<p>return (
-    <div className="dashboard">
-      <DateRangePicker onChange={setDateRange} />
-      <LineChart data={data?.dailyRevenue}>
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Line type="monotone" dataKey="revenue" />
-      </LineChart>
-      <KPICards data={data} />
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="testing-analytical-queries">Testing Analytical Queries<a class="headerlink" href="#testing-analytical-queries" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>describe('Analytical Queries', () =&gt; {
-  it('should calculate daily revenue', async () =&gt; {
-    const result = await client.query(DAILY_REVENUE, {
-      variables: {
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-      },
-    });</p>
-<div class="highlight"><pre><span></span><code>expect(result.data.dailyRevenue).toHaveLength(31);
-expect(result.data.dailyRevenue[0]).toHaveProperty(&#39;revenue&#39;);
-expect(result.data.dailyRevenue[0].revenue).toBeGreaterThan(0);
+<h2 id="read-views">Read Views<a class="headerlink" href="#read-views" title="Permanent link">&para;</a></h2>
+<p>FraiseQL queries a <code>v_</code> view (or a <code>tv_</code> projection table), never the raw fact
+table directly. The view joins the dimensions you need and emits a <code>data</code> JSONB
+payload alongside the public <code>id</code>. Aggregations are derived on top of this view at
+runtime.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_event</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                               </span><span class="c1">-- public UUID, required by FraiseQL</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;source&#39;</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="k">source</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;device_type&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">device_type</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">sessions</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;event_date&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;product_id&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;region&#39;</span><span class="p">,</span><span class="w">      </span><span class="n">p</span><span class="p">.</span><span class="n">region</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;source&#39;</span><span class="p">,</span><span class="w">      </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;source&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;device_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;device_type&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;sessions&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">sessions</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_product</span><span class="p">;</span>
 </code></pre></div>
-<p>});</p>
-<p>it('should handle date filtering', async () =&gt; {
-    const result = await client.query(DAILY_REVENUE, {
-      variables: {
-        startDate: '2024-06-15',
-        endDate: '2024-06-20',
-      },
-    });</p>
-<div class="highlight"><pre><span></span><code>expect(result.data.dailyRevenue.length).toBeLessThanOrEqual(6);
-result.data.dailyRevenue.forEach((day: any) =&gt; {
-  expect(day.date).toBeGreaterThanOrEqual(&#39;2024-06-15&#39;);
-  expect(day.date).toBeLessThanOrEqual(&#39;2024-06-20&#39;);
-});
+<h3 id="tv_-projection-tables-for-heavy-reads"><code>tv_</code> Projection Tables for Heavy Reads<a class="headerlink" href="#tv_-projection-tables-for-heavy-reads" title="Permanent link">&para;</a></h3>
+<p>When a read is too expensive to compute per request — deep nesting, wide joins, or
+large rollups — materialize it into a <code>tv_</code> projection table: a real table holding
+pre-composed JSONB, refreshed by functions, triggers, or a schedule. FraiseQL
+queries a <code>tv_</code> table exactly like a <code>v_</code> view.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_daily_product_metrics</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">metric_date</span><span class="w">  </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">product_id</span><span class="w">   </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">         </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">        </span><span class="c1">-- pre-composed payload</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">metric_date</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">)</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>});</p>
-<p>it('should calculate cohort retention correctly', async () =&gt; {
-    const result = await client.query(RETENTION_COHORT, {
-      variables: {
-        cohortStart: '2024-01-01',
-        cohortEnd: '2024-02-01',
-        maxDays: 30,
-      },
-    });</p>
-<div class="highlight"><pre><span></span><code>// Retention rate should decrease over time
-const rates = result.data.retentionCohort.map(c =&gt; c.retention_rate);
-for (let i = 1; i &lt; rates.length; i++) {
-  expect(rates[i]).toBeLessThanOrEqual(rates[i - 1]);
-}
+<hr />
+<h2 id="aggregation-patterns-in-view-sql">Aggregation Patterns in View SQL<a class="headerlink" href="#aggregation-patterns-in-view-sql" title="Permanent link">&para;</a></h2>
+<p>Beyond the runtime auto-aggregation, the heavy lifting of OLAP lives in plain
+PostgreSQL that you embed in your <code>v_</code>/<code>tv_</code> views.</p>
+<h3 id="time-bucketing-with-date_trunc">Time Bucketing with <code>DATE_TRUNC</code><a class="headerlink" href="#time-bucketing-with-date_trunc" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w">                          </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                </span><span class="k">AS</span><span class="w"> </span><span class="n">events</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w">                          </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_order_value</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket</span><span class="p">;</span>
 </code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="conditional-aggregates-with-filter-where">Conditional Aggregates with <code>FILTER (WHERE …)</code><a class="headerlink" href="#conditional-aggregates-with-filter-where" title="Permanent link">&para;</a></h3>
+<p><code>FILTER</code> computes several conditional measures in a single scan — ideal for funnel
+and segmentation reporting.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;step&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;view&#39;</span><span class="p">)</span><span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">views</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;step&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;add_to_cart&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">add_to_cart</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;step&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;purchase&#39;</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">purchases</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;step&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;purchase&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_product</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="window-functions">Window Functions<a class="headerlink" href="#window-functions" title="Permanent link">&para;</a></h3>
+<p>Window functions (<code>ROW_NUMBER</code>, <code>RANK</code>, <code>LAG</code>, <code>LEAD</code>, running totals over
+<code>OVER (PARTITION BY …)</code>) are standard PostgreSQL. Embed them in your view SQL when
+you need rankings, period-over-period deltas, or moving aggregates.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_daily_revenue_trend</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">bucket</span><span class="w">            </span><span class="k">AS</span><span class="w"> </span><span class="n">event_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket</span><span class="p">)</span><span class="w">                 </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_delta</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket</span><span class="w"> </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span><span class="p">)</span>
+<span class="w">                                                                  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_7d_avg</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;event_date&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">bucket</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue_delta&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">revenue</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="n">daily</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="cohort-retention">Cohort Retention<a class="headerlink" href="#cohort-retention" title="Permanent link">&para;</a></h3>
+<p>Cohort analysis is a multi-CTE query you wrap in a view (or a <code>tv_</code> projection
+table if it is expensive):</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_retention_cohort</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">WITH</span><span class="w"> </span><span class="n">cohort_users</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">signup_date</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cohort_date</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_dim_user</span><span class="w"> </span><span class="n">u</span>
+<span class="p">),</span>
+<span class="n">activity</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="k">c</span><span class="p">.</span><span class="n">cohort_date</span><span class="p">,</span>
+<span class="w">        </span><span class="k">c</span><span class="p">.</span><span class="n">pk_user</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">cohort_date</span><span class="p">)::</span><span class="nb">INT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">days_since_signup</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">cohort_users</span><span class="w"> </span><span class="k">c</span>
+<span class="w">    </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">cohort_date</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cohort_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">days_since_signup</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">pk_user</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">days_since_signup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cohort_size</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span>
+<span class="w">        </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">pk_user</span><span class="p">)::</span><span class="nb">NUMERIC</span>
+<span class="w">        </span><span class="o">/</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">pk_user</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">days_since_signup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">retention_rate</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;cohort_date&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">cohort_date</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;days_since_signup&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">days_since_signup</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">activity</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">cohort_date</span><span class="p">,</span><span class="w"> </span><span class="n">days_since_signup</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="exposing-the-analytics-api">Exposing the Analytics API<a class="headerlink" href="#exposing-the-analytics-api" title="Permanent link">&para;</a></h2>
+<p>Define the view-backed types and the queries that read them, then build the app.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">Date</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_daily_revenue_trend&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DailyRevenue</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">event_date</span><span class="p">:</span> <span class="n">Date</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">revenue_delta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">daily_revenue</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DailyRevenue</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Daily revenue trend over a date range.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">&quot;v_daily_revenue_trend&quot;</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;event_date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="s2">&quot;lte&quot;</span><span class="p">:</span> <span class="n">end</span><span class="p">}},</span>
+    <span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">revenue_by_product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Revenue segmented by product, aggregated at runtime.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">&quot;v_event&quot;</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;event_date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="s2">&quot;lte&quot;</span><span class="p">:</span> <span class="n">end</span><span class="p">}},</span>
+    <span class="p">)</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/analytics&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="n">DailyRevenue</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">daily_revenue</span><span class="p">,</span> <span class="n">revenue_by_product</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it with any ASGI server:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<hr />
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="pre-computed-aggregate-tables">Pre-Computed Aggregate Tables<a class="headerlink" href="#pre-computed-aggregate-tables" title="Permanent link">&para;</a></h3>
+<p>For dashboards that hit the same rollups repeatedly, refresh an aggregate table on
+a schedule and expose it through a <code>tv_</code>/<code>v_</code> view.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_refresh_daily_aggregates</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">void</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_daily_product_metrics</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">metric_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;1 day&#39;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_daily_product_metrics</span><span class="w"> </span><span class="p">(</span><span class="n">metric_date</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span>
+<span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">      </span><span class="k">SUM</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">&#39;event_count&#39;</span><span class="p">,</span><span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">&#39;unique_users&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_user</span><span class="p">)</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
+<span class="w">    </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_product</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;30 days&#39;</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="c1">-- Schedule nightly with pg_cron</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;refresh_daily_aggregates&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;0 2 * * *&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;SELECT fn_refresh_daily_aggregates()&#39;</span>
+<span class="p">);</span>
+</code></pre></div>
+<h3 id="partition-pruning">Partition Pruning<a class="headerlink" href="#partition-pruning" title="Permanent link">&para;</a></h3>
+<p>Range-partitioning by <code>event_date</code> lets PostgreSQL skip irrelevant partitions:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Only scans the January 2026 partition</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="s1">&#39;2026-01-31&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="materialized-views">Materialized Views<a class="headerlink" href="#materialized-views" title="Permanent link">&para;</a></h3>
+<p>For expensive, slow-changing rollups, a materialized view refreshed
+concurrently keeps reads fast:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">mv_top_products_by_revenue</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">product_name</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">unique_customers</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_product</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;30 days&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">product_name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_revenue</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_mv_top_products</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">mv_top_products_by_revenue</span><span class="w"> </span><span class="p">(</span><span class="n">product_id</span><span class="p">);</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;refresh_mv_top_products&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;REFRESH MATERIALIZED VIEW CONCURRENTLY mv_top_products_by_revenue&#39;</span>
+<span class="p">);</span>
+</code></pre></div>
+<hr />
+<h2 id="real-time-metrics-with-subscriptions">Real-Time Metrics with Subscriptions<a class="headerlink" href="#real-time-metrics-with-subscriptions" title="Permanent link">&para;</a></h2>
+<p>For a live dashboard, expose a subscription whose async-generator resolver yields
+the latest metrics. The generator can poll a recent-window aggregate or be driven
+by PostgreSQL <code>LISTEN/NOTIFY</code>; FraiseQL streams whatever it yields over WebSocket.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">realtime_metrics</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream rolling metrics for the last hour every 10 seconds.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_realtime_metrics&quot;</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">rows</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+<p>Back <code>v_realtime_metrics</code> with a view that aggregates the trailing window:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_realtime_metrics</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">events_last_hour</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w">      </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_last_hour</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">active_users</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;events_last_hour&#39;</span><span class="p">,</span><span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;revenue_last_hour&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;active_users&#39;</span><span class="p">,</span><span class="w">      </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;1 hour&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="monitoring-analytical-performance">Monitoring Analytical Performance<a class="headerlink" href="#monitoring-analytical-performance" title="Permanent link">&para;</a></h2>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Track slow analytical queries
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;</p>
-<p>SELECT
-  query,
-  calls,
-  mean_exec_time,
-  max_exec_time
-FROM pg_stat_statements
-WHERE query LIKE '%events%'
-ORDER BY mean_exec_time DESC
-LIMIT 20;
-```text</p>
-<!-- Code example in TEXT -->
+<p>Use <code>pg_stat_statements</code> to find the slowest analytical queries and the views that
+need a <code>tv_</code> projection or an extra index:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pg_stat_statements</span><span class="p">;</span>
 
+<span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">calls</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="p">,</span><span class="w"> </span><span class="n">max_exec_time</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%v_event%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Patterns:</strong></p>
 <ul>
-<li><a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> - Per-tenant analytics</li>
-<li><a href="../iot-timeseries/">IoT Time-Series</a> - Specialized time-series</li>
+<li><a href="../">Patterns Overview</a></li>
+<li><a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> — per-tenant analytics with RLS</li>
+<li><a href="../iot-timeseries/">IoT Time-Series</a> — specialized time-series ingestion and bucketing</li>
 </ul>
-<p><strong>Performance Guides:</strong></p>
+<p><strong>Architecture:</strong></p>
+<ul>
+<li><a href="../../architecture/analytics/aggregation-model/">Aggregation Model</a></li>
+<li><a href="../../architecture/analytics/fact-dimension-pattern/">Fact/Dimension Pattern</a></li>
+<li><a href="../../architecture/database/tv-table-pattern/"><code>tv_</code> Table Pattern</a></li>
+</ul>
+<p><strong>Guides:</strong></p>
 <ul>
 <li><a href="../../guides/performance-optimization/">Performance Optimization</a></li>
-<li><a href="../../guides/schema-design-best-practices/">Query Optimization</a></li>
-</ul>
-<p><strong>Deployment:</strong></p>
-<ul>
+<li><a href="../../guides/schema-design-best-practices/">Schema Design Best Practices</a></li>
 <li><a href="../../guides/production-deployment/">Production Deployment</a></li>
-<li><a href="../../guides/monitoring/">Scaling Guidelines</a></li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

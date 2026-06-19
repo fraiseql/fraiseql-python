@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Blueprint for building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions backed by PostgreSQL LISTEN/NOTIFY.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/patterns/realtime-collaboration/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Real-Time Collaboration - FraiseQL Documentation</title>
+        <title>Real-Time Collaboration with Subscriptions - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Real-Time Collaboration
+              Real-Time Collaboration with Subscriptions
             
           </span>
         </div>
@@ -3468,10 +3470,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#document-model" class="md-nav__link">
+  <a href="#write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Document Model
+        Write tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-views-the-graphql-querysubscription-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read views (the GraphQL query/subscription sources)
       
     </span>
   </a>
@@ -3484,10 +3497,143 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#triggers-turn-writes-into-notify-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers: turn writes into NOTIFY events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#write-functions-fn_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write functions (fn_)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fraiseql-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
         FraiseQL Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FraiseQL Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#queries-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries (reads)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutations-writes-via-fn_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations (writes via fn_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions-async-generators-over-listennotify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions: async generators over LISTEN/NOTIFY
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriptions: async generators over LISTEN/NOTIFY">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subscription-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wiring-it-into-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring it into the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conflict-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conflict resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-integration-react-apollo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client integration (React + Apollo)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-and-operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance and operational notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4993,10 +5139,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#document-model" class="md-nav__link">
+  <a href="#write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Document Model
+        Write tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-views-the-graphql-querysubscription-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read views (the GraphQL query/subscription sources)
       
     </span>
   </a>
@@ -5009,10 +5166,143 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#triggers-turn-writes-into-notify-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers: turn writes into NOTIFY events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#write-functions-fn_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write functions (fn_)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fraiseql-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
         FraiseQL Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FraiseQL Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#queries-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries (reads)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutations-writes-via-fn_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations (writes via fn_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions-async-generators-over-listennotify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions: async generators over LISTEN/NOTIFY
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriptions: async generators over LISTEN/NOTIFY">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subscription-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wiring-it-into-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring it into the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conflict-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conflict resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-integration-react-apollo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client integration (React + Apollo)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-and-operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance and operational notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -5039,718 +5329,766 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Real-Time Collaboration with Subscriptions
-description: Complete guide to building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="real-time-collaboration-with-subscriptions">Real-Time Collaboration with Subscriptions<a class="headerlink" href="#real-time-collaboration-with-subscriptions" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
-<strong>Complexity:</strong> ⭐⭐⭐⭐ (Advanced)
+<p><strong>Status:</strong> Production Ready
+<strong>Complexity:</strong> Advanced
 <strong>Audience:</strong> Frontend architects, real-time systems engineers
-<strong>Reading Time:</strong> 25-30 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>Complete guide to building collaborative tools (like Google Docs, Figma, Notion) with real-time synchronization using FraiseQL subscriptions.</p>
+<strong>Reading Time:</strong> 25-30 minutes</p>
+<p>Blueprint for building collaborative tools (like Google Docs, Figma, Notion) with
+real-time synchronization using FraiseQL subscriptions.</p>
+<p>In FraiseQL v1 a subscription is an <strong>async-generator resolver</strong> served over a
+GraphQL WebSocket connection. You write the generator; FraiseQL streams whatever it
+yields to the subscribed client. The natural event source for collaboration is
+PostgreSQL <strong><code>LISTEN</code>/<code>NOTIFY</code></strong>: a trigger on a write table emits <code>NOTIFY</code> on a
+channel, and the resolver <code>async for</code>s those notifications, re-reads a read view,
+and <code>yield</code>s the fresh value. Everything — documents, operations, presence, comments
+— lives in PostgreSQL.</p>
 <hr />
 <h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<p><strong>Diagram: Real-Time Architecture</strong> - WebSocket-based collaboration with presence tracking</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>Users: "Collaborators" {
-  shape: box
-  style.fill: "#e3f2fd"
-  children: [
-    UserA: "👤 User A\n(Editor)"
-    UserB: "👤 User B\n(Editor)"
-    UserC: "👤 User C\n(Viewer)"
-  ]
-}</p>
-<p>Server: "WebSocket Server\n(FraiseQL Rust)" {
-  shape: box
-  style.fill: "#f3e5f5"
-  style.border: "2px solid #7b1fa2"
-}</p>
-<p>Operations: "Mutations\n(operations)" {
-  shape: box
-  style.fill: "#fff3e0"
-}</p>
-<p>Subscriptions: "Subscriptions\n(live updates)" {
-  shape: box
-  style.fill: "#f1f8e9"
-}</p>
-<p>Presence: "Presence\n(who's online)" {
-  shape: box
-  style.fill: "#ffe0b2"
-}</p>
-<p>Database: "PostgreSQL" {
-  shape: box
-  style.fill: "#c8e6c9"
-  children: [
-    Docs: "📄 Documents"
-    Ops: "📝 Operations log"
-    Changes: "📋 Changes (CRDT)"
-  ]
-}</p>
-<p>Users -&gt; Server: "WebSocket"
-Server -&gt; Operations
-Server -&gt; Subscriptions
-Server -&gt; Presence
-Operations -&gt; Database: "Write operations"
-Subscriptions -&gt; Database: "Subscribe to changes"
-Presence -&gt; Database: "Update presence"
-Database -&gt; Server: "Broadcast updates"
-Server -&gt; Users: "Real-time sync"
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>Collaborators (browsers)
+        |   GraphQL over WebSocket (graphql-transport-ws)
+        v
+FastAPI app  (create_fraiseql_app)
+  - @fraiseql.query      reads v_/tv_ views
+  - @fraiseql.mutation   calls fn_ functions (which also NOTIFY)
+  - @fraiseql.subscription  async generators: LISTEN a channel -&gt; re-read view -&gt; yield
+        |
+        v
+PostgreSQL
+  - tb_document, tb_document_change, tb_presence, tb_comment   (write tables)
+  - triggers: AFTER INSERT/UPDATE -&gt; NOTIFY &lt;channel&gt;, &lt;id&gt;
+  - v_document, v_document_change, v_presence, v_comment       (read views, data JSONB)
+  - fn_apply_operation, fn_update_presence, fn_add_comment     (write functions)
+</code></pre></div>
+<p>The flow for a single edit:</p>
+<ol>
+<li>A client sends an <code>applyOperation</code> <strong>mutation</strong>. The resolver calls a <code>fn_</code> function
+   that writes a row into <code>tb_document_change</code> and updates <code>tb_document</code>.</li>
+<li>A PostgreSQL <strong>trigger</strong> on <code>tb_document_change</code> issues
+   <code>NOTIFY document_change, '&lt;document_id&gt;'</code>.</li>
+<li>Every <strong>subscription</strong> resolver that is <code>LISTEN</code>-ing on the <code>document_change</code>
+   channel for that document wakes up, re-reads <code>v_document_change</code>, and <code>yield</code>s the
+   new change.</li>
+<li>FraiseQL pushes the yielded payload down each subscribed WebSocket to the other
+   collaborators.</li>
+</ol>
+<p>There is no external broker. PostgreSQL is the source of truth and the message bus.</p>
 <hr />
 <h2 id="schema-design">Schema Design<a class="headerlink" href="#schema-design" title="Permanent link">&para;</a></h2>
-<h3 id="document-model">Document Model<a class="headerlink" href="#document-model" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Documents (editable items)
-CREATE TABLE documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  workspace_id UUID NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  content_type VARCHAR(50) NOT NULL,  -- text, rich-text, spreadsheet, drawing
-  created_by UUID NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  deleted_at TIMESTAMP,  -- Soft delete</p>
-<p>INDEX idx_workspace_id (workspace_id),
-  INDEX idx_updated_at (updated_at)
-);</p>
-<p>-- Permissions (who can edit/view)
-CREATE TABLE document_permissions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  permission VARCHAR(50) NOT NULL,  -- view, edit, comment, manage
-  granted_at TIMESTAMP DEFAULT NOW(),</p>
-<p>UNIQUE(document_id, user_id),
-  INDEX idx_document_id (document_id)
-);</p>
-<p>-- Changes/Operations (for CRDT - Conflict-free Replicated Data Type)
-CREATE TABLE document_changes (
-  id BIGSERIAL PRIMARY KEY,
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  operation JSONB NOT NULL,  -- { type: 'insert', position: 100, content: 'text' }
-  vector_clock JSONB NOT NULL,  -- For CRDT: { user_1: 5, user_2: 3 }
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_document_id (document_id),
-  INDEX idx_created_at (created_at)
-);</p>
-<p>-- Activity Stream (for showing what's happening)
-CREATE TABLE document_activity (
-  id BIGSERIAL PRIMARY KEY,
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  activity_type VARCHAR(50) NOT NULL,  -- edit, comment, join, leave
-  metadata JSONB,
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_document_id (document_id),
-  INDEX idx_created_at (created_at)
-);</p>
-<p>-- Presence (who's currently editing)
-CREATE TABLE document_presence (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id),
-  user_id UUID NOT NULL,
-  cursor_position INT,  -- Position in document
-  selection_start INT,
-  selection_end INT,
-  color VARCHAR(7),  -- #FF5733 for user's color
-  last_activity TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_document_id (document_id),
-  INDEX idx_last_activity (last_activity)
-);</p>
-<p>-- Comments
-CREATE TABLE comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  content TEXT NOT NULL,
-  position INT,  -- Where in document (for inline comments)
-  resolved BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_document_id (document_id),
-  INDEX idx_resolved (resolved)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL's convention separates the normalized write tables (<code>tb_</code>) from the read
+views (<code>v_</code>) that build a <code>data</code> JSONB column. Internal <code>pk_</code> keys stay hidden; the
+public surface is the <code>id</code> UUID.</p>
+<h3 id="write-tables">Write tables<a class="headerlink" href="#write-tables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Documents (editable items)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_document</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">            </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">workspace_id</span><span class="w">  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">title</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content_type</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- text, rich-text, spreadsheet, drawing</span>
+<span class="w">    </span><span class="n">content</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_by</span><span class="w">    </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">deleted_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w">              </span><span class="c1">-- soft delete</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_document_workspace</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">workspace_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_document_updated</span><span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">updated_at</span><span class="p">);</span>
 
+<span class="c1">-- Permissions (who can edit/view)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_document_permission</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_document_permission</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_document</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">pk_document</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">permission</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">           </span><span class="c1">-- view, edit, comment, manage</span>
+<span class="w">    </span><span class="n">granted_at</span><span class="w">   </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="c1">-- Changes / operations (one row per edit)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_document_change</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_document_change</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_document</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">pk_document</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">operation</span><span class="w">    </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- { &quot;type&quot;: &quot;insert&quot;, &quot;position&quot;: 100, &quot;content&quot;: &quot;text&quot; }</span>
+<span class="w">    </span><span class="n">vector_clock</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- causality, e.g. { &quot;user_1&quot;: 5, &quot;user_2&quot;: 3 }</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">   </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_change_document</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document_change</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">pk_document_change</span><span class="p">);</span>
+
+<span class="c1">-- Presence (who is currently editing)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_presence</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_presence</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_document</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">pk_document</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cursor_position</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">selection_start</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">selection_end</span><span class="w">   </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">color</span><span class="w">        </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                     </span><span class="c1">-- &quot;#FF5733&quot;</span>
+<span class="w">    </span><span class="n">last_activity</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">)</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_presence_activity</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_presence</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">last_activity</span><span class="p">);</span>
+
+<span class="c1">-- Comments</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_comment</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">           </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_document</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="p">(</span><span class="n">pk_document</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_parent</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">pk_comment</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">position</span><span class="w">     </span><span class="nb">INT</span><span class="p">,</span><span class="w">                      </span><span class="c1">-- where in the document, for inline comments</span>
+<span class="w">    </span><span class="n">resolved</span><span class="w">     </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">   </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">   </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_comment_document</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="read-views-the-graphql-querysubscription-sources">Read views (the GraphQL query/subscription sources)<a class="headerlink" href="#read-views-the-graphql-querysubscription-sources" title="Permanent link">&para;</a></h3>
+<p>Each view exposes the public <code>id</code> plus a <code>data</code> JSONB column built with
+<code>jsonb_build_object(...)</code>. Never put <code>pk_*</code> inside <code>data</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_document</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">workspace_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">            </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">d</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;contentType&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">d</span><span class="p">.</span><span class="n">content_type</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdBy&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="n">created_by</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updatedAt&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="n">updated_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_document_change</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">document_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w">       </span><span class="k">c</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;operation&#39;</span><span class="p">,</span><span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="k">operation</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;vectorClock&#39;</span><span class="p">,</span><span class="w">  </span><span class="k">c</span><span class="p">.</span><span class="n">vector_clock</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_document_change</span><span class="w"> </span><span class="k">c</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_presence</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">document_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;cursorPosition&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">cursor_position</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;selectionStart&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">selection_start</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;selectionEnd&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">p</span><span class="p">.</span><span class="n">selection_end</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;color&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">p</span><span class="p">.</span><span class="n">color</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;lastActivity&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">p</span><span class="p">.</span><span class="n">last_activity</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_presence</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_comment</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">document_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">         </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w">     </span><span class="k">c</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;position&#39;</span><span class="p">,</span><span class="w">   </span><span class="k">c</span><span class="p">.</span><span class="k">position</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;resolved&#39;</span><span class="p">,</span><span class="w">   </span><span class="k">c</span><span class="p">.</span><span class="n">resolved</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">  </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="triggers-turn-writes-into-notify-events">Triggers: turn writes into NOTIFY events<a class="headerlink" href="#triggers-turn-writes-into-notify-events" title="Permanent link">&para;</a></h2>
+<p>The bridge between a mutation and every live subscription is a trigger that emits a
+<code>NOTIFY</code>. The payload is just the document <code>id</code>, so listeners know which document
+changed; they re-read the view to get the fresh data.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Notify on every new change row</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_document_change</span><span class="p">()</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_document_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_document_id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;document_change&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_document_id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_document_change_notify</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document_change</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_document_change</span><span class="p">();</span>
+
+<span class="c1">-- Notify on presence updates</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_presence</span><span class="p">()</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_document_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_document_id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;presence&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_document_id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_presence_notify</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_presence</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_presence</span><span class="p">();</span>
+
+<span class="c1">-- Notify on new comments</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_comment</span><span class="p">()</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_document_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_document_id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_document</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;comment&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_document_id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_comment_notify</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_comment</span><span class="p">();</span>
+</code></pre></div>
+<blockquote>
+<p><code>pg_notify</code> payloads are capped at 8000 bytes, which is why we send only the
+document <code>id</code> and re-read the view rather than shipping the whole row over the
+channel.</p>
+</blockquote>
+<hr />
+<h2 id="write-functions-fn_">Write functions (<code>fn_</code>)<a class="headerlink" href="#write-functions-fn_" title="Permanent link">&para;</a></h2>
+<p>Mutations never touch tables directly. They call PostgreSQL functions that hold the
+write logic and return JSONB describing success or failure. Because the writes go
+through <code>tb_document_change</code> / <code>tb_presence</code> / <code>tb_comment</code>, the triggers above fire
+automatically — the mutation does not have to <code>NOTIFY</code> by hand.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_apply_operation</span><span class="p">(</span>
+<span class="w">    </span><span class="n">p_document_id</span><span class="w">  </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_user_id</span><span class="w">      </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_operation</span><span class="w">    </span><span class="n">JSONB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_vector_clock</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_pk_document</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_change</span><span class="w">      </span><span class="n">tb_document_change</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_pk_document</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_document_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_pk_document</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;document not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_document_change</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="k">operation</span><span class="p">,</span><span class="w"> </span><span class="n">vector_clock</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_pk_document</span><span class="p">,</span><span class="w"> </span><span class="n">p_user_id</span><span class="p">,</span><span class="w"> </span><span class="n">p_operation</span><span class="p">,</span><span class="w"> </span><span class="n">p_vector_clock</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_change</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">-- Apply the operation to the materialized content (insert/delete on text).</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_document</span>
+<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;type&#39;</span>
+<span class="w">            </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;insert&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">                </span><span class="k">left</span><span class="p">(</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;position&#39;</span><span class="p">)::</span><span class="nb">int</span><span class="p">)</span>
+<span class="w">                </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">)</span>
+<span class="w">                </span><span class="o">||</span><span class="w"> </span><span class="n">substr</span><span class="p">(</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;position&#39;</span><span class="p">)::</span><span class="nb">int</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">                </span><span class="k">left</span><span class="p">(</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;position&#39;</span><span class="p">)::</span><span class="nb">int</span><span class="p">)</span>
+<span class="w">                </span><span class="o">||</span><span class="w"> </span><span class="n">substr</span><span class="p">(</span><span class="n">content</span><span class="p">,</span>
+<span class="w">                          </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;position&#39;</span><span class="p">)::</span><span class="nb">int</span>
+<span class="w">                          </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">p_operation</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;length&#39;</span><span class="p">)::</span><span class="nb">int</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">ELSE</span><span class="w"> </span><span class="n">content</span>
+<span class="w">        </span><span class="k">END</span><span class="p">,</span>
+<span class="w">        </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_pk_document</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;change_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_change</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_presence</span><span class="p">(</span>
+<span class="w">    </span><span class="n">p_document_id</span><span class="w">     </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_user_id</span><span class="w">         </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_cursor_position</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_selection_start</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_selection_end</span><span class="w">   </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_color</span><span class="w">           </span><span class="nb">TEXT</span>
+<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_pk_document</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_pk_document</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_document_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_pk_document</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;document not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_presence</span>
+<span class="w">        </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">cursor_position</span><span class="p">,</span><span class="w"> </span><span class="n">selection_start</span><span class="p">,</span><span class="w"> </span><span class="n">selection_end</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span>
+<span class="w">        </span><span class="p">(</span><span class="n">v_pk_document</span><span class="p">,</span><span class="w"> </span><span class="n">p_user_id</span><span class="p">,</span><span class="w"> </span><span class="n">p_cursor_position</span><span class="p">,</span>
+<span class="w">         </span><span class="n">p_selection_start</span><span class="p">,</span><span class="w"> </span><span class="n">p_selection_end</span><span class="p">,</span><span class="w"> </span><span class="n">p_color</span><span class="p">)</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span>
+<span class="w">        </span><span class="k">SET</span><span class="w"> </span><span class="n">cursor_position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">cursor_position</span><span class="p">,</span>
+<span class="w">            </span><span class="n">selection_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">selection_start</span><span class="p">,</span>
+<span class="w">            </span><span class="n">selection_end</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">selection_end</span><span class="p">,</span>
+<span class="w">            </span><span class="n">color</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">color</span><span class="p">,</span>
+<span class="w">            </span><span class="n">last_activity</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_add_comment</span><span class="p">(</span>
+<span class="w">    </span><span class="n">p_document_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_user_id</span><span class="w">     </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_content</span><span class="w">     </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_position</span><span class="w">    </span><span class="nb">INT</span>
+<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_pk_document</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_comment</span><span class="w">     </span><span class="n">tb_comment</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_document</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_pk_document</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_document_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_pk_document</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;document not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_document</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">position</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_pk_document</span><span class="p">,</span><span class="w"> </span><span class="n">p_user_id</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">,</span><span class="w"> </span><span class="n">p_position</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_comment</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;comment_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_comment</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="fraiseql-schema">FraiseQL Schema<a class="headerlink" href="#fraiseql-schema" title="Permanent link">&para;</a></h2>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="collaboration_schemapy">collaboration_schema.py<a class="headerlink" href="#collaboration_schemapy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL import types
-from datetime import datetime
-from typing import Optional</p>
-<p>@types.object
-class Document:
-    id: UUID  # UUID v4 for GraphQL ID
-    title: str
-    content_type: str
-    content: str  # Current document state
-    created_by: 'User'
-    created_at: datetime
-    updated_at: datetime
-    permissions: list['DocumentPermission']
-    current_editors: list['User']  # Who's online
-    comments: list['Comment']</p>
-<p>@types.object
-class DocumentPermission:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    permission: str  # view, edit, comment, manage
-    granted_at: datetime</p>
-<p>@types.object
-class DocumentChange:
-    """Individual operation (for reconstruction)"""
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    operation: dict  # type, position, content
-    vector_clock: dict  # For CRDT
-    created_at: datetime</p>
-<p>@types.object
-class Presence:
-    """Real-time user presence"""
-    user_id: UUID  # UUID v4 for GraphQL ID
-    cursor_position: int
-    selection_start: Optional[int]
-    selection_end: Optional[int]
-    color: str</p>
-<p>@types.object
-class DocumentActivity:
-    """Activity stream"""
-    user_id: UUID  # UUID v4 for GraphQL ID
-    activity_type: str  # edit, comment, join, leave
-    metadata: dict
-    created_at: datetime</p>
-<p>@types.object
-class Comment:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    position: Optional[int]
-    resolved: bool
-    created_at: datetime
-    replies: list['Comment']</p>
-<p>@types.object
-class Query:
-    def document(self, id: str) -&gt; Document:
-        """Get document with full content"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>def document_changes(
-    self,
-    document_id: str,
-    since_version: int = 0
-) -&gt; list[DocumentChange]:
-    &quot;&quot;&quot;Get changes since version (for sync)&quot;&quot;&quot;
-    pass
+<p>Types map to the read views. Queries and mutations follow the CQRS split; the
+subscriptions are async generators backed by <code>LISTEN/NOTIFY</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># collaboration_schema.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 
-def activity_feed(
-    self,
-    document_id: str,
-    limit: int = 50
-) -&gt; list[DocumentActivity]:
-    &quot;&quot;&quot;Activity stream&quot;&quot;&quot;
-    pass
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">JSON</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_document&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>               <span class="c1"># current materialized document state</span>
+    <span class="n">created_by</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">updated_at</span><span class="p">:</span> <span class="n">datetime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_document_change&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DocumentChange</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single applied operation.&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="n">JSON</span>            <span class="c1"># { type, position, content }</span>
+    <span class="n">vector_clock</span><span class="p">:</span> <span class="n">JSON</span>         <span class="c1"># causality across users</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_presence&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Presence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Real-time editor presence.&quot;&quot;&quot;</span>
+
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">cursor_position</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">selection_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">selection_end</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">last_activity</span><span class="p">:</span> <span class="n">datetime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Comment</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">resolved</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ApplyOperationInput</span><span class="p">:</span>
+    <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="n">JSON</span>
+    <span class="n">vector_clock</span><span class="p">:</span> <span class="n">JSON</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdatePresenceInput</span><span class="p">:</span>
+    <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">cursor_position</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">selection_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">selection_end</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AddCommentInput</span><span class="p">:</span>
+    <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">position</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChangeSuccess</span><span class="p">:</span>
+    <span class="n">change</span><span class="p">:</span> <span class="n">DocumentChange</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChangeError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;OPERATION_FAILED&quot;</span>
 </code></pre></div>
-<p>@types.object
-class Mutation:
-    def update_document(
-        self,
-        document_id: str,
-        operation: dict,
-        vector_clock: dict
-    ) -&gt; DocumentChange:
-        """Apply operation (edit)"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>def add_comment(
-    self,
-    document_id: str,
-    content: str,
-    position: Optional[int] = None
-) -&gt; Comment:
-    &quot;&quot;&quot;Add comment&quot;&quot;&quot;
-    pass
+<h3 id="queries-reads">Queries (reads)<a class="headerlink" href="#queries-reads" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">document</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Document</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_document&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
-def resolve_comment(self, comment_id: str) -&gt; Comment:
-    &quot;&quot;&quot;Mark comment as resolved&quot;&quot;&quot;
-    pass
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">document_changes</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DocumentChange</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Changes for a document, oldest first (used to catch up on reconnect).&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_document_change&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">comments</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">)</span>
 </code></pre></div>
-<p>@types.object
-class Subscription:
-    def document_changes(self, document_id: str) -&gt; DocumentChange:
-        """Stream of changes from other users"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>def presence(self, document_id: str) -&gt; Presence:
-    &quot;&quot;&quot;Real-time presence updates&quot;&quot;&quot;
-    pass
+<h3 id="mutations-writes-via-fn_">Mutations (writes via <code>fn_</code>)<a class="headerlink" href="#mutations-writes-via-fn_" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">apply_operation</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">ApplyOperationInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChangeSuccess</span> <span class="o">|</span> <span class="n">ChangeError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_apply_operation&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;p_document_id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_operation&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">operation</span><span class="p">,</span>
+            <span class="s2">&quot;p_vector_clock&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">vector_clock</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ChangeError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_document_change&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;change_id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ChangeSuccess</span><span class="p">(</span><span class="n">change</span><span class="o">=</span><span class="n">change</span><span class="p">)</span>
 
-def activity(self, document_id: str) -&gt; DocumentActivity:
-    &quot;&quot;&quot;Real-time activity stream&quot;&quot;&quot;
-    pass
 
-def comments(self, document_id: str) -&gt; Comment:
-    &quot;&quot;&quot;New comments&quot;&quot;&quot;
-    pass
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_presence</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdatePresenceInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_update_presence&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;p_document_id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_cursor_position&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">cursor_position</span><span class="p">,</span>
+            <span class="s2">&quot;p_selection_start&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">selection_start</span><span class="p">,</span>
+            <span class="s2">&quot;p_selection_end&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">selection_end</span><span class="p">,</span>
+            <span class="s2">&quot;p_color&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">color</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">))</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_comment</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">AddCommentInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Comment</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_add_comment&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;p_document_id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+            <span class="s2">&quot;p_content&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+            <span class="s2">&quot;p_position&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">position</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;comment_id&quot;</span><span class="p">])</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
-<h2 id="operational-transformation-ot-for-conflict-resolution">Operational Transformation (OT) for Conflict Resolution<a class="headerlink" href="#operational-transformation-ot-for-conflict-resolution" title="Permanent link">&para;</a></h2>
-<h3 id="apply-operation">Apply Operation<a class="headerlink" href="#apply-operation" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>class OperationTransform:
-    @staticmethod
-    def apply_operation(text: str, operation: dict) -&gt; str:
-        """Apply insert/delete operation"""
-        op_type = operation.get('type')
-        pos = operation.get('position')
-        content = operation.get('content')</p>
-<div class="highlight"><pre><span></span><code>    if op_type == &#39;insert&#39;:
-        return text[:pos] + content + text[pos:]
-    elif op_type == &#39;delete&#39;:
-        length = operation.get(&#39;length&#39;, 1)
-        return text[:pos] + text[pos + length:]
-    return text
+<h2 id="subscriptions-async-generators-over-listennotify">Subscriptions: async generators over LISTEN/NOTIFY<a class="headerlink" href="#subscriptions-async-generators-over-listennotify" title="Permanent link">&para;</a></h2>
+<p>A subscription resolver is an <strong>async generator</strong>. It opens a dedicated PostgreSQL
+connection, runs <code>LISTEN &lt;channel&gt;</code>, and <code>async for</code>s incoming notifications. When a
+notification arrives whose payload matches the subscribed document, it re-reads the
+relevant view and <code>yield</code>s the fresh value. FraiseQL serves each yielded value to the
+client over the WebSocket.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># realtime.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
-@staticmethod
-def transform_operations(op1: dict, op2: dict) -&gt; dict:
-    &quot;&quot;&quot;Transform op2 against op1 (for conflict resolution)&quot;&quot;&quot;
-    # If both insert at same position, use user ID to break tie
-    if op1.get(&#39;type&#39;) == &#39;insert&#39; and op2.get(&#39;type&#39;) == &#39;insert&#39;:
-        if op1.get(&#39;position&#39;) == op2.get(&#39;position&#39;):
-            # Insert later user&#39;s content after earlier user&#39;s
-            return {
-                **op2,
-                &#39;position&#39;: op2[&#39;position&#39;] + len(op1.get(&#39;content&#39;, &#39;&#39;))
-            }
-    # If op2 deletes after op1 insert, adjust position
-    elif op1.get(&#39;type&#39;) == &#39;insert&#39; and op2.get(&#39;type&#39;) == &#39;delete&#39;:
-        if op2.get(&#39;position&#39;) &gt; op1.get(&#39;position&#39;):
-            return {
-                **op2,
-                &#39;position&#39;: op2[&#39;position&#39;] + len(op1.get(&#39;content&#39;, &#39;&#39;))
-            }
-    return op2
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_listen</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Yield once per NOTIFY on `channel` whose payload is `document_id`.&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LISTEN </span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">notify</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">notifies</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">notify</span><span class="o">.</span><span class="n">payload</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">document_id</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">document_change_stream</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">DocumentChange</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream every change applied to a document by anyone.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;pool&quot;</span><span class="p">]</span>
+    <span class="n">last_seen</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_listen</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="s2">&quot;document_change&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="p">):</span>
+        <span class="n">changes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_document_change&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">changes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_seen</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">change</span><span class="o">.</span><span class="n">created_at</span> <span class="o">&gt;</span> <span class="n">last_seen</span><span class="p">:</span>
+                <span class="n">last_seen</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">created_at</span>
+                <span class="k">yield</span> <span class="n">change</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">presence_stream</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Presence</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream presence updates (cursor moves, joins, leaves).&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;pool&quot;</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_listen</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="s2">&quot;presence&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">presence</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_presence&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">presence</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">comment_stream</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Comment</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream new comments as they are posted.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;pool&quot;</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_listen</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="s2">&quot;comment&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">comment</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="real-time-synchronization-flow">Real-Time Synchronization Flow<a class="headerlink" href="#real-time-synchronization-flow" title="Permanent link">&para;</a></h2>
-<h3 id="client-side-react">Client-Side (React)<a class="headerlink" href="#client-side-react" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useQuery, useMutation, useSubscription, gql } from '@apollo/client';
-import { useCallback, useRef, useState } from 'react';</p>
-<p>const DOCUMENT_QUERY = gql<code>query GetDocument($id: ID!) {
-    document(id: $id) {
-      id
-      title
-      content
-      currentEditors { id email }
-      comments { id content resolved }
-    }
-  }</code>;</p>
-<p>const UPDATE_DOCUMENT = gql<code>mutation UpdateDocument($docId: ID!, $operation: JSON!, $vectorClock: JSON!) {
-    updateDocument(documentId: $docId, operation: $operation, vectorClock: $vectorClock) {
-      id
-      operation
-      createdAt
-    }
-  }</code>;</p>
-<p>const DOCUMENT_CHANGES_SUB = gql<code>subscription OnDocumentChanges($docId: ID!) {
-    documentChanges(documentId: $docId) {
-      id
-      userId
-      operation
-      vectorClock
-      createdAt
-    }
-  }</code>;</p>
-<p>const PRESENCE_SUB = gql<code>subscription OnPresence($docId: ID!) {
-    presence(documentId: $docId) {
-      userId
-      cursorPosition
-      color
-    }
-  }</code>;</p>
-<p>export function CollaborativeEditor({ documentId }: { documentId: string }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [content, setContent] = useState('');
-  const [vectorClock, setVectorClock] = useState<Record\<string, number>>({});
-  const [editors, setEditors] = useState<any[]>[]);
-  const userId = getCurrentUserId();</p>
-<p>// Fetch initial document
-  const { data: docData } = useQuery(DOCUMENT_QUERY, {
-    variables: { id: documentId },
-  });</p>
-<p>// Listen for changes from other users
-  const { data: changesData } = useSubscription(DOCUMENT_CHANGES_SUB, {
-    variables: { docId: documentId },
-  });</p>
-<p>// Listen for presence updates
-  const { data: presenceData } = useSubscription(PRESENCE_SUB, {
-    variables: { docId: documentId },
-  });</p>
-<p>const [updateDocument] = useMutation(UPDATE_DOCUMENT);</p>
-<p>// Initialize
-  useEffect(() =&gt; {
-    if (docData?.document) {
-      setContent(docData.document.content);
-      setEditors(docData.document.currentEditors);
-    }
-  }, [docData]);</p>
-<p>// Apply remote changes
-  useEffect(() =&gt; {
-    if (changesData?.documentChanges) {
-      const change = changesData.documentChanges;
-      const newContent = applyOperation(content, change.operation);
-      setContent(newContent);</p>
-<div class="highlight"><pre><span></span><code>  // Update vector clock
-  setVectorClock(prev =&gt; ({
-    ...prev,
-    [change.userId]: (prev[change.userId] || 0) + 1,
-  }));
-}
-</code></pre></div>
-<p>}, [changesData]);</p>
-<p>// Update presence indicators
-  useEffect(() =&gt; {
-    if (presenceData?.presence) {
-      renderCursorPosition(presenceData.presence);
-    }
-  }, [presenceData]);</p>
-<p>// Handle local edits
-  const handleChange = useCallback(
-    async (e: React.ChangeEvent<HTMLDivElement>) =&gt; {
-      const newContent = e.currentTarget.textContent'';
-      const operation = detectOperation(content, newContent);</p>
-<div class="highlight"><pre><span></span><code>  // Update local state immediately
-  setContent(newContent);
-
-  // Increment our vector clock
-  const newClock = {
-    ...vectorClock,
-    [userId]: (vectorClock[userId] || 0) + 1,
-  };
-  setVectorClock(newClock);
-
-  // Send to server
-  await updateDocument({
-    variables: {
-      docId: documentId,
-      operation,
-      vectorClock: newClock,
-    },
-  });
-},
-[content, vectorClock, documentId, updateDocument, userId]
-</code></pre></div>
-<p>);</p>
-<p>return (
-    <div>
-      <h1>{docData?.document?.title}</h1></p>
-<div class="highlight"><pre><span></span><code>  {/* Show current editors */}
-  &lt;div className=&quot;editors&quot;&gt;
-    {editors.map(editor =&gt; (
-      &lt;span key={editor.id} title={editor.email}&gt;👤&lt;/span&gt;
-    ))}
-  &lt;/div&gt;
-
-  {/* Editor with collaborative cursors */}
-  &lt;div
-    ref={editorRef}
-    contentEditable
-    onInput={handleChange}
-    className=&quot;editor&quot;
-  &gt;
-    {content}
-  &lt;/div&gt;
-
-  {/* Comments sidebar */}
-  &lt;CommentsSidebar documentId={documentId} /&gt;
-&lt;/div&gt;
-</code></pre></div>
-<p>);
-}</p>
-<p>function detectOperation(oldContent: string, newContent: string) {
-  // Find the difference
-  const minLen = Math.min(oldContent.length, newContent.length);
-  let start = 0;
-  while (start &lt; minLen &amp;&amp; oldContent[start] === newContent[start]) {
-    start++;
-  }</p>
-<p>if (newContent.length &gt; oldContent.length) {
-    // Insert
-    return {
-      type: 'insert',
-      position: start,
-      content: newContent.slice(start, newContent.length - (oldContent.length - start)),
-    };
-  } else {
-    // Delete
-    return {
-      type: 'delete',
-      position: start,
-      length: oldContent.length - newContent.length,
-    };
-  }
-}</p>
-<p>function applyOperation(text: string, operation: any): string {
-  if (operation.type === 'insert') {
-    return text.slice(0, operation.position) +
-           operation.content +
-           text.slice(operation.position);
-  } else if (operation.type === 'delete') {
-    return text.slice(0, operation.position) +
-           text.slice(operation.position + operation.length);
-  }
-  return text;
-}</p>
-<p>function renderCursorPosition(presence: any) {
-  // Render remote user's cursor in document
-  const cursor = document.querySelector(<code>[data-user-id="${presence.userId}"]</code>);
-  if (cursor) {
-    cursor.style.left = presence.cursorPosition + 'px';
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="activity-feed-presence">Activity Feed &amp; Presence<a class="headerlink" href="#activity-feed-presence" title="Permanent link">&para;</a></h2>
-<h3 id="track-activity">Track Activity<a class="headerlink" href="#track-activity" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Trigger to log activity
-CREATE OR REPLACE FUNCTION log_activity() RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO document_activity (
-    document_id,
-    user_id,
-    activity_type,
-    metadata
-  ) VALUES (
-    NEW.document_id,
-    NEW.user_id,
-    'edit',
-    jsonb_build_object(
-      'operation_type', NEW.operation-&gt;&gt;'type',
-      'operation_id', NEW.id
-    )
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER document_changes_activity
-AFTER INSERT ON document_changes
-FOR EACH ROW
-EXECUTE FUNCTION log_activity();
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="presence-management">Presence Management<a class="headerlink" href="#presence-management" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// Update presence every time cursor moves
-const handleCursorMove = useDebouncedCallback((position: number) =&gt; {
-  updatePresence({
-    variables: {
-      documentId,
-      cursorPosition: position,
-      selectionStart: selection.start,
-      selectionEnd: selection.end,
-    },
-  });
-}, 500); // Debounce to avoid spam</p>
-<p>// Clean up on unmount (user left)
-useEffect(() =&gt; {
-  return () =&gt; {
-    removePresence({
-      variables: { documentId },
-    });
-  };
-}, [documentId]);
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="comments-threading">Comments &amp; Threading<a class="headerlink" href="#comments-threading" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const ADD_COMMENT = gql<code>mutation AddComment($docId: ID!, $content: String!, $position: Int) {
-    addComment(documentId: $docId, content: $content, position: $position) {
-      id
-      content
-      userId
-      createdAt
-    }
-  }</code>;</p>
-<p>export function CommentsSidebar({ documentId }: { documentId: string }) {
-  const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
-  const { data } = useQuery(DOCUMENT_QUERY, { variables: { id: documentId } });
-  const [addComment] = useMutation(ADD_COMMENT);</p>
-<p>const handleHighlightText = (start: number, end: number) =&gt; {
-    setSelectedPosition(start);
-  };</p>
-<p>const handleSubmitComment = async (content: string) =&gt; {
-    await addComment({
-      variables: {
-        docId: documentId,
-        content,
-        position: selectedPosition,
-      },
-    });
-    setSelectedPosition(null);
-  };</p>
-<p>return (
-    <aside className="comments-sidebar">
-      {data?.document?.comments?.map(comment =&gt; (
-        <CommentThread key={comment.id} comment={comment} />
-      ))}
-      {selectedPosition !== null &amp;&amp; (
-        <CommentForm onSubmit={handleSubmitComment} />
-      )}
-    </aside>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="conflict-resolution-strategy">Conflict Resolution Strategy<a class="headerlink" href="#conflict-resolution-strategy" title="Permanent link">&para;</a></h2>
-<p>For documents with concurrent edits:</p>
-<ol>
-<li><strong>Vector Clocks</strong> - Track causality</li>
-<li><strong>Last-Write-Wins</strong> - If concurrent edits at same position</li>
-<li><strong>User ID Tiebreaker</strong> - Sort by user ID for determinism</li>
-<li><strong>Operational Transform</strong> - Adjust operations based on order</li>
-</ol>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def resolve_conflict(op1: dict, op2: dict, user1_id: str, user2_id: str) -&gt; tuple:
-    """Return (transformed_op1, transformed_op2)"""</p>
-<div class="highlight"><pre><span></span><code># If both inserting at same position
-if (op1[&#39;type&#39;] == &#39;insert&#39; and op2[&#39;type&#39;] == &#39;insert&#39; and
-    op1[&#39;position&#39;] == op2[&#39;position&#39;]):
-
-    # User with earlier ID gets their insert first
-    if user1_id &lt; user2_id:
-        op2_new = {
-            **op2,
-            &#39;position&#39;: op2[&#39;position&#39;] + len(op1[&#39;content&#39;])
-        }
-        return (op1, op2_new)
-    else:
-        op1_new = {
-            **op1,
-            &#39;position&#39;: op1[&#39;position&#39;] + len(op2[&#39;content&#39;])
-        }
-        return (op1_new, op2)
-
-# Handle other cases...
-return (op1, op2)
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="testing-real-time-collaboration">Testing Real-Time Collaboration<a class="headerlink" href="#testing-real-time-collaboration" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>describe('Collaborative Editing', () =&gt; {
-  it('should merge concurrent edits', async () =&gt; {
-    const user1Changes = [
-      { type: 'insert', position: 0, content: 'Hello' },
-    ];
-    const user2Changes = [
-      { type: 'insert', position: 0, content: 'World' },
-    ];</p>
-<div class="highlight"><pre><span></span><code>const result = await resolveConflict(user1Changes, user2Changes);
-
-// Both changes should be preserved in final content
-expect(result).toContain(&#39;Hello&#39;);
-expect(result).toContain(&#39;World&#39;);
-</code></pre></div>
-<p>});</p>
-<p>it('should update presence correctly', async () =&gt; {
-    const presence = usePresenceHook('doc123');</p>
-<div class="highlight"><pre><span></span><code>expect(presence.editors).toHaveLength(0);
-presence.join(&#39;user1&#39;);
-expect(presence.editors).toHaveLength(1);
-presence.leave(&#39;user1&#39;);
-expect(presence.editors).toHaveLength(0);
-</code></pre></div>
-<p>});</p>
-<p>it('should maintain comment threads', async () =&gt; {
-    const comment = await addComment({
-      documentId: 'doc123',
-      content: 'Fix this typo',
-      position: 100,
-    });</p>
-<div class="highlight"><pre><span></span><code>expect(comment.id).toBeDefined();
-expect(comment.position).toBe(100);
-
-const reply = await replyToComment({
-  commentId: comment.id,
-  content: &#39;Already fixed!&#39;,
-});
-
-expect(reply.parentCommentId).toBe(comment.id);
-</code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<p>Transport is GraphQL-over-WebSocket. FraiseQL's <code>SubscriptionManager</code> /
+<code>WebSocketConnection</code> handle both the modern <code>graphql-transport-ws</code> protocol and the
+legacy <code>graphql-ws</code> one, so the standard clients (Apollo, urql, <code>graphql-ws</code>) connect
+without custom code.</p>
+<h3 id="subscription-helpers">Subscription helpers<a class="headerlink" href="#subscription-helpers" title="Permanent link">&para;</a></h3>
+<p>FraiseQL ships helpers you can layer onto a subscription:</p>
 <ul>
-<li><strong>Debounce presence updates</strong> - Only send every 500ms</li>
-<li><strong>Batch operations</strong> - Group changes from same user</li>
-<li><strong>Archive old changes</strong> - Delete changes older than 30 days</li>
-<li><strong>Snapshot documents</strong> - Store full content snapshot periodically</li>
-<li><strong>Compress change log</strong> - Compact operations into final state</li>
+<li><strong><code>subscription_filter</code></strong> — drop yielded values that don't match a predicate
+  (for example, never echo a user's own edit back to them).</li>
+<li><strong><code>complexity</code></strong> — bound the cost of a subscription so a client can't open an
+  unbounded fan-out.</li>
+<li><strong><code>with_lifecycle</code></strong> — run setup/teardown around the generator (for example, write
+  a presence row on connect and remove it on disconnect).</li>
+<li><strong>subscription result <code>cache</code></strong> — reuse a recently computed payload across
+  subscribers of the same document.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">subscription_filter</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="nd">@subscription_filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">change</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">change</span><span class="o">.</span><span class="n">user_id</span> <span class="o">!=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">others_changes</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">DocumentChange</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Like document_change_stream, but skips the caller&#39;s own changes.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;pool&quot;</span><span class="p">]</span>
+    <span class="n">last_seen</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_listen</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="s2">&quot;document_change&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_document_change&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">last_seen</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">change</span><span class="o">.</span><span class="n">created_at</span> <span class="o">&gt;</span> <span class="n">last_seen</span><span class="p">:</span>
+                <span class="n">last_seen</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">created_at</span>
+                <span class="k">yield</span> <span class="n">change</span>
+</code></pre></div>
+<p>You can also gate a subscription with an authorizer, exactly as for queries:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">document_viewer_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">guarded_stream</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="n">document_id</span><span class="p">:</span> <span class="n">ID</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">DocumentChange</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<h3 id="wiring-it-into-the-app">Wiring it into the app<a class="headerlink" href="#wiring-it-into-the-app" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/collab&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Document</span><span class="p">,</span> <span class="n">DocumentChange</span><span class="p">,</span> <span class="n">Presence</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">document</span><span class="p">,</span> <span class="n">document_changes</span><span class="p">,</span> <span class="n">comments</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">apply_operation</span><span class="p">,</span> <span class="n">update_presence</span><span class="p">,</span> <span class="n">add_comment</span><span class="p">],</span>
+    <span class="n">subscriptions</span><span class="o">=</span><span class="p">[</span><span class="n">document_change_stream</span><span class="p">,</span> <span class="n">presence_stream</span><span class="p">,</span> <span class="n">comment_stream</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>   <span class="c1"># enables the GraphQL playground (and WebSocket testing)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it like any FastAPI app:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<hr />
+<h2 id="conflict-resolution">Conflict resolution<a class="headerlink" href="#conflict-resolution" title="Permanent link">&para;</a></h2>
+<p>For documents with concurrent edits, resolve order deterministically before applying:</p>
+<ol>
+<li><strong>Vector clocks</strong> — track causality between users' operations.</li>
+<li><strong>Position-based transform</strong> — adjust an operation's position against operations
+   that landed earlier.</li>
+<li><strong>User-ID tiebreaker</strong> — when two inserts target the same position, order by user
+   ID so every replica converges on the same result.</li>
+</ol>
+<p>This logic can live in the client (apply optimistically, reconcile on the incoming
+stream) and/or in the <code>fn_apply_operation</code> function (authoritative ordering). A simple
+position transform:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">transform_operation</span><span class="p">(</span><span class="n">incoming</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">applied</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shift `incoming` so it stays correct after `applied` already landed.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">applied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;insert&quot;</span> <span class="ow">and</span> <span class="n">incoming</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">applied</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]:</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">applied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">incoming</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">incoming</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">shift</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">applied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;delete&quot;</span> <span class="ow">and</span> <span class="n">incoming</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">applied</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]:</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">applied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">incoming</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">applied</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">],</span> <span class="n">incoming</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">shift</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="n">incoming</span>
+</code></pre></div>
+<p>Because the authoritative <code>content</code> is rebuilt inside <code>fn_apply_operation</code>, the server
+is always the tiebreaker of record; clients converge by replaying the
+<code>document_change_stream</code>.</p>
+<hr />
+<h2 id="client-integration-react-apollo">Client integration (React + Apollo)<a class="headerlink" href="#client-integration-react-apollo" title="Permanent link">&para;</a></h2>
+<p>The client subscribes over WebSocket and applies incoming operations.</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@apollo/client&quot;</span><span class="p">;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">DOCUMENT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query Document($id: ID!) {</span>
+<span class="sb">    document(id: $id) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      content</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">APPLY_OPERATION</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation ApplyOperation($input: ApplyOperationInput!) {</span>
+<span class="sb">    applyOperation(input: $input) {</span>
+<span class="sb">      ... on ChangeSuccess {</span>
+<span class="sb">        change { id operation createdAt }</span>
+<span class="sb">      }</span>
+<span class="sb">      ... on ChangeError {</span>
+<span class="sb">        message</span>
+<span class="sb">        code</span>
+<span class="sb">      }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">CHANGE_STREAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription ChangeStream($documentId: ID!) {</span>
+<span class="sb">    documentChangeStream(documentId: $documentId) {</span>
+<span class="sb">      id</span>
+<span class="sb">      userId</span>
+<span class="sb">      operation</span>
+<span class="sb">      vectorClock</span>
+<span class="sb">      createdAt</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">PRESENCE_STREAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription PresenceStream($documentId: ID!) {</span>
+<span class="sb">    presenceStream(documentId: $documentId) {</span>
+<span class="sb">      userId</span>
+<span class="sb">      cursorPosition</span>
+<span class="sb">      color</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">CollaborativeEditor</span><span class="p">({</span><span class="w"> </span><span class="nx">documentId</span><span class="w"> </span><span class="p">}</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">documentId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">doc</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">DOCUMENT</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">documentId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">change</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">CHANGE_STREAM</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">documentId</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">presence</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">PRESENCE_STREAM</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">documentId</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">applyOperation</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">APPLY_OPERATION</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Apply remote changes streamed from other editors.</span>
+<span class="w">  </span><span class="c1">// Send local edits via applyOperation(...) — the server&#39;s trigger NOTIFYs</span>
+<span class="w">  </span><span class="c1">// every other subscriber on the &quot;document_change&quot; channel.</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">Editor</span><span class="w"> </span><span class="nx">doc</span><span class="o">=</span><span class="p">{</span><span class="nx">doc</span><span class="p">}</span><span class="w"> </span><span class="nx">change</span><span class="o">=</span><span class="p">{</span><span class="nx">change</span><span class="p">}</span><span class="w"> </span><span class="nx">presence</span><span class="o">=</span><span class="p">{</span><span class="nx">presence</span><span class="p">}</span><span class="w"> </span><span class="nx">onEdit</span><span class="o">=</span><span class="p">{</span><span class="nx">applyOperation</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Send presence updates on a debounce so cursor movement doesn't flood the channel:</p>
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">pushPresence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useDebouncedCallback</span><span class="p">((</span><span class="nx">position</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">updatePresence</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">input</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">documentId</span><span class="p">,</span><span class="w"> </span><span class="nx">cursorPosition</span><span class="o">:</span><span class="w"> </span><span class="kt">position</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">},</span><span class="w"> </span><span class="mf">500</span><span class="p">);</span>
+</code></pre></div>
+<hr />
+<h2 id="performance-and-operational-notes">Performance and operational notes<a class="headerlink" href="#performance-and-operational-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>One <code>LISTEN</code> connection per subscription stream.</strong> <code>LISTEN/NOTIFY</code> requires a
+  session-level connection, so keep a small dedicated pool for subscriptions and put a
+  ceiling on concurrent streams (the <code>complexity</code> helper helps here).</li>
+<li><strong>Payloads carry only the <code>id</code>.</strong> Re-reading the view keeps notifications tiny and
+  under PostgreSQL's 8000-byte limit, and guarantees subscribers see committed data.</li>
+<li><strong>Debounce presence.</strong> Send cursor updates at most every ~500ms.</li>
+<li><strong>Archive old changes.</strong> Move <code>tb_document_change</code> rows older than your retention
+  window to cold storage; the materialized <code>content</code> is the snapshot.</li>
+<li><strong>Snapshot periodically.</strong> The <code>content</code> column is already a snapshot, so reconnecting
+  clients only need to replay changes since their last seen <code>created_at</code>.</li>
 </ul>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<p><strong>Related Patterns:</strong></p>
 <ul>
-<li><a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> - Document ownership/permissions</li>
-<li><a href="./">Activity Feeds in Social Networks</a> - Similar patterns</li>
+<li><a href="../">Patterns overview</a></li>
+<li><a href="../ecommerce-workflows/">E-commerce workflows</a> — mutations via <code>fn_</code> functions</li>
+<li><a href="../saas-multi-tenant/">Multi-tenant SaaS</a> — document ownership and permissions via RLS</li>
+<li><a href="../../architecture/realtime/subscriptions/">Subscriptions architecture</a> — WebSocket transport internals</li>
+<li><a href="../../foundation/02-core-concepts/">Core concepts</a> — the <code>tb_</code>/<code>v_</code>/<code>fn_</code> CQRS model</li>
 </ul>
-<p><strong>Real-Time Features:</strong></p>
-<ul>
-<li><a href="../../guides/patterns/">Real-Time Patterns</a></li>
-<li><a href="../../guides/clients/">Subscriptions &amp; WebSockets</a></li>
-</ul>
-<p><strong>Production Deployment:</strong></p>
-<ul>
-<li><a href="../../guides/production-deployment/">Production Deployment</a></li>
-<li><a href="../../guides/observability/">Observability &amp; Monitoring</a></li>
-</ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

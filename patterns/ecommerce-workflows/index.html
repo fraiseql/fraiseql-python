@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Building a production e-commerce platform on FraiseQL v1 with order management, inventory tracking, and fulfillment workflows backed by PostgreSQL.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/patterns/ecommerce-workflows/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>E-Commerce Workflows - FraiseQL Documentation</title>
+        <title>E-Commerce Platform with Complex Workflows - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              E-Commerce Workflows
+              E-Commerce Platform with Complex Workflows
             
           </span>
         </div>
@@ -3473,6 +3475,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#how-multi-step-workflows-work-in-fraiseql-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How multi-step workflows work in FraiseQL v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#schema-design" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3485,10 +3498,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#products-inventory" class="md-nav__link">
+  <a href="#products-inventory-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Products &amp; Inventory
+        Products &amp; Inventory (write tables)
       
     </span>
   </a>
@@ -3496,10 +3509,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#orders-fulfillment" class="md-nav__link">
+  <a href="#orders-fulfillment-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Orders &amp; Fulfillment
+        Orders &amp; Fulfillment (write tables)
       
     </span>
   </a>
@@ -3507,10 +3520,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#payments-discounts" class="md-nav__link">
+  <a href="#payments-discounts-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Payments &amp; Discounts
+        Payments &amp; Discounts (write tables)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-transactional-outbox-cross-system-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The transactional outbox (cross-system steps)
       
     </span>
   </a>
@@ -3523,10 +3547,182 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fraiseql-schema" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL Schema
+        Read views
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fraiseql-types-queries-and-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FraiseQL types, queries, and mutations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FraiseQL types, queries, and mutations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inputs-and-result-unions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs and result unions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#order-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Order Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State Machine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-transition-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State transition guard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fn_create_order-mutation-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The fn_create_order mutation function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventory-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inventory Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventory Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-inventory-on-cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release inventory on cancellation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-system-steps-the-outbox-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-system steps: the outbox worker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting &amp; Analytics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-order-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Order Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4981,6 +5177,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#how-multi-step-workflows-work-in-fraiseql-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How multi-step workflows work in FraiseQL v1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#schema-design" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4993,10 +5200,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#products-inventory" class="md-nav__link">
+  <a href="#products-inventory-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Products &amp; Inventory
+        Products &amp; Inventory (write tables)
       
     </span>
   </a>
@@ -5004,10 +5211,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#orders-fulfillment" class="md-nav__link">
+  <a href="#orders-fulfillment-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Orders &amp; Fulfillment
+        Orders &amp; Fulfillment (write tables)
       
     </span>
   </a>
@@ -5015,10 +5222,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#payments-discounts" class="md-nav__link">
+  <a href="#payments-discounts-write-tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Payments &amp; Discounts
+        Payments &amp; Discounts (write tables)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-transactional-outbox-cross-system-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The transactional outbox (cross-system steps)
       
     </span>
   </a>
@@ -5031,10 +5249,182 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fraiseql-schema" class="md-nav__link">
+  <a href="#read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL Schema
+        Read views
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fraiseql-types-queries-and-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FraiseQL types, queries, and mutations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FraiseQL types, queries, and mutations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inputs-and-result-unions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs and result unions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#order-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Order Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#state-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State Machine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-transition-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State transition guard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fn_create_order-mutation-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The fn_create_order mutation function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inventory-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inventory Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventory Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#release-inventory-on-cancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release inventory on cancellation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-system-steps-the-outbox-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-system steps: the outbox worker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting &amp; Analytics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-order-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Order Workflows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -5061,636 +5451,925 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: E-Commerce Platform with Complex Workflows
-description: Complete guide to building a production e-commerce platform with order management, inventory tracking, and fulfillment workflows.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="e-commerce-platform-with-complex-workflows">E-Commerce Platform with Complex Workflows<a class="headerlink" href="#e-commerce-platform-with-complex-workflows" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
-<strong>Complexity:</strong> ⭐⭐⭐⭐ (Advanced)
+<p><strong>Status:</strong> Production Ready
+<strong>Complexity:</strong> Advanced
 <strong>Audience:</strong> E-commerce architects, backend engineers
-<strong>Reading Time:</strong> 25-30 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>Complete guide to building a production e-commerce platform with order management, inventory tracking, and fulfillment workflows.</p>
+<strong>Reading Time:</strong> 25-30 minutes</p>
+<p>A blueprint for a production e-commerce platform on FraiseQL v1: order
+management, inventory tracking, and fulfillment workflows. Everything is
+PostgreSQL — write tables (<code>tb_*</code>), read views (<code>v_*</code>/<code>tv_*</code>), and mutation
+logic in <code>fn_*</code> functions — served as a GraphQL API by a FastAPI app.</p>
+<h2 id="how-multi-step-workflows-work-in-fraiseql-v1">How multi-step workflows work in FraiseQL v1<a class="headerlink" href="#how-multi-step-workflows-work-in-fraiseql-v1" title="Permanent link">&para;</a></h2>
+<p>FraiseQL v1 has no saga framework and no built-in webhook/orchestration engine.
+Complex workflows are assembled from three PostgreSQL building blocks:</p>
+<ol>
+<li><strong><code>fn_*</code> functions = transactional units.</strong> Each mutation calls one
+   <code>fn_*</code> function that runs in a single transaction. Validation, the write,
+   inventory reservation, and status changes either all commit or all roll
+   back. This is your atomic step.</li>
+<li><strong><code>status</code> columns = the state machine.</strong> An order moves through
+   <code>pending → confirmed → processing → shipped → delivered</code> (or <code>cancelled</code>)
+   by updating a <code>status</code> column <em>inside</em> an <code>fn_*</code> function. A <code>BEFORE UPDATE</code>
+   trigger enforces legal transitions.</li>
+<li><strong>A transactional outbox = cross-system steps.</strong> Anything that touches an
+   external system (charge a card, send an email, notify a carrier) is written
+   as a row into an outbox table <em>in the same transaction</em> as the order change.
+   A background worker you run polls the outbox, performs the side effect, and
+   marks the row done. This gives you exactly-once-ish delivery without a
+   distributed saga coordinator: if the transaction rolls back, the outbox row
+   never exists; if it commits, the worker will eventually drain it.</li>
+</ol>
+<p>The result is a reliable, observable workflow built entirely from PostgreSQL
+transactions plus one worker process — no external orchestration layer.</p>
 <hr />
 <h2 id="schema-design">Schema Design<a class="headerlink" href="#schema-design" title="Permanent link">&para;</a></h2>
-<h3 id="products-inventory">Products &amp; Inventory<a class="headerlink" href="#products-inventory" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sku VARCHAR(50) UNIQUE NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  category_id UUID NOT NULL,
-  brand VARCHAR(100),
-  price DECIMAL(12, 2) NOT NULL,
-  cost DECIMAL(12, 2),  -- For margin calculation
-  status VARCHAR(50) NOT NULL,  -- active, draft, discontinued
-  created_at TIMESTAMP DEFAULT NOW()
-);</p>
-<p>-- Product variants (sizes, colors, etc.)
-CREATE TABLE product_variants (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  sku VARCHAR(50) UNIQUE NOT NULL,
-  name VARCHAR(255),  -- e.g., "Red - Size M"
-  price_modifier DECIMAL(10, 2),  -- +$5 for premium variant
-  weight DECIMAL(8, 3),
-  dimensions JSONB,  -- { width: 10, height: 20, depth: 5 }
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_product_id (product_id)
-);</p>
-<p>-- Inventory tracking (stock levels)
-CREATE TABLE inventory (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  variant_id UUID NOT NULL UNIQUE REFERENCES product_variants(id),
-  warehouse_id UUID NOT NULL,
-  quantity_on_hand INT NOT NULL DEFAULT 0,
-  quantity_reserved INT NOT NULL DEFAULT 0,
-  quantity_available INT GENERATED ALWAYS AS (quantity_on_hand - quantity_reserved) STORED,
-  reorder_point INT,
-  reorder_quantity INT,
-  last_stock_check TIMESTAMP,</p>
-<p>INDEX idx_warehouse_id (warehouse_id),
-  INDEX idx_quantity_available (quantity_available)
-);</p>
-<p>-- Stock movements (audit trail)
-CREATE TABLE stock_movements (
-  id BIGSERIAL PRIMARY KEY,
-  variant_id UUID NOT NULL REFERENCES product_variants(id),
-  warehouse_id UUID NOT NULL,
-  movement_type VARCHAR(50) NOT NULL,  -- purchase, return, adjustment, damage
-  quantity INT NOT NULL,
-  reference_id VARCHAR(50),  -- order_id, return_id
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_variant_id (variant_id),
-  INDEX idx_movement_type (movement_type)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL v1 separates the <strong>write side</strong> (<code>tb_*</code> normalized tables, the source
+of truth) from the <strong>read side</strong> (<code>v_*</code> / <code>tv_*</code> views that build a <code>data</code>
+JSONB payload for GraphQL). Mutations write through <code>fn_*</code> functions; queries
+read the views.</p>
+<h3 id="products-inventory-write-tables">Products &amp; Inventory (write tables)<a class="headerlink" href="#products-inventory-write-tables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_product</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">  </span><span class="c1">-- internal, hidden</span>
+<span class="w">  </span><span class="n">id</span><span class="w">               </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w">   </span><span class="c1">-- public GraphQL id</span>
+<span class="w">  </span><span class="n">sku</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">name</span><span class="w">             </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">description</span><span class="w">      </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_category</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_category</span><span class="p">(</span><span class="n">pk_category</span><span class="p">),</span>
+<span class="w">  </span><span class="n">brand</span><span class="w">            </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+<span class="w">  </span><span class="n">price</span><span class="w">            </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">cost</span><span class="w">             </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w">                 </span><span class="c1">-- for margin calculation</span>
+<span class="w">  </span><span class="n">status</span><span class="w">           </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;draft&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- active, draft, discontinued</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">       </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 
-<h3 id="orders-fulfillment">Orders &amp; Fulfillment<a class="headerlink" href="#orders-fulfillment" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Orders (customer purchases)
-CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_number VARCHAR(20) UNIQUE NOT NULL,  -- Public facing
-  customer_id UUID NOT NULL,
-  status VARCHAR(50) NOT NULL,  -- pending, confirmed, processing, shipped, delivered, cancelled
-  subtotal DECIMAL(12, 2),
-  tax DECIMAL(10, 2),
-  shipping_cost DECIMAL(10, 2),
-  discount_amount DECIMAL(10, 2),
-  total DECIMAL(12, 2) NOT NULL,
-  currency VARCHAR(3) NOT NULL,  -- USD, EUR, etc.
-  payment_status VARCHAR(50) NOT NULL,  -- pending, completed, failed, refunded
-  billing_address_id UUID NOT NULL,
-  shipping_address_id UUID NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  shipped_at TIMESTAMP,
-  delivered_at TIMESTAMP,
-  cancelled_at TIMESTAMP,</p>
-<p>INDEX idx_customer_id (customer_id),
-  INDEX idx_status (status),
-  INDEX idx_payment_status (payment_status),
-  INDEX idx_created_at (created_at)
-);</p>
-<p>-- Order line items
-CREATE TABLE order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  variant_id UUID NOT NULL,
-  quantity INT NOT NULL,
-  unit_price DECIMAL(12, 2) NOT NULL,
-  discount_amount DECIMAL(10, 2),
-  total DECIMAL(12, 2) NOT NULL,</p>
-<p>INDEX idx_order_id (order_id)
-);</p>
-<p>-- Fulfillment operations
-CREATE TABLE fulfillments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id),
-  status VARCHAR(50) NOT NULL,  -- pending, shipped, delivered, cancelled
-  tracking_number VARCHAR(100),
-  carrier VARCHAR(50),  -- FedEx, UPS, USPS
-  estimated_delivery DATE,
-  actual_delivery TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_order_id (order_id),
-  INDEX idx_status (status)
-);</p>
-<p>-- Fulfillment line items
-CREATE TABLE fulfillment_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  fulfillment_id UUID NOT NULL REFERENCES fulfillments(id) ON DELETE CASCADE,
-  order_item_id UUID NOT NULL REFERENCES order_items(id),
-  quantity INT NOT NULL,</p>
-<p>INDEX idx_fulfillment_id (fulfillment_id)
-);</p>
-<p>-- Returns &amp; Refunds
-CREATE TABLE returns (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id),
-  status VARCHAR(50) NOT NULL,  -- pending, approved, shipped, received, refunded
-  reason VARCHAR(255),
-  refund_amount DECIMAL(12, 2),
-  refund_status VARCHAR(50) NOT NULL,  -- pending, completed, failed
-  created_at TIMESTAMP DEFAULT NOW(),
-  refunded_at TIMESTAMP,</p>
-<p>INDEX idx_order_id (order_id),
-  INDEX idx_status (status)
-);</p>
-<p>-- Return line items
-CREATE TABLE return_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  return_id UUID NOT NULL REFERENCES returns(id) ON DELETE CASCADE,
-  order_item_id UUID NOT NULL REFERENCES order_items(id),
-  quantity INT NOT NULL,
-  condition VARCHAR(50),  -- unopened, opened, defective</p>
-<p>INDEX idx_return_id (return_id)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Product variants (sizes, colors, etc.)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_product_variant</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                 </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_product</span><span class="w">         </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_product</span><span class="p">(</span><span class="n">pk_product</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">sku</span><span class="w">                </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">name</span><span class="w">               </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span><span class="w">                 </span><span class="c1">-- e.g. &quot;Red - Size M&quot;</span>
+<span class="w">  </span><span class="n">price_modifier</span><span class="w">     </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">     </span><span class="c1">-- +$5 for premium variant</span>
+<span class="w">  </span><span class="n">weight</span><span class="w">             </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">),</span>
+<span class="w">  </span><span class="n">dimensions</span><span class="w">         </span><span class="n">JSONB</span><span class="p">,</span><span class="w">                        </span><span class="c1">-- {&quot;width&quot;: 10, &quot;height&quot;: 20, &quot;depth&quot;: 5}</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">         </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_variant_product</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="w"> </span><span class="p">(</span><span class="n">fk_product</span><span class="p">);</span>
 
-<h3 id="payments-discounts">Payments &amp; Discounts<a class="headerlink" href="#payments-discounts" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id),
-  amount DECIMAL(12, 2) NOT NULL,
-  status VARCHAR(50) NOT NULL,  -- pending, completed, failed, refunded
-  payment_method VARCHAR(50),  -- credit_card, paypal, stripe
-  transaction_id VARCHAR(100),
-  error_message TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),</p>
-<p>INDEX idx_order_id (order_id),
-  INDEX idx_status (status)
-);</p>
-<p>CREATE TABLE discounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code VARCHAR(50) UNIQUE NOT NULL,
-  type VARCHAR(50) NOT NULL,  -- percentage, fixed_amount
-  value DECIMAL(10, 2) NOT NULL,
-  max_uses INT,
-  current_uses INT DEFAULT 0,
-  min_order_amount DECIMAL(10, 2),
-  valid_from DATE,
-  valid_until DATE,
-  is_active BOOLEAN DEFAULT TRUE,</p>
-<p>INDEX idx_code (code),
-  INDEX idx_is_active (is_active)
-);</p>
-<p>CREATE TABLE order_discounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID NOT NULL REFERENCES orders(id),
-  discount_id UUID NOT NULL REFERENCES discounts(id),
-  discount_amount DECIMAL(10, 2),</p>
-<p>UNIQUE(order_id, discount_id)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Inventory tracking (stock levels)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_inventory</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_product_variant</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="p">(</span><span class="n">pk_product_variant</span><span class="p">),</span>
+<span class="w">  </span><span class="n">fk_warehouse</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_warehouse</span><span class="p">(</span><span class="n">pk_warehouse</span><span class="p">),</span>
+<span class="w">  </span><span class="n">quantity_on_hand</span><span class="w">    </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">quantity_reserved</span><span class="w">   </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">quantity_available</span><span class="w">  </span><span class="nb">INT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="n">quantity_on_hand</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">quantity_reserved</span><span class="p">)</span><span class="w"> </span><span class="n">STORED</span><span class="p">,</span>
+<span class="w">  </span><span class="n">reorder_point</span><span class="w">       </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">reorder_quantity</span><span class="w">    </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">last_stock_check</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">  </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">fk_product_variant</span><span class="p">,</span><span class="w"> </span><span class="n">fk_warehouse</span><span class="p">)</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_inventory_warehouse</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="p">(</span><span class="n">fk_warehouse</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_inventory_available</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="p">(</span><span class="n">quantity_available</span><span class="p">);</span>
 
+<span class="c1">-- Stock movements (audit trail)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_stock_movement</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_stock_movement</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_product_variant</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="p">(</span><span class="n">pk_product_variant</span><span class="p">),</span>
+<span class="w">  </span><span class="n">fk_warehouse</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_warehouse</span><span class="p">(</span><span class="n">pk_warehouse</span><span class="p">),</span>
+<span class="w">  </span><span class="n">movement_type</span><span class="w">       </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">        </span><span class="c1">-- purchase, return, adjustment, damage</span>
+<span class="w">  </span><span class="n">quantity</span><span class="w">            </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">reference</span><span class="w">           </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span><span class="w">                 </span><span class="c1">-- order id, return id</span>
+<span class="w">  </span><span class="n">notes</span><span class="w">               </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_movement_variant</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_stock_movement</span><span class="w"> </span><span class="p">(</span><span class="n">fk_product_variant</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_movement_type</span><span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_stock_movement</span><span class="w"> </span><span class="p">(</span><span class="n">movement_type</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="orders-fulfillment-write-tables">Orders &amp; Fulfillment (write tables)<a class="headerlink" href="#orders-fulfillment-write-tables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Orders (customer purchases)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_order</span><span class="w">            </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">order_number</span><span class="w">        </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- public facing</span>
+<span class="w">  </span><span class="n">fk_customer</span><span class="w">         </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_customer</span><span class="p">(</span><span class="n">pk_customer</span><span class="p">),</span>
+<span class="w">  </span><span class="n">status</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span>
+<span class="w">                      </span><span class="c1">-- pending, confirmed, processing, shipped, delivered, cancelled</span>
+<span class="w">  </span><span class="n">subtotal</span><span class="w">            </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">tax</span><span class="w">                 </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">shipping_cost</span><span class="w">       </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">discount_amount</span><span class="w">     </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">total</span><span class="w">               </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">currency</span><span class="w">            </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- USD, EUR, etc.</span>
+<span class="w">  </span><span class="n">payment_status</span><span class="w">      </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, completed, failed, refunded</span>
+<span class="w">  </span><span class="n">fk_billing_address</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_address</span><span class="p">(</span><span class="n">pk_address</span><span class="p">),</span>
+<span class="w">  </span><span class="n">fk_shipping_address</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_address</span><span class="p">(</span><span class="n">pk_address</span><span class="p">),</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">shipped_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">  </span><span class="n">delivered_at</span><span class="w">        </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">  </span><span class="n">cancelled_at</span><span class="w">        </span><span class="n">TIMESTAMPTZ</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_customer</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">fk_customer</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_status</span><span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_payment</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">payment_status</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_created</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+
+<span class="c1">-- Order line items</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_order_item</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_order</span><span class="w">            </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">pk_order</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_product_variant</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="p">(</span><span class="n">pk_product_variant</span><span class="p">),</span>
+<span class="w">  </span><span class="n">quantity</span><span class="w">            </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">unit_price</span><span class="w">          </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">discount_amount</span><span class="w">     </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">total</span><span class="w">               </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_item_order</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">);</span>
+
+<span class="c1">-- Fulfillment operations</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_fulfillment</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_fulfillment</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_order</span><span class="w">            </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">pk_order</span><span class="p">),</span>
+<span class="w">  </span><span class="n">status</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, shipped, delivered, cancelled</span>
+<span class="w">  </span><span class="n">tracking_number</span><span class="w">     </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+<span class="w">  </span><span class="n">carrier</span><span class="w">             </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span><span class="w">                 </span><span class="c1">-- FedEx, UPS, USPS</span>
+<span class="w">  </span><span class="n">estimated_delivery</span><span class="w">  </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">actual_delivery</span><span class="w">     </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_fulfillment_order</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_fulfillment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_fulfillment_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_fulfillment</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+
+<span class="c1">-- Fulfillment line items</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_fulfillment_item</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_fulfillment_item</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_fulfillment</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_fulfillment</span><span class="p">(</span><span class="n">pk_fulfillment</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_order_item</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order_item</span><span class="p">(</span><span class="n">pk_order_item</span><span class="p">),</span>
+<span class="w">  </span><span class="n">quantity</span><span class="w">            </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_fulfillment_item_fulfillment</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_fulfillment_item</span><span class="w"> </span><span class="p">(</span><span class="n">fk_fulfillment</span><span class="p">);</span>
+
+<span class="c1">-- Returns &amp; Refunds</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_return</span><span class="w">           </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_order</span><span class="w">            </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">pk_order</span><span class="p">),</span>
+<span class="w">  </span><span class="n">status</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, approved, shipped, received, refunded</span>
+<span class="w">  </span><span class="n">reason</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+<span class="w">  </span><span class="n">refund_amount</span><span class="w">       </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">refund_status</span><span class="w">       </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, completed, failed</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">refunded_at</span><span class="w">         </span><span class="n">TIMESTAMPTZ</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_return_order</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_return</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_return_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_return</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+
+<span class="c1">-- Return line items</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_return_item</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_return_item</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                  </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_return</span><span class="w">           </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_return</span><span class="p">(</span><span class="n">pk_return</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_order_item</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order_item</span><span class="p">(</span><span class="n">pk_order_item</span><span class="p">),</span>
+<span class="w">  </span><span class="n">quantity</span><span class="w">            </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">condition</span><span class="w">           </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w">                  </span><span class="c1">-- unopened, opened, defective</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_return_item_return</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_return_item</span><span class="w"> </span><span class="p">(</span><span class="n">fk_return</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="payments-discounts-write-tables">Payments &amp; Discounts (write tables)<a class="headerlink" href="#payments-discounts-write-tables" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_payment</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_payment</span><span class="w">      </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">              </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">fk_order</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">pk_order</span><span class="p">),</span>
+<span class="w">  </span><span class="n">amount</span><span class="w">          </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">status</span><span class="w">          </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, completed, failed, refunded</span>
+<span class="w">  </span><span class="n">payment_method</span><span class="w">  </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span><span class="w">                     </span><span class="c1">-- credit_card, paypal, stripe</span>
+<span class="w">  </span><span class="n">transaction_id</span><span class="w">  </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+<span class="w">  </span><span class="n">error_message</span><span class="w">   </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_payment_order</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_payment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_payment_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_payment</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_discount</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_discount</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">                </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">code</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="k">type</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- percentage, fixed_amount</span>
+<span class="w">  </span><span class="n">value</span><span class="w">             </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">max_uses</span><span class="w">          </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">current_uses</span><span class="w">      </span><span class="nb">INT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">min_order_amount</span><span class="w">  </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">valid_from</span><span class="w">        </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">valid_until</span><span class="w">       </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">is_active</span><span class="w">         </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">TRUE</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_discount_code</span><span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_discount</span><span class="w"> </span><span class="p">(</span><span class="n">code</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_discount_active</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_discount</span><span class="w"> </span><span class="p">(</span><span class="n">is_active</span><span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order_discount</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_order_discount</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_order</span><span class="w">          </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">pk_order</span><span class="p">),</span>
+<span class="w">  </span><span class="n">fk_discount</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_discount</span><span class="p">(</span><span class="n">pk_discount</span><span class="p">),</span>
+<span class="w">  </span><span class="n">discount_amount</span><span class="w">   </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="k">UNIQUE</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">,</span><span class="w"> </span><span class="n">fk_discount</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+<h3 id="the-transactional-outbox-cross-system-steps">The transactional outbox (cross-system steps)<a class="headerlink" href="#the-transactional-outbox-cross-system-steps" title="Permanent link">&para;</a></h3>
+<p>Cross-system side effects are recorded here in the same transaction as the
+business write, then drained by your worker.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_outbox</span><span class="w">     </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w">            </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">topic</span><span class="w">         </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">             </span><span class="c1">-- charge_payment, send_email, notify_carrier</span>
+<span class="w">  </span><span class="n">payload</span><span class="w">       </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">status</span><span class="w">        </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- pending, processing, done, failed</span>
+<span class="w">  </span><span class="n">attempts</span><span class="w">      </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">available_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span><span class="w">  </span><span class="c1">-- for retry backoff</span>
+<span class="w">  </span><span class="n">created_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">processed_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_outbox_pending</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">available_at</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
-<h2 id="fraiseql-schema">FraiseQL Schema<a class="headerlink" href="#fraiseql-schema" title="Permanent link">&para;</a></h2>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="ecommerce_schemapy">ecommerce_schema.py<a class="headerlink" href="#ecommerce_schemapy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL import types, authorize
-from decimal import Decimal
-from datetime import datetime, date</p>
-<p>@types.object
-class Product:
-    id: UUID  # UUID v4 for GraphQL ID
-    sku: str
-    name: str
-    price: Decimal
-    category: 'Category'
-    variants: list['ProductVariant']
-    inventory: list['Inventory']
-    reviews: list['Review']
-    rating: Decimal  # Average rating
-    in_stock: bool</p>
-<p>@types.object
-class ProductVariant:
-    id: UUID  # UUID v4 for GraphQL ID
-    product: Product
-    name: str
-    price: Decimal
-    sku: str
-    weight: Decimal | None
-    available_quantity: int</p>
-<p>@types.object
-class Order:
-    id: UUID  # UUID v4 for GraphQL ID
-    order_number: str
-    customer: 'Customer'
-    status: str
-    items: list['OrderItem']
-    subtotal: Decimal
-    tax: Decimal
-    shipping_cost: Decimal
-    total: Decimal
-    payment_status: str
-    fulfillments: list['Fulfillment']
-    returns: list['Return']
-    created_at: datetime
-    shipped_at: datetime | None</p>
-<p>@types.object
-class OrderItem:
-    id: UUID  # UUID v4 for GraphQL ID
-    variant: ProductVariant
-    quantity: int
-    unit_price: Decimal
-    total: Decimal</p>
-<p>@types.object
-class Fulfillment:
-    id: UUID  # UUID v4 for GraphQL ID
-    order: Order
-    status: str
-    tracking_number: str | None
-    carrier: str | None
-    items: list['FulfillmentItem']
-    estimated_delivery: date | None</p>
-<p>@types.object
-class Return:
-    id: UUID  # UUID v4 for GraphQL ID
-    order: Order
-    status: str
-    items: list['ReturnItem']
-    refund_amount: Decimal
-    refund_status: str
-    reason: str</p>
-<p>@types.object
-class Query:
-    def product(self, id: str) -&gt; Product:
-        """Get product details"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>def search_products(
-    self,
-    query: str,
-    category: str | None = None,
-    min_price: Decimal | None = None,
-    max_price: Decimal | None = None,
-    limit: int = 50
-) -&gt; list[Product]:
-    &quot;&quot;&quot;Search products&quot;&quot;&quot;
-    pass
+<h2 id="read-views">Read views<a class="headerlink" href="#read-views" title="Permanent link">&para;</a></h2>
+<p>GraphQL reads come from <code>v_*</code> views (or <code>tv_*</code> projection tables for heavy
+nested reads). Each view exposes the public <code>id</code> (UUID) and a <code>data</code> JSONB
+column built with <code>jsonb_build_object(...)</code>. Internal <code>pk_*</code> / <code>fk_*</code> columns
+never appear in <code>data</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Product read view: id + data JSONB shaped for GraphQL</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_product</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                            </span><span class="c1">-- public id for WHERE id = $1</span>
+<span class="w">  </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;sku&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">p</span><span class="p">.</span><span class="n">sku</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;description&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">description</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;price&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">price</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">p</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;inStock&#39;</span><span class="p">,</span><span class="w">      </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">inv</span><span class="p">.</span><span class="n">quantity_available</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">),</span>
+<span class="w">    </span><span class="s1">&#39;rating&#39;</span><span class="p">,</span><span class="w">       </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rating</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
+<span class="w">    </span><span class="s1">&#39;variants&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">                </span><span class="n">pv</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">              </span><span class="n">pv</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;sku&#39;</span><span class="p">,</span><span class="w">               </span><span class="n">pv</span><span class="p">.</span><span class="n">sku</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;price&#39;</span><span class="p">,</span><span class="w">             </span><span class="n">p</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">pv</span><span class="p">.</span><span class="n">price_modifier</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;weight&#39;</span><span class="p">,</span><span class="w">            </span><span class="n">pv</span><span class="p">.</span><span class="n">weight</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;availableQuantity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">vinv</span><span class="p">.</span><span class="n">quantity_available</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">      </span><span class="p">))</span>
+<span class="w">      </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="w"> </span><span class="n">pv</span>
+<span class="w">      </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="n">vinv</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">vinv</span><span class="p">.</span><span class="n">fk_product_variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pv</span><span class="p">.</span><span class="n">pk_product_variant</span>
+<span class="w">      </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pv</span><span class="p">.</span><span class="n">fk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="n">p</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="w"> </span><span class="n">pv2</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">pv2</span><span class="p">.</span><span class="n">fk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="n">inv</span><span class="w">       </span><span class="k">ON</span><span class="w"> </span><span class="n">inv</span><span class="p">.</span><span class="n">fk_product_variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pv2</span><span class="p">.</span><span class="n">pk_product_variant</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_review</span><span class="w"> </span><span class="n">r</span><span class="w">            </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
 
-@authorize(roles=[&#39;customer&#39;, &#39;admin&#39;])
-def my_orders(self, limit: int = 20) -&gt; list[Order]:
-    &quot;&quot;&quot;Current user&#39;s orders&quot;&quot;&quot;
-    pass
-
-@authorize(roles=[&#39;admin&#39;])
-def orders(
-    self,
-    status: str | None = None,
-    limit: int = 50
-) -&gt; list[Order]:
-    &quot;&quot;&quot;List orders (admin)&quot;&quot;&quot;
-    pass
-
-@authorize(roles=[&#39;admin&#39;])
-def inventory_status(self) -&gt; dict:
-    &quot;&quot;&quot;Low stock alerts&quot;&quot;&quot;
-    pass
+<span class="c1">-- Order read view</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">fk_customer</span><span class="p">,</span><span class="w">                                   </span><span class="c1">-- kept for filtering / RLS, not in data</span>
+<span class="w">  </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">             </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;orderNumber&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">order_number</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;subtotal&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">o</span><span class="p">.</span><span class="n">subtotal</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;tax&#39;</span><span class="p">,</span><span class="w">            </span><span class="n">o</span><span class="p">.</span><span class="n">tax</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;shippingCost&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">o</span><span class="p">.</span><span class="n">shipping_cost</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;currency&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">o</span><span class="p">.</span><span class="n">currency</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;paymentStatus&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">payment_status</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">      </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;shippedAt&#39;</span><span class="p">,</span><span class="w">      </span><span class="n">o</span><span class="p">.</span><span class="n">shipped_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;items&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">oi</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">oi</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;unitPrice&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">unit_price</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">oi</span><span class="p">.</span><span class="n">total</span>
+<span class="w">      </span><span class="p">))</span>
+<span class="w">      </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="n">oi</span>
+<span class="w">      </span><span class="k">WHERE</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">fk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_order</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 </code></pre></div>
-<p>@types.object
-class Mutation:
-    def add_to_cart(self, variant_id: str, quantity: int) -&gt; 'CartItem':
-        """Add product to cart"""
-        pass</p>
-<div class="highlight"><pre><span></span><code>@authorize(roles=[&#39;customer&#39;])
-def create_order(
-    self,
-    cart_items: list[dict],
-    shipping_address_id: str,
-    discount_code: str | None = None
-) -&gt; Order:
-    &quot;&quot;&quot;Create order from cart&quot;&quot;&quot;
-    pass
+<p>For order detail pages that fan out into items, fulfillments, and returns, a
+<code>tv_order</code> projection table (a real table holding pre-composed JSONB, refreshed
+by your <code>fn_*</code> functions or triggers) keeps heavy nested reads fast.</p>
+<hr />
+<h2 id="fraiseql-types-queries-and-mutations">FraiseQL types, queries, and mutations<a class="headerlink" href="#fraiseql-types-queries-and-mutations" title="Permanent link">&para;</a></h2>
+<p>Define GraphQL types over the read views, queries over the views, and mutations
+over the <code>fn_*</code> functions. Mutations return a <code>success | error</code> union.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ecommerce_schema.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
 
-@authorize(roles=[&#39;customer&#39;])
-def cancel_order(self, order_id: str) -&gt; Order:
-    &quot;&quot;&quot;Cancel pending order&quot;&quot;&quot;
-    pass
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-@authorize(roles=[&#39;customer&#39;])
-def return_items(
-    self,
-    order_id: str,
-    items: list[dict]
-) -&gt; Return:
-    &quot;&quot;&quot;Initiate return&quot;&quot;&quot;
-    pass
+<span class="kn">from</span><span class="w"> </span><span class="nn">.authz</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_authorizer</span><span class="p">,</span> <span class="n">admin_authorizer</span>
 
-@authorize(roles=[&#39;admin&#39;])
-def create_fulfillment(
-    self,
-    order_id: str,
-    items: list[dict],
-    carrier: str,
-    tracking_number: str
-) -&gt; Fulfillment:
-    &quot;&quot;&quot;Create shipment&quot;&quot;&quot;
-    pass
 
-@authorize(roles=[&#39;admin&#39;])
-def process_payment(self, order_id: str) -&gt; &#39;Payment&#39;:
-    &quot;&quot;&quot;Process order payment&quot;&quot;&quot;
-    pass
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">rating</span><span class="p">:</span> <span class="n">Decimal</span>           <span class="c1"># average rating, computed in the view</span>
+    <span class="n">in_stock</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">variants</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;ProductVariant&quot;</span><span class="p">]</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product_variant&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProductVariant</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">available_quantity</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">order_number</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;OrderItem&quot;</span><span class="p">]</span>
+    <span class="n">subtotal</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">tax</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">shipping_cost</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">payment_status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">shipped_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order_item&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderItem</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">unit_price</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_fulfillment&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Fulfillment</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">tracking_number</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">carrier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">estimated_delivery</span><span class="p">:</span> <span class="n">date</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_return&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Return</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">refund_amount</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">refund_status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="inputs-and-result-unions">Inputs and result unions<a class="headerlink" href="#inputs-and-result-unions" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderLineInput</span><span class="p">:</span>
+    <span class="n">variant_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateOrderInput</span><span class="p">:</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderLineInput</span><span class="p">]</span>
+    <span class="n">shipping_address_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">discount_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateOrderSuccess</span><span class="p">:</span>
+    <span class="n">order</span><span class="p">:</span> <span class="n">Order</span>              <span class="c1"># @success auto-injects status/message/id</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateOrderError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ORDER_FAILED&quot;</span>
+</code></pre></div>
+<h3 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">&para;</a></h3>
+<p>Authorization is applied per operation with an <code>Authorizer</code> passed to the
+decorator — there is no <code>@authorize</code> decorator in v1. Row scoping (a customer
+sees only their own orders) is enforced by PostgreSQL Row-Level Security on the
+underlying tables, driven by the session GUCs FraiseQL sets from
+<code>info.context</code>. See <a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> for the RLS
+pattern.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_products</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_price</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_price</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">search</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">customer_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Current user&#39;s orders (scoped to the caller by RLS).&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">admin_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}</span> <span class="k">if</span> <span class="n">status</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h3>
+<p>Each mutation calls one <code>fn_*</code> function. The function runs in a transaction:
+it validates input, performs the write, reserves inventory, updates the
+<code>status</code> column, and (for cross-system steps) inserts outbox rows — all
+atomically. It returns a JSONB object with a <code>success</code> flag.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">customer_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;variant_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">variant_id</span><span class="p">),</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="n">l</span><span class="o">.</span><span class="n">quantity</span><span class="p">}</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">],</span>
+            <span class="s2">&quot;shipping_address_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">shipping_address_id</span><span class="p">),</span>
+            <span class="s2">&quot;discount_code&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">discount_code</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Order creation failed&quot;</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;ORDER_FAILED&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">customer_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cancel_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_cancel_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">order_id</span><span class="p">)})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Cancellation failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/shop&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Product</span><span class="p">,</span> <span class="n">ProductVariant</span><span class="p">,</span> <span class="n">Order</span><span class="p">,</span> <span class="n">OrderItem</span><span class="p">,</span> <span class="n">Fulfillment</span><span class="p">,</span> <span class="n">Return</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">product</span><span class="p">,</span> <span class="n">search_products</span><span class="p">,</span> <span class="n">my_orders</span><span class="p">,</span> <span class="n">orders</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_order</span><span class="p">,</span> <span class="n">cancel_order</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>   <span class="c1"># False enables the GraphQL playground</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it with <code>uvicorn ecommerce_schema:app</code>.</p>
 <hr />
 <h2 id="order-lifecycle">Order Lifecycle<a class="headerlink" href="#order-lifecycle" title="Permanent link">&para;</a></h2>
 <h3 id="state-machine">State Machine<a class="headerlink" href="#state-machine" title="Permanent link">&para;</a></h3>
-<p><strong>Diagram:</strong> System architecture visualization</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>Pending: "pending\n(awaiting payment)" {
-  shape: box
-  style.fill: "#fff9c4"
-}</p>
-<p>Confirmed: "confirmed\n(payment received)" {
-  shape: box
-  style.fill: "#fff3e0"
-}</p>
-<p>Processing: "processing\n(preparing shipment)" {
-  shape: box
-  style.fill: "#ffe0b2"
-}</p>
-<p>Shipped: "shipped\n(in transit)" {
-  shape: box
-  style.fill: "#ffccbc"
-}</p>
-<p>Delivered: "delivered\n(final destination)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}</p>
-<p>Cancelled: "cancelled\n(at any point)" {
-  shape: box
-  style.fill: "#ffebee"
-}</p>
-<p>Pending -&gt; Confirmed
-Confirmed -&gt; Processing
-Processing -&gt; Shipped
-Shipped -&gt; Delivered
-Pending -&gt; Cancelled
-Confirmed -&gt; Cancelled
-Processing -&gt; Cancelled
-Shipped -&gt; Cancelled
-```text</p>
-<!-- Code example in TEXT -->
+<p>The order <code>status</code> column is the state machine. Transitions happen only inside
+<code>fn_*</code> functions, and a trigger rejects illegal jumps.</p>
+<div class="highlight"><pre><span></span><code>pending  ──► confirmed ──► processing ──► shipped ──► delivered
+   │            │              │             │
+   └────────────┴──────────────┴─────────────┘
+                      ▼
+                  cancelled
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>From</th>
+<th>Allowed next states</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pending</code></td>
+<td><code>confirmed</code>, <code>cancelled</code></td>
+</tr>
+<tr>
+<td><code>confirmed</code></td>
+<td><code>processing</code>, <code>cancelled</code></td>
+</tr>
+<tr>
+<td><code>processing</code></td>
+<td><code>shipped</code>, <code>cancelled</code></td>
+</tr>
+<tr>
+<td><code>shipped</code></td>
+<td><code>delivered</code>, <code>cancelled</code></td>
+</tr>
+<tr>
+<td><code>delivered</code></td>
+<td><em>(terminal)</em></td>
+</tr>
+<tr>
+<td><code>cancelled</code></td>
+<td><em>(terminal)</em></td>
+</tr>
+</tbody>
+</table>
+<h3 id="state-transition-guard">State transition guard<a class="headerlink" href="#state-transition-guard" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_validate_order_transition</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">  </span><span class="k">CASE</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;confirmed&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Invalid transition from pending to %&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;confirmed&#39;</span><span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;processing&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Invalid transition from confirmed to %&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;processing&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;shipped&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Invalid transition from processing to %&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;shipped&#39;</span><span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;delivered&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Invalid transition from shipped to %&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;delivered&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Cannot change a delivered or cancelled order&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">ELSE</span>
+<span class="w">      </span><span class="k">NULL</span><span class="p">;</span><span class="w">  </span><span class="c1">-- transition allowed</span>
+<span class="w">  </span><span class="k">END</span><span class="w"> </span><span class="k">CASE</span><span class="p">;</span>
+<span class="w">  </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
-<h3 id="state-transitions">State Transitions<a class="headerlink" href="#state-transitions" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Trigger to enforce state transitions
-CREATE OR REPLACE FUNCTION validate_order_transition()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Valid transitions
-  CASE
-    WHEN OLD.status = 'pending' AND NEW.status NOT IN ('confirmed', 'cancelled') THEN
-      RAISE EXCEPTION 'Invalid transition from pending';
-    WHEN OLD.status = 'confirmed' AND NEW.status NOT IN ('processing', 'cancelled') THEN
-      RAISE EXCEPTION 'Invalid transition from confirmed';
-    WHEN OLD.status = 'shipped' AND NEW.status NOT IN ('delivered', 'cancelled') THEN
-      RAISE EXCEPTION 'Invalid transition from shipped';
-    WHEN OLD.status IN ('delivered', 'cancelled') THEN
-      RAISE EXCEPTION 'Cannot change delivered or cancelled orders';
-  END CASE;</p>
-<p>RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER order_status_validation
-BEFORE UPDATE ON orders
-FOR EACH ROW
-WHEN (OLD.status IS DISTINCT FROM NEW.status)
-EXECUTE FUNCTION validate_order_transition();
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">order_status_validation</span>
+<span class="k">BEFORE</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="k">WHEN</span><span class="w"> </span><span class="p">(</span><span class="k">OLD</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">status</span><span class="p">)</span>
+<span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_validate_order_transition</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="the-fn_create_order-mutation-function">The <code>fn_create_order</code> mutation function<a class="headerlink" href="#the-fn_create_order-mutation-function" title="Permanent link">&para;</a></h3>
+<p>This is the transactional unit behind the <code>create_order</code> mutation: it creates
+the order, reserves inventory, sets the initial status, and enqueues the
+payment side effect — all in one transaction.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">  </span><span class="n">v_order_pk</span><span class="w">    </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="w">  </span><span class="n">v_order_id</span><span class="w">    </span><span class="n">UUID</span><span class="p">;</span>
+<span class="w">  </span><span class="n">v_line</span><span class="w">        </span><span class="n">JSONB</span><span class="p">;</span>
+<span class="w">  </span><span class="n">v_variant_pk</span><span class="w">  </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="w">  </span><span class="n">v_total</span><span class="w">       </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">  </span><span class="c1">-- 1. Create the order shell (status defaults to &#39;pending&#39;)</span>
+<span class="w">  </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">order_number</span><span class="p">,</span><span class="w"> </span><span class="n">fk_customer</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">,</span><span class="w"> </span><span class="n">currency</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">fk_billing_address</span><span class="p">,</span><span class="w"> </span><span class="n">fk_shipping_address</span><span class="p">)</span>
+<span class="w">  </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;ORD-&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">to_char</span><span class="p">(</span><span class="n">now</span><span class="p">(),</span><span class="w"> </span><span class="s1">&#39;YYYYMMDD&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">nextval</span><span class="p">(</span><span class="s1">&#39;order_number_seq&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.customer_pk&#39;</span><span class="p">)::</span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;USD&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;shipping_address_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">::</span><span class="nb">TEXT</span><span class="p">::</span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">  </span><span class="c1">-- resolve via lookup in practice</span>
+<span class="w">    </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;shipping_address_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">::</span><span class="nb">TEXT</span><span class="p">::</span><span class="nb">BIGINT</span>
+<span class="w">  </span><span class="p">)</span>
+<span class="w">  </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">pk_order</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">;</span>
 
+<span class="w">  </span><span class="c1">-- 2. Add line items and reserve inventory atomically</span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="n">v_line</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">&#39;lines&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="n">LOOP</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_product_variant</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_variant_pk</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_product_variant</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;variant_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_inventory</span>
+<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">quantity_reserved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantity_reserved</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">INT</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_product_variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_variant_pk</span>
+<span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="n">quantity_available</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="p">(</span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">INT</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">      </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;INSUFFICIENT_STOCK:%&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;variant_id&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">,</span><span class="w"> </span><span class="n">fk_product_variant</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">,</span><span class="w"> </span><span class="n">unit_price</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">,</span><span class="w"> </span><span class="n">v_variant_pk</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">INT</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">price</span><span class="p">,</span>
+<span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">v_line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">INT</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_product_variant</span><span class="w"> </span><span class="n">pv</span>
+<span class="w">    </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pv</span><span class="p">.</span><span class="n">fk_product</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pv</span><span class="p">.</span><span class="n">pk_product_variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_variant_pk</span><span class="p">;</span>
+<span class="w">  </span><span class="k">END</span><span class="w"> </span><span class="n">LOOP</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">-- 3. Recompute total</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">total</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_total</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">;</span>
+<span class="w">  </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_total</span><span class="p">,</span><span class="w"> </span><span class="n">subtotal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_total</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">-- 4. Enqueue the cross-system payment step in the SAME transaction</span>
+<span class="w">  </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">topic</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
+<span class="w">  </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;charge_payment&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;amount&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_total</span><span class="p">));</span>
+
+<span class="w">  </span><span class="c1">-- Everything above commits together, or nothing does.</span>
+<span class="w">  </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;order&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_total</span><span class="p">)</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="k">EXCEPTION</span>
+<span class="w">  </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">      </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
+<span class="w">      </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">split_part</span><span class="p">(</span><span class="n">SQLERRM</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="inventory-management">Inventory Management<a class="headerlink" href="#inventory-management" title="Permanent link">&para;</a></h2>
-<h3 id="reserve-on-order-creation">Reserve on Order Creation<a class="headerlink" href="#reserve-on-order-creation" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION reserve_inventory()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Check available inventory
-  UPDATE inventory
-  SET quantity_reserved = quantity_reserved + NEW.quantity
-  WHERE variant_id = NEW.variant_id
-    AND quantity_available &gt;= NEW.quantity;</p>
-<p>IF NOT FOUND THEN
-    RAISE EXCEPTION 'Insufficient inventory for variant %', NEW.variant_id;
-  END IF;</p>
-<p>RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER order_item_reserve
-BEFORE INSERT ON order_items
-FOR EACH ROW
-EXECUTE FUNCTION reserve_inventory();
-```text</p>
-<!-- Code example in TEXT -->
+<p>Inventory is reserved inside <code>fn_create_order</code> (above) and released inside the
+cancellation function. Keeping the reserve/release in the same transaction as
+the status change is what prevents overselling — there is no separate
+coordinator to keep in sync.</p>
+<h3 id="release-inventory-on-cancellation">Release inventory on cancellation<a class="headerlink" href="#release-inventory-on-cancellation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_cancel_order</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">  </span><span class="n">v_order_pk</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">;</span>
+<span class="w">  </span><span class="n">v_order_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;order_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_order_pk</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">;</span>
+<span class="w">  </span><span class="k">IF</span><span class="w"> </span><span class="n">v_order_pk</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Order not found&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<h3 id="release-on-cancellation">Release on Cancellation<a class="headerlink" href="#release-on-cancellation" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION release_inventory()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE inventory
-  SET quantity_reserved = quantity_reserved - oi.quantity
-  FROM order_items oi
-  WHERE inventory.variant_id = oi.variant_id
-    AND oi.order_id = NEW.id;</p>
-<p>RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER order_cancel_release
-BEFORE UPDATE ON orders
-FOR EACH ROW
-WHEN (OLD.status != 'cancelled' AND NEW.status = 'cancelled')
-EXECUTE FUNCTION release_inventory();
-```text</p>
-<!-- Code example in TEXT -->
+<span class="w">  </span><span class="c1">-- Release reserved stock for every line on the order</span>
+<span class="w">  </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="n">inv</span>
+<span class="w">  </span><span class="k">SET</span><span class="w"> </span><span class="n">quantity_reserved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantity_reserved</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">quantity</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="n">oi</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">inv</span><span class="p">.</span><span class="n">fk_product_variant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">fk_product_variant</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">fk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">;</span>
 
-<hr />
-<h2 id="payment-processing">Payment Processing<a class="headerlink" href="#payment-processing" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const PROCESS_PAYMENT = gql<code>mutation ProcessPayment($orderId: ID!, $paymentMethod: String!) {
-    processPayment(orderId: $orderId, paymentMethod: $paymentMethod) {
-      id
-      status
-      order {
-        id
-        payment_status
-      }
-    }
-  }</code>;</p>
-<p>export async function processOrderPayment(
-  orderId: string,
-  token: string
-) {
-  try {
-    // Charge customer via Stripe/PayPal
-    const charge = await stripe.charges.create({
-      amount: order.total * 100, // Convert to cents
-      currency: order.currency.toLowerCase(),
-      source: token,
-      metadata: { orderId },
-    });</p>
-<div class="highlight"><pre><span></span><code>// Record payment in database
-const result = await client.mutation(PROCESS_PAYMENT, {
-  variables: {
-    orderId,
-    paymentMethod: &#39;stripe&#39;,
-  },
-});
+<span class="w">  </span><span class="c1">-- Flip status (the BEFORE UPDATE trigger validates the transition)</span>
+<span class="w">  </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="w">  </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cancelled_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_pk</span><span class="p">;</span>
 
-// Update order status
-if (result.data.processPayment.status === &#39;completed&#39;) {
-  await client.mutation(UPDATE_ORDER_STATUS, {
-    variables: {
-      orderId,
-      status: &#39;confirmed&#39;,
-    },
-  });
-}
+<span class="w">  </span><span class="c1">-- Cross-system step: notify the customer</span>
+<span class="w">  </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">topic</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
+<span class="w">  </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;send_email&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;template&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;order_cancelled&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
 
-return result;
+<span class="w">  </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;order&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="k">EXCEPTION</span>
+<span class="w">  </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>} catch (error) {
-    // Handle payment failure
-    console.error('Payment failed:', error);
-    throw error;
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<hr />
+<h2 id="cross-system-steps-the-outbox-worker">Cross-system steps: the outbox worker<a class="headerlink" href="#cross-system-steps-the-outbox-worker" title="Permanent link">&para;</a></h2>
+<p>The mutation transaction only ever touches PostgreSQL. External effects
+(charging a card via Stripe, sending email, notifying a carrier) are recorded
+in <code>tb_outbox</code> and performed <em>afterward</em> by a worker you run alongside the
+FastAPI app. This is the v1 substitute for a saga/webhook engine: there is no
+built-in orchestration, but the outbox gives you the same reliability
+guarantees with plain SQL.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># worker.py — run as a separate process: python -m worker</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">payments</span>  <span class="c1"># your Stripe/PayPal client</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mailer</span>    <span class="c1"># your email client</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">drain_outbox</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># Claim one pending row with FOR UPDATE SKIP LOCKED so multiple</span>
+    <span class="c1"># workers never grab the same job.</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="p">(</span><span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            SELECT pk_outbox, topic, payload</span>
+<span class="sd">            FROM tb_outbox</span>
+<span class="sd">            WHERE status = &#39;pending&#39; AND available_at &lt;= now()</span>
+<span class="sd">            ORDER BY available_at</span>
+<span class="sd">            FOR UPDATE SKIP LOCKED</span>
+<span class="sd">            LIMIT 1</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="p">))</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">pk</span><span class="p">,</span> <span class="n">topic</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="n">row</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">topic</span> <span class="o">==</span> <span class="s2">&quot;charge_payment&quot;</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">payments</span><span class="o">.</span><span class="n">charge</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">])</span>
+                <span class="c1"># Confirm the order via its own fn_ function (its own transaction)</span>
+                <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                    <span class="s2">&quot;SELECT fn_mark_order_paid(</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),)</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">topic</span> <span class="o">==</span> <span class="s2">&quot;send_email&quot;</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">mailer</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">topic</span> <span class="o">==</span> <span class="s2">&quot;notify_carrier&quot;</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">payments</span><span class="o">.</span><span class="n">notify_carrier</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>  <span class="c1"># illustrative</span>
+
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">&quot;UPDATE tb_outbox SET status = &#39;done&#39;, processed_at = now() WHERE pk_outbox = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">pk</span><span class="p">,),</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># retry with backoff</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                UPDATE tb_outbox</span>
+<span class="sd">                SET attempts = attempts + 1,</span>
+<span class="sd">                    available_at = now() + (attempts + 1) * interval &#39;30 seconds&#39;,</span>
+<span class="sd">                    status = CASE WHEN attempts + 1 &gt;= 5 THEN &#39;failed&#39; ELSE &#39;pending&#39; END,</span>
+<span class="sd">                    error_message = %s</span>
+<span class="sd">                WHERE pk_outbox = %s</span>
+<span class="sd">                &quot;&quot;&quot;</span><span class="p">,</span>
+                <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="n">pk</span><span class="p">),</span>
+            <span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/shop&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">drain_outbox</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+<p>Key properties:</p>
+<ul>
+<li><strong>Atomicity</strong> — the outbox row and the order write share one transaction, so
+  you never charge a card for an order that rolled back.</li>
+<li><strong>At-least-once delivery</strong> — the worker retries with backoff; downstream
+  effects (payment confirmation via <code>fn_mark_order_paid</code>) are idempotent.</li>
+<li><strong>Back-pressure &amp; ordering</strong> — <code>FOR UPDATE SKIP LOCKED</code> lets you scale to
+  several workers without double-processing.</li>
+</ul>
 <hr />
 <h2 id="reporting-analytics">Reporting &amp; Analytics<a class="headerlink" href="#reporting-analytics" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const ORDER_METRICS = gql<code>query OrderMetrics($startDate: Date!, $endDate: Date!) {
-    orderMetrics(startDate: $startDate, endDate: $endDate) {
-      total_revenue
-      order_count
-      average_order_value
-      conversion_rate
-      top_products {
-        id
-        name
-        revenue
-        quantity_sold
-      }
-    }
-  }</code>;</p>
-<p>export function RevenueReport() {
-  const [dateRange, setDateRange] = useState({
-    start: subDays(new Date(), 30),
-    end: new Date(),
-  });</p>
-<p>const { data } = useQuery(ORDER_METRICS, {
-    variables: {
-      startDate: format(dateRange.start, 'yyyy-MM-dd'),
-      endDate: format(dateRange.end, 'yyyy-MM-dd'),
-    },
-  });</p>
-<p>return (
-    <div className="report">
-      <h1>Revenue Report</h1>
-      <KPI label="Revenue" value={formatCurrency(data?.orderMetrics?.total_revenue)} />
-      <KPI label="Orders" value={data?.orderMetrics?.order_count} />
-      <KPI label="AOV" value={formatCurrency(data?.orderMetrics?.average_order_value)} />
-      <TopProducts products={data?.orderMetrics?.top_products} />
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p>Sales reporting is plain PostgreSQL aggregation inside a view, served as a
+GraphQL type. FraiseQL v1 supports runtime auto-aggregation (COUNT, SUM, AVG,
+MIN, MAX, STDDEV, VARIANCE) over view-backed types, and you can also pre-shape
+metrics directly in the view with <code>DATE_TRUNC</code> time bucketing.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order_metrics</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">    </span><span class="c1">-- bucket key, used as the view id</span>
+<span class="w">  </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w">               </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;totalRevenue&#39;</span><span class="p">,</span><span class="w">      </span><span class="k">SUM</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">payment_status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="s1">&#39;orderCount&#39;</span><span class="p">,</span><span class="w">        </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>
+<span class="w">    </span><span class="s1">&#39;averageOrderValue&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">),</span>
+<span class="w">    </span><span class="s1">&#39;cancelledCount&#39;</span><span class="p">,</span><span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">);</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order_metrics&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderMetrics</span><span class="p">:</span>
+    <span class="n">day</span><span class="p">:</span> <span class="n">date</span>
+    <span class="n">total_revenue</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">order_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">average_order_value</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">cancelled_count</span><span class="p">:</span> <span class="nb">int</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">admin_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">order_metrics</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderMetrics</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order_metrics&quot;</span><span class="p">,</span> <span class="n">day__gte</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">day__lte</span><span class="o">=</span><span class="n">end_date</span><span class="p">)</span>
+</code></pre></div>
+<p>A client query:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">OrderMetrics</span><span class="p">(</span><span class="nv">$start</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!,</span><span class="w"> </span><span class="nv">$end</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">orderMetrics</span><span class="p">(</span><span class="n">startDate</span><span class="p">:</span><span class="w"> </span><span class="nv">$start</span><span class="p">,</span><span class="w"> </span><span class="n">endDate</span><span class="p">:</span><span class="w"> </span><span class="nv">$end</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">day</span>
+<span class="w">    </span><span class="n">totalRevenue</span>
+<span class="w">    </span><span class="n">orderCount</span>
+<span class="w">    </span><span class="n">averageOrderValue</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>For dedicated reporting workloads, materialize the metrics into a <code>tv_*</code>
+projection table refreshed on a schedule instead of computing the aggregate on
+every request.</p>
 <hr />
 <h2 id="testing-order-workflows">Testing Order Workflows<a class="headerlink" href="#testing-order-workflows" title="Permanent link">&para;</a></h2>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>describe('Order Management', () =&gt; {
-  it('should create order and reserve inventory', async () =&gt; {
-    const variant = await createVariant();
-    const initialStock = 100;
-    await setInventory(variant.id, initialStock);</p>
-<div class="highlight"><pre><span></span><code>const order = await createOrder([
-  { variantId: variant.id, quantity: 10 }
-]);
+<p>Because all the workflow logic lives in <code>fn_*</code> functions, the highest-value
+tests are integration tests that run the mutation against a real PostgreSQL
+database and assert on the resulting state. FraiseQL v1 uses
+<code>pytest</code> + <code>pytest-asyncio</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
 
-const inventory = await getInventory(variant.id);
-expect(inventory.quantityReserved).toBe(10);
-expect(inventory.quantityAvailable).toBe(90);
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_create_order_reserves_inventory</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">seed_variant</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creating an order reserves stock atomically.&quot;&quot;&quot;</span>
+    <span class="n">variant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">seed_variant</span><span class="p">(</span><span class="n">quantity_on_hand</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;variant_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">variant_id</span><span class="p">),</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">}],</span>
+         <span class="s2">&quot;shipping_address_id&quot;</span><span class="p">:</span> <span class="s2">&quot;addr-uuid&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>
+    <span class="n">inv</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_inventory&quot;</span><span class="p">,</span> <span class="n">variant_id</span><span class="o">=</span><span class="n">variant_id</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;quantity_reserved&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">10</span>
+    <span class="k">assert</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;quantity_available&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">90</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_create_order_prevents_overselling</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">seed_variant</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ordering more than is available fails and reserves nothing.&quot;&quot;&quot;</span>
+    <span class="n">variant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">seed_variant</span><span class="p">(</span><span class="n">quantity_on_hand</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;variant_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">variant_id</span><span class="p">),</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">}],</span>
+         <span class="s2">&quot;shipping_address_id&quot;</span><span class="p">:</span> <span class="s2">&quot;addr-uuid&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span>
+    <span class="k">assert</span> <span class="s2">&quot;INSUFFICIENT_STOCK&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span>
+    <span class="n">inv</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_inventory&quot;</span><span class="p">,</span> <span class="n">variant_id</span><span class="o">=</span><span class="n">variant_id</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">inv</span><span class="p">[</span><span class="s2">&quot;quantity_reserved&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>   <span class="c1"># transaction rolled back</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_cancel_order_releases_inventory</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">seeded_order</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cancelling an order releases its reserved stock.&quot;&quot;&quot;</span>
+    <span class="n">order_id</span><span class="p">,</span> <span class="n">variant_id</span> <span class="o">=</span> <span class="n">seeded_order</span>
+    <span class="n">before</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_inventory&quot;</span><span class="p">,</span> <span class="n">variant_id</span><span class="o">=</span><span class="n">variant_id</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_cancel_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">order_id</span><span class="p">)})</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>
+    <span class="n">after</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_inventory&quot;</span><span class="p">,</span> <span class="n">variant_id</span><span class="o">=</span><span class="n">variant_id</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">after</span><span class="p">[</span><span class="s2">&quot;quantity_reserved&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">before</span><span class="p">[</span><span class="s2">&quot;quantity_reserved&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">10</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_outbox_row_enqueued_on_order</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">seed_variant</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The payment side effect is recorded in the outbox, not executed inline.&quot;&quot;&quot;</span>
+    <span class="n">variant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">seed_variant</span><span class="p">(</span><span class="n">quantity_on_hand</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;variant_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">variant_id</span><span class="p">),</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}],</span>
+         <span class="s2">&quot;shipping_address_id&quot;</span><span class="p">:</span> <span class="s2">&quot;addr-uuid&quot;</span><span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_outbox&quot;</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;charge_payment&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;payload&quot;</span><span class="p">][</span><span class="s2">&quot;order_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span>
 </code></pre></div>
-<p>});</p>
-<p>it('should prevent overselling', async () =&gt; {
-    const variant = await createVariant();
-    await setInventory(variant.id, 5);</p>
-<div class="highlight"><pre><span></span><code>const createOrder = async () =&gt; {
-  return await createOrder([
-    { variantId: variant.id, quantity: 10 }
-  ]);
-};
-
-expect(createOrder()).rejects.toThrow(&#39;Insufficient inventory&#39;);
-</code></pre></div>
-<p>});</p>
-<p>it('should release inventory on cancellation', async () =&gt; {
-    const order = await createOrder([...]);
-    const inventory = await getInventory(variant.id);
-    const reserved = inventory.quantityReserved;</p>
-<div class="highlight"><pre><span></span><code>await cancelOrder(order.id);
-
-const updatedInventory = await getInventory(variant.id);
-expect(updatedInventory.quantityReserved).toBe(reserved - 10);
-</code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Patterns:</strong></p>
 <ul>
-<li><a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> - Multi-vendor marketplaces</li>
-<li><a href="../analytics-olap-platform/">Analytics Platform</a> - Sales reporting</li>
+<li><a href="../">Patterns overview</a> - Index of application blueprints</li>
+<li><a href="../saas-multi-tenant/">Multi-Tenant SaaS</a> - RLS-based tenant and role isolation</li>
+<li><a href="../analytics-olap-platform/">Analytics Platform</a> - Sales reporting and OLAP</li>
 </ul>
 <p><strong>Guides:</strong></p>
 <ul>
-<li><a href="../../guides/production-deployment/">Production Deployment</a></li>
-<li><a href="../../guides/schema-design-best-practices/">Schema Design Best Practices</a></li>
+<li><a href="../../architecture/integration/integration-patterns/">Integration Patterns</a> - FastAPI integration, FDW, <code>fn_*</code> functions</li>
+<li><a href="../../foundation/10-error-handling-validation/">Error Handling &amp; Validation</a> - Success/error unions and mutation results</li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
