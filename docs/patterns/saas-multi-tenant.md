@@ -1,830 +1,807 @@
-<!-- Skip to main content -->
 ---
-
 title: Multi-Tenant SaaS with Row-Level Security
-description: Complete guide to building a production-grade multi-tenant SaaS application using FraiseQL with row-level security (RLS).
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation", "security"]
-tags: ["documentation", "reference"]
+description: Building a production-grade multi-tenant SaaS application with FraiseQL v1 using PostgreSQL Row-Level Security (RLS).
+keywords: ["saas", "multi-tenant", "row-level-security", "rls", "postgresql", "security"]
+tags: ["documentation", "patterns"]
 ---
 
 # Multi-Tenant SaaS with Row-Level Security
 
-**Status:** ✅ Production Ready
-**Complexity:** ⭐⭐⭐⭐ (Advanced)
+**Status:** Production Ready
+**Complexity:** Advanced
 **Audience:** SaaS architects, backend developers
 **Reading Time:** 30-35 minutes
-**Last Updated:** 2026-02-05
 
-Complete guide to building a production-grade multi-tenant SaaS application using FraiseQL with row-level security (RLS).
+A blueprint for building a multi-tenant SaaS application on FraiseQL v1. Tenant
+isolation is enforced where it belongs — inside PostgreSQL — using **Row-Level
+Security (RLS)** policies. FraiseQL sets a per-transaction session variable from the
+request context, and every RLS policy reads it. Application code never has to
+remember to add `WHERE tenant_id = ...`; the database does it for you.
 
 ---
 
-## Architecture Overview
+## How Isolation Works
 
-**Diagram: Security Architecture** - Multi-layer security pipeline from request to response
+Tenant context flows from the HTTP request all the way down to the row filter:
 
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
-
-Clients: "Web/Mobile Clients" {
-  shape: box
-  style.fill: "#e3f2fd"
-  style.border: "2px solid #1976d2"
-  children: [
-    React: "React"
-    Vue: "Vue"
-    Flutter: "Flutter"
-    RN: "React Native"
-  ]
-}
-
-Server: "FraiseQL Server (Rust)" {
-  shape: box
-  style.fill: "#f3e5f5"
-  style.border: "2px solid #7b1fa2"
-  children: [
-    Extract: "Extract tenant_id from JWT"
-    Inject: "Inject tenant_id into queries"
-    AuthHandle: "Handle authentication/authorization"
-  ]
-}
-
-Database: "PostgreSQL Database with RLS" {
-  shape: box
-  style.fill: "#f1f8e9"
-  style.border: "2px solid #388e3c"
-  children: [
-    RLS: "Row-Level Security Policies"
-    Isolation: "WHERE tenant_id = user.tenant_id"
-    Safety: "Data isolation at database level"
-  ]
-}
-
-Clients -> Server: "GraphQL queries + JWT"
-Server -> Database: "SQL queries (with RLS)"
-Database -> Server: "Row-filtered results"
-Server -> Clients: "JSON response"
 ```text
-<!-- Code example in TEXT -->
+GraphQL request (+ JWT)
+   │  your auth middleware verifies the token
+   ▼
+info.context["tenant_id"]   (also "user_id", "is_super_admin", role, …)
+   │  FraiseQL CQRS repository issues, per transaction:
+   ▼
+SET LOCAL app.tenant_id = '<uuid>'
+   │  PostgreSQL evaluates RLS policies:
+   ▼
+USING (tenant_id = current_setting('app.tenant_id')::uuid)
+   ▼
+Only the current tenant's rows are visible / writable
+```
+
+The mechanism has three moving parts:
+
+1. **A `tenant_id` column** on every tenant-scoped `tb_*` table.
+2. **RLS policies** on those tables that compare `tenant_id` against
+   `current_setting('app.tenant_id')`.
+3. **FraiseQL's CQRS repository** (`info.context["db"]`), which reads `tenant_id`
+   (and `user_id`, `is_super_admin`, and any role claims) out of `info.context` and
+   emits `SET LOCAL app.tenant_id = …` at the start of each transaction. Because the
+   GUC is set with `SET LOCAL`, it is scoped to that transaction and resets cleanly —
+   safe to use with pooled connections.
+
+There is no separate server process and no build step. FraiseQL is a runtime,
+PostgreSQL-only framework: you run a FastAPI app, and tenant isolation lives entirely
+in PostgreSQL.
 
 ---
 
 ## Schema Design
 
-### Core Tables
+FraiseQL v1 follows a CQRS layout. Writes target normalized `tb_*` tables through
+`fn_*` functions; reads come from `v_*`/`tv_*` views that expose a `data` JSONB
+column. RLS is applied to the `tb_*` tables — and because views run with the
+querying role's privileges, the same policies transparently filter the views too.
+
+### Write Tables (`tb_*`)
 
 ```sql
-<!-- Code example in SQL -->
--- Tenants (the SaaS customers)
-CREATE TABLE tenants (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug VARCHAR(255) UNIQUE NOT NULL, -- mycompany.example.com
-  name VARCHAR(255) NOT NULL,
-  plan VARCHAR(50) NOT NULL, -- free, starter, pro, enterprise
-  stripe_customer_id VARCHAR(255),
-  status VARCHAR(50) NOT NULL, -- active, suspended, cancelled
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+-- Tenants (the SaaS customers). Not tenant-scoped itself.
+CREATE TABLE tb_tenant (
+  pk_tenant          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id                 UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  identifier         TEXT UNIQUE NOT NULL,        -- slug, e.g. "acme"
+  name               TEXT NOT NULL,
+  plan               TEXT NOT NULL DEFAULT 'free', -- free, starter, pro, enterprise
+  stripe_customer_id TEXT,
+  status             TEXT NOT NULL DEFAULT 'active', -- active, suspended, cancelled
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Users (tenant members)
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  email VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  full_name VARCHAR(255),
-  role VARCHAR(50) NOT NULL, -- owner, admin, member, viewer
-  status VARCHAR(50) NOT NULL, -- active, invited, deactivated
-  last_login TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(tenant_id, email),
-  INDEX idx_tenant_id (tenant_id)
+-- Users (tenant members).
+CREATE TABLE tb_user (
+  pk_user       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id            UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id     UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  email         TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name     TEXT,
+  role          TEXT NOT NULL DEFAULT 'member', -- owner, admin, member, viewer
+  status        TEXT NOT NULL DEFAULT 'invited', -- active, invited, deactivated
+  last_login    TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, email)
 );
+CREATE INDEX ix_user_tenant ON tb_user (tenant_id);
 
--- Projects (tenant workspace items)
-CREATE TABLE projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL,
+-- Projects (tenant workspace items).
+CREATE TABLE tb_project (
+  pk_project  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id   UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
   description TEXT,
-  owner_id UUID NOT NULL REFERENCES users(id),
-  status VARCHAR(50) NOT NULL, -- active, archived
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_tenant_id (tenant_id),
-  INDEX idx_owner_id (owner_id)
+  owner_id    UUID NOT NULL REFERENCES tb_user(id),
+  status      TEXT NOT NULL DEFAULT 'active', -- active, archived
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX ix_project_tenant ON tb_project (tenant_id);
+CREATE INDEX ix_project_owner ON tb_project (owner_id);
 
--- Project Members (who can access each project)
-CREATE TABLE project_members (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role VARCHAR(50) NOT NULL, -- editor, viewer, admin
-  invited_at TIMESTAMP DEFAULT NOW(),
-  joined_at TIMESTAMP,
-
-  UNIQUE(project_id, user_id),
-  INDEX idx_project_id (project_id),
-  INDEX idx_user_id (user_id)
+-- Project members (who can access each project).
+CREATE TABLE tb_project_member (
+  pk_project_member BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id                UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id         UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  project_id        UUID NOT NULL REFERENCES tb_project(id) ON DELETE CASCADE,
+  user_id           UUID NOT NULL REFERENCES tb_user(id) ON DELETE CASCADE,
+  role              TEXT NOT NULL DEFAULT 'viewer', -- editor, viewer, admin
+  invited_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  joined_at         TIMESTAMPTZ,
+  UNIQUE (project_id, user_id)
 );
+CREATE INDEX ix_project_member_tenant ON tb_project_member (tenant_id);
 
--- Tasks (project work items)
-CREATE TABLE tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  title VARCHAR(255) NOT NULL,
+-- Tasks (project work items).
+CREATE TABLE tb_task (
+  pk_task     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id   UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  project_id  UUID NOT NULL REFERENCES tb_project(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
   description TEXT,
-  status VARCHAR(50) NOT NULL, -- todo, in_progress, done
-  assigned_to UUID REFERENCES users(id),
-  priority VARCHAR(50) NOT NULL, -- low, medium, high
-  due_date DATE,
-  created_by UUID NOT NULL REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
+  status      TEXT NOT NULL DEFAULT 'todo', -- todo, in_progress, done
+  assigned_to UUID REFERENCES tb_user(id),
+  priority    TEXT NOT NULL DEFAULT 'medium', -- low, medium, high
+  due_date    DATE,
+  created_by  UUID NOT NULL REFERENCES tb_user(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_task_tenant ON tb_task (tenant_id);
+CREATE INDEX ix_task_project ON tb_task (project_id);
+CREATE INDEX ix_task_status ON tb_task (status);
 
-  INDEX idx_tenant_id (tenant_id),
-  INDEX idx_project_id (project_id),
-  INDEX idx_assigned_to (assigned_to),
-  INDEX idx_status (status)
+-- Audit log (compliance & debugging).
+CREATE TABLE tb_audit_log (
+  pk_audit_log BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id           UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id    UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  user_id      UUID REFERENCES tb_user(id),
+  entity_type  TEXT NOT NULL,
+  entity_id    UUID NOT NULL,
+  action       TEXT NOT NULL, -- created, updated, deleted
+  old_values   JSONB,
+  new_values   JSONB,
+  ip_address   INET,
+  user_agent   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_audit_tenant ON tb_audit_log (tenant_id);
+CREATE INDEX ix_audit_created ON tb_audit_log (created_at);
+
+-- Subscription (one per tenant, drives billing).
+CREATE TABLE tb_subscription (
+  pk_subscription        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id                     UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id              UUID NOT NULL UNIQUE REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  stripe_subscription_id TEXT,
+  plan                   TEXT NOT NULL,
+  status                 TEXT NOT NULL, -- active, past_due, cancelled
+  current_period_start   DATE,
+  current_period_end     DATE,
+  cancel_at_period_end   BOOLEAN NOT NULL DEFAULT false,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Audit Log (compliance & debugging)
-CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id),
-  entity_type VARCHAR(50) NOT NULL, -- users, projects, tasks, etc.
-  entity_id UUID NOT NULL,
-  action VARCHAR(50) NOT NULL, -- created, updated, deleted
-  old_values JSONB,
-  new_values JSONB,
-  ip_address INET,
-  user_agent TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_tenant_id (tenant_id),
-  INDEX idx_user_id (user_id),
-  INDEX idx_created_at (created_at)
+-- Usage metrics (for metered billing).
+CREATE TABLE tb_usage_metric (
+  pk_usage_metric BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id              UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+  tenant_id       UUID NOT NULL REFERENCES tb_tenant(id) ON DELETE CASCADE,
+  metric_name     TEXT NOT NULL, -- api_calls, storage_gb, …
+  metric_value    NUMERIC(15, 2) NOT NULL DEFAULT 0,
+  period_start    DATE NOT NULL,
+  period_end      DATE NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, metric_name, period_start, period_end)
 );
+CREATE INDEX ix_usage_tenant ON tb_usage_metric (tenant_id);
+```
 
--- Subscriptions (usage tracking for billing)
-CREATE TABLE subscriptions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,
-  stripe_subscription_id VARCHAR(255),
-  plan VARCHAR(50) NOT NULL,
-  status VARCHAR(50) NOT NULL, -- active, past_due, cancelled
-  current_period_start DATE,
-  current_period_end DATE,
-  cancel_at_period_end BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
+Note the trinity identifier pattern: `pk_*` is an internal `BIGINT` for fast joins
+(never exposed), `id` is the public `UUID`, and `identifier` is an optional
+human-readable slug. GraphQL only ever sees `id` and `identifier`.
 
-  INDEX idx_tenant_id (tenant_id)
-);
+### Read Views (`v_*`)
 
--- Usage Metrics (for billing)
-CREATE TABLE usage_metrics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  metric_name VARCHAR(100) NOT NULL, -- api_calls, storage_gb, etc.
-  metric_value DECIMAL(15, 2),
-  period_start DATE NOT NULL,
-  period_end DATE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
+Reads come from views that build a `data` JSONB column. RLS on the underlying
+`tb_*` tables is enforced automatically when the view runs as the querying role.
 
-  INDEX idx_tenant_id (tenant_id),
-  INDEX idx_period (period_start, period_end)
-);
-```text
-<!-- Code example in TEXT -->
+```sql
+CREATE VIEW v_project AS
+SELECT
+  p.id,
+  p.tenant_id,
+  jsonb_build_object(
+    'id',          p.id,
+    'name',        p.name,
+    'description', p.description,
+    'status',      p.status,
+    'ownerId',     p.owner_id,
+    'createdAt',   p.created_at
+  ) AS data
+FROM tb_project p;
+
+CREATE VIEW v_task AS
+SELECT
+  t.id,
+  t.tenant_id,
+  t.project_id,
+  jsonb_build_object(
+    'id',         t.id,
+    'title',      t.title,
+    'status',     t.status,
+    'priority',   t.priority,
+    'assignedTo', t.assigned_to,
+    'dueDate',    t.due_date,
+    'createdAt',  t.created_at
+  ) AS data
+FROM tb_task t;
+```
+
+The view exposes `id` (for `WHERE id = $1` lookups), `tenant_id` (for optional
+`mandatory_filters`), and the `data` JSONB. The internal `pk_*` columns never leave
+the table.
 
 ---
 
 ## Row-Level Security Policies
 
+This is the heart of tenant isolation. Enable RLS, then write policies that read the
+session GUC FraiseQL sets for you.
+
 ### Enable RLS
 
 ```sql
-<!-- Code example in SQL -->
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE usage_metrics ENABLE ROW LEVEL SECURITY;
-```text
-<!-- Code example in TEXT -->
+ALTER TABLE tb_user           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_project        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_project_member ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_task           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_audit_log      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_subscription   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_usage_metric   ENABLE ROW LEVEL SECURITY;
 
-### Tenant Context Function
+-- Force RLS even for the table owner, so no role bypasses isolation.
+ALTER TABLE tb_user           FORCE ROW LEVEL SECURITY;
+ALTER TABLE tb_project        FORCE ROW LEVEL SECURITY;
+ALTER TABLE tb_task           FORCE ROW LEVEL SECURITY;
+ALTER TABLE tb_subscription   FORCE ROW LEVEL SECURITY;
+ALTER TABLE tb_usage_metric   FORCE ROW LEVEL SECURITY;
+```
+
+### Session Context Helpers
+
+FraiseQL emits `SET LOCAL app.tenant_id = …`, `SET LOCAL app.user_id = …`, and
+`SET LOCAL app.is_super_admin = …` from `info.context`. Thin SQL helpers make the
+policies readable. The second `true` argument to `current_setting` returns `NULL`
+instead of erroring when the GUC is unset.
 
 ```sql
-<!-- Code example in SQL -->
--- Get current tenant from JWT claims
 CREATE OR REPLACE FUNCTION current_tenant_id() RETURNS UUID AS $$
-  SELECT (current_setting('app.tenant_id', true))::UUID;
+  SELECT NULLIF(current_setting('app.tenant_id', true), '')::UUID;
 $$ LANGUAGE SQL STABLE;
 
--- Get current user from JWT claims
 CREATE OR REPLACE FUNCTION current_user_id() RETURNS UUID AS $$
-  SELECT (current_setting('app.user_id', true))::UUID;
+  SELECT NULLIF(current_setting('app.user_id', true), '')::UUID;
 $$ LANGUAGE SQL STABLE;
 
--- Get current user's role
+-- Populate this GUC from a role claim in your auth middleware
+-- (info.context["user_role"]) if you want role checks inside RLS.
 CREATE OR REPLACE FUNCTION current_user_role() RETURNS TEXT AS $$
-  SELECT (current_setting('app.user_role', true))::TEXT;
+  SELECT NULLIF(current_setting('app.user_role', true), '');
 $$ LANGUAGE SQL STABLE;
-```text
-<!-- Code example in TEXT -->
+```
 
-### RLS Policies - Users Table
+### Users Table
 
 ```sql
-<!-- Code example in SQL -->
--- Users can only see users in their tenant
-CREATE POLICY users_tenant_isolation ON users
+-- See only users in the current tenant.
+CREATE POLICY user_tenant_isolation ON tb_user
   FOR SELECT
   USING (tenant_id = current_tenant_id());
 
--- Users can only update their own profile
-CREATE POLICY users_self_update ON users
+-- Update your own profile; admins and owners can update anyone in the tenant.
+CREATE POLICY user_self_update ON tb_user
   FOR UPDATE
   USING (
-    id = current_user_id() OR
-    current_user_role() IN ('owner', 'admin')
+    tenant_id = current_tenant_id()
+    AND (id = current_user_id() OR current_user_role() IN ('owner', 'admin'))
   );
 
--- Only admins can delete users
-CREATE POLICY users_delete ON users
+-- Only owners/admins delete users.
+CREATE POLICY user_delete ON tb_user
   FOR DELETE
-  USING (current_user_role() IN ('owner', 'admin'));
+  USING (
+    tenant_id = current_tenant_id()
+    AND current_user_role() IN ('owner', 'admin')
+  );
 
--- Allow new user creation (signup)
-CREATE POLICY users_insert ON users
+-- New users must be created inside the active tenant.
+CREATE POLICY user_insert ON tb_user
   FOR INSERT
-  WITH CHECK (true); -- Allow insertion, FraiseQL handles tenant assignment
-```text
-<!-- Code example in TEXT -->
+  WITH CHECK (tenant_id = current_tenant_id());
+```
 
-### RLS Policies - Projects Table
+### Projects Table
 
 ```sql
-<!-- Code example in SQL -->
--- Users can only see projects in their tenant
--- AND either they're the owner or a project member
-CREATE POLICY projects_visibility ON projects
+-- See projects in your tenant that you own or are a member of.
+CREATE POLICY project_visibility ON tb_project
   FOR SELECT
   USING (
-    tenant_id = current_tenant_id() AND
-    (
-      owner_id = current_user_id() OR
-      id IN (
-        SELECT project_id FROM project_members
+    tenant_id = current_tenant_id()
+    AND (
+      owner_id = current_user_id()
+      OR id IN (
+        SELECT project_id FROM tb_project_member
         WHERE user_id = current_user_id()
       )
     )
   );
 
--- Only project owners and admins can update
-CREATE POLICY projects_update ON projects
+-- Owners and tenant admins can update.
+CREATE POLICY project_update ON tb_project
   FOR UPDATE
   USING (
-    owner_id = current_user_id() OR
-    current_user_role() IN ('owner', 'admin')
+    tenant_id = current_tenant_id()
+    AND (owner_id = current_user_id() OR current_user_role() IN ('owner', 'admin'))
   );
 
--- Only owners can delete
-CREATE POLICY projects_delete ON projects
+-- Only the project owner deletes.
+CREATE POLICY project_delete ON tb_project
   FOR DELETE
-  USING (owner_id = current_user_id());
+  USING (tenant_id = current_tenant_id() AND owner_id = current_user_id());
 
--- Can create in own tenant
-CREATE POLICY projects_insert ON projects
+-- Create only inside the active tenant.
+CREATE POLICY project_insert ON tb_project
   FOR INSERT
   WITH CHECK (tenant_id = current_tenant_id());
-```text
-<!-- Code example in TEXT -->
+```
 
-### RLS Policies - Tasks Table
+### Tasks Table
 
 ```sql
-<!-- Code example in SQL -->
--- Users can only see tasks in projects they have access to
-CREATE POLICY tasks_visibility ON tasks
+-- See tasks in projects you can access.
+CREATE POLICY task_visibility ON tb_task
   FOR SELECT
   USING (
-    tenant_id = current_tenant_id() AND
-    project_id IN (
-      SELECT id FROM projects
+    tenant_id = current_tenant_id()
+    AND project_id IN (
+      SELECT id FROM tb_project
       WHERE owner_id = current_user_id()
-         OR id IN (SELECT project_id FROM project_members WHERE user_id = current_user_id())
+         OR id IN (
+           SELECT project_id FROM tb_project_member
+           WHERE user_id = current_user_id()
+         )
     )
   );
 
--- Project members and admins can update tasks
-CREATE POLICY tasks_update ON tasks
+-- Project participants and tenant admins update tasks.
+CREATE POLICY task_update ON tb_task
   FOR UPDATE
   USING (
-    project_id IN (
-      SELECT id FROM projects
-      WHERE owner_id = current_user_id()
-         OR id IN (SELECT project_id FROM project_members WHERE user_id = current_user_id())
-    ) OR
-    current_user_role() IN ('owner', 'admin')
+    tenant_id = current_tenant_id()
+    AND (
+      project_id IN (
+        SELECT id FROM tb_project
+        WHERE owner_id = current_user_id()
+           OR id IN (
+             SELECT project_id FROM tb_project_member
+             WHERE user_id = current_user_id()
+           )
+      )
+      OR current_user_role() IN ('owner', 'admin')
+    )
   );
+```
 
--- Only project owners can delete tasks
-CREATE POLICY tasks_delete ON tasks
-  FOR DELETE
-  USING (
-    project_id IN (
-      SELECT id FROM projects WHERE owner_id = current_user_id()
-    ) OR
-    current_user_role() IN ('owner', 'admin')
-  );
-```text
-<!-- Code example in TEXT -->
-
-### RLS Policies - Audit Logs
+### Audit Logs
 
 ```sql
-<!-- Code example in SQL -->
--- Users can only see audit logs for their tenant
-CREATE POLICY audit_logs_visibility ON audit_logs
+-- Only tenant admins read audit logs, scoped to their tenant.
+CREATE POLICY audit_log_visibility ON tb_audit_log
   FOR SELECT
   USING (
-    tenant_id = current_tenant_id() AND
-    current_user_role() IN ('owner', 'admin') -- Only admins see logs
+    tenant_id = current_tenant_id()
+    AND current_user_role() IN ('owner', 'admin')
   );
 
--- Prevent direct manipulation of audit logs
-CREATE POLICY audit_logs_immutable ON audit_logs
-  FOR UPDATE, DELETE
-  USING (false);
-```text
-<!-- Code example in TEXT -->
+-- Audit logs are append-only: no policy allows UPDATE or DELETE,
+-- so RLS denies them outright once FORCE ROW LEVEL SECURITY is on.
+```
+
+### Cross-Tenant Reads with `mandatory_filters`
+
+RLS is your defense-in-depth baseline. For an extra explicit guard — or for code
+paths where you want belt-and-braces filtering on the read side — FraiseQL's
+repository accepts `mandatory_filters`, which are AND-ed into every generated query
+and cannot be overridden by client arguments:
+
+```python
+projects = await db.find(
+    "v_project",
+    mandatory_filters={"tenant_id": info.context["tenant_id"]},
+)
+```
+
+With RLS in place this is redundant, but it documents intent and protects you if a
+table ever ships without a policy.
 
 ---
 
-## FraiseQL Schema Definition (Python)
+## FraiseQL Types and Queries (Python)
+
+Define types against the read views and let RLS handle tenant scoping. The
+namespaced API (`import fraiseql`) avoids shadowing builtins.
 
 ```python
-<!-- Code example in Python -->
-# schema.py
-from FraiseQL import types, authorize
-from datetime import datetime
+import fraiseql
+from fraiseql.types import ID, DateTime
 
-@types.object
+@fraiseql.type(sql_source="v_tenant", jsonb_column="data")
 class Tenant:
-    id: UUID  # UUID v4 for GraphQL ID
-    slug: str
+    id: ID
+    identifier: str
     name: str
     plan: str
     status: str
-    users: list['User']
-    projects: list['Project']
-    subscription: 'Subscription'
-    created_at: datetime
+    created_at: DateTime
 
-@types.object
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     email: str
-    full_name: str
-    role: str  # owner, admin, member, viewer
+    full_name: str | None
+    role: str            # owner, admin, member, viewer
     status: str
-    tenant: Tenant
-    projects: list['Project']  # Projects this user is a member of
-    tasks: list['Task']  # Tasks assigned to this user
-    created_at: datetime
+    created_at: DateTime
 
-@types.object
+@fraiseql.type(sql_source="v_project", jsonb_column="data")
 class Project:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
-    description: str
-    owner: User
+    description: str | None
     status: str
-    members: list[User]
-    tasks: list['Task']
-    created_at: datetime
+    created_at: DateTime
 
-@types.object
+@fraiseql.type(sql_source="v_task", jsonb_column="data")
 class Task:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     title: str
-    description: str
+    description: str | None
     status: str
-    assigned_to: User | None
-    project: Project
     priority: str
     due_date: str | None
-    created_by: User
-    created_at: datetime
+    created_at: DateTime
+```
 
-@types.object
-class Subscription:
-    id: UUID  # UUID v4 for GraphQL ID
-    plan: str
-    status: str
-    current_period_start: str
-    current_period_end: str
-    stripe_subscription_id: str | None
+Queries read from the views. Because the repository has already issued
+`SET LOCAL app.tenant_id`, every row returned belongs to the caller's tenant — no
+manual filtering required.
 
-@types.object
-class Query:
-    @authorize(roles=['owner', 'admin', 'member', 'viewer'])
-    def me(self) -> User:
-        """Current authenticated user"""
-        pass
+```python
+@fraiseql.query
+async def me(info) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", id=info.context["user_id"])
 
-    @authorize(roles=['owner', 'admin', 'member'])
-    def users(self, limit: int = 50, offset: int = 0) -> list[User]:
-        """List all users in current tenant"""
-        pass
+@fraiseql.query
+async def projects(info, status: str | None = None) -> list[Project]:
+    db = info.context["db"]
+    filters = {"status": status} if status else {}
+    return await db.find("v_project", **filters)
 
-    @authorize(roles=['owner', 'admin', 'member', 'viewer'])
-    def projects(self, status: str | None = None) -> list[Project]:
-        """List accessible projects"""
-        pass
+@fraiseql.query
+async def tasks(
+    info,
+    project_id: ID,
+    status: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Task]:
+    db = info.context["db"]
+    filters = {"project_id": project_id}
+    if status:
+        filters["status"] = status
+    return await db.find("v_task", limit=limit, offset=offset, **filters)
+```
 
-    @authorize(roles=['owner', 'admin', 'member', 'viewer'])
-    def tasks(
-        self,
-        project_id: str,
-        status: str | None = None,
-        assigned_to: str | None = None,
-        limit: int = 50,
-        offset: int = 0
-    ) -> list[Task]:
-        """List tasks in a project"""
-        pass
+### Authorization Beyond Tenant Isolation
 
-    @authorize(roles=['owner', 'admin'])
-    def usage_report(self, period_start: str, period_end: str) -> dict:
-        """Get usage metrics for current tenant"""
-        pass
+RLS already enforces *tenant* boundaries. For coarser operation-level checks (for
+example, "only owners may view billing"), use one of two real v1 mechanisms:
 
-    @authorize(roles=['owner', 'admin'])
-    def audit_logs(self, limit: int = 100, offset: int = 0) -> list[dict]:
-        """Get audit logs (admin only)"""
-        pass
+**1. Role checks inside RLS.** If your auth middleware populates `app.user_role` (or
+checks `current_user_id()` against a role table), the policies above already gate
+SELECT/UPDATE/DELETE by role. This keeps authorization in one place — the database.
 
-@types.object
-class Mutation:
-    @authorize(roles=['owner', 'admin'])
-    def invite_user(self, email: str, role: str = 'member') -> User:
-        """Send invitation to new user"""
-        pass
+**2. An `Authorizer` on the query.** FraiseQL accepts an authorizer callable that
+runs before the resolver and can reject the request based on `info.context`:
 
-    @authorize(roles=['owner', 'admin'])
-    def create_project(self, name: str, description: str = '') -> Project:
-        """Create new project"""
-        pass
+```python
+def require_roles(*allowed: str):
+    async def authorizer(info) -> bool:
+        return info.context.get("user_role") in allowed
+    return authorizer
 
-    @authorize(roles=['owner', 'admin', 'member'])
-    def create_task(
-        self,
-        project_id: str,
-        title: str,
-        description: str = '',
-        assigned_to: str | None = None,
-        priority: str = 'medium'
-    ) -> Task:
-        """Create task in project"""
-        pass
+@fraiseql.query(authorizer=require_roles("owner", "admin"))
+async def audit_logs(info, limit: int = 100, offset: int = 0) -> list[AuditLog]:
+    db = info.context["db"]
+    return await db.find("v_audit_log", limit=limit, offset=offset)
+```
 
-    @authorize(roles=['owner', 'admin', 'member'])
-    def update_task(
-        self,
-        task_id: str,
-        status: str | None = None,
-        assigned_to: str | None = None
-    ) -> Task:
-        """Update task status/assignment"""
-        pass
+v1 has no role-based authorization decorator — authorization is expressed through
+RLS policies and/or `@fraiseql.query(authorizer=...)`.
 
-    @authorize(roles=['owner'])
-    def upgrade_plan(self, plan: str, stripe_token: str) -> Subscription:
-        """Upgrade subscription plan"""
-        pass
-```text
-<!-- Code example in TEXT -->
+### Mutations via `fn_*` Functions
+
+Writes call PostgreSQL functions through `db.execute_function`. The function runs
+inside the same transaction, so `app.tenant_id` is set and any RLS `WITH CHECK`
+clauses apply.
+
+```python
+@fraiseql.input
+class CreateProjectInput:
+    name: str
+    description: str = ""
+
+@fraiseql.success
+class CreateProjectSuccess:
+    project: Project
+
+@fraiseql.error
+class CreateProjectError:
+    message: str
+    code: str = "VALIDATION_ERROR"
+
+@fraiseql.mutation
+async def create_project(
+    info, input: CreateProjectInput
+) -> CreateProjectSuccess | CreateProjectError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_project",
+        {
+            "tenant_id": info.context["tenant_id"],
+            "owner_id": info.context["user_id"],
+            "name": input.name,
+            "description": input.description,
+        },
+    )
+    if not result.get("success"):
+        return CreateProjectError(message=result.get("message", "failed"))
+    return CreateProjectSuccess(project=Project(**result["project"]))
+```
+
+---
+
+## Wiring Tenant Context (FastAPI)
+
+Tenant isolation only works if `info.context["tenant_id"]` is populated. You do that
+in FastAPI middleware (or a context getter) that verifies the JWT and copies its
+claims into the GraphQL context. FraiseQL then turns those context keys into session
+GUCs automatically.
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+
+async def build_context(request) -> dict:
+    # Verify the JWT however you like (PyJWT, Auth0, etc.).
+    claims = verify_jwt(request.headers.get("authorization"))
+    return {
+        "tenant_id": claims["tenant_id"],
+        "user_id": claims["user_id"],
+        "user_role": claims["role"],
+        "is_super_admin": claims.get("is_super_admin", False),
+    }
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/saas",
+    types=[Tenant, User, Project, Task],
+    queries=[me, projects, tasks, audit_logs],
+    mutations=[create_project],
+    context_getter=build_context,
+    production=True,
+)
+```
+
+Run it like any FastAPI app:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+The critical rule: **never trust a `tenant_id` sent by the client.** It must come
+from the verified token. The client cannot forge `info.context["tenant_id"]` because
+it is derived server-side from a signed JWT before any query runs.
 
 ---
 
 ## JWT Token Structure
 
-### Token Payload
-
 ```json
-<!-- Code example in JSON -->
 {
   "sub": "user_123",
-  "email": "alice@company.com",
-  "tenant_id": "tenant_456",
-  "user_id": "user_123",
+  "email": "alice@acme.com",
+  "tenant_id": "9f1c2b...",
+  "user_id": "3a7e9d...",
   "role": "admin",
   "iat": 1640000000,
   "exp": 1640086400
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Setting Tenant Context in FraiseQL Server
-
-```rust
-<!-- Code example in RUST -->
-// FraiseQL-server middleware (pseudo-code)
-async fn set_tenant_context(token: &Claims) -> Result<()> {
-    // Set tenant and user context for RLS policies
-    client.execute(
-        "SET app.tenant_id = $1",
-        &[&token.tenant_id]
-    ).await?;
-
-    client.execute(
-        "SET app.user_id = $1",
-        &[&token.user_id]
-    ).await?;
-
-    client.execute(
-        "SET app.user_role = $1",
-        &[&token.role]
-    ).await?;
-
-    Ok(())
-}
-```text
-<!-- Code example in TEXT -->
+Your middleware verifies the signature and expiry, then maps `tenant_id`, `user_id`,
+and `role` into the GraphQL context. From there FraiseQL handles the
+`SET LOCAL app.*` calls and PostgreSQL handles the rest.
 
 ---
 
-## Client Implementation
+## Billing and Usage Tracking
 
-### React Hook for Current Tenant
-
-```typescript
-<!-- Code example in TypeScript -->
-import { useQuery, gql } from '@apollo/client';
-
-const ME_QUERY = gql`
-  query Me {
-    me {
-      id
-      email
-      full_name
-      role
-      tenant {
-        id
-        slug
-        name
-        plan
-      }
-    }
-  }
-`;
-
-export function useCurrentUser() {
-  const { data, loading, error } = useQuery(ME_QUERY);
-  return {
-    user: data?.me,
-    tenant: data?.me?.tenant,
-    loading,
-    error,
-  };
-}
-```text
-<!-- Code example in TEXT -->
-
-### List Projects Query
-
-```typescript
-<!-- Code example in TypeScript -->
-const LIST_PROJECTS = gql`
-  query ListProjects {
-    projects {
-      id
-      name
-      owner {
-        full_name
-      }
-      members {
-        id
-        email
-      }
-    }
-  }
-`;
-
-export function ProjectList() {
-  const { data, loading } = useQuery(LIST_PROJECTS);
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <ul>
-      {data?.projects?.map((project) => (
-        <li key={project.id}>
-          <h3>{project.name}</h3>
-          <p>Owner: {project.owner.full_name}</p>
-          <p>Members: {project.members.length}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-```text
-<!-- Code example in TEXT -->
-
-### Create Project Mutation
-
-```typescript
-<!-- Code example in TypeScript -->
-const CREATE_PROJECT = gql`
-  mutation CreateProject($name: String!, $description: String!) {
-    createProject(name: $name, description: $description) {
-      id
-      name
-      description
-      owner {
-        id
-        full_name
-      }
-    }
-  }
-`;
-
-export function CreateProjectForm() {
-  const [name, setName] = useState('');
-  const [createProject, { loading }] = useMutation(CREATE_PROJECT, {
-    refetchQueries: [{ query: LIST_PROJECTS }],
-  });
-
-  const handleCreate = async () => {
-    await createProject({
-      variables: { name, description: '' },
-    });
-    setName('');
-  };
-
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Project name"
-      />
-      <button disabled={loading}>Create</button>
-    </form>
-  );
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Billing Integration
-
-### Track Usage
+Plan limits and metered usage live in PostgreSQL functions, so they run in the same
+transaction as the rest of the request and respect tenant isolation.
 
 ```sql
-<!-- Code example in SQL -->
--- Function to increment usage
-CREATE OR REPLACE FUNCTION increment_usage(
-  p_tenant_id UUID,
-  p_metric_name VARCHAR,
-  p_amount DECIMAL
+-- Increment a usage counter for the current billing period.
+CREATE OR REPLACE FUNCTION fn_increment_usage(
+  p_tenant_id  UUID,
+  p_metric     TEXT,
+  p_amount     NUMERIC
 ) RETURNS void AS $$
 BEGIN
-  INSERT INTO usage_metrics (tenant_id, metric_name, metric_value, period_start, period_end)
+  INSERT INTO tb_usage_metric (tenant_id, metric_name, metric_value, period_start, period_end)
   VALUES (
     p_tenant_id,
-    p_metric_name,
+    p_metric,
     p_amount,
-    DATE_TRUNC('month', NOW())::DATE,
-    DATE_TRUNC('month', NOW() + INTERVAL '1 month')::DATE - INTERVAL '1 day'
+    DATE_TRUNC('month', now())::DATE,
+    (DATE_TRUNC('month', now()) + INTERVAL '1 month' - INTERVAL '1 day')::DATE
   )
   ON CONFLICT (tenant_id, metric_name, period_start, period_end)
-  DO UPDATE SET metric_value = metric_value + EXCLUDED.metric_value;
+  DO UPDATE SET metric_value = tb_usage_metric.metric_value + EXCLUDED.metric_value;
 END;
 $$ LANGUAGE plpgsql;
-```text
-<!-- Code example in TEXT -->
 
-### Check Usage Limits
-
-```sql
-<!-- Code example in SQL -->
--- Example: Check if tenant has exceeded API call limit
-CREATE OR REPLACE FUNCTION check_api_limit(p_tenant_id UUID) RETURNS BOOLEAN AS $$
+-- Enforce a per-plan API limit.
+CREATE OR REPLACE FUNCTION fn_check_api_limit(p_tenant_id UUID) RETURNS BOOLEAN AS $$
 DECLARE
-  v_current_usage DECIMAL;
-  v_plan VARCHAR;
-  v_limit DECIMAL;
+  v_usage NUMERIC;
+  v_plan  TEXT;
+  v_limit NUMERIC;
 BEGIN
-  SELECT plan INTO v_plan FROM tenants WHERE id = p_tenant_id;
+  SELECT plan INTO v_plan FROM tb_tenant WHERE id = p_tenant_id;
 
-  SELECT metric_value INTO v_current_usage FROM usage_metrics
+  SELECT metric_value INTO v_usage
+  FROM tb_usage_metric
   WHERE tenant_id = p_tenant_id
     AND metric_name = 'api_calls'
-    AND period_start = DATE_TRUNC('month', NOW())::DATE;
+    AND period_start = DATE_TRUNC('month', now())::DATE;
 
-  v_current_usage := COALESCE(v_current_usage, 0);
-
-  -- Define limits per plan
+  v_usage := COALESCE(v_usage, 0);
   v_limit := CASE v_plan
-    WHEN 'free' THEN 1000
-    WHEN 'starter' THEN 10000
-    WHEN 'pro' THEN 100000
+    WHEN 'free'       THEN 1000
+    WHEN 'starter'    THEN 10000
+    WHEN 'pro'        THEN 100000
     WHEN 'enterprise' THEN 999999999
+    ELSE 0
   END;
 
-  RETURN v_current_usage < v_limit;
+  RETURN v_usage < v_limit;
 END;
 $$ LANGUAGE plpgsql;
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Security Considerations
+## Provisioning a New Tenant
 
-### 1. Token Validation
-
-```typescript
-<!-- Code example in TypeScript -->
-// Verify JWT before setting context
-function validateToken(token: string): Claims | null {
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET) as Claims;
-  } catch (err) {
-    console.error('Invalid token:', err);
-    return null;
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 2. Prevent Tenant ID Forgery
-
-```typescript
-<!-- Code example in TypeScript -->
-// Never trust tenant_id from client - get it from token
-const getTenantIdFromToken = (token: Claims): string => {
-  if (!token.tenant_id) {
-    throw new Error('Invalid token: missing tenant_id');
-  }
-  return token.tenant_id;
-};
-```text
-<!-- Code example in TEXT -->
-
-### 3. Audit All Changes
+Tenant signup is a single `fn_*` function that creates the tenant, its first user
+(the owner), and a default subscription atomically. Because the new tenant has no
+prior rows, you typically run provisioning with a super-admin context
+(`info.context["is_super_admin"] = True`) or a dedicated service role whose policies
+permit the initial inserts.
 
 ```sql
-<!-- Code example in SQL -->
--- Trigger to auto-log changes
-CREATE OR REPLACE FUNCTION audit_trigger() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION fn_provision_tenant(
+  p_slug       TEXT,
+  p_name       TEXT,
+  p_owner_email TEXT,
+  p_owner_hash  TEXT
+) RETURNS JSONB AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_user_id   UUID;
 BEGIN
-  INSERT INTO audit_logs (
-    tenant_id,
-    user_id,
-    entity_type,
-    entity_id,
-    action,
-    old_values,
-    new_values
+  INSERT INTO tb_tenant (identifier, name, plan, status)
+  VALUES (p_slug, p_name, 'free', 'active')
+  RETURNING id INTO v_tenant_id;
+
+  INSERT INTO tb_user (tenant_id, email, password_hash, role, status)
+  VALUES (v_tenant_id, p_owner_email, p_owner_hash, 'owner', 'active')
+  RETURNING id INTO v_user_id;
+
+  INSERT INTO tb_subscription (tenant_id, plan, status, current_period_start, current_period_end)
+  VALUES (
+    v_tenant_id, 'free', 'active',
+    now()::DATE, (now() + INTERVAL '1 month')::DATE
+  );
+
+  RETURN jsonb_build_object('success', true, 'tenantId', v_tenant_id, 'ownerId', v_user_id);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+## Audit Logging
+
+A single trigger function reads the session GUCs and records who changed what. It
+relies on the same `current_tenant_id()` / `current_user_id()` helpers, so the audit
+trail is automatically tenant-scoped.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_audit_trigger() RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO tb_audit_log (
+    tenant_id, user_id, entity_type, entity_id, action, old_values, new_values
   ) VALUES (
     current_tenant_id(),
     current_user_id(),
     TG_TABLE_NAME,
     CASE WHEN TG_OP = 'DELETE' THEN OLD.id ELSE NEW.id END,
-    TG_OP,
-    CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
-    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END
+    lower(TG_OP),
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN row_to_json(OLD)::jsonb END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW)::jsonb END
   );
   RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply trigger to all tables
-CREATE TRIGGER users_audit AFTER INSERT OR UPDATE OR DELETE ON users
-FOR EACH ROW EXECUTE FUNCTION audit_trigger();
+CREATE TRIGGER user_audit
+  AFTER INSERT OR UPDATE OR DELETE ON tb_user
+  FOR EACH ROW EXECUTE FUNCTION fn_audit_trigger();
 
-CREATE TRIGGER projects_audit AFTER INSERT OR UPDATE OR DELETE ON projects
-FOR EACH ROW EXECUTE FUNCTION audit_trigger();
+CREATE TRIGGER project_audit
+  AFTER INSERT OR UPDATE OR DELETE ON tb_project
+  FOR EACH ROW EXECUTE FUNCTION fn_audit_trigger();
 
-CREATE TRIGGER tasks_audit AFTER INSERT OR UPDATE OR DELETE ON tasks
-FOR EACH ROW EXECUTE FUNCTION audit_trigger();
-```text
-<!-- Code example in TEXT -->
+CREATE TRIGGER task_audit
+  AFTER INSERT OR UPDATE OR DELETE ON tb_task
+  FOR EACH ROW EXECUTE FUNCTION fn_audit_trigger();
+```
+
+---
+
+## Testing Tenant Isolation
+
+The cheapest, most convincing test is at the SQL layer: set a tenant GUC and confirm
+you cannot see another tenant's rows. This exercises the exact mechanism FraiseQL
+uses at runtime.
+
+```sql
+-- Seed two tenants, then prove isolation.
+SET LOCAL app.tenant_id = '<tenant-a-uuid>';
+SET LOCAL app.user_id   = '<tenant-a-owner-uuid>';
+SET LOCAL app.user_role = 'owner';
+
+-- Returns only tenant A's projects; tenant B's rows are invisible.
+SELECT count(*) FROM tb_project;            -- only A
+SELECT count(*) FROM tb_project WHERE tenant_id = '<tenant-b-uuid>';  -- 0
+```
+
+At the application level, drive two different JWTs through the GraphQL endpoint and
+assert each only ever sees its own data:
+
+```python
+import pytest
+
+@pytest.mark.asyncio
+async def test_tenant_isolation(client):
+    token_a = make_jwt(tenant_id=TENANT_A, user_id=OWNER_A, role="owner")
+    resp = await client.post(
+        "/graphql",
+        json={"query": "{ projects { id name } }"},
+        headers={"authorization": f"Bearer {token_a}"},
+    )
+    project_ids = {p["id"] for p in resp.json()["data"]["projects"]}
+    assert project_ids <= TENANT_A_PROJECT_IDS  # never tenant B's
+```
 
 ---
 
@@ -832,110 +809,57 @@ FOR EACH ROW EXECUTE FUNCTION audit_trigger();
 
 ### Connection Pooling
 
-- Use PgBouncer for connection pooling
-- Set pool size to 100-200 per tenant segment
-- Use transaction pooling mode for high-concurrency scenarios
+- PgBouncer in **transaction** pooling mode pairs well with `SET LOCAL`: the GUC is
+  scoped to the transaction, so it never leaks to the next request on a reused
+  connection.
+- Size the pool to your concurrency, not your tenant count — tenants share the pool.
 
 ### Caching
 
-- Cache tenant configuration (plan limits, features)
-- Cache user roles (expires after 5 minutes)
-- Invalidate on role/permission changes
+- FraiseQL ships PostgreSQL-backed result caching (`PostgresCache`, `ResultCache`,
+  `CachedRepository`) with cascade invalidation rules. Cache keys include the query
+  and arguments; keep tenant context out of cached payloads or scope keys per tenant.
+- Cache slow-changing tenant configuration (plan limits, feature flags) and
+  invalidate on plan or role changes.
 
-### Monitoring
+### Read Replicas
 
-- Track per-tenant query performance
-- Monitor RLS policy evaluation time
-- Alert on unusual usage patterns
-
-### Multi-Region Deployment
-
-```text
-<!-- Code example in TEXT -->
-Region 1 (US-East)           Region 2 (EU)
-    ↓                             ↓
-FraiseQL Server ----------- Replication -------- FraiseQL Server
-    ↓                             ↓
-PostgreSQL Primary ---------- Streaming -------- PostgreSQL Replica
-(tenant_a, tenant_b)         (standby)         (for reads)
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Testing Multi-Tenant Isolation
-
-```typescript
-<!-- Code example in TypeScript -->
-describe('Multi-Tenant Isolation', () => {
-  it('tenant_a cannot see tenant_b data', async () => {
-    // Login as user from tenant_a
-    const token_a = generateToken({ tenant_id: 'a', user_id: 'user_1' });
-
-    // Try to query with tenant_b context (should fail)
-    const result = await client.query(LIST_PROJECTS, {
-      headers: { authorization: `Bearer ${token_a}` },
-    });
-
-    // RLS policy should prevent access
-    expect(result.errors).toBeDefined();
-  });
-
-  it('users can only see their tenant projects', async () => {
-    const token = generateToken({ tenant_id: 'a', user_id: 'user_1' });
-    const result = await client.query(LIST_PROJECTS, {
-      headers: { authorization: `Bearer ${token}` },
-    });
-
-    // All returned projects should have tenant_id = 'a'
-    expect(result.data.projects.every(p => p.tenant_id === 'a')).toBe(true);
-  });
-});
-```text
-<!-- Code example in TEXT -->
+- Route read-only queries to a streaming replica. RLS policies and the `app.*` GUCs
+  apply identically on replicas, so tenant isolation holds for replica reads too.
 
 ---
 
 ## Common Pitfalls
 
-### ❌ Storing tenant_id in app, not JWT
+### Trusting a client-supplied `tenant_id`
 
-Vulnerable to token swapping. Always extract from verified token.
+Always derive `tenant_id` from the verified JWT in your context getter, never from a
+GraphQL argument or header the client controls.
 
-### ❌ Relying only on app-level filtering
+### Relying only on application-level filtering
 
-Use database RLS as defense in depth.
+App filters are easy to forget on one code path. Make RLS the baseline so a missing
+`WHERE` clause still cannot leak data. Use `mandatory_filters` as an additional
+explicit guard.
 
-### ❌ Not auditing sensitive operations
+### Forgetting `FORCE ROW LEVEL SECURITY`
 
-Track who accessed what, when, for compliance.
+Plain `ENABLE ROW LEVEL SECURITY` is bypassed by the table owner. Add `FORCE` so no
+role — including the one your app connects as, if it owns the tables — escapes the
+policies.
 
-### ❌ Same schema for all tenants
+### Leaving a GUC set between requests
 
-Multi-schema is better if tenants are large, separate instances.
+`SET LOCAL` (which FraiseQL uses) resets at transaction end. Avoid plain `SET`, which
+persists on the connection and can leak one tenant's context into the next request on
+a pooled connection.
 
 ---
 
 ## See Also
 
-**Related Patterns:**
-
-- [Database Federation](./federation-patterns.md) - Multiple databases
-- [Real-Time Collaboration](./realtime-collaboration.md) - Live updates
-- [E-Commerce Workflows](./ecommerce-workflows.md) - Complex workflows
-
-**Security Guides:**
-
-- [Production Security Checklist](../guides/production-security-checklist.md)
-- [Authentication & Authorization](../guides/authorization-quick-start.md)
-- [Audit Logging](../guides/observers.md)
-
-**Deployment:**
-
-- [Production Deployment](../guides/production-deployment.md)
-- [Kubernetes Setup](../guides/production-deployment.md)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- [Patterns Overview](./README.md)
+- [Analytics OLAP Platform](./analytics-olap-platform.md)
+- [Extension Points](../architecture/integration/extension-points.md)
+- [Consistency Model](../architecture/reliability/consistency-model.md)
+- [Database-Centric Architecture](../foundation/03-database-centric-architecture.md)
