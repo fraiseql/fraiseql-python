@@ -427,6 +427,5 @@ SELECT * FROM ta_orders WHERE created_at >= ? AND created_at < ?;
 ## See Also
 
 - [tv_* Table Pattern (JSON Plane Details)](./tv-table-pattern.md)
-- [ta_* Table Pattern (Arrow Plane Details)](./ta-table-pattern.md)
 - [Schema Conventions](../../specs/schema-conventions.md)
 - [FraiseQL Database Architecture](../../architecture/)
