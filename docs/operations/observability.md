@@ -1,17 +1,17 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL v2 Observability & Monitoring Guide
-description: FraiseQL v2 provides a comprehensive, production-ready observability stack that enables real-time monitoring, performance analysis, debugging, and operational e
+title: FraiseQL v1 Observability & Monitoring Guide
+description: FraiseQL v1 provides a Python observability toolkit — Prometheus metrics, OpenTelemetry tracing, health/readiness checks, query statistics, PostgreSQL-native error tracking, and security audit logging — wired into your FastAPI app.
 keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL v2 Observability & Monitoring Guide
+# FraiseQL v1 Observability & Monitoring Guide
 
 ## Overview
 
-FraiseQL v2 provides a comprehensive, production-ready observability stack that enables real-time monitoring, performance analysis, debugging, and operational excellence. The observability system integrates Prometheus metrics, structured JSON logging, distributed tracing, and performance monitoring into a cohesive platform.
+FraiseQL v1 ships a Python observability toolkit that you compose onto the FastAPI app returned by `create_fraiseql_app(...)`. It integrates Prometheus metrics, OpenTelemetry distributed tracing, composable health checks (with built-in `/health` and `/ready` endpoints), `pg_stat_statements`-backed query statistics, PostgreSQL-native error tracking, and structured security audit logging.
+
+Everything runs **inside your FastAPI/uvicorn process** — there is no separate server and no build step. You import helpers from `fraiseql.monitoring`, `fraiseql.tracing`, and `fraiseql.audit`, then call them on the app at startup.
 
 ## Table of Contents
 
@@ -28,443 +28,459 @@ FraiseQL v2 provides a comprehensive, production-ready observability stack that 
 
 ### Minimal Setup
 
-```bash
-<!-- Code example in BASH -->
-# 1. Start FraiseQL Server
-RUST_LOG=info cargo run -p FraiseQL-server
+Wire metrics and tracing onto the FastAPI app, then run it with uvicorn:
 
-# 2. Access metrics endpoint
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.monitoring import setup_metrics, MetricsConfig
+from fraiseql.tracing import setup_tracing, TracingConfig
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,
+)
+
+# Prometheus metrics + /metrics endpoint
+setup_metrics(app, MetricsConfig(namespace="fraiseql"))
+
+# OpenTelemetry distributed tracing
+setup_tracing(app, TracingConfig(service_name="fraiseql"))
+```
+
+```bash
+# Run the app
+uvicorn myapp:app --host 0.0.0.0 --port 8000
+
+# Scrape Prometheus metrics
 curl http://localhost:8000/metrics
 
-# 3. Access health check
+# Liveness probe
 curl http://localhost:8000/health
 
-# 4. View introspection schema
-curl http://localhost:8000/introspection
-```text
-<!-- Code example in TEXT -->
+# Readiness probe (checks the database + schema)
+curl http://localhost:8000/ready
+```
+
+The `/health` and `/ready` endpoints are added automatically by `create_fraiseql_app`. `setup_metrics` adds the `/metrics` endpoint (path configurable via `MetricsConfig.metrics_path`).
 
 ### With Prometheus + Grafana
 
 ```bash
-<!-- Code example in BASH -->
-# 1. Start Docker services
-docker-compose -f docker-compose.yml up -d
+# 1. Start Docker services (app + Prometheus + Grafana)
+docker compose up -d
 
-# 2. Access Grafana
+# 2. Open Grafana
 open http://localhost:3000
 
-# 3. Add Prometheus datasource
-# - URL: http://prometheus:9090
-# - Default
+# 3. Add a Prometheus datasource
+#    - URL: http://prometheus:9090
+#    - Set as default
 
-# 4. Import dashboard
-# - URL: file://monitoring/grafana-dashboard.json
-```text
-<!-- Code example in TEXT -->
+# 4. Build dashboards from the fraiseql_* metric series
+```
 
 ### Accessing Metrics
 
 ```bash
-<!-- Code example in BASH -->
-# Prometheus text format (scrape by Prometheus)
+# Prometheus text exposition format (scraped by Prometheus)
 curl http://localhost:8000/metrics
+```
 
-# JSON format (for dashboards/APIs)
-curl http://localhost:8000/metrics/json
+The response is standard Prometheus text. With the default `namespace="fraiseql"` you will see series such as:
 
-# Example response:
-# {
-#   "queries_total": 1250,
-#   "queries_success": 1200,
-#   "queries_error": 50,
-#   "avg_query_duration_ms": 23.5,
-#   "cache_hit_ratio": 0.65
-# }
 ```text
-<!-- Code example in TEXT -->
+# HELP fraiseql_graphql_queries_total Total number of GraphQL queries
+# TYPE fraiseql_graphql_queries_total counter
+fraiseql_graphql_queries_total{operation_type="query",operation_name="users"} 1250
+# HELP fraiseql_graphql_query_duration_seconds GraphQL query execution time in seconds
+# TYPE fraiseql_graphql_query_duration_seconds histogram
+fraiseql_graphql_query_duration_seconds_sum{operation_type="query",operation_name="users"} 29.4
+fraiseql_graphql_query_duration_seconds_count{operation_type="query",operation_name="users"} 1250
+```
+
+> Metrics collection requires the optional `prometheus_client` dependency. If it is not installed, `setup_metrics` degrades gracefully and the `/metrics` endpoint returns placeholder output.
 
 ## OpenTelemetry Integration
 
 ### Initialization
 
-FraiseQL v2 provides full **OpenTelemetry** integration for distributed tracing and observability:
+FraiseQL v1 provides OpenTelemetry distributed tracing through `setup_tracing(app, config)`. It installs a `TracingMiddleware` on the FastAPI app and (when the OpenTelemetry SDK is available) auto-instruments psycopg so database calls become child spans:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::observability;
+```python
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-// Initialize OpenTelemetry at startup
-#[tokio::main]
-async fn main() -> Result<()> {
-    // Initialize tracer, metrics, and logging
-    observability::init_observability()?;
+tracer = setup_tracing(
+    app,
+    TracingConfig(
+        service_name="fraiseql",
+        service_version="1.0.0",
+        deployment_environment="production",
+        sample_rate=1.0,                      # 1.0 = 100% sampling
+        export_format="otlp",                 # "otlp", "jaeger", or "zipkin"
+        export_endpoint="http://otel-collector:4317",
+    ),
+)
+```
 
-    // Now all requests will be automatically traced
-    start_server().await
-}
-```text
-<!-- Code example in TEXT -->
+`TracingConfig` validates that `sample_rate` is between `0.0` and `1.0` and that `export_format` is one of `otlp`, `jaeger`, or `zipkin`. Paths in `exclude_paths` (`/health`, `/ready`, `/metrics`, `/docs`, `/openapi.json`) are not traced.
 
-### W3C Trace Context Format
-
-FraiseQL uses the **W3C Trace Context** standard for cross-service tracing:
-
-```text
-<!-- Code example in TEXT -->
-traceparent: 00-{trace-id}-{span-id}-{trace-flags}
-            └──────────┬──────────┘
-            Example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
-```text
-<!-- Code example in TEXT -->
-
-**Components**:
-
-- **Version** (2 hex digits): `00` (v1)
-- **Trace ID** (32 hex digits): Unique request identifier across all services
-  - Generated: `uuid()` as 32-char hex (e.g., `4bf92f3577b34da6a3ce929d0e0e4736`)
-- **Span ID** (16 hex digits): Unique operation within trace
-  - Generated: `uuid()` as 16-char hex (e.g., `00f067aa0ba902b7`)
-- **Trace Flags** (2 hex digits): `01` = sampled, `00` = not sampled
+> Tracing requires the optional OpenTelemetry packages. When they are not installed, the tracer becomes a no-op and the middleware passes requests through untouched.
 
 ### Trace Context Propagation
 
-Automatic trace context propagation across service boundaries:
+The tracer propagates context using the standard W3C `traceparent` header. The `TracingMiddleware` extracts incoming context from request headers; you can inject the current context into outgoing requests:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::observability::context::{TraceContext, get_context, set_context};
+```python
+from fraiseql.tracing import get_tracer
 
-// In request handler
-let incoming_traceparent = req.headers().get("traceparent")?;
-let trace_ctx = TraceContext::from_traceparent(incoming_traceparent)?;
+tracer = get_tracer()
 
-// Store in thread-local context
-set_context(trace_ctx.clone());
+# Propagate the current trace into a downstream HTTP call
+headers = tracer.inject_context({})
+# headers now contains a "traceparent" entry when propagation is enabled
+```
 
-// Execute query (trace ID automatically included in all logs/spans)
-let result = execute_query(query).await?;
+The W3C `traceparent` format is:
 
-// Create child span for downstream call
-let child_span = trace_ctx.child();
-let downstream_traceparent = child_span.traceparent_header();
-
-// Call downstream service with trace propagation
-client.call(service, request)
-    .header("traceparent", downstream_traceparent)
-    .await?;
-
-// Clear context after request
-clear_context();
 ```text
-<!-- Code example in TEXT -->
+traceparent: 00-{32-hex-trace-id}-{16-hex-span-id}-{trace-flags}
+            Example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+```
+
+**Components**:
+
+- **Version** (2 hex digits): `00`
+- **Trace ID** (32 hex digits): unique request identifier across services
+- **Span ID** (16 hex digits): unique operation within the trace
+- **Trace Flags** (2 hex digits): `01` = sampled, `00` = not sampled
 
 ### Span Creation and Management
 
-Use the **SpanBuilder** pattern for creating instrumentation:
+The `FraiseQLTracer` exposes context managers for instrumenting work explicitly. Each is a no-op when tracing is disabled:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::observability::tracing::{SpanBuilder, SpanStatus};
+```python
+from fraiseql.tracing import get_tracer
 
-// Create a span with attributes
-let span = SpanBuilder::new("execute_query")
-    .with_attribute("operation", "GetUser")
-    .with_attribute("database", "postgres")
-    .with_attribute("cache", "hit")
-    .build();
+tracer = get_tracer()
 
-// Status after execution
-if query_succeeded {
-    span.set_status(SpanStatus::Ok);
-} else {
-    span.set_status(SpanStatus::Error);
-}
-```text
-<!-- Code example in TEXT -->
+# Trace a database query (sets db.system=postgresql, db.statement, etc.)
+with tracer.trace_database_query("SELECT", "v_user", "SELECT data FROM v_user"):
+    rows = await db.find("v_user")
 
-### Structured Logging with Trace Correlation
+# Trace a GraphQL operation
+with tracer.trace_graphql_query("GetUser", query_text, variables):
+    result = await execute(query_text, variables)
+```
 
-All logs automatically include trace context:
+Decorator helpers are also exported for convenience:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::observability::logging::{LogEntry, LogLevel};
+```python
+from fraiseql.tracing import trace_graphql_operation, trace_database_query
 
-let entry = LogEntry::new(LogLevel::Info, "Query executed")
-    .with_duration_ms(45.2)
-    .with_field("operation", "GetUser")
-    .with_field("rows", "142");
+@trace_graphql_operation("query", "GetUser")
+async def run_get_user(query: str, variables: dict | None = None) -> dict:
+    ...
 
-// Automatically includes:
-// - timestamp
-// - level (INFO)
-// - message
-// - trace_id (from context)
-// - span_id (from context)
-// - all custom fields
-// Output: JSON to stdout
-```text
-<!-- Code example in TEXT -->
+@trace_database_query("SELECT", "v_user")
+async def load_users(sql: str) -> list[dict]:
+    ...
+```
 
-**Example JSON Output**:
+### Recording Custom Metrics
 
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-31T12:34:56.789Z",
-  "level": "INFO",
-  "message": "Query executed",
-  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "span_id": "00f067aa0ba902b7",
-  "duration_ms": 45.2,
-  "operation": "GetUser",
-  "rows": 142
-}
-```text
-<!-- Code example in TEXT -->
+The Prometheus collector returned by `setup_metrics` (also reachable via `get_metrics()`) records GraphQL, mutation, database, cache, and error metrics:
 
-### Metrics Collection
+```python
+from fraiseql.monitoring import get_metrics
 
-Metrics automatically tracked for:
+metrics = get_metrics()
+if metrics is not None:
+    metrics.record_query(
+        operation_type="query",
+        operation_name="GetUser",
+        duration_ms=45.0,
+        success=True,
+    )
+    metrics.record_db_query(query_type="SELECT", table_name="v_user", duration_ms=12.0)
+    metrics.record_cache_hit(cache_type="result")
+```
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::observability::metrics::MetricsCollector;
-
-let collector = MetricsCollector::new();
-
-// Record each request
-collector.record_request(
-    duration_ms: 45,
-    is_error: false
-);
-
-// Get summary with Prometheus format
-let summary = collector.summary();
-// Output includes:
-// - graphql_requests_total {count}
-// - graphql_errors_total {count}
-// - graphql_duration_ms {average}
-```text
-<!-- Code example in TEXT -->
+The `with_metrics(...)` decorator records timing and success/failure automatically for `"query"` / `"mutation"` operation types.
 
 ---
 
 ## Architecture
 
-### Three-Layer Observability Stack
+### Three Observability Layers
 
 ```text
-<!-- Code example in TEXT -->
 ┌─────────────────────────────────────────────────────────────┐
 │                    Visualization Layer                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │    Grafana   │  │   Kibana     │  │   DataDog    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│  │    Grafana   │  │   Kibana     │  │   DataDog    │        │
+│  └──────────────┘  └──────────────┘  └──────────────┘        │
 └─────────────────────────────────────────────────────────────┘
                             ↑
 ┌─────────────────────────────────────────────────────────────┐
 │                   Backend/Aggregation Layer                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Prometheus  │  │ Elasticsearch│  │   Jaeger     │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│  │  Prometheus  │  │ Elasticsearch│  │  Jaeger/OTLP │        │
+│  └──────────────┘  └──────────────┘  └──────────────┘        │
 └─────────────────────────────────────────────────────────────┘
                             ↑
 ┌─────────────────────────────────────────────────────────────┐
-│              FraiseQL Server Observability                   │
+│            FraiseQL FastAPI App (Python)                     │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │             Metrics                                  │   │
-│  │  - Query execution time, throughput, errors          │   │
-│  │  - Database performance, connection pools            │   │
-│  │  - Cache hit rates and efficiency                    │   │
+│  │  Metrics — setup_metrics(app, MetricsConfig(...))     │   │
+│  │  - GraphQL query/mutation count, duration, errors     │   │
+│  │  - Database query + connection-pool gauges            │   │
+│  │  - Cache hits/misses, HTTP request metrics            │   │
 │  └──────────────────────────────────────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │          Structured JSON Logging                      │   │
-│  │  - Request context and correlation                   │   │
-│  │  - Performance metrics in every log entry            │   │
-│  │  - Error details with stack traces                   │   │
+│  │  Tracing — setup_tracing(app, TracingConfig(...))     │   │
+│  │  - W3C traceparent propagation                        │   │
+│  │  - Auto-instrumented psycopg spans                    │   │
+│  │  - GraphQL operation / DB / cache span helpers        │   │
 │  └──────────────────────────────────────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │         Distributed Tracing (W3C)                     │   │
-│  │  - Request correlation across services               │   │
-│  │  - Span tracking and event recording                 │   │
-│  │  - Cross-cutting context via baggage                 │   │
+│  │  Health — HealthCheck + built-in /health & /ready     │   │
+│  │  - check_database / check_pool_stats / check_query_…  │   │
 │  └──────────────────────────────────────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │         Performance Monitoring                        │   │
-│  │  - Slow query detection and analysis                 │   │
-│  │  - Operation profiling                               │   │
-│  │  - Cache efficiency tracking                         │   │
+│  │  Performance + Audit                                  │   │
+│  │  - QueryStatsCollector (pg_stat_statements)           │   │
+│  │  - PostgreSQLErrorTracker (Sentry replacement)        │   │
+│  │  - SecurityLogger (security audit events)             │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Monitoring Stack Components
 
 ### 1. Prometheus Metrics
 
-**Purpose**: Real-time metric collection and time-series analysis
+**Purpose**: Real-time metric collection and time-series analysis.
 
-**Key Metrics**:
+**Setup**: `setup_metrics(app, MetricsConfig(...))`. The `namespace` (default `"fraiseql"`) prefixes every metric name. Configuration lives in `MetricsConfig`:
 
-- `fraiseql_graphql_queries_total`: Total queries executed
-- `fraiseql_graphql_queries_success`: Successful queries
-- `fraiseql_graphql_queries_error`: Failed queries
-- `fraiseql_graphql_query_duration_ms`: Average query duration
-- `fraiseql_database_queries_total`: Database operations
-- `fraiseql_cache_hit_ratio`: Cache efficiency (0-1)
-- `fraiseql_validation_errors_total`: Schema validation errors
-- `fraiseql_parse_errors_total`: Query parse errors
-- `fraiseql_execution_errors_total`: Execution errors
+```python
+from fraiseql.monitoring import MetricsConfig
 
-**Endpoints**:
+config = MetricsConfig(
+    enabled=True,
+    namespace="fraiseql",
+    metrics_path="/metrics",
+    exclude_paths={"/metrics", "/health", "/ready", "/startup"},
+)
+```
 
-- `/metrics` - Prometheus text format (for scraping)
-- `/metrics/json` - JSON format (for dashboards)
+**Key metrics** (shown with the default `fraiseql` namespace):
 
-**See Also**: [Metrics Reference](./reference/metrics.md) for detailed metrics
+- `fraiseql_graphql_queries_total` — total GraphQL queries (labels: `operation_type`, `operation_name`)
+- `fraiseql_graphql_queries_success` / `fraiseql_graphql_queries_errors` — query outcomes
+- `fraiseql_graphql_query_duration_seconds` — query duration histogram
+- `fraiseql_graphql_mutations_total` / `..._success` / `..._errors` — mutation counters
+- `fraiseql_db_queries_total` / `fraiseql_db_query_duration_seconds` — database operations
+- `fraiseql_db_connections_active` / `..._idle` / `..._total` — connection-pool gauges
+- `fraiseql_cache_hits_total` / `fraiseql_cache_misses_total` — cache efficiency
+- `fraiseql_errors_total` — errors (labels: `error_type`, `error_code`, `operation`)
+- `fraiseql_http_requests_total` / `fraiseql_http_request_duration_seconds` — HTTP metrics
 
-### 2. Structured JSON Logging
+**Endpoint**: `/metrics` (Prometheus text exposition format).
 
-**Purpose**: Contextual logging for debugging and analysis
+### 2. Structured Logging
 
-**Log Entry Structure**:
+**Purpose**: Contextual logging for debugging and analysis.
+
+FraiseQL emits standard Python `logging` records. Configure JSON output (for example with `python-json-logger`) so each line carries request context and timing:
 
 ```json
-<!-- Code example in JSON -->
 {
-  "timestamp": "2024-01-16T15:30:45.123Z",
+  "timestamp": "2026-01-16T15:30:45.123Z",
   "level": "INFO",
   "message": "GraphQL query executed",
-  "request_context": {
-    "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "operation": "GetUser",
-    "user_id": "user123",
-    "client_ip": "203.0.113.42"
-  },
-  "metrics": {
-    "duration_ms": 23.5,
-    "db_queries": 2,
-    "cache_hit": true
-  },
-  "error": null
+  "operation": "GetUser",
+  "user_id": "user123",
+  "duration_ms": 23.5,
+  "db_queries": 2,
+  "cache_hit": true
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**See Also**: [Structured Logging Guide](./structured-logging.md)
+Set the level via `logging.basicConfig(level=...)` or your logging config. Security-relevant events are emitted as structured JSON by the security audit logger (see [Security Audit Logging](#5-security-audit-logging)).
 
 ### 3. Distributed Tracing
 
-**Purpose**: Request correlation across service boundaries
+**Purpose**: Request correlation across service boundaries.
 
-**W3C Trace Context Header Format**:
+Enabled with `setup_tracing(app, TracingConfig(...))`. Uses the W3C `traceparent` header for propagation and exports spans via OTLP, Jaeger, or Zipkin.
 
-```text
-<!-- Code example in TEXT -->
-traceparent: 00-{32-hex-trace-id}-{16-hex-span-id}-{trace-flags}
-```text
-<!-- Code example in TEXT -->
+**Key features**:
 
-**Key Features**:
-
-- Automatic trace ID generation
-- Parent-child span relationships
-- Cross-cutting context via baggage
-- W3C standard compliant
-
-**See Also**: [Distributed Tracing Guide](./distributed-tracing.md)
+- Automatic W3C trace context extraction and propagation
+- Auto-instrumented psycopg database spans
+- Per-operation span helpers (`trace_graphql_query`, `trace_database_query`, `trace_cache_operation`)
+- Configurable sampling via `sample_rate`
 
 ### 4. Performance Monitoring
 
-**Purpose**: Detailed performance analysis and optimization
+**Purpose**: Detailed performance analysis and optimization.
 
-**Tracking**:
+FraiseQL surfaces PostgreSQL query statistics through the `QueryStatsCollector`, which reads the `v_query_stats` view backed by the `pg_stat_statements` extension:
 
-- Query execution phases (parse, validation, DB, formatting)
-- Slow query detection and analysis
-- Cache efficiency analysis
-- Operation-specific profiling
-- Database query performance
+```python
+from fraiseql.monitoring import init_query_stats
 
-**See Also**: [Observability Architecture](./observability-architecture.md)
+# At startup, with your psycopg AsyncConnectionPool
+collector = init_query_stats(pool)
+
+# Later — top queries by total execution time
+stats = await collector.get_stats(top_n=20, order_by="total_exec_time")
+for s in stats:
+    print(f"{s.query_preview[:60]}  calls={s.calls}  mean={s.mean_exec_time_ms}ms")
+```
+
+Valid `order_by` values: `total_exec_time`, `mean_exec_time`, `calls`, `cache_hit_ratio`. The collector degrades gracefully (returns an empty list) when `pg_stat_statements` is not installed. The companion health check `check_query_stats` reports whether the extension is available.
+
+### 5. Security Audit Logging
+
+**Purpose**: Record authentication, authorization, rate-limiting, and query-security events.
+
+The security logger (`fraiseql.audit`) writes structured `SecurityEvent` records to stdout and/or a file:
+
+```python
+from fraiseql.audit import get_security_logger, SecurityEventType
+
+security = get_security_logger()
+
+security.log_auth_failure(
+    reason="invalid_token",
+    ip_address="203.0.113.42",
+    attempted_username="alice",
+)
+
+security.log_authorization_denied(
+    user_id="user123",
+    resource="Order",
+    action="read",
+    reason="missing role",
+)
+```
+
+`SecurityEventType` covers authentication (`AUTH_SUCCESS`, `AUTH_FAILURE`, …), authorization (`AUTHZ_DENIED`, `AUTHZ_FIELD_DENIED`, …), rate limiting, CSRF, query security (complexity/depth/timeout), and system events. The log file path defaults to `security_events.log` and can be overridden with `FRAISEQL_SECURITY_LOG_PATH`.
+
+### 6. Error Tracking (PostgreSQL-native)
+
+**Purpose**: Capture exceptions with full context — a Sentry replacement using your own database.
+
+```python
+from fraiseql.monitoring import init_error_tracker
+
+# At startup, with your psycopg AsyncConnectionPool
+tracker = init_error_tracker(pool, environment="production", release_version="1.0.0")
+
+# Capture an exception with context
+try:
+    await risky_operation()
+except Exception as exc:
+    await tracker.capture_exception(exc, context={"request": request_data})
+```
+
+Errors are grouped by fingerprint, store full stack traces and request/user context, and can be correlated with OpenTelemetry `trace_id`/`span_id`.
+
+### 7. Health and Readiness Checks
+
+**Purpose**: Kubernetes liveness/readiness probes.
+
+`create_fraiseql_app` registers two endpoints automatically:
+
+- `GET /health` — liveness probe; returns `{"status": "healthy", "service": "fraiseql"}` while the process is up.
+- `GET /ready` — readiness probe; validates the database pool, runs a `SELECT`, and confirms the schema is loaded. Returns `503` when not ready.
+
+For richer composite checks, use the `HealthCheck` runner with the pre-built check functions:
+
+```python
+from fraiseql.monitoring import (
+    HealthCheck,
+    check_database,
+    check_pool_stats,
+    check_query_stats,
+)
+
+health = HealthCheck()
+health.add_check("database", check_database)
+health.add_check("pool", check_pool_stats)
+health.add_check("query_stats", check_query_stats)
+
+result = await health.run_checks()
+# {"status": "healthy" | "degraded", "checks": {...}}
+```
+
+`check_database` and `check_pool_stats` read the app's connection pool via `fraiseql.fastapi.dependencies.get_db_pool`. You can expose `health.run_checks()` from a custom FastAPI route if you want a single aggregated report.
 
 ## Integration Patterns
 
-### Pattern 1: Request Lifecycle Tracing
+### Pattern 1: Compose the full stack at startup
 
-Track a single request through the entire execution pipeline:
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::{
-    TraceContext, RequestContext, PerformanceMonitor,
-    StructuredLogEntry, LogLevel, LogMetrics
-};
-
-// 1. Create trace context (at entry point)
-let trace = TraceContext::new();
-let request_ctx = RequestContext::new()
-    .with_operation("GetUser".to_string());
-
-// 2. Create performance monitor
-let perf_monitor = PerformanceMonitor::new(100.0); // 100ms threshold
-
-// 3. Execute query
-let query_perf = execute_query(...);
-perf_monitor.record_query(query_perf.clone());
-
-// 4. Log with all context
-let entry = StructuredLogEntry::new(
-    LogLevel::Info,
-    "Query executed successfully".to_string()
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.monitoring import (
+    setup_metrics, MetricsConfig,
+    init_query_stats, init_error_tracker,
 )
-.with_request_context(request_ctx)
-.with_metrics(LogMetrics::new()
-    .with_duration_ms(query_perf.duration_us as f64 / 1000.0)
-    .with_db_queries(query_perf.db_queries)
-    .with_cache_hit(query_perf.cached));
+from fraiseql.tracing import setup_tracing, TracingConfig
+from fraiseql.fastapi.dependencies import get_db_pool
 
-tracing::info!("{}", entry.to_json_string());
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,
+)
 
-### Pattern 2: Service-to-Service Tracing
+setup_metrics(app, MetricsConfig(namespace="fraiseql"))
+setup_tracing(app, TracingConfig(service_name="fraiseql", deployment_environment="production"))
 
-Propagate trace context across service boundaries:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+@app.on_event("startup")
+async def init_observability() -> None:
+    pool = get_db_pool()
+    init_query_stats(pool)
+    init_error_tracker(pool, environment="production")
+```
 
-// Upstream service receives request with trace
-let incoming_header = req.headers().get("traceparent").unwrap();
-let trace = TraceContext::from_w3c_traceparent(incoming_header)?;
+### Pattern 2: Capture and correlate errors
 
-// Add baggage for downstream
-let trace_with_context = trace
-    .with_baggage("user_id".to_string(), user.id.clone())
-    .with_baggage("tenant".to_string(), user.tenant.clone());
+```python
+from fraiseql.monitoring import get_error_tracker, get_metrics
 
-// Downstream call
-let child_trace = trace_with_context.child_span();
-downstream_service.call(
-    client,
-    request,
-    headers.insert("traceparent", child_trace.to_w3c_traceparent())
-)?;
-```text
-<!-- Code example in TEXT -->
+async def handle_operation(operation_name: str) -> None:
+    metrics = get_metrics()
+    tracker = get_error_tracker()
+    try:
+        await do_work()
+    except Exception as exc:
+        if metrics is not None:
+            metrics.record_error(
+                error_type=type(exc).__name__,
+                error_code="HANDLER_ERROR",
+                operation=operation_name,
+            )
+        if tracker is not None:
+            await tracker.capture_exception(exc, context={"operation": operation_name})
+        raise
+```
 
-### Pattern 3: Performance Analysis Dashboard
+### Pattern 3: Performance analysis dashboard
 
 Real-time monitoring with Grafana:
 
 ```bash
-<!-- Code example in BASH -->
-# 1. Configure Grafana datasource
+# 1. Configure the Grafana datasource
 curl -X POST http://localhost:3000/api/datasources \
   -H "Content-Type: application/json" \
   -d '{
@@ -475,65 +491,56 @@ curl -X POST http://localhost:3000/api/datasources \
     "isDefault": true
   }'
 
-# 2. Import dashboard
-curl -X POST http://localhost:3000/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d @monitoring/grafana-dashboard.json
-```text
-<!-- Code example in TEXT -->
+# 2. Build panels from fraiseql_* series, e.g.:
+#    rate(fraiseql_graphql_queries_total[5m])
+#    histogram_quantile(0.95, rate(fraiseql_graphql_query_duration_seconds_bucket[5m]))
+```
 
-### Pattern 4: Alerting Rules
+### Pattern 4: Alerting rules
 
-Set up Prometheus alerting:
+Set up Prometheus alerting against the `fraiseql_*` series:
 
 ```yaml
-<!-- Code example in YAML -->
 # prometheus/alerts.yml
 groups:
-  - name: FraiseQL
+  - name: fraiseql
     rules:
       # High error rate
       - alert: HighErrorRate
         expr: |
-          (rate(fraiseql_graphql_queries_error[5m]) /
+          (rate(fraiseql_graphql_queries_errors[5m]) /
            rate(fraiseql_graphql_queries_total[5m])) > 0.05
         annotations:
-          summary: "Error rate above 5%"
+          summary: "GraphQL error rate above 5%"
 
-      # High latency
+      # High latency (p95)
       - alert: HighLatency
-        expr: fraiseql_graphql_query_duration_ms > 500
+        expr: |
+          histogram_quantile(0.95,
+            rate(fraiseql_graphql_query_duration_seconds_bucket[5m])) > 0.5
         annotations:
-          summary: "Query latency above 500ms"
-
-      # Low cache hit rate
-      - alert: LowCacheHitRate
-        expr: fraiseql_cache_hit_ratio < 0.50
-        annotations:
-          summary: "Cache hit rate below 50%"
-```text
-<!-- Code example in TEXT -->
+          summary: "p95 query latency above 500ms"
+```
 
 ## Deployment Configuration
 
 ### Docker Compose (Development)
 
 ```yaml
-<!-- Code example in YAML -->
-version: '3.8'
 services:
-  FraiseQL:
-    image: FraiseQL-server:latest
+  app:
+    build: .
+    command: uvicorn myapp:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://user:pass@postgres:5432/db
-      RUST_LOG: info
+      FRAISEQL_ENVIRONMENT: development
     depends_on:
       - postgres
 
   postgres:
-    image: postgres:15
+    image: postgres:16
     environment:
       POSTGRES_PASSWORD: password
     volumes:
@@ -557,61 +564,66 @@ services:
 
 volumes:
   postgres_data:
-```text
-<!-- Code example in TEXT -->
+```
+
+`prometheus.yml` should scrape the app's `/metrics` endpoint:
+
+```yaml
+scrape_configs:
+  - job_name: fraiseql
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8000"]
+```
 
 ### Kubernetes (Production)
 
-```yaml
-<!-- Code example in YAML -->
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: FraiseQL-config
-data:
-  config.toml: |
-    bind_addr = "0.0.0.0:8000"
-    database_url = "postgresql://..."
-    pool_min_size = 5
-    pool_max_size = 20
+Run the app with uvicorn and wire the probes to the built-in endpoints:
 
----
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: FraiseQL-server
+  name: fraiseql
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: FraiseQL
+      app: fraiseql
   template:
     metadata:
       labels:
-        app: FraiseQL
+        app: fraiseql
     spec:
       containers:
-      - name: FraiseQL
-        image: FraiseQL-server:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: RUST_LOG
-          value: info
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-```text
-<!-- Code example in TEXT -->
+        - name: app
+          image: my-fraiseql-app:latest
+          command: ["uvicorn", "myapp:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fraiseql-secrets
+                  key: database-url
+            - name: FRAISEQL_ENVIRONMENT
+              value: production
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+```
+
+Configuration is supplied through `create_fraiseql_app(...)` keyword arguments, `FraiseQLConfig`, or `FRAISEQL_`-prefixed environment variables — there is no TOML config file.
 
 ## Alerting and SLOs
 
@@ -624,16 +636,15 @@ spec:
 | Query Latency p95 | > 200ms | Warning | Analyze |
 | Query Latency p95 | > 1s | Critical | Page on-call |
 | Cache Hit Rate | < 50% | Warning | Review caching |
-| Database Time % | > 80% | Warning | Optimize queries |
+| DB Pool Utilization | > 90% | Warning | Scale pool/replicas |
 | Server Error Rate | > 1% | Critical | Page on-call |
 
 ### Sample SLOs
 
 ```text
-<!-- Code example in TEXT -->
-Service Level Objectives for FraiseQL v2:
+Service Level Objectives:
 
-1. Availability SLO: 99.95% (4 hours/month downtime)
+1. Availability SLO: 99.95% (about 4 hours/month downtime)
    - Alert if: error_rate > 0.5% for 5 minutes
 
 2. Latency SLO: 95th percentile < 200ms
@@ -644,21 +655,20 @@ Service Level Objectives for FraiseQL v2:
 
 4. Query Success: > 99.9%
    - Alert if: success_rate < 99% for 5 minutes
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Best Practices
 
 ### 1. Logging Best Practices
 
-✅ **DO:**
+DO:
 
-- Include request IDs in all log entries
+- Include request IDs in log entries
 - Log at appropriate levels (DEBUG/TRACE only in development)
-- Include business context (user_id, operation, tenant)
-- Use structured JSON format
+- Include business context (`user_id`, `operation`, `tenant_id`)
+- Use structured JSON output
 
-❌ **DON'T:**
+DON'T:
 
 - Log sensitive data (passwords, tokens, PII)
 - Use vague error messages
@@ -667,49 +677,49 @@ Service Level Objectives for FraiseQL v2:
 
 ### 2. Metrics Best Practices
 
-✅ **DO:**
+DO:
 
-- Use consistent metric names
-- Export metrics every 30-60 seconds
+- Keep the default `fraiseql` namespace consistent across services
 - Track both success and error cases
-- Monitor resource usage (CPU, memory, connections)
+- Monitor resource usage (connections, CPU, memory)
+- Use histograms (`*_duration_seconds_bucket`) for percentiles
 
-❌ **DON'T:**
+DON'T:
 
-- Create unbounded cardinality metrics
-- Export sensitive information
-- Change metric names without versioning
+- Create unbounded label cardinality (e.g., raw IDs as labels)
+- Export sensitive information in labels
+- Change metric names without versioning dashboards
 - Track PII in metrics
 
 ### 3. Tracing Best Practices
 
-✅ **DO:**
+DO:
 
-- Create traces at system boundaries
-- Propagate trace IDs across services
-- Sample appropriately for traffic volume
-- Set meaningful span names
+- Create spans at system boundaries
+- Propagate the `traceparent` header across services
+- Sample appropriately for traffic volume (`sample_rate`)
+- Set meaningful span/operation names
 
-❌ **DON'T:**
+DON'T:
 
-- Create traces for every operation
-- Store sensitive data in baggage
-- Forget to finish spans
-- Use verbose log messages in spans
+- Trace every trivial operation at 100% under heavy load
+- Store sensitive data in span attributes
+- Forget to close manual spans (use the context managers)
+- Trace the excluded probe/health paths
 
 ### 4. Performance Monitoring
 
-✅ **DO:**
+DO:
 
-- Monitor slow query rate
+- Install `pg_stat_statements` and review `QueryStatsCollector` output
 - Track cache efficiency
-- Analyze database performance
-- Use performance data for optimization
+- Analyze database performance against the pool gauges
+- Use percentiles, not just averages
 
-❌ **DON'T:**
+DON'T:
 
 - Ignore performance trends
-- Rely on averages alone (use percentiles)
+- Rely on averages alone
 - Skip error analysis
 - Assume caching is always beneficial
 
@@ -717,60 +727,71 @@ Service Level Objectives for FraiseQL v2:
 
 ### Metrics Not Appearing in Prometheus
 
-**Symptoms**: `/metrics` endpoint works but Prometheus scrape fails
+**Symptoms**: `/metrics` works but Prometheus scrape fails.
 
 **Solutions**:
 
-1. Check Prometheus configuration: `curl http://prometheus:9090/-/healthy`
-2. Verify target is reachable: `telnet FraiseQL 8000`
-3. Check scrape interval: Default is 15 seconds
-4. Look for errors in Prometheus logs
+1. Confirm `setup_metrics(app, ...)` runs before the app serves traffic.
+2. Verify the target is reachable: `curl http://app:8000/metrics`.
+3. Check Prometheus health: `curl http://prometheus:9090/-/healthy`.
+4. Ensure `prometheus_client` is installed (otherwise output is placeholder data).
+5. Check the scrape `metrics_path` matches `MetricsConfig.metrics_path`.
 
 ### Missing Log Entries
 
-**Symptoms**: Some requests not logged
+**Symptoms**: Some requests are not logged.
 
 **Solutions**:
 
-1. Check log level: Set `RUST_LOG=debug` for verbose logging
-2. Verify sink is configured correctly
-3. Check for log buffering: May have 1-2 second delay
-4. Ensure application isn't crashing silently
+1. Set the log level: `logging.basicConfig(level=logging.DEBUG)`.
+2. Verify your logging handler/formatter is configured.
+3. Check for log buffering (may add a small delay).
+4. Ensure the application is not crashing silently.
 
 ### Trace Context Lost Between Services
 
-**Symptoms**: Trace IDs not propagating
+**Symptoms**: Trace IDs not propagating.
 
 **Solutions**:
 
-1. Verify `traceparent` header is being set
-2. Check header format: `00-{32-hex}-{16-hex}-{2-hex}`
-3. Ensure services parse and propagate headers
-4. Check for header case sensitivity
+1. Verify `setup_tracing` ran and the OpenTelemetry SDK is installed.
+2. Confirm the `traceparent` header is set on outgoing calls (use `tracer.inject_context(...)`).
+3. Check the header format: `00-{32-hex}-{16-hex}-{2-hex}`.
+4. Ensure downstream services parse and re-propagate the header.
 
-### High Memory Usage
+### `/ready` Returns 503
 
-**Symptoms**: Server memory grows over time
+**Symptoms**: Readiness probe fails while `/health` succeeds.
 
 **Solutions**:
 
-1. Check for trace context leaks
-2. Monitor baggage size (should be < 1KB per request)
-3. Verify metrics aren't accumulating unbounded
-4. Enable profile memory: `RUST_BACKTRACE=1`
+1. Confirm `DATABASE_URL` is correct and PostgreSQL is reachable.
+2. Inspect the JSON body — the `checks` map names the failing dependency.
+3. Verify the connection pool initialized at startup.
+4. Confirm the GraphQL schema built without errors.
+
+### Empty Query Statistics
+
+**Symptoms**: `QueryStatsCollector.get_stats()` returns an empty list.
+
+**Solutions**:
+
+1. Install the extension: `CREATE EXTENSION pg_stat_statements;`.
+2. Add `pg_stat_statements` to `shared_preload_libraries` and restart PostgreSQL.
+3. Run `check_query_stats` to confirm availability.
+4. Ensure the database role can read the stats views.
 
 ## Additional Resources
 
-- [Metrics Reference](./reference/metrics.md)
-- [Structured Logging Guide](./structured-logging.md)
 - [Distributed Tracing Guide](./distributed-tracing.md)
-- [Observability Architecture](./observability-architecture.md)
+- [Configuration Reference](./configuration.md)
+- [Production Deployment](../production/deployment.md)
 
 ## Support
 
-For issues or questions about observability in FraiseQL v2:
+For issues or questions about observability in FraiseQL v1:
 
-- Check [troubleshooting section](#troubleshooting)
-- Review logs with `RUST_LOG=debug`
+- Check the [troubleshooting section](#troubleshooting)
+- Raise the log level to `DEBUG` for verbose output
 - Enable tracing for detailed execution flow
 - File an issue with metrics/logs/traces attached
