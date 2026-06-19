@@ -2,24 +2,28 @@
 ---
 
 title: FraiseQL Advanced Optimization
-description: This specification covers advanced optimization techniques for FraiseQL deployments, beyond baseline performance characteristics. It addresses:
+description: Advanced optimization techniques for FraiseQL deployments on PostgreSQL, beyond baseline performance characteristics.
 keywords: ["design", "scalability", "performance", "patterns", "security"]
 tags: ["documentation", "reference"]
 ---
 
 # FraiseQL Advanced Optimization
 
-**Version**: 2.0.0
-**Status**: Specification
+**Status**: Guide
 **Last Updated**: January 2026
 
 ---
 
 ## Executive Summary
 
-This specification covers advanced optimization techniques for FraiseQL deployments, beyond baseline performance characteristics. It addresses:
+This guide covers advanced optimization techniques for FraiseQL deployments, beyond baseline
+performance characteristics. FraiseQL is a Python runtime GraphQL framework for PostgreSQL
+that builds its schema in memory at app startup and runs over FastAPI; queries resolve against
+your `v_`/`tv_` PostgreSQL views and mutations call `fn_` functions. Most optimization work
+therefore happens in PostgreSQL itself (indexes, views, partitioning) and in the surrounding
+infrastructure (caching, connection pooling, scaling). This guide addresses:
 
-- **Query Optimization**: Execution plans, predicate pushdown, adaptive strategies
+- **Query Optimization**: PostgreSQL execution plans, predicate placement, index-aware filtering
 - **Database Tuning**: Index design, partitioning, materialized views, statistics
 - **Caching Edge Cases**: Hot keys, thundering herd, cache eviction policies
 - **Multi-Instance Scaling**: Consistency across replicas, session affinity, load balancing
@@ -31,262 +35,77 @@ This specification covers advanced optimization techniques for FraiseQL deployme
 
 ## 1. Query Optimization
 
+FraiseQL generates parameterized SQL against your `v_`/`tv_` PostgreSQL views at runtime and lets
+**PostgreSQL's own query planner** choose execution plans, join algorithms, and index usage. There
+is no separate FraiseQL query compiler or optimizer — the optimization surface is your view SQL,
+your indexes, and PostgreSQL's planner. Your job is to write selective views, index the right
+columns, and verify the plans PostgreSQL chooses with `EXPLAIN`.
+
 ### 1.1 Execution Plan Analysis
 
-FraiseQL generates deterministic execution plans at compile time, enabling offline optimization.
+Inspect the plan PostgreSQL produces for the SQL behind a view, including actual timing and buffer
+hits, with `EXPLAIN (ANALYZE, BUFFERS)`:
 
-```python
-<!-- Code example in Python -->
-class ExecutionPlan:
-    """Internal representation of query execution strategy"""
+```sql
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+SELECT id, data
+FROM v_user
+WHERE (data->>'tenant_id') = '...'
+ORDER BY (data->>'created_at') DESC
+LIMIT 50;
+```
 
-    def __init__(self):
-        # Compile-time optimization information
-        self.steps: list[ExecutionStep] = []
-        self.cost_estimate: float = 0.0
-        self.io_estimate: int = 0  # Estimated rows
-        self.memory_estimate: int = 0  # In bytes
-        self.parallelizable: bool = True
-        self.joins: list[JoinStrategy] = []
-        self.filters: list[FilterPushdown] = []
-        self.projections: list[ProjectionStep] = []
-        self.caching_opportunities: list[CachePoint] = []
+Read the plan top-down: look for sequential scans on large tables (missing or unused index),
+high `actual rows` versus `estimated rows` (stale statistics — run `ANALYZE`), and expensive
+sorts that could be served by an index. The `Buffers` line tells you how much I/O the query did.
 
-class JoinStrategy(Enum):
-    """Different join algorithms"""
-    NESTED_LOOP = "nested_loop"      # O(n*m) - for small tables
-    HASH_JOIN = "hash_join"           # O(n+m) - for equality predicates
-    SORT_MERGE = "sort_merge"         # O(n log n + m log m) - for ordered data
-    BROADCAST = "broadcast"           # For skewed distributions
-    INDEXED_LOOKUP = "indexed_lookup" # For index scans
+### 1.2 Predicate Placement
 
-class FilterPushdown:
-    """Push filters down to database for early elimination"""
+PostgreSQL pushes WHERE predicates down to index/heap scans automatically, but only when the
+predicate is **sargable** (can use an index). Make sure the columns your GraphQL filters target
+are indexed and that the view does not wrap them in a way that defeats the index:
 
-    def __init__(
-        self,
-        predicate: str,
-        can_use_index: bool = False,
-        selectivity: float = 1.0  # Fraction of rows matching filter
-    ):
-        self.predicate = predicate
-        self.can_use_index = can_use_index
-        self.selectivity = selectivity
-        self.estimated_reduction = 1.0 - selectivity  # 1.0 = 100% of rows filtered
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Indexed, sargable: planner can use idx on (data->>'tenant_id')
+CREATE INDEX idx_user_tenant
+ON tb_user ((data->>'tenant_id'))
+WHERE deleted_at IS NULL;
 
-### 1.2 Predicate Pushdown
+-- For JSONB containment filters, a GIN index lets @> use the index
+CREATE INDEX idx_user_data_gin ON tb_user USING GIN (data);
+```
 
-Push filters to database where they can use indexes:
+FraiseQL's WHERE operators (`eq`, `gt`, `contains`, `@>`, etc.) translate to parameterized SQL
+predicates; whether they use an index is entirely down to the indexes you create on the
+underlying table or expression.
 
-```python
-<!-- Code example in Python -->
-class QueryOptimizer:
-    """Optimize execution plans with predicate pushdown"""
+### 1.3 Join Order
 
-    def optimize_query(
-        self,
-        plan: ExecutionPlan,
-        database_stats: DatabaseStatistics
-    ) -> OptimizedExecutionPlan:
-        """Apply optimization techniques to execution plan"""
+When a view joins several tables, PostgreSQL's planner reorders the joins for you based on table
+statistics — there is no FraiseQL-level join reordering. Keep the planner well-informed and the
+joins cheap:
 
-        optimized = OptimizedExecutionPlan(plan)
+- Run `ANALYZE` so row-count estimates are accurate (see Section 2.4).
+- Index foreign-key columns so the planner can choose nested-loop + index lookups for selective
+  joins instead of large hash joins.
+- Filter as early as possible inside the view (push selective `WHERE` clauses onto the driving
+  table) so intermediate result sets stay small.
+- For very large joins, consider materializing the result in a `tv_` projection table refreshed
+  by a function or trigger, so GraphQL reads hit a single pre-composed table.
 
-        # 1. Push predicates to earliest possible step
-        for filter_step in plan.filters:
-            if self._can_push_predicate(filter_step, plan):
-                self._push_predicate_to_scan(optimized, filter_step)
+### 1.4 Adapting to Runtime Cardinality
 
-        # 2. Reorder joins for optimal cardinality
-        optimized.joins = self._optimize_join_order(
-            plan.joins,
-            database_stats
-        )
+PostgreSQL adapts execution to actual data at runtime (e.g. choosing nested-loop vs. hash join
+from statistics, and parallel workers from `max_parallel_workers_per_gather`). You influence this
+by keeping statistics fresh and, where the planner consistently misestimates, by adding extended
+statistics:
 
-        # 3. Identify cached subqueries
-        optimized.cached_subqueries = self._identify_cached_subqueries(plan)
-
-        # 4. Estimate updated costs
-        optimized.cost_estimate = self._estimate_cost(optimized, database_stats)
-
-        return optimized
-
-    def _can_push_predicate(
-        self,
-        filter_step: FilterPushdown,
-        plan: ExecutionPlan
-    ) -> bool:
-        """Check if predicate can be pushed to table scan
-
-        Can push if:
-        - All columns in predicate come from same table
-        - Index exists on filter column
-        - Selectivity is good (filters significant rows)
-        """
-        return (
-            filter_step.can_use_index and
-            filter_step.selectivity < 0.5  # Filter at least 50%
-        )
-
-    def _push_predicate_to_scan(
-        self,
-        plan: OptimizedExecutionPlan,
-        filter_step: FilterPushdown
-    ) -> None:
-        """Move filter predicate to table scan operation"""
-        # Find scan step that this predicate applies to
-        for step in plan.steps:
-            if isinstance(step, ScanStep):
-                if self._predicate_applies_to_table(filter_step, step):
-                    step.additional_filters.append(filter_step.predicate)
-                    plan.steps.remove(filter_step)  # Remove later filter
-                    break
-```text
-<!-- Code example in TEXT -->
-
-### 1.3 Join Order Optimization
-
-Reorder joins to minimize intermediate result sizes:
-
-```python
-<!-- Code example in Python -->
-class JoinOrderOptimizer:
-    """Optimize join order to minimize cost"""
-
-    def optimize_join_order(
-        self,
-        joins: list[Join],
-        statistics: DatabaseStatistics
-    ) -> list[Join]:
-        """Reorder joins using dynamic programming
-
-        Goal: Minimize number of rows in intermediate results
-
-        Example:
-        Original:  A ⊲⊳ B ⊲⊳ C ⊲⊳ D
-        Cost: A(1M) × B(10K) × C(100K) × D(50K) = 5×10^14 rows intermediate
-
-        Optimized: A ⊲⊳ B ⊲⊳ C (selective) ⊲⊳ D
-        Cost: A(1M) × B(10K) × C(1K) × D(50K) = 5×10^10 rows intermediate
-        (500,000x reduction!)
-        """
-        n = len(joins)
-        if n <= 1:
-            return joins
-
-        # dp[mask] = minimum cost to join tables in mask
-        dp = {}
-        parent = {}  # Track which join order was optimal
-
-        def get_cost(table_mask: int) -> float:
-            """Recursively compute minimum cost for subset of tables"""
-            if table_mask in dp:
-                return dp[table_mask]
-
-            # Base case: single table
-            if bin(table_mask).count("1") == 1:
-                table_id = self._find_table_id(table_mask)
-                return float(statistics.get_table_rows(table_id))
-
-            # Try all possible left/right splits
-            min_cost = float("inf")
-            best_split = None
-
-            for left_mask in self._generate_subsets(table_mask):
-                right_mask = table_mask ^ left_mask
-                if right_mask == 0:
-                    continue
-
-                left_cost = get_cost(left_mask)
-                right_cost = get_cost(right_mask)
-
-                # Find join predicates between left and right
-                selectivity = self._get_join_selectivity(left_mask, right_mask, joins)
-
-                # Cost of this join order: output rows
-                join_cost = left_cost * right_cost * selectivity
-
-                if join_cost < min_cost:
-                    min_cost = join_cost
-                    best_split = (left_mask, right_mask)
-
-            dp[table_mask] = min_cost
-            parent[table_mask] = best_split
-
-            return min_cost
-
-        # Compute optimal order for all tables
-        all_tables_mask = (1 << n) - 1
-        get_cost(all_tables_mask)
-
-        # Reconstruct optimal join order
-        return self._reconstruct_join_order(all_tables_mask, parent)
-```text
-<!-- Code example in TEXT -->
-
-### 1.4 Adaptive Query Execution
-
-Adjust execution plans based on runtime statistics:
-
-```python
-<!-- Code example in Python -->
-class AdaptiveQueryExecutor:
-    """Modify execution plan based on runtime feedback"""
-
-    async def execute_with_adaptation(
-        self,
-        plan: ExecutionPlan,
-        context: ExecutionContext
-    ) -> QueryResult:
-        """Execute query with runtime adaptations"""
-
-        # 1. Execute first step (scan)
-        scan_result = await self._execute_step(plan.steps[0])
-        actual_rows = scan_result.row_count
-
-        # 2. Compare to estimate
-        plan_rows = plan.steps[0].row_estimate
-        variance = abs(actual_rows - plan_rows) / max(plan_rows, 1)
-
-        # 3. If actual rows significantly different, adapt
-        if variance > 0.3:  # >30% difference
-            adapted_plan = self._adapt_plan(plan, actual_rows)
-            return await self._execute_adapted_plan(adapted_plan, scan_result)
-
-        # 4. Otherwise continue with original plan
-        return await self._execute_remaining_steps(plan, scan_result)
-
-    def _adapt_plan(
-        self,
-        original_plan: ExecutionPlan,
-        actual_rows: int
-    ) -> ExecutionPlan:
-        """Create adapted plan based on actual cardinality"""
-        adapted = ExecutionPlan()
-
-        for i, step in enumerate(original_plan.steps):
-            if i == 0:
-                # Keep first step (already executed)
-                adapted.steps.append(step)
-            else:
-                # Re-estimate cost of subsequent steps with actual rows
-                new_step = copy.deepcopy(step)
-                new_step.input_rows = actual_rows
-                new_step.recompute_estimates()
-                adapted.steps.append(new_step)
-
-        # Re-optimize join order if needed
-        if isinstance(adapted.steps[-1], JoinStep):
-            adapted.joins = self._optimize_join_order_runtime(
-                adapted.joins,
-                actual_rows
-            )
-
-        return adapted
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Help the planner when two columns are correlated
+CREATE STATISTICS stat_user_tenant_status (dependencies)
+ON tenant_id, status FROM tb_user;
+ANALYZE tb_user;
+```
 
 ---
 
@@ -295,7 +114,6 @@ class AdaptiveQueryExecutor:
 ### 2.1 Index Design Strategy
 
 ```python
-<!-- Code example in Python -->
 class IndexDesignGuide:
     """Guidelines for optimal index design"""
 
@@ -331,7 +149,7 @@ class IndexDesignGuide:
 
 
 # Example: Comprehensive index strategy for users table
-@FraiseQL.type
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
     id: ID
     email: str
@@ -422,13 +240,11 @@ CREATE INDEX idx_user_tenant_email_covering ON tb_user (tenant_id, email)
 INCLUDE (id, status)
 WHERE deleted_at IS NULL;
 """
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 2.2 Materialized Views for Complex Queries
 
 ```python
-<!-- Code example in Python -->
 class MaterializedViewStrategy:
     """Use materialized views to pre-compute expensive aggregations"""
 
@@ -480,20 +296,18 @@ class MaterializedViewStrategy:
             "use_for": "critical aggregations"
         }
     }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 2.3 Partitioning Strategy
 
 ```python
-<!-- Code example in Python -->
 class PartitioningStrategy:
     """Partition large tables for performance and maintenance"""
 
     PARTITIONING_OPTIONS = {
         "range": {
             "use_for": "Time-series data",
-            "example": "PARTITION BY RANGE (YEAR(created_at))",
+            "example": "PARTITION BY RANGE (created_at)",
             "benefits": "Efficient time-range queries, easier archival",
             "cost": "Moderate"
         },
@@ -538,13 +352,11 @@ class PartitioningStrategy:
     -- - Faster VACUUM (partition-level)
     -- - Parallel sequential scans across partitions
     """
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 2.4 Query Statistics
 
 ```python
-<!-- Code example in Python -->
 class QueryStatisticsManager:
     """Maintain statistics for query optimization"""
 
@@ -591,8 +403,7 @@ class QueryStatisticsManager:
         "vacuum_full": "Weekly for heavily-updated tables",
         "reindex": "Monthly for index fragmentation",
     }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -603,7 +414,6 @@ class QueryStatisticsManager:
 When a single cache key receives massive traffic:
 
 ```python
-<!-- Code example in Python -->
 class HotKeyDetector:
     """Detect and handle hot keys (single keys with extreme traffic)"""
 
@@ -697,15 +507,13 @@ class LocalCacheForHotKeys:
             key=lambda k: self.cache[k][1]
         )
         del self.cache[oldest_key]
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3.2 Thundering Herd Problem
 
 When cache expires and many requests try to refresh simultaneously:
 
 ```python
-<!-- Code example in Python -->
 class ThunderingHerdMitigation:
     """Prevent cache stampede when popular key expires"""
 
@@ -792,13 +600,11 @@ class ProbabilisticEarlyRefresh:
             await self.redis.set(key, value, ex=ttl)
         except Exception as e:
             logger.exception(f"Background refresh failed for {key}: {e}")
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3.3 Cache Eviction Policies
 
 ```python
-<!-- Code example in Python -->
 class CacheEvictionPolicy(Enum):
     """Cache eviction strategies when full"""
 
@@ -854,8 +660,7 @@ class EvictionPolicySelector:
         else:
             # Default: Simple and effective
             return CacheEvictionPolicy.LRU
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -864,7 +669,6 @@ class EvictionPolicySelector:
 ### 4.1 Consistency Across Replicas
 
 ```python
-<!-- Code example in Python -->
 class MultiInstanceConsistencyManager:
     """Ensure consistency when running multiple instances"""
 
@@ -946,13 +750,11 @@ class ReadConsistencyLevel(Enum):
     # Read from replica, fall back to primary on miss
     # Use: Hybrid approach, best for most cases
     HYBRID = "hybrid"
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 4.2 Session Affinity
 
 ```python
-<!-- Code example in Python -->
 class SessionAffinityManager:
     """Route requests to same instance for connection locality"""
 
@@ -987,13 +789,11 @@ class SessionAffinityManager:
         # Ketama algorithm
         hash_value = self._compute_hash(key)
         return hash_value % replicas
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 4.3 Load Balancing Strategies
 
 ```python
-<!-- Code example in Python -->
 class LoadBalancingStrategy(Enum):
     """Different load balancing approaches"""
 
@@ -1048,8 +848,7 @@ class LoadBalancer:
 
         else:
             return self.instances[0]  # Default
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1058,7 +857,6 @@ class LoadBalancer:
 ### 5.1 Memory Management
 
 ```python
-<!-- Code example in Python -->
 class MemoryOptimizer:
     """Optimize memory usage in FraiseQL runtime"""
 
@@ -1105,13 +903,11 @@ class MemoryOptimizer:
             thresholds["threshold1"],
             thresholds["threshold2"]
         )
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 5.2 Connection Pooling
 
 ```python
-<!-- Code example in Python -->
 class ConnectionPoolOptimizer:
     """Configure optimal connection pool parameters"""
 
@@ -1156,8 +952,7 @@ class ConnectionPoolOptimizer:
             "avg_wait_time_ms": pool.avg_checkout_time_ms,
             "pool_exhaustion_events": pool.exhaustion_count,
         }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1166,7 +961,6 @@ class ConnectionPoolOptimizer:
 ### 6.1 Query Profiling
 
 ```python
-<!-- Code example in Python -->
 class QueryProfiler:
     """Profile query execution for optimization"""
 
@@ -1234,13 +1028,11 @@ class QueryProfile:
             step.name: "Index" in step.name
             for step in self.steps
         }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 6.2 Distributed Tracing for Performance
 
 ```python
-<!-- Code example in Python -->
 class QueryTracer:
     """Trace query execution across services"""
 
@@ -1261,7 +1053,7 @@ class QueryTracer:
                 pass
 
             with self._create_span("database.prepare"):
-                # Query compilation
+                # SQL generation and parameter binding
                 pass
 
             with self._create_span("database.execute"):
@@ -1278,8 +1070,7 @@ class QueryTracer:
         """Create tracing span"""
         # Implementation: OpenTelemetry or similar
         pass
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1288,7 +1079,6 @@ class QueryTracer:
 ### 7.1 Circuit Breaker Pattern
 
 ```python
-<!-- Code example in Python -->
 class CircuitBreaker:
     """Prevent cascading failures with circuit breaker"""
 
@@ -1346,13 +1136,11 @@ class CircuitBreaker:
             self.last_failure_time and
             time.time() - self.last_failure_time > self.recovery_timeout
         )
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 7.2 Graceful Degradation
 
 ```python
-<!-- Code example in Python -->
 class GracefulDegradation:
     """Degrade service gracefully under load"""
 
@@ -1392,13 +1180,11 @@ class GracefulDegradation:
         # Cache policy: Keep responses for 30 seconds
         key = f"cached_response:{query}:{context.user_id}"
         return await self.cache.get(key)
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 7.3 Backpressure Handling
 
 ```python
-<!-- Code example in Python -->
 class BackpressureManager:
     """Handle traffic surge with graceful backpressure"""
 
@@ -1428,8 +1214,7 @@ class BackpressureManager:
         """Process single request"""
         # Implementation
         pass
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1542,4 +1327,8 @@ FraiseQL advanced optimization covers:
 
 ---
 
-**Complete**: All 17 Priority 3 architecture documents now available for comprehensive system design and implementation planning.
+Because FraiseQL builds its schema in memory at startup and serves it over FastAPI, the bulk of
+this tuning lives in PostgreSQL (indexes, views, partitioning, statistics) and in your deployment
+infrastructure (caching, connection pools, replicas) rather than in the framework itself. Profile
+with `EXPLAIN (ANALYZE, BUFFERS)`, index for your real query shapes, and apply the caching and
+scaling patterns above as your workload grows.
