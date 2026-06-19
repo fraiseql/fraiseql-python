@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="PostgreSQL aggregate functions supported by FraiseQL v1 runtime auto-aggregation, plus the standard SQL aggregates you can use directly inside your views.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/specs/aggregation-operators/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Aggregation Operators - FraiseQL Documentation</title>
+        <title>Aggregation Operators Reference - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#aggregation-operators-specification" class="md-skip">
+        <a href="#aggregation-operators-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Aggregation Operators
+              Aggregation Operators Reference
             
           </span>
         </div>
@@ -4802,55 +4804,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#capability-manifest-extension" class="md-nav__link">
+  <a href="#supported-aggregate-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability Manifest Extension
+        Supported aggregate functions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Capability Manifest Extension">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-runtime-auto-aggregation-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How runtime auto-aggregation works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How runtime auto-aggregation works">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#postgresql-aggregation-operators" class="md-nav__link">
+  <a href="#registering-aggregation-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mysql-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MySQL Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlite-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLite Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-server-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL Server Aggregation Operators
+        Registering aggregation metadata
       
     </span>
   </a>
@@ -4863,22 +4843,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-schema-generation" class="md-nav__link">
+  <a href="#aggregation-in-view-sql" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphQL Schema Generation
+        Aggregation in view SQL
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="GraphQL Schema Generation">
+    <nav class="md-nav" aria-label="Aggregation in view SQL">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#postgresql-target-full-support" class="md-nav__link">
+  <a href="#group-by" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL Target (Full Support)
+        GROUP BY
       
     </span>
   </a>
@@ -4886,10 +4866,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mysql-target-good-support" class="md-nav__link">
+  <a href="#having" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MySQL Target (Good Support)
+        HAVING
       
     </span>
   </a>
@@ -4897,10 +4877,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sqlite-target-basic-support" class="md-nav__link">
+  <a href="#conditional-aggregates-with-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQLite Target (Basic Support)
+        Conditional aggregates with FILTER
       
     </span>
   </a>
@@ -4908,10 +4888,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sql-server-target-enterprise-support" class="md-nav__link">
+  <a href="#time-bucketing-with-date_trunc" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL Server Target (Enterprise Support)
+        Time bucketing with DATE_TRUNC
       
     </span>
   </a>
@@ -4924,15 +4904,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-3-advanced-aggregate-functions" class="md-nav__link">
+  <a href="#array-json-and-string-aggregates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3: Advanced Aggregate Functions
+        Array, JSON, and string aggregates
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Phase 3: Advanced Aggregate Functions">
+    <nav class="md-nav" aria-label="Array, JSON, and string aggregates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4958,10 +4938,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#string_agg-group_concat" class="md-nav__link">
+  <a href="#string_agg" class="md-nav__link">
     <span class="md-ellipsis">
       
-        STRING_AGG / GROUP_CONCAT
+        STRING_AGG
       
     </span>
   </a>
@@ -4985,60 +4965,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#compilation-rules" class="md-nav__link">
+  <a href="#choosing-measure-and-dimension-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compilation Rules
+        Choosing measure and dimension columns
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Compilation Rules">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#measure-column-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Measure Column Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dimension-path-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dimension Path Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#temporal-bucketing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Temporal Bucketing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
+  <a href="#related-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Related Specifications
+        Related references
       
     </span>
   </a>
@@ -5186,55 +5127,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#capability-manifest-extension" class="md-nav__link">
+  <a href="#supported-aggregate-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability Manifest Extension
+        Supported aggregate functions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Capability Manifest Extension">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-runtime-auto-aggregation-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How runtime auto-aggregation works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How runtime auto-aggregation works">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#postgresql-aggregation-operators" class="md-nav__link">
+  <a href="#registering-aggregation-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mysql-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MySQL Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlite-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLite Aggregation Operators
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-server-aggregation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL Server Aggregation Operators
+        Registering aggregation metadata
       
     </span>
   </a>
@@ -5247,22 +5166,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-schema-generation" class="md-nav__link">
+  <a href="#aggregation-in-view-sql" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphQL Schema Generation
+        Aggregation in view SQL
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="GraphQL Schema Generation">
+    <nav class="md-nav" aria-label="Aggregation in view SQL">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#postgresql-target-full-support" class="md-nav__link">
+  <a href="#group-by" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL Target (Full Support)
+        GROUP BY
       
     </span>
   </a>
@@ -5270,10 +5189,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mysql-target-good-support" class="md-nav__link">
+  <a href="#having" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MySQL Target (Good Support)
+        HAVING
       
     </span>
   </a>
@@ -5281,10 +5200,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sqlite-target-basic-support" class="md-nav__link">
+  <a href="#conditional-aggregates-with-filter" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQLite Target (Basic Support)
+        Conditional aggregates with FILTER
       
     </span>
   </a>
@@ -5292,10 +5211,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#sql-server-target-enterprise-support" class="md-nav__link">
+  <a href="#time-bucketing-with-date_trunc" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQL Server Target (Enterprise Support)
+        Time bucketing with DATE_TRUNC
       
     </span>
   </a>
@@ -5308,15 +5227,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-3-advanced-aggregate-functions" class="md-nav__link">
+  <a href="#array-json-and-string-aggregates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 3: Advanced Aggregate Functions
+        Array, JSON, and string aggregates
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Phase 3: Advanced Aggregate Functions">
+    <nav class="md-nav" aria-label="Array, JSON, and string aggregates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5342,10 +5261,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#string_agg-group_concat" class="md-nav__link">
+  <a href="#string_agg" class="md-nav__link">
     <span class="md-ellipsis">
       
-        STRING_AGG / GROUP_CONCAT
+        STRING_AGG
       
     </span>
   </a>
@@ -5369,60 +5288,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#compilation-rules" class="md-nav__link">
+  <a href="#choosing-measure-and-dimension-columns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compilation Rules
+        Choosing measure and dimension columns
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Compilation Rules">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#measure-column-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Measure Column Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dimension-path-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dimension Path Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#temporal-bucketing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Temporal Bucketing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
+  <a href="#related-references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Related Specifications
+        Related references
       
     </span>
   </a>
@@ -5449,572 +5329,268 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Aggregation Operators Specification
-description: This specification defines the aggregation operators available in FraiseQL, organized by database target and phase of implementation.
-keywords: ["format", "compliance", "protocol", "specification", "standard"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="aggregation-operators-specification">Aggregation Operators Specification<a class="headerlink" href="#aggregation-operators-specification" title="Permanent link">&para;</a></h1>
-<p><strong>Version:</strong> 1.0
-<strong>Status:</strong> Complete
-<strong>Audience:</strong> Compiler developers, SDK maintainers
-<strong>Date:</strong> January 12, 2026</p>
+<h1 id="aggregation-operators-reference">Aggregation Operators Reference<a class="headerlink" href="#aggregation-operators-reference" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Stable</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This specification defines the aggregation operators available in FraiseQL, organized by database target and phase of implementation.</p>
-<p><strong>Phases</strong>:</p>
-<ul>
-<li><strong>Phase 1-2</strong> (✅ Complete): Basic aggregates (COUNT, SUM, AVG, MIN, MAX, STDDEV, VARIANCE)</li>
-<li><strong>Phase 3</strong> (📋 Planned): Advanced aggregates (ARRAY_AGG, JSON_AGG, STRING_AGG, BOOL_AND/OR)</li>
-<li><strong>Phase 4</strong> (📋 Planned): Auto-generated GraphQL types (perfect for v2 compiler!)</li>
-</ul>
+<p>FraiseQL v1 performs <strong>runtime auto-aggregation</strong> against PostgreSQL. When a GraphQL
+query selects aggregate fields on a view-backed type, FraiseQL derives the matching
+<code>GROUP BY</code> and aggregate SQL automatically and runs it against your <code>v_</code>/<code>tv_</code> view.
+There is no build step, no compiler, and no schema artifact — everything happens at
+app startup and request time. FraiseQL v1 targets <strong>PostgreSQL only</strong>.</p>
+<p>Auto-aggregation is implemented by <code>_derive_auto_aggregation</code> (with
+<code>_parse_aggregation_expr</code>) in <code>src/fraiseql/db.py</code>. The aggregate expressions you
+declare per type are parsed and validated against an allowlist, then composed into a
+parameterized <code>SELECT ... GROUP BY</code> statement against the registered view.</p>
+<p>This document covers two related things:</p>
+<ol>
+<li>The aggregate functions FraiseQL knows how to <strong>derive automatically</strong> at runtime.</li>
+<li>The standard PostgreSQL aggregate, grouping, and bucketing constructs you write
+   <strong>directly in your view SQL</strong> when you need behavior beyond auto-aggregation.</li>
+</ol>
 <hr />
-<h2 id="capability-manifest-extension">Capability Manifest Extension<a class="headerlink" href="#capability-manifest-extension" title="Permanent link">&para;</a></h2>
-<p>The capability manifest defines which operators are available for each database target.</p>
-<h3 id="postgresql-aggregation-operators">PostgreSQL Aggregation Operators<a class="headerlink" href="#postgresql-aggregation-operators" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "postgresql": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT <span class="arithmatex">\(field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDDEV", "sql": "STDDEV", "return_type": "Float" },
-        { "function": "STDDEV_POP", "sql": "STDDEV_POP", "return_type": "Float" },
-        { "function": "STDDEV_SAMP", "sql": "STDDEV_SAMP", "return_type": "Float" },
-        { "function": "VARIANCE", "sql": "VARIANCE", "return_type": "Float" },
-        { "function": "VAR_POP", "sql": "VAR_POP", "return_type": "Float" },
-        { "function": "VAR_SAMP", "sql": "VAR_SAMP", "return_type": "Float" },
-        { "function": "PERCENTILE_CONT", "sql": "PERCENTILE_CONT(\)</span>fraction) WITHIN GROUP (ORDER BY <span class="arithmatex">\(field)", "return_type": "Float" },
-        { "function": "PERCENTILE_DISC", "sql": "PERCENTILE_DISC(\)</span>fraction) WITHIN GROUP (ORDER BY <span class="arithmatex">\(field)", "return_type": "Same as input" }
-      ],
-      "advanced": [
-        { "function": "ARRAY_AGG", "sql": "ARRAY_AGG", "return_type": "Array", "phase": 3 },
-        { "function": "JSON_AGG", "sql": "JSON_AGG", "return_type": "JSON", "phase": 3 },
-        { "function": "JSONB_AGG", "sql": "JSONB_AGG", "return_type": "JSONB", "phase": 3 },
-        { "function": "STRING_AGG", "sql": "STRING_AGG(\)</span>field, $separator)", "return_type": "String", "phase": 3 },
-        { "function": "BOOL_AND", "sql": "BOOL_AND", "return_type": "Boolean", "phase": 3 },
-        { "function": "BOOL_OR", "sql": "BOOL_OR", "return_type": "Boolean", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATE_TRUNC", "sql": "DATE_TRUNC", "buckets": ["second", "minute", "hour", "day", "week", "month", "quarter", "year"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "... FILTER (WHERE ...)", "supported": true }
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mysql-aggregation-operators">MySQL Aggregation Operators<a class="headerlink" href="#mysql-aggregation-operators" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "mysql": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT <span class="arithmatex">\(field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDDEV", "sql": "STDDEV", "return_type": "Float", "note": "Sample standard deviation" },
-        { "function": "STDDEV_POP", "sql": "STDDEV_POP", "return_type": "Float" },
-        { "function": "STDDEV_SAMP", "sql": "STDDEV_SAMP", "return_type": "Float" },
-        { "function": "VARIANCE", "sql": "VARIANCE", "return_type": "Float", "note": "Sample variance" },
-        { "function": "VAR_POP", "sql": "VAR_POP", "return_type": "Float" },
-        { "function": "VAR_SAMP", "sql": "VAR_SAMP", "return_type": "Float" }
-      ],
-      "advanced": [
-        { "function": "GROUP_CONCAT", "sql": "GROUP_CONCAT(\)</span>field SEPARATOR <span class="arithmatex">\(separator)", "return_type": "String", "phase": 3, "note": "Similar to STRING_AGG" },
-        { "function": "JSON_ARRAYAGG", "sql": "JSON_ARRAYAGG", "return_type": "JSON", "phase": 3 },
-        { "function": "JSON_OBJECTAGG", "sql": "JSON_OBJECTAGG(\)</span>key, $value)", "return_type": "JSON", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATE_FORMAT", "sql": "DATE_FORMAT", "buckets": ["day", "week", "month", "year"], "note": "Limited bucket support" }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sqlite-aggregation-operators">SQLite Aggregation Operators<a class="headerlink" href="#sqlite-aggregation-operators" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "sqlite": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT <span class="arithmatex">\(field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [],
-      "advanced": [
-        { "function": "GROUP_CONCAT", "sql": "GROUP_CONCAT(\)</span>field, $separator)", "return_type": "String", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "strftime", "sql": "strftime", "buckets": ["day", "week", "month", "year"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sql-server-aggregation-operators">SQL Server Aggregation Operators<a class="headerlink" href="#sql-server-aggregation-operators" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "sqlserver": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT <span class="arithmatex">\(field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDEV", "sql": "STDEV", "return_type": "Float", "note": "Sample standard deviation" },
-        { "function": "STDEVP", "sql": "STDEVP", "return_type": "Float", "note": "Population standard deviation" },
-        { "function": "VAR", "sql": "VAR", "return_type": "Float", "note": "Sample variance" },
-        { "function": "VARP", "sql": "VARP", "return_type": "Float", "note": "Population variance" }
-      ],
-      "advanced": [
-        { "function": "STRING_AGG", "sql": "STRING_AGG(\)</span>field, $separator)", "return_type": "String", "phase": 3, "note": "Requires SQL Server 2017+" }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATEPART", "sql": "DATEPART", "buckets": ["day", "week", "month", "quarter", "year", "hour", "minute"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ],
-      "json": [
-        { "function": "JSON_VALUE", "sql": "JSON_VALUE", "supported": true },
-        { "function": "JSON_QUERY", "sql": "JSON_QUERY", "supported": true },
-        { "function": "FOR_JSON", "sql": "FOR JSON PATH", "supported": true, "phase": 3, "note": "Output formatting" }
-      ]
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="supported-aggregate-functions">Supported aggregate functions<a class="headerlink" href="#supported-aggregate-functions" title="Permanent link">&para;</a></h2>
+<p>The following PostgreSQL aggregates are available for analytics over view-backed types:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>SQL</th>
+<th>Returns</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>COUNT</code></td>
+<td><code>COUNT(...)</code></td>
+<td>integer</td>
+<td>Row counts; <code>COUNT(DISTINCT col)</code> for distinct counts.</td>
+</tr>
+<tr>
+<td><code>SUM</code></td>
+<td><code>SUM(...)</code></td>
+<td>numeric</td>
+<td>Totals over a measure column.</td>
+</tr>
+<tr>
+<td><code>AVG</code></td>
+<td><code>AVG(...)</code></td>
+<td>double precision</td>
+<td>Mean of a measure column.</td>
+</tr>
+<tr>
+<td><code>MIN</code></td>
+<td><code>MIN(...)</code></td>
+<td>same as input</td>
+<td>Smallest value in the group.</td>
+</tr>
+<tr>
+<td><code>MAX</code></td>
+<td><code>MAX(...)</code></td>
+<td>same as input</td>
+<td>Largest value in the group.</td>
+</tr>
+<tr>
+<td><code>STDDEV</code></td>
+<td><code>STDDEV(...)</code></td>
+<td>double precision</td>
+<td>Sample standard deviation.</td>
+</tr>
+<tr>
+<td><code>VARIANCE</code></td>
+<td><code>VARIANCE(...)</code></td>
+<td>double precision</td>
+<td>Sample variance.</td>
+</tr>
+</tbody>
+</table>
+<p><code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, and <code>MAX</code> are wired into runtime auto-aggregation and can
+be derived from the field selection (see below). <code>STDDEV</code> and <code>VARIANCE</code> are standard
+PostgreSQL aggregates: compute them in your view SQL (or a dedicated analytics view) and
+expose the result as an ordinary field.</p>
+<p><code>SUM</code> and <code>AVG</code> operate on numeric inputs. When a measure is read from a JSONB <code>data</code>
+column, FraiseQL casts the extracted text to <code>numeric</code> before applying the aggregate;
+when the measure is a native numeric column (see <code>native_measures</code>), it aggregates the
+column directly and avoids the cast.</p>
 <hr />
-<h2 id="graphql-schema-generation">GraphQL Schema Generation<a class="headerlink" href="#graphql-schema-generation" title="Permanent link">&para;</a></h2>
-<p>For a fact table <code>tf_sales</code> with measures <code>revenue</code>, <code>quantity</code>, compiler generates database-specific aggregate types.</p>
-<h3 id="postgresql-target-full-support">PostgreSQL Target (Full Support)<a class="headerlink" href="#postgresql-target-full-support" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type SalesAggregate {
-  # Basic aggregates
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stddev: Float      # PostgreSQL only
-  revenue_variance: Float    # PostgreSQL only
-  quantity_sum: Int
-  quantity_avg: Float
-  quantity_min: Int
-  quantity_max: Int</p>
-<p># Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_week: String
-  occurred_at_month: String
-}</p>
-<p>input SalesGroupByInput {
-  category: Boolean
-  region: Boolean
-  customer_segment: Boolean
-  occurred_at_day: Boolean
-  occurred_at_week: Boolean
-  occurred_at_month: Boolean
-  occurred_at_quarter: Boolean
-  occurred_at_year: Boolean
-}</p>
-<p>input SalesHavingInput {
-  count_eq: Int
-  count_gt: Int
-  count_gte: Int
-  revenue_sum_eq: Float
-  revenue_sum_gt: Float
-  revenue_sum_gte: Float
-  revenue_avg_eq: Float
-  revenue_avg_gt: Float
-  revenue_avg_gte: Float
-}</p>
-<p>type Query {
-  sales_aggregate(
-    where: SalesWhereInput
-    groupBy: SalesGroupByInput
-    having: SalesHavingInput
-    orderBy: [OrderByInput!]
-    limit: Int
-    offset: Int
-  ): [SalesAggregate!]!
-}
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="how-runtime-auto-aggregation-works">How runtime auto-aggregation works<a class="headerlink" href="#how-runtime-auto-aggregation-works" title="Permanent link">&para;</a></h2>
+<p>Auto-aggregation kicks in when a query selects only <strong>dimensions</strong> and <strong>measures</strong> on a
+view-backed type — that is, when no identity field (such as <code>id</code>) is requested. FraiseQL
+then:</p>
+<ol>
+<li>Reads the field selection from the GraphQL query.</li>
+<li>Looks up the type's aggregation metadata (registered via <code>register_type_for_view</code>).</li>
+<li>Splits the selected fields into <code>GROUP BY</code> dimensions and aggregate measures.</li>
+<li>Builds a parameterized <code>SELECT &lt;dimensions&gt;, &lt;aggregates&gt; FROM &lt;view&gt; GROUP BY
+   &lt;dimensions&gt;</code> and executes it.</li>
+</ol>
+<p>Aggregate expressions are declared as strings like <code>SUM(cost)</code> or <code>AVG(volume)</code> and are
+validated against the allowlist before any SQL is composed, so the function name can
+never be injected.</p>
+<h3 id="registering-aggregation-metadata">Registering aggregation metadata<a class="headerlink" href="#registering-aggregation-metadata" title="Permanent link">&para;</a></h3>
+<p>Attach aggregation metadata to a view-backed type with <code>register_type_for_view</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
 
-<h3 id="mysql-target-good-support">MySQL Target (Good Support)<a class="headerlink" href="#mysql-target-good-support" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type SalesAggregate {
-  # Basic aggregates (same as PostgreSQL)
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stddev: Float      # MySQL has STDDEV
-  revenue_variance: Float    # MySQL has VARIANCE
-  quantity_sum: Int
-  quantity_avg: Float</p>
-<p># NO advanced aggregates in Phase 1-2
-  # Phase 3 will add GROUP_CONCAT, JSON_ARRAYAGG</p>
-<p># Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_month: String
-  occurred_at_year: String
-  # NO quarter bucket
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sqlite-target-basic-support">SQLite Target (Basic Support)<a class="headerlink" href="#sqlite-target-basic-support" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type SalesAggregate {
-  # Basic aggregates only
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  # NO stddev/variance
-  quantity_sum: Int
-  quantity_avg: Float</p>
-<p># Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_month: String
-  occurred_at_year: String
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sql-server-target-enterprise-support">SQL Server Target (Enterprise Support)<a class="headerlink" href="#sql-server-target-enterprise-support" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type SalesAggregate {
-  # Basic aggregates
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stdev: Float       # SQL Server: STDEV
-  revenue_variance: Float    # SQL Server: VAR
-  quantity_sum: Int
-  quantity_avg: Float</p>
-<p># Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_week: String
-  occurred_at_month: String
-  occurred_at_quarter: String
-  occurred_at_year: String
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="phase-3-advanced-aggregate-functions">Phase 3: Advanced Aggregate Functions<a class="headerlink" href="#phase-3-advanced-aggregate-functions" title="Permanent link">&para;</a></h2>
-<p><strong>Status</strong>: Implemented (database-dependent availability)</p>
-<h3 id="array_agg">ARRAY_AGG<a class="headerlink" href="#array_agg" title="Permanent link">&para;</a></h3>
-<p>Aggregate values into an array.</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    ARRAY_AGG(data-&gt;&gt;'product_name') AS product_names
-FROM tf_sales
-GROUP BY data-&gt;&gt;'category';
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Use JSON_ARRAYAGG instead
-SELECT
-    JSON_EXTRACT(data, '<span class="arithmatex">\(.category') AS category,
-    JSON_ARRAYAGG(JSON_EXTRACT(data, '\)</span>.product_name')) AS product_names
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.category');
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQLite</strong>: Not supported</p>
-<p><strong>SQL Server</strong>: Not directly supported (use FOR JSON)</p>
-<h3 id="json_agg-jsonb_agg">JSON_AGG / JSONB_AGG<a class="headerlink" href="#json_agg-jsonb_agg" title="Permanent link">&para;</a></h3>
-<p>Aggregate rows into JSON.</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'customer_id' AS customer_id,
-    JSONB_AGG(jsonb_build_object(
-        'product', data-&gt;&gt;'product_name',
-        'revenue', revenue
-    )) AS orders
-FROM tf_sales
-GROUP BY data-&gt;&gt;'customer_id';
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    JSON_EXTRACT(data, '<span class="arithmatex">\(.customer_id') AS customer_id,
-    JSON_ARRAYAGG(
-        JSON_OBJECT(
-            'product', JSON_EXTRACT(data, '\)</span>.product_name'),
-            'revenue', revenue
-        )
-    ) AS orders
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.customer_id');
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQLite</strong>: Not supported</p>
-<p><strong>SQL Server</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Use FOR JSON PATH
-SELECT
-    JSON_VALUE(data, '<span class="arithmatex">\(.customer_id') AS customer_id,
-    (
-        SELECT
-            JSON_VALUE(data, '\)</span>.product_name') AS product,
-            revenue
-        FROM tf_sales s2
-        WHERE JSON_VALUE(s2.data, '<span class="arithmatex">\(.customer_id') = JSON_VALUE(s1.data, '\)</span>.customer_id')
-        FOR JSON PATH
-    ) AS orders
-FROM tf_sales s1
-GROUP BY JSON_VALUE(data, '$.customer_id');
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="string_agg-group_concat">STRING_AGG / GROUP_CONCAT<a class="headerlink" href="#string_agg-group_concat" title="Permanent link">&para;</a></h3>
-<p>Concatenate strings with delimiter.</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'customer_id' AS customer_id,
-    STRING_AGG(data-&gt;&gt;'product_name', ', ' ORDER BY revenue DESC) AS products
-FROM tf_sales
-GROUP BY data-&gt;&gt;'customer_id';
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    JSON_EXTRACT(data, '<span class="arithmatex">\(.customer_id') AS customer_id,
-    GROUP_CONCAT(JSON_EXTRACT(data, '\)</span>.product_name') ORDER BY revenue DESC SEPARATOR ', ') AS products
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.customer_id');
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQLite</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    json_extract(data, '<span class="arithmatex">\(.customer_id') AS customer_id,
-    GROUP_CONCAT(json_extract(data, '\)</span>.product_name'), ', ') AS products
-FROM tf_sales
-GROUP BY json_extract(data, '$.customer_id');
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQL Server</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    JSON_VALUE(data, '<span class="arithmatex">\(.customer_id') AS customer_id,
-    STRING_AGG(JSON_VALUE(data, '\)</span>.product_name'), ', ') AS products
-FROM tf_sales
-GROUP BY JSON_VALUE(data, '$.customer_id');
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="bool_and-bool_or">BOOL_AND / BOOL_OR<a class="headerlink" href="#bool_and-bool_or" title="Permanent link">&para;</a></h3>
-<p>Boolean aggregates (all true / any true).</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    BOOL_AND((data-&gt;&gt;'in_stock')::boolean) AS all_in_stock,
-    BOOL_OR((data-&gt;&gt;'on_sale')::boolean) AS any_on_sale
-FROM tf_sales
-GROUP BY data-&gt;&gt;'category';
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL/SQLite/SQL Server</strong>: Emulate with MIN/MAX on boolean values or CASE WHEN.</p>
-<hr />
-<h2 id="compilation-rules">Compilation Rules<a class="headerlink" href="#compilation-rules" title="Permanent link">&para;</a></h2>
-<h3 id="measure-column-detection">Measure Column Detection<a class="headerlink" href="#measure-column-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Criteria</strong>:</p>
-<ul>
-<li>Numeric type: INT, BIGINT, DECIMAL, FLOAT, NUMERIC, REAL, DOUBLE PRECISION</li>
-<li>Non-nullable preferred (but nullable allowed)</li>
-<li>Excluded by convention: <code>id</code>, <code>created_at</code>, <code>updated_at</code></li>
-</ul>
-<p><strong>Example</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn is_measure_column(column: &amp;Column) -&gt; bool {
-    let numeric_types = ["int", "bigint", "decimal", "float", "numeric", "real", "double"];
-    let excluded_names = ["id", "created_at", "updated_at"];</p>
-<div class="highlight"><pre><span></span><code>numeric_types.contains(&amp;column.data_type.to_lowercase().as_str())
-    &amp;&amp; !excluded_names.contains(&amp;column.name.to_lowercase().as_str())
+<span class="n">register_type_for_view</span><span class="p">(</span>
+    <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_sales_summary&quot;</span><span class="p">,</span>
+    <span class="n">type_class</span><span class="o">=</span><span class="n">SalesSummary</span><span class="p">,</span>
+    <span class="n">aggregation</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;measures&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;measures.revenue&quot;</span><span class="p">:</span> <span class="s2">&quot;SUM&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;measures.quantity&quot;</span><span class="p">:</span> <span class="s2">&quot;SUM&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;dimensions&quot;</span><span class="p">:</span> <span class="s2">&quot;dimensions&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;native_dimensions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;period_date&quot;</span><span class="p">,</span> <span class="s2">&quot;category_id&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;native_measures&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;measures.quantity&quot;</span><span class="p">:</span> <span class="s2">&quot;quantity&quot;</span><span class="p">},</span>
+        <span class="s2">&quot;native_dimension_mapping&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dimensions.category.id&quot;</span><span class="p">:</span> <span class="s2">&quot;category_id&quot;</span><span class="p">},</span>
+    <span class="p">},</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="dimension-path-detection">Dimension Path Detection<a class="headerlink" href="#dimension-path-detection" title="Permanent link">&para;</a></h3>
-<p><strong>Criteria</strong>:</p>
+<p>Metadata keys:</p>
 <ul>
-<li>References JSONB column (default: <code>data</code>)</li>
-<li>Supports nested paths: <code>data-&gt;&gt;'key'</code>, <code>data#&gt;&gt;'{path,to,key}'</code></li>
-<li>Database-specific operators from capability manifest</li>
+<li><code>measures</code> — maps a JSONB measure path to the aggregate function to apply
+  (<code>"SUM"</code>, <code>"AVG"</code>, etc.).</li>
+<li><code>dimensions</code> — the JSONB key (default <code>"data"</code> substructure) holding grouping
+  attributes.</li>
+<li><code>native_dimensions</code> — SQL columns that should be grouped via <code>t."col"</code> instead of
+  JSONB extraction. Native columns let PostgreSQL use btree indexes and keep <code>ORDER BY</code>
+  correct for dimension columns.</li>
+<li><code>native_measures</code> — maps JSONB measure paths to flat SQL column names so <code>SUM</code>/<code>AVG</code>
+  run on native numeric columns and skip the <code>::numeric</code> cast.</li>
+<li><code>native_dimension_mapping</code> — maps deep JSONB dimension paths to flat SQL columns so
+  <code>GROUP BY</code> can use native columns even for nested dimension paths.</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn extract_dimension(column_name: &amp;str, jsonb_column: &amp;str) -&gt; String {
-    match database_target {
-        "postgresql" =&gt; format!("{}-&gt;&gt;'{}' AS {}", jsonb_column, column_name, column_name),
-        "mysql" =&gt; format!("JSON_EXTRACT({}, '<span class="arithmatex">\(.{}') AS {}", jsonb_column, column_name, column_name),
-        "sqlite" =&gt; format!("json_extract({}, '\)</span>.{}') AS {}", jsonb_column, column_name, column_name),
-        "sqlserver" =&gt; format!("JSON_VALUE({}, '$.{}') AS {}", jsonb_column, column_name, column_name),
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="temporal-bucketing">Temporal Bucketing<a class="headerlink" href="#temporal-bucketing" title="Permanent link">&para;</a></h3>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn temporal_bucket_postgres(field: &amp;str, bucket: &amp;str) -&gt; String {
-    format!("DATE_TRUNC('{}', {})", bucket, field)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn temporal_bucket_mysql(field: &amp;str, bucket: &amp;str) -&gt; String {
-    let format = match bucket {
-        "day" =&gt; "%Y-%m-%d",
-        "week" =&gt; "%Y-%u",
-        "month" =&gt; "%Y-%m",
-        "year" =&gt; "%Y",
-        _ =&gt; panic!("Unsupported bucket: {}", bucket),
-    };
-    format!("DATE_FORMAT({}, '{}')", field, format)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQLite</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn temporal_bucket_sqlite(field: &amp;str, bucket: &amp;str) -&gt; String {
-    let format = match bucket {
-        "day" =&gt; "%Y-%m-%d",
-        "week" =&gt; "%Y-%W",
-        "month" =&gt; "%Y-%m",
-        "year" =&gt; "%Y",
-        _ =&gt; panic!("Unsupported bucket: {}", bucket),
-    };
-    format!("strftime('{}', {})", format, field)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQL Server</strong>:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>fn temporal_bucket_sqlserver(field: &amp;str, bucket: &amp;str) -&gt; String {
-    let part = bucket; // day, week, month, quarter, year
-    format!("DATEPART({}, {})", part, field)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Use <code>native_dimensions</code> whenever your view exposes a real SQL column for a grouping key:
+it is the difference between a sequential scan over extracted JSONB text and an
+index-backed <code>GROUP BY</code>.</p>
 <hr />
-<h2 id="related-specifications">Related Specifications<a class="headerlink" href="#related-specifications" title="Permanent link">&para;</a></h2>
+<h2 id="aggregation-in-view-sql">Aggregation in view SQL<a class="headerlink" href="#aggregation-in-view-sql" title="Permanent link">&para;</a></h2>
+<p>For anything beyond derived <code>COUNT</code>/<code>SUM</code>/<code>AVG</code>/<code>MIN</code>/<code>MAX</code> — including <code>STDDEV</code>,
+<code>VARIANCE</code>, conditional aggregates, time bucketing, and the array/JSON/string aggregates
+below — write standard PostgreSQL in your <code>v_</code>/<code>tv_</code> view. FraiseQL reads the resulting
+rows like any other view.</p>
+<h3 id="group-by">GROUP BY<a class="headerlink" href="#group-by" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                   </span><span class="k">AS</span><span class="w"> </span><span class="n">order_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="having">HAVING<a class="headerlink" href="#having" title="Permanent link">&para;</a></h3>
+<p>Filter groups after aggregation with <code>HAVING</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                 </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="conditional-aggregates-with-filter">Conditional aggregates with FILTER<a class="headerlink" href="#conditional-aggregates-with-filter" title="Permanent link">&para;</a></h3>
+<p><code>FILTER (WHERE ...)</code> computes an aggregate over a subset of rows in the same pass — the
+idiomatic PostgreSQL way to do conditional sums and counts:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w">                                          </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                                 </span><span class="k">AS</span><span class="w"> </span><span class="n">total_orders</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;shipped&#39;</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">shipped_orders</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
+<span class="w">        </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;on_sale&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">sale_revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="time-bucketing-with-date_trunc">Time bucketing with DATE_TRUNC<a class="headerlink" href="#time-bucketing-with-date_trunc" title="Permanent link">&para;</a></h3>
+<p>Bucket a timestamp into fixed periods with <code>DATE_TRUNC</code>. Supported buckets include
+<code>second</code>, <code>minute</code>, <code>hour</code>, <code>day</code>, <code>week</code>, <code>month</code>, <code>quarter</code>, and <code>year</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket_month</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">                         </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket_month</span><span class="p">;</span>
+</code></pre></div>
+<p>Expose the bucket as a regular column and group on it. For dimension columns that you
+group on, prefer a native SQL column (and list it in <code>native_dimensions</code>) so the
+<code>GROUP BY</code> and <code>ORDER BY</code> can use an index.</p>
+<hr />
+<h2 id="array-json-and-string-aggregates">Array, JSON, and string aggregates<a class="headerlink" href="#array-json-and-string-aggregates" title="Permanent link">&para;</a></h2>
+<p>PostgreSQL provides several aggregates that collapse a group into a single composite
+value. Use them <strong>directly in your view SQL</strong>; expose the result as a field on the
+view-backed type.</p>
+<h3 id="array_agg">ARRAY_AGG<a class="headerlink" href="#array_agg" title="Permanent link">&para;</a></h3>
+<p>Collect group values into an array:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ARRAY_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product_names</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="json_agg-jsonb_agg">JSON_AGG / JSONB_AGG<a class="headerlink" href="#json_agg-jsonb_agg" title="Permanent link">&para;</a></h3>
+<p>Collect rows into a JSON array — useful for building nested read models inside a <code>tv_</code>
+projection view:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">JSONB_AGG</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;product&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span>
+<span class="w">    </span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="string_agg">STRING_AGG<a class="headerlink" href="#string_agg" title="Permanent link">&para;</a></h3>
+<p>Concatenate group values with a delimiter, optionally ordered:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">STRING_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">products</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="bool_and-bool_or">BOOL_AND / BOOL_OR<a class="headerlink" href="#bool_and-bool_or" title="Permanent link">&para;</a></h3>
+<p>Boolean aggregates — "all true" and "any true" across a group:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                       </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">BOOL_AND</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;in_stock&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">all_in_stock</span><span class="p">,</span>
+<span class="w">    </span><span class="n">BOOL_OR</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;on_sale&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">any_on_sale</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="choosing-measure-and-dimension-columns">Choosing measure and dimension columns<a class="headerlink" href="#choosing-measure-and-dimension-columns" title="Permanent link">&para;</a></h2>
+<p>When modeling a view for aggregation:</p>
 <ul>
-<li><strong>Capability Manifest</strong> (<code>capability-manifest.md</code>) - Database-specific operator availability</li>
-<li><strong>Aggregation Model</strong> (<code>../architecture/analytics/aggregation-model.md</code>) - Compilation and execution</li>
-<li><strong>Database Targeting</strong> (<code>../architecture/database/database-targeting.md</code>) - Multi-database support</li>
-<li><strong>Window Operators</strong> (<code>window-operators.md</code>) - Window function reference</li>
+<li><strong>Measures</strong> are numeric values you aggregate (<code>revenue</code>, <code>quantity</code>). Store them as
+  native numeric columns where possible and reference them through <code>native_measures</code> to
+  avoid per-row JSONB casts.</li>
+<li><strong>Dimensions</strong> are the attributes you group by (<code>category</code>, <code>region</code>, a <code>DATE_TRUNC</code>
+  bucket). Surface them as native SQL columns and list them in <code>native_dimensions</code> so
+  PostgreSQL can use btree indexes for <code>GROUP BY</code> and <code>ORDER BY</code>.</li>
+<li>Never expose internal keys (<code>pk_*</code>, <code>fk_*</code>) as dimensions; group on the public <code>id</code>
+  (UUID), <code>identifier</code>, or a derived dimension column instead.</li>
 </ul>
+<p>For the full naming conventions, see the schema conventions reference linked below.</p>
 <hr />
+<h2 id="related-references">Related references<a class="headerlink" href="#related-references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../architecture/analytics/aggregation-model/">Aggregation Model</a> — how
+  auto-aggregation derives <code>GROUP BY</code> and aggregate SQL at runtime.</li>
+<li><a href="../../architecture/analytics/fact-dimension-pattern/">Fact / Dimension Pattern</a> — data
+  modeling for analytics views in PostgreSQL.</li>
+<li><a href="../../architecture/analytics/window-functions/">Window Functions</a> — <code>ROW_NUMBER</code>,
+  <code>RANK</code>, <code>LAG</code>, <code>LEAD</code>, and <code>OVER (PARTITION BY ...)</code> patterns for view SQL.</li>
+<li><a href="../schema-conventions/">Schema Conventions</a> — <code>tb_</code>/<code>v_</code>/<code>tv_</code>/<code>fn_</code> prefixes, the
+  trinity identifier pattern, and the <code>data</code> JSONB convention.</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL relies on opinionated PostgreSQL schema conventions for read views, write functions, and identifier columns. The runtime reads these conventions at app startup to build and serve the GraphQL API.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/specs/schema-conventions/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Schema Conventions - FraiseQL Documentation</title>
+        <title>Schema Conventions Specification - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Schema Conventions
+              Schema Conventions Specification
             
           </span>
         </div>
@@ -4847,10 +4849,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-primary-foreign-keys" class="md-nav__link">
+  <a href="#31-the-trinity-identifier-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 Primary &amp; Foreign Keys
+        3.1 The Trinity Identifier Pattern
       
     </span>
   </a>
@@ -4963,21 +4965,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#431-analytical-fact-tables" class="md-nav__link">
+  <a href="#44-fact-and-dimension-tables-analytical-modeling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3.1 Analytical Fact Tables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-arrow-plane-view-flat-single-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 Arrow Plane View (Flat, Single-Level)
+        4.4 Fact and Dimension Tables (Analytical Modeling)
       
     </span>
   </a>
@@ -5013,10 +5004,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#52-basic-create-function-postgresql" class="md-nav__link">
+  <a href="#52-basic-create-function" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.2 Basic Create Function (PostgreSQL)
+        5.2 Basic Create Function
       
     </span>
   </a>
@@ -5045,39 +5036,28 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#55-database-specific-optimizations-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.5 Database-Specific Optimizations (Optional)
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-mutation-logging-audit-tables" class="md-nav__link">
+  <a href="#6-many-to-many-relationships" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Mutation Logging &amp; Audit Tables
+        6. Many-to-Many Relationships
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. Mutation Logging &amp; Audit Tables">
+    <nav class="md-nav" aria-label="6. Many-to-Many Relationships">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#61-entity-change-log-table" class="md-nav__link">
+  <a href="#61-junction-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.1 Entity Change Log Table
+        6.1 Junction Table
       
     </span>
   </a>
@@ -5085,54 +5065,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#62-debezium-envelope-format" class="md-nav__link">
+  <a href="#62-view-for-array-aggregation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.2 Debezium Envelope Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#63-status-taxonomy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.3 Status Taxonomy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#64-helper-functions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.4 Helper Functions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#65-usage-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.5 Usage Patterns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#66-separation-of-concerns-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.6 Separation of Concerns Pattern
+        6.2 View for Array Aggregation
       
     </span>
   </a>
@@ -5145,33 +5081,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-many-to-many-relationships" class="md-nav__link">
+  <a href="#7-indexing-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Many-to-Many Relationships
+        7. Indexing Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="7. Many-to-Many Relationships">
+    <nav class="md-nav" aria-label="7. Indexing Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#71-junction-table" class="md-nav__link">
+  <a href="#71-essential-indexes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7.1 Junction Table
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#72-view-for-array-aggregation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.2 View for Array Aggregation
+        7.1 Essential Indexes
       
     </span>
   </a>
@@ -5184,22 +5109,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-indexing-strategy" class="md-nav__link">
+  <a href="#8-view-materialization-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Indexing Strategy
+        8. View Materialization Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="8. Indexing Strategy">
+    <nav class="md-nav" aria-label="8. View Materialization Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#81-essential-indexes" class="md-nav__link">
+  <a href="#81-when-to-materialize" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8.1 Essential Indexes
+        8.1 When to Materialize
       
     </span>
   </a>
@@ -5212,38 +5137,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-view-materialization-strategy" class="md-nav__link">
+  <a href="#9-validation-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. View Materialization Strategy
+        9. Validation Checklist
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="9. View Materialization Strategy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#91-when-to-materialize" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9.1 When to Materialize
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-validation-checklist" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. Validation Checklist
+        See Also
       
     </span>
   </a>
@@ -5492,10 +5400,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#31-primary-foreign-keys" class="md-nav__link">
+  <a href="#31-the-trinity-identifier-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3.1 Primary &amp; Foreign Keys
+        3.1 The Trinity Identifier Pattern
       
     </span>
   </a>
@@ -5608,21 +5516,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#431-analytical-fact-tables" class="md-nav__link">
+  <a href="#44-fact-and-dimension-tables-analytical-modeling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4.3.1 Analytical Fact Tables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#44-arrow-plane-view-flat-single-level" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4.4 Arrow Plane View (Flat, Single-Level)
+        4.4 Fact and Dimension Tables (Analytical Modeling)
       
     </span>
   </a>
@@ -5658,10 +5555,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#52-basic-create-function-postgresql" class="md-nav__link">
+  <a href="#52-basic-create-function" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.2 Basic Create Function (PostgreSQL)
+        5.2 Basic Create Function
       
     </span>
   </a>
@@ -5690,39 +5587,28 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#55-database-specific-optimizations-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.5 Database-Specific Optimizations (Optional)
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-mutation-logging-audit-tables" class="md-nav__link">
+  <a href="#6-many-to-many-relationships" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Mutation Logging &amp; Audit Tables
+        6. Many-to-Many Relationships
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="6. Mutation Logging &amp; Audit Tables">
+    <nav class="md-nav" aria-label="6. Many-to-Many Relationships">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#61-entity-change-log-table" class="md-nav__link">
+  <a href="#61-junction-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.1 Entity Change Log Table
+        6.1 Junction Table
       
     </span>
   </a>
@@ -5730,54 +5616,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#62-debezium-envelope-format" class="md-nav__link">
+  <a href="#62-view-for-array-aggregation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6.2 Debezium Envelope Format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#63-status-taxonomy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.3 Status Taxonomy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#64-helper-functions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.4 Helper Functions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#65-usage-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.5 Usage Patterns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#66-separation-of-concerns-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6.6 Separation of Concerns Pattern
+        6.2 View for Array Aggregation
       
     </span>
   </a>
@@ -5790,33 +5632,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-many-to-many-relationships" class="md-nav__link">
+  <a href="#7-indexing-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Many-to-Many Relationships
+        7. Indexing Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="7. Many-to-Many Relationships">
+    <nav class="md-nav" aria-label="7. Indexing Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#71-junction-table" class="md-nav__link">
+  <a href="#71-essential-indexes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7.1 Junction Table
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#72-view-for-array-aggregation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7.2 View for Array Aggregation
+        7.1 Essential Indexes
       
     </span>
   </a>
@@ -5829,22 +5660,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-indexing-strategy" class="md-nav__link">
+  <a href="#8-view-materialization-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Indexing Strategy
+        8. View Materialization Strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="8. Indexing Strategy">
+    <nav class="md-nav" aria-label="8. View Materialization Strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#81-essential-indexes" class="md-nav__link">
+  <a href="#81-when-to-materialize" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8.1 Essential Indexes
+        8.1 When to Materialize
       
     </span>
   </a>
@@ -5857,38 +5688,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-view-materialization-strategy" class="md-nav__link">
+  <a href="#9-validation-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. View Materialization Strategy
+        9. Validation Checklist
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="9. View Materialization Strategy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#91-when-to-materialize" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9.1 When to Materialize
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-validation-checklist" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. Validation Checklist
+        See Also
       
     </span>
   </a>
@@ -5915,21 +5729,20 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Schema Conventions Specification
-description: FraiseQL enforces opinionated PostgreSQL schema conventions that enable automatic compilation, efficient filtering, and optimal performance. These conventions a
-keywords: ["format", "compliance", "schema", "protocol", "specification", "standard"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="schema-conventions-specification">Schema Conventions Specification<a class="headerlink" href="#schema-conventions-specification" title="Permanent link">&para;</a></h1>
 <p><strong>Version:</strong> 1.0
-<strong>Status:</strong> Draft
+<strong>Status:</strong> Stable
 <strong>Audience:</strong> Database architects, schema designers, DBAs</p>
 <hr />
 <h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL enforces opinionated PostgreSQL schema conventions that enable automatic compilation, efficient filtering, and optimal performance. These conventions are <strong>mandatory</strong> for FraiseQL to function.</p>
-<p><strong>Core principle:</strong> The database schema is the source of truth. The authoring layer declares which views to expose as GraphQL types.</p>
+<p>FraiseQL is a runtime GraphQL framework for PostgreSQL. It relies on a small set of
+opinionated schema conventions so that, at application startup, it can build the GraphQL
+schema in memory and serve it over FastAPI. There is no build or code-generation step — the
+runtime reads your views and functions directly.</p>
+<p><strong>Core principle:</strong> The database schema is the source of truth. Your Python decorators
+declare which views to expose as GraphQL types and which functions back your mutations; the
+conventions below let FraiseQL map them efficiently.</p>
+<p>These conventions are PostgreSQL-specific. FraiseQL v1 targets PostgreSQL only.</p>
 <hr />
 <h2 id="2-naming-conventions">2. Naming Conventions<a class="headerlink" href="#2-naming-conventions" title="Permanent link">&para;</a></h2>
 <h3 id="21-table-naming">2.1 Table Naming<a class="headerlink" href="#21-table-naming" title="Permanent link">&para;</a></h3>
@@ -5950,7 +5763,7 @@ tags: ["documentation", "reference"]</p>
 <td>Singular entity name</td>
 </tr>
 <tr>
-<td><code>tb_{entity}_relationship</code></td>
+<td><code>tb_{entity}_{relationship}</code></td>
 <td>Junction/bridge tables</td>
 <td><code>tb_user_role</code>, <code>tb_product_tag</code></td>
 <td>For many-to-many</td>
@@ -5963,8 +5776,10 @@ tags: ["documentation", "reference"]</p>
 <li>Must use snake_case</li>
 <li>No abbreviations (use <code>tb_customer</code>, not <code>tb_cust</code>)</li>
 <li>Entity name should be singular</li>
-<li>Table exists only if there's a write model for the entity</li>
+<li>A table exists only if there is a write model for the entity</li>
 </ul>
+<p>Write tables are the normalized source of truth. They are never exposed directly to GraphQL —
+queries read from views, and mutations write through <code>fn_</code> functions.</p>
 <h3 id="22-view-naming">2.2 View Naming<a class="headerlink" href="#22-view-naming" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -5977,17 +5792,17 @@ tags: ["documentation", "reference"]</p>
 <tbody>
 <tr>
 <td><code>v_{entity}</code></td>
-<td>Base projection (JSON plane)</td>
+<td>Logical read view producing a <code>data</code> JSONB column</td>
 <td><code>v_user</code>, <code>v_post</code></td>
 </tr>
 <tr>
 <td><code>v_{entities}_by_{parent}</code></td>
-<td>Pre-aggregated composition</td>
+<td>Pre-aggregated composition view</td>
 <td><code>v_posts_by_user</code>, <code>v_order_items_by_order</code></td>
 </tr>
 <tr>
 <td><code>tv_{entity}</code></td>
-<td>Table-backed view (JSON plane)</td>
+<td>Table-backed projection view (real table holding pre-composed JSONB)</td>
 <td><code>tv_user_summary</code></td>
 </tr>
 <tr>
@@ -5995,36 +5810,28 @@ tags: ["documentation", "reference"]</p>
 <td>Materialized view (cached)</td>
 <td><code>mv_user_stats</code></td>
 </tr>
-<tr>
-<td><code>va_{entity}</code></td>
-<td>Logical view (Arrow plane)</td>
-<td><code>va_user</code>, <code>va_post</code></td>
-</tr>
-<tr>
-<td><code>ta_{entity}</code></td>
-<td>Table-backed view (Arrow plane)</td>
-<td><code>ta_user</code>, <code>ta_orders</code></td>
-</tr>
 </tbody>
 </table>
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Base views MUST produce a <code>data</code> JSONB column</li>
-<li>Pre-aggregated views group by foreign key</li>
-<li>Arrow views are flat, single-level only</li>
+<li>Read views (<code>v_</code>, <code>tv_</code>) MUST produce a <code>data</code> JSONB column</li>
+<li>Pre-aggregated views group by the internal foreign key</li>
 <li>View names must be lowercase snake_case</li>
 </ul>
 <p><strong>When to use each pattern:</strong></p>
-<p>See <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a> for detailed decision trees:</p>
+<p>See the <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a> for detailed
+decision trees, and the <a href="../../architecture/database/tv-table-pattern/">tv_ table pattern</a> for
+table-backed projections:</p>
 <ul>
-<li><code>v_*</code> vs <code>tv_*</code>: Logical vs table-backed for JSON/GraphQL queries</li>
-<li><code>va_*</code> vs <code>ta_*</code>: Logical vs table-backed for Arrow/Analytics queries</li>
+<li><code>v_*</code> is a logical view: the SQL runs on every query, composing the <code>data</code> JSONB on the fly.
+  Best for simple to moderate reads.</li>
+<li><code>tv_*</code> is a real table holding pre-composed JSONB, refreshed by functions or triggers. Best
+  for heavy, deeply nested reads where re-composing JSONB on every query would be too slow.</li>
 </ul>
 <p><strong>Quick decision:</strong></p>
 <ul>
-<li>Simple queries → <code>v_*</code> (JSON) or <code>va_*</code> (Arrow)</li>
-<li>Complex queries with 3+ JOINs → <code>tv_*</code> (JSON)</li>
-<li>Large datasets (&gt;1M rows) → <code>ta_*</code> (Arrow)</li>
+<li>Simple to moderate queries → <code>v_*</code> (logical view)</li>
+<li>Complex queries with 3+ JOINs or deep nesting → <code>tv_*</code> (table-backed projection)</li>
 </ul>
 <h3 id="23-function-naming-stored-procedures">2.3 Function Naming (Stored Procedures)<a class="headerlink" href="#23-function-naming-stored-procedures" title="Permanent link">&para;</a></h3>
 <table>
@@ -6052,9 +5859,11 @@ tags: ["documentation", "reference"]</p>
 <ul>
 <li>Must be lowercase snake_case</li>
 <li>Action verbs: <code>create</code>, <code>update</code>, <code>delete</code>, <code>upsert</code>, <code>archive</code>, etc.</li>
-<li>Function must return JSON with result data</li>
+<li>Function returns JSON with the result data (see section 5)</li>
 <li>Function is transaction-safe</li>
 </ul>
+<p>All mutation business logic lives in these PostgreSQL functions. A <code>@fraiseql.mutation</code>
+resolver calls them via <code>db.execute_function("fn_...", {...})</code>.</p>
 <h3 id="24-constraint-naming">2.4 Constraint Naming<a class="headerlink" href="#24-constraint-naming" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -6092,34 +5901,37 @@ tags: ["documentation", "reference"]</p>
 </tr>
 </tbody>
 </table>
+<p>For a complete listing of identifier patterns, see
+<a href="../../reference/naming-patterns/">Naming Patterns</a>.</p>
 <hr />
 <h2 id="3-column-conventions">3. Column Conventions<a class="headerlink" href="#3-column-conventions" title="Permanent link">&para;</a></h2>
-<h3 id="31-primary-foreign-keys">3.1 Primary &amp; Foreign Keys<a class="headerlink" href="#31-primary-foreign-keys" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Write table (tb_*)
-CREATE TABLE tb_user (
-    pk_user BIGINTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    identifier TEXT NOT NULL UNIQUE,
-    ...
-);</p>
-<p>-- Related write table
-CREATE TABLE tb_post (
-    pk_post INTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    fk_user BIGINTEGER NOT NULL REFERENCES tb_user(pk_user),
-    ...
-);
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="31-the-trinity-identifier-pattern">3.1 The Trinity Identifier Pattern<a class="headerlink" href="#31-the-trinity-identifier-pattern" title="Permanent link">&para;</a></h3>
+<p>Every entity carries three identifiers with distinct roles:</p>
+<ul>
+<li><code>pk_{entity}</code> — internal <code>BIGINT</code> primary key. Used for fast joins. <strong>Never</strong> exposed in GraphQL.</li>
+<li><code>id</code> — public <code>UUID</code> column. Stable external identity, exposed as the GraphQL <code>id</code>.</li>
+<li><code>identifier</code> — optional human-readable <code>TEXT UNIQUE</code> slug. Exposed when present.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Write table (tb_*)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span>
+<span class="p">);</span>
 
+<span class="c1">-- Related write table</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_post</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Primary key: <code>pk_{entity}</code> (INTEGER, auto-generated)</li>
-<li>Foreign key: <code>fk_{entity}</code> (INTEGER, NOT NULL, references pk_*)</li>
-<li>Public ID: <code>id</code> (UUID, exposed via GraphQL)</li>
-<li>Surrogate key: <code>identifier</code> (TEXT, human-readable, indexed)</li>
+<li>Primary key: <code>pk_{entity}</code> (<code>BIGINT</code>, auto-generated)</li>
+<li>Foreign key: <code>fk_{entity}</code> (<code>BIGINT</code>, references <code>pk_*</code>)</li>
+<li>Public ID: <code>id</code> (<code>UUID</code>, exposed via GraphQL)</li>
+<li>Human-readable slug: <code>identifier</code> (<code>TEXT</code>, indexed)</li>
 </ul>
 <p><strong>Why this dual-key strategy?</strong></p>
 <table>
@@ -6134,193 +5946,179 @@ CREATE TABLE tb_post (
 <tbody>
 <tr>
 <td><code>pk_user</code></td>
-<td>INT</td>
+<td><code>BIGINT</code></td>
 <td>Internal joins, max performance</td>
 <td>PRIMARY KEY</td>
 </tr>
 <tr>
 <td><code>id</code></td>
-<td>UUID</td>
-<td>External references, federation</td>
+<td><code>UUID</code></td>
+<td>External references</td>
 <td>UNIQUE</td>
 </tr>
 <tr>
 <td><code>identifier</code></td>
-<td>TEXT</td>
+<td><code>TEXT</code></td>
 <td>Human-readable URLs</td>
 <td>UNIQUE</td>
 </tr>
 </tbody>
 </table>
+<p>GraphQL exposes <code>id: ID!</code> and optionally <code>identifier: String</code>, never <code>pk_*</code>. Keep <code>pk_*</code> and
+<code>fk_*</code> out of the <code>data</code> JSONB entirely.</p>
 <h3 id="32-filterable-foreign-keys-in-views">3.2 Filterable Foreign Keys in Views<a class="headerlink" href="#32-filterable-foreign-keys-in-views" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- View includes native FK columns for efficient filtering
-CREATE VIEW v_post AS
-SELECT
-    pk_post,
-    fk_user,
-    id,
-    identifier,
-    (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
-    jsonb_build_object(
-        'id', id,
-        'title', title,
-        'userId', (SELECT id FROM tb_user WHERE pk_user = fk_user),
-        'createdAt', created_at
-    ) AS data
-FROM tb_post
-WHERE deleted_at IS NULL;</p>
-<p>-- Index the foreign key column for fast filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- View includes a UUID FK column for efficient filtering</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
+<span class="c1">-- Index the foreign key column for fast filtering</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_v_post_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Related views expose <code>{parent}_id</code> as native column</li>
-<li>This column is UUID (matches public <code>id</code>)</li>
+<li>Related views expose <code>{parent}_id</code> as a native column</li>
+<li>This column is <code>UUID</code> (matches the public <code>id</code>)</li>
 <li>Always indexed for fast filtering</li>
-<li>Appears in both <code>data</code> JSONB and as native column</li>
+<li>Appears in both the <code>data</code> JSONB and as a native column</li>
 </ul>
 <h3 id="33-deep-path-filter-columns">3.3 Deep Path Filter Columns<a class="headerlink" href="#33-deep-path-filter-columns" title="Permanent link">&para;</a></h3>
 <p>For frequently-filtered nested paths, add denormalized columns:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE VIEW v_order AS
-SELECT
-    pk_order,
-    id,
-    identifier,</p>
-<div class="highlight"><pre><span></span><code>-- Direct relationships
-user_id,
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 
--- Deep paths (denormalized for filtering)
-items__product__category_id,
-items__product__vendor_id,
-items__product__tag_ids,
+<span class="w">    </span><span class="c1">-- Direct relationships</span>
+<span class="w">    </span><span class="n">user_id</span><span class="p">,</span>
 
-jsonb_build_object(...) AS data
+<span class="w">    </span><span class="c1">-- Deep paths (denormalized for filtering)</span>
+<span class="w">    </span><span class="n">paths</span><span class="p">.</span><span class="n">items__product__category_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">paths</span><span class="p">.</span><span class="n">items__product__vendor_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">paths</span><span class="p">.</span><span class="n">items__product__tag_ids</span><span class="p">,</span>
+
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span>
+<span class="w">        </span><span class="c1">-- ... remaining fields ...</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="k">LATERAL</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">items__product__category_id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">items__product__vendor_id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">items__product__tag_ids</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_item</span><span class="w"> </span><span class="n">oi</span>
+<span class="w">    </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">fk_product</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_category</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_category</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_category</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_vendor</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">pk_vendor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_vendor</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_product_tag</span><span class="w"> </span><span class="n">pt</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">pt</span><span class="p">.</span><span class="n">fk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_tag</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">pk_tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pt</span><span class="p">.</span><span class="n">fk_tag</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">fk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_order</span>
+<span class="p">)</span><span class="w"> </span><span class="n">paths</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">true</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="c1">-- Index each path column (GIN for array columns)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_order_category</span>
+<span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order_item</span><span class="p">(</span><span class="n">fk_product</span><span class="p">);</span>
 </code></pre></div>
-<p>FROM ...
-LEFT JOIN LATERAL (
-    SELECT
-        array_agg(DISTINCT c.id) AS items__product__category_id,
-        array_agg(DISTINCT v.id) AS items__product__vendor_id,
-        array_agg(DISTINCT t.id) AS items__product__tag_ids
-    FROM tb_order_item oi
-    JOIN tb_product p ON p.pk_product = oi.fk_product
-    LEFT JOIN tb_category c ON c.pk_category = p.fk_category
-    LEFT JOIN tb_vendor v ON v.pk_vendor = p.fk_vendor
-    LEFT JOIN tb_product_tag pt ON pt.fk_product = p.pk_product
-    LEFT JOIN tb_tag t ON t.pk_tag = pt.fk_tag
-    WHERE oi.fk_order = o.pk_order
-) paths ON true;</p>
-<p>-- Index each path column
-CREATE INDEX idx_v_order_items__product__category_id
-  ON v_order USING GIN(items__product__category_id);
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
 <li>Column name = GraphQL filter path with <code>__</code> separators</li>
-<li>Singular relationships: UUID type</li>
-<li>Array relationships: UUID[] type</li>
-<li>Must be indexed (B-tree for UUID, GIN for UUID[])</li>
-<li>Compiler introspects these columns automatically</li>
+<li>Singular relationships: <code>UUID</code> type</li>
+<li>Array relationships: <code>UUID[]</code> type</li>
+<li>Must be indexed (B-tree for <code>UUID</code>, GIN for <code>UUID[]</code>)</li>
+<li>FraiseQL reads these columns at startup and offers them as filter arguments</li>
 </ul>
 <h3 id="34-audit-columns">3.4 Audit Columns<a class="headerlink" href="#34-audit-columns" title="Permanent link">&para;</a></h3>
-<p>All tables MUST include audit columns:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user (
-    pk_user BIGINTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    email TEXT NOT NULL,</p>
-<div class="highlight"><pre><span></span><code>-- Audit columns
-created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-created_by INTEGER REFERENCES tb_user(pk_user),
-updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-updated_by INTEGER REFERENCES tb_user(pk_user),
-deleted_at TIMESTAMPTZ,
-deleted_by INTEGER REFERENCES tb_user(pk_user),
+<p>All write tables SHOULD include audit columns:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 
-CHECK (updated_at &gt;= created_at),
-CHECK (deleted_at &gt;= created_at)
+<span class="w">    </span><span class="c1">-- Audit columns</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_by</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_by</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">    </span><span class="n">deleted_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">    </span><span class="n">deleted_by</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+
+<span class="w">    </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">updated_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">created_at</span><span class="p">),</span>
+<span class="w">    </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">deleted_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">created_at</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="c1">-- Trigger to maintain updated_at</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trigger_tb_user_updated_at</span>
+<span class="k">BEFORE</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_timestamp</span><span class="p">();</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Trigger to update updated_at
-CREATE TRIGGER trigger_tb_user_updated_at
-BEFORE UPDATE ON tb_user
-FOR EACH ROW
-EXECUTE FUNCTION update_timestamp();
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
-<li><code>created_at</code>: TIMESTAMPTZ, NOT NULL, default CURRENT_TIMESTAMP</li>
-<li><code>created_by</code>: INTEGER FK to user (nullable if system creates it)</li>
-<li><code>updated_at</code>: TIMESTAMPTZ, NOT NULL, updated by trigger</li>
-<li><code>updated_by</code>: INTEGER FK to user</li>
-<li><code>deleted_at</code>: TIMESTAMPTZ, NULL if active (soft delete)</li>
-<li><code>deleted_by</code>: INTEGER FK to user</li>
+<li><code>created_at</code>: <code>TIMESTAMPTZ</code>, NOT NULL, default <code>CURRENT_TIMESTAMP</code></li>
+<li><code>created_by</code>: <code>BIGINT</code> FK to user (nullable if the system creates the row)</li>
+<li><code>updated_at</code>: <code>TIMESTAMPTZ</code>, NOT NULL, maintained by trigger</li>
+<li><code>updated_by</code>: <code>BIGINT</code> FK to user</li>
+<li><code>deleted_at</code>: <code>TIMESTAMPTZ</code>, NULL if active (soft delete)</li>
+<li><code>deleted_by</code>: <code>BIGINT</code> FK to user</li>
 <li>Add CHECK constraints to prevent invalid timestamps</li>
 </ul>
 <p><strong>Usage:</strong></p>
 <ul>
 <li>Views filter on <code>WHERE deleted_at IS NULL</code> for soft delete</li>
-<li>Cache invalidation uses <code>updated_at</code> as signal</li>
-<li>CDC events use audit columns for timestamps</li>
+<li>Cache invalidation can use <code>updated_at</code> as a freshness signal</li>
 </ul>
 <h3 id="35-projection-data-column">3.5 Projection Data Column<a class="headerlink" href="#35-projection-data-column" title="Permanent link">&para;</a></h3>
-<p>All views MUST include a <code>data</code> JSONB column:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE VIEW v_user AS
-SELECT
-    pk_user,
-    id,
-    identifier,
-    jsonb_build_object(
-        'id', id,
-        'identifier', identifier,
-        'email', email,
-        'name', name,
-        'createdAt', created_at,
-        'updatedAt', updated_at
-    ) AS data
-FROM tb_user
-WHERE deleted_at IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>All read views MUST include a <code>data</code> JSONB column:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updatedAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Column must be named <code>data</code></li>
-<li>Type: JSONB</li>
-<li>Contains fully-formed projection in GraphQL field case</li>
-<li>Must be at the END of SELECT (last column)</li>
+<li>The column must be named <code>data</code> (configurable via <code>jsonb_column</code>, default <code>"data"</code>)</li>
+<li>Type: <code>JSONB</code></li>
+<li>Contains the fully-formed projection in GraphQL field case</li>
+<li>Place it at the END of the SELECT (last column) by convention</li>
 <li>Never null (use <code>{}</code> for empty objects, <code>[]</code> for empty arrays)</li>
+<li>Never put <code>pk_*</code> or <code>fk_*</code> inside <code>data</code></li>
 </ul>
 <p><strong>Field naming in JSONB:</strong></p>
 <ul>
 <li>Convert snake_case to camelCase</li>
 <li><code>created_at</code> → <code>createdAt</code></li>
 <li><code>user_id</code> → <code>userId</code></li>
-<li>Avoid nested objects; flatten or use pre-aggregated views</li>
 </ul>
+<p>At startup, FraiseQL maps each <code>@fraiseql.type</code> field to a key in this <code>data</code> JSONB. The hot
+path reads <code>data</code> and shapes it to the requested GraphQL fields (the optional <code>fraiseql_rs</code>
+Rust extension accelerates this transformation).</p>
 <h3 id="36-reserved-column-names">3.6 Reserved Column Names<a class="headerlink" href="#36-reserved-column-names" title="Permanent link">&para;</a></h3>
-<p>These columns are reserved by FraiseQL and MUST NOT be used elsewhere:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>pk_*         — Primary key (internal only)
-fk_*         — Foreign key (internal only)
+<p>These columns have a special meaning to FraiseQL and SHOULD NOT be repurposed:</p>
+<div class="highlight"><pre><span></span><code>pk_*         — Primary key (internal only, never exposed)
+fk_*         — Foreign key (internal only, never exposed)
 id           — Public identifier (UUID)
 identifier   — Human-readable slug
-<em><em>id         — Filterable FK in views (UUID or UUID[])
-*_</em></em>         — Deep path columns (path separators)
+*_id         — Filterable FK in views (UUID or UUID[])
+*__*         — Deep path columns (path separators)
 data         — Projection JSONB
 created_at   — Audit column
 created_by   — Audit column
@@ -6328,259 +6126,168 @@ updated_at   — Audit column
 updated_by   — Audit column
 deleted_at   — Audit column (soft delete)
 deleted_by   — Audit column
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="4-view-patterns">4. View Patterns<a class="headerlink" href="#4-view-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="41-base-entity-view">4.1 Base Entity View<a class="headerlink" href="#41-base-entity-view" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE VIEW v_user AS
-SELECT
-    pk_user,                              -- Internal key
-    id,                                   -- Public ID
-    identifier,                           -- Slug
-    jsonb_build_object(                   -- Projection
-        'id', id,
-        'identifier', identifier,
-        'email', email,
-        'name', name,
-        'createdAt', created_at
-    ) AS data
-FROM tb_user
-WHERE deleted_at IS NULL;                 -- Soft delete
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">                                   </span><span class="c1">-- Public ID</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="w">                   </span><span class="c1">-- Projection</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span><span class="w">                 </span><span class="c1">-- Soft delete</span>
+</code></pre></div>
 <p><strong>Must include:</strong></p>
 <ul>
-<li><code>pk_*</code> for internal reference</li>
-<li><code>id</code> for public identity</li>
-<li><code>identifier</code> for URLs</li>
+<li><code>id</code> for public identity (and <code>WHERE id = $1</code> lookups)</li>
 <li><code>data</code> JSONB with camelCase fields</li>
-<li>Soft delete filter</li>
+<li>A soft-delete filter</li>
 </ul>
 <h3 id="42-related-entity-view-with-foreign-key">4.2 Related Entity View with Foreign Key<a class="headerlink" href="#42-related-entity-view-with-foreign-key" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE VIEW v_post AS
-SELECT
-    pk_post,
-    fk_user,
-    id,
-    identifier,
-    (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
-    jsonb_build_object(
-        'id', id,
-        'identifier', identifier,
-        'title', title,
-        'userId', (SELECT id FROM tb_user WHERE pk_user = fk_user),
-        'createdAt', created_at
-    ) AS data
-FROM tb_post
-WHERE deleted_at IS NULL;</p>
-<p>-- Index the FK column for filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
+<span class="c1">-- Index the underlying FK column for filtering</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_fk_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Must include:</strong></p>
 <ul>
-<li>Native <code>{parent}_id</code> column for filtering</li>
-<li>Index on FK columns</li>
-<li>FK value in <code>data</code> JSONB for clients</li>
+<li>A native <code>{parent}_id</code> (<code>UUID</code>) column for filtering</li>
+<li>An index on the underlying FK column</li>
+<li>The FK value (as <code>UUID</code>) in the <code>data</code> JSONB for clients</li>
 </ul>
 <h3 id="43-pre-aggregated-composition-view">4.3 Pre-aggregated Composition View<a class="headerlink" href="#43-pre-aggregated-composition-view" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Group related entities by parent key
-CREATE VIEW v_posts_by_user AS
-SELECT
-    fk_user,
-    jsonb_agg(data ORDER BY created_at DESC) AS posts
-FROM v_post
-GROUP BY fk_user;</p>
-<p>-- Composition view joins base + pre-aggregated
-CREATE VIEW v_user_with_posts AS
-SELECT
-    u.pk_user,
-    u.id,
-    u.identifier,
-    u.data || jsonb_build_object(
-        'posts', COALESCE(p.posts, '[]'::jsonb)
-    ) AS data
-FROM v_user u
-LEFT JOIN v_posts_by_user p ON p.fk_user = u.pk_user;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Group related entities by the parent key</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_posts_by_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">posts</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="n">v</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
 
+<span class="c1">-- Composition view joins base + pre-aggregated</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_with_posts</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">posts</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">    </span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">tu</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tu</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_posts_by_user</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tu</span><span class="p">.</span><span class="n">pk_user</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Pre-aggregated views are NOT exposed directly to GraphQL</li>
-<li>Used only for efficient composition</li>
-<li>Join on internal <code>fk_*</code> columns</li>
-<li>Compose using JSONB merge (<code>||</code>)</li>
+<li>Pre-aggregated <code>_by_</code> views are NOT exposed directly to GraphQL</li>
+<li>They are used only for efficient composition</li>
+<li>Join on internal <code>fk_*</code> / <code>pk_*</code> columns</li>
+<li>Compose using the JSONB merge operator (<code>||</code>)</li>
 </ul>
-<h3 id="431-analytical-fact-tables">4.3.1 Analytical Fact Tables<a class="headerlink" href="#431-analytical-fact-tables" title="Permanent link">&para;</a></h3>
-<p>For analytical workloads, FraiseQL supports <strong>fact tables</strong> with the <code>tf_</code> prefix:</p>
-<p><strong>Fact tables</strong> (<code>tf_*</code>):</p>
+<h3 id="44-fact-and-dimension-tables-analytical-modeling">4.4 Fact and Dimension Tables (Analytical Modeling)<a class="headerlink" href="#44-fact-and-dimension-tables-analytical-modeling" title="Permanent link">&para;</a></h3>
+<p>Fact and dimension tables are a legitimate data-modeling pattern. You build the tables and an
+ETL/refresh process; FraiseQL queries them through views like any other read source. When a
+GraphQL query selects aggregate fields, FraiseQL derives <code>GROUP BY</code> and aggregate SQL at
+runtime against your views (supported aggregates: <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>,
+<code>STDDEV</code>, <code>VARIANCE</code>).</p>
+<p><strong>Fact tables</strong> hold transactional or event data:</p>
 <ul>
-<li>Transactional/event data at any granularity</li>
-<li>Measures: SQL columns (numeric types for fast aggregation)</li>
-<li>Dimensions: JSONB <code>dimensions</code> column (flexible grouping)</li>
-<li>Denormalized filters: Indexed SQL columns (customer_id, occurred_at)</li>
-<li>Pre-aggregated versions use descriptive suffixes: <code>tf_sales_daily</code>, <code>tf_events_monthly</code></li>
+<li>Measures: SQL columns (numeric types, for fast aggregation)</li>
+<li>Dimensions: a JSONB <code>dimensions</code> column for flexible grouping</li>
+<li>Denormalized filters: indexed SQL columns (e.g. <code>customer_id</code>, <code>occurred_at</code>)</li>
 </ul>
-<p><strong>Dimension tables</strong> (<code>td_*</code>):</p>
-<ul>
-<li>Reference data used at ETL time to denormalize into fact tables</li>
-<li>Never joined at query time (FraiseQL does not support joins)</li>
-<li>Managed by DBA/data team</li>
-</ul>
+<p><strong>Dimension tables</strong> hold reference data used at ETL time to denormalize into fact tables.</p>
 <p><strong>Example:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Fact table: Raw sales transactions (finest granularity)
-CREATE TABLE tf_sales (
-    id BIGSERIAL PRIMARY KEY,
-    -- Measures (SQL columns for fast aggregation)
-    revenue DECIMAL(10,2) NOT NULL,
-    quantity INT NOT NULL,
-    -- Dimensions (JSONB for flexible GROUP BY)
-    dimensions JSONB NOT NULL,
-    -- Denormalized filters (indexed for fast WHERE)
-    customer_id UUID NOT NULL,
-    occurred_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);</p>
-<p>CREATE INDEX idx_sales_customer ON tf_sales(customer_id);
-CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
-CREATE INDEX idx_sales_dimensions_gin ON tf_sales USING GIN(dimensions);</p>
-<p>-- Pre-aggregated fact table: Daily granularity (same structure, different granularity)
-CREATE TABLE tf_sales_daily (
-    id BIGSERIAL PRIMARY KEY,
-    day DATE NOT NULL UNIQUE,
-    -- Pre-aggregated measures
-    revenue DECIMAL(10,2) NOT NULL,      -- SUM(revenue)
-    quantity INT NOT NULL,               -- SUM(quantity)
-    transaction_count INT NOT NULL,      -- COUNT(*)
-    -- Dimensions (can still group within daily aggregates)
-    dimensions JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);</p>
-<p>CREATE UNIQUE INDEX idx_sales_daily_day ON tf_sales_daily(day);
-CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensions);</p>
-<p>-- Dimension table: Product catalog (for ETL denormalization)
-CREATE TABLE td_products (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);</p>
-<p>-- ETL process denormalizes td_products into tf_sales.dimensions
--- Example: dimensions-&gt;&gt;'product_name', dimensions-&gt;&gt;'product_category'
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Fact table: raw sales transactions (finest granularity)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_sales_fact</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_sales_fact</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="c1">-- Measures (SQL columns for fast aggregation)</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Dimensions (JSONB for flexible GROUP BY)</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- Denormalized filters (indexed for fast WHERE)</span>
+<span class="w">    </span><span class="n">customer_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">occurred_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
 
-<p><strong>Key architectural principle</strong>: FraiseQL does NOT support joins. All dimensional data must be denormalized into the <code>dimensions</code> JSONB column at ETL time. The DBA/data team manages ETL pipelines; FraiseQL provides the GraphQL query interface.</p>
-<p><strong>Related documentation</strong>: See <code>docs/specs/analytical-schema-conventions.md</code> for complete analytical naming conventions, and <code>docs/architecture/analytics/fact-dimension-pattern.md</code> for detailed patterns.</p>
-<h3 id="44-arrow-plane-view-flat-single-level">4.4 Arrow Plane View (Flat, Single-Level)<a class="headerlink" href="#44-arrow-plane-view-flat-single-level" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE VIEW av_user AS
-SELECT
-    pk_user,
-    id,
-    identifier,
-    email,
-    name,
-    created_at,
-    updated_at
-FROM tb_user
-WHERE deleted_at IS NULL;</p>
-<p>CREATE VIEW av_post AS
-SELECT
-    pk_post,
-    fk_user,
-    id,
-    identifier,
-    (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
-    title,
-    content,
-    created_at
-FROM tb_post
-WHERE deleted_at IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_customer</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales_fact</span><span class="p">(</span><span class="n">customer_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_occurred</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales_fact</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_dimensions_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales_fact</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">dimensions</span><span class="p">);</span>
 
-<p><strong>Rules:</strong></p>
-<ul>
-<li>Single level only (no nesting)</li>
-<li>Each entity = separate Arrow batch</li>
-<li>FK columns included for client-side joins</li>
-<li>Columnar, not JSONB</li>
-<li>Suitable for analytics/BI tools</li>
-</ul>
+<span class="c1">-- Pre-aggregated fact table: daily granularity</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_sales_fact_daily</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_sales_fact_daily</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">day</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- SUM(revenue)</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">               </span><span class="c1">-- SUM(quantity)</span>
+<span class="w">    </span><span class="n">transaction_count</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- COUNT(*)</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_daily_dimensions_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales_fact_daily</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">dimensions</span><span class="p">);</span>
+
+<span class="c1">-- Dimension table: product catalog (for ETL denormalization)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_product_dim</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_product_dim</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">category</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">price</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+
+<span class="c1">-- An ETL process denormalizes product attributes into tb_sales_fact.dimensions,</span>
+<span class="c1">-- e.g. dimensions-&gt;&gt;&#39;product_name&#39;, dimensions-&gt;&gt;&#39;product_category&#39;.</span>
+</code></pre></div>
+<p>Window functions (<code>ROW_NUMBER</code>, <code>RANK</code>, <code>LAG</code>, <code>LEAD</code>, <code>OVER (PARTITION BY ...)</code>) and richer
+analytics are standard PostgreSQL that you embed in your <code>v_</code>/<code>tv_</code> view SQL — FraiseQL serves
+the resulting view, no special API required.</p>
 <hr />
 <h2 id="5-stored-procedures-mutations">5. Stored Procedures (Mutations)<a class="headerlink" href="#5-stored-procedures-mutations" title="Permanent link">&para;</a></h2>
 <h3 id="51-mutation-response-contract">5.1 Mutation Response Contract<a class="headerlink" href="#51-mutation-response-contract" title="Permanent link">&para;</a></h3>
-<p>All stored procedures (mutations) MUST return a standardized JSON response matching this structure:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "status": "success|error|noop",
-  "message": "Human-readable message",
-  "entity_id": "uuid-string",
-  "entity_type": "User",
-  "entity": {
-    "id": "uuid",
-    "identifier": "slug",
-    "name": "...",
-    "email": "..."
-  },
-  "updated_fields": ["field1", "field2"],
-  "cascade": {
-    "updated": [
-      {
-        "__typename": "User",
-        "id": "uuid",
-        "operation": "CREATED|UPDATED",
-        "entity": { ... }
-      }
-    ],
-    "deleted": [
-      {
-        "__typename": "User",
-        "id": "uuid",
-        "operation": "DELETED"
-      }
-    ],
-    "invalidations": [
-      {
-        "query_name": "users",
-        "strategy": "INVALIDATE|REPLACE|APPEND",
-        "scope": "PREFIX|EXACT|SUFFIX"
-      }
-    ],
-    "metadata": {
-      "timestamp": "2026-01-11T...",
-      "transaction_id": "txid",
-      "depth": 1,
-      "affected_count": 1
-    }
-  },
-  "metadata": {
-    "trigger": "api_create|api_update|api_delete",
-    "reason": "entity_created|entity_updated|conflict|not_found",
-    "input_payload": { ... }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response fields (all required):</strong></p>
+<p>A <code>@fraiseql.mutation</code> resolver calls a <code>fn_</code> function via <code>db.execute_function(...)</code>. The
+function performs validation and the write, then returns a JSON response. A practical
+response shape:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success|error|noop&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Human-readable message&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;entity_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-string&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;entity_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;entity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;identifier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;slug&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;updated_fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;field1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;field2&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;trigger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_create|api_update|api_delete&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;entity_created|entity_updated|conflict|not_found&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response fields:</strong></p>
 <table>
 <thead>
 <tr>
@@ -6598,22 +6305,22 @@ WHERE deleted_at IS NULL;
 <tr>
 <td><code>message</code></td>
 <td>TEXT</td>
-<td>Human-readable message for client</td>
+<td>Human-readable message for the client</td>
 </tr>
 <tr>
 <td><code>entity_id</code></td>
 <td>TEXT</td>
-<td>UUID of affected entity</td>
+<td>UUID of the affected entity</td>
 </tr>
 <tr>
 <td><code>entity_type</code></td>
 <td>TEXT</td>
-<td>Entity type name (e.g., "User")</td>
+<td>Entity type name (e.g. <code>"User"</code>)</td>
 </tr>
 <tr>
 <td><code>entity</code></td>
 <td>JSONB</td>
-<td>The mutated entity (full view data)</td>
+<td>The mutated entity (full view projection)</td>
 </tr>
 <tr>
 <td><code>updated_fields</code></td>
@@ -6621,46 +6328,9 @@ WHERE deleted_at IS NULL;
 <td>Fields that were actually changed</td>
 </tr>
 <tr>
-<td><code>cascade</code></td>
-<td>JSONB</td>
-<td>Cache invalidation + cascaded updates</td>
-</tr>
-<tr>
 <td><code>metadata</code></td>
 <td>JSONB</td>
-<td>Operation metadata and input</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Cascade structure:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>updated</code></td>
-<td>ARRAY</td>
-<td>Entities that were created/updated with <code>operation</code> and <code>__typename</code></td>
-</tr>
-<tr>
-<td><code>deleted</code></td>
-<td>ARRAY</td>
-<td>Entities that were deleted</td>
-</tr>
-<tr>
-<td><code>invalidations</code></td>
-<td>ARRAY</td>
-<td>Cache keys to invalidate with strategy</td>
-</tr>
-<tr>
-<td><code>metadata</code></td>
-<td>OBJECT</td>
-<td>Timestamp, transaction_id, depth, affected_count</td>
+<td>Operation metadata</td>
 </tr>
 </tbody>
 </table>
@@ -6687,777 +6357,276 @@ WHERE deleted_at IS NULL;
 </tr>
 </tbody>
 </table>
-<p><strong>Note:</strong> The mutation response above is the <strong>public-facing API response</strong>. Internally, all mutations are also logged to <code>tb_entity_change_log</code> with a full Debezium envelope for complete audit trails. See <strong>section 6: Mutation Logging &amp; Audit Tables</strong> for details. This enables:</p>
-<ul>
-<li>Complete audit trail of all entity writes</li>
-<li>CDC event emission for real-time systems</li>
-<li>Observability and performance monitoring</li>
-<li>Error diagnostics and debugging</li>
-<li>Multi-source mutation tracking (GraphQL, batch imports, ETL, direct SQL)</li>
-</ul>
-<h3 id="52-basic-create-function-postgresql">5.2 Basic Create Function (PostgreSQL)<a class="headerlink" href="#52-basic-create-function-postgresql" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE FUNCTION fn_create_user(
-    tenant_id UUID,
-    user_id UUID,
-    payload JSONB
-)
-RETURNS TEXT  -- Returns JSON response (portable format)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_new_id UUID := gen_random_uuid();
-    v_entity JSONB;
-    v_response JSONB;
-BEGIN
-    -- Insert new user
-    INSERT INTO tb_user (id, email, name, created_by)
-    VALUES (
-        v_new_id,
-        payload-&gt;&gt;'email',
-        payload-&gt;&gt;'name',
-        user_id
-    );</p>
-<div class="highlight"><pre><span></span><code>-- Fetch full projection
-SELECT data INTO v_entity
-FROM v_user
-WHERE id = v_new_id;
+<p>The Python resolver inspects <code>status</code> and returns a <code>@fraiseql.success</code> or <code>@fraiseql.error</code>
+type accordingly.</p>
+<h3 id="52-basic-create-function">5.2 Basic Create Function<a class="headerlink" href="#52-basic-create-function" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
+<span class="w">    </span><span class="n">tenant_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">SECURITY</span><span class="w"> </span><span class="k">DEFINER</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_new_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">();</span>
+<span class="w">    </span><span class="n">v_entity</span><span class="w"> </span><span class="n">JSONB</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">created_by</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">v_new_id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_id</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
 
--- Build response
-v_response := jsonb_build_object(
-    &#39;status&#39;, &#39;success&#39;,
-    &#39;message&#39;, &#39;User created successfully&#39;,
-    &#39;entity_id&#39;, v_new_id::text,
-    &#39;entity_type&#39;, &#39;User&#39;,
-    &#39;entity&#39;, v_entity,
-    &#39;updated_fields&#39;, ARRAY[&#39;email&#39;, &#39;name&#39;],
-    &#39;cascade&#39;, jsonb_build_object(
-        &#39;updated&#39;, jsonb_build_array(
-            jsonb_build_object(
-                &#39;__typename&#39;, &#39;User&#39;,
-                &#39;id&#39;, v_new_id::text,
-                &#39;operation&#39;, &#39;CREATED&#39;,
-                &#39;entity&#39;, v_entity
-            )
-        ),
-        &#39;invalidations&#39;, jsonb_build_array(
-            jsonb_build_object(
-                &#39;query_name&#39;, &#39;users&#39;,
-                &#39;strategy&#39;, &#39;INVALIDATE&#39;,
-                &#39;scope&#39;, &#39;PREFIX&#39;
-            )
-        ),
-        &#39;metadata&#39;, jsonb_build_object(
-            &#39;timestamp&#39;, NOW()::text,
-            &#39;depth&#39;, 1,
-            &#39;affected_count&#39;, 1
-        )
-    ),
-    &#39;metadata&#39;, jsonb_build_object(
-        &#39;trigger&#39;, &#39;api_create&#39;,
-        &#39;reason&#39;, &#39;entity_created&#39;,
-        &#39;input_payload&#39;, payload
-    )
-);
+<span class="w">    </span><span class="c1">-- Fetch the full projection from the read view</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_entity</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_new_id</span><span class="p">;</span>
 
-RETURN v_response::TEXT;
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User created successfully&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_entity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_create&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;entity_created&#39;</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">EXCEPTION</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="nb">TEXT</span><span class="p">[],</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_create&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>EXCEPTION WHEN OTHERS THEN
-    v_response := jsonb_build_object(
-        'status', 'error',
-        'message', SQLERRM,
-        'entity_id', NULL,
-        'entity_type', 'User',
-        'entity', NULL,
-        'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
-        'metadata', jsonb_build_object(
-            'trigger', 'api_create',
-            'reason', 'error',
-            'input_payload', payload
-        )
-    );
-    RETURN v_response::TEXT;
-END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
 <li>Function name: <code>fn_{action}_{entity}</code></li>
-<li>Parameters: <code>tenant_id UUID</code>, <code>user_id UUID</code> (from auth context), <code>payload JSONB</code> (input)</li>
-<li>Return type: <strong>TEXT</strong> (JSON serialized, portable across databases)</li>
-<li>Must handle errors with try-catch, return error status</li>
-<li>Entity must be full projection from view</li>
-<li>Cascade field is REQUIRED (even if empty for simple mutations)</li>
+<li>Parameters: auth context (<code>tenant_id</code>, <code>user_id</code>) plus a <code>payload JSONB</code></li>
+<li>Return type: <code>JSONB</code> (the response contract above)</li>
+<li>Handle errors and return an <code>error</code> status rather than propagating raw exceptions</li>
+<li>The <code>entity</code> field is the full projection fetched from the read view</li>
 </ul>
 <h3 id="53-update-function-with-audit">5.3 Update Function with Audit<a class="headerlink" href="#53-update-function-with-audit" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE FUNCTION fn_update_user(
-    tenant_id UUID,
-    user_id UUID,
-    payload JSONB
-)
-RETURNS TEXT
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_id UUID := (payload-&gt;&gt;'id')::UUID;
-    v_entity JSONB;
-    v_before JSONB;
-    v_updated_fields TEXT[];
-    v_response JSONB;
-BEGIN
-    -- Fetch BEFORE snapshot
-    SELECT data INTO v_before FROM v_user WHERE id = v_id;
-    IF v_before IS NULL THEN
-        RETURN jsonb_build_object(
-            'status', 'noop',
-            'message', 'User not found',
-            'entity_id', v_id::text,
-            'entity_type', 'User',
-            'entity', NULL,
-            'updated_fields', ARRAY[]::TEXT[],
-            'cascade', NULL,
-            'metadata', jsonb_build_object('trigger', 'api_update', 'reason', 'not_found')
-        )::TEXT;
-    END IF;</p>
-<div class="highlight"><pre><span></span><code>-- Update fields conditionally
-UPDATE tb_user
-SET
-    name = COALESCE(payload-&gt;&gt;&#39;name&#39;, name),
-    updated_by = user_id,
-    updated_at = NOW()
-WHERE id = v_id;
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user</span><span class="p">(</span>
+<span class="w">    </span><span class="n">tenant_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">SECURITY</span><span class="w"> </span><span class="k">DEFINER</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_entity</span><span class="w"> </span><span class="n">JSONB</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_before</span><span class="w"> </span><span class="n">JSONB</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_updated_fields</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[];</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="c1">-- Fetch the BEFORE snapshot</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_before</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_before</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;noop&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User not found&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="nb">TEXT</span><span class="p">[],</span>
+<span class="w">            </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_update&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;not_found&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
--- Track which fields actually changed
-v_updated_fields := ARRAY(
-    SELECT key FROM jsonb_each_text(payload)
-    WHERE key != &#39;id&#39;
-);
+<span class="w">    </span><span class="c1">-- Update only the fields present in the payload</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">SET</span>
+<span class="w">        </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">),</span>
+<span class="w">        </span><span class="n">updated_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_id</span><span class="p">),</span>
+<span class="w">        </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
--- Fetch AFTER snapshot
-SELECT data INTO v_entity FROM v_user WHERE id = v_id;
+<span class="w">    </span><span class="c1">-- Track which fields were actually supplied</span>
+<span class="w">    </span><span class="n">v_updated_fields</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">(</span>
+<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_each_text</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;id&#39;</span>
+<span class="w">    </span><span class="p">);</span>
 
--- Build response
-v_response := jsonb_build_object(
-    &#39;status&#39;, &#39;success&#39;,
-    &#39;message&#39;, &#39;User updated successfully&#39;,
-    &#39;entity_id&#39;, v_id::text,
-    &#39;entity_type&#39;, &#39;User&#39;,
-    &#39;entity&#39;, v_entity,
-    &#39;updated_fields&#39;, v_updated_fields,
-    &#39;cascade&#39;, jsonb_build_object(
-        &#39;updated&#39;, jsonb_build_array(
-            jsonb_build_object(
-                &#39;__typename&#39;, &#39;User&#39;,
-                &#39;id&#39;, v_id::text,
-                &#39;operation&#39;, &#39;UPDATED&#39;,
-                &#39;entity&#39;, v_entity
-            )
-        ),
-        &#39;invalidations&#39;, jsonb_build_array(
-            jsonb_build_object(
-                &#39;query_name&#39;, &#39;users&#39;,
-                &#39;strategy&#39;, &#39;INVALIDATE&#39;,
-                &#39;scope&#39;, &#39;PREFIX&#39;
-            )
-        ),
-        &#39;metadata&#39;, jsonb_build_object(
-            &#39;timestamp&#39;, NOW()::text,
-            &#39;depth&#39;, 1,
-            &#39;affected_count&#39;, 1
-        )
-    ),
-    &#39;metadata&#39;, jsonb_build_object(
-        &#39;trigger&#39;, &#39;api_update&#39;,
-        &#39;reason&#39;, &#39;entity_updated&#39;,
-        &#39;input_payload&#39;, payload
-    )
-);
+<span class="w">    </span><span class="c1">-- Fetch the AFTER snapshot</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_entity</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
-RETURN v_response::TEXT;
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User updated successfully&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_entity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_updated_fields</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_update&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;entity_updated&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">EXCEPTION</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="nb">TEXT</span><span class="p">[],</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_update&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>EXCEPTION WHEN OTHERS THEN
-    RETURN jsonb_build_object(
-        'status', 'error',
-        'message', SQLERRM,
-        'entity_id', v_id::text,
-        'entity_type', 'User',
-        'entity', NULL,
-        'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
-        'metadata', jsonb_build_object('trigger', 'api_update', 'reason', 'error')
-    )::TEXT;
-END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Extract entity ID from payload</li>
-<li>Fetch BEFORE snapshot for comparison</li>
-<li>Update only fields present in payload</li>
+<li>Extract the entity ID from the payload</li>
+<li>Fetch a BEFORE snapshot for comparison</li>
+<li>Update only the fields present in the payload</li>
 <li>Track which fields actually changed</li>
-<li>Fetch AFTER snapshot</li>
-<li>Include both snapshots in cascade</li>
-<li>Always return standard response format</li>
+<li>Fetch an AFTER snapshot for the response</li>
+<li>Always return the standard response shape</li>
 </ul>
 <h3 id="54-delete-function-soft-delete">5.4 Delete Function (Soft Delete)<a class="headerlink" href="#54-delete-function-soft-delete" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE FUNCTION fn_delete_user(
-    tenant_id UUID,
-    user_id UUID,
-    payload JSONB
-)
-RETURNS TEXT
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_id UUID := (payload-&gt;&gt;'id')::UUID;
-    v_response JSONB;
-BEGIN
-    UPDATE tb_user
-    SET
-        deleted_at = NOW(),
-        deleted_by = user_id
-    WHERE id = v_id AND deleted_at IS NULL;</p>
-<div class="highlight"><pre><span></span><code>IF NOT FOUND THEN
-    v_response := jsonb_build_object(
-        &#39;status&#39;, &#39;noop&#39;,
-        &#39;message&#39;, &#39;User already deleted or not found&#39;,
-        &#39;entity_id&#39;, v_id::text,
-        &#39;entity_type&#39;, &#39;User&#39;,
-        &#39;entity&#39;, NULL,
-        &#39;updated_fields&#39;, ARRAY[]::TEXT[],
-        &#39;cascade&#39;, jsonb_build_object(
-            &#39;deleted&#39;, jsonb_build_array(
-                jsonb_build_object(
-                    &#39;__typename&#39;, &#39;User&#39;,
-                    &#39;id&#39;, v_id::text,
-                    &#39;operation&#39;, &#39;DELETED&#39;
-                )
-            )
-        ),
-        &#39;metadata&#39;, jsonb_build_object(&#39;trigger&#39;, &#39;api_delete&#39;, &#39;reason&#39;, &#39;not_found&#39;)
-    );
-ELSE
-    v_response := jsonb_build_object(
-        &#39;status&#39;, &#39;success&#39;,
-        &#39;message&#39;, &#39;User deleted successfully&#39;,
-        &#39;entity_id&#39;, v_id::text,
-        &#39;entity_type&#39;, &#39;User&#39;,
-        &#39;entity&#39;, NULL,
-        &#39;updated_fields&#39;, ARRAY[&#39;deleted_at&#39;, &#39;deleted_by&#39;],
-        &#39;cascade&#39;, jsonb_build_object(
-            &#39;deleted&#39;, jsonb_build_array(
-                jsonb_build_object(
-                    &#39;__typename&#39;, &#39;User&#39;,
-                    &#39;id&#39;, v_id::text,
-                    &#39;operation&#39;, &#39;DELETED&#39;
-                )
-            ),
-            &#39;invalidations&#39;, jsonb_build_array(
-                jsonb_build_object(
-                    &#39;query_name&#39;, &#39;users&#39;,
-                    &#39;strategy&#39;, &#39;INVALIDATE&#39;,
-                    &#39;scope&#39;, &#39;PREFIX&#39;
-                )
-            )
-        ),
-        &#39;metadata&#39;, jsonb_build_object(&#39;trigger&#39;, &#39;api_delete&#39;, &#39;reason&#39;, &#39;entity_deleted&#39;)
-    );
-END IF;
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_delete_user</span><span class="p">(</span>
+<span class="w">    </span><span class="n">tenant_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">SECURITY</span><span class="w"> </span><span class="k">DEFINER</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">SET</span>
+<span class="w">        </span><span class="n">deleted_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">        </span><span class="n">deleted_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_id</span><span class="p">)</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
-RETURN v_response::TEXT;
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;noop&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User already deleted or not found&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="nb">TEXT</span><span class="p">[],</span>
+<span class="w">            </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;not_found&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User deleted successfully&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;deleted_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;deleted_by&#39;</span><span class="p">],</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;entity_deleted&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">EXCEPTION</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity_type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;entity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;updated_fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="nb">TEXT</span><span class="p">[],</span>
+<span class="w">        </span><span class="s1">&#39;metadata&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;trigger&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;api_delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;reason&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
-<p>EXCEPTION WHEN OTHERS THEN
-    RETURN jsonb_build_object(
-        'status', 'error',
-        'message', SQLERRM,
-        'entity_id', v_id::text,
-        'entity_type', 'User',
-        'entity', NULL,
-        'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
-        'metadata', jsonb_build_object('trigger', 'api_delete', 'reason', 'error')
-    )::TEXT;
-END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
 <li>Soft delete: set <code>deleted_at</code> and <code>deleted_by</code></li>
 <li>Never hard-delete from <code>tb_*</code></li>
-<li>Use <code>deleted</code> array in cascade (no <code>updated</code>)</li>
-<li>Deleted entities have no entity data</li>
-<li>Return <code>operation: DELETED</code> in cascade</li>
-</ul>
-<h3 id="55-database-specific-optimizations-optional">5.5 Database-Specific Optimizations (Optional)<a class="headerlink" href="#55-database-specific-optimizations-optional" title="Permanent link">&para;</a></h3>
-<p>This spec defines the <strong>response contract</strong> that all databases must follow.</p>
-<p><strong>PostgreSQL can further optimize:</strong></p>
-<ul>
-<li>See: <code>docs/specs/stored-procedures-postgresql.md</code></li>
-<li>Use composite types for efficiency</li>
-<li>Two-layer architecture (app.<em>wrapper → core.</em> implementation)</li>
-<li>Built-in mutation logging and CDC</li>
-<li>Industry-standard stored procedure patterns</li>
-</ul>
-<p><strong>Other databases:</strong></p>
-<ul>
-<li>SQLite: See <code>docs/specs/stored-procedures-sqlite.md</code></li>
-<li>MySQL: See <code>docs/specs/stored-procedures-mysql.md</code></li>
-<li>Each maintains the JSON response contract above</li>
+<li>Deleted entities carry no <code>entity</code> data in the response</li>
+<li>Read views filter <code>WHERE deleted_at IS NULL</code>, so the row disappears from queries</li>
 </ul>
 <hr />
-<h2 id="6-mutation-logging-audit-tables">6. Mutation Logging &amp; Audit Tables<a class="headerlink" href="#6-mutation-logging-audit-tables" title="Permanent link">&para;</a></h2>
-<h3 id="61-entity-change-log-table">6.1 Entity Change Log Table<a class="headerlink" href="#61-entity-change-log-table" title="Permanent link">&para;</a></h3>
-<p>The <code>tb_entity_change_log</code> table provides a <strong>centralized, source-agnostic audit log</strong> for all entity writes across the system, whether from GraphQL mutations, batch imports, ETL processes, direct SQL, or any other source.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE core.tb_entity_change_log (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    pk_entity_change_log UUID NOT NULL DEFAULT gen_random_uuid(),</p>
-<div class="highlight"><pre><span></span><code>fk_customer_org UUID NOT NULL,      -- Multi-tenant isolation
-fk_contact UUID,                     -- User ID who made the change (nullable)
-
-object_type TEXT NOT NULL,           -- Entity type (User, Post, Order, etc.)
-object_id UUID NOT NULL,             -- Entity UUID being modified
-
-modification_type TEXT NOT NULL CHECK (
-    modification_type IN (&#39;INSERT&#39;, &#39;UPDATE&#39;, &#39;DELETE&#39;, &#39;NOOP&#39;)
-),
-
-change_status TEXT NOT NULL CHECK (
-    change_status ~ &#39;^(new|existing|updated|deleted|synced|completed|ok|done|success|failed:[a-z_]+|noop:[a-z_]+|conflict:[a-z_]+|duplicate:[a-z_]+|validation:[a-z_]+|not_found|forbidden|unauthorized|blocked:[a-z_]+)$&#39;
-),
-
-object_data JSONB NOT NULL,          -- Debezium envelope (see 6.2)
-extra_metadata JSONB DEFAULT &#39;{}&#39;::jsonb,
-
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+<h2 id="6-many-to-many-relationships">6. Many-to-Many Relationships<a class="headerlink" href="#6-many-to-many-relationships" title="Permanent link">&para;</a></h2>
+<h3 id="61-junction-table">6.1 Junction Table<a class="headerlink" href="#61-junction-table" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_role</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user_role</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_role</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_role</span><span class="p">(</span><span class="n">pk_role</span><span class="p">),</span>
+<span class="w">    </span><span class="n">assigned_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">fk_role</span><span class="p">)</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>);</p>
-<p>CREATE INDEX idx_entity_log_object ON core.tb_entity_change_log (object_type, object_id);
-CREATE INDEX idx_entity_log_org ON core.tb_entity_change_log (fk_customer_org, created_at);
-CREATE INDEX idx_entity_log_status ON core.tb_entity_change_log (change_status);
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="62-view-for-array-aggregation">6.2 View for Array Aggregation<a class="headerlink" href="#62-view-for-array-aggregation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Aggregate role IDs per user</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_role_ids_by_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">ur</span><span class="p">.</span><span class="n">fk_user</span><span class="p">,</span>
+<span class="w">    </span><span class="n">array_agg</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">role_ids</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user_role</span><span class="w"> </span><span class="n">ur</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_role</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">pk_role</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ur</span><span class="p">.</span><span class="n">fk_role</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ur</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
 
-<p><strong>Purpose:</strong></p>
-<ul>
-<li>Centralized audit log for all entity writes (GraphQL mutations, batch imports, ETL, direct SQL, triggers, etc.)</li>
-<li>Source of truth for observability and debugging</li>
-<li>Enables CDC event emission for real-time systems</li>
-<li>Powers admin timelines, analytics, and compliance audits</li>
-<li><strong>Source-agnostic:</strong> Tracks any write operation regardless of origin</li>
-</ul>
-<h3 id="62-debezium-envelope-format">6.2 Debezium Envelope Format<a class="headerlink" href="#62-debezium-envelope-format" title="Permanent link">&para;</a></h3>
-<p>The <code>object_data</code> JSONB column contains a <strong>Debezium-style change envelope</strong> for compatibility with CDC systems:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "before": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "old@example.com",
-    "updated_at": "2026-01-11T14:00:00Z"
-  },
-  "after": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "new@example.com",
-    "updated_at": "2026-01-11T15:00:00Z"
-  },
-  "op": "u",
-  "source": {
-    "table": "tb_user",
-    "schema": "public",
-    "db": "production",
-    "organization": "550e8400-e29b-41d4-a716-446655440001",
-    "ts_ms": 1704067200000
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Operation Codes:</strong></p>
-<ul>
-<li><code>"c"</code> — Create (INSERT)</li>
-<li><code>"u"</code> — Update (UPDATE)</li>
-<li><code>"d"</code> — Delete (DELETE)</li>
-<li><code>"r"</code> — Read/Noop (NOOP, no change)</li>
-</ul>
-<p><strong>Field Semantics:</strong></p>
-<ul>
-<li><code>before</code> — Entity state before modification (null for INSERT)</li>
-<li><code>after</code> — Entity state after modification (null for DELETE)</li>
-<li><code>op</code> — Database operation code</li>
-<li><code>source</code> — Metadata about the change source (table, schema, organization, timestamp)</li>
-</ul>
-<h3 id="63-status-taxonomy">6.3 Status Taxonomy<a class="headerlink" href="#63-status-taxonomy" title="Permanent link">&para;</a></h3>
-<p>The <code>change_status</code> field uses <strong>structured, machine-readable status codes</strong> for pattern matching and aggregation:</p>
-<table>
-<thead>
-<tr>
-<th>Category</th>
-<th>Pattern</th>
-<th>Examples</th>
-<th>Use Case</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Success</td>
-<td>Plain word</td>
-<td><code>new</code>, <code>existing</code>, <code>updated</code>, <code>deleted</code>, <code>synced</code>, <code>completed</code>, <code>success</code></td>
-<td>Operation succeeded</td>
-</tr>
-<tr>
-<td>Error</td>
-<td><code>failed:{reason}</code></td>
-<td><code>failed:not_found</code>, <code>failed:validation</code>, <code>failed:constraint</code></td>
-<td>Operation failed</td>
-</tr>
-<tr>
-<td>Conflict</td>
-<td><code>conflict:{reason}</code></td>
-<td><code>conflict:already_exists</code>, <code>conflict:duplicate_email</code></td>
-<td>Data conflict detected</td>
-</tr>
-<tr>
-<td>Validation</td>
-<td><code>validation:{reason}</code></td>
-<td><code>validation:invalid_format</code>, <code>validation:missing_field</code></td>
-<td>Validation error</td>
-</tr>
-<tr>
-<td>No-op</td>
-<td><code>noop:{reason}</code></td>
-<td><code>noop:unchanged</code>, <code>noop:already_synced</code>, <code>noop:duplicate</code></td>
-<td>No change made</td>
-</tr>
-<tr>
-<td>Blocked</td>
-<td><code>blocked:{reason}</code></td>
-<td><code>blocked:permission_denied</code>, <code>blocked:rate_limit</code></td>
-<td>Operation prevented</td>
-</tr>
-</tbody>
-</table>
-<h3 id="64-helper-functions">6.4 Helper Functions<a class="headerlink" href="#64-helper-functions" title="Permanent link">&para;</a></h3>
-<p><strong>log_mutation_event()</strong> — Writes change to <code>tb_entity_change_log</code></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION log_mutation_event(
-    input_fk_customer_org UUID,
-    input_fk_contact UUID,
-    input_object_type TEXT,
-    input_object_id UUID,
-    input_modification_type TEXT,
-    input_change_status TEXT,
-    input_payload_before JSONB DEFAULT NULL,
-    input_payload_after JSONB DEFAULT NULL,
-    input_source_table TEXT DEFAULT NULL,
-    input_source_schema TEXT DEFAULT 'public',
-    input_extra_metadata JSONB DEFAULT '{}'::jsonb
-)
-RETURNS UUID
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Builds Debezium envelope and inserts into change log
-    -- Returns pk_entity_change_log for tracing
-    ...
-END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>build_mutation_response()</strong> — Constructs mutation response without logging</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION core.build_mutation_response(
-    input_change_status TEXT,
-    input_message TEXT,
-    input_entity_id UUID,
-    input_entity_type TEXT,
-    input_custom_entity JSONB,
-    input_fields TEXT[] DEFAULT ARRAY[]::TEXT[],
-    input_cascade_data JSONB DEFAULT NULL,
-    input_extra_metadata JSONB DEFAULT '{}'::JSONB
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-IMMUTABLE
-AS $$
-BEGIN
-    -- Pure function: builds and returns mutation_response type
-    -- No side effects; safe to call multiple times
-    RETURN (
-        input_change_status,
-        input_message,
-        input_entity_id::TEXT,
-        input_entity_type,
-        input_custom_entity,
-        input_fields,
-        input_cascade_data,
-        input_extra_metadata
-    )::app.mutation_response;
-END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>log_and_return_mutation()</strong> — Combined helper (logs + returns response)</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION core.log_and_return_mutation(
-    input_tenant_id UUID,
-    input_user_id UUID,
-    input_entity_type TEXT,
-    input_entity_id UUID,
-    input_modification_type TEXT,
-    input_change_status TEXT,
-    input_fields TEXT[],
-    input_message TEXT,
-    input_payload_before JSONB DEFAULT NULL,
-    input_payload_after JSONB DEFAULT NULL,
-    input_cascade_data JSONB DEFAULT NULL,
-    input_extra_metadata JSONB DEFAULT '{}'::JSONB
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Step 1: Log the mutation (side effect)
-    PERFORM log_mutation_event(
-        input_tenant_id,
-        input_user_id,
-        input_entity_type,
-        input_entity_id,
-        input_modification_type,
-        input_change_status,
-        input_payload_before,
-        input_payload_after,
-        input_entity_type,
-        'public',
-        input_extra_metadata
-    );</p>
-<div class="highlight"><pre><span></span><code>-- Step 2: Build and return response (pure function)
-RETURN core.build_mutation_response(
-    input_change_status,
-    input_message,
-    input_entity_id,
-    input_entity_type,
-    COALESCE(input_payload_after, input_payload_before),
-    input_fields,
-    input_cascade_data,
-    input_extra_metadata
-);
+<span class="c1">-- Include the role IDs in the user view</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">ur</span><span class="p">.</span><span class="n">role_ids</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="n">UUID</span><span class="p">[])</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">role_ids</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;roleIds&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">ur</span><span class="p">.</span><span class="n">role_ids</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="n">UUID</span><span class="p">[])</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_role_ids_by_user</span><span class="w"> </span><span class="n">ur</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">ur</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 </code></pre></div>
-<p>END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="65-usage-patterns">6.5 Usage Patterns<a class="headerlink" href="#65-usage-patterns" title="Permanent link">&para;</a></h3>
-<p><strong>Standard mutation with automatic logging:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION fn_create_user(
-    input_tenant_id UUID,
-    input_user_id UUID,
-    input_email TEXT,
-    input_name TEXT
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_new_user_id UUID;
-    v_before JSONB := NULL;
-    v_after JSONB;
-BEGIN
-    -- Create user
-    INSERT INTO tb_user (email, name)
-    VALUES (input_email, input_name)
-    RETURNING id INTO v_new_user_id;</p>
-<div class="highlight"><pre><span></span><code>-- Fetch created state
-SELECT jsonb_build_object(
-    &#39;id&#39;, id,
-    &#39;email&#39;, email,
-    &#39;name&#39;, name,
-    &#39;createdAt&#39;, created_at
-) INTO v_after
-FROM tb_user WHERE id = v_new_user_id;
-
--- Log and return
-RETURN core.log_and_return_mutation(
-    input_tenant_id,
-    input_user_id,
-    &#39;User&#39;,
-    v_new_user_id,
-    &#39;INSERT&#39;,
-    &#39;new&#39;,
-    ARRAY[&#39;id&#39;, &#39;email&#39;, &#39;name&#39;, &#39;createdAt&#39;],
-    &#39;User created successfully&#39;,
-    v_before,
-    v_after,
-    NULL,
-    jsonb_build_object(&#39;trigger&#39;, &#39;api_create&#39;)
-);
-</code></pre></div>
-<p>END;
-$$;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Custom error response:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check for conflict
-IF EXISTS (SELECT 1 FROM tb_user WHERE email = input_email) THEN
-    PERFORM log_mutation_event(
-        input_tenant_id,
-        input_user_id,
-        'User',
-        '00000000-0000-0000-0000-000000000000',
-        'NOOP',
-        'conflict:already_exists',
-        NULL,
-        jsonb_build_object('email', input_email),
-        'tb_user',
-        'public',
-        jsonb_build_object('attempted_email', input_email)
-    );</p>
-<div class="highlight"><pre><span></span><code>RETURN core.build_mutation_response(
-    &#39;conflict:already_exists&#39;,
-    &#39;User with this email already exists&#39;,
-    &#39;00000000-0000-0000-0000-000000000000&#39;,
-    &#39;User&#39;,
-    jsonb_build_object(&#39;email&#39;, input_email, &#39;error&#39;, &#39;duplicate&#39;),
-    ARRAY[]::TEXT[],
-    NULL,
-    jsonb_build_object(&#39;trigger&#39;, &#39;api_create&#39;, &#39;conflict_reason&#39;, &#39;duplicate_email&#39;)
-);
-</code></pre></div>
-<p>END IF;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="66-separation-of-concerns-pattern">6.6 Separation of Concerns Pattern<a class="headerlink" href="#66-separation-of-concerns-pattern" title="Permanent link">&para;</a></h3>
-<p>This design separates <strong>side effects (logging)</strong> from <strong>pure functions (response building)</strong>:</p>
-<ul>
-<li><code>log_mutation_event()</code> — Side effect only; writes to database</li>
-<li><code>build_mutation_response()</code> — Pure function; no side effects</li>
-<li><code>log_and_return_mutation()</code> — Combines both for typical mutations</li>
-</ul>
-<p><strong>Benefits:</strong></p>
-<ul>
-<li>Testable: Each function can be tested independently</li>
-<li>Flexible: Can log without returning, or return without logging if needed</li>
-<li>Clear: Easy to understand what each function does</li>
-<li>Follows functional programming principles</li>
-</ul>
-<hr />
-<h2 id="7-many-to-many-relationships">7. Many-to-Many Relationships<a class="headerlink" href="#7-many-to-many-relationships" title="Permanent link">&para;</a></h2>
-<h3 id="71-junction-table">7.1 Junction Table<a class="headerlink" href="#71-junction-table" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user_role (
-    pk_user_role INTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    fk_user BIGINTEGER NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
-    fk_role INTEGER NOT NULL REFERENCES tb_role(pk_role),
-    assigned_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(fk_user, fk_role)
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="72-view-for-array-aggregation">7.2 View for Array Aggregation<a class="headerlink" href="#72-view-for-array-aggregation" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Aggregate role IDs per user
-CREATE VIEW v_user_role_ids_by_user AS
-SELECT
-    fk_user,
-    array_agg(fk_role) AS role_ids,
-    array_agg(r.id) AS role_ids_uuid
-FROM tb_user_role ur
-JOIN tb_role r ON r.pk_role = ur.fk_role
-GROUP BY fk_user;</p>
-<p>-- Include in user view
-CREATE VIEW v_user AS
-SELECT
-    u.pk_user,
-    u.id,
-    u.identifier,
-    COALESCE(ur.role_ids_uuid, ARRAY[]::UUID[]) AS role_ids,
-    jsonb_build_object(
-        'id', u.id,
-        'identifier', u.identifier,
-        'email', u.email,
-        'roleIds', COALESCE(ur.role_ids_uuid, ARRAY[]::UUID[])
-    ) AS data
-FROM tb_user u
-LEFT JOIN v_user_role_ids_by_user ur ON ur.fk_user = u.pk_user
-WHERE u.deleted_at IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
-
 <p><strong>Rules:</strong></p>
 <ul>
-<li>Junction table uses internal keys (<code>fk_*</code>)</li>
-<li>View aggregates to UUID array</li>
-<li>Include both array column AND in JSONB</li>
-<li>Index the array column for GIN filtering</li>
+<li>The junction table uses internal keys (<code>fk_*</code>)</li>
+<li>The view aggregates to a <code>UUID[]</code> array of public IDs</li>
+<li>Include the array both as a native column AND inside the <code>data</code> JSONB</li>
+<li>Index the array column with GIN for filtering</li>
 </ul>
 <hr />
-<h2 id="8-indexing-strategy">8. Indexing Strategy<a class="headerlink" href="#8-indexing-strategy" title="Permanent link">&para;</a></h2>
-<h3 id="81-essential-indexes">8.1 Essential Indexes<a class="headerlink" href="#81-essential-indexes" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- On write table
-CREATE INDEX idx_tb_user_id ON tb_user(id);
-CREATE INDEX idx_tb_user_identifier ON tb_user(identifier);
-CREATE INDEX idx_tb_user_created_at ON tb_user(created_at);
-CREATE UNIQUE INDEX idx_tb_user_email ON tb_user(email) WHERE deleted_at IS NULL;</p>
-<p>-- On related table
-CREATE INDEX idx_tb_post_fk_user ON tb_post(fk_user);
-CREATE INDEX idx_tb_post_id ON tb_post(id);
-CREATE INDEX idx_tb_post_created_at ON tb_post(created_at);</p>
-<p>-- On view for filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-CREATE INDEX idx_v_post_created_at ON v_post(created_at);</p>
-<p>-- On array/JSONB columns (GIN)
-CREATE INDEX idx_v_order_items__product__category_id
-  ON v_order USING GIN(items__product__category_id);
-CREATE INDEX idx_v_user_role_ids
-  ON v_user USING GIN(role_ids);
-CREATE INDEX idx_v_post_data_gin
-  ON v_post USING GIN(data);
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="7-indexing-strategy">7. Indexing Strategy<a class="headerlink" href="#7-indexing-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="71-essential-indexes">7.1 Essential Indexes<a class="headerlink" href="#71-essential-indexes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- On the write table</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_identifier</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">identifier</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
+<span class="c1">-- On related tables</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_fk_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+
+<span class="c1">-- On array/JSONB columns (GIN)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_role_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user_role</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
 <li>B-tree on: public <code>id</code>, <code>identifier</code>, audit columns, FK columns</li>
 <li>UNIQUE on: <code>id</code> and <code>identifier</code></li>
-<li>GIN on: array columns, deep path columns, <code>data</code> JSONB (optional)</li>
-<li>Index what will be filtered</li>
+<li>GIN on: array columns, deep path columns, and <code>data</code> JSONB (optional)</li>
+<li>Index what will actually be filtered</li>
 </ul>
 <hr />
-<h2 id="9-view-materialization-strategy">9. View Materialization Strategy<a class="headerlink" href="#9-view-materialization-strategy" title="Permanent link">&para;</a></h2>
-<h3 id="91-when-to-materialize">9.1 When to Materialize<a class="headerlink" href="#91-when-to-materialize" title="Permanent link">&para;</a></h3>
+<h2 id="8-view-materialization-strategy">8. View Materialization Strategy<a class="headerlink" href="#8-view-materialization-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="81-when-to-materialize">8.1 When to Materialize<a class="headerlink" href="#81-when-to-materialize" title="Permanent link">&para;</a></h3>
 <p>Use materialized views for:</p>
 <ul>
 <li>Complex aggregations (slow joins)</li>
@@ -7465,54 +6634,60 @@ CREATE INDEX idx_v_post_data_gin
 <li>Rarely-changing data (stats, summaries)</li>
 <li>High-cardinality pre-aggregations</li>
 </ul>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE MATERIALIZED VIEW mv_user_stats AS
-SELECT
-    fk_user,
-    COUNT(DISTINCT fk_post) AS post_count,
-    COUNT(DISTINCT fk_comment) AS comment_count,
-    MAX(post.created_at) AS latest_post_at
-FROM tb_user u
-LEFT JOIN tb_post ON tb_post.fk_user = u.pk_user
-LEFT JOIN tb_comment ON tb_comment.fk_user = u.pk_user
-GROUP BY fk_user;</p>
-<p>-- Refresh strategy
-CREATE INDEX idx_mv_user_stats_fk_user ON mv_user_stats(fk_user);</p>
-<p>-- Refresh manually or on schedule
-REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_stats;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">mv_user_stats</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">post_count</span><span class="p">,</span>
+<span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">latest_post_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">;</span>
 
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_mv_user_stats_fk_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">mv_user_stats</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+
+<span class="c1">-- Refresh manually or on a schedule</span>
+<span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_user_stats</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Rules:</strong></p>
 <ul>
 <li>Name: <code>mv_{entity}</code></li>
 <li>Index on grouping columns</li>
-<li>Refresh strategy documented</li>
-<li>Use CONCURRENTLY to avoid locks</li>
+<li>Document the refresh strategy</li>
+<li>Use <code>CONCURRENTLY</code> to avoid locks</li>
 </ul>
+<p>For heavy nested reads, prefer a <code>tv_*</code> table-backed projection refreshed by triggers — see
+the <a href="../../architecture/database/tv-table-pattern/">tv_ table pattern</a>.</p>
 <hr />
-<h2 id="10-validation-checklist">10. Validation Checklist<a class="headerlink" href="#10-validation-checklist" title="Permanent link">&para;</a></h2>
+<h2 id="9-validation-checklist">9. Validation Checklist<a class="headerlink" href="#9-validation-checklist" title="Permanent link">&para;</a></h2>
 <p>When creating a schema for FraiseQL:</p>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All write tables prefixed <code>tb_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All read views prefixed <code>v_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All functions prefixed <code>fn_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Primary keys: <code>pk_{entity}</code> (INTEGER)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Foreign keys: <code>fk_{entity}</code> (INTEGER)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Public IDs: <code>id</code> (UUID)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Surrogates: <code>identifier</code> (TEXT, indexed)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All views have <code>data</code> JSONB column</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Related entity views expose <code>{parent}_id</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deep path columns follow <code>entity__path__field</code> pattern</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All tables have audit columns</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All views filter on <code>deleted_at IS NULL</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All read views prefixed <code>v_*</code> (or <code>tv_*</code> for table-backed projections)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All mutation functions prefixed <code>fn_*</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Primary keys: <code>pk_{entity}</code> (<code>BIGINT</code>, hidden)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Foreign keys: <code>fk_{entity}</code> (<code>BIGINT</code>, hidden)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Public IDs: <code>id</code> (<code>UUID</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Slugs: <code>identifier</code> (<code>TEXT</code>, indexed) where applicable</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All read views have a <code>data</code> JSONB column</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Related entity views expose <code>{parent}_id</code> (<code>UUID</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deep path columns follow the <code>entity__path__field</code> pattern</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Tables have audit columns</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Views filter on <code>deleted_at IS NULL</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pre-aggregated views named <code>v_{entities}_by_{parent}</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Arrow views named <code>av_{entity}</code> and are flat</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mutation functions return JSONB</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All relevant columns indexed</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mutation functions return the standard JSON response</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Relevant columns are indexed</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> JSONB fields use camelCase</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No nullable JSONB (use {} or [])</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No <code>pk_*</code> / <code>fk_*</code> inside <code>data</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No nullable JSONB (use <code>{}</code> or <code>[]</code>)</li>
+</ul>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../reference/naming-patterns/">Naming Patterns</a> — full identifier reference</li>
+<li><a href="../../reference/scalars/">Scalars</a> — built-in GraphQL scalar types</li>
+<li><a href="../../architecture/database/view-selection-guide/">View Selection Guide</a> — <code>v_</code> vs <code>tv_</code></li>
+<li><a href="../../architecture/database/tv-table-pattern/">tv_ Table Pattern</a> — table-backed projections</li>
+<li><a href="../../foundation/03-database-centric-architecture/">Database-Centric Architecture</a> — the CQRS model</li>
 </ul>
 <hr />
 <p><em>End of Schema Conventions Specification</em></p>
@@ -7522,6 +6697,9 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_stats;
 
 
 
+
+  
+  
 
 
 
