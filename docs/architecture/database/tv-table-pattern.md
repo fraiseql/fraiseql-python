@@ -1,9 +1,7 @@
-<!-- Skip to main content -->
 ---
-
-title: tv_* Table Pattern: Table-Backed JSON Views
-description: - Physical storage on disk (materialized JSONB data)
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+title: "tv_* Table Pattern: Table-Backed JSON Views"
+description: Physically stored, pre-composed JSONB projections for high-performance nested GraphQL reads.
+keywords: ["design", "scalability", "performance", "patterns", "postgresql"]
 tags: ["documentation", "reference"]
 ---
 
@@ -11,53 +9,59 @@ tags: ["documentation", "reference"]
 
 ## Overview
 
-**tv_* tables** are PostgreSQL-specific, materialized table-backed views that pre-compute and physically store pre-composed JSONB data structures for high-performance GraphQL query execution on complex nested data.
+**`tv_*` tables** are PostgreSQL tables that pre-compute and physically store a
+pre-composed `data` JSONB column for high-performance GraphQL reads over complex,
+deeply nested data. A `tv_*` table looks exactly like a `v_*` read view to FraiseQL
+(`id` + `data` JSONB), but the JSONB is materialized on disk instead of being
+composed on every query.
 
-**Analogous to**: `ta_*` tables for Arrow plane (analytics), but `tv_*` for JSON plane (GraphQL).
+**Key difference from logical views (`v_*`):** unlike a logical view, a `tv_*`
+relation is a real table with:
 
-**Key difference**: Unlike logical views (`v_*`), tv_* tables are actual PostgreSQL tables with:
+- Physical storage on disk (materialized `data` JSONB)
+- A trigger-based or scheduled refresh mechanism
+- Denormalized JSONB composition for complex nested queries
+- Substantially faster read performance on deeply nested data
 
-- Physical storage on disk (materialized JSONB data)
-- Trigger-based or scheduled refresh mechanism
-- Denormalized JSONB composition for complex queries
-- 5-50x faster query performance on deeply nested data
+FraiseQL queries a `tv_*` table the same way it queries a `v_*` view — via
+`db.find("tv_user_profile")` / `db.find_one(...)` from a `@fraiseql.query`
+resolver. Choosing between `v_*` and `tv_*` is purely a database design decision;
+the GraphQL layer is unchanged.
 
 ## When to Use tv_* Tables
 
-### ✅ **Use tv_* when**
+### Use tv_* when
 
 - **Complex JSONB composition** with multiple JOINs (3+ related entities)
-- **Deep nesting** required (e.g., User → Posts → Comments → Likes)
+- **Deep nesting** is required (e.g., User → Posts → Comments → Likes)
 - **High-frequency read, low-frequency write** workloads
 - **Pre-aggregated dashboards** with complex data structures
-- **GraphQL queries** with consistent nested patterns
+- **GraphQL queries** follow consistent nested patterns
 - **GraphQL subscriptions** need fast access to composed data
 
-### ❌ **Don't use tv_* when**
+### Don't use tv_* when
 
-- **Simple queries** (single or 2-table joins) - use `v_*` logical views instead
-- **Frequently changing data** with millisecond latency requirements
-- **Storage is constrained** (tv_* duplicates JSONB data)
-- **Dynamic query patterns** where composition varies by request
+- **Simple queries** (single or 2-table joins) — use a `v_*` logical view instead
+- **Frequently changing data** with millisecond freshness requirements
+- **Storage is constrained** (a `tv_*` table duplicates the JSONB data)
+- **Dynamic query patterns** where the composition varies per request
 
 ## Performance Comparison
 
-### Scenario: Complex User Profile with Posts, Comments, and Likes (10K users)
+### Scenario: complex user profile with posts, comments, and likes (10K users)
 
-| Metric | v_user_full (View) | tv_user_profile (Table) | Improvement |
-|--------|-------------------|------------------------|-------------|
-| Query time | 2-5s | 100-200ms | **10-50x faster** |
-| JSONB composition | Real-time (multiple JOINs) | Pre-computed | **Zero JOIN cost** |
-| Memory usage | 500MB-1GB | 150-300MB | **3-6x lower** |
-| CPU | 50-80% | 5-10% | **5-16x reduction** |
+| Metric | `v_user_full` (view) | `tv_user_profile` (table) | Improvement |
+|--------|----------------------|---------------------------|-------------|
+| Query time | 2–5 s | 100–200 ms | 10–50x faster |
+| JSONB composition | Real-time (multiple JOINs) | Pre-computed | Zero JOIN cost |
+| Memory usage | 500 MB–1 GB | 150–300 MB | 3–6x lower |
+| CPU | 50–80% | 5–10% | 5–16x reduction |
 
-### Query Breakdown
+### Query breakdown
 
-**Logical view (v_user_full)** - Real-time composition:
+**Logical view (`v_user_full`)** — real-time composition:
 
 ```text
-<!-- Code example in TEXT -->
-
 1. Fetch user (1ms)
 2. Fetch posts (2-3s via JOIN)
 3. Compose posts array (500-800ms)
@@ -66,25 +70,20 @@ tags: ["documentation", "reference"]
 6. Fetch likes per comment (1-2s)
 7. Build final JSONB (200-300ms)
 Total: 5-10 seconds
+```
+
+**Table-backed view (`tv_user_profile`)** — pre-computed:
+
 ```text
-<!-- Code example in TEXT -->
-
-**Table-backed view (tv_user_profile)** - Pre-computed:
-
-```text
-<!-- Code example in TEXT -->
-
 1. Fetch pre-composed JSONB (100-200ms)
 Total: 100-200ms
-```text
-<!-- Code example in TEXT -->
+```
 
 ## DDL Pattern
 
-### Basic Structure
+### Basic structure
 
 ```sql
-<!-- Code example in SQL -->
 -- 1. Create physical table with pre-composed JSONB
 CREATE TABLE tv_user_profile (
     id TEXT NOT NULL PRIMARY KEY,
@@ -102,13 +101,11 @@ CREATE TRIGGER trg_refresh_tv_user_profile
     AFTER INSERT OR UPDATE OR DELETE ON tb_user
     FOR EACH ROW
     EXECUTE FUNCTION refresh_tv_user_profile_trigger();
-```text
-<!-- Code example in TEXT -->
+```
 
-### JSONB Composition Pattern
+### JSONB composition pattern
 
 ```sql
-<!-- Code example in SQL -->
 -- Helper view to compose nested data (intermediate step)
 CREATE VIEW v_user_posts_composed AS
 SELECT
@@ -162,28 +159,26 @@ LEFT JOIN v_user_posts_composed p ON p.fk_user = u.pk_user
 ON CONFLICT (id) DO UPDATE SET
     data = EXCLUDED.data,
     updated_at = NOW();
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Refresh Strategies
 
-Choose based on your latency and overhead requirements:
+Choose based on your latency and overhead requirements.
 
-### Option 1: Trigger-Based (Real-Time)
+### Option 1: Trigger-based (real-time)
 
-**Best for**: GraphQL subscriptions, <1min latency requirements
+**Best for:** GraphQL subscriptions, sub-minute latency requirements.
 
-**Characteristics**:
+**Characteristics:**
 
 - Fires after every INSERT/UPDATE/DELETE on source tables
-- Latency: <100ms per operation
-- Overhead: Per-row cost (scales with write volume)
-- Control: Fully automatic
+- Latency: <100 ms per operation
+- Overhead: per-row cost (scales with write volume)
+- Control: fully automatic
 
-**Implementation**:
+**Implementation:**
 
 ```sql
-<!-- Code example in SQL -->
 CREATE OR REPLACE FUNCTION refresh_tv_user_profile_trigger()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -221,24 +216,22 @@ CREATE TRIGGER trg_refresh_tv_user_profile_on_comment
     AFTER INSERT OR UPDATE OR DELETE ON tb_comment
     FOR EACH ROW
     EXECUTE FUNCTION refresh_tv_user_profile_trigger();
-```text
-<!-- Code example in TEXT -->
+```
 
-### Option 2: Scheduled Batch (Low Overhead)
+### Option 2: Scheduled batch (low overhead)
 
-**Best for**: Nightly dashboards, acceptable staleness (minutes to hours)
+**Best for:** nightly dashboards, acceptable staleness (minutes to hours).
 
-**Characteristics**:
+**Characteristics:**
 
 - Batched refresh at fixed intervals
-- Latency: Minutes to hours
-- Overhead: Batch cost (no per-row overhead)
-- Control: Scheduled via pg_cron
+- Latency: minutes to hours
+- Overhead: batch cost (no per-row overhead)
+- Control: scheduled via pg_cron
 
-**Implementation**:
+**Implementation:**
 
 ```sql
-<!-- Code example in SQL -->
 -- Enable pg_cron extension
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
@@ -280,24 +273,22 @@ BEGIN
     RETURN QUERY SELECT v_inserted, v_updated;
 END;
 $$ LANGUAGE plpgsql;
-```text
-<!-- Code example in TEXT -->
+```
 
-### Option 3: Command-Based Explicit Refresh
+### Option 3: Command-based explicit refresh
 
-**Best for**: Development, bulk data loads, manual ETL
+**Best for:** development, bulk data loads, manual ETL.
 
-**Characteristics**:
+**Characteristics:**
 
 - Manual refresh on demand
-- Latency: On-demand
-- Overhead: Only when called
-- Control: Explicit API calls
+- Latency: on-demand
+- Overhead: only when called
+- Control: explicit invocation
 
-**Implementation**:
+**Implementation:**
 
 ```sql
-<!-- Code example in SQL -->
 CREATE OR REPLACE FUNCTION refresh_tv_user_profile(user_id_filter UUID DEFAULT NULL)
 RETURNS TABLE(rows_inserted BIGINT, rows_updated BIGINT) AS $$
 DECLARE
@@ -335,83 +326,88 @@ SELECT * FROM refresh_tv_user_profile('550e8400-e29b-41d4-a716-446655440000'::UU
 
 -- Usage: Refresh all profiles
 SELECT * FROM refresh_tv_user_profile();
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Refresh Strategy Decision Matrix
 
 | Write Volume | Read Volume | Data Complexity | Recommended |
-|-------------|-------------|-----------------|------------|
+|--------------|-------------|-----------------|-------------|
 | Low (<100/min) | High | Complex (3+ JOINs) | Trigger-based |
-| Low (<100/min) | High | Simple | Scheduled (15min) |
-| Medium (100-1K/min) | High | Complex | Trigger-based + batch cleanup |
-| Medium (100-1K/min) | High | Simple | Scheduled (5-15min) |
+| Low (<100/min) | High | Simple | Scheduled (15 min) |
+| Medium (100–1K/min) | High | Complex | Trigger-based + batch cleanup |
+| Medium (100–1K/min) | High | Simple | Scheduled (5–15 min) |
 | High (>1K/min) | High | Any | Batch refresh only |
 
 ## Migration Guide
 
-### Step 1: Create Intermediate Views
+### Step 1: Create intermediate views
 
-Create helper views for composition logic (reusable across tv_*, REST APIs, etc.):
-
-```bash
-<!-- Code example in BASH -->
-psql -h localhost -U postgres fraiseql_dev < examples/sql/postgres/v_user_posts_composed.sql
-psql -h localhost -U postgres fraiseql_dev < examples/sql/postgres/v_user_profile_composed.sql
-```text
-<!-- Code example in TEXT -->
-
-### Step 2: Create tv_* Table
+Create helper views for the composition logic (reusable across `tv_*` tables,
+other reports, etc.):
 
 ```bash
-<!-- Code example in BASH -->
-psql -h localhost -U postgres fraiseql_dev < examples/sql/postgres/tv_user_profile.sql
-```text
-<!-- Code example in TEXT -->
+psql -h localhost -U postgres fraiseql_dev < examples/sql/v_user_posts_composed.sql
+psql -h localhost -U postgres fraiseql_dev < examples/sql/v_user_profile_composed.sql
+```
 
-### Step 3: Initial Population
+### Step 2: Create the tv_* table
+
+```bash
+psql -h localhost -U postgres fraiseql_dev < examples/sql/tv_user_profile.sql
+```
+
+### Step 3: Initial population
 
 ```sql
-<!-- Code example in SQL -->
 -- Populate table from logical view
 SELECT * FROM refresh_tv_user_profile();
 
 -- Verify row counts
-SELECT COUNT(*) as tv_profile_count FROM tv_user_profile;
-SELECT COUNT(*) as v_user_count FROM v_user;
+SELECT COUNT(*) AS tv_profile_count FROM tv_user_profile;
+SELECT COUNT(*) AS v_user_count FROM v_user;
 
 -- They should be equal
-```text
-<!-- Code example in TEXT -->
+```
 
-### Step 4: Update GraphQL Schema
+### Step 4: Point the GraphQL type at the table
 
-In your authoring layer (Python/TypeScript), bind the `User` type to use `tv_user_profile` instead of `v_user`:
+Bind the `User` type to `tv_user_profile` instead of `v_user`. The `data` JSONB
+column is read exactly as for a logical view, so only `sql_source` changes:
 
 ```python
-<!-- Code example in Python -->
-# Before: Uses v_user (logical view)
-@FraiseQL.type()
+import fraiseql
+from fraiseql.types import ID
+
+# Before: reads v_user (logical view, real-time composition)
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
     posts: list[Post]
 
-# After: Uses tv_user_profile (table-backed view)
-@FraiseQL.type(view="tv_user_profile")
+# After: reads tv_user_profile (table-backed, pre-composed JSONB)
+@fraiseql.type(sql_source="tv_user_profile", jsonb_column="data")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
     posts: list[Post]
-```text
-<!-- Code example in TEXT -->
+```
 
-### Step 5: Monitor Performance
+Query resolvers do not change — they still call `db.find(...)` against the
+configured source at runtime:
+
+```python
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("tv_user_profile")
+```
+
+### Step 5: Monitor performance
 
 ```sql
-<!-- Code example in SQL -->
 -- Check staleness (how old is the pre-computed data?)
-SELECT MAX(updated_at) - NOW() as staleness
+SELECT MAX(updated_at) - NOW() AS staleness
 FROM tv_user_profile;
 
 -- Monitor refresh function performance
@@ -420,123 +416,119 @@ SELECT * FROM refresh_tv_user_profile();
 
 -- Check data accuracy (profile count should match user count)
 SELECT
-    (SELECT COUNT(*) FROM tv_user_profile) as profiles,
-    (SELECT COUNT(*) FROM v_user) as users,
-    (SELECT COUNT(*) FROM tv_user_profile) = (SELECT COUNT(*) FROM v_user) as counts_match;
-```text
-<!-- Code example in TEXT -->
+    (SELECT COUNT(*) FROM tv_user_profile) AS profiles,
+    (SELECT COUNT(*) FROM v_user) AS users,
+    (SELECT COUNT(*) FROM tv_user_profile) = (SELECT COUNT(*) FROM v_user) AS counts_match;
+```
 
 ## Limitations and Considerations
 
 ### Storage
 
-- **Data duplication**: tv_*tables duplicate JSONB from tb_* tables
-- **Storage overhead**: Typically 20-50% of source data size (JSONB is less dense than columnar)
-- **Index overhead**: GIN indexes add ~5-10% overhead
+- **Data duplication**: `tv_*` tables duplicate JSONB derived from `tb_*` tables.
+- **Storage overhead**: typically 20–50% of source data size.
+- **Index overhead**: GIN indexes add roughly 5–10% overhead.
 
-### Refresh Latency
+### Refresh latency
 
-- **Trigger-based**: <100ms per operation (suitable for real-time GraphQL)
-- **Scheduled batch**: Minutes (suitable for dashboards)
-- **Manual refresh**: On-demand (suitable for development/testing)
+- **Trigger-based**: <100 ms per operation (suitable for real-time GraphQL).
+- **Scheduled batch**: minutes (suitable for dashboards).
+- **Manual refresh**: on-demand (suitable for development/testing).
 
-### Staleness Risk
+### Staleness risk
 
-- **Trigger-based**: Nearly real-time (slight delay during high-volume writes)
-- **Scheduled batch**: By design (e.g., 5-minute staleness)
-- **Manual refresh**: Until explicitly called
+- **Trigger-based**: nearly real-time (slight delay during high-volume writes).
+- **Scheduled batch**: by design (e.g., 5-minute staleness).
+- **Manual refresh**: stale until explicitly refreshed.
 
-### Schema Drift Risk
+### Schema drift risk
 
-- **JSONB structure must match GraphQL schema**: Mismatch causes validation errors
-- **Nested entity changes**: Changes to related entities (Post, Comment) require trigger updates
-- **Mitigation**: Comprehensive unit and integration tests verify schema consistency
+- **JSONB structure must match the GraphQL schema**: a mismatch causes validation errors.
+- **Nested entity changes**: changes to related entities (Post, Comment) require trigger updates.
+- **Mitigation**: unit and integration tests verify schema consistency.
 
-### Cascading Triggers
+### Cascading triggers
 
-- Multiple triggers (on user, post, comment) can create overhead
-- Consider batch refresh if write volume is very high (>1K/min)
-- Monitor trigger execution time
+- Multiple triggers (on user, post, comment) can create overhead.
+- Consider batch refresh when write volume is very high (>1K/min).
+- Monitor trigger execution time.
 
 ## Best Practices
 
-1. **Use intermediate composed views** for reusability (also useful for REST APIs)
-2. **Test trigger logic** before production deployment with high-volume writes
-3. **Monitor staleness** with `updated_at` column
-4. **Use command-based refresh** for bulk import verification
-5. **Schedule batch refresh** as fallback for trigger failures
-6. **Keep tv_* schema synchronized** with GraphQL schema definitions
-7. **Document refresh strategy** in architecture decisions
-8. **Use JSONB indexes** (GIN) for faster queries
-9. **Benchmark vs. logical view** to confirm performance improvement
+1. **Use intermediate composed views** for reusability.
+2. **Test trigger logic** before deploying to high-volume write workloads.
+3. **Monitor staleness** with the `updated_at` column.
+4. **Use command-based refresh** for bulk-import verification.
+5. **Schedule a batch refresh** as a fallback for trigger failures.
+6. **Keep the `tv_*` JSONB shape synchronized** with the GraphQL type definition.
+7. **Document the chosen refresh strategy** in architecture decisions.
+8. **Use GIN indexes** on the `data` column for faster queries.
+9. **Benchmark against the logical view** to confirm the performance gain.
 
 ## Troubleshooting
 
 ### Issue: tv_* table empty after trigger creation
 
-**Cause**: Trigger only fires on future changes, not existing data.
+**Cause:** the trigger only fires on future changes, not existing data.
 
-**Solution**: Run initial population:
+**Solution:** run the initial population.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT * FROM refresh_tv_user_profile();
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Issue: tv_* data stale after writes
 
-**Cause**: Trigger not firing or delayed.
+**Cause:** the trigger is not firing or is delayed.
 
-**Solution**: Check trigger status:
+**Solution:** check trigger status.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT * FROM information_schema.triggers
 WHERE trigger_name LIKE 'trg_refresh_tv%';
 
 -- Manually refresh
 SELECT * FROM refresh_tv_user_profile();
-```text
-<!-- Code example in TEXT -->
+```
 
-### Issue: High CPU from cascading triggers
+### Issue: high CPU from cascading triggers
 
-**Cause**: Multiple triggers (on related tables) causing many refreshes.
+**Cause:** multiple triggers (on related tables) cause many refreshes.
 
-**Solution**: Switch to batched refresh:
+**Solution:** switch to a batched refresh.
 
 ```sql
-<!-- Code example in SQL -->
 -- Drop per-row triggers
 DROP TRIGGER IF EXISTS trg_refresh_tv_user_profile_on_post ON tb_post;
 DROP TRIGGER IF EXISTS trg_refresh_tv_user_profile_on_comment ON tb_comment;
 
 -- Schedule batch refresh instead
 SELECT cron.schedule('refresh-tv-profile', '*/5 * * * *', 'SELECT refresh_tv_user_profile();');
-```text
-<!-- Code example in TEXT -->
+```
 
-### Issue: JSONB composition mismatch with GraphQL schema
+### Issue: JSONB composition mismatch with the GraphQL schema
 
-**Cause**: DDL changed without updating schema binding.
+**Cause:** the DDL changed without updating the type binding.
 
-**Solution**:
+**Solution:**
 
-1. Update PostgreSQL DDL (helper views + tv_* table)
-2. Update GraphQL schema binding (authoring layer)
-3. Re-populate tv_* table
-4. Run integration tests to verify
+1. Update the PostgreSQL DDL (helper views + `tv_*` table).
+2. Update the `@fraiseql.type` binding (`sql_source` / field set).
+3. Re-populate the `tv_*` table.
+4. Run integration tests to verify.
 
 ## Examples
 
-See `/home/lionel/code/FraiseQL/examples/sql/postgres/` for complete DDL examples:
+See `examples/sql/` for complete DDL examples:
 
-- `tv_user_profile.sql` - User profile with nested posts and comments
-- `tv_order_summary.sql` - Order with line items and customer details
+- `tv_user_profile.sql` — user profile with nested posts and comments
+- `tv_order_summary.sql` — order with line items and customer details
 
 ## See Also
 
 - [View Selection Guide](./view-selection-guide.md)
 - [Schema Conventions](../../specs/schema-conventions.md)
-- [FraiseQL Database Architecture](../../architecture/)
+- [Naming Patterns](../../reference/naming-patterns.md)
+- [Database-Centric Architecture](../../foundation/03-database-centric-architecture.md)
+</content>
+</invoke>

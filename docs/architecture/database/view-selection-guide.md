@@ -1,75 +1,70 @@
-<!-- Skip to main content -->
 ---
-
-title: View Selection Guide: Choosing Between v_*, tv_*, va_*, and ta_*
-description: FraiseQL supports **four distinct view patterns** across two query planes. This guide helps you choose the right pattern for your use case.
+title: "View Selection Guide: Choosing Between v_* and tv_*"
+description: FraiseQL exposes GraphQL reads through PostgreSQL views. This guide helps you choose between a logical view (v_*) and a table-backed projection view (tv_*).
 keywords: ["design", "scalability", "performance", "patterns", "security"]
 tags: ["documentation", "reference"]
 ---
 
-# View Selection Guide: Choosing Between v_*, tv_*, va_*, and ta_*
+# View Selection Guide: Choosing Between v_* and tv_*
 
 ## Overview
 
-FraiseQL supports **four distinct view patterns** across two query planes. This guide helps you choose the right pattern for your use case.
+In FraiseQL v1, every GraphQL read resolves against a PostgreSQL view that returns a
+`data` JSONB column. There are **two view patterns** to choose from, and the choice is
+the single biggest lever for read performance. This guide helps you pick the right one.
 
-## View Patterns at a Glance
+| Pattern | Type | Storage | Use Case | Latency | Maintenance |
+|---------|------|---------|----------|---------|-------------|
+| `v_*` | Logical view | None | Simple GraphQL queries | Medium (100-500ms) | None |
+| `tv_*` | Table-backed projection | JSONB table | Complex nested GraphQL | Fast (50-200ms) | Trigger/scheduled refresh |
 
-| Pattern | Plane | Type | Storage | Use Case | Latency | Maintenance |
-|---------|-------|------|---------|----------|---------|------------|
-| `v_*` | JSON | Logical | None | Simple GraphQL queries | Medium (100-500ms) | None |
-| `tv_*` | JSON | Table | JSONB | Complex nested GraphQL | Fast (50-200ms) | Trigger/scheduled refresh |
-| `va_*` | Arrow | Logical | None | Simple analytics queries | Medium (500ms-5s) | None |
-| `ta_*` | Arrow | Table | Columnar | Large-scale analytics | Very Fast (50-100ms) | Trigger/scheduled refresh |
+A `v_*` view composes its `data` JSONB at query time with a plain `SELECT`. A `tv_*` view
+is a real table holding pre-composed JSONB, refreshed by triggers or a scheduled job —
+you pay storage and refresh cost up front to make reads fast and predictable.
+
+Both are bound to a GraphQL type the same way, at runtime, when the app starts:
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+```
+
+Switching a type from a logical view to a table-backed projection is just a one-line
+change to `sql_source` — clients never see the difference.
 
 ## Decision Tree
 
 ```text
-<!-- Code example in TEXT -->
-START: What query plane are you working in?
+START: How complex is the read?
 
-├─ JSON PLANE (GraphQL queries)
-│  ├─ Simple query? (1-2 tables, flat structure)
-│  │  └─ YES → Use v_*
-│  │        Why: No JOIN overhead, instant to deploy
-│  │        Example: Query single user or user list
-│  │
-│  └─ Complex query? (3+ tables, nested data)
-│     ├─ HIGH read volume (>100 reqs/sec)?
-│     │  └─ Use tv_* (table-backed)
-│     │     Why: Pre-computed JSONB, sub-second latency
-│     │     Example: User profiles with posts/comments
-│     │
-│     └─ LOW read volume (<100 reqs/sec)?
-│        ├─ Query time > 1 second?
-│        │  └─ Use tv_* (table-backed)
-│        │     Why: Composition cost exceeds storage cost
-│        │
-│        └─ Query time < 1 second?
-│           └─ Use v_* (logical)
-│              Why: Storage overhead not justified
+├─ Simple query? (1-2 tables, flat structure)
+│  └─ YES → Use v_*
+│        Why: No JOIN overhead, nothing to maintain
+│        Example: Query a single user or a user list
 │
-└─ ARROW PLANE (Analytics queries)
-   ├─ Small dataset? (<100K rows)
-   │  └─ Use va_* (logical)
-   │     Why: No storage overhead, simple to maintain
-   │     Example: Daily sales summary (10K rows)
+└─ Complex query? (3+ tables, nested data)
+   ├─ HIGH read volume (>100 reqs/sec)?
+   │  └─ Use tv_* (table-backed projection)
+   │     Why: Pre-composed JSONB, sub-second latency
+   │     Example: User profiles with posts/comments
    │
-   └─ Large dataset? (>1M rows)
+   └─ LOW read volume (<100 reqs/sec)?
       ├─ Query time > 1 second?
-      │  └─ Use ta_* (table-backed)
-      │     Why: Columnar format, BRIN indexes
-      │     Example: 10M historical transactions
+      │  └─ Use tv_* (table-backed projection)
+      │     Why: Composition cost exceeds storage cost
       │
       └─ Query time < 1 second?
-         └─ Use va_* (logical)
+         └─ Use v_* (logical view)
             Why: Storage overhead not justified
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Quick Reference by Scenario
-
-### GraphQL Queries
 
 **Simple Cases (Use v_*)**:
 
@@ -84,348 +79,177 @@ START: What query plane are you working in?
 - ✅ Dashboard requiring pre-aggregated data
 - ✅ GraphQL subscriptions (real-time updates)
 
-### Analytics Queries
-
-**Small Datasets (Use va_*)**:
-
-- ✅ Daily sales summary (computed once per day)
-- ✅ Weekly user metrics (5K rows)
-- ✅ Monthly revenue report (1K rows)
-
-**Large Datasets (Use ta_*)**:
-
-- ✅ 10M+ transaction history
-- ✅ 100K+ event stream (append-only)
-- ✅ Time-series analytics (millions of data points)
-
 ## Performance Comparison Matrix
 
 ### Query Execution Time (Lower is Better)
 
-| Query Type | v_* | tv_* | va_* | ta_* |
-|-----------|-----|------|------|------|
-| Single entity (User by ID) | **50-100ms** | 50-100ms | - | - |
-| Entity with 1 related (User + Posts) | 100-300ms | **100-200ms** | - | - |
-| Entity with 3+ related (User + Posts + Comments + Likes) | 2-5s | **50-200ms** | - | - |
-| Analytics: 10K rows, simple filter | - | - | **100-200ms** | 100-150ms |
-| Analytics: 1M rows, range query | - | - | 2-10s | **50-100ms** |
-| Analytics: 100M rows, aggregation | - | - | >30s | **200-500ms** |
+| Query Type | v_* | tv_* |
+|-----------|-----|------|
+| Single entity (User by ID) | **50-100ms** | 50-100ms |
+| Entity with 1 related (User + Posts) | 100-300ms | **100-200ms** |
+| Entity with 3+ related (User + Posts + Comments + Likes) | 2-5s | **50-200ms** |
 
 ### Memory Usage (Lower is Better)
 
-| Scenario | v_* | tv_* | va_* | ta_* |
-|----------|-----|------|------|------|
-| 1K records with deep nesting | 50-100MB | **20-30MB** | - | - |
-| 10K records with deep nesting | 500-800MB | **100-200MB** | - | - |
-| 100K row analytics query | - | - | 200-500MB | **50-100MB** |
-| 10M row analytics query | - | - | 2-5GB | **500MB-1GB** |
+| Scenario | v_* | tv_* |
+|----------|-----|------|
+| 1K records with deep nesting | 50-100MB | **20-30MB** |
+| 10K records with deep nesting | 500-800MB | **100-200MB** |
 
 ### Storage Overhead (Lower is Better)
 
 | Pattern | Overhead | Notes |
 |---------|----------|-------|
 | `v_*` | 0% | No storage (logical view) |
-| `tv_*` | 20-50% | JSONB pre-composition |
-| `va_*` | 0% | No storage (logical view) |
-| `ta_*` | 10-30% | Columnar format, BRIN indexes |
+| `tv_*` | 20-50% | JSONB pre-composition stored in a table |
 
 ## When to Migrate
 
-### Migrate from v_*to tv_* when
+### Migrate from v_* to tv_* when
 
 ✅ **GraphQL query times exceed 1 second**
 
 - Measure: Run production queries and log execution time
-- Action: Create tv_* table with pre-composed JSONB
+- Action: Create a `tv_*` table with pre-composed JSONB
 - Benefit: 10-50x faster queries
 
 ✅ **Query complexity has 3+ JOINs**
 
-- Indicator: Query hits database for nested data multiple times
-- Action: Pre-compose nested data into tv_* JSONB
-- Benefit: Single table scan vs. multiple JOINs
+- Indicator: Query composes nested data from multiple tables on every read
+- Action: Pre-compose nested data into a `tv_*` JSONB column
+- Benefit: Single indexed lookup vs. multiple JOINs
 
-✅ **High read volume (>100 requests/sec) to same data structure**
+✅ **High read volume (>100 requests/sec) to the same data structure**
 
 - Indicator: Database CPU high during peak traffic
-- Action: Cache computations in tv_* table
+- Action: Cache the composition in a `tv_*` table
 - Benefit: Query cost moves from compute-heavy to storage-read
 
 ✅ **Real-time GraphQL subscriptions require fast updates**
 
-- Indicator: Subscription latency varies based on nesting depth
-- Action: Trigger-based tv_* refresh ensures consistent latency
+- Indicator: Subscription latency varies with nesting depth
+- Action: Trigger-based `tv_*` refresh ensures consistent latency
 - Benefit: Subscription updates in <100ms
-
-### Migrate from va_*to ta_* when
-
-✅ **Analytics query times exceed 1 second**
-
-- Measure: Run EXPLAIN on Arrow queries
-- Action: Create ta_* table with columnar storage
-- Benefit: 50-100x faster on time-series queries
-
-✅ **Dataset larger than 1M rows**
-
-- Indicator: VA query memory usage > 1GB
-- Action: Use BRIN indexes on time-series columns
-- Benefit: Queries scan fewer pages
-
-✅ **Read volume high, staleness acceptable**
-
-- Indicator: Multiple concurrent analytics queries affecting other workloads
-- Action: Batch refresh ta_* tables during off-hours
-- Benefit: Analytics isolated from OLTP
 
 ### Don't Migrate when
 
-❌ **Query already fast** (<500ms for GraphQL, <1s for analytics)
+❌ **Query already fast** (<500ms)
 
-- Keep logical views unless write overhead forces migration
+- Keep the logical view unless write overhead forces migration
 
 ❌ **Storage is severely constrained**
 
-- Keep logical views; optimize queries instead
+- Keep the logical view; optimize the underlying query instead
 
 ❌ **Write volume is unpredictable**
 
-- Triggers may become overhead; use scheduled batch instead
+- Refresh triggers may become overhead; use a scheduled batch refresh instead
 
-## Migration Path Examples
+## Migration Path Example
 
-### Example 1: Complex User Profile (v_*→ tv_*)
+### Complex User Profile (v_* → tv_*)
 
 **Current State**:
 
 ```sql
-<!-- Code example in SQL -->
--- v_user_full: Logical view with real-time composition
+-- v_user_full: logical view with real-time composition
 -- Query time: 3-5 seconds
-SELECT * FROM v_user_full WHERE id = ?;
-```text
-<!-- Code example in TEXT -->
+SELECT * FROM v_user_full WHERE id = $1;
+```
 
 **Problem**: Users reported slow profile loading on high-traffic pages.
 
-**Decision**: Migrate to tv_* for pre-composed data.
+**Decision**: Migrate to a `tv_*` table-backed projection for pre-composed data.
 
 **Implementation**:
 
 ```sql
-<!-- Code example in SQL -->
--- Step 1: Create intermediate composed views (helper)
-CREATE VIEW v_user_posts_composed AS ...
-CREATE VIEW v_user_full_composed AS ...
+-- Step 1: Create the projection table holding pre-composed JSONB
+CREATE TABLE tv_user_profile AS
+SELECT id, data FROM v_user_full;
 
--- Step 2: Create tv_user_profile table
-CREATE TABLE tv_user_profile AS SELECT * FROM v_user_full_composed;
+-- Step 2: Keep it fresh with a trigger on the source write table
+CREATE TRIGGER trg_refresh_tv_user_profile
+    AFTER INSERT OR UPDATE OR DELETE ON tb_user
+    FOR EACH ROW EXECUTE FUNCTION fn_refresh_tv_user_profile();
+```
 
--- Step 3: Add refresh trigger
-CREATE TRIGGER trg_refresh_tv_user_profile ON tb_user ...
+```python
+# Step 3: Point the GraphQL type at the projection view (runtime binding)
+import fraiseql
+from fraiseql.types import ID
 
--- Step 4: Update GraphQL binding
-@FraiseQL.type(view="tv_user_profile")
-class User: ...
-
--- Step 5: Verify performance
--- Query time: 100-200ms ✅
--- User experience: 25-50x faster ✅
-```text
-<!-- Code example in TEXT -->
+@fraiseql.type(sql_source="tv_user_profile", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    posts: list["Post"]
+```
 
 **Before/After**:
 
 - **Before**: 3-5 second page load + database spike during peak traffic
 - **After**: 100-200ms page load, consistent performance
 
-### Example 2: Large Analytics Dataset (va_*→ ta_*)
+## Client API
 
-**Current State**:
+Clients never choose a view. They issue the same GraphQL query regardless of whether the
+type is backed by a `v_*` or a `tv_*` view — the server-side binding determines which one
+runs:
 
-```sql
-<!-- Code example in SQL -->
--- va_orders: Logical view over 10M rows
--- Query time: 5-10 seconds
-SELECT * FROM va_orders WHERE created_at >= ? AND created_at < ?;
-```text
-<!-- Code example in TEXT -->
-
-**Problem**: BI dashboard queries timing out, blocking other queries.
-
-**Decision**: Migrate to ta_* for optimized columnar storage.
-
-**Implementation**:
-
-```sql
-<!-- Code example in SQL -->
--- Step 1: Create ta_orders table with BRIN indexes
-CREATE TABLE ta_orders (
-    id TEXT PRIMARY KEY,
-    total NUMERIC,
-    created_at TIMESTAMPTZ,
-    ...
-);
-CREATE INDEX idx_ta_orders_created_at_brin ON ta_orders USING BRIN(created_at);
-
--- Step 2: Populate from va_orders
-INSERT INTO ta_orders SELECT * FROM va_orders;
-
--- Step 3: Add refresh trigger (or scheduled batch)
-CREATE TRIGGER trg_refresh_ta_orders ON tb_order ...
-
--- Step 4: Update Arrow schema binding
-registry.get("ta_orders")
-
--- Step 5: Verify performance
--- Query time: 50-100ms ✅
--- Memory: 500MB-1GB (vs 2-5GB) ✅
-```text
-<!-- Code example in TEXT -->
-
-**Before/After**:
-
-- **Before**: 5-10 second queries, dashboard timeouts, other queries blocked
-- **After**: 50-100ms queries, instant dashboard, no impact to OLTP
-
-## Client API Patterns
-
-### GraphQL (JSON Plane)
-
-Clients don't explicitly choose views; the schema binding determines which view to use:
-
-```typescript
-<!-- Code example in TypeScript -->
-// Client query (same for both v_* and tv_*)
-const query = gql`
-  query {
-    user(id: "550e8400...") {
+```graphql
+query {
+  user(id: "550e8400-e29b-41d4-a716-446655440000") {
+    id
+    name
+    posts {
       id
-      name
-      posts {
+      title
+      comments {
         id
-        title
-        comments {
-          id
-          text
-        }
+        text
       }
     }
   }
-`;
-
-// FraiseQL schema binding (server-side)
-@FraiseQL.type(view="tv_user_profile")  // Uses tv_* for performance
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    posts: list[Post]
-```text
-<!-- Code example in TEXT -->
-
-**When to use which**:
-
-- Simple queries: `@FraiseQL.type(view="v_user")` (no view specified)
-- Complex queries: `@FraiseQL.type(view="tv_user_profile")` (explicit view)
-
-### Arrow Flight (Analytics Plane)
-
-Clients explicitly choose the view when creating tickets:
-
-```python
-<!-- Code example in Python -->
-import pyarrow.flight as flight
-
-client = flight.connect("grpc://localhost:50051")
-
-# Use logical view (va_orders)
-ticket_small = {
-    "view": "va_orders",  # Explicit choice
-    "filter": "created_at > '2026-01-01'",
-    "limit": 10000
 }
-stream = client.do_get(flight.Ticket(json.dumps(ticket_small).encode()))
+```
 
-# Use table-backed view (ta_orders)
-ticket_large = {
-    "view": "ta_orders",  # Explicit choice - faster for large datasets
-    "filter": "created_at > '2026-01-01'",
-    "limit": 1000000
-}
-stream = client.do_get(flight.Ticket(json.dumps(ticket_large).encode()))
-```text
-<!-- Code example in TEXT -->
+To move from a logical view to a projection view, change only `sql_source`:
 
-**View Discovery**:
-
-```python
-<!-- Code example in Python -->
-# List available views
-views = client.list_flights(criteria=None)
-for flight_info in views:
-    print(f"View: {flight_info.name}")
-    print(f"  Type: {'table' if flight_info.name.startswith('ta_') else 'logical'}")
-    print(f"  Rows: {flight_info.total_records}")
-```text
-<!-- Code example in TEXT -->
+- Simple queries: `@fraiseql.type(sql_source="v_user", jsonb_column="data")`
+- Complex queries: `@fraiseql.type(sql_source="tv_user_profile", jsonb_column="data")`
 
 ## Decision Checklist
 
 Before creating a new view, answer these questions:
-
-### For GraphQL (JSON Plane)
 
 - [ ] Is the query for a single entity? → Use `v_*`
 - [ ] Does the query require 3+ JOINs? → Consider `tv_*`
 - [ ] Are query times > 1 second? → Use `tv_*`
 - [ ] Is read volume > 100 reqs/sec to this view? → Use `tv_*`
 - [ ] Can you accept 100-300ms latency? → Use `v_*`
-- [ ] Do you need real-time subscriptions? → Use `tv_*` with triggers
+- [ ] Do you need real-time subscriptions? → Use `tv_*` with refresh triggers
 
-**Recommendation**: Default to `v_*`. Migrate to `tv_*` only if performance metrics require it.
-
-### For Arrow Flight (Analytics)
-
-- [ ] Is the dataset < 100K rows? → Use `va_*`
-- [ ] Is query time < 1 second? → Use `va_*`
-- [ ] Is the dataset > 1M rows? → Use `ta_*`
-- [ ] Are query times > 1 second? → Use `ta_*`
-- [ ] Is storage constrained? → Use `va_*`
-
-**Recommendation**: Default to `va_*`. Migrate to `ta_*` for large datasets.
+**Recommendation**: Default to `v_*`. Migrate to `tv_*` only when production metrics
+require it.
 
 ## Performance Testing
 
-### Test GraphQL Performance (v_*vs tv_*)
+Measure both views with `EXPLAIN (ANALYZE, BUFFERS)` and compare the reported
+**Execution Time**:
 
 ```sql
-<!-- Code example in SQL -->
--- Measure v_* execution time
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM v_user_full WHERE id = ?;
--- Note query time (look for "Execution Time")
+-- Measure the logical view
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM v_user_full WHERE id = $1;
 
--- Measure tv_* execution time
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM tv_user_profile WHERE id = ?;
--- Should be 10-50x faster
-```text
-<!-- Code example in TEXT -->
-
-### Test Analytics Performance (va_*vs ta_*)
-
-```sql
-<!-- Code example in SQL -->
--- Measure va_* execution time
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM va_orders WHERE created_at >= ? AND created_at < ?;
-
--- Measure ta_* execution time
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM ta_orders WHERE created_at >= ? AND created_at < ?;
--- Should be 50-100x faster for large datasets
-```text
-<!-- Code example in TEXT -->
+-- Measure the table-backed projection (should be 10-50x faster)
+EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM tv_user_profile WHERE id = $1;
+```
 
 ## See Also
 
-- [tv_* Table Pattern (JSON Plane Details)](./tv-table-pattern.md)
+- [tv_* Table Pattern](./tv-table-pattern.md)
 - [Schema Conventions](../../specs/schema-conventions.md)
-- [FraiseQL Database Architecture](../../architecture/)
+- [Naming Patterns](../../reference/naming-patterns.md)
+- [Aggregation Model](../analytics/aggregation-model.md)
+- [Database-Centric Architecture](../../foundation/03-database-centric-architecture.md)
