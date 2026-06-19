@@ -1,9 +1,7 @@
-<!-- Skip to main content -->
 ---
-
 title: FraiseQL Authentication Deployment Guide
 description: Production deployment guide for FraiseQL's authentication system.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
+keywords: ["framework", "python", "fastapi", "postgresql", "authentication"]
 tags: ["documentation", "reference"]
 ---
 
@@ -11,61 +9,63 @@ tags: ["documentation", "reference"]
 
 Production deployment guide for FraiseQL's authentication system.
 
+FraiseQL is a Python runtime GraphQL framework served over FastAPI. Authentication
+runs **inside the FastAPI app** (pure Python) — there is no separate auth server and
+no compile step. You deploy a standard Python ASGI application and configure auth
+through `FraiseQLConfig` / `FRAISEQL_`-prefixed environment variables.
+
 ## Prerequisites
 
 **Required Knowledge:**
 
-- OAuth 2.0 and OIDC protocols
-- Kubernetes deployment and manifests
-- Docker and containerization
+- OAuth 2.0 / OIDC and JWT validation
+- Containerization (Docker) and your orchestrator (Kubernetes, ECS, etc.)
+- Python application packaging and ASGI servers (uvicorn / gunicorn)
 - SSL/TLS certificate management
-- Database administration and backups
-- Linux system administration
+- PostgreSQL administration and backups
 - Load balancing and reverse proxy configuration
 - Security best practices and compliance
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- Docker 20.10+ and Docker Compose 1.29+
-- Kubernetes 1.24+ (kubectl configured)
-- Helm 3+ (optional, for Kubernetes deployments)
+- FraiseQL (latest stable release) and Python 3.13+
+- `uvicorn` (and optionally `gunicorn` for multi-worker process management)
+- Docker 20.10+ (and Docker Compose 2+) or your container runtime
+- Kubernetes 1.24+ (kubectl configured), if deploying to Kubernetes
 - PostgreSQL 14+ database
-- OpenSSL or cert management tool
-- Nginx or reverse proxy (optional)
-- Git for configuration management
+- OpenSSL or a certificate management tool
+- Nginx or another reverse proxy (optional)
 
 **Required Infrastructure:**
 
-- Kubernetes cluster or Docker host (for deployment)
+- A container host or orchestrator (for deployment)
 - PostgreSQL 14+ database (primary + replica for HA)
-- OAuth provider (Google Cloud, Auth0, Keycloak, etc.)
+- An OIDC/JWT issuer for production auth (Auth0, or any issuer you front with Auth0
+  or validate with a custom `AuthProvider`)
 - Domain with DNS setup
 - SSL/TLS certificate (Let's Encrypt, commercial CA, or internal)
 - Load balancer or Ingress controller
-- Network security groups/security groups properly configured
-- Persistent storage for database
+- Persistent storage for the database
 - Backup storage system
 
 **Optional but Recommended:**
 
 - Kubernetes cert-manager for automatic certificate renewal
-- Helm charts for standardized deployments
 - Container registry (Docker Hub, ECR, GCR, etc.)
-- Secrets management system (HashiCorp Vault, AWS Secrets Manager)
-- Monitoring and alerting infrastructure
-- Log aggregation system
+- A secrets management system (HashiCorp Vault, AWS Secrets Manager, GCP Secret Manager)
+- Monitoring, alerting, and log aggregation infrastructure
 - Disaster recovery and backup testing
-- Kubernetes autoscaling configuration
+- Autoscaling configuration
 
-**Time Estimate:** 2-4 hours for Kubernetes deployment, 1-2 hours for Docker Compose setup
+**Time Estimate:** 2-4 hours for a Kubernetes deployment, 1-2 hours for Docker Compose.
 
 ## Pre-Deployment Checklist
 
-- [ ] OAuth provider credentials configured
-- [ ] Database schema migrations applied
+- [ ] Auth provider (Auth0 or custom JWT issuer) configured
+- [ ] Database schema and migrations applied
 - [ ] SSL/TLS certificates installed
-- [ ] Environment variables configured
+- [ ] `FRAISEQL_` environment variables configured (secrets via secret manager)
+- [ ] Token revocation store selected (`PostgreSQLRevocationStore` for production)
 - [ ] Monitoring and logging configured
 - [ ] Backup strategy defined
 - [ ] Security audit completed
@@ -74,167 +74,173 @@ Production deployment guide for FraiseQL's authentication system.
 
 ## Environment Configuration
 
+All FraiseQL settings can be supplied as environment variables prefixed with
+`FRAISEQL_`. They map directly onto fields of `FraiseQLConfig`
+(`src/fraiseql/fastapi/config.py`), e.g. `FRAISEQL_AUTH_PROVIDER` →
+`auth_provider`, `FRAISEQL_AUTH0_DOMAIN` → `auth0_domain`.
+
 ### Production Environment Variables
 
 ```bash
-<!-- Code example in BASH -->
-# OAuth Provider (Google, Keycloak, Auth0, etc.)
-OAUTH_PROVIDER=google
-GOOGLE_CLIENT_ID=<prod-client-id>
-GOOGLE_CLIENT_SECRET=<prod-secret>
-OAUTH_REDIRECT_URI=https://api.yourdomain.com/auth/callback
+# Database (PostgreSQL only)
+FRAISEQL_DATABASE_URL=postgresql://fraiseql_app:strong_password@prod-db.internal:5432/fraiseql
+FRAISEQL_DATABASE_POOL_SIZE=20
+FRAISEQL_DATABASE_POOL_RECYCLE=1800
 
-# For Keycloak:
-# KEYCLOAK_URL=https://keycloak.yourdomain.com
-# KEYCLOAK_REALM=production
-# KEYCLOAK_CLIENT_ID=FraiseQL-prod
-# KEYCLOAK_CLIENT_SECRET=<secret>
+# Environment (disables playground/introspection automatically)
+FRAISEQL_ENVIRONMENT=production
 
-# JWT Configuration
-JWT_ISSUER=https://accounts.google.com
-JWT_ALGORITHM=RS256
+# Authentication
+FRAISEQL_AUTH_ENABLED=true
+FRAISEQL_AUTH_PROVIDER=auth0            # auth0 | custom | none
 
-# Database
-DATABASE_URL=postgres://user:strong_password@prod-db.internal:5432/FraiseQL
-DATABASE_POOL_SIZE=20
-DATABASE_MAX_LIFETIME=1800
+# Auth0 settings (when FRAISEQL_AUTH_PROVIDER=auth0)
+FRAISEQL_AUTH0_DOMAIN=myapp.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.yourdomain.com
+# FRAISEQL_AUTH0_ALGORITHMS=["RS256"]   # defaults to RS256
 
-# Security
-RUST_LOG=info,fraiseql_server::auth=info
-SESSION_TIMEOUT_MINUTES=60
+# Token revocation
+FRAISEQL_REVOCATION_ENABLED=true
+FRAISEQL_REVOCATION_CHECK_ENABLED=true
+FRAISEQL_REVOCATION_TTL=86400
 
-# Server
+# Server (uvicorn / gunicorn) — standard ASGI server settings
 PORT=8000
-SERVER_HOST=0.0.0.0
+```
 
-# HTTPS (optional)
-TLS_CERT_PATH=/etc/FraiseQL/certs/server.crt
-TLS_KEY_PATH=/etc/FraiseQL/certs/server.key
-```text
-<!-- Code example in TEXT -->
+When `FRAISEQL_AUTH_PROVIDER=auth0`, FraiseQL auto-creates an `Auth0Provider` from
+`auth0_domain` / `auth0_api_identifier` at startup — you do not write provider code.
+For any other OIDC issuer (Google, Keycloak, etc.), either front it with Auth0 or set
+`FRAISEQL_AUTH_PROVIDER=custom` and supply an `AuthProvider` subclass that validates
+that issuer's JWTs via its JWKS/issuer/audience.
 
-### .env.prod File
+> **Secrets:** never bake credentials into the image. Inject `FRAISEQL_DATABASE_URL`
+> and any provider secrets at runtime from your platform's secret manager
+> (Kubernetes Secrets, Vault, AWS/GCP Secrets Manager). The values above show shape,
+> not real secrets.
+
+### .env file
+
+For non-container hosts, FraiseQL loads a `.env` file automatically (pydantic-settings):
 
 ```bash
-<!-- Code example in BASH -->
-# Create in your deployment server
-source /etc/FraiseQL/auth.env
+# Load deployment secrets into the process environment
+source /etc/fraiseql/auth.env
 
-# Verify critical variables
-echo "OAuth Provider: $OAUTH_PROVIDER"
-echo "Database: $DATABASE_URL (hidden)"
-echo "JWT Issuer: $JWT_ISSUER"
-```text
-<!-- Code example in TEXT -->
+# Verify critical variables (avoid printing secret values)
+echo "Auth provider: $FRAISEQL_AUTH_PROVIDER"
+echo "Auth0 domain:  $FRAISEQL_AUTH0_DOMAIN"
+echo "Environment:   $FRAISEQL_ENVIRONMENT"
+```
 
 ## Database Setup
 
 ### 1. Create Database
 
 ```bash
-<!-- Code example in BASH -->
-# On PostgreSQL server
+# On the PostgreSQL server
 sudo -u postgres psql
 
-CREATE DATABASE FraiseQL;
+CREATE DATABASE fraiseql;
 CREATE USER fraiseql_app WITH PASSWORD 'strong_password_here';
 ALTER ROLE fraiseql_app SET client_encoding TO 'utf8';
 ALTER ROLE fraiseql_app SET default_transaction_isolation TO 'read committed';
-ALTER ROLE fraiseql_app SET default_transaction_deferrable TO on;
-ALTER ROLE fraiseql_app SET default_time_zone TO 'UTC';
+ALTER ROLE fraiseql_app SET timezone TO 'UTC';
 
-GRANT ALL PRIVILEGES ON DATABASE FraiseQL TO fraiseql_app;
+GRANT ALL PRIVILEGES ON DATABASE fraiseql TO fraiseql_app;
 
-\c FraiseQL
+\c fraiseql
 GRANT ALL PRIVILEGES ON SCHEMA public TO fraiseql_app;
-```text
-<!-- Code example in TEXT -->
+```
 
-### 2. Create Sessions Table
+### 2. Token Revocation Table
 
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE IF NOT EXISTS _system.sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,
-    refresh_token_hash TEXT NOT NULL UNIQUE,
-    issued_at BIGINT NOT NULL,
-    expires_at BIGINT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    revoked_at TIMESTAMPTZ
-);
+In production, use `PostgreSQLRevocationStore`
+(`src/fraiseql/auth/token_revocation.py`) so revocations survive restarts and are
+shared across instances. The store creates and manages its own table
+(default name `tb_token_revocation`) on first use:
 
-CREATE INDEX idx_sessions_user_id ON _system.sessions(user_id);
-CREATE INDEX idx_sessions_expires_at ON _system.sessions(expires_at);
-CREATE INDEX idx_sessions_revoked_at ON _system.sessions(revoked_at);
+```python
+from psycopg_pool import AsyncConnectionPool
 
--- Grant permissions
-GRANT ALL PRIVILEGES ON TABLE _system.sessions TO fraiseql_app;
-GRANT ALL PRIVILEGES ON SEQUENCE _system.sessions_id_seq TO fraiseql_app;
-```text
-<!-- Code example in TEXT -->
+from fraiseql.auth.token_revocation import PostgreSQLRevocationStore
+
+pool = AsyncConnectionPool(conninfo="postgresql://...")
+revocation_store = PostgreSQLRevocationStore(pool, table_name="tb_token_revocation")
+# The table is created lazily on first revocation/check.
+```
+
+The in-memory store (`InMemoryRevocationStore`) is for development/testing only —
+revocations are lost on restart and are not shared between processes.
 
 ### 3. Verify Connection
 
 ```bash
-<!-- Code example in BASH -->
-export DATABASE_URL="postgres://fraiseql_app:strong_password_here@prod-db.internal:5432/FraiseQL"
-psql $DATABASE_URL -c "SELECT COUNT(*) FROM _system.sessions;"
-```text
-<!-- Code example in TEXT -->
+export FRAISEQL_DATABASE_URL="postgresql://fraiseql_app:strong_password_here@prod-db.internal:5432/fraiseql"
+psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1;"
+```
 
 ## Docker Deployment
+
+FraiseQL is a Python package — the image installs `fraiseql` and runs the FastAPI
+app with an ASGI server. The optional `fraiseql-rs` acceleration ships as a prebuilt
+wheel, so **no Rust toolchain and no compile step are needed**.
 
 ### Dockerfile
 
 ```dockerfile
-<!-- Code example in DOCKERFILE -->
-FROM rust:1.75 AS builder
+FROM python:3.13-slim
 
-WORKDIR /build
-COPY . .
-
-RUN cargo build --release -p FraiseQL-server
-
-FROM debian:bookworm-slim
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
+# libpq is needed by psycopg at runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/FraiseQL-server /usr/local/bin/
+WORKDIR /app
+
+# Install FraiseQL (prebuilt wheels — no build step)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Your application code (types, queries, mutations, the FastAPI app object)
+COPY app/ ./app/
 
 EXPOSE 8000
 
-ENTRYPOINT ["FraiseQL-server"]
-```text
-<!-- Code example in TEXT -->
+# Run the ASGI app with multiple workers via gunicorn + uvicorn workers.
+CMD ["gunicorn", "app.main:app", \
+     "-k", "uvicorn.workers.UvicornWorker", \
+     "-w", "4", "-b", "0.0.0.0:8000"]
+```
+
+`requirements.txt` pins `fraiseql` (and `fraiseql-rs` for the acceleration wheel).
+For a single worker (or local development) you can run `uvicorn app.main:app --host 0.0.0.0 --port 8000` instead.
+
+> `app.main:app` refers to the FastAPI app returned by `create_fraiseql_app(...)`
+> in your `app/main.py`. Auth is configured there (or via `FRAISEQL_` env vars).
 
 ### Docker Compose Production
 
 ```yaml
-<!-- Code example in YAML -->
-version: '3.8'
-
 services:
-  FraiseQL:
-    image: FraiseQL/server:latest
-    container_name: FraiseQL-auth
+  fraiseql:
+    build: .
+    container_name: fraiseql-auth
     restart: always
     environment:
-      RUST_LOG: info
-      DATABASE_URL: ${DATABASE_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
-      JWT_ISSUER: ${JWT_ISSUER}
+      FRAISEQL_DATABASE_URL: ${FRAISEQL_DATABASE_URL}
+      FRAISEQL_ENVIRONMENT: production
+      FRAISEQL_AUTH_ENABLED: "true"
+      FRAISEQL_AUTH_PROVIDER: auth0
+      FRAISEQL_AUTH0_DOMAIN: ${FRAISEQL_AUTH0_DOMAIN}
+      FRAISEQL_AUTH0_API_IDENTIFIER: ${FRAISEQL_AUTH0_API_IDENTIFIER}
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/auth"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -242,10 +248,10 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    container_name: FraiseQL-db
+    container_name: fraiseql-db
     restart: always
     environment:
-      POSTGRES_DB: FraiseQL
+      POSTGRES_DB: fraiseql
       POSTGRES_USER: fraiseql_app
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
@@ -267,22 +273,25 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - FraiseQL
+      - fraiseql
 
 volumes:
   postgres_data:
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Nginx Configuration
 
-### nginx.conf
+FraiseQL serves GraphQL at `/graphql` and exposes `/health` (liveness) and
+`/ready` (readiness) probes. Put TLS termination and rate limiting at the proxy.
 
 ```nginx
-<!-- Code example in NGINX -->
-upstream FraiseQL {
-    server FraiseQL:8000;
+upstream fraiseql {
+    server fraiseql:8000;
 }
+
+# Rate-limit zones (declared at http context in your nginx.conf)
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=1r/s;
 
 server {
     listen 80;
@@ -305,40 +314,29 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-XSS-Protection "1; mode=block" always;
 
-    # Rate limiting
-    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
-    limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=1r/s;
-
-    location /auth/ {
-        limit_req zone=auth_limit burst=5;
-        proxy_pass http://FraiseQL;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
     location /graphql {
         limit_req zone=api_limit burst=20;
-        proxy_pass http://FraiseQL;
+        proxy_pass http://fraiseql;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    location /health {
+    location ~ ^/(health|ready)$ {
         access_log off;
-        proxy_pass http://FraiseQL;
+        proxy_pass http://fraiseql;
     }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+> Apply a stricter `auth_limit` zone to any native-auth login routes you expose
+> (from `fraiseql.auth.native`'s FastAPI router) if you use the native provider.
 
 ## SSL/TLS Setup
 
 ### Using Let's Encrypt
 
 ```bash
-<!-- Code example in BASH -->
 # Install certbot
 sudo apt-get install certbot python3-certbot-nginx
 
@@ -351,61 +349,64 @@ sudo systemctl start certbot.timer
 
 # Verify renewal
 sudo certbot renew --dry-run
-```text
-<!-- Code example in TEXT -->
+```
+
+For PostgreSQL connection security (TLS + SCRAM-SHA-256), configure `pg_hba.conf`
+and add `?sslmode=require` to your `FRAISEQL_DATABASE_URL`.
 
 ## Kubernetes Deployment
 
-### FraiseQL-deployment.yaml
-
 ```yaml
-<!-- Code example in YAML -->
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: FraiseQL
+  name: fraiseql
   labels:
-    app: FraiseQL
+    app: fraiseql
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: FraiseQL
+      app: fraiseql
   template:
     metadata:
       labels:
-        app: FraiseQL
+        app: fraiseql
     spec:
       containers:
-      - name: FraiseQL
-        image: FraiseQL/server:latest
+      - name: fraiseql
+        image: your-registry/fraiseql:latest
         ports:
         - containerPort: 8000
         env:
-        - name: DATABASE_URL
+        - name: FRAISEQL_ENVIRONMENT
+          value: production
+        - name: FRAISEQL_AUTH_PROVIDER
+          value: auth0
+        - name: FRAISEQL_DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: FraiseQL-secrets
+              name: fraiseql-secrets
               key: database-url
-        - name: GOOGLE_CLIENT_ID
+        - name: FRAISEQL_AUTH0_DOMAIN
           valueFrom:
             secretKeyRef:
-              name: FraiseQL-secrets
-              key: google-client-id
-        - name: GOOGLE_CLIENT_SECRET
+              name: fraiseql-secrets
+              key: auth0-domain
+        - name: FRAISEQL_AUTH0_API_IDENTIFIER
           valueFrom:
             secretKeyRef:
-              name: FraiseQL-secrets
-              key: google-client-secret
+              name: fraiseql-secrets
+              key: auth0-api-identifier
         livenessProbe:
           httpGet:
-            path: /health/auth
+            path: /health
             port: 8000
           initialDelaySeconds: 10
           periodSeconds: 30
         readinessProbe:
           httpGet:
-            path: /health/auth
+            path: /ready
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -420,10 +421,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: FraiseQL
+  name: fraiseql
 spec:
   selector:
-    app: FraiseQL
+    app: fraiseql
   type: ClusterIP
   ports:
   - protocol: TCP
@@ -433,12 +434,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: FraiseQL
+  name: fraiseql
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: FraiseQL
+    name: fraiseql
   minReplicas: 3
   maxReplicas: 10
   metrics:
@@ -454,132 +455,123 @@ spec:
       target:
         type: Utilization
         averageUtilization: 80
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Monitoring Setup
 
 ### Prometheus Configuration
 
 ```yaml
-<!-- Code example in YAML -->
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'FraiseQL'
+  - job_name: 'fraiseql'
     static_configs:
       - targets: ['localhost:8000']
     metrics_path: '/metrics'
-```text
-<!-- Code example in TEXT -->
+```
 
-### Grafana Dashboard
-
-Import dashboard from `/docs/auth/grafana-dashboard.json`
+Use the `/health` and `/ready` endpoints for liveness/readiness, and your standard
+ASGI/FastAPI metrics for latency and error-rate dashboards.
 
 ## Backup Strategy
 
 ### Database Backups
 
 ```bash
-<!-- Code example in BASH -->
 #!/bin/bash
 # backup.sh
 
-BACKUP_DIR="/backups/FraiseQL"
+BACKUP_DIR="/backups/fraiseql"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DB_NAME="FraiseQL"
+DB_NAME="fraiseql"
 
-mkdir -p $BACKUP_DIR
+mkdir -p "$BACKUP_DIR"
 
 # Full backup
-pg_dump -h $DB_HOST -U fraiseql_app $DB_NAME | \
-  gzip > $BACKUP_DIR/fraiseql_$TIMESTAMP.sql.gz
+pg_dump -h "$DB_HOST" -U fraiseql_app "$DB_NAME" | \
+  gzip > "$BACKUP_DIR/fraiseql_$TIMESTAMP.sql.gz"
 
 # Keep only last 30 days
-find $BACKUP_DIR -name "fraiseql_*.sql.gz" -mtime +30 -delete
+find "$BACKUP_DIR" -name "fraiseql_*.sql.gz" -mtime +30 -delete
 
 # Upload to S3
-aws s3 cp $BACKUP_DIR/fraiseql_$TIMESTAMP.sql.gz \
-  s3://FraiseQL-backups/
-```text
-<!-- Code example in TEXT -->
+aws s3 cp "$BACKUP_DIR/fraiseql_$TIMESTAMP.sql.gz" \
+  s3://fraiseql-backups/
+```
 
 Schedule with cron:
 
 ```bash
-<!-- Code example in BASH -->
 # Run daily at 2 AM
 0 2 * * * /scripts/backup.sh
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Restore from Backup
 
 ```bash
-<!-- Code example in BASH -->
 gunzip -c fraiseql_20260121_020000.sql.gz | \
-  psql -h prod-db.internal -U fraiseql_app FraiseQL
-```text
-<!-- Code example in TEXT -->
+  psql -h prod-db.internal -U fraiseql_app fraiseql
+```
 
 ## Scaling
 
 ### Horizontal Scaling
 
-- Run multiple FraiseQL instances behind load balancer
-- Each instance connects to same database
-- Sessions shared via PostgreSQL (or Redis)
-- Stateless design allows easy scaling
+- Run multiple FraiseQL app instances behind a load balancer.
+- Each instance connects to the same PostgreSQL database.
+- Use `PostgreSQLRevocationStore` so token revocations are shared across instances.
+- The app is stateless (auth state lives in JWTs + PostgreSQL), so scaling is simple.
+- Within a single instance, run multiple worker processes via
+  `gunicorn -k uvicorn.workers.UvicornWorker -w N`.
 
 ### Vertical Scaling
 
-Adjust resource limits:
+Adjust resource limits, for example in Kubernetes:
 
 ```bash
-<!-- Code example in BASH -->
-# In Kubernetes
-kubectl set resources deployment FraiseQL \
+kubectl set resources deployment fraiseql \
   --limits=memory=1Gi,cpu=1000m \
   --requests=memory=512Mi,cpu=500m
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Performance Tuning
 
 ### PostgreSQL Connection Pool
 
-```bash
-<!-- Code example in BASH -->
-DATABASE_POOL_SIZE=50
-DATABASE_MAX_LIFETIME=1800
-```text
-<!-- Code example in TEXT -->
-
-### Session Cache (if using Redis)
+Tune the pool via `FraiseQLConfig` / env vars:
 
 ```bash
-<!-- Code example in BASH -->
-REDIS_URL=redis://redis.internal:6379
-SESSION_CACHE_TTL=300
-```text
-<!-- Code example in TEXT -->
+FRAISEQL_DATABASE_POOL_SIZE=50
+FRAISEQL_DATABASE_MAX_OVERFLOW=20
+FRAISEQL_DATABASE_POOL_RECYCLE=1800
+```
+
+### JWKS Caching
+
+When using Auth0 (or any JWKS-based issuer), the provider fetches and caches the
+issuer's signing keys (JWKS) so per-request token validation does not hit the issuer
+every time. Keep the app reachable to the issuer's `.well-known/jwks.json` endpoint,
+and allow outbound egress from your pods/containers to the issuer. Cached keys are
+refreshed automatically when an unknown key ID is seen (e.g. after key rotation).
 
 ## High Availability
 
 ### Multi-Region Setup
 
 ```text
-<!-- Code example in TEXT -->
 Region 1: Primary database
 Region 2: Read replica
 Region 3: Standby replica
 
-Failover: Automatic via RDS
-```text
-<!-- Code example in TEXT -->
+Failover: managed PostgreSQL service or your replication tooling
+```
+
+Because auth runs inside each stateless app instance and revocations live in
+PostgreSQL, app-tier HA is just "run more replicas across zones". Database HA is the
+critical piece — use a primary + replica with automated failover.
 
 ### Disaster Recovery
 
@@ -591,16 +583,15 @@ Failover: Automatic via RDS
 
 **Development**:
 
-- Single instance
+- Single app instance / single worker
 - Shared database
-- ~$50/month
+- In-memory revocation store
 
 **Production**:
 
-- 3x instances (HA)
-- PostgreSQL managed service
-- Monitoring and backups
-- ~$500/month
+- 3x app instances (HA), multiple workers each
+- Managed PostgreSQL (primary + replica)
+- `PostgreSQLRevocationStore`, monitoring, and backups
 
 ## Monitoring Dashboard
 
@@ -608,49 +599,57 @@ Key metrics to monitor:
 
 1. **Availability**: % uptime (target: 99.9%)
 2. **Latency**: p50, p95, p99 (target: <100ms)
-3. **Errors**: Error rate (target: <1%)
-4. **Capacity**: CPU, memory, connections
+3. **Errors**: error rate (target: <1%)
+4. **Capacity**: CPU, memory, database connections
 
 ## Troubleshooting
 
-### Service Won't Start
+### App Won't Start
 
 ```bash
-<!-- Code example in BASH -->
 # Check logs
-docker logs FraiseQL
+docker logs fraiseql
 
 # Check database connection
-psql $DATABASE_URL -c "SELECT 1"
+psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1"
 
-# Check OAuth provider
-curl https://accounts.google.com/.well-known/openid-configuration
-```text
-<!-- Code example in TEXT -->
+# Check the auth issuer is reachable (Auth0 example)
+curl "https://${FRAISEQL_AUTH0_DOMAIN}/.well-known/openid-configuration"
+```
+
+A missing `auth0_domain`/`auth0_api_identifier` with `FRAISEQL_AUTH_PROVIDER=auth0`
+raises a configuration error at startup — set both env vars.
 
 ### High Latency
 
-```bash
-<!-- Code example in BASH -->
-# Check database slow queries
-SELECT * FROM pg_stat_statements ORDER BY total_time DESC;
+```sql
+-- Check database slow queries (requires pg_stat_statements)
+SELECT * FROM pg_stat_statements ORDER BY total_exec_time DESC;
+```
 
-# Check OAuth provider latency
-time curl https://accounts.google.com/.well-known/openid-configuration
-```text
-<!-- Code example in TEXT -->
+```bash
+# Check auth issuer latency (Auth0 example)
+time curl "https://${FRAISEQL_AUTH0_DOMAIN}/.well-known/jwks.json"
+```
 
 ### Database Connection Pool Exhausted
 
 ```bash
-<!-- Code example in BASH -->
 # Increase pool size
-DATABASE_POOL_SIZE=100
+FRAISEQL_DATABASE_POOL_SIZE=100
+```
 
-# Check active connections
-psql -c "SELECT count(*) FROM pg_stat_activity;"
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Check active connections
+SELECT count(*) FROM pg_stat_activity;
+```
+
+### Access Denied
+
+Denied operations surface as a GraphQL error with
+`extensions.code = "FORBIDDEN"` (not an HTTP 4xx). Check the user's roles/permissions
+in the JWT and the `@requires_permission` / `@requires_role` / `Authorizer` rules on
+the affected operations.
 
 ## See Also
 

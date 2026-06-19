@@ -1,15 +1,18 @@
-<!-- Skip to main content -->
 ---
-
 title: FraiseQL Authentication Troubleshooting Guide
 description: Common issues and solutions for FraiseQL authentication.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
+keywords: ["framework", "authentication", "auth0", "jwt", "fastapi", "postgresql"]
 tags: ["documentation", "reference"]
 ---
 
 # FraiseQL Authentication Troubleshooting Guide
 
 Common issues and solutions for FraiseQL authentication.
+
+FraiseQL v1 auth runs **inside your FastAPI application** (Python). You start the app
+with `uvicorn app:app` and validate tokens with an `AuthProvider` (Auth0, a native
+provider, or a custom `AuthProvider` subclass). Denied operations surface as a GraphQL
+error with `extensions.code = "FORBIDDEN"` — there is no separate authentication server.
 
 ## Login Issues
 
@@ -27,206 +30,190 @@ Common issues and solutions for FraiseQL authentication.
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
 # Check configured redirect URI
-echo $OAUTH_REDIRECT_URI
+echo $FRAISEQL_OAUTH_REDIRECT_URI
 
 # Compare with provider settings
-# Google Cloud Console → OAuth Credentials
-# Keycloak → Client Settings → Valid Redirect URIs
 # Auth0 → Application Settings → Allowed Callback URLs
+# (Any OIDC issuer behind a custom AuthProvider → that issuer's callback config)
 
 # Exact match required:
-# ❌ http://localhost:8000/auth/callback  (different port)
-# ✅ http://localhost:8000/auth/callback
+# Bad:  http://localhost:8000/auth/callback  (different port than registered)
+# Good: http://localhost:8000/auth/callback
 
-# ❌ http://example.com/auth/callback     (no https)
-# ✅ https://example.com/auth/callback
-```text
-<!-- Code example in TEXT -->
+# Bad:  http://example.com/auth/callback     (no https)
+# Good: https://example.com/auth/callback
+```
 
 ### "Invalid State" Error
 
-**Symptoms**: After OAuth provider redirects, getting "Invalid State" error
+**Symptoms**: After the OAuth provider redirects, you get an "Invalid State" error
 
 **Causes**:
 
-- State parameter expired (>10 minutes)
+- State parameter expired (the provider's login took too long)
 - User took too long to authenticate
-- State cache cleared
+- State cache cleared (app restarted mid-flow)
 - Multiple browsers/tabs
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Increase state expiry if needed (edit auth/handlers.rs)
-// 10 minutes * 60 = 600 seconds
-state_expiry = now + 600;
-
 # If state keeps expiring, check for:
-# - Server clock skew
+# - Server clock skew (see "Token Expired" below)
 # - Network delays
 # - Browser/user delay
 
-# Test with shorter timeout:
+# Test with a fast round-trip:
 # 1. Start auth flow
 # 2. Authenticate immediately
-# 3. Should work
+# 3. Should succeed
 
-# If works, increase user time allowance
-```text
-<!-- Code example in TEXT -->
+# If a fast round-trip works, the state lifetime is fine and the
+# original failure was just a slow user/login. State lifetime is
+# controlled by your OAuth/OIDC provider settings (e.g. Auth0).
+```
 
 ### "Invalid Code" or "Code Expired"
 
-**Symptoms**: Authorization code rejected by OAuth provider
+**Symptoms**: Authorization code rejected by the OAuth provider
 
 **Causes**:
 
-- Code already used
-- Code expired (>10 minutes)
+- Code already used (codes are single-use)
+- Code expired
 - Wrong client credentials
-- Network issues during exchange
+- Network issues during the token exchange
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check client credentials
-echo "Client ID: $GOOGLE_CLIENT_ID"
-echo "Client Secret length: ${#GOOGLE_CLIENT_SECRET}"
+# Check Auth0 (or your issuer) credentials
+echo "Domain: $FRAISEQL_AUTH0_DOMAIN"
+echo "API identifier: $FRAISEQL_AUTH0_API_IDENTIFIER"
 
-# Verify they match provider exactly
-# Don't copy-paste manually - download from provider
+# Verify they match the provider dashboard exactly.
+# Don't transcribe by hand — copy from the provider.
 
-# Check logs for errors
-docker logs FraiseQL | grep -i "exchange"
-RUST_LOG=debug cargo run
+# Run the app with auth debug logging (see "Debugging" below) and watch
+# for the token-exchange failure:
+uvicorn app:app --reload
 
-# If network issue, check:
-# - DNS resolution to provider
+# If it's a network issue, check:
+# - DNS resolution to the provider
 # - TLS certificate validity
 # - Network connectivity
 
-curl -v https://oauth2.googleapis.com/token
-```text
-<!-- Code example in TEXT -->
+curl -v https://YOUR_TENANT.auth0.com/oauth/token
+```
 
 ### "User Not Found" or "Invalid Credentials"
 
-**Symptoms**: User can see OAuth provider login, but fails there
+**Symptoms**: The user reaches the provider login but fails there
 
 **Causes**:
 
 - User account doesn't exist
 - Wrong username/password
 - Account locked/disabled
-- Provider not recognizing user
+- Provider not recognizing the user
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# For Google:
-# - Verify Google account exists
-# - Check if 2FA enabled (may need app password)
-# - Try incognito mode
-
-# For Keycloak:
-# - Verify user created in realm
-# - Check user enabled
-# - Verify password correct
-# - Check user federation if using LDAP
-
 # For Auth0:
-# - Verify user exists in Auth0 dashboard
-# - Check user is not blocked
-# - If using DB connection, check it's enabled
-# - If using social login, check it's enabled
-```text
-<!-- Code example in TEXT -->
+# - Verify the user exists in the Auth0 dashboard
+# - Check the user is not blocked
+# - If using a database connection, check it's enabled
+# - If using social login, check that connection is enabled
+
+# For a custom OIDC issuer (behind a custom AuthProvider subclass):
+# - Verify the user exists in that issuer
+# - Check the account is enabled
+# - Verify the password / federation source
+
+# For the built-in native provider:
+# - Verify the account exists and is_active = true
+# - A disabled account returns 403 "Account is disabled"
+```
 
 ## Token Issues
 
-### "Token Expired" on Valid Token
+### "Token Expired" on a Valid Token
 
-**Symptoms**: Token was just issued but getting "Token Expired" error
+**Symptoms**: A token was just issued but you get a "Token Expired" error
 
 **Causes**:
 
 - Server clock skew
 - Token actually expired
 - Wrong JWT issuer
-- Validation config mismatch
+- Validation config mismatch (`auth0_domain` / `auth0_api_identifier`)
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check server clock
+# Check the server clock
 date -u
-# Should be within ±30 seconds of NTP server
+# Should be within a few seconds of an NTP source
 
 # Fix if needed
-sudo ntpdate -s time.nist.gov
-sudo systemctl restart chrony
+sudo systemctl restart chrony   # or: sudo ntpdate -s time.nist.gov
 
-# Check JWT issuer matches provider
-echo "Configured: $JWT_ISSUER"
-echo "Provider issuer: https://accounts.google.com"  # example
+# Check the configured issuer/audience match the provider
+echo "Auth0 domain:        $FRAISEQL_AUTH0_DOMAIN"
+echo "Auth0 API identifier: $FRAISEQL_AUTH0_API_IDENTIFIER"
+```
 
-# Decode token and check exp claim
-# Use jwt.io or:
-python3 -c "
-import json, base64
-token = 'your_token_here'
-parts = token.split('.')
-payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=='))
+Decode the token and inspect the `exp` claim (use [jwt.io](https://jwt.io) or):
+
+```python
+import base64
+import json
 import time
-print(f'Expires in: {payload[\"exp\"] - int(time.time())} seconds')
-"
-```text
-<!-- Code example in TEXT -->
 
-### "Invalid Signature" on Token
+token = "your_token_here"
+payload = json.loads(base64.urlsafe_b64decode(token.split(".")[1] + "=="))
+print(f"Expires in: {payload['exp'] - int(time.time())} seconds")
+```
+
+### "Invalid Signature" on a Token
 
 **Symptoms**: Token rejected with "Invalid Signature"
 
 **Causes**:
 
-- Public key mismatch
-- Token modified
-- Wrong algorithm
-- Key rotation issue
+- JWKS public-key mismatch
+- Token modified in transit
+- Wrong signing algorithm
+- Key rotation (provider rotated keys, the app cached the old set)
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Verify public key endpoint
-curl https://accounts.google.com/oauth2/v1/certs | jq .
+# Verify the provider's JWKS endpoint responds
+curl https://YOUR_TENANT.auth0.com/.well-known/jwks.json | jq .
 
-# Check algorithm configured
-echo "JWT_ALGORITHM: $JWT_ALGORITHM"
-# Should be RS256 for OAuth providers
+# Check the configured algorithms (default: ["RS256"])
+echo "Algorithms: $FRAISEQL_AUTH0_ALGORITHMS"
+# Should be RS256 for Auth0 / most OIDC providers
 
-# Verify issuer matches
-echo "JWT_ISSUER: $JWT_ISSUER"
+# Verify the issuer/audience match
+echo "Domain:         $FRAISEQL_AUTH0_DOMAIN"
+echo "API identifier: $FRAISEQL_AUTH0_API_IDENTIFIER"
 
-# If key rotation happened:
-# - Clear any cached keys
-# - Restart server
-# - Fetch new keys from provider
-
-# Restart to clear caches:
-docker restart FraiseQL
-```text
-<!-- Code example in TEXT -->
+# If the provider rotated keys, restart the app to re-fetch JWKS:
+# stop uvicorn, then
+uvicorn app:app
+```
 
 ### Can't Refresh Token
 
-**Symptoms**: Refresh endpoint returns "Token Not Found"
+**Symptoms**: The refresh endpoint returns "Token Not Found" or "Invalid token"
+
+This applies when you use FraiseQL's **native** auth provider (it issues and tracks
+refresh tokens in PostgreSQL via the token-revocation store). Pure Auth0/OIDC setups
+refresh against the provider, not FraiseQL.
 
 **Causes**:
 
@@ -238,34 +225,26 @@ docker restart FraiseQL
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Verify refresh token format
-# Should start with base64 characters
+# Verify your database connection
+echo $FRAISEQL_DATABASE_URL
+psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1;"
 
-# Check session exists in database
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
-  "SELECT COUNT(*) FROM _system.sessions;"
+# Check whether the token was revoked (PostgreSQLRevocationStore).
+# The exact table name comes from your RevocationConfig; inspect with:
+psql "$FRAISEQL_DATABASE_URL" -c "\dt *revocation*"
 
-# Verify database connection
-echo $DATABASE_URL
-
-# Check if token was revoked
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
-  "SELECT revoked_at FROM _system.sessions LIMIT 1;"
-
-# If revoked, need to log in again
-```text
-<!-- Code example in TEXT -->
+# If the refresh token was revoked or expired, the user must log in again.
+```
 
 ## Database Issues
 
 ### "Connection Refused"
 
-**Symptoms**: Server fails to start, "Connection refused" to database
+**Symptoms**: The app fails to start with "Connection refused" to the database
 
 **Causes**:
 
-- Database not running
+- PostgreSQL not running
 - Wrong host/port
 - Firewall blocking
 - Wrong credentials
@@ -273,189 +252,140 @@ docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check database is running
-docker-compose ps postgres
+# Check the connection string
+echo $FRAISEQL_DATABASE_URL
+# Should be: postgresql://user:pass@host:5432/dbname
 
-# Check connection string
-echo $DATABASE_URL
-# Should be: postgres://user:pass@host:5432/dbname
+# Test the connection directly
+psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1;"
 
-# Test connection directly
-psql $DATABASE_URL -c "SELECT 1;"
-
-# If still fails:
-# Check firewall
+# If still failing, check the network path
 telnet prod-db.internal 5432
 
-# Check credentials
-echo "User: fraiseql_app"
-echo "Password length: ${#DATABASE_PASSWORD}"
-
-# Try with more verbose output
-RUST_LOG=debug cargo run
-```text
-<!-- Code example in TEXT -->
+# Then start the app with debug logging to see the pool error:
+FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app
+```
 
 ### "FATAL: database does not exist"
 
-**Symptoms**: Server says database not found
+**Symptoms**: PostgreSQL reports the database is not found
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Create database if missing
-docker exec FraiseQL-db psql -U postgres -c \
-  "CREATE DATABASE FraiseQL;"
+# Create the database if it's missing
+createdb -h localhost -U postgres mydb
 
-# Verify table exists
-psql $DATABASE_URL -c "\dt _system.sessions;"
+# Verify your read views / functions exist
+psql "$FRAISEQL_DATABASE_URL" -c "\dv v_*"
+psql "$FRAISEQL_DATABASE_URL" -c "\df fn_*"
+```
 
-# If not, create it
-psql $DATABASE_URL < /path/to/init.sql
-```text
-<!-- Code example in TEXT -->
+### Revocation / Session Table Missing
 
-### "Table does not exist"
-
-**Symptoms**: Errors about missing `_system.sessions` table
+**Symptoms**: Errors about a missing token-revocation table when using the native
+provider with `PostgreSQLRevocationStore`
 
 **Solutions**:
 
+The `PostgreSQLRevocationStore` creates and manages its own table from your
+`RevocationConfig`. Make sure the configured database user can create tables, then
+let the store initialize at startup. To inspect what exists:
+
 ```bash
-<!-- Code example in BASH -->
-# Create sessions table
-psql $DATABASE_URL << EOF
-CREATE TABLE IF NOT EXISTS _system.sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,
-    refresh_token_hash TEXT NOT NULL UNIQUE,
-    issued_at BIGINT NOT NULL,
-    expires_at BIGINT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    revoked_at TIMESTAMPTZ
-);
+psql "$FRAISEQL_DATABASE_URL" -c "\dt *revocation*"
+```
 
-CREATE INDEX idx_sessions_user_id ON _system.sessions(user_id);
-CREATE INDEX idx_sessions_expires_at ON _system.sessions(expires_at);
-CREATE INDEX idx_sessions_revoked_at ON _system.sessions(revoked_at);
-EOF
-
-# Verify
-psql $DATABASE_URL -c "\d _system.sessions;"
-```text
-<!-- Code example in TEXT -->
+If you provisioned the schema separately, confirm the table the store expects is
+present (its name is set in `RevocationConfig`); otherwise grant `CREATE` on the
+schema and restart the app so the store can create it.
 
 ## Performance Issues
 
 ### Login Is Slow
 
-**Symptoms**: OAuth flow takes >2 seconds
+**Symptoms**: The auth flow takes more than ~2 seconds
 
 **Causes**:
 
-- OAuth provider slow
+- OAuth/OIDC provider slow (or first JWKS fetch)
 - Network latency
-- Database slow
-- Server overloaded
+- Database slow (native provider session lookups)
+- App process overloaded
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
 # Check provider latency
-time curl -I https://accounts.google.com/
+time curl -I https://YOUR_TENANT.auth0.com/
 
 # Check database query time
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
-  "SELECT query, calls, total_time/calls as avg_time \
+psql "$FRAISEQL_DATABASE_URL" -c \
+  "SELECT query, calls, total_exec_time/calls AS avg_time \
    FROM pg_stat_statements \
    ORDER BY avg_time DESC LIMIT 10;"
 
-# Check server metrics
-curl http://localhost:8000/metrics/auth
+# If the connection pool is the bottleneck, raise it in your config:
+export FRAISEQL_DATABASE_POOL_SIZE=50
 
-# Look for high session lookup times
-# If >50ms, increase database pool:
-DATABASE_POOL_SIZE=50
-
-# If still slow, enable query logging:
-RUST_LOG=debug
-```text
-<!-- Code example in TEXT -->
+# Then enable debug logging to confirm where the time goes:
+FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app
+```
 
 ### High CPU Usage
 
-**Symptoms**: Server using >80% CPU
+**Symptoms**: The app process uses a lot of CPU
 
 **Causes**:
 
 - Many simultaneous logins
-- Infinite loop in validation
-- Key rotation loop
-- Brute force attack
+- Repeated JWKS fetches (key cache disabled/misconfigured)
+- Brute-force attempts
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check active connections
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
+# Check active database connections
+psql "$FRAISEQL_DATABASE_URL" -c \
   "SELECT count(*) FROM pg_stat_activity;"
 
-# Check for brute force attempts
-docker logs FraiseQL | grep "failed\|error" | tail -20
+# Look for repeated auth failures (brute force) in the app logs
+# (see "Debugging" below for how to surface auth logs)
 
-# Enable rate limiting to prevent abuse:
-# Nginx rate limit:
-limit_req_zone $binary_remote_addr zone=auth:10m rate=1r/s;
+# Mitigate abuse at the edge with a reverse-proxy rate limit, e.g. nginx:
+#   limit_req_zone $binary_remote_addr zone=auth:10m rate=1r/s;
 
-# Check for validation loop
-# (shouldn't happen with current implementation)
-
-# If legitimate traffic, scale horizontally:
-# Add more server instances
-```text
-<!-- Code example in TEXT -->
+# For legitimate load, run more uvicorn workers / app instances:
+uvicorn app:app --workers 4
+```
 
 ### High Memory Usage
 
-**Symptoms**: Memory grows over time or reaches limit
+**Symptoms**: Memory grows over time
 
 **Causes**:
 
-- Sessions not expiring
-- Memory leak in dependencies
-- Cache growing unbounded
+- Native-provider sessions / revoked tokens not being pruned
+- Unbounded in-process caches (e.g. `InMemoryRevocationStore`)
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check session count
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
-  "SELECT COUNT(*) FROM _system.sessions \
-   WHERE revoked_at IS NULL;"
+# If using PostgreSQLRevocationStore, prune expired revocations periodically.
+# The TokenRevocationService / store exposes cleanup; you can also age out
+# rows directly once you confirm the table name from RevocationConfig:
+psql "$FRAISEQL_DATABASE_URL" -c "\dt *revocation*"
 
-# Clean old sessions
-docker exec FraiseQL-db psql -U fraiseql_app -d FraiseQL -c \
-  "DELETE FROM _system.sessions \
-   WHERE expires_at < $(date +%s) - 604800;"
-
-# Restart to clear any temporary caches
-docker restart FraiseQL
-
-# Set memory limits
-docker update --memory 512m FraiseQL
-```text
-<!-- Code example in TEXT -->
+# Prefer PostgreSQLRevocationStore over InMemoryRevocationStore for any
+# long-running or multi-process deployment — the in-memory store grows
+# unbounded and is not shared across workers.
+```
 
 ## OAuth Provider Issues
 
 ### "OAuth Provider Unreachable"
 
-**Symptoms**: Can't connect to OAuth provider
+**Symptoms**: The app can't reach the OAuth/OIDC provider
 
 **Causes**:
 
@@ -467,105 +397,165 @@ docker update --memory 512m FraiseQL
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check provider status
-curl https://accounts.google.com/o/oauth2/v2/auth?client_id=test
+# Check provider reachability
+curl -I https://YOUR_TENANT.auth0.com/
 
 # Check DNS resolution
-nslookup accounts.google.com
+nslookup YOUR_TENANT.auth0.com
 
 # Check network connectivity
-ping accounts.google.com
+ping YOUR_TENANT.auth0.com
 
 # Check firewall rules
 sudo ufw status
 
-# If behind proxy:
+# If the app runs behind a proxy:
 export https_proxy=http://proxy.internal:3128
-```text
-<!-- Code example in TEXT -->
+```
 
 ### "Cannot Get Public Keys"
 
-**Symptoms**: JWT validation fails, can't fetch public keys
+**Symptoms**: JWT validation fails because the app can't fetch JWKS public keys
 
 **Solutions**:
 
 ```bash
-<!-- Code example in BASH -->
-# Check OIDC metadata endpoint
-curl https://accounts.google.com/.well-known/openid-configuration
+# Check the OIDC discovery metadata
+curl https://YOUR_TENANT.auth0.com/.well-known/openid-configuration
 
-# Check JWKS endpoint
-curl https://www.googleapis.com/oauth2/v1/certs
+# Check the JWKS endpoint directly
+curl https://YOUR_TENANT.auth0.com/.well-known/jwks.json
 
-# If both respond, clear local cache and restart:
-docker restart FraiseQL
+# If both respond, restart the app to clear the cached key set:
+uvicorn app:app
 
-# Check for certificate issues
-curl -v https://accounts.google.com/ 2>&1 | grep "certificate"
-```text
-<!-- Code example in TEXT -->
+# Check for TLS/certificate issues
+curl -v https://YOUR_TENANT.auth0.com/ 2>&1 | grep -i "certificate"
+```
+
+## Authorization Issues
+
+### Operation Denied with `extensions.code = "FORBIDDEN"`
+
+**Symptoms**: A query/mutation returns a GraphQL error whose
+`extensions.code` is `"FORBIDDEN"`, often with `required_role`,
+`required_roles`, or `required_permission`.
+
+**Causes**:
+
+- The resolver is guarded by `@requires_auth` / `@requires_role` /
+  `@requires_permission` (and `@requires_any_role` / `@requires_any_permission`)
+  and the request's `UserContext` lacks the needed role/permission.
+- An `Authorizer` attached via `@fraiseql.query(authorizer=...)` (or `mutation` /
+  `subscription`, or app-wide via `create_fraiseql_app(authorizer=...)`) returned
+  `AuthorizationDecision.deny(...)`.
+- The token validated, but the roles/permissions claims weren't mapped onto the
+  `UserContext`.
+
+**Solutions**:
+
+Inspect the `UserContext` that the resolver actually sees. It lives at
+`info.context["user"]`:
+
+```python
+@fraiseql.query
+async def whoami(info) -> str:
+    user = info.context["user"]  # a UserContext
+    return (
+        f"user_id={user.user_id} "
+        f"roles={user.roles} "
+        f"permissions={user.permissions}"
+    )
+```
+
+`UserContext` exposes `has_role`, `has_permission`, `has_any_role`,
+`has_any_permission` (plus `has_all_roles` / `has_all_permissions`). If
+`roles`/`permissions` are empty, the problem is in your provider's claim mapping,
+not the guard:
+
+- **Auth0**: ensure the roles/permissions are present in the token (add them via an
+  Auth0 Action/rule, or enable RBAC + "Add Permissions in the Access Token" on the
+  API). The provider maps `roles` and `permissions` claims onto the `UserContext`.
+- **Custom provider**: in your `AuthProvider.get_user_from_token`, populate
+  `UserContext(user_id=..., roles=[...], permissions=[...])` from the decoded payload.
+
+### 401 vs 403 (Unauthenticated vs Forbidden)
+
+- **No / invalid token → unauthenticated.** `@requires_auth` raises when
+  `info.context["user"]` is missing, and the native provider's HTTP routes return
+  `401` for bad credentials.
+- **Valid token but insufficient role/permission → forbidden.** The role/permission
+  guards raise a GraphQL error with `extensions.code = "FORBIDDEN"`; the native
+  provider's HTTP routes return `403` (e.g. "Account is disabled").
+
+If you expect 403 but get 401, the token isn't being parsed at all — check the
+`Authorization: Bearer <token>` header and the provider config. If you expect 401 but
+get 403, the token *is* valid; the user simply lacks the role/permission.
 
 ## Debugging
 
 ### Enable Debug Logging
 
-```bash
-<!-- Code example in BASH -->
-# In .env or command line
-RUST_LOG=debug,fraiseql_server::auth=trace
+FraiseQL auth uses the standard Python `logging` module. Raise the level on the
+`fraiseql` parent logger (or the `fraiseql.auth` subtree) to see token validation and
+authorization decisions:
 
-# Or more selective
-RUST_LOG=fraiseql_server::auth::handlers=debug
-```text
-<!-- Code example in TEXT -->
+```python
+import logging
+
+# Everything FraiseQL emits
+logging.getLogger("fraiseql").setLevel(logging.DEBUG)
+
+# Or just the auth subtree (token validation, revocation, providers)
+logging.getLogger("fraiseql.auth").setLevel(logging.DEBUG)
+```
+
+You can also set the level via the `FRAISEQL_LOG_LEVEL` environment variable when
+launching the app:
+
+```bash
+FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app --reload
+```
 
 ### Check Detailed Logs
 
 ```bash
-<!-- Code example in BASH -->
-# View real-time logs
-docker logs -f FraiseQL
+# Run the app in the foreground and watch the logs
+uvicorn app:app --reload
 
-# Save logs to file
-docker logs FraiseQL > logs.txt 2>&1
+# Save logs to a file
+uvicorn app:app > logs.txt 2>&1
 
-# Search logs
-docker logs FraiseQL | grep "error\|warn"
+# Search for auth errors/warnings
+grep -iE "error|warn" logs.txt
+```
 
-# Get metrics
-curl http://localhost:8000/metrics/auth | json_pp
-```text
-<!-- Code example in TEXT -->
-
-### Test Endpoints Manually
+### Test the GraphQL Endpoint Manually
 
 ```bash
-<!-- Code example in BASH -->
-# Start login
-curl -X POST http://localhost:8000/auth/start \
+# Send an authenticated query to the FraiseQL GraphQL endpoint
+curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
-  -d '{"provider":"google"}' | jq .
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"query":"{ whoami }"}' | jq .
 
-# List sessions
-psql $DATABASE_URL -c \
-  "SELECT user_id, created_at, expires_at FROM _system.sessions LIMIT 5;"
+# A FORBIDDEN response looks like:
+# { "errors": [ { "message": "...", "extensions": { "code": "FORBIDDEN", ... } } ] }
+```
 
-# Check health
-curl http://localhost:8000/health/auth | jq .
-```text
-<!-- Code example in TEXT -->
+When `production=False`, you can also open the GraphQL playground in a browser at
+`/graphql` and add an `Authorization` header to experiment interactively.
 
 ## Getting Help
 
-1. **Check logs first**: `docker logs FraiseQL`
-2. **Enable debug logging**: `RUST_LOG=debug`
-3. **Check GitHub issues**: <https://github.com/FraiseQL/FraiseQL/issues>
-4. **Create issue with**:
-   - Error message (no secrets!)
+1. **Enable debug logging**: set `logging.getLogger("fraiseql.auth")` to `DEBUG`, or
+   launch with `FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app`.
+2. **Inspect the `UserContext`**: log `info.context["user"]` to confirm roles/permissions.
+3. **Decode the token**: check `iss`, `aud`, `exp`, and the roles/permissions claims.
+4. **Check the issue tracker** and open an issue with:
+   - The error message and any `extensions.code` (no secrets!)
    - Steps to reproduce
-   - Environment (OS, Rust version, etc.)
+   - Environment (OS, Python version, FraiseQL version)
    - Logs with debug enabled
 
 ---

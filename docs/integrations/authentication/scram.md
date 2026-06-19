@@ -1,372 +1,215 @@
-<!-- Skip to main content -->
 ---
-
 title: PostgreSQL SCRAM Authentication
-description: FraiseQL supports SCRAM (Salted Challenge Response Authentication Mechanism) authentication for secure connections to PostgreSQL databases.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
+description: Secure the FraiseQL-to-PostgreSQL database connection with SCRAM-SHA-256, PostgreSQL's modern challenge-response password authentication.
+keywords: ["database", "authentication", "postgresql", "scram", "security"]
 tags: ["documentation", "reference"]
 ---
 
 # PostgreSQL SCRAM Authentication
 
-FraiseQL supports SCRAM (Salted Challenge Response Authentication Mechanism) authentication for secure connections to PostgreSQL databases.
+SCRAM-SHA-256 is PostgreSQL's modern, secure password authentication method. It
+replaces the older, vulnerable MD5 scheme. FraiseQL connects to PostgreSQL with
+[psycopg](https://www.psycopg.org/) (libpq), which negotiates SCRAM-SHA-256 with
+the server automatically — there is no FraiseQL-specific code or configuration
+involved.
+
+> **Database auth, not application auth.** This page is about authenticating
+> *FraiseQL's own connection to PostgreSQL*. It is unrelated to authenticating
+> your API's end users (JWT / Auth0 / custom providers) — for that, see
+> [Authentication overview](./README.md).
 
 ## Overview
 
-SCRAM is the modern, secure authentication method for PostgreSQL. It replaces the older, vulnerable MD5 authentication scheme.
+SCRAM (Salted Challenge Response Authentication Mechanism) lets the psycopg
+client prove it knows the database role's password without ever sending the
+password in plaintext. Configuration is entirely on the **PostgreSQL side**
+(`postgresql.conf`, `pg_hba.conf`, role passwords); FraiseQL only needs a valid
+`database_url`.
 
-### SCRAM Variants
+| Method | RFC | PostgreSQL | Channel binding |
+|--------|-----|-----------|-----------------|
+| **SCRAM-SHA-256** | [RFC 5802](https://datatracker.ietf.org/doc/html/rfc5802) | 10+ | No |
+| **SCRAM-SHA-256-PLUS** | [RFC 5802](https://datatracker.ietf.org/doc/html/rfc5802) | 11+ (with TLS) | Yes |
 
-| Method | RFC | PostgreSQL | Channel Binding | Security |
-|--------|-----|-----------|-----------------|----------|
-| **SCRAM-SHA-256** | [RFC 5802](https://tools.ietf.org/html/rfc5802) | 10+ | ❌ No | ✅ **Recommended** |
-| **SCRAM-SHA-256-PLUS** | [RFC 5802](https://tools.ietf.org/html/rfc5802) | 11+ | ✅ Yes | ✅ **Best** |
+## PostgreSQL side
 
-## Prerequisites
+### 1. Enable SCRAM password encryption
 
-### PostgreSQL Version Requirements
-
-- **SCRAM-SHA-256**: PostgreSQL 10 or later
-- **SCRAM-SHA-256-PLUS**: PostgreSQL 11 or later (with TLS channel binding)
-
-Check your PostgreSQL version:
-
-```bash
-<!-- Code example in BASH -->
-psql --version
-# or from within psql:
-SELECT version();
-```text
-<!-- Code example in TEXT -->
-
-### User Password Configuration
-
-Ensure PostgreSQL is configured to use SCRAM for password authentication:
+Set `password_encryption` so PostgreSQL stores password hashes in SCRAM format:
 
 ```sql
-<!-- Code example in SQL -->
--- Check current password_encryption setting
+-- Check the current setting
 SHOW password_encryption;
--- Output: scram-sha-256 (or md5, which is deprecated)
+-- Want: scram-sha-256  (md5 is deprecated)
 
--- Set to SCRAM-SHA-256
+-- Enable SCRAM-SHA-256 (postgresql.conf, or via ALTER SYSTEM)
+ALTER SYSTEM SET password_encryption = 'scram-sha-256';
+SELECT pg_reload_conf();
+```
+
+This only governs *newly set* passwords. Existing roles keep their old hashes
+until their passwords are reset (see step 3).
+
+### 2. Require SCRAM in `pg_hba.conf`
+
+`pg_hba.conf` decides the authentication method per connection. Use
+`scram-sha-256` for the host/database/role FraiseQL connects as:
+
+```text
+# TYPE  DATABASE   USER             ADDRESS         METHOD
+host    mydb       fraiseql_user    10.0.0.0/24     scram-sha-256
+hostssl mydb       fraiseql_user    0.0.0.0/0       scram-sha-256
+```
+
+Reload after editing:
+
+```sql
+SELECT pg_reload_conf();
+```
+
+Use `hostssl` to additionally require TLS for that connection (recommended — see
+[Recommend TLS alongside SCRAM](#recommend-tls-alongside-scram)).
+
+### 3. Create roles with SCRAM-hashed passwords
+
+With `password_encryption = scram-sha-256` active, any password you set is stored
+as a SCRAM verifier:
+
+```sql
+-- New role
+CREATE ROLE fraiseql_user LOGIN PASSWORD 'a-long-random-password';
+
+-- Re-hash an existing role's password (also use \password in psql, which
+-- never echoes the password into history or logs)
+ALTER ROLE fraiseql_user PASSWORD 'a-long-random-password';
+```
+
+In `psql`, prefer the `\password` meta-command — it prompts interactively and
+rehashes using the server's current `password_encryption`:
+
+```text
+\password fraiseql_user
+```
+
+### 4. Verify the role uses SCRAM
+
+```sql
+-- The stored verifier should begin with SCRAM-SHA-256$
+SELECT rolname, rolpassword
+FROM pg_authid
+WHERE rolname = 'fraiseql_user';
+-- e.g. SCRAM-SHA-256$4096:...   (not md5...)
+```
+
+## FraiseQL / client side
+
+FraiseQL connects through psycopg using a standard `database_url`. SCRAM is
+negotiated by libpq automatically; you do not write or configure any
+authentication code in FraiseQL.
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://fraiseql_user:password@db.internal:5432/mydb",
+    types=[...],
+    queries=[...],
+)
+```
+
+If `psql` with the same URL connects successfully against a SCRAM-configured
+server, FraiseQL will too — the negotiation is identical.
+
+Keep credentials out of source control. Pass the URL via an environment variable
+(FraiseQL also reads `FRAISEQL_DATABASE_URL`):
+
+```bash
+export FRAISEQL_DATABASE_URL="postgresql://fraiseql_user:$(vault kv get -field=password secret/fraiseql/db)@db.internal:5432/mydb"
+```
+
+## Recommend TLS alongside SCRAM
+
+SCRAM protects the *password*, but on its own it does not encrypt query traffic
+or authenticate the server. Add TLS for both:
+
+```python
+app = create_fraiseql_app(
+    database_url=(
+        "postgresql://fraiseql_user:password@db.internal:5432/mydb"
+        "?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.crt"
+    ),
+    types=[...],
+    queries=[...],
+)
+```
+
+- `sslmode=verify-full` encrypts the connection **and** verifies the server's
+  certificate against `sslrootcert` (preventing MITM). Use this in production.
+- On PostgreSQL 11+, a TLS connection enables **SCRAM-SHA-256-PLUS** channel
+  binding, which ties authentication to the TLS session and defeats relay
+  attacks. libpq selects it automatically when both ends support it.
+- Pair `sslmode=verify-full` with `hostssl ... scram-sha-256` lines in
+  `pg_hba.conf` so the server rejects any non-TLS or non-SCRAM attempt.
+
+## Migrating from MD5
+
+If existing roles still use MD5:
+
+```sql
+-- 1. Switch the default to SCRAM
 ALTER SYSTEM SET password_encryption = 'scram-sha-256';
 SELECT pg_reload_conf();
 
--- Reset user password to apply new authentication method
-ALTER USER fraiseql_user PASSWORD 'new_secure_password';
-```text
-<!-- Code example in TEXT -->
+-- 2. Re-hash each role by resetting its password
+ALTER ROLE fraiseql_user PASSWORD 'a-long-random-password';
 
-## Configuration
+-- 3. Confirm the verifier is now SCRAM
+SELECT rolname, rolpassword FROM pg_authid WHERE rolname = 'fraiseql_user';
+```
 
-### Basic SCRAM Authentication
-
-```toml
-<!-- Code example in TOML -->
-[database]
-# PostgreSQL connection string with SCRAM authentication
-url = "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"
-```text
-<!-- Code example in TEXT -->
-
-FraiseQL automatically:
-
-1. Extracts the username and password from the connection string
-2. Negotiates SCRAM-SHA-256 with the PostgreSQL server
-3. Performs secure challenge-response authentication
-4. Encrypts the password during transmission (never sent in plain text)
-
-### With TLS/SSL (SCRAM-SHA-256-PLUS)
-
-For the most secure configuration with channel binding:
-
-```toml
-<!-- Code example in TOML -->
-[database]
-# PostgreSQL connection string with SCRAM-SHA-256-PLUS
-url = "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"
-
-[tls]
-enabled = true
-ca_cert = "/path/to/ca.crt"
-client_cert = "/path/to/client.crt"
-client_key = "/path/to/client.key"
-```text
-<!-- Code example in TEXT -->
-
-When both TLS and SCRAM are enabled:
-
-1. TLS connection is established first
-2. SCRAM-SHA-256-PLUS negotiates with TLS channel binding
-3. Authentication is tied to the TLS session (prevents replay attacks)
-
-## Security Features
-
-### SCRAM-SHA-256
-
-✅ **Advantages:**
-
-- Password is never sent in plaintext
-- Uses SHA-256 hashing with salt
-- Each password is hashed with a unique salt
-- Multiple iterations prevent dictionary attacks (default: 4096 PBKDF2 iterations)
-- Resistant to brute-force attacks
-- Resistant to timing attacks
-
-✅ **Protection Against:**
-
-- Plaintext password exposure
-- Rainbow tables
-- Dictionary attacks
-- Brute-force attacks
-- Timing-based password guessing
-
-### SCRAM-SHA-256-PLUS
-
-Adds **channel binding** for additional security:
-
-✅ **Additional Protection:**
-
-- Binds authentication to TLS certificate
-- Prevents MITM attacks on the authentication layer
-- Prevents key compromise attacks
-- Authenticates the server through the TLS channel
-
-## Migration from MD5
-
-If your PostgreSQL instance uses MD5 authentication:
-
-### Step 1: Update PostgreSQL
-
-```bash
-<!-- Code example in BASH -->
-# On PostgreSQL server
-sudo systemctl stop postgresql
-sudo apt-get install postgresql-14  # or later version
-sudo systemctl start postgresql
-```text
-<!-- Code example in TEXT -->
-
-### Step 2: Configure SCRAM
-
-```sql
-<!-- Code example in SQL -->
--- Connect as superuser
-sudo -u postgres psql
-
--- Set SCRAM as default
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-```text
-<!-- Code example in TEXT -->
-
-### Step 3: Reset User Passwords
-
-```sql
-<!-- Code example in SQL -->
--- For each user, reset password to apply SCRAM
-ALTER USER fraiseql_user PASSWORD 'secure_password';
-ALTER USER other_user PASSWORD 'their_secure_password';
-```text
-<!-- Code example in TEXT -->
-
-### Step 4: Verify Migration
-
-```sql
-<!-- Code example in SQL -->
--- Check that users are now using SCRAM
-SELECT usename, usepassword FROM pg_user WHERE usename = 'fraiseql_user';
--- Output should show: $SCRAM-SHA-256$... (not md5...)
-```text
-<!-- Code example in TEXT -->
-
-### Step 5: Update FraiseQL Configuration
-
-```toml
-<!-- Code example in TOML -->
-# Update connection string if credentials changed
-[database]
-url = "postgresql://fraiseql_user:new_password@localhost:5432/fraiseql_db"
-```text
-<!-- Code example in TEXT -->
-
-## Password Requirements
-
-FraiseQL securely handles passwords:
-
-### Recommendations
-
-1. **Strong Passwords**: Use 16+ character passwords with mixed case, numbers, and symbols
-2. **Unique Passwords**: Don't reuse passwords across systems
-3. **Regular Rotation**: Change database passwords every 90 days
-4. **No Logging**: Passwords are never logged or printed to console
-
-### Memory Security
-
-FraiseQL uses the `zeroize` crate to:
-
-- Immediately zero password memory after use
-- Prevent password fragments in memory dumps
-- Automatic on drop (no manual cleanup needed)
-
-## Testing SCRAM Configuration
-
-### Test Connection
-
-```bash
-<!-- Code example in BASH -->
-# Test with psql first
-psql postgresql://fraiseql_user:password@localhost:5432/fraiseql_db
-
-# If successful, FraiseQL should also connect
-FraiseQL-server start
-```text
-<!-- Code example in TEXT -->
-
-### Test with FraiseQL
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_core::database::ConnectionPool;
-
-#[tokio::main]
-async fn main() {
-    let config = ConnectionConfig {
-        database_url: "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db".to_string(),
-        ..Default::default()
-    };
-
-    let pool = ConnectionPool::new(config).await.expect("Connection failed");
-    println!("✅ SCRAM authentication successful");
-}
-```text
-<!-- Code example in TEXT -->
-
-### Verify Authentication Method
-
-```bash
-<!-- Code example in BASH -->
-# View the authentication message from server
-RUST_LOG=fraiseql_wire::auth=debug FraiseQL-server start
-
-# Should show:
-# [DEBUG] AuthenticationSASL with mechanisms: ["SCRAM-SHA-256"]
-# [DEBUG] SCRAM-SHA-256 authentication successful
-```text
-<!-- Code example in TEXT -->
+Then change the `pg_hba.conf` method from `md5` to `scram-sha-256` and
+`SELECT pg_reload_conf();`. FraiseQL needs no changes unless the password itself
+changed — in which case update the `database_url`.
 
 ## Troubleshooting
 
-### "SCRAM authentication failed"
-
-**Possible causes:**
-
-1. Wrong password
-2. User doesn't exist in PostgreSQL
-3. PostgreSQL not configured for SCRAM
-4. Network connectivity issues
-
-**Solution:**
+**"SCRAM authentication failed" / "password authentication failed"**
+Test the exact URL with `psql` first — FraiseQL uses the same negotiation:
 
 ```bash
-<!-- Code example in BASH -->
-# Test with psql first
-psql postgresql://fraiseql_user:password@localhost:5432/fraiseql_db
+psql "postgresql://fraiseql_user:password@db.internal:5432/mydb"
+```
 
-# Check PostgreSQL logs
-tail -f /var/log/postgresql/postgresql.log
-```text
-<!-- Code example in TEXT -->
+If `psql` also fails, the cause is on the PostgreSQL side (wrong password, role
+missing, role still on MD5, or a `pg_hba.conf` line that does not match). Check
+that the role's verifier starts with `SCRAM-SHA-256$` (step 4) and that
+`pg_hba.conf` uses `scram-sha-256` for that host/database/user.
 
-### "Password authentication failed"
+**Server still negotiates MD5**
+The role's password was set before `password_encryption` was switched. Re-run
+`ALTER ROLE ... PASSWORD ...` to rehash it.
 
-**Possible cause:** PostgreSQL still using MD5
+**"connection refused"**
+PostgreSQL is not reachable — check that it is running, that it listens on the
+expected interface (`listen_addresses`), and that no firewall blocks port 5432.
+This is a connectivity issue, not an authentication one.
 
-**Solution:**
+## Security best practices
 
-```sql
-<!-- Code example in SQL -->
--- Check authentication method
-SHOW password_encryption;
-
--- If output is 'md5', migrate to SCRAM:
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-ALTER USER fraiseql_user PASSWORD 'new_password';
-```text
-<!-- Code example in TEXT -->
-
-### "Connection refused"
-
-**Possible causes:**
-
-1. PostgreSQL not running
-2. Firewall blocking port 5432
-3. PostgreSQL listening on different interface
-
-**Solution:**
-
-```bash
-<!-- Code example in BASH -->
-# Check if PostgreSQL is running
-systemctl status postgresql
-
-# Check what PostgreSQL is listening on
-ss -tlnp | grep postgres
-# or
-netstat -tlnp | grep postgres
-```text
-<!-- Code example in TEXT -->
-
-## Performance Considerations
-
-SCRAM authentication adds minimal overhead:
-
-- **Handshake time**: ~10-50ms depending on network
-- **PBKDF2 iterations**: Default 4096 (can be tuned)
-- **Memory**: ~1KB per authentication session
-- **CPU**: Negligible (modern CPUs handle SHA-256 efficiently)
-
-For applications with thousands of connections, use connection pooling:
-
-```toml
-<!-- Code example in TOML -->
-[database]
-url = "postgresql://..."
-
-[pool]
-max_connections = 100
-min_idle = 10
-```text
-<!-- Code example in TEXT -->
-
-## Security Best Practices
-
-1. **Use SCRAM-SHA-256-PLUS** when possible (with TLS)
-2. **Enable TLS** for all connections to PostgreSQL
-3. **Use strong passwords** (16+ characters, mixed case)
-4. **Rotate passwords regularly** (every 90 days)
-5. **Monitor authentication failures** in PostgreSQL logs
-6. **Separate database credentials** from application code (use environment variables)
-7. **Use connection pooling** to limit authentication overhead
-8. **Audit authentication events** for security monitoring
-
-### Environment Variables
-
-```bash
-<!-- Code example in BASH -->
-# Don't put passwords in code
-export DATABASE_URL="postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"
-
-# Or use a secrets manager
-export DATABASE_PASSWORD=$(vault kv get -field=password secret/FraiseQL/db)
-```text
-<!-- Code example in TEXT -->
+1. Set `password_encryption = scram-sha-256` and use `scram-sha-256` lines in
+   `pg_hba.conf` for every FraiseQL connection; remove any `md5`/`trust` lines.
+2. Require TLS with `sslmode=verify-full` so SCRAM-SHA-256-PLUS channel binding
+   is used and traffic is encrypted.
+3. Give FraiseQL a dedicated, least-privileged database role.
+4. Use a long, unique, randomly generated password and rotate it periodically.
+5. Keep the `database_url` in an environment variable or secrets manager, never
+   in source control.
+6. Monitor PostgreSQL logs for repeated authentication failures.
 
 ## References
 
-- [PostgreSQL Documentation: SCRAM-SHA-256 Authentication](https://www.postgresql.org/docs/current/sql-syntax-lexical.html)
-- [RFC 5802: SCRAM (Salted Challenge Response Authentication Mechanism)](https://tools.ietf.org/html/rfc5802)
-- [OWASP: Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
-- [PostgreSQL Security Documentation](https://www.postgresql.org/docs/current/sql-createrole.html)
+- [PostgreSQL: Password Authentication (SCRAM)](https://www.postgresql.org/docs/current/auth-password.html)
+- [PostgreSQL: The pg_hba.conf File](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)
+- [PostgreSQL: SSL Support (libpq sslmode)](https://www.postgresql.org/docs/current/libpq-ssl.html)
+- [RFC 5802: SCRAM](https://datatracker.ietf.org/doc/html/rfc5802)
+- [Authentication overview (application/user auth)](./README.md)
