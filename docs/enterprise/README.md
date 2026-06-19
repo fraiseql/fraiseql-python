@@ -253,5 +253,3 @@ flag. See the full field list and defaults in
 ---
 
 **Back to:** [Documentation Home](../index.md)
-</content>
-</invoke>

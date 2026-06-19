@@ -191,5 +191,4 @@ LIMIT 10;
 ## See Also
 
 - [pgvector GitHub Repository](https://github.com/pgvector/pgvector)
-- [Vector Search Best Practices](https://github.com/pgvector/pgvector#best-practices)</content>
-<parameter name="filePath">docs/reference/vector-operators.md
+- [Vector Search Best Practices](https://github.com/pgvector/pgvector#best-practices)
