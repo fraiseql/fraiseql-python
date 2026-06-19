@@ -1,626 +1,276 @@
-<!-- Skip to main content -->
 ---
-
-title: Aggregation Operators Specification
-description: This specification defines the aggregation operators available in FraiseQL, organized by database target and phase of implementation.
-keywords: ["format", "compliance", "protocol", "specification", "standard"]
+title: Aggregation Operators Reference
+description: PostgreSQL aggregate functions supported by FraiseQL v1 runtime auto-aggregation, plus the standard SQL aggregates you can use directly inside your views.
+keywords: ["aggregation", "group by", "having", "postgresql", "analytics", "reference"]
 tags: ["documentation", "reference"]
 ---
 
-# Aggregation Operators Specification
+# Aggregation Operators Reference
 
-**Version:** 1.0
-**Status:** Complete
-**Audience:** Compiler developers, SDK maintainers
-**Date:** January 12, 2026
+**Status:** Stable
 
 ---
 
 ## Overview
 
-This specification defines the aggregation operators available in FraiseQL, organized by database target and phase of implementation.
+FraiseQL v1 performs **runtime auto-aggregation** against PostgreSQL. When a GraphQL
+query selects aggregate fields on a view-backed type, FraiseQL derives the matching
+`GROUP BY` and aggregate SQL automatically and runs it against your `v_`/`tv_` view.
+There is no build step, no compiler, and no schema artifact — everything happens at
+app startup and request time. FraiseQL v1 targets **PostgreSQL only**.
 
-**Phases**:
+Auto-aggregation is implemented by `_derive_auto_aggregation` (with
+`_parse_aggregation_expr`) in `src/fraiseql/db.py`. The aggregate expressions you
+declare per type are parsed and validated against an allowlist, then composed into a
+parameterized `SELECT ... GROUP BY` statement against the registered view.
 
-- **Phase 1-2** (✅ Complete): Basic aggregates (COUNT, SUM, AVG, MIN, MAX, STDDEV, VARIANCE)
-- **Phase 3** (📋 Planned): Advanced aggregates (ARRAY_AGG, JSON_AGG, STRING_AGG, BOOL_AND/OR)
-- **Phase 4** (📋 Planned): Auto-generated GraphQL types (perfect for v2 compiler!)
+This document covers two related things:
 
----
-
-## Capability Manifest Extension
-
-The capability manifest defines which operators are available for each database target.
-
-### PostgreSQL Aggregation Operators
-
-```json
-<!-- Code example in JSON -->
-{
-  "postgresql": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT $field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDDEV", "sql": "STDDEV", "return_type": "Float" },
-        { "function": "STDDEV_POP", "sql": "STDDEV_POP", "return_type": "Float" },
-        { "function": "STDDEV_SAMP", "sql": "STDDEV_SAMP", "return_type": "Float" },
-        { "function": "VARIANCE", "sql": "VARIANCE", "return_type": "Float" },
-        { "function": "VAR_POP", "sql": "VAR_POP", "return_type": "Float" },
-        { "function": "VAR_SAMP", "sql": "VAR_SAMP", "return_type": "Float" },
-        { "function": "PERCENTILE_CONT", "sql": "PERCENTILE_CONT($fraction) WITHIN GROUP (ORDER BY $field)", "return_type": "Float" },
-        { "function": "PERCENTILE_DISC", "sql": "PERCENTILE_DISC($fraction) WITHIN GROUP (ORDER BY $field)", "return_type": "Same as input" }
-      ],
-      "advanced": [
-        { "function": "ARRAY_AGG", "sql": "ARRAY_AGG", "return_type": "Array", "phase": 3 },
-        { "function": "JSON_AGG", "sql": "JSON_AGG", "return_type": "JSON", "phase": 3 },
-        { "function": "JSONB_AGG", "sql": "JSONB_AGG", "return_type": "JSONB", "phase": 3 },
-        { "function": "STRING_AGG", "sql": "STRING_AGG($field, $separator)", "return_type": "String", "phase": 3 },
-        { "function": "BOOL_AND", "sql": "BOOL_AND", "return_type": "Boolean", "phase": 3 },
-        { "function": "BOOL_OR", "sql": "BOOL_OR", "return_type": "Boolean", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATE_TRUNC", "sql": "DATE_TRUNC", "buckets": ["second", "minute", "hour", "day", "week", "month", "quarter", "year"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "... FILTER (WHERE ...)", "supported": true }
-      ]
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### MySQL Aggregation Operators
-
-```json
-<!-- Code example in JSON -->
-{
-  "mysql": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT $field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDDEV", "sql": "STDDEV", "return_type": "Float", "note": "Sample standard deviation" },
-        { "function": "STDDEV_POP", "sql": "STDDEV_POP", "return_type": "Float" },
-        { "function": "STDDEV_SAMP", "sql": "STDDEV_SAMP", "return_type": "Float" },
-        { "function": "VARIANCE", "sql": "VARIANCE", "return_type": "Float", "note": "Sample variance" },
-        { "function": "VAR_POP", "sql": "VAR_POP", "return_type": "Float" },
-        { "function": "VAR_SAMP", "sql": "VAR_SAMP", "return_type": "Float" }
-      ],
-      "advanced": [
-        { "function": "GROUP_CONCAT", "sql": "GROUP_CONCAT($field SEPARATOR $separator)", "return_type": "String", "phase": 3, "note": "Similar to STRING_AGG" },
-        { "function": "JSON_ARRAYAGG", "sql": "JSON_ARRAYAGG", "return_type": "JSON", "phase": 3 },
-        { "function": "JSON_OBJECTAGG", "sql": "JSON_OBJECTAGG($key, $value)", "return_type": "JSON", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATE_FORMAT", "sql": "DATE_FORMAT", "buckets": ["day", "week", "month", "year"], "note": "Limited bucket support" }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ]
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### SQLite Aggregation Operators
-
-```json
-<!-- Code example in JSON -->
-{
-  "sqlite": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT $field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [],
-      "advanced": [
-        { "function": "GROUP_CONCAT", "sql": "GROUP_CONCAT($field, $separator)", "return_type": "String", "phase": 3 }
-      ],
-      "temporal_bucketing": [
-        { "function": "strftime", "sql": "strftime", "buckets": ["day", "week", "month", "year"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ]
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### SQL Server Aggregation Operators
-
-```json
-<!-- Code example in JSON -->
-{
-  "sqlserver": {
-    "aggregation": {
-      "basic": [
-        { "function": "COUNT", "sql": "COUNT", "return_type": "Int" },
-        { "function": "COUNT_DISTINCT", "sql": "COUNT(DISTINCT $field)", "return_type": "Int" },
-        { "function": "SUM", "sql": "SUM", "return_type": "Numeric" },
-        { "function": "AVG", "sql": "AVG", "return_type": "Float" },
-        { "function": "MIN", "sql": "MIN", "return_type": "Same as input" },
-        { "function": "MAX", "sql": "MAX", "return_type": "Same as input" }
-      ],
-      "statistical": [
-        { "function": "STDEV", "sql": "STDEV", "return_type": "Float", "note": "Sample standard deviation" },
-        { "function": "STDEVP", "sql": "STDEVP", "return_type": "Float", "note": "Population standard deviation" },
-        { "function": "VAR", "sql": "VAR", "return_type": "Float", "note": "Sample variance" },
-        { "function": "VARP", "sql": "VARP", "return_type": "Float", "note": "Population variance" }
-      ],
-      "advanced": [
-        { "function": "STRING_AGG", "sql": "STRING_AGG($field, $separator)", "return_type": "String", "phase": 3, "note": "Requires SQL Server 2017+" }
-      ],
-      "temporal_bucketing": [
-        { "function": "DATEPART", "sql": "DATEPART", "buckets": ["day", "week", "month", "quarter", "year", "hour", "minute"] }
-      ],
-      "conditional": [
-        { "function": "FILTER", "sql": "CASE WHEN ... THEN ... END", "supported": "emulated" }
-      ],
-      "json": [
-        { "function": "JSON_VALUE", "sql": "JSON_VALUE", "supported": true },
-        { "function": "JSON_QUERY", "sql": "JSON_QUERY", "supported": true },
-        { "function": "FOR_JSON", "sql": "FOR JSON PATH", "supported": true, "phase": 3, "note": "Output formatting" }
-      ]
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+1. The aggregate functions FraiseQL knows how to **derive automatically** at runtime.
+2. The standard PostgreSQL aggregate, grouping, and bucketing constructs you write
+   **directly in your view SQL** when you need behavior beyond auto-aggregation.
 
 ---
 
-## GraphQL Schema Generation
+## Supported aggregate functions
 
-For a fact table `tf_sales` with measures `revenue`, `quantity`, compiler generates database-specific aggregate types.
+The following PostgreSQL aggregates are available for analytics over view-backed types:
 
-### PostgreSQL Target (Full Support)
+| Function   | SQL          | Returns          | Notes |
+|------------|--------------|------------------|-------|
+| `COUNT`    | `COUNT(...)` | integer          | Row counts; `COUNT(DISTINCT col)` for distinct counts. |
+| `SUM`      | `SUM(...)`   | numeric          | Totals over a measure column. |
+| `AVG`      | `AVG(...)`   | double precision | Mean of a measure column. |
+| `MIN`      | `MIN(...)`   | same as input    | Smallest value in the group. |
+| `MAX`      | `MAX(...)`   | same as input    | Largest value in the group. |
+| `STDDEV`   | `STDDEV(...)`| double precision | Sample standard deviation. |
+| `VARIANCE` | `VARIANCE(...)` | double precision | Sample variance. |
 
-```graphql
-<!-- Code example in GraphQL -->
-type SalesAggregate {
-  # Basic aggregates
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stddev: Float      # PostgreSQL only
-  revenue_variance: Float    # PostgreSQL only
-  quantity_sum: Int
-  quantity_avg: Float
-  quantity_min: Int
-  quantity_max: Int
+`COUNT`, `SUM`, `AVG`, `MIN`, and `MAX` are wired into runtime auto-aggregation and can
+be derived from the field selection (see below). `STDDEV` and `VARIANCE` are standard
+PostgreSQL aggregates: compute them in your view SQL (or a dedicated analytics view) and
+expose the result as an ordinary field.
 
-  # Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_week: String
-  occurred_at_month: String
-}
-
-input SalesGroupByInput {
-  category: Boolean
-  region: Boolean
-  customer_segment: Boolean
-  occurred_at_day: Boolean
-  occurred_at_week: Boolean
-  occurred_at_month: Boolean
-  occurred_at_quarter: Boolean
-  occurred_at_year: Boolean
-}
-
-input SalesHavingInput {
-  count_eq: Int
-  count_gt: Int
-  count_gte: Int
-  revenue_sum_eq: Float
-  revenue_sum_gt: Float
-  revenue_sum_gte: Float
-  revenue_avg_eq: Float
-  revenue_avg_gt: Float
-  revenue_avg_gte: Float
-}
-
-type Query {
-  sales_aggregate(
-    where: SalesWhereInput
-    groupBy: SalesGroupByInput
-    having: SalesHavingInput
-    orderBy: [OrderByInput!]
-    limit: Int
-    offset: Int
-  ): [SalesAggregate!]!
-}
-```text
-<!-- Code example in TEXT -->
-
-### MySQL Target (Good Support)
-
-```graphql
-<!-- Code example in GraphQL -->
-type SalesAggregate {
-  # Basic aggregates (same as PostgreSQL)
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stddev: Float      # MySQL has STDDEV
-  revenue_variance: Float    # MySQL has VARIANCE
-  quantity_sum: Int
-  quantity_avg: Float
-
-  # NO advanced aggregates in Phase 1-2
-  # Phase 3 will add GROUP_CONCAT, JSON_ARRAYAGG
-
-  # Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_month: String
-  occurred_at_year: String
-  # NO quarter bucket
-}
-```text
-<!-- Code example in TEXT -->
-
-### SQLite Target (Basic Support)
-
-```graphql
-<!-- Code example in GraphQL -->
-type SalesAggregate {
-  # Basic aggregates only
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  # NO stddev/variance
-  quantity_sum: Int
-  quantity_avg: Float
-
-  # Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_month: String
-  occurred_at_year: String
-}
-```text
-<!-- Code example in TEXT -->
-
-### SQL Server Target (Enterprise Support)
-
-```graphql
-<!-- Code example in GraphQL -->
-type SalesAggregate {
-  # Basic aggregates
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  revenue_min: Float
-  revenue_max: Float
-  revenue_stdev: Float       # SQL Server: STDEV
-  revenue_variance: Float    # SQL Server: VAR
-  quantity_sum: Int
-  quantity_avg: Float
-
-  # Grouped dimensions
-  category: String
-  region: String
-  occurred_at_day: String
-  occurred_at_week: String
-  occurred_at_month: String
-  occurred_at_quarter: String
-  occurred_at_year: String
-}
-```text
-<!-- Code example in TEXT -->
+`SUM` and `AVG` operate on numeric inputs. When a measure is read from a JSONB `data`
+column, FraiseQL casts the extracted text to `numeric` before applying the aggregate;
+when the measure is a native numeric column (see `native_measures`), it aggregates the
+column directly and avoids the cast.
 
 ---
 
-## Phase 3: Advanced Aggregate Functions
+## How runtime auto-aggregation works
 
-**Status**: Implemented (database-dependent availability)
+Auto-aggregation kicks in when a query selects only **dimensions** and **measures** on a
+view-backed type — that is, when no identity field (such as `id`) is requested. FraiseQL
+then:
+
+1. Reads the field selection from the GraphQL query.
+2. Looks up the type's aggregation metadata (registered via `register_type_for_view`).
+3. Splits the selected fields into `GROUP BY` dimensions and aggregate measures.
+4. Builds a parameterized `SELECT <dimensions>, <aggregates> FROM <view> GROUP BY
+   <dimensions>` and executes it.
+
+Aggregate expressions are declared as strings like `SUM(cost)` or `AVG(volume)` and are
+validated against the allowlist before any SQL is composed, so the function name can
+never be injected.
+
+### Registering aggregation metadata
+
+Attach aggregation metadata to a view-backed type with `register_type_for_view`:
+
+```python
+from fraiseql.db import register_type_for_view
+
+register_type_for_view(
+    view_name="v_sales_summary",
+    type_class=SalesSummary,
+    aggregation={
+        "measures": {
+            "measures.revenue": "SUM",
+            "measures.quantity": "SUM",
+        },
+        "dimensions": "dimensions",
+        "native_dimensions": ["period_date", "category_id"],
+        "native_measures": {"measures.quantity": "quantity"},
+        "native_dimension_mapping": {"dimensions.category.id": "category_id"},
+    },
+)
+```
+
+Metadata keys:
+
+- `measures` — maps a JSONB measure path to the aggregate function to apply
+  (`"SUM"`, `"AVG"`, etc.).
+- `dimensions` — the JSONB key (default `"data"` substructure) holding grouping
+  attributes.
+- `native_dimensions` — SQL columns that should be grouped via `t."col"` instead of
+  JSONB extraction. Native columns let PostgreSQL use btree indexes and keep `ORDER BY`
+  correct for dimension columns.
+- `native_measures` — maps JSONB measure paths to flat SQL column names so `SUM`/`AVG`
+  run on native numeric columns and skip the `::numeric` cast.
+- `native_dimension_mapping` — maps deep JSONB dimension paths to flat SQL columns so
+  `GROUP BY` can use native columns even for nested dimension paths.
+
+Use `native_dimensions` whenever your view exposes a real SQL column for a grouping key:
+it is the difference between a sequential scan over extracted JSONB text and an
+index-backed `GROUP BY`.
+
+---
+
+## Aggregation in view SQL
+
+For anything beyond derived `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` — including `STDDEV`,
+`VARIANCE`, conditional aggregates, time bucketing, and the array/JSON/string aggregates
+below — write standard PostgreSQL in your `v_`/`tv_` view. FraiseQL reads the resulting
+rows like any other view.
+
+### GROUP BY
+
+```sql
+SELECT
+    data->>'category'          AS category,
+    SUM((data->>'revenue')::numeric)  AS revenue_sum,
+    AVG((data->>'revenue')::numeric)  AS revenue_avg,
+    COUNT(*)                   AS order_count
+FROM tv_sales
+GROUP BY data->>'category';
+```
+
+### HAVING
+
+Filter groups after aggregation with `HAVING`:
+
+```sql
+SELECT
+    data->>'category'                 AS category,
+    SUM((data->>'revenue')::numeric)  AS revenue_sum
+FROM tv_sales
+GROUP BY data->>'category'
+HAVING SUM((data->>'revenue')::numeric) > 10000;
+```
+
+### Conditional aggregates with FILTER
+
+`FILTER (WHERE ...)` computes an aggregate over a subset of rows in the same pass — the
+idiomatic PostgreSQL way to do conditional sums and counts:
+
+```sql
+SELECT
+    data->>'region'                                          AS region,
+    COUNT(*)                                                 AS total_orders,
+    COUNT(*) FILTER (WHERE (data->>'status') = 'shipped')    AS shipped_orders,
+    SUM((data->>'revenue')::numeric)
+        FILTER (WHERE (data->>'on_sale')::boolean)           AS sale_revenue
+FROM tv_sales
+GROUP BY data->>'region';
+```
+
+### Time bucketing with DATE_TRUNC
+
+Bucket a timestamp into fixed periods with `DATE_TRUNC`. Supported buckets include
+`second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, and `year`:
+
+```sql
+SELECT
+    DATE_TRUNC('month', (data->>'occurred_at')::timestamptz) AS bucket_month,
+    SUM((data->>'revenue')::numeric)                         AS revenue_sum
+FROM tv_sales
+GROUP BY DATE_TRUNC('month', (data->>'occurred_at')::timestamptz)
+ORDER BY bucket_month;
+```
+
+Expose the bucket as a regular column and group on it. For dimension columns that you
+group on, prefer a native SQL column (and list it in `native_dimensions`) so the
+`GROUP BY` and `ORDER BY` can use an index.
+
+---
+
+## Array, JSON, and string aggregates
+
+PostgreSQL provides several aggregates that collapse a group into a single composite
+value. Use them **directly in your view SQL**; expose the result as a field on the
+view-backed type.
 
 ### ARRAY_AGG
 
-Aggregate values into an array.
-
-**PostgreSQL**:
+Collect group values into an array:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    data->>'category' AS category,
+    data->>'category'                AS category,
     ARRAY_AGG(data->>'product_name') AS product_names
-FROM tf_sales
+FROM tv_sales
 GROUP BY data->>'category';
-```text
-<!-- Code example in TEXT -->
-
-**MySQL**:
-
-```sql
-<!-- Code example in SQL -->
--- Use JSON_ARRAYAGG instead
-SELECT
-    JSON_EXTRACT(data, '$.category') AS category,
-    JSON_ARRAYAGG(JSON_EXTRACT(data, '$.product_name')) AS product_names
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.category');
-```text
-<!-- Code example in TEXT -->
-
-**SQLite**: Not supported
-
-**SQL Server**: Not directly supported (use FOR JSON)
+```
 
 ### JSON_AGG / JSONB_AGG
 
-Aggregate rows into JSON.
-
-**PostgreSQL**:
+Collect rows into a JSON array — useful for building nested read models inside a `tv_`
+projection view:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
     data->>'customer_id' AS customer_id,
     JSONB_AGG(jsonb_build_object(
         'product', data->>'product_name',
-        'revenue', revenue
+        'revenue', (data->>'revenue')::numeric
     )) AS orders
-FROM tf_sales
+FROM tv_sales
 GROUP BY data->>'customer_id';
-```text
-<!-- Code example in TEXT -->
+```
 
-**MySQL**:
+### STRING_AGG
 
-```sql
-<!-- Code example in SQL -->
-SELECT
-    JSON_EXTRACT(data, '$.customer_id') AS customer_id,
-    JSON_ARRAYAGG(
-        JSON_OBJECT(
-            'product', JSON_EXTRACT(data, '$.product_name'),
-            'revenue', revenue
-        )
-    ) AS orders
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.customer_id');
-```text
-<!-- Code example in TEXT -->
-
-**SQLite**: Not supported
-
-**SQL Server**:
+Concatenate group values with a delimiter, optionally ordered:
 
 ```sql
-<!-- Code example in SQL -->
--- Use FOR JSON PATH
-SELECT
-    JSON_VALUE(data, '$.customer_id') AS customer_id,
-    (
-        SELECT
-            JSON_VALUE(data, '$.product_name') AS product,
-            revenue
-        FROM tf_sales s2
-        WHERE JSON_VALUE(s2.data, '$.customer_id') = JSON_VALUE(s1.data, '$.customer_id')
-        FOR JSON PATH
-    ) AS orders
-FROM tf_sales s1
-GROUP BY JSON_VALUE(data, '$.customer_id');
-```text
-<!-- Code example in TEXT -->
-
-### STRING_AGG / GROUP_CONCAT
-
-Concatenate strings with delimiter.
-
-**PostgreSQL**:
-
-```sql
-<!-- Code example in SQL -->
 SELECT
     data->>'customer_id' AS customer_id,
-    STRING_AGG(data->>'product_name', ', ' ORDER BY revenue DESC) AS products
-FROM tf_sales
+    STRING_AGG(data->>'product_name', ', ' ORDER BY (data->>'revenue')::numeric DESC)
+        AS products
+FROM tv_sales
 GROUP BY data->>'customer_id';
-```text
-<!-- Code example in TEXT -->
-
-**MySQL**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    JSON_EXTRACT(data, '$.customer_id') AS customer_id,
-    GROUP_CONCAT(JSON_EXTRACT(data, '$.product_name') ORDER BY revenue DESC SEPARATOR ', ') AS products
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.customer_id');
-```text
-<!-- Code example in TEXT -->
-
-**SQLite**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    json_extract(data, '$.customer_id') AS customer_id,
-    GROUP_CONCAT(json_extract(data, '$.product_name'), ', ') AS products
-FROM tf_sales
-GROUP BY json_extract(data, '$.customer_id');
-```text
-<!-- Code example in TEXT -->
-
-**SQL Server**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    JSON_VALUE(data, '$.customer_id') AS customer_id,
-    STRING_AGG(JSON_VALUE(data, '$.product_name'), ', ') AS products
-FROM tf_sales
-GROUP BY JSON_VALUE(data, '$.customer_id');
-```text
-<!-- Code example in TEXT -->
+```
 
 ### BOOL_AND / BOOL_OR
 
-Boolean aggregates (all true / any true).
-
-**PostgreSQL**:
+Boolean aggregates — "all true" and "any true" across a group:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    data->>'category' AS category,
-    BOOL_AND((data->>'in_stock')::boolean) AS all_in_stock,
-    BOOL_OR((data->>'on_sale')::boolean) AS any_on_sale
-FROM tf_sales
+    data->>'category'                       AS category,
+    BOOL_AND((data->>'in_stock')::boolean)  AS all_in_stock,
+    BOOL_OR((data->>'on_sale')::boolean)    AS any_on_sale
+FROM tv_sales
 GROUP BY data->>'category';
-```text
-<!-- Code example in TEXT -->
-
-**MySQL/SQLite/SQL Server**: Emulate with MIN/MAX on boolean values or CASE WHEN.
+```
 
 ---
 
-## Compilation Rules
+## Choosing measure and dimension columns
 
-### Measure Column Detection
+When modeling a view for aggregation:
 
-**Criteria**:
+- **Measures** are numeric values you aggregate (`revenue`, `quantity`). Store them as
+  native numeric columns where possible and reference them through `native_measures` to
+  avoid per-row JSONB casts.
+- **Dimensions** are the attributes you group by (`category`, `region`, a `DATE_TRUNC`
+  bucket). Surface them as native SQL columns and list them in `native_dimensions` so
+  PostgreSQL can use btree indexes for `GROUP BY` and `ORDER BY`.
+- Never expose internal keys (`pk_*`, `fk_*`) as dimensions; group on the public `id`
+  (UUID), `identifier`, or a derived dimension column instead.
 
-- Numeric type: INT, BIGINT, DECIMAL, FLOAT, NUMERIC, REAL, DOUBLE PRECISION
-- Non-nullable preferred (but nullable allowed)
-- Excluded by convention: `id`, `created_at`, `updated_at`
-
-**Example**:
-
-```rust
-<!-- Code example in RUST -->
-fn is_measure_column(column: &Column) -> bool {
-    let numeric_types = ["int", "bigint", "decimal", "float", "numeric", "real", "double"];
-    let excluded_names = ["id", "created_at", "updated_at"];
-
-    numeric_types.contains(&column.data_type.to_lowercase().as_str())
-        && !excluded_names.contains(&column.name.to_lowercase().as_str())
-}
-```text
-<!-- Code example in TEXT -->
-
-### Dimension Path Detection
-
-**Criteria**:
-
-- References JSONB column (default: `data`)
-- Supports nested paths: `data->>'key'`, `data#>>'{path,to,key}'`
-- Database-specific operators from capability manifest
-
-**Example**:
-
-```rust
-<!-- Code example in RUST -->
-fn extract_dimension(column_name: &str, jsonb_column: &str) -> String {
-    match database_target {
-        "postgresql" => format!("{}->>'{}' AS {}", jsonb_column, column_name, column_name),
-        "mysql" => format!("JSON_EXTRACT({}, '$.{}') AS {}", jsonb_column, column_name, column_name),
-        "sqlite" => format!("json_extract({}, '$.{}') AS {}", jsonb_column, column_name, column_name),
-        "sqlserver" => format!("JSON_VALUE({}, '$.{}') AS {}", jsonb_column, column_name, column_name),
-    }
-}
-```text
-<!-- Code example in TEXT -->
-
-### Temporal Bucketing
-
-**PostgreSQL**:
-
-```rust
-<!-- Code example in RUST -->
-fn temporal_bucket_postgres(field: &str, bucket: &str) -> String {
-    format!("DATE_TRUNC('{}', {})", bucket, field)
-}
-```text
-<!-- Code example in TEXT -->
-
-**MySQL**:
-
-```rust
-<!-- Code example in RUST -->
-fn temporal_bucket_mysql(field: &str, bucket: &str) -> String {
-    let format = match bucket {
-        "day" => "%Y-%m-%d",
-        "week" => "%Y-%u",
-        "month" => "%Y-%m",
-        "year" => "%Y",
-        _ => panic!("Unsupported bucket: {}", bucket),
-    };
-    format!("DATE_FORMAT({}, '{}')", field, format)
-}
-```text
-<!-- Code example in TEXT -->
-
-**SQLite**:
-
-```rust
-<!-- Code example in RUST -->
-fn temporal_bucket_sqlite(field: &str, bucket: &str) -> String {
-    let format = match bucket {
-        "day" => "%Y-%m-%d",
-        "week" => "%Y-%W",
-        "month" => "%Y-%m",
-        "year" => "%Y",
-        _ => panic!("Unsupported bucket: {}", bucket),
-    };
-    format!("strftime('{}', {})", format, field)
-}
-```text
-<!-- Code example in TEXT -->
-
-**SQL Server**:
-
-```rust
-<!-- Code example in RUST -->
-fn temporal_bucket_sqlserver(field: &str, bucket: &str) -> String {
-    let part = bucket; // day, week, month, quarter, year
-    format!("DATEPART({}, {})", part, field)
-}
-```text
-<!-- Code example in TEXT -->
+For the full naming conventions, see the schema conventions reference linked below.
 
 ---
 
-## Related Specifications
+## Related references
 
-- **Capability Manifest** (`capability-manifest.md`) - Database-specific operator availability
-- **Aggregation Model** (`../architecture/analytics/aggregation-model.md`) - Compilation and execution
-- **Database Targeting** (`../architecture/database/database-targeting.md`) - Multi-database support
-- **Window Operators** (`window-operators.md`) - Window function reference
-
----
+- [Aggregation Model](../architecture/analytics/aggregation-model.md) — how
+  auto-aggregation derives `GROUP BY` and aggregate SQL at runtime.
+- [Fact / Dimension Pattern](../architecture/analytics/fact-dimension-pattern.md) — data
+  modeling for analytics views in PostgreSQL.
+- [Window Functions](../architecture/analytics/window-functions.md) — `ROW_NUMBER`,
+  `RANK`, `LAG`, `LEAD`, and `OVER (PARTITION BY ...)` patterns for view SQL.
+- [Schema Conventions](./schema-conventions.md) — `tb_`/`v_`/`tv_`/`fn_` prefixes, the
+  trinity identifier pattern, and the `data` JSONB convention.
