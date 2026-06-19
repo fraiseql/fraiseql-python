@@ -1,124 +1,101 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL v2 Reference
-description: Complete API and operator references.
-keywords: ["directives", "types", "scalars", "schema", "api"]
+title: FraiseQL Reference
+description: API, scalar, and operator references for FraiseQL v1.
+keywords: ["decorators", "types", "scalars", "operators", "config", "cli"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL v2 Reference
+# FraiseQL Reference
 
-Complete API and operator references.
+FraiseQL is a Python runtime GraphQL framework for PostgreSQL. You define types,
+queries, and mutations with decorators; at app startup the schema is built in
+memory and served over FastAPI. This section is the API and operator reference.
 
----
-
-## 📚 Reference Documentation
-
-### Type System & Schema
-
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [naming-patterns.md](naming-patterns.md) | FraiseQL naming conventions and patterns | 600+ | Reference |
-| [scalars.md](scalars.md) | Scalar type library and custom scalars | 1,492 | Reference |
-
-**Naming Patterns Topics:**
-
-- `id: UUID v4` — GraphQL entity identifiers
-- `pk_`, `fk_` — Internal BIGINT database keys
-- `tb_{entity}` — Write-side normalized tables
-- `v_{entity}` — Read-side denormalized views
-- `tv_{entity}` — Materialized table-backed views
-- `tf_{entity}` — Analytics fact tables with JSONB
-
-**Scalar Topics:**
-
-- Built-in scalar types (String, Int, Float, Boolean, ID)
-- Extended scalars (Date, DateTime, Time, UUID, JSON, etc.)
-- Custom scalar creation
-- Scalar validation rules
-- Serialization formats
-- Database type mappings
+New here? Start with the [Quickstart](../getting-started/quickstart.md), or browse
+the full [Documentation Home](../index.md).
 
 ---
 
-### Query Operators
-
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [where-operators.md](where-operators.md) | Complete WHERE operator catalog | 1,137 | Reference |
-
-**Topics Covered:**
-
-- Comparison operators (eq, neq, gt, gte, lt, lte)
-- String operators (contains, startsWith, endsWith, regex)
-- List operators (in, notIn, isEmpty, isNotEmpty)
-- Null operators (isNull, isNotNull)
-- Logical operators (and, or, not)
-- JSON operators (jsonPath, jsonContains)
-- Array operators (arrayContains, arrayOverlap)
-- Database-specific operators (PostgreSQL JSONB, full-text search)
-- SQL generation examples
-
----
-
-### Authoring Tools
+## Decorators & API
 
 | Document | Description |
 |----------|-------------|
-| [cli-schema-format.md](cli-schema-format.md) | FraiseQL CLI schema format reference |
-| [view-selection-api.md](view-selection-api.md) | View selection API for automatic schema generation |
+| [decorators.md](decorators.md) | `@fraiseql.type`, `@fraiseql.query`, `@fraiseql.mutation`, `@fraiseql.input`, `@fraiseql.success`/`@fraiseql.error`, and friends |
+| [mutations-api.md](mutations-api.md) | Mutation result types and calling PostgreSQL `fn_` functions |
+| [repositories.md](repositories.md) | The CQRS repository (`db.find`, `db.find_one`, `db.execute_function`) on `info.context["db"]` |
+
+## Types & Scalars
+
+| Document | Description |
+|----------|-------------|
+| [scalars.md](scalars.md) | The built-in and domain scalar library (`ID`, `UUID`, `DateTime`, `EmailAddress`, `JSON`, `LTree`, and many more) |
+
+## Filtering Operators
+
+All operators are PostgreSQL-specific and generated at runtime from your `WHERE`
+input types.
+
+| Document | Description |
+|----------|-------------|
+| [where-operators.md](where-operators.md) | The complete WHERE operator catalog (comparison, text/pattern, array, JSON) |
+| [ltree-operators.md](ltree-operators.md) | `ltree` hierarchy operators (`ancestor_of`, `descendant_of`, `matches_lquery`, …) |
+| [vector-operators.md](vector-operators.md) | pgvector distance operators (`cosine_distance`, `inner_product`, `hamming_distance`, …) |
+
+## Conventions
+
+| Document | Description |
+|----------|-------------|
+| [naming-patterns.md](naming-patterns.md) | Database naming conventions (`tb_`, `v_`, `tv_`, `fn_`, `pk_`/`fk_`, the trinity `pk_`/`id`/`identifier`) |
+| [database.md](database.md) | Read views, table-backed views, and the `data` JSONB pattern |
+| [terminology.md](terminology.md) | Glossary of FraiseQL terms |
+
+## Configuration & CLI
+
+| Document | Description |
+|----------|-------------|
+| [config.md](config.md) | `FraiseQLConfig`, `create_fraiseql_app(...)` kwargs, and `FRAISEQL_` environment variables |
+| [cli.md](cli.md) | Command-line tooling for development workflows |
+| [quick-reference.md](quick-reference.md) | One-page cheat sheet of common patterns |
 
 ---
 
-### Distributed Transactions
+## Using these references
 
-| Document | Description | Lines | Est. Time |
-|----------|-------------|-------|-----------|
-| [saga-api.md](saga-api.md) | SAGA API reference for distributed transactions | 800+ | Reference |
+A minimal v1 app ties the pieces together at startup:
 
-**Topics Covered:**
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID
 
-- SAGA pattern for multi-database transactions
-- Coordinator API
-- Participant API
-- Compensation strategies
-- Retry policies
-- Timeout handling
 
----
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+    email: str
 
-### REST API Reference
 
-- **[API Reference](api/graphql-api.md)** — Complete HTTP API endpoint documentation
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
 
----
 
-## 🎯 Using These References
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users],
+    production=False,  # enables the GraphQL playground
+)
+```
 
-**For Schema Authors:**
-
-- Reference [scalars.md](scalars.md) when defining types
-- Use [where-operators.md](where-operators.md) to understand available filters
-
-**For Frontend Developers:**
-
-- Bookmark [where-operators.md](where-operators.md) for query building
-- Check [scalars.md](scalars.md) for type serialization
-
-**For Compiler/Runtime Developers:**
-
-- Implement operators from [where-operators.md](where-operators.md)
-- Add new scalars following patterns in [scalars.md](scalars.md)
+- **Schema authors** — reach for [decorators.md](decorators.md),
+  [scalars.md](scalars.md), and [naming-patterns.md](naming-patterns.md).
+- **Frontend developers** — bookmark [where-operators.md](where-operators.md)
+  and [scalars.md](scalars.md) for query building and type serialization.
+- **Operators / deployers** — see [config.md](config.md) and [cli.md](cli.md).
 
 ---
 
-## 📚 Related Documentation
-
-- **[Specs: Authoring Contract](../specs/authoring-contract.md)** — Schema authoring rules
-- **[Specs: Compiled Schema](../specs/compiled-schema.md)** — Compiled type system
-- **[View Selection Guide](../architecture/database/view-selection-guide.md)** — Database view patterns and type mappings
-
----
-
-**Back to:** [Documentation Home](../README.md)
+**Back to:** [Documentation Home](../index.md)
