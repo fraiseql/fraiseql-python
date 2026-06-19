@@ -1,4 +1,3 @@
-<!-- Skip to main content -->
 ---
 
 title: FraiseQL Authentication Details
@@ -9,7 +8,6 @@ tags: ["documentation", "reference"]
 
 # FraiseQL Authentication Details
 
-**Version**: 2.0.0-alpha.1
 **Status**: ✅ Implemented
 **Last Updated**: February 5, 2026
 
@@ -81,7 +79,6 @@ FraiseQL authentication follows these principles:
 ### 1.2 Authentication Flow Overview
 
 ```text
-<!-- Code example in TEXT -->
 Client Request
     ↓
 ┌─────────────────────────────────────────┐
@@ -108,16 +105,15 @@ Client Request
     ↓
 ┌─────────────────────────────────────────┐
 │ 4. Attach to Request Context            │
-│    - Available to authorization rules   │
+│    - Available to the Authorizer        │
 │    - Available to queries/mutations     │
-│    - Available to hooks/extensions      │
+│    - Available to field authorization   │
 └─────────────────────────────────────────┘
     ↓
 Authorize Request
     ↓
 Execute Query/Mutation
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 1.3 Supported Authentication Schemes
 
@@ -143,7 +139,6 @@ Used for web applications where users log in through a browser.
 #### Flow Sequence
 
 ```text
-<!-- Code example in TEXT -->
 User's Browser               FraiseQL App              OAuth2 Provider
       │                           │                           │
       │ (1) Click "Login"         │                           │
@@ -173,14 +168,17 @@ User's Browser               FraiseQL App              OAuth2 Provider
       │ (7) Logged in             │                           │
       │◄──────────────────────────┤                           │
       │   (set session/token)     │                           │
-```text
-<!-- Code example in TEXT -->
+```
 
 #### Implementation Details
 
+The example below is a self-contained reference implementation. In a FraiseQL v1
+app you typically front OAuth2/OIDC with **Auth0** (`Auth0Provider(Auth0Config(...))`,
+`auth_provider="auth0"`) or implement a custom `AuthProvider` subclass; FraiseQL does
+not ship its own OAuth2 client classes.
+
 ```python
-<!-- Code example in Python -->
-from FraiseQL.auth import OAuth2Provider, TokenRequest
+import httpx
 
 class OAuth2AuthorizationCodeFlow:
     """OAuth2 Authorization Code flow implementation"""
@@ -270,8 +268,7 @@ class OAuth2AuthorizationCodeFlow:
                 token_type=data.get("token_type", "Bearer"),
                 id_token=data.get("id_token"),  # OpenID Connect
             )
-```text
-<!-- Code example in TEXT -->
+```
 
 #### Security Considerations
 
@@ -286,7 +283,6 @@ class OAuth2AuthorizationCodeFlow:
    - Prevents authorization code interception
 
    ```python
-<!-- Code example in Python -->
    import secrets
    import hashlib
    import base64
@@ -306,8 +302,7 @@ class OAuth2AuthorizationCodeFlow:
        ).decode().rstrip("=")
 
        return code_verifier, challenge
-   ```text
-<!-- Code example in TEXT -->
+   ```
 
 3. **Token Storage**
    - Never store tokens in localStorage (XSS vulnerability)
@@ -324,7 +319,6 @@ class OAuth2AuthorizationCodeFlow:
 Used for service-to-service authentication without user involvement.
 
 ```python
-<!-- Code example in Python -->
 class OAuth2ClientCredentialsFlow:
     """OAuth2 Client Credentials flow for machine-to-machine auth"""
 
@@ -368,8 +362,7 @@ class OAuth2ClientCredentialsFlow:
                 expires_in=data.get("expires_in", 3600),
                 token_type=data.get("token_type", "Bearer"),
             )
-```text
-<!-- Code example in TEXT -->
+```
 
 **Use Cases:**
 
@@ -390,7 +383,6 @@ class OAuth2ClientCredentialsFlow:
 Refresh tokens extend session lifetime without requiring re-authentication.
 
 ```python
-<!-- Code example in Python -->
 class OAuth2RefreshTokenFlow:
     """OAuth2 Refresh Token flow for token renewal"""
 
@@ -438,13 +430,11 @@ class OAuth2RefreshTokenFlow:
                 expires_in=data.get("expires_in", 3600),
                 token_type=data.get("token_type", "Bearer"),
             )
-```text
-<!-- Code example in TEXT -->
+```
 
 **Token Rotation Strategy:**
 
 ```text
-<!-- Code example in TEXT -->
 Initial Login:
   access_token (short-lived, 15min) → Set cookie httpOnly, Secure, SameSite=Strict
   refresh_token (long-lived, 7 days) → Set cookie httpOnly, Secure, SameSite=Strict
@@ -458,8 +448,7 @@ After 14 minutes (before expiry):
 If refresh_token expires:
   Require full re-authentication (redirect to login)
   Display grace period message (optional)
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -470,7 +459,6 @@ If refresh_token expires:
 SAML (Security Assertion Markup Language) is XML-based protocol for enterprise SSO.
 
 ```text
-<!-- Code example in TEXT -->
 User's Browser          FraiseQL App           Identity Provider (IdP)
       │                      │                       │
       │ (1) Click "Login"    │                       │
@@ -499,13 +487,11 @@ User's Browser          FraiseQL App           Identity Provider (IdP)
       │ (7) Create session   │                       │
       │◄─────────────────────┤                       │
       │   (set auth cookie)  │                       │
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3.2 SAML Assertion Validation
 
 ```python
-<!-- Code example in Python -->
 from lxml import etree
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
@@ -744,15 +730,13 @@ class SAMLAssertionValidator:
             "name": attributes.get("urn:oid:2.5.4.3", user_id),
             "attributes": attributes,
         }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3.3 SAML Attribute Mapping
 
 Map SAML attributes to FraiseQL user model:
 
 ```python
-<!-- Code example in Python -->
 class SAMLAttributeMapper:
     """Map SAML attributes to FraiseQL user properties"""
 
@@ -798,8 +782,7 @@ class SAMLAttributeMapper:
                     mapped[fraiseql_field] = value
 
         return mapped
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -810,29 +793,24 @@ class SAMLAttributeMapper:
 JWT consists of three base64url-encoded parts separated by dots:
 
 ```text
-<!-- Code example in TEXT -->
 eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.
 eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.
 SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-```text
-<!-- Code example in TEXT -->
+```
 
 **Header** (JWT metadata):
 
 ```json
-<!-- Code example in JSON -->
 {
   "alg": "RS256",     // Signing algorithm
   "typ": "JWT",       // Token type
   "kid": "key-id-123" // Key ID (for key rotation)
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Payload** (Claims):
 
 ```json
-<!-- Code example in JSON -->
 {
   "sub": "user:12345",           // Subject (user ID)
   "aud": "api.example.com",       // Audience (intended recipient)
@@ -844,21 +822,17 @@ SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
   "roles": ["admin", "user"],    // Custom claim: roles
   "permissions": ["read:posts", "write:posts"]  // Custom claim: permissions
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Signature**:
 
 ```text
-<!-- Code example in TEXT -->
 HMAC-SHA256 or RSA-SHA256 of (header + payload) using secret key
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 4.2 JWT Generation
 
 ```python
-<!-- Code example in Python -->
 from datetime import datetime, timedelta
 import jwt
 from cryptography.hazmat.primitives import serialization
@@ -965,7 +939,7 @@ class JWTTokenGenerator:
         payload = {
             "sub": user_id,
             "tenant_id": tenant_id,
-            "type": "refresh",  // Token type
+            "type": "refresh",  # Token type
             "iss": self.issuer,
             "aud": self.audience,
             "iat": int(now.timestamp()),
@@ -980,13 +954,11 @@ class JWTTokenGenerator:
         )
 
         return token
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 4.3 JWT Validation
 
 ```python
-<!-- Code example in Python -->
 class JWTTokenValidator:
     """Validate and extract claims from JWT tokens"""
 
@@ -1089,22 +1061,30 @@ class JWTTokenValidator:
             return payload.get("tenant_id")
         except (jwt.DecodeError, jwt.InvalidSignatureError):
             return None
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## 5. Custom Authentication Provider Pattern
 
-FraiseQL supports pluggable authentication providers for custom requirements.
+FraiseQL v1 supports pluggable authentication via the `AuthProvider` ABC in
+`fraiseql.auth`. The built-in providers are `Auth0Provider`,
+`Auth0ProviderWithRevocation`, `NativeAuthProvider`, and `RustCustomJWTProvider`; you can
+add your own by subclassing `AuthProvider` and implementing
+`async validate_token(token) -> dict[str, Any]` and
+`async get_user_from_token(token) -> UserContext`, then passing the instance to
+`create_fraiseql_app(auth=...)`.
+
+The class below is an **illustrative** credential-check shape (for example, an LDAP bind in
+your login flow). It is *not* the FraiseQL base class — see the end of this section for how
+to wire the equivalent through the real `AuthProvider` ABC:
 
 ```python
-<!-- Code example in Python -->
 from abc import ABC, abstractmethod
 from typing import Any
 
 class AuthenticationProvider(ABC):
-    """Base class for custom authentication providers"""
+    """Illustrative base for a custom credential check (not a FraiseQL class)."""
 
     @abstractmethod
     async def authenticate(
@@ -1230,32 +1210,73 @@ class LDAPAuthenticationProvider(AuthenticationProvider):
         """Extract roles from LDAP attributes"""
         # Implementation specific to your LDAP schema
         pass
-```text
-<!-- Code example in TEXT -->
+```
 
-Register custom provider:
+> **FraiseQL v1 note.** The class above is illustrative — it shows the *shape* of a
+> custom credential check. v1 does **not** provide an `AuthenticationProvider` base with
+> `authenticate`/`validate`/`revoke`, nor a `register_authentication_provider(...)`
+> registry. The real extension point is the `AuthProvider` ABC in `fraiseql.auth`
+> (abstract `async validate_token(token) -> dict[str, Any]` and
+> `async get_user_from_token(token) -> UserContext`), selected via
+> `create_fraiseql_app(auth=...)`.
 
-```python
-<!-- Code example in Python -->
-# In app initialization
-from FraiseQL.auth import register_authentication_provider
+**There is no FraiseQL LDAP provider.** To authenticate against LDAP/Active Directory,
+use one of two honest paths:
 
-ldap_provider = LDAPAuthenticationProvider(
-    ldap_server="ldap://directory.example.com",
-    base_dn="ou=users,dc=example,dc=com"
-)
+1. **Front it with Auth0** (or another OIDC broker that fronts your directory). FraiseQL
+   then validates the resulting JWTs:
 
-register_authentication_provider("ldap", ldap_provider)
+   ```python
+   from fraiseql.auth import Auth0Provider, Auth0Config
+   from fraiseql.fastapi import create_fraiseql_app
 
-# In schema
-@FraiseQL.type
-@FraiseQL.authenticate(provider="ldap")
-class User:
-    id: ID
-    email: str
-    roles: list[str]
-```text
-<!-- Code example in TEXT -->
+   auth = Auth0Provider(Auth0Config(
+       domain="your-tenant.auth0.com",
+       api_identifier="https://api.example.com",
+   ))
+
+   app = create_fraiseql_app(
+       database_url="postgresql://localhost/mydb",
+       types=[User],
+       queries=[...],
+       auth=auth,
+   )
+   ```
+
+2. **Implement a custom `AuthProvider`.** Subclass the ABC and validate whatever your
+   issuer hands you (here, an opaque session/token your login flow created after a
+   successful LDAP bind):
+
+   ```python
+   from typing import Any
+   from fraiseql.auth import AuthProvider, UserContext
+
+   class LDAPSessionProvider(AuthProvider):
+       """Validate session tokens minted after an LDAP bind."""
+
+       async def validate_token(self, token: str) -> dict[str, Any]:
+           session = await self._lookup_session(token)
+           if session is None or session.expired():
+               raise ValueError("Session invalid or expired")
+           return {"sub": session.user_id, "roles": session.roles}
+
+       async def get_user_from_token(self, token: str) -> UserContext:
+           payload = await self.validate_token(token)
+           return UserContext(
+               user_id=payload["sub"],
+               roles=payload.get("roles", []),
+           )
+
+   app = create_fraiseql_app(
+       database_url="postgresql://localhost/mydb",
+       types=[User],
+       queries=[...],
+       auth=LDAPSessionProvider(),
+   )
+   ```
+
+The LDAP bind itself (the `LDAPAuthenticationProvider` shown above) lives in your login
+endpoint or a custom FastAPI route; FraiseQL only validates the credential it issues.
 
 ---
 
@@ -1296,7 +1317,6 @@ class User:
 Combine stateless and stateful for best of both:
 
 ```python
-<!-- Code example in Python -->
 class HybridSessionManager:
     """Combine JWT (stateless) and session store (stateful)"""
 
@@ -1418,8 +1438,7 @@ class HybridSessionManager:
         if session_record:
             session_record.revoked = True
             await self.session_store.save(session_record)
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1430,7 +1449,6 @@ class HybridSessionManager:
 For tokens that need immediate revocation (password change, logout, compromise):
 
 ```python
-<!-- Code example in Python -->
 class TokenRevocationStore:
     """Store revoked tokens for immediate invalidation"""
 
@@ -1476,13 +1494,11 @@ class TokenRevocationStore:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         key = f"revoked_token:{token_hash}"
         return await self.redis.exists(key)
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 7.2 Revocation Reasons
 
 ```python
-<!-- Code example in Python -->
 class RevocationReason(Enum):
     """Reasons for token revocation"""
 
@@ -1508,8 +1524,7 @@ class RevocationReason(Enum):
     SESSION_TIMEOUT = "session_timeout"            # Inactivity timeout
     DEVICE_LOST = "device_lost"                    # Device marked as lost
     LOGOUT_ALL_DEVICES = "logout_all_devices"      # Log out all sessions
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1520,7 +1535,6 @@ class RevocationReason(Enum):
 Every request includes tenant context for isolation:
 
 ```python
-<!-- Code example in Python -->
 class TenantContext:
     """User's tenant context for authorization and data isolation"""
 
@@ -1543,51 +1557,90 @@ class TenantContext:
         Exception: Platform admins (system administrators).
         """
         return self.tenant_id == target_tenant_id or "platform_admin" in self.roles
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 8.2 Tenant-Scoped Authorization
 
+FraiseQL v1 enforces tenant scoping with PostgreSQL **Row-Level Security (RLS)** and/or an
+operation-level `Authorizer` — there is no `@FraiseQL.authorize`/`authorization_rule`
+decorator. The CQRS repository sets session GUCs (`SET LOCAL app.tenant_id = …`) from
+`info.context["tenant_id"]`, so RLS policies see the current tenant automatically.
+
+Define the type as usual and let RLS do the filtering:
+
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-@FraiseQL.authorize(rule="owned_by_tenant")
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_post", jsonb_column="data")
 class Post:
-    """Posts are scoped to owning tenant"""
+    """Posts are scoped to the owning tenant via RLS."""
     id: ID
     title: str
     content: str
-    tenant_id: ID
+```
 
-# Authorization rule: User can only access posts from their tenant
-@FraiseQL.authorization_rule(name="owned_by_tenant")
-def rule_owned_by_tenant(resource, user_context):
-    return resource.tenant_id == user_context.tenant_id
-```text
-<!-- Code example in TEXT -->
+```sql
+-- The v_post view (and its tb_post backing table) carries tenant_id;
+-- RLS restricts every read to the request's tenant.
+ALTER TABLE tb_post ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY post_tenant_isolation ON tb_post
+    USING (fk_customer_org = current_setting('app.tenant_id')::uuid);
+```
+
+For row-by-row decisions that go beyond RLS, attach an `Authorizer` to the operation
+via `@fraiseql.query(authorizer=...)` (or globally on `create_fraiseql_app(authorizer=...)`).
+The authorizer returns an `AuthorizationDecision.allow(...)` / `.deny(...)`:
+
+```python
+import fraiseql
+from typing import Any
+from fraiseql.security.authorization import AuthorizationDecision
+
+class TenantAuthorizer:
+    async def authorize_operation(
+        self,
+        *,
+        context: dict[str, Any],
+        operation_type,
+        operation_name: str,
+        arguments: dict[str, Any],
+    ) -> AuthorizationDecision:
+        if context.get("user") is None:
+            return AuthorizationDecision.deny()
+        # AND a tenant filter into the read's mandatory_filters.
+        return AuthorizationDecision.allow(
+            filters={"tenant_id": context["tenant_id"]},
+        )
+
+@fraiseql.query(authorizer=TenantAuthorizer())
+async def posts(info) -> list[Post]:
+    db = info.context["db"]
+    return await db.find("v_post")
+```
 
 ### 8.3 Multi-Tenant Database Strategy
 
-```python
-<!-- Code example in Python -->
-class MultiTenantDatabaseManager:
-    """Manage database connections per tenant"""
+FraiseQL v1 targets a **single PostgreSQL database**. The recommended (and built-in)
+isolation strategy is **shared tables with RLS**: every tenant's rows live in the same
+`tb_`/`v_`/`tv_` objects, and Row-Level Security restricts each request to its tenant.
 
-    def __init__(self, default_pool: DatabasePool, tenant_pools: dict[str, DatabasePool]):
-        self.default_pool = default_pool
-        self.tenant_pools = tenant_pools
+Tenant context flows automatically:
 
-    def get_pool_for_tenant(self, tenant_id: str) -> DatabasePool:
-        """Get database connection pool for tenant
-
-        Strategy options:
-        1. Shared database, separate schema per tenant
-        2. Separate database per tenant
-        3. Separate server per tenant
-        """
-        return self.tenant_pools.get(tenant_id, self.default_pool)
 ```text
-<!-- Code example in TEXT -->
+request → info.context["tenant_id"] → SET LOCAL app.tenant_id = … → RLS policies
+```
+
+The repository issues `SET LOCAL app.tenant_id = …` (and `app.user_id`,
+`app.is_super_admin`, etc.) per transaction from `info.context`, so policies like the one
+in §8.2 filter every query. You can additionally pass
+`mandatory_filters={"tenant_id": ...}` to `db.find`/`db.count` for defence in depth.
+
+If you need stronger physical isolation, use **schema-per-tenant** inside the same
+database (one `search_path` per tenant) — still one PostgreSQL instance, one connection
+pool. Separate databases or servers per tenant are an operational/deployment choice
+outside FraiseQL; v1 does not route across multiple databases.
 
 ---
 
@@ -1606,7 +1659,6 @@ class MultiTenantDatabaseManager:
 **Recommended:** Secure httpOnly cookie with SameSite=Strict
 
 ```python
-<!-- Code example in Python -->
 response.set_cookie(
     key="access_token",
     value=token,
@@ -1617,36 +1669,40 @@ response.set_cookie(
     domain="api.example.com",
     path="/graphql"
 )
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 9.2 CSRF Protection
 
-Protect against Cross-Site Request Forgery:
+Protect against Cross-Site Request Forgery. FraiseQL v1 ships real CSRF protection in
+`fraiseql.security` (there is no hook framework — wire it as standard FastAPI middleware
+on the app returned by `create_fraiseql_app`):
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.hook(event="request.before_authorization")
-async def validate_csrf(request):
-    """Validate CSRF token for state-changing operations"""
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security.csrf_protection import (
+    create_production_csrf_config,
+    setup_csrf_protection,
+)
 
-    if request.method in ["GET", "HEAD", "OPTIONS"]:
-        return  # CSRF only applies to state-changing requests
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    queries=[...],
+)
 
-    # Get CSRF token from request
-    csrf_token = request.headers.get("X-CSRF-Token")
+# Validates an X-CSRF-Token header on state-changing (mutation) operations,
+# checks Origin/Referer, and exposes a token-issuing endpoint.
+csrf_config = create_production_csrf_config(secret_key="...")
+setup_csrf_protection(app, csrf_config)
+```
 
-    # Verify against session
-    session_csrf = request.session.get("csrf_token")
-    if csrf_token != session_csrf:
-        raise FraiseSQLError("CSRF_VALIDATION_FAILED", "CSRF token mismatch")
-```text
-<!-- Code example in TEXT -->
+The middleware (`CSRFProtectionMiddleware` / `GraphQLCSRFValidator`) skips safe operations
+(queries, `GET`/`HEAD`/`OPTIONS`) and enforces the token only on mutations, returning a
+GraphQL/JSON error response when validation fails.
 
 ### 9.3 Rate Limiting & Brute Force Protection
 
 ```python
-<!-- Code example in Python -->
 class AuthenticationRateLimiter:
     """Prevent brute force attacks on authentication endpoints"""
 
@@ -1679,13 +1735,11 @@ class AuthenticationRateLimiter:
         """Get remaining lockout time in seconds"""
         key = f"auth_attempts:{identifier}"
         return await self.redis.ttl(key)
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 9.4 Credential Validation
 
 ```python
-<!-- Code example in Python -->
 class CredentialValidator:
     """Validate credentials before authentication attempt"""
 
@@ -1718,8 +1772,7 @@ class CredentialValidator:
         pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(pattern, email):
             raise ValidationError("Invalid email format")
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1728,7 +1781,6 @@ class CredentialValidator:
 ### 10.1 Authentication Event Logging
 
 ```python
-<!-- Code example in Python -->
 class AuthenticationAuditLog:
     """Log authentication events for compliance and investigation"""
 
@@ -1772,8 +1824,7 @@ class AuthenticationAuditLog:
                 status, ip_address, user_agent, details
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         """, event.values())
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 10.2 Compliance Requirements
 
@@ -1807,7 +1858,6 @@ class AuthenticationAuditLog:
 Cache JWT validation results to avoid repeated cryptographic operations:
 
 ```python
-<!-- Code example in Python -->
 class CachedJWTValidator:
     """Cache JWT validation for performance"""
 
@@ -1843,73 +1893,70 @@ class CachedJWTValidator:
         }
 
         return payload
-```text
-<!-- Code example in TEXT -->
+```
 
-### 11.2 Parallel Authentication
+### 11.2 Provider Fallback (Migration)
+
+When migrating between auth providers (for example, cutting over from a legacy issuer to
+Auth0), wrap two `AuthProvider` instances and try them in order. Each implements the real
+`async get_user_from_token(token) -> UserContext` contract from `fraiseql.auth`:
 
 ```python
-<!-- Code example in Python -->
-async def authenticate_with_fallback(
-    credentials: dict[str, Any],
-    primary_provider: AuthenticationProvider,
-    secondary_provider: AuthenticationProvider | None = None
-) -> AuthenticationResult:
-    """Try primary provider, fall back to secondary if needed
+from fraiseql.auth import AuthProvider, UserContext
+
+async def resolve_user_with_fallback(
+    token: str,
+    primary_provider: AuthProvider,
+    secondary_provider: AuthProvider | None = None,
+) -> UserContext:
+    """Validate the token with the primary provider, fall back to the secondary.
 
     Allows migration between providers without downtime.
     """
     try:
-        return await primary_provider.authenticate(credentials)
-    except AuthenticationError as e:
-        if secondary_provider:
+        return await primary_provider.get_user_from_token(token)
+    except Exception as e:
+        if secondary_provider is not None:
             try:
-                return await secondary_provider.authenticate(credentials)
-            except AuthenticationError:
-                raise e  # Raise original error
+                return await secondary_provider.get_user_from_token(token)
+            except Exception:
+                raise e  # Surface the primary provider's error
         raise
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## 12. Error Handling
 
+FraiseQL v1's built-in authentication errors live in `fraiseql.auth` and subclass plain
+`Exception`: `AuthenticationError`, `TokenExpiredError`, `InvalidTokenError`,
+`InsufficientPermissionsError`. Authorization *denials* do not raise an HTTP 4xx from a
+router — they surface as a GraphQL error with a stable `extensions.code` (default
+`"FORBIDDEN"`), produced by the `Authorizer` / field-authorization machinery in
+`fraiseql.security`.
+
 ```python
-<!-- Code example in Python -->
-class AuthenticationError(FraiseSQLError):
-    """Base authentication error"""
-    code = "E_AUTH_FAILED"
-    http_status = 401
+from fraiseql.auth import AuthenticationError  # base; subclasses Exception
 
 class InvalidCredentialsError(AuthenticationError):
-    """Invalid username/password"""
-    code = "E_AUTH_INVALID_CREDENTIALS"
-
-class TokenExpiredError(AuthenticationError):
-    """JWT or session token has expired"""
-    code = "E_AUTH_TOKEN_EXPIRED"
+    """Invalid username/password."""
 
 class TokenRevokedError(AuthenticationError):
-    """Token has been revoked (logout/password change)"""
-    code = "E_AUTH_TOKEN_REVOKED"
+    """Token has been revoked (logout/password change)."""
 
 class CSRFError(AuthenticationError):
-    """CSRF token validation failed"""
-    code = "E_AUTH_CSRF_VALIDATION_FAILED"
-    http_status = 403
+    """CSRF token validation failed."""
 
 class RateLimitExceededError(AuthenticationError):
-    """Too many authentication attempts"""
-    code = "E_AUTH_RATE_LIMIT_EXCEEDED"
-    http_status = 429
+    """Too many authentication attempts."""
+```
 
-class UnauthorizedError(FraiseSQLError):
-    """User not authenticated"""
-    code = "E_AUTH_UNAUTHORIZED"
-    http_status = 401
-```text
-<!-- Code example in TEXT -->
+Your own resolvers raise `graphql.GraphQLError` (optionally with
+`extensions={"code": "..."}`) for client-facing failures; the `Authorizer` does this for
+you when a decision denies. When auth runs inside the native FastAPI router
+(`fraiseql.auth.native.router`), REST endpoints return the usual FastAPI status codes
+(`401`/`403`/`429`) — these are HTTP responses from the Python app, not a separate router
+layer.
 
 ---
 

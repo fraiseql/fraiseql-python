@@ -1,6 +1,4 @@
-<!-- Skip to main content -->
 ---
-
 title: Analytical Schema Conventions
 description: This document defines naming conventions and patterns for analytical tables in FraiseQL.
 keywords: ["format", "compliance", "schema", "protocol", "specification", "standard"]
@@ -44,7 +42,6 @@ This document defines naming conventions and patterns for analytical tables in F
 **Structure**:
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE tf_sales (
     id BIGSERIAL PRIMARY KEY,
     -- Measures (SQL columns)
@@ -60,8 +57,7 @@ CREATE TABLE tf_sales (
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Pre-Aggregated Fact Tables (Different Granularity)
 
@@ -80,7 +76,6 @@ CREATE TABLE tf_sales (
 **Structure** (identical to fact tables):
 
 ```sql
-<!-- Code example in SQL -->
 -- Pre-aggregated fact table at daily granularity
 CREATE TABLE tf_sales_daily (
     id BIGSERIAL PRIMARY KEY,
@@ -94,10 +89,9 @@ CREATE TABLE tf_sales_daily (
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-**Note**: The legacy `ta_` prefix is deprecated. Use `tf_` for all fact tables regardless of granularity.
+**Note**: Use `tf_` for all fact tables regardless of granularity. Expose them to GraphQL through a `v_`/`tv_` read view (with an `id` column and a `data` JSONB column) so they follow the standard query-source conventions.
 
 ### Dimension Tables (td_)
 
@@ -117,7 +111,6 @@ CREATE TABLE tf_sales_daily (
 **Structure** (regular table, not fact pattern):
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE td_products (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -127,8 +120,7 @@ CREATE TABLE td_products (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -156,13 +148,12 @@ CREATE TABLE td_products (
 
 ### Dimensions (JSONB Paths)
 
-**Column Name**: `data` (default, configurable)
+**Column Name**: `dimensions` on the fact table (surfaced to GraphQL through the view's `data` JSONB)
 **Path Pattern**: Snake_case keys in JSONB
 
 **Examples**:
 
 ```json
-<!-- Code example in JSON -->
 {
   "category": "Electronics",
   "region": "North America",
@@ -171,13 +162,11 @@ CREATE TABLE td_products (
   "payment_method": "Credit Card",
   "shipping_method": "Express"
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Nested Paths**:
 
 ```json
-<!-- Code example in JSON -->
 {
   "customer": {
     "segment": "Enterprise",
@@ -188,20 +177,17 @@ CREATE TABLE td_products (
     "subcategory": "Computers"
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Access Pattern**:
 
 ```sql
-<!-- Code example in SQL -->
 -- Top-level
 dimensions->>'category'
 
 -- Nested
 dimensions#>>'{customer,segment}'
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Denormalized Filters (Indexed SQL Columns)
 
@@ -219,14 +205,12 @@ dimensions#>>'{customer,segment}'
 **Why Denormalized?**:
 
 ```sql
-<!-- Code example in SQL -->
 -- ✅ FAST: Indexed SQL column
 WHERE customer_id = 'uuid-123'  -- Uses B-tree index
 
 -- ❌ SLOW: JSONB filter
 WHERE dimensions->>'customer_id' = 'uuid-123'  -- GIN index slower for exact match
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -242,7 +226,6 @@ WHERE dimensions->>'customer_id' = 'uuid-123'  -- GIN index slower for exact mat
 **Example ETL Flow**:
 
 ```sql
-<!-- Code example in SQL -->
 -- Step 1: Staging table receives raw data
 INSERT INTO staging_sales (transaction_id, product_id, customer_id, revenue)
 VALUES ('txn-001', 'prod-123', 'cust-456', 99.99);
@@ -269,8 +252,7 @@ JOIN td_customers c ON s.customer_id = c.id;
 
 -- Step 3: Clean staging
 TRUNCATE staging_sales;
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -279,7 +261,6 @@ TRUNCATE staging_sales;
 ### Fact Tables
 
 ```sql
-<!-- Code example in SQL -->
 -- Denormalized filter columns (B-tree)
 CREATE INDEX idx_sales_customer ON tf_sales(customer_id);
 CREATE INDEX idx_sales_product ON tf_sales(product_id);
@@ -295,20 +276,17 @@ CREATE INDEX idx_sales_category ON tf_sales ((dimensions->>'category'));
 -- Composite indexes for common query patterns
 CREATE INDEX idx_sales_customer_occurred
     ON tf_sales(customer_id, occurred_at DESC);
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Pre-Aggregated Fact Tables
 
 ```sql
-<!-- Code example in SQL -->
 -- Granularity dimension (unique)
 CREATE UNIQUE INDEX idx_sales_daily_day ON tf_sales_daily(day);
 
 -- JSONB dimensions (if still grouping within aggregates)
 CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensions);
-```text
-<!-- Code example in TEXT -->
+```
 
 **Don't Over-Index**:
 
@@ -320,91 +298,108 @@ CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensio
 
 ## FraiseQL Schema Definition
 
-### Fact Table Binding
+### Exposing a Fact Table Through a Read View
+
+FraiseQL queries fact tables through a `v_`/`tv_` read view, never the `tf_` table
+directly. The view exposes a public `id` column plus a `data` JSONB column built with
+`jsonb_build_object(...)`, alongside any measure and dimension columns you want to
+aggregate. Define that view in SQL:
+
+```sql
+CREATE VIEW v_sales AS
+SELECT
+    s.id,
+    s.revenue,
+    s.quantity,
+    s.cost,
+    s.customer_id,
+    s.product_id,
+    s.occurred_at,
+    s.dimensions->>'category'         AS category,
+    s.dimensions->>'region'           AS region,
+    s.dimensions->>'product_name'     AS product_name,
+    s.dimensions->>'customer_segment' AS customer_segment,
+    jsonb_build_object(
+        'id', s.id,
+        'revenue', s.revenue,
+        'quantity', s.quantity,
+        'cost', s.cost,
+        'category', s.dimensions->>'category',
+        'region', s.dimensions->>'region',
+        'product_name', s.dimensions->>'product_name',
+        'customer_segment', s.dimensions->>'customer_segment',
+        'occurred_at', s.occurred_at
+    ) AS data
+FROM tf_sales s;
+```
+
+Then bind a `@fraiseql.type` to that view and write a `@fraiseql.query` resolver that
+reads it through the CQRS repository:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL import schema, type, query, ID
+import fraiseql
+from fraiseql.types import ID
+from uuid import UUID
 
-@schema.type
+@fraiseql.type(sql_source="v_sales", jsonb_column="data")
 class Sales:
     id: ID
     # Measures (SQL columns)
     revenue: float
     quantity: int
     cost: float
-    # Dimensions (from dimensions JSONB)
+    # Dimensions (from dimensions JSONB, surfaced as view columns)
     category: str            # dimensions->>'category'
     region: str              # dimensions->>'region'
     product_name: str        # dimensions->>'product_name'
     customer_segment: str    # dimensions->>'customer_segment'
     # Denormalized filters
-    customer_id: UUID  # UUID v4 for GraphQL ID
-    product_id: UUID  # UUID v4 for GraphQL ID
+    customer_id: UUID
+    product_id: UUID
     occurred_at: str
 
-@schema.query
-def sales_aggregate(
-    where: "SalesWhereInput" = None,
-    groupBy: "SalesGroupByInput" = None,
-    having: "SalesHavingInput" = None
-) -> list["SalesAggregate"]:
-    """Auto-generated aggregate query."""
-    pass
+@fraiseql.query
+async def sales(info) -> list[Sales]:
+    """Read sales rows from the v_sales view."""
+    db = info.context["db"]
+    return await db.find("v_sales")
+```
 
-# Mark as fact table
-schema.bind("Sales", "view", "tf_sales", fact_table=True)
-```text
-<!-- Code example in TEXT -->
+### Runtime Auto-Aggregation
 
-### Compiler Behavior
+There is no compile step and no `fact_table=True` flag. When a GraphQL query selects
+aggregate fields on a view-backed type, FraiseQL derives the `GROUP BY` and aggregate
+SQL **at runtime** and executes it directly against your `v_`/`tv_` view.
 
-When `fact_table=True`:
+The runtime auto-aggregation allowlist is:
 
-1. **Introspect Table**: Detect measures, `data` column, filters
-2. **Generate Aggregate Types**:
-   - `SalesAggregate` - Result type with grouped dimensions + aggregated measures
-   - `SalesGroupByInput` - Dimension paths + temporal buckets
-   - `SalesHavingInput` - Aggregate filters
-3. **Generate Query**: `sales_aggregate(where, groupBy, having)`
+`SUM`, `AVG`, `COUNT`, `MIN`, `MAX`, `ARRAY_AGG`, `STRING_AGG`, `BOOL_AND`,
+`BOOL_OR`, `JSON_AGG`, `JSONB_AGG`.
 
-### Generated GraphQL (PostgreSQL)
+`STDDEV` and `VARIANCE` are **not** runtime-derived. If you need them, compute them with
+raw SQL inside the view (they are valid PostgreSQL aggregates). The same applies to any
+`GROUP BY` / `HAVING` / `FILTER (WHERE …)` shaping you want baked into the read view.
 
-```graphql
-<!-- Code example in GraphQL -->
-type SalesAggregate {
-  # Grouped dimensions (from dimensions JSONB)
-  category: String
-  region: String
-  product_name: String
-  occurred_at_day: Date
-  occurred_at_month: Date
+### Pre-Aggregating in the View (PostgreSQL)
 
-  # Aggregated measures (from SQL columns)
-  count: Int!
-  revenue_sum: Float
-  revenue_avg: Float
-  quantity_sum: Int
-  quantity_avg: Int
-}
+For rollups, write the `GROUP BY` directly in the view SQL — temporal bucketing with
+`DATE_TRUNC`, `HAVING` filters on aggregates, and grouping on dimension columns are all
+standard PostgreSQL:
 
-input SalesGroupByInput {
-  category: Boolean
-  region: Boolean
-  product_name: Boolean
-  customer_segment: Boolean
-  occurred_at_day: Boolean
-  occurred_at_week: Boolean
-  occurred_at_month: Boolean
-}
-
-input SalesHavingInput {
-  revenue_sum_gt: Float
-  revenue_avg_gte: Float
-  count_eq: Int
-}
-```text
-<!-- Code example in TEXT -->
+```sql
+CREATE VIEW v_sales_by_day AS
+SELECT
+    DATE_TRUNC('day', occurred_at)::date AS day,
+    dimensions->>'category'              AS category,
+    dimensions->>'region'                AS region,
+    COUNT(*)                             AS transaction_count,
+    SUM(revenue)                         AS revenue_sum,
+    AVG(revenue)                         AS revenue_avg,
+    SUM(quantity)                        AS quantity_sum
+FROM tf_sales
+GROUP BY 1, 2, 3
+HAVING SUM(revenue) > 0;
+```
 
 ---
 
@@ -415,10 +410,11 @@ input SalesHavingInput {
 - Use `tf_` prefix for all fact tables (any granularity)
 - Use `td_` prefix for dimension tables (ETL reference data)
 - Store measures as SQL columns (fast aggregation)
-- Store dimensions in `data` JSONB (flexibility)
+- Store dimensions in the `dimensions` JSONB column (flexibility)
+- Expose fact tables to GraphQL through a `v_`/`tv_` read view (with an `id` and a `data` JSONB column)
 - Index denormalized filter columns
-- Create pre-aggregated fact tables for common query patterns
-- Use temporal bucketing for time-series analysis
+- Create pre-aggregated fact tables (or pre-aggregating views) for common query patterns
+- Use temporal bucketing (`DATE_TRUNC`) for time-series analysis
 - Name pre-aggregated tables clearly: `tf_sales_daily`, `tf_events_monthly`
 
 ### DON'T ❌
