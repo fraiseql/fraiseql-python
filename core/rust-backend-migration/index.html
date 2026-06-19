@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Migration guide from Python-only to Rust pipeline backend">
+        <meta name="description" content="Understand the v1.9 Rust JSON-transform architecture and adapt your resolvers to RustResponseBytes">
       
       
       
@@ -23,7 +23,7 @@
     
     
       
-        <title>Rust Backend Migration - FraiseQL Documentation</title>
+        <title>Rust Transform Pipeline (v1.9+) - FraiseQL Documentation</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rust-backend-migration-guide" class="md-skip">
+        <a href="#rust-transform-pipeline-v19" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Rust Backend Migration
+              Rust Transform Pipeline (v1.9+)
             
           </span>
         </div>
@@ -4859,10 +4859,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#before-v19-dual-execution-paths" class="md-nav__link">
+  <a href="#execution-flow-v19" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Before v1.9: Dual Execution Paths
+        Execution flow (v1.9+)
       
     </span>
   </a>
@@ -4870,21 +4870,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#v19-exclusive-rust-pipeline" class="md-nav__link">
+  <a href="#key-points" class="md-nav__link">
     <span class="md-ellipsis">
       
-        v1.9+: Exclusive Rust Pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Changes
+        Key points
       
     </span>
   </a>
@@ -4897,64 +4886,25 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-migrate-to-rust-backend" class="md-nav__link">
+  <a href="#why-the-rust-transform-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why Migrate to Rust Backend?
+        Why the Rust Transform Path
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Why Migrate to Rust Backend?">
+    <nav class="md-nav" aria-label="Why the Rust Transform Path">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#performance-benefits" class="md-nav__link">
+  <a href="#performance-characteristics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance Benefits
+        Performance characteristics
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Performance Benefits">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#query-execution-speed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Query Execution Speed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#memory-efficiency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Memory Efficiency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#real-world-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real-World Benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -4962,107 +4912,7 @@
   <a href="#architecture-benefits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Benefits
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Benefits">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#type-safety" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type Safety
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reliability" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reliability
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#developer-experience" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Developer Experience
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#migration-checklist" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration Checklist
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Migration Checklist">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#phase-1-assessment-1-2-hours" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 1: Assessment (1-2 hours)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-2-code-migration-4-6-hours" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 2: Code Migration (4-6 hours)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-3-testing-validation-2-4-hours" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 3: Testing &amp; Validation (2-4 hours)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#phase-4-production-deployment-1-2-hours" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 4: Production Deployment (1-2 hours)
+        Architecture benefits
       
     </span>
   </a>
@@ -5075,22 +4925,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-by-step-migration-guide" class="md-nav__link">
+  <a href="#setting-up-the-pool-and-repository" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step-by-Step Migration Guide
+        Setting Up the Pool and Repository
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step-by-Step Migration Guide">
+    <nav class="md-nav" aria-label="Setting Up the Pool and Repository">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-update-dependencies" class="md-nav__link">
+  <a href="#the-normal-path-create_fraiseql_app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Update Dependencies
+        The normal path: create_fraiseql_app
       
     </span>
   </a>
@@ -5098,43 +4948,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-update-connection-pool" class="md-nav__link">
+  <a href="#the-manual-path-building-the-pool-yourself" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Update Connection Pool
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-migrate-query-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Migrate Query Methods
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-handle-response-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Handle Response Types
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-update-error-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: Update Error Handling
+        The manual path: building the pool yourself
       
     </span>
   </a>
@@ -5147,22 +4964,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-resolver-migration-examples" class="md-nav__link">
+  <a href="#writing-read-resolvers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphQL Resolver Migration Examples
+        Writing Read Resolvers
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="GraphQL Resolver Migration Examples">
+    <nav class="md-nav" aria-label="Writing Read Resolvers">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#simple-list-query" class="md-nav__link">
+  <a href="#list-query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simple List Query
+        List query
       
     </span>
   </a>
@@ -5173,7 +4990,7 @@
   <a href="#single-record-query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single Record Query
+        Single-record query
       
     </span>
   </a>
@@ -5181,10 +4998,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#complex-filtering-query" class="md-nav__link">
+  <a href="#filtered-query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complex Filtering Query
+        Filtered query
       
     </span>
   </a>
@@ -5197,22 +5014,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration-migration" class="md-nav__link">
+  <a href="#handling-rustresponsebytes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration Migration
+        Handling RustResponseBytes
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration Migration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#database-configuration" class="md-nav__link">
+  <a href="#resolver-level-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database Configuration
+        Resolver-level tests
       
     </span>
   </a>
@@ -5220,10 +5059,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#application-context" class="md-nav__link">
+  <a href="#end-to-end-graphql-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Application Context
+        End-to-end GraphQL tests
       
     </span>
   </a>
@@ -5236,22 +5075,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing-migration" class="md-nav__link">
+  <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing Migration
+        Troubleshooting
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Testing Migration">
+    <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#unit-test-updates" class="md-nav__link">
+  <a href="#fraiseql-rust-extension-is-not-available" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unit Test Updates
+        "fraiseql Rust extension is not available"
       
     </span>
   </a>
@@ -5259,38 +5098,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#integration-test-updates" class="md-nav__link">
+  <a href="#connection-pool-exhausted" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Integration Test Updates
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting-common-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting Common Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting Common Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#issue-rust-extension-not-available" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Issue: "Rust extension not available"
+        "Connection pool exhausted"
       
     </span>
   </a>
@@ -5298,10 +5109,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#issue-connection-pool-exhausted" class="md-nav__link">
+  <a href="#expected-iterable-but-got-rustresponsebytes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Issue: "Connection pool exhausted"
+        "Expected Iterable but got RustResponseBytes"
       
     </span>
   </a>
@@ -5309,32 +5120,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#issue-graphql-type-mismatch-errors" class="md-nav__link">
+  <a href="#schema-and-migration-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Issue: "GraphQL type mismatch errors"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#issue-performance-regression-after-migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Issue: "Performance regression after migration"
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#issue-migration-tool-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Issue: "Migration tool compatibility"
+        Schema and migration tools
       
     </span>
   </a>
@@ -5351,117 +5140,6 @@
     <span class="md-ellipsis">
       
         FAQ
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="FAQ">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#general-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        General Questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#compatibility-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compatibility Questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#support-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Support Questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#success-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Success Metrics
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Success Metrics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#performance-improvements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Improvements
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#operational-improvements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operational Improvements
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#developer-experience_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Developer Experience
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps-after-migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps After Migration
       
     </span>
   </a>
@@ -5499,558 +5177,301 @@
   
 
 
-<h1 id="rust-backend-migration-guide">Rust Backend Migration Guide<a class="headerlink" href="#rust-backend-migration-guide" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: December 21, 2025
-<strong>Applies to</strong>: FraiseQL v1.9+ (psycopg removal)
-<strong>Status</strong>: ✅ Migration Complete - Legacy Support Ended</p>
+<h1 id="rust-transform-pipeline-v19">Rust Transform Pipeline (v1.9+)<a class="headerlink" href="#rust-transform-pipeline-v19" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL v1.9+ uses an <strong>exclusive Rust backend architecture</strong> where all database operations flow through a high-performance Rust pipeline. The traditional psycopg-only execution path has been <strong>completely removed</strong>.</p>
-<p>This guide helps existing users migrate from the legacy psycopg implementation to the new Rust-powered architecture.</p>
+<p>FraiseQL v1 has a clear two-layer execution model for reads:</p>
+<ol>
+<li><strong>Database query layer — psycopg.</strong> Every SQL query against PostgreSQL runs through
+   <a href="https://www.psycopg.org/">psycopg 3</a> and its async connection pool
+   (<code>psycopg_pool.AsyncConnectionPool</code>). psycopg is a <strong>required, first-class dependency</strong> —
+   it is the only PostgreSQL driver FraiseQL uses, and it is not optional, deprecated, or
+   removed.</li>
+<li><strong>JSON transform / response layer — Rust (<code>fraiseql._fraiseql_rs</code>).</strong> After psycopg returns
+   the raw JSONB rows, FraiseQL hands them to a bundled Rust extension that performs field
+   projection, <code>camelCase</code> conversion, <code>__typename</code> injection, and direct UTF-8 byte encoding.
+   The result is a <code>RustResponseBytes</code> object that is written straight to the HTTP response,
+   bypassing <code>graphql-core</code> serialization.</li>
+</ol>
+<p>This guide explains the v1.9 architecture and shows how to write resolvers that use the
+Rust-transform path (<code>db.find</code> / <code>db.find_one</code>).</p>
 <h2 id="what-changed-in-v19">What Changed in v1.9<a class="headerlink" href="#what-changed-in-v19" title="Permanent link">&para;</a></h2>
-<h3 id="before-v19-dual-execution-paths">Before v1.9: Dual Execution Paths<a class="headerlink" href="#before-v19-dual-execution-paths" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>GraphQL → Repository → [psycopg pool] → PostgreSQL → JSONB → Python Objects → GraphQL Response
-                    ↓
-              [Rust pipeline] (optional)
+<p>The change in v1.9 is <strong>not</strong> about the database driver — psycopg is still the driver and
+still required. What changed is the <strong>JSON-transform / response path</strong>: it became
+<strong>Rust-exclusive, with no Python-serialization fallback</strong>.</p>
+<p>Before v1.9, the JSON transformation could fall back to a Python serialization path. As of
+v1.9+, the Rust extension is bundled and mandatory: it is built with maturin as
+<code>fraiseql._fraiseql_rs</code> and loaded by <code>src/fraiseql/core/rust_pipeline.py</code>. If the extension
+is missing, FraiseQL raises an error asking you to reinstall — there is no Python fallback.</p>
+<h3 id="execution-flow-v19">Execution flow (v1.9+)<a class="headerlink" href="#execution-flow-v19" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>GraphQL request
+   → @query resolver calls db.find(...) / db.find_one(...)
+      → psycopg AsyncConnectionPool executes SQL against PostgreSQL
+         → PostgreSQL returns JSONB rows
+            → Rust transform (field projection, camelCase, __typename, UTF-8 bytes)
+               → RustResponseBytes
+                  → written directly to the HTTP response (no graphql-core serialization)
 </code></pre></div>
-<h3 id="v19-exclusive-rust-pipeline">v1.9+: Exclusive Rust Pipeline<a class="headerlink" href="#v19-exclusive-rust-pipeline" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>GraphQL → Repository → [Rust DatabasePool] → PostgreSQL → JSONB → Rust Transform → RustResponseBytes → HTTP
-</code></pre></div>
-<h3 id="key-changes">Key Changes<a class="headerlink" href="#key-changes" title="Permanent link">&para;</a></h3>
+<h3 id="key-points">Key points<a class="headerlink" href="#key-points" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Aspect</th>
-<th>Before (psycopg)</th>
-<th>After (Rust v1.9+)</th>
+<th>Detail</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Execution Path</strong></td>
-<td>Python string operations</td>
-<td>Zero-copy Rust pipeline</td>
+<td><strong>Database driver</strong></td>
+<td>psycopg 3 (<code>psycopg[pool]</code>) — required, unchanged</td>
 </tr>
 <tr>
-<td><strong>Response Type</strong></td>
-<td>Python dict/list</td>
-<td><code>RustResponseBytes</code></td>
+<td><strong>Connection pool</strong></td>
+<td><code>psycopg_pool.AsyncConnectionPool</code></td>
 </tr>
 <tr>
-<td><strong>Performance</strong></td>
-<td>Baseline</td>
-<td>2-3x faster, 40-60% less memory</td>
+<td><strong>Repository</strong></td>
+<td><code>FraiseQLRepository(pool, context)</code></td>
 </tr>
 <tr>
-<td><strong>Memory Usage</strong></td>
-<td>High (intermediate objects)</td>
-<td>Low (direct serialization)</td>
+<td><strong>JSON transform</strong></td>
+<td>Rust extension <code>fraiseql._fraiseql_rs</code> — bundled, mandatory, no fallback</td>
 </tr>
 <tr>
-<td><strong>Initialization</strong></td>
-<td><code>PsycopgRepository(pool)</code></td>
-<td><code>FraiseQLRepository(pool._pool, context)</code></td>
+<td><strong>Read return type</strong></td>
+<td><code>RustResponseBytes</code> (from <code>db.find</code> / <code>db.find_one</code>)</td>
 </tr>
 <tr>
-<td><strong>API Methods</strong></td>
-<td><code>select_from_json_view()</code></td>
-<td><code>find()</code> and <code>find_one()</code></td>
+<td><strong>Response handling</strong></td>
+<td><code>RustResponseBytes</code> is written directly to HTTP (zero-copy bytes)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="why-migrate-to-rust-backend">Why Migrate to Rust Backend?<a class="headerlink" href="#why-migrate-to-rust-backend" title="Permanent link">&para;</a></h2>
-<h3 id="performance-benefits">Performance Benefits<a class="headerlink" href="#performance-benefits" title="Permanent link">&para;</a></h3>
-<p>The Rust backend provides significant performance improvements:</p>
-<h4 id="query-execution-speed">Query Execution Speed<a class="headerlink" href="#query-execution-speed" title="Permanent link">&para;</a></h4>
+<h2 id="why-the-rust-transform-path">Why the Rust Transform Path<a class="headerlink" href="#why-the-rust-transform-path" title="Permanent link">&para;</a></h2>
+<p>Moving JSON transformation out of Python and into the bundled Rust extension keeps the hot
+read path off the Python interpreter once psycopg has fetched the rows.</p>
+<h3 id="performance-characteristics">Performance characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>2-3x faster</strong> for large result sets (&gt;1000 rows)</li>
-<li><strong>Zero Python string operations</strong> - all JSON serialization happens in Rust</li>
-<li><strong>Direct HTTP response</strong> - <code>RustResponseBytes</code> bypasses GraphQL serialization</li>
+<li><strong>JSON serialization happens in Rust</strong>, not in Python — no intermediate Python dict/list
+  objects are built for the response body.</li>
+<li><strong>Direct HTTP response</strong> — <code>RustResponseBytes</code> is encoded once and written to the socket,
+  bypassing <code>graphql-core</code> serialization.</li>
+<li><strong>Lower garbage-collection pressure</strong> — fewer transient Python objects per request under
+  load.</li>
 </ul>
-<h4 id="memory-efficiency">Memory Efficiency<a class="headerlink" href="#memory-efficiency" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>40-60% reduction</strong> in memory usage for large responses</li>
-<li><strong>No intermediate Python objects</strong> between database and HTTP</li>
-<li><strong>Reduced garbage collection pressure</strong> under high load</li>
-</ul>
-<h4 id="real-world-benchmarks">Real-World Benchmarks<a class="headerlink" href="#real-world-benchmarks" title="Permanent link">&para;</a></h4>
-<p>Based on production testing with 10,000 concurrent users:</p>
-<div class="highlight"><pre><span></span><code>Test Scenario: Complex GraphQL query with 5000 user records
-┌─────────────────┬─────────────┬─────────────┬─────────────┐
-│ Metric          │ psycopg     │ Rust v1.9+  │ Improvement │
-├─────────────────┼─────────────┼─────────────┼─────────────┤
-│ Response Time   │ 450ms       │ 180ms       │ 2.5x faster │
-│ Memory Usage    │ 85MB        │ 45MB        │ 47% less    │
-│ CPU Usage       │ 78%         │ 45%         │ 42% less    │
-│ Throughput      │ 120 req/sec │ 280 req/sec │ 2.3x higher │
-└─────────────────┴─────────────┴─────────────┴─────────────┘
+<p>The exact speedup depends on payload size and query shape; benefits are most visible on large
+result sets and deeply-nested GraphQL selections. The figures below are <strong>illustrative
+examples</strong> from a single internal benchmark, not guarantees — measure your own workload.</p>
+<div class="highlight"><pre><span></span><code>Example benchmark — complex GraphQL query returning ~5,000 records
+┌─────────────────┬─────────────┬─────────────┬──────────────────┐
+│ Metric          │ Python JSON │ Rust v1.9+  │ Example delta    │
+├─────────────────┼─────────────┼─────────────┼──────────────────┤
+│ Response Time   │ 450ms       │ 180ms       │ ~2.5x faster     │
+│ Memory Usage    │ 85MB        │ 45MB        │ ~47% less        │
+│ Throughput      │ 120 req/sec │ 280 req/sec │ ~2.3x higher     │
+└─────────────────┴─────────────┴─────────────┴──────────────────┘
 </code></pre></div>
-<h3 id="architecture-benefits">Architecture Benefits<a class="headerlink" href="#architecture-benefits" title="Permanent link">&para;</a></h3>
-<h4 id="type-safety">Type Safety<a class="headerlink" href="#type-safety" title="Permanent link">&para;</a></h4>
+<h3 id="architecture-benefits">Architecture benefits<a class="headerlink" href="#architecture-benefits" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Compile-time guarantees</strong> prevent data corruption</li>
-<li><strong>Memory-safe operations</strong> eliminate null pointer exceptions</li>
-<li><strong>Concurrent execution</strong> without GIL limitations</li>
+<li><strong>Single read path</strong> — <code>db.find</code> / <code>db.find_one</code> always use the Rust transform, so there is
+  no mode detection or branching in your resolvers.</li>
+<li><strong>Consistent return type</strong> — reads return <code>RustResponseBytes</code> everywhere.</li>
+<li><strong>Clear failure mode</strong> — if the Rust extension is missing, FraiseQL fails loudly at import
+  time rather than silently degrading.</li>
 </ul>
-<h4 id="reliability">Reliability<a class="headerlink" href="#reliability" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Zero-copy operations</strong> eliminate serialization bugs</li>
-<li><strong>Predictable performance</strong> under all load conditions</li>
-<li><strong>Automatic optimization</strong> of query execution paths</li>
-</ul>
-<h4 id="developer-experience">Developer Experience<a class="headerlink" href="#developer-experience" title="Permanent link">&para;</a></h4>
-<ul>
-<li><strong>Single execution path</strong> - no mode detection or branching</li>
-<li><strong>Consistent API</strong> - same interface across all operations</li>
-<li><strong>Better debugging</strong> - clear error messages and stack traces</li>
-</ul>
-<h2 id="migration-checklist">Migration Checklist<a class="headerlink" href="#migration-checklist" title="Permanent link">&para;</a></h2>
-<h3 id="phase-1-assessment-1-2-hours">Phase 1: Assessment (1-2 hours)<a class="headerlink" href="#phase-1-assessment-1-2-hours" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Identify current usage patterns</strong></li>
-<li>Review all <code>PsycopgRepository</code> instantiations</li>
-<li>Catalog <code>select_from_json_view()</code> calls</li>
-<li>
-<p>Document custom query methods</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Check dependencies</strong></p>
-</li>
-<li>Verify PostgreSQL version compatibility</li>
-<li>Ensure Rust extension is available</li>
-<li>
-<p>Check system requirements (4GB+ RAM recommended)</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Performance baseline</strong></p>
-</li>
-<li>Run current benchmarks</li>
-<li>Document slow queries for comparison</li>
-<li>Establish performance requirements</li>
-</ul>
-<h3 id="phase-2-code-migration-4-6-hours">Phase 2: Code Migration (4-6 hours)<a class="headerlink" href="#phase-2-code-migration-4-6-hours" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Update imports</strong></li>
-<li>Replace <code>from psycopg_pool import AsyncConnectionPool</code></li>
-<li>Add <code>from fraiseql.core.database import DatabasePool</code></li>
-<li>
-<p>Update repository imports</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Update initialization</strong></p>
-</li>
-<li>Replace <code>PsycopgRepository</code> with <code>FraiseQLRepository</code></li>
-<li>Update connection pool creation</li>
-<li>
-<p>Add context parameter for tenant/session data</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Migrate query methods</strong></p>
-</li>
-<li>Replace <code>select_from_json_view()</code> with <code>find()</code>/<code>find_one()</code></li>
-<li>Update GraphQL resolvers to use new API</li>
-<li>
-<p>Handle <code>RustResponseBytes</code> return types</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Update error handling</strong></p>
-</li>
-<li>Replace psycopg-specific exceptions</li>
-<li>Add Rust pipeline error handling</li>
-<li>Update logging and monitoring</li>
-</ul>
-<h3 id="phase-3-testing-validation-2-4-hours">Phase 3: Testing &amp; Validation (2-4 hours)<a class="headerlink" href="#phase-3-testing-validation-2-4-hours" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Unit tests</strong></li>
-<li>Update test fixtures for new repository</li>
-<li>Verify query results match expectations</li>
-<li>
-<p>Test error conditions</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Integration tests</strong></p>
-</li>
-<li>End-to-end GraphQL query testing</li>
-<li>Performance regression testing</li>
-<li>
-<p>Load testing with realistic data</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Production validation</strong></p>
-</li>
-<li>Canary deployment testing</li>
-<li>Gradual traffic migration</li>
-<li>Rollback plan preparation</li>
-</ul>
-<h3 id="phase-4-production-deployment-1-2-hours">Phase 4: Production Deployment (1-2 hours)<a class="headerlink" href="#phase-4-production-deployment-1-2-hours" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Gradual rollout</strong></li>
-<li>Feature flags for new implementation</li>
-<li>A/B testing between old and new</li>
-<li>
-<p>Incremental traffic migration</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Monitoring</strong></p>
-</li>
-<li>Performance metrics collection</li>
-<li>Error rate monitoring</li>
-<li>
-<p>User experience tracking</p>
-</li>
-<li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Cleanup</strong></p>
-</li>
-<li>Remove legacy code</li>
-<li>Update documentation</li>
-<li>Archive migration scripts</li>
-</ul>
-<h2 id="step-by-step-migration-guide">Step-by-Step Migration Guide<a class="headerlink" href="#step-by-step-migration-guide" title="Permanent link">&para;</a></h2>
-<h3 id="step-1-update-dependencies">Step 1: Update Dependencies<a class="headerlink" href="#step-1-update-dependencies" title="Permanent link">&para;</a></h3>
-<p><strong>Before (psycopg-based):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># requirements.txt or pyproject.toml</span>
-<span class="n">psycopg</span><span class="o">-</span><span class="n">pool</span><span class="o">==</span><span class="mf">3.2.0</span>
-<span class="n">psycopg</span><span class="o">==</span><span class="mf">3.1.0</span>
-</code></pre></div>
-<p><strong>After (Rust-based):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># requirements.txt or pyproject.toml</span>
-<span class="n">fraiseql</span><span class="o">&gt;=</span><span class="mf">1.9.0</span>
-<span class="c1"># No direct psycopg dependencies needed</span>
-</code></pre></div>
-<h3 id="step-2-update-connection-pool">Step 2: Update Connection Pool<a class="headerlink" href="#step-2-update-connection-pool" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+<h2 id="setting-up-the-pool-and-repository">Setting Up the Pool and Repository<a class="headerlink" href="#setting-up-the-pool-and-repository" title="Permanent link">&para;</a></h2>
+<p>In almost all applications you do <strong>not</strong> build the pool yourself.
+<code>create_fraiseql_app(...)</code> creates the psycopg <code>AsyncConnectionPool</code> for you and wires a
+<code>FraiseQLRepository</code> into each request's GraphQL context as <code>info.context["db"]</code>.</p>
+<h3 id="the-normal-path-create_fraiseql_app">The normal path: <code>create_fraiseql_app</code><a class="headerlink" href="#the-normal-path-create_fraiseql_app" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="c1"># Create psycopg connection pool</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
-    <span class="n">conninfo</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span><span class="p">,</span>
-    <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="c1"># Initialize repository</span>
-<span class="n">db</span> <span class="o">=</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-123&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.core.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
+<p><code>create_fraiseql_app</code> accepts pool-tuning kwargs: <code>connection_pool_size</code>,
+<code>connection_pool_max_overflow</code>, <code>connection_pool_timeout</code>, and <code>connection_pool_recycle</code>.</p>
+<h3 id="the-manual-path-building-the-pool-yourself">The manual path: building the pool yourself<a class="headerlink" href="#the-manual-path-building-the-pool-yourself" title="Permanent link">&para;</a></h3>
+<p>If you are embedding FraiseQL outside the standard app factory (custom context, tests, or
+scripts), build the psycopg pool and the repository directly. The repository takes the
+psycopg <code>AsyncConnectionPool</code> and an optional context dict.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_db_pool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
 
-<span class="c1"># Create Rust-powered connection pool</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-        <span class="s2">&quot;min_idle&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="s2">&quot;connection_timeout&quot;</span><span class="p">:</span> <span class="mi">30</span>
-    <span class="p">}</span>
-<span class="p">)</span>
+<span class="c1"># create_db_pool returns a psycopg_pool.AsyncConnectionPool, configured for FraiseQL</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_db_pool</span><span class="p">(</span><span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span><span class="p">)</span>
 
-<span class="c1"># Initialize repository with context</span>
 <span class="n">db</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
-    <span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">_pool</span><span class="p">,</span>  <span class="c1"># Use internal psycopg pool</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant-123&quot;</span><span class="p">}</span>
+    <span class="n">pool</span><span class="p">,</span>
+    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant-123&quot;</span><span class="p">},</span>  <span class="c1"># optional: flows into RLS session GUCs</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="step-3-migrate-query-methods">Step 3: Migrate Query Methods<a class="headerlink" href="#step-3-migrate-query-methods" title="Permanent link">&para;</a></h3>
-<p><strong>Before (Legacy API):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<p><code>FraiseQLRepository.__init__(self, pool: AsyncConnectionPool, context: dict | None = None)</code>
+takes the psycopg pool directly — there is no separate "Rust pool" wrapper.</p>
+<h2 id="writing-read-resolvers">Writing Read Resolvers<a class="headerlink" href="#writing-read-resolvers" title="Permanent link">&para;</a></h2>
+<p>Read resolvers call <code>db.find</code> (lists) or <code>db.find_one</code> (single record). Both return
+<code>RustResponseBytes</code>; you return that value straight from the resolver and FraiseQL sends it to
+the HTTP response.</p>
+<h3 id="list-query">List query<a class="headerlink" href="#list-query" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
-
-    <span class="n">options</span> <span class="o">=</span> <span class="n">QueryOptions</span><span class="p">(</span>
-        <span class="n">filters</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
-        <span class="n">pagination</span><span class="o">=</span><span class="n">PaginationInput</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Returns Python dict/list</span>
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-        <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="n">options</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">results</span>
-</code></pre></div>
-<p><strong>After (Rust API):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-
-    <span class="c1"># Returns RustResponseBytes - zero-copy to HTTP</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>  <span class="c1"># Required for GraphQL field selection</span>
-        <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
-        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
-        <span class="n">offset</span><span class="o">=</span><span class="n">offset</span>
-    <span class="p">)</span>
-</code></pre></div>
-<h3 id="step-4-handle-response-types">Step 4: Handle Response Types<a class="headerlink" href="#step-4-handle-response-types" title="Permanent link">&para;</a></h3>
-<p><strong>Before (Python Objects):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GraphQL resolver returns Python objects</span>
-<span class="c1"># GraphQL-core serializes to JSON → HTTP response</span>
-<span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">return</span> <span class="n">results</span>  <span class="c1"># Python dict/list → JSON</span>
-</code></pre></div>
-<p><strong>After (RustResponseBytes):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GraphQL resolver returns RustResponseBytes</span>
-<span class="c1"># Bypasses GraphQL serialization - direct to HTTP</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">return</span> <span class="n">result</span>  <span class="c1"># RustResponseBytes → HTTP (zero-copy)</span>
-</code></pre></div>
-<h3 id="step-5-update-error-handling">Step 5: Update Error Handling<a class="headerlink" href="#step-5-update-error-handling" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseError</span><span class="p">,</span> <span class="n">OperationalError</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">DatabaseError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Database operation failed&quot;</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">OperationalError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connection error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Database connection failed&quot;</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Rust pipeline errors are wrapped in standard Python exceptions</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># Rust errors propagate as standard exceptions</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query execution failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Database operation failed&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="graphql-resolver-migration-examples">GraphQL Resolver Migration Examples<a class="headerlink" href="#graphql-resolver-migration-examples" title="Permanent link">&para;</a></h2>
-<h3 id="simple-list-query">Simple List Query<a class="headerlink" href="#simple-list-query" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
-
-    <span class="n">options</span> <span class="o">=</span> <span class="n">QueryOptions</span><span class="p">(</span>
-        <span class="n">pagination</span><span class="o">=</span><span class="n">PaginationInput</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
-    <span class="p">)</span>
-
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-        <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="n">options</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">results</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;v_product&quot;</span><span class="p">,</span>
         <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;products&quot;</span><span class="p">,</span>
-        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
+        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>  <span class="c1"># drives field selection / projection</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
-        <span class="n">offset</span><span class="o">=</span><span class="n">offset</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
-<h3 id="single-record-query">Single Record Query<a class="headerlink" href="#single-record-query" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
+<h3 id="single-record-query">Single-record query<a class="headerlink" href="#single-record-query" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
-
-    <span class="n">options</span> <span class="o">=</span> <span class="n">QueryOptions</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
-
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-        <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="n">options</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">results</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="c1"># find_one returns RustResponseBytes for a hit, or None when no row matches</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>After:</strong></p>
+<h3 id="filtered-query">Filtered query<a class="headerlink" href="#filtered-query" title="Permanent link">&para;</a></h3>
+<p><code>db.find</code> accepts a <code>where</code> dict (and filter kwargs) plus <code>order_by</code>. The Rust transform still
+handles the response.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_orders</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span>
+    <span class="n">customer_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">date_from</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Order&quot;</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
-        <span class="nb">id</span><span class="o">=</span><span class="nb">id</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">result</span>  <span class="c1"># Returns RustResponseBytes or None</span>
-</code></pre></div>
-<h3 id="complex-filtering-query">Complex Filtering Query<a class="headerlink" href="#complex-filtering-query" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">customer_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">date_from</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
-
-    <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">customer_id</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;customer_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">&quot;customer_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
     <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
     <span class="k">if</span> <span class="n">date_from</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;created_at__min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_from</span>
-
-    <span class="n">options</span> <span class="o">=</span> <span class="n">QueryOptions</span><span class="p">(</span>
-        <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="n">OrderByInstructions</span><span class="p">(</span><span class="n">instructions</span><span class="o">=</span><span class="p">[</span>
-            <span class="n">OrderByInstruction</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">OrderDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)</span>
-        <span class="p">])</span>
-    <span class="p">)</span>
-
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-        <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="n">options</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">results</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">customer_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">date_from</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-
-    <span class="c1"># Build filter dict (same syntax as before)</span>
-    <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">customer_id</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;customer_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">customer_id</span>
-    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
-    <span class="k">if</span> <span class="n">date_from</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;created_at__min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_from</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">&quot;created_at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="n">date_from</span><span class="p">}</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;v_order&quot;</span><span class="p">,</span>
         <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;orders&quot;</span><span class="p">,</span>
         <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">filters</span><span class="p">,</span>  <span class="c1"># Unpack filters as kwargs</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;DESC&quot;</span><span class="p">}]</span>
+        <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;DESC&quot;</span><span class="p">}],</span>
     <span class="p">)</span>
 </code></pre></div>
-<h2 id="configuration-migration">Configuration Migration<a class="headerlink" href="#configuration-migration" title="Permanent link">&para;</a></h2>
-<h3 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># config.py</span>
-<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span>
+<h2 id="handling-rustresponsebytes">Handling <code>RustResponseBytes</code><a class="headerlink" href="#handling-rustresponsebytes" title="Permanent link">&para;</a></h2>
+<p><code>db.find</code> and <code>db.find_one</code> return <code>RustResponseBytes</code>, defined in
+<code>fraiseql.core.rust_pipeline</code>. It wraps a finished UTF-8 byte buffer of the GraphQL response
+body. The point of the type is that it is <strong>already serialized</strong> — return it directly and let
+FraiseQL stream it to the client.</p>
+<p>Do <strong>not</strong> decode-and-re-encode it in your resolver; that throws away the whole benefit:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
-    <span class="n">conninfo</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
-    <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span>
-<span class="p">)</span>
+<span class="c1"># Correct: return RustResponseBytes unchanged</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+
+
+<span class="c1"># Incorrect: round-tripping through Python JSON defeats the Rust transform</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_bad</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>  <span class="c1"># don&#39;t do this</span>
 </code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># config.py</span>
-<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">&quot;postgresql://user:pass@localhost:5432/mydb&quot;</span>
+<p>Always pass <code>info</code> to <code>find</code> / <code>find_one</code> so the Rust transform knows which fields the client
+requested. If <code>info</code> is omitted, FraiseQL tries to recover it from
+<code>info.context["graphql_info"]</code>, but passing it explicitly is clearest.</p>
+<h2 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h2>
+<p>Mutations are unchanged by the Rust-transform work. They call PostgreSQL functions through the
+same psycopg-backed repository:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.core.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
 
-<span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-        <span class="s2">&quot;min_idle&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-        <span class="s2">&quot;connection_timeout&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
-        <span class="s2">&quot;idle_timeout&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-        <span class="s2">&quot;max_lifetime&quot;</span><span class="p">:</span> <span class="mi">3600</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="application-context">Application Context<a class="headerlink" href="#application-context" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
-<span class="n">db</span> <span class="o">=</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
-<span class="n">db</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
-    <span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">_pool</span><span class="p">,</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># For RBAC</span>
-        <span class="s2">&quot;contact_id&quot;</span><span class="p">:</span> <span class="kc">None</span>  <span class="c1"># For multi-user contexts</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-</code></pre></div>
-<h2 id="testing-migration">Testing Migration<a class="headerlink" href="#testing-migration" title="Permanent link">&para;</a></h2>
-<h3 id="unit-test-updates">Unit Test Updates<a class="headerlink" href="#unit-test-updates" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># tests/test_repository.py</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">PsycopgRepository</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">db</span><span class="p">(</span><span class="n">postgres_url</span><span class="p">):</span>
-    <span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">conninfo</span><span class="o">=</span><span class="n">postgres_url</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
-    <span class="n">options</span> <span class="o">=</span> <span class="n">QueryOptions</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">})</span>
-    <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-        <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">options</span><span class="o">=</span><span class="n">options</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
 </code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># tests/test_repository.py</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.core.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
+<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
+<h3 id="resolver-level-tests">Resolver-level tests<a class="headerlink" href="#resolver-level-tests" title="Permanent link">&para;</a></h3>
+<p>Reads return <code>RustResponseBytes</code>, so unit tests assert on the type or decode the bytes for
+inspection. A real psycopg pool (or a test fixture that builds one) is required because the
+query still runs through psycopg.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_db_pool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.core.rust_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustResponseBytes</span>
+
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">db</span><span class="p">(</span><span class="n">postgres_url</span><span class="p">):</span>
-    <span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="n">postgres_url</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
-    <span class="k">return</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">_pool</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">})</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">db</span><span class="p">(</span><span class="n">postgres_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FraiseQLRepository</span><span class="p">:</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_db_pool</span><span class="p">(</span><span class="n">postgres_url</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">})</span>
+
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
-    <span class="c1"># Note: Testing Rust pipeline requires different approach</span>
-    <span class="c1"># Integration tests verify end-to-end behavior</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-        <span class="n">info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Mock GraphQL info for testing</span>
-        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span>
-    <span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RustResponseBytes</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="integration-test-updates">Integration Test Updates<a class="headerlink" href="#integration-test-updates" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># tests/test_graphql.py</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    query {</span>
-<span class="s2">        users(limit: 10) {</span>
-<span class="s2">            id</span>
-<span class="s2">            name</span>
-<span class="s2">            email</span>
-<span class="s2">        }</span>
-<span class="s2">    }</span>
-<span class="s2">    &quot;&quot;&quot;</span>
-
-    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">})</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-
-    <span class="k">assert</span> <span class="s2">&quot;users&quot;</span> <span class="ow">in</span> <span class="n">data</span>
-    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;users&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">10</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># tests/test_graphql.py</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
+<h3 id="end-to-end-graphql-tests">End-to-end GraphQL tests<a class="headerlink" href="#end-to-end-graphql-tests" title="Permanent link">&para;</a></h3>
+<p>End-to-end tests hit the FastAPI <code>/graphql</code> endpoint and assert on the JSON body, exactly as
+before — the Rust transform is transparent to the HTTP contract.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_user_query</span><span class="p">(</span><span class="n">client</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    query {</span>
 <span class="s2">        users(limit: 10) {</span>
@@ -6063,244 +5484,72 @@
 
     <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">})</span>
 
-    <span class="c1"># Rust pipeline returns direct HTTP response</span>
     <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-
     <span class="k">assert</span> <span class="s2">&quot;users&quot;</span> <span class="ow">in</span> <span class="n">data</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;users&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">10</span>
-
-    <span class="c1"># Additional validation: check performance headers</span>
-    <span class="k">assert</span> <span class="s2">&quot;X-Rust-Pipeline&quot;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span>
-    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Rust-Pipeline&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span>
 </code></pre></div>
-<h2 id="troubleshooting-common-issues">Troubleshooting Common Issues<a class="headerlink" href="#troubleshooting-common-issues" title="Permanent link">&para;</a></h2>
-<h3 id="issue-rust-extension-not-available">Issue: "Rust extension not available"<a class="headerlink" href="#issue-rust-extension-not-available" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong></p>
-<div class="highlight"><pre><span></span><code>ImportError: fraiseql Rust extension is not available
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="fraiseql-rust-extension-is-not-available">"fraiseql Rust extension is not available"<a class="headerlink" href="#fraiseql-rust-extension-is-not-available" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>ImportError: fraiseql Rust extension is not available.
+Please reinstall fraiseql: pip install --force-reinstall fraiseql
 </code></pre></div>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li><strong>Reinstall FraiseQL:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>uninstall<span class="w"> </span>fraiseql
-pip<span class="w"> </span>install<span class="w"> </span>--force-reinstall<span class="w"> </span>fraiseql
+<p>The Rust transform is bundled with FraiseQL as <code>fraiseql._fraiseql_rs</code>. If the wheel was built
+without it (or a source install failed to compile), reinstall a prebuilt wheel:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>--force-reinstall<span class="w"> </span>fraiseql
 </code></pre></div>
-<ol>
-<li><strong>Check system dependencies:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Ubuntu/Debian</span>
-sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>build-essential
-
-<span class="c1"># macOS</span>
-xcode-select<span class="w"> </span>--install
-
-<span class="c1"># Windows</span>
-<span class="c1"># Install Visual Studio Build Tools</span>
-</code></pre></div>
-<ol>
-<li><strong>Verify Python version:</strong></li>
-<li>Rust extension requires Python 3.8+</li>
-<li>Check with: <code>python --version</code></li>
-</ol>
-<h3 id="issue-connection-pool-exhausted">Issue: "Connection pool exhausted"<a class="headerlink" href="#issue-connection-pool-exhausted" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong></p>
-<div class="highlight"><pre><span></span><code>DatabaseError: Connection pool exhausted
-</code></pre></div>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li><strong>Increase pool size:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
+<p>If you build from source, ensure a Rust toolchain and maturin are available, then rebuild.</p>
+<h3 id="connection-pool-exhausted">"Connection pool exhausted"<a class="headerlink" href="#connection-pool-exhausted" title="Permanent link">&para;</a></h3>
+<p>This is a psycopg pool limit, not a Rust issue. Raise the pool size or fix connection leaks:</p>
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">&quot;min_idle&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">}</span>  <span class="c1"># Increase from defaults</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<ol>
-<li><strong>Check connection leaks:</strong></li>
-<li>Ensure connections are properly released</li>
-<li>Use context managers for transactions</li>
-<li>
-<p>Monitor connection pool stats</p>
-</li>
-<li>
-<p><strong>Optimize query patterns:</strong></p>
-</li>
-<li>Use <code>find_one()</code> for single records</li>
-<li>Implement proper pagination</li>
-<li>Avoid N+1 query patterns</li>
-</ol>
-<h3 id="issue-graphql-type-mismatch-errors">Issue: "GraphQL type mismatch errors"<a class="headerlink" href="#issue-graphql-type-mismatch-errors" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong></p>
-<div class="highlight"><pre><span></span><code>GraphQLError: Expected Iterable but got RustResponseBytes
+<p>Also confirm connections are released (use context managers for explicit transactions) and
+prefer <code>find_one</code> for single-record lookups to avoid over-fetching.</p>
+<h3 id="expected-iterable-but-got-rustresponsebytes">"Expected Iterable but got RustResponseBytes"<a class="headerlink" href="#expected-iterable-but-got-rustresponsebytes" title="Permanent link">&para;</a></h3>
+<p>This means a resolver tried to treat <code>RustResponseBytes</code> as a plain Python list. Return it
+unchanged from the resolver and pass <code>info</code> so the transform produces the correct shape:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>  <span class="c1"># return as-is</span>
 </code></pre></div>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li><strong>Check GraphQL resolver return types:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Correct: Let Rust pipeline handle response</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
-
-<span class="c1"># Incorrect: Manual processing loses optimization</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>  <span class="c1"># Don&#39;t do this!</span>
-</code></pre></div>
-<ol>
-<li><strong>Verify field selection:</strong></li>
-<li>Pass <code>info</code> parameter to <code>find()</code> methods</li>
-<li>
-<p>Ensure GraphQL schema matches database views</p>
-</li>
-<li>
-<p><strong>Check multi-field queries:</strong></p>
-</li>
-<li>Rust pipeline handles single-field queries optimally</li>
-<li>Complex multi-field queries may need special handling</li>
-</ol>
-<h3 id="issue-performance-regression-after-migration">Issue: "Performance regression after migration"<a class="headerlink" href="#issue-performance-regression-after-migration" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong></p>
-<ul>
-<li>Queries slower than expected</li>
-<li>Memory usage increased</li>
-<li>Higher CPU usage</li>
-</ul>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li><strong>Verify Rust pipeline usage:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Check that Rust pipeline is active</span>
-<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">})</span>
-<span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Rust-Pipeline&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span>
-</code></pre></div>
-<ol>
-<li><strong>Compare query patterns:</strong></li>
-<li>Ensure using <code>find()</code> not legacy <code>select_from_json_view()</code></li>
-<li>Check that GraphQL <code>info</code> parameter is passed</li>
-<li>
-<p>Verify connection pool configuration</p>
-</li>
-<li>
-<p><strong>Profile performance:</strong></p>
-</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
-<span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query took: </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="issue-migration-tool-compatibility">Issue: "Migration tool compatibility"<a class="headerlink" href="#issue-migration-tool-compatibility" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms:</strong></p>
-<ul>
-<li>Alembic migrations fail</li>
-<li>Schema changes not applied</li>
-<li>Database inconsistencies</li>
-</ul>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li><strong>Use compatible migration tools:</strong></li>
-<li>Continue using existing migration tools</li>
-<li>Rust backend works with standard PostgreSQL schemas</li>
-<li>
-<p>No changes needed to migration scripts</p>
-</li>
-<li>
-<p><strong>Verify schema compatibility:</strong></p>
-</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Check that views exist and are accessible</span>
+<h3 id="schema-and-migration-tools">Schema and migration tools<a class="headerlink" href="#schema-and-migration-tools" title="Permanent link">&para;</a></h3>
+<p>The Rust transform works with any standard PostgreSQL schema — your <code>v_</code> / <code>tv_</code> read views
+and JSONB structures are unchanged. Migration tools (Alembic and friends) operate on the
+database directly and need no changes:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Confirm your read views exist</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">information_schema</span><span class="p">.</span><span class="n">views</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;v_%&#39;</span><span class="p">;</span>
 </code></pre></div>
-<ol>
-<li><strong>Test migrations:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Run migrations before switching to Rust backend</span>
-alembic<span class="w"> </span>upgrade<span class="w"> </span>head
-
-<span class="c1"># Then test with Rust backend</span>
-pytest<span class="w"> </span>tests/integration/
-</code></pre></div>
 <h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h2>
-<h3 id="general-questions">General Questions<a class="headerlink" href="#general-questions" title="Permanent link">&para;</a></h3>
-<p><strong>Q: Is the migration mandatory?</strong>
-A: Yes, as of FraiseQL v1.9, the psycopg-only path has been completely removed. All applications must use the Rust backend.</p>
-<p><strong>Q: Can I migrate gradually?</strong>
-A: Yes, you can migrate resolvers incrementally. The Rust backend is backward compatible with existing GraphQL schemas and database views.</p>
+<p><strong>Q: Is psycopg still required?</strong>
+A: Yes. psycopg 3 (<code>psycopg[pool]</code>) is the PostgreSQL driver and a required dependency. The
+Rust extension transforms the JSON response after psycopg has fetched the rows; it does not
+replace psycopg.</p>
+<p><strong>Q: Is the Rust extension optional?</strong>
+A: No. It is bundled as <code>fraiseql._fraiseql_rs</code> and mandatory for the read path. There is no
+Python-serialization fallback; a missing extension raises at import time.</p>
 <p><strong>Q: Do I need to change my database schema?</strong>
-A: No, the Rust backend works with existing PostgreSQL schemas, views, and JSONB structures. No database changes are required.</p>
-<p><strong>Q: What if I have custom query methods?</strong>
-A: Custom methods using raw SQL will need to be adapted. The Rust backend provides a consistent API, but custom SQL execution may need refactoring.</p>
-<h3 id="performance-questions">Performance Questions<a class="headerlink" href="#performance-questions" title="Permanent link">&para;</a></h3>
-<p><strong>Q: When will I see performance improvements?</strong>
-A: Performance benefits are most noticeable with:</p>
-<ul>
-<li>Large result sets (&gt;1000 rows)</li>
-<li>Complex GraphQL queries with deep field selection</li>
-<li>High-concurrency scenarios</li>
-<li>Memory-constrained environments</li>
-</ul>
-<p><strong>Q: Are there any performance downsides?</strong>
-A: The Rust backend adds minimal overhead for simple queries but provides substantial benefits for complex operations. Memory usage is consistently lower.</p>
-<p><strong>Q: How do I monitor performance?</strong>
-A: Check response headers for <code>X-Rust-Pipeline: true</code> to confirm Rust execution. Use standard application performance monitoring tools.</p>
-<h3 id="compatibility-questions">Compatibility Questions<a class="headerlink" href="#compatibility-questions" title="Permanent link">&para;</a></h3>
-<p><strong>Q: Does it work with my existing GraphQL schema?</strong>
-A: Yes, the Rust backend is fully compatible with existing GraphQL schemas. The API changes are in the resolver implementation, not the schema definition.</p>
-<p><strong>Q: Can I use it with my current PostgreSQL version?</strong>
-A: The Rust backend works with PostgreSQL 12+. For optimal performance, PostgreSQL 14+ is recommended.</p>
-<p><strong>Q: What about my existing middleware?</strong>
-A: Most middleware continues to work. The <code>RustResponseBytes</code> type integrates seamlessly with HTTP response handling.</p>
-<h3 id="support-questions">Support Questions<a class="headerlink" href="#support-questions" title="Permanent link">&para;</a></h3>
-<p><strong>Q: Where can I get help with migration?</strong>
-A: Check the troubleshooting section above, or create an issue in the FraiseQL repository with migration questions.</p>
-<p><strong>Q: Are there example migrations I can reference?</strong>
-A: This guide includes before/after examples for common patterns. The FraiseQL test suite also demonstrates proper Rust backend usage.</p>
-<p><strong>Q: What if I encounter a bug during migration?</strong>
-A: Report issues to the FraiseQL repository. Include your before/after code, error messages, and FraiseQL version information.</p>
-<h2 id="success-metrics">Success Metrics<a class="headerlink" href="#success-metrics" title="Permanent link">&para;</a></h2>
-<p>After successful migration, you should see:</p>
-<h3 id="performance-improvements">Performance Improvements<a class="headerlink" href="#performance-improvements" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ Query response times 2-3x faster for large datasets</li>
-<li>✅ Memory usage reduced by 40-60%</li>
-<li>✅ CPU usage decreased under load</li>
-<li>✅ Higher throughput (requests/second)</li>
-</ul>
-<h3 id="operational-improvements">Operational Improvements<a class="headerlink" href="#operational-improvements" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ Consistent query performance</li>
-<li>✅ Reduced garbage collection pressure</li>
-<li>✅ Better error messages and debugging</li>
-<li>✅ Simplified deployment (fewer dependencies)</li>
-</ul>
-<h3 id="developer-experience_1">Developer Experience<a class="headerlink" href="#developer-experience_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ Single execution path (no mode detection)</li>
-<li>✅ Type-safe operations</li>
-<li>✅ Better IDE support and autocomplete</li>
-<li>✅ Consistent API across all operations</li>
-</ul>
-<h2 id="next-steps-after-migration">Next Steps After Migration<a class="headerlink" href="#next-steps-after-migration" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Monitor Performance</strong>: Track query times, memory usage, and error rates</li>
-<li><strong>Optimize Queries</strong>: Use the new API patterns for maximum performance</li>
-<li><strong>Update Documentation</strong>: Document the migration for your team</li>
-<li><strong>Plan Future Updates</strong>: Leverage Rust backend features like advanced caching</li>
-</ol>
+A: No. The Rust transform works with existing PostgreSQL views and JSONB structures.</p>
+<p><strong>Q: Do I have to build the connection pool myself?</strong>
+A: No. <code>create_fraiseql_app</code> builds the psycopg pool and wires <code>FraiseQLRepository</code> into
+<code>info.context["db"]</code>. Build the pool manually only for custom embedding or tests.</p>
+<p><strong>Q: When will I see the biggest performance benefit?</strong>
+A: On large result sets and deeply-nested GraphQL selections, where moving JSON serialization
+out of Python matters most. Measure your own workload.</p>
 <h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../database-api/">Database API Documentation</a></strong> - Complete Rust backend API reference</li>
-<li><strong><a href="../../performance/rust-pipeline-optimization/">Performance Optimization Guide</a></strong> - Advanced performance tuning</li>
-<li><strong><a href="../../guides/troubleshooting/">Troubleshooting Guide</a></strong> - Common issues and solutions</li>
-<li><strong><a href="../../archive/testing/ci-architecture/">CI/CD Architecture</a></strong> - Testing the Rust backend</li>
+<li><strong><a href="../database-api/">Database API Documentation</a></strong> — repository and read/write API reference</li>
+<li><strong><a href="../rust-pipeline-integration/">Rust Pipeline Integration</a></strong> — how the transform integrates</li>
+<li><strong><a href="../../performance/rust-pipeline-optimization/">Performance Optimization Guide</a></strong> — tuning</li>
+<li><strong><a href="../../guides/troubleshooting/">Troubleshooting Guide</a></strong> — common issues and solutions</li>
 </ul>
-<hr />
-<p><strong>Migration Complete</strong>: This guide covers the complete transition from psycopg to the exclusive Rust backend in FraiseQL v1.9+.</p>
 
 
 
