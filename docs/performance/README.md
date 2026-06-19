@@ -1,438 +1,207 @@
-<!-- Skip to main content -->
 ---
 
-title: Performance Tuning Guide
-description: If you just upgraded to v2.0.0-alpha.1:
+title: Performance Overview
+description: Index to FraiseQL v1 performance guides — PostgreSQL tuning, caching, connection pooling, the optional Rust JSON pipeline, and APQ.
 keywords: ["performance"]
 tags: ["documentation", "reference"]
 ---
 
 # Performance Tuning Guide
 
-**Status**: 🟢 Production Ready
-**Last Updated**: 2026-01-31
-**Performance Improvement**: **42-55% latency reduction with tuning**
+**Status**: Production Ready
+**Last Updated**: 2026-06-19
 
-## Quick Start (5 minutes)
+FraiseQL v1 is a Python runtime GraphQL framework for PostgreSQL, served over
+FastAPI. The schema is built in memory at app startup — there is no build or
+compile step. Performance work therefore lives in three places:
 
-If you just upgraded to v2.0.0-alpha.1:
+1. **PostgreSQL** — your `v_`/`tv_` views, indexes, and `fn_` functions do the
+   heavy lifting. Most latency wins come from good view and index design.
+2. **The runtime** — psycopg connection pooling, query-result caching, and the
+   optional `fraiseql_rs` Rust extension that accelerates JSON transformation on
+   the hot path.
+3. **The GraphQL surface** — Automatic Persisted Queries (APQ), field selection,
+   pagination, and N+1 prevention.
 
-### 1. No Changes Required ✅
+This page is an index. Pick a guide below based on what you want to tune.
 
-SQL projection optimization is **enabled automatically**. Your queries are now 42-55% faster.
+## Where to Start
+
+| You want to… | Read |
+|---|---|
+| Get a broad tour of every performance feature | [Performance Guide](./performance-guide.md) |
+| Speed up reads with query-result caching | [Caching](./caching.md) |
+| Tune the PostgreSQL connection pool | [Connection Pool Tuning](./connection-pool-tuning.md) |
+| Cut parsing/transport cost on hot queries | [APQ Optimization Guide](./apq-optimization-guide.md) |
+| Understand the Rust JSON pipeline | [Rust Pipeline Optimization](./rust-pipeline-optimization.md) |
+| Measure before/after changes | [Benchmarking Guide](./benchmarking-guide.md) |
+
+## Performance Levers in v1
+
+| Lever | What it does | Where to tune it |
+|---|---|---|
+| **PostgreSQL views + indexes** | Pre-compose nested data as JSONB in `v_`/`tv_` views; index filtered columns | Your database schema |
+| **Query-result caching** | PostgreSQL-backed `ResultCache` with cascade invalidation | [Caching](./caching.md) |
+| **Connection pooling** | psycopg pool reuses connections; tunable size/overflow/timeout/recycle | [Connection Pool Tuning](./connection-pool-tuning.md) |
+| **`fraiseql_rs` JSON pipeline** | 7-10x faster JSON transform / field selection vs pure Python | [Rust Pipeline Optimization](./rust-pipeline-optimization.md) |
+| **APQ** | Persist queries by hash so clients send a short ID, not the full query text | [APQ Optimization Guide](./apq-optimization-guide.md) |
+
+## Quick Start
+
+Performance-relevant settings are passed to `create_fraiseql_app(...)` (or set
+via `FraiseQLConfig` / `FRAISEQL_` environment variables). There is no config
+file and no separate server binary — you run the FastAPI app with `uvicorn`.
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,                 # disables the playground, tightens errors
+    connection_pool_size=20,         # → FraiseQLConfig.database_pool_size
+    connection_pool_max_overflow=10, # → FraiseQLConfig.database_pool_max_overflow
+    connection_pool_timeout=30,      # → FraiseQLConfig.database_pool_timeout
+    connection_pool_recycle=1800,    # → FraiseQLConfig.database_pool_recycle
+)
+```
 
 ```bash
-<!-- Code example in BASH -->
-# Just deploy the new version
-cargo build --release
-# Queries automatically faster!
-```text
-<!-- Code example in TEXT -->
-
-### 2. Verify It's Working
-
-Check logs for projection SQL:
-
-```bash
-<!-- Code example in BASH -->
-RUST_LOG=fraiseql_core::runtime=debug cargo run
-# Look for: "SQL with projection = jsonb_build_object(...)"
-```text
-<!-- Code example in TEXT -->
-
-### 3. Monitor Performance
-
-```bash
-<!-- Code example in BASH -->
-# Measure latency before/after
-wrk -t4 -c100 -d30s http://localhost:3000/graphql
-
-# Expected: 40-55% improvement automatically
-```text
-<!-- Code example in TEXT -->
-
-## Performance Improvements Already Included
-
-| Feature | Impact | Status |
-|---------|--------|--------|
-| **SQL Projection** | 42-55% latency ↓ | ✅ v2.0.0-alpha.1 |
-| **Projection Caching** | 2-10x speedup | ✅ v2.0.0-alpha.1 |
-| **Query Plan Caching** | 10-20% speedup | ✅ v2.0.0-alpha.1 |
-| **Connection Pooling** | Tunable | ✅ Documented |
-
-**Total out-of-box improvement: 42-55%** 🎉
-
-## Detailed Tuning Guides
-
-### For GraphQL API Teams
-
-**[SQL Projection Optimization](./projection-optimization.md)**
-
-- How projection works
-- Best practices for query design
-- Troubleshooting and FAQ
-- Real-world examples
-
-**[Connection Pool Tuning](./connection-pool-tuning.md)**
-
-- Pool size configuration
-- Monitoring and alerts
-- Optimization techniques
-- Production checklist
-
-### For DevOps / Infrastructure
-
-**[Migration & Deployment](../deployment/migration-projection.md)**
-
-- Zero-breaking-changes upgrade path
-- Performance testing methodology
-- Rollback procedures
-- Monitoring setup
-
-### For Engineers / Researchers
-
-**[Benchmark Results](./projection-baseline-results.md)**
-
-- Raw performance data
-- Statistical methodology
-- Database-specific analysis
-- Real-world impact calculations
+# Run it
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
 ## By Use Case
 
 ### Development / Testing
 
-**Configuration**:
-
-```rust
-<!-- Code example in RUST -->
-let adapter = PostgresAdapter::with_pool_size(connection_string, 5).await?;
-```text
-<!-- Code example in TEXT -->
-
-**Expected**:
-
-- Latency: 50-100ms p95
-- Throughput: 1K-5K req/s
-- Memory: Low (small pool)
-
-**Tuning**: Not needed for development
+- A small pool is plenty: `connection_pool_size=5`.
+- Leave caching off while you iterate on schema and views.
+- Use `production=False` to keep the GraphQL playground available.
 
 ### Staging / Pre-Production
 
-**Configuration**:
-
-```rust
-<!-- Code example in RUST -->
-let adapter = PostgresAdapter::with_pool_size(connection_string, 20).await?;
-```text
-<!-- Code example in TEXT -->
-
-**Expected**:
-
-- Latency: 20-50ms p95
-- Throughput: 5K-20K req/s
-- Memory: Moderate
-
-**Tuning**:
-
-1. Run load tests
-2. Monitor pool utilization
-3. Adjust pool size if needed
-4. Validate projection is working
+- Raise the pool toward your expected concurrency (`connection_pool_size=20`).
+- Run a load test and watch pool utilization (see
+  [Connection Pool Tuning](./connection-pool-tuning.md)).
+- Turn on query-result caching for hot read paths and validate invalidation
+  behaviour (see [Caching](./caching.md)).
 
 ### Production / Scale
 
-**Configuration**:
+- Size the pool from your worker/CPU count and database `max_connections`.
+- Enable caching with cascade invalidation rules for expensive reads.
+- Register hot queries with APQ to drop request payload size and parse cost.
+- Keep the `fraiseql_rs` extension installed for the fast JSON path.
 
-```rust
-<!-- Code example in RUST -->
-let max_size = (num_cpus::get() * 2) + 5;
-let adapter = PostgresAdapter::with_pool_size(connection_string, max_size).await?;
-```text
-<!-- Code example in TEXT -->
+## Tuning Checklist
 
-**Expected**:
+### Database
 
-- Latency: 10-30ms p95
-- Throughput: 20K+ req/s
-- Memory: Optimized
+- [ ] `v_`/`tv_` views pre-compose nested data as a `data` JSONB column
+- [ ] Indexes exist on every filtered/joined column (and on `id`)
+- [ ] Heavy nested reads use `tv_` projection tables refreshed by functions/triggers
+- [ ] `EXPLAIN ANALYZE` confirms index usage on your hottest queries
 
-**Tuning**:
+### Runtime
 
-1. Pre-warm pool on startup
-2. Monitor pool metrics
-3. Set up alerts
-4. Load test before deploy
-5. Monitor for 24h post-deploy
+- [ ] Connection pool sized for your concurrency, not left at the default
+- [ ] Query-result caching enabled for expensive, cache-friendly reads
+- [ ] Cascade invalidation rules cover the tables behind cached views
+- [ ] `fraiseql_rs` installed (verify the fast JSON path is active)
 
-## Performance Checklist
+### GraphQL Surface
 
-### Pre-Deployment
+- [ ] APQ enabled for repeated client queries
+- [ ] Clients select only the fields they need (field selection is pushed down)
+- [ ] Large result sets are paginated
+- [ ] N+1 fields use `@fraiseql.dataloader_field`
 
-- [ ] Upgraded to v2.0.0-alpha.1
-- [ ] Ran full test suite
-- [ ] Connection pool size calculated
-- [ ] Load test passed
-- [ ] SQL projection verified in logs
-- [ ] Monitoring configured
-- [ ] Alerts configured
+## Diagnosing Slow Queries
 
-### Post-Deployment
-
-- [ ] Monitor latency (expect 40-55% improvement)
-- [ ] Monitor pool utilization
-- [ ] Monitor database connections
-- [ ] Check error rates (should be unchanged)
-- [ ] Confirm projection in production logs
-
-## Troubleshooting
-
-### Queries Slower After Upgrade
-
-**Unlikely, but if it happens**:
-
-1. Check if projection is working:
-
-   ```bash
-<!-- Code example in BASH -->
-   RUST_LOG=fraiseql_core::runtime=debug cargo run
-   ```text
-<!-- Code example in TEXT -->
-
-2. Disable projection temporarily:
-
-   ```bash
-<!-- Code example in BASH -->
-   FRAISEQL_DISABLE_PROJECTION=true cargo run
-   ```text
-<!-- Code example in TEXT -->
-
-3. Check pool metrics:
-
-   ```rust
-<!-- Code example in RUST -->
-   let metrics = adapter.pool_metrics();
-   println!("{:?}", metrics);
-   ```text
-<!-- Code example in TEXT -->
-
-4. Check query complexity:
-   - Did you add complex joins?
-   - Did you add expensive WHERE clauses?
-   - Are you returning more fields?
-
-### High Latency
-
-**Check in order**:
-
-1. Pool utilization:
-
-   ```rust
-<!-- Code example in RUST -->
-   if metrics.waiting_requests > 0 {
-       // Pool too small - increase size
-   }
-   ```text
-<!-- Code example in TEXT -->
-
-2. Query performance:
-
-   ```bash
-<!-- Code example in BASH -->
-   RUST_LOG=debug  # Check query times
-   ```text
-<!-- Code example in TEXT -->
-
-3. Database load:
+1. **Find the slow SQL.** PostgreSQL `pg_stat_statements` shows the worst
+   offenders:
 
    ```sql
-<!-- Code example in SQL -->
-   -- Check for slow queries
-   SELECT * FROM pg_stat_statements
-   WHERE mean_time > 100;
-   ```text
-<!-- Code example in TEXT -->
+   SELECT query, calls, mean_exec_time
+   FROM pg_stat_statements
+   WHERE mean_exec_time > 100
+   ORDER BY mean_exec_time DESC
+   LIMIT 20;
+   ```
 
-### Connection Pool Exhaustion
+2. **Check the plan.** Run `EXPLAIN ANALYZE` on the underlying view query and
+   confirm indexes are used instead of sequential scans:
 
-**Symptoms**: Errors about too many connections
+   ```sql
+   EXPLAIN ANALYZE
+   SELECT data FROM v_user WHERE id = '...'::uuid;
+   ```
 
-**Solutions**:
+3. **Check the pool.** Connection saturation shows up as latency variance under
+   load. See [Connection Pool Tuning](./connection-pool-tuning.md) for sizing,
+   monitoring, and exhaustion symptoms.
 
-1. Increase pool size
-2. Optimize slow queries
-3. Add indexes to database
-4. Load balance across servers
+4. **Check the cache.** If a hot read is uncached or invalidating too
+   aggressively, the [Caching](./caching.md) guide covers `ResultCache`,
+   `CacheConfig`, and cascade rules.
 
-## Monitoring Dashboard
+## All Performance Guides
 
-### Key Metrics
+- [Performance Guide](./performance-guide.md) — broad tour of v1 performance features
+- [Caching](./caching.md) — PostgreSQL-backed query-result caching and cascade invalidation
+- [Caching Migration](./caching-migration.md) — moving to the caching API
+- [Server Cache Invalidation](./server-cache-invalidation.md) — invalidation patterns
+- [Connection Pool Tuning](./connection-pool-tuning.md) — psycopg pool sizing and monitoring
+- [Rust Pipeline Optimization](./rust-pipeline-optimization.md) — the optional `fraiseql_rs` JSON path
+- [Benchmarking Guide](./benchmarking-guide.md) — how to measure FraiseQL performance
+- [APQ Assessment](./apq-assessment.md) — when Automatic Persisted Queries help
+- [APQ Optimization Guide](./apq-optimization-guide.md) — configuring and tuning APQ
+- [Coordinate Performance Guide](./coordinate-performance-guide.md) — tuning coordinate/geo queries
+- [Index](./index.md) — performance section landing page
 
-```text
-<!-- Code example in TEXT -->
-Query Latency (p50/p95/p99):  __ms
-Pool Utilization:             __%
-Active Connections:           __
-Waiting Requests:             __
-Database Connections:         __
-Network Bandwidth:            __MB/s
-Error Rate:                   __%
-```text
-<!-- Code example in TEXT -->
+## External Resources
 
-### Alert Thresholds
-
-```yaml
-<!-- Code example in YAML -->
-queries:
-  - name: High Latency
-    condition: p95_latency > 100ms
-    action: Page on-call
-
-  - name: Pool Exhaustion
-    condition: waiting_requests > 5
-    action: Page on-call
-
-  - name: High Error Rate
-    condition: error_rate > 1%
-    action: Page on-call
-```text
-<!-- Code example in TEXT -->
-
-## Performance Benchmarks
-
-### Out-of-Box Performance
-
-With v2.0.0-alpha.1 on medium hardware (8 cores, 16GB RAM):
-
-```text
-<!-- Code example in TEXT -->
-Latency (p50):     12ms
-Latency (p95):     28ms
-Latency (p99):     35ms
-Throughput:        6000+ req/s
-Concurrent Users:  500+
-```text
-<!-- Code example in TEXT -->
-
-### Scaling Characteristics
-
-```text
-<!-- Code example in TEXT -->
-1K users:   Single server (max pool 20)
-10K users:  5-10 servers (load balanced)
-100K users: 50-100 servers (geo-distributed)
-```text
-<!-- Code example in TEXT -->
+- [PostgreSQL Performance Optimization](https://wiki.postgresql.org/wiki/Performance_Optimization) — database tuning
+- [PostgreSQL Performance Tips](https://www.postgresql.org/docs/current/performance-tips.html) — query planning
+- [GraphQL Best Practices](https://graphql.org/learn/best-practices/) — query design
 
 ## FAQ
 
-**Q: Do I need to change my queries?**
-A: No, projection is automatic. Your queries run faster without changes.
+**Q: Is there a build/compile step to optimize?**
+A: No. FraiseQL v1 builds its schema in memory at app startup. All optimization
+is runtime: PostgreSQL views/indexes, caching, the connection pool, the
+`fraiseql_rs` JSON path, and APQ.
 
-**Q: What's the performance improvement?**
-A: 42-55% latency reduction automatically with v2.0.0-alpha.1.
+**Q: What does the Rust extension do?**
+A: `fraiseql_rs` accelerates JSON transformation and field selection on the hot
+path (roughly 7-10x faster than pure Python for that step). It is an optional
+acceleration, not a separate architecture. See
+[Rust Pipeline Optimization](./rust-pipeline-optimization.md).
 
-**Q: Is there any risk in upgrading?**
-A: No, it's fully backward compatible. No breaking changes.
+**Q: How do I tune the connection pool?**
+A: Pass `connection_pool_size`, `connection_pool_max_overflow`,
+`connection_pool_timeout`, and `connection_pool_recycle` to
+`create_fraiseql_app(...)` (they map to `FraiseQLConfig.database_pool_*`). Size
+the pool for your concurrency; see
+[Connection Pool Tuning](./connection-pool-tuning.md).
 
-**Q: Can I disable projection?**
-A: Yes, set `FRAISEQL_DISABLE_PROJECTION=true` for debugging.
+**Q: Where does caching live?**
+A: It is PostgreSQL-backed query-result caching (`ResultCache`, `CacheConfig`,
+cascade invalidation). See [Caching](./caching.md).
 
-**Q: How do I know if projection is working?**
-A: Check logs: `RUST_LOG=fraiseql_core::runtime=debug` look for `jsonb_build_object`.
-
-**Q: Should I tune the connection pool?**
-A: For production: Yes, size it based on your concurrency. For dev: No, defaults are fine.
-
-**Q: What's the right pool size?**
-A: Start with `(core_count × 2) + 5`. Monitor and adjust based on utilization.
-
-**Q: How do I monitor pool health?**
-A: Use `adapter.pool_metrics()` and track active/idle/waiting connections.
-
-**Q: What about multi-database setups?**
-A: Each database gets its own pool. Tune separately.
-
-## Additional Resources
-
-### Documentation
-
-- [SQL Projection Optimization](./projection-optimization.md) - Deep dive into projection
-- [Connection Pool Tuning](./connection-pool-tuning.md) - Pool configuration
-- [Benchmark Results](./projection-baseline-results.md) - Statistical data
-- [Migration Guide](../deployment/migration-projection.md) - Upgrade guide
-
-### External Resources
-
-- [deadpool-postgres](https://github.com/bikeshedder/deadpool) - Connection pooling library
-- [PostgreSQL Tuning](https://wiki.postgresql.org/wiki/Performance_Optimization) - Database tuning
-- [GraphQL Best Practices](https://graphql.org/learn/best-practices/) - Query design
-
-## Support
-
-- **Documentation Issues**: Check the [guides above](#additional-resources)
-- **Bug Reports**: Include `RUST_LOG=debug` output
-- **Performance Help**: Share your load profile and metrics
+**Q: My queries are slow — where do I look first?**
+A: Start in PostgreSQL: `pg_stat_statements` and `EXPLAIN ANALYZE` on the
+underlying view. Most latency comes from view/index design, not from FraiseQL.
 
 ---
 
-## Quick Reference
+**Next**: Pick a guide based on what you're tuning:
 
-### Enable Tuning (30 seconds)
-
-```rust
-<!-- Code example in RUST -->
-// Calculate pool size
-let pool_size = (num_cpus::get() * 2) + 5;
-
-// Create adapter with tuned pool
-let adapter = PostgresAdapter::with_pool_size(
-    &std::env::var("DATABASE_URL")?,
-    pool_size
-).await?;
-
-// Monitor in your GraphQL handler
-let metrics = adapter.pool_metrics();
-if metrics.waiting_requests > 0 {
-    eprintln!("Pool saturation: {} waiting", metrics.waiting_requests);
-}
-```text
-<!-- Code example in TEXT -->
-
-### Verify Performance Improvement
-
-```bash
-<!-- Code example in BASH -->
-# Before upgrade (save this)
-wrk -t4 -c100 -d30s http://old-server/graphql > before.txt
-
-# After upgrade
-wrk -t4 -c100 -d30s http://new-server/graphql > after.txt
-
-# Compare (expect ~40-55% improvement)
-```text
-<!-- Code example in TEXT -->
-
-### Monitor Production
-
-```bash
-<!-- Code example in BASH -->
-# Watch latency trend
-watch -n 5 'psql $DATABASE_URL -c "SELECT
-  percentile_cont(0.5) WITHIN GROUP (ORDER BY query_time),
-  percentile_cont(0.95) WITHIN GROUP (ORDER BY query_time),
-  COUNT(*)
-FROM query_log WHERE timestamp > now() - interval 1 minute"'
-```text
-<!-- Code example in TEXT -->
-
----
-
-**Next**: Choose a guide above based on your role:
-
-- 👨‍💻 **Developer**: Read [Projection Optimization](./projection-optimization.md)
-- 🏗️ **Architect**: Read [Connection Pool Tuning](./connection-pool-tuning.md)
-- 🚀 **DevOps**: Read [Migration Guide](../deployment/migration-projection.md)
-- 📊 **Engineer**: Read [Benchmark Results](./projection-baseline-results.md)
+- **Reads slow?** Start with the [Performance Guide](./performance-guide.md) and your view indexes
+- **High concurrency?** Read [Connection Pool Tuning](./connection-pool-tuning.md)
+- **Repeated expensive reads?** Read [Caching](./caching.md)
+- **Lots of repeat client queries?** Read the [APQ Optimization Guide](./apq-optimization-guide.md)
