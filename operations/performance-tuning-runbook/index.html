@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Operational procedures for diagnosing and optimizing FraiseQL query performance in production.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/operations/performance-tuning-runbook/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Performance Tuning - FraiseQL Documentation</title>
+        <title>Performance Tuning Runbook - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Performance Tuning
+              Performance Tuning Runbook
             
           </span>
         </div>
@@ -4532,8 +4534,562 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#diagnosis-step-2-get-query-plan-from-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis Step 2: Get Query Plan from Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis-step-3-check-for-missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis Step 3: Check for Missing Indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-database-connection-pool-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Database Connection Pool Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Database Connection Pool Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-too-many-connections-or-connection-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: "Too Many Connections" or "Connection Timeout"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-index-fragmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Index Fragmentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Index Fragmentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-was-fast-now-slow-same-data-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Was Fast, Now Slow (Same Data Size)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-stale-database-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Stale Database Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Stale Database Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-planner-chooses-wrong-index-or-seq-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Planner Chooses Wrong Index or Seq Scan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-slow-aggregation-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Slow Aggregation Queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Slow Aggregation Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-group-by-or-countdistinct-queries-taking-10-seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: GROUP BY or COUNT(DISTINCT) Queries Taking &gt; 10 Seconds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-n1-query-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. N+1 Query Problem
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. N+1 Query Problem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-many-small-queries-instead-of-one-large-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Many Small Queries Instead of One Large Query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-network-latency-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Network Latency Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Network Latency Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-queries-slow-even-though-database-is-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Queries Slow Even Though Database is Fast
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-leaks-or-growing-memory-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Leaks or Growing Memory Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Leaks or Growing Memory Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-memory-usage-increases-over-time-never-returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Memory Usage Increases Over Time, Never Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-query-caching-effectiveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Query Caching Effectiveness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Query Caching Effectiveness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-results-seem-stale-or-caching-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Results Seem Stale or Caching Not Working
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-production-response-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Production Response Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5008,8 +5564,562 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#diagnosis-step-2-get-query-plan-from-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis Step 2: Get Query Plan from Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis-step-3-check-for-missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis Step 3: Check for Missing Indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-database-connection-pool-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Database Connection Pool Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Database Connection Pool Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-too-many-connections-or-connection-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: "Too Many Connections" or "Connection Timeout"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-index-fragmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Index Fragmentation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Index Fragmentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-was-fast-now-slow-same-data-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Was Fast, Now Slow (Same Data Size)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-stale-database-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Stale Database Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Stale Database Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-planner-chooses-wrong-index-or-seq-scan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Planner Chooses Wrong Index or Seq Scan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-slow-aggregation-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Slow Aggregation Queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Slow Aggregation Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-group-by-or-countdistinct-queries-taking-10-seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: GROUP BY or COUNT(DISTINCT) Queries Taking &gt; 10 Seconds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-n1-query-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. N+1 Query Problem
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. N+1 Query Problem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-many-small-queries-instead-of-one-large-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Many Small Queries Instead of One Large Query
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-network-latency-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Network Latency Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Network Latency Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-queries-slow-even-though-database-is-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Queries Slow Even Though Database is Fast
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-leaks-or-growing-memory-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Leaks or Growing Memory Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Leaks or Growing Memory Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-memory-usage-increases-over-time-never-returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Memory Usage Increases Over Time, Never Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-query-caching-effectiveness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Query Caching Effectiveness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Query Caching Effectiveness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#symptom-query-results-seem-stale-or-caching-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Query Results Seem Stale or Caching Not Working
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diagnosis_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnosis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-production-response-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Production Response Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5033,19 +6143,16 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Performance Tuning Runbook
-description: Operational procedures for diagnosing and optimizing FraiseQL query performance in production.
-keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="performance-tuning-runbook">Performance Tuning Runbook<a class="headerlink" href="#performance-tuning-runbook" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
+<p><strong>Status:</strong> Production Ready
 <strong>Audience:</strong> DevOps, Database Administrators, Performance Engineers
-<strong>Reading Time:</strong> 30-40 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
+<strong>Reading Time:</strong> 30-40 minutes</p>
 <p>Operational procedures for diagnosing and optimizing FraiseQL query performance in production.</p>
+<p>FraiseQL v1 is a Python runtime GraphQL framework that serves a PostgreSQL database over
+FastAPI. Queries read <code>v_</code>/<code>tv_</code> views, mutations call <code>fn_</code> PostgreSQL functions, and the
+GraphQL schema is built in memory at application startup. Almost all performance work
+therefore happens in two places: <strong>your PostgreSQL database</strong> (indexes, statistics, views)
+and <strong>the FastAPI app</strong> (connection pool, caching). This runbook covers both.</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>This runbook provides <strong>diagnosis workflows</strong> and <strong>remediation steps</strong> for common performance issues. Each section includes:</p>
@@ -5057,72 +6164,53 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <hr />
 <h2 id="quick-diagnosis-tree">Quick Diagnosis Tree<a class="headerlink" href="#quick-diagnosis-tree" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Is performance issue...</p>
-<ol>
-<li>
-<p>NEW: Slow since deployment?
-   → Go to: AFTER SCHEMA CHANGE (below)</p>
-</li>
-<li>
-<p>GRADUAL: Getting slower over time?
-   → Go to: INDEX FRAGMENTATION or STATISTICS STALE</p>
-</li>
-<li>
-<p>INTERMITTENT: Only sometimes slow?
-   → Go to: CONNECTION POOL EXHAUSTION or DATABASE UNDER LOAD</p>
-</li>
-<li>
-<p>SPECIFIC QUERY: One query is slow?
-   → Go to: QUERY ANALYSIS</p>
-</li>
-<li>
-<p>BROAD: Many queries slow?
-   → Go to: DATABASE TUNING or NETWORK LATENCY
-```text</p>
-</li>
-</ol>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Is performance issue...
 
+1. NEW: Slow since deployment?
+   → Go to: AFTER SCHEMA CHANGE (below)
+
+2. GRADUAL: Getting slower over time?
+   → Go to: INDEX FRAGMENTATION or STATISTICS STALE
+
+3. INTERMITTENT: Only sometimes slow?
+   → Go to: CONNECTION POOL EXHAUSTION or DATABASE UNDER LOAD
+
+4. SPECIFIC QUERY: One query is slow?
+   → Go to: QUERY ANALYSIS
+
+5. BROAD: Many queries slow?
+   → Go to: DATABASE TUNING or NETWORK LATENCY
+</code></pre></div>
 <hr />
 <h2 id="1-query-performance-analysis">1. Query Performance Analysis<a class="headerlink" href="#1-query-performance-analysis" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-single-query-takes-1-second">Symptom: Single Query Takes &gt; 1 Second<a class="headerlink" href="#symptom-single-query-takes-1-second" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis-step-1-enable-query-logging">Diagnosis Step 1: Enable Query Logging<a class="headerlink" href="#diagnosis-step-1-enable-query-logging" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="set-environment-variable">Set environment variable<a class="headerlink" href="#set-environment-variable" title="Permanent link">&para;</a></h1>
-<p>export RUST_LOG=FraiseQL=debug</p>
-<h1 id="restart-server">Restart server<a class="headerlink" href="#restart-server" title="Permanent link">&para;</a></h1>
-<p>systemctl restart FraiseQL</p>
-<h1 id="watch-logs">Watch logs<a class="headerlink" href="#watch-logs" title="Permanent link">&para;</a></h1>
-<p>tail -f /var/log/FraiseQL.log | grep "QUERY"
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL is a Python/FastAPI application. Turn up Python logging to see the SQL it issues
+against your views and functions. Set the logger level via standard Python logging (or the
+<code>FRAISEQL_</code> environment, e.g. <code>FRAISEQL_DATABASE_ECHO=true</code> to echo SQL).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># In your app entry point, before create_fraiseql_app(...)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run the app with uvicorn and watch the logs</span>
+uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;query\|select&quot;</span>
+</code></pre></div>
 <p><strong>Look for:</strong></p>
 <ul>
 <li>Query execution time</li>
-<li>SQL generation time</li>
+<li>The generated SQL against your <code>v_</code>/<code>tv_</code> views</li>
 <li>Database roundtrip time</li>
-<li>Result transformation time</li>
+<li>Result transformation time (JSONB shaping, done by the optional <code>fraiseql_rs</code> extension)</li>
 </ul>
 <h3 id="diagnosis-step-2-get-query-plan-from-database">Diagnosis Step 2: Get Query Plan from Database<a class="headerlink" href="#diagnosis-step-2-get-query-plan-from-database" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL
-EXPLAIN ANALYZE
-SELECT ... FROM ... WHERE ...;</p>
-<p>-- MySQL
-EXPLAIN FORMAT=JSON
-SELECT ... FROM ... WHERE ...;</p>
-<p>-- SQL Server
-SET STATISTICS IO ON;
-SET STATISTICS TIME ON;
-SELECT ... FROM ... WHERE ...;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Take the SQL FraiseQL logged (a <code>SELECT ... FROM v_...</code>) and run <code>EXPLAIN ANALYZE</code> against
+PostgreSQL:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- PostgreSQL</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="p">...;</span>
+</code></pre></div>
 <p><strong>Interpret output:</strong></p>
 <ul>
 <li><strong>Seq Scan</strong> = Sequential scan (bad, table is too large)</li>
@@ -5131,686 +6219,631 @@ SELECT ... FROM ... WHERE ...;
 <li><strong>Hash Join</strong> = Hash-based join (acceptable)</li>
 </ul>
 <h3 id="diagnosis-step-3-check-for-missing-indexes">Diagnosis Step 3: Check for Missing Indexes<a class="headerlink" href="#diagnosis-step-3-check-for-missing-indexes" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Find tables without indexes
-SELECT schemaname, tablename
-FROM pg_tables
-WHERE schemaname = 'public'
-EXCEPT
-SELECT schemaname, tablename
-FROM pg_indexes
-WHERE schemaname = 'public'
-ORDER BY tablename;</p>
-<p>-- Check most common WHERE columns in slow queries
-SELECT query FROM pg_stat_statements
-WHERE mean_time &gt; 100
-ORDER BY mean_time DESC LIMIT 5;</p>
-<p>-- Example output: "SELECT * FROM users WHERE created_at &gt;= ..."
--- → Need index on created_at
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Find tables without indexes</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_tables</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span>
+<span class="k">EXCEPT</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_indexes</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tablename</span><span class="p">;</span>
 
+<span class="c1">-- Check the most expensive queries (requires the pg_stat_statements extension)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="p">,</span><span class="w"> </span><span class="n">calls</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+
+<span class="c1">-- Example output: &quot;SELECT ... FROM tb_user WHERE created_at &gt;= ...&quot;</span>
+<span class="c1">-- → Need index on created_at</span>
+</code></pre></div>
+<blockquote>
+<p>Enable <code>pg_stat_statements</code> by adding it to <code>shared_preload_libraries</code> in
+<code>postgresql.conf</code> and running <code>CREATE EXTENSION pg_stat_statements;</code>.</p>
+</blockquote>
 <h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Add Missing Index</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Identify filter columns from EXPLAIN output
-CREATE INDEX idx_user_created_at ON users(created_at);</p>
-<p>-- Verify index is used
-EXPLAIN SELECT * FROM users WHERE created_at &gt;= '2026-01-01';
--- Should show "Index Scan" not "Seq Scan"
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Identify filter columns from EXPLAIN output</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
 
-<p><strong>Syntax per database:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Concurrent index creation (doesn't lock table)
-CREATE INDEX CONCURRENTLY idx_user_created_at ON users(created_at);</p>
-<p>-- MySQL: Online index creation (5.7+)
-ALTER TABLE users ADD INDEX idx_created_at (created_at), ALGORITHM=INPLACE;</p>
-<p>-- SQL Server: Online index creation
-CREATE INDEX idx_created_at ON users(created_at) WITH (ONLINE=ON);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Verify the index is used</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">;</span>
+<span class="c1">-- Should show &quot;Index Scan&quot; not &quot;Seq Scan&quot;</span>
+</code></pre></div>
+<p><strong>Concurrent index creation (doesn't lock the table):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Build the index without blocking writes (recommended in production)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+</code></pre></div>
+<p>Because read views build a <code>data</code> JSONB column, you often want indexes on the JSONB
+expressions you filter on:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Index on a value extracted from the JSONB data column</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">));</span>
 
+<span class="c1">-- GIN index for containment / key-existence queries on the whole JSONB document</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_data_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Solution 2: Composite Indexes for Common Filter Combinations</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- If queries often filter by both tenant and status:
--- CREATE INDEX idx_user_tenant_status ON users(tenant_id, status);
--- Covers WHERE tenant_id = X AND status = 'active'</p>
-<p>-- If queries filter by range, put range column last:
--- CREATE INDEX idx_posts_user_date ON posts(user_id, created_at);
--- Covers WHERE user_id = X AND created_at &gt;= Y
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- If queries often filter by both tenant and status:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_tenant_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span>
+<span class="c1">-- Covers WHERE tenant_id = X AND status = &#39;active&#39;</span>
 
-<p><strong>Solution 3: Switch to Materialized View (tv_*)</strong></p>
-<p>If index doesn't help (aggregation or complex join):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="before-logical-view-computed-per-query">Before: Logical view (computed per query)<a class="headerlink" href="#before-logical-view-computed-per-query" title="Permanent link">&para;</a></h1>
-<p>@type
-class UserStats:
-    post_count: int = field(computed="COUNT(SELECT ...)")</p>
-<h1 id="after-table-backed-view-materialized-daily">After: Table-backed view (materialized daily)<a class="headerlink" href="#after-table-backed-view-materialized-daily" title="Permanent link">&para;</a></h1>
-<p>@type
-class UserStats:
-    post_count: int  # Pre-computed, indexed
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- If queries filter by range, put the range column last:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_posts_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
+<span class="c1">-- Covers WHERE fk_user = X AND created_at &gt;= Y</span>
+</code></pre></div>
+<p><strong>Solution 3: Switch to a Table-Backed Projection View (<code>tv_*</code>)</strong></p>
+<p>If indexing a logical <code>v_</code> view doesn't help (heavy aggregation or deep nested joins),
+move to a <strong>table-backed projection view</strong> (<code>tv_</code>): a real table that holds the
+pre-composed <code>data</code> JSONB, refreshed by your <code>fn_</code> functions or triggers. Reads then hit
+a pre-built, indexable table instead of recomputing JSONB per request.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
+<span class="c1"># Logical view: data JSONB computed per query (good for small/simple reads)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="c1"># Table-backed projection view: data pre-composed and refreshed by fn_/triggers</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserStatsFast</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Pre-computed in tv_user_stats, indexable</span>
+</code></pre></div>
 <p><strong>Solution 4: Reduce Query Scope</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="before-fetching-too-much">Before: Fetching too much<a class="headerlink" href="#before-fetching-too-much" title="Permanent link">&para;</a></h1>
-<p>query {
-  users {  # Gets all 10M users!
-    id
-    name
-    posts { id title }
-  }
-}</p>
-<h1 id="after-add-filters">After: Add filters<a class="headerlink" href="#after-add-filters" title="Permanent link">&para;</a></h1>
-<p>query {
-  users(where: { created_at: { gte: "2026-01-01" } }) {
-    id
-    name
-    posts { id title }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c"># Before: fetching too much</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Gets all 10M users!</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
+<span class="c"># After: add filters (WHERE operators are generated against the view)</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">created_at</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-01-01&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="prevention">Prevention<a class="headerlink" href="#prevention" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor slow queries: <code>max_query_time &gt; 500ms</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Weekly index review: Check for missing indexes on filtered columns</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query profiling in staging: Profile all new queries before deploying</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor slow queries via <code>pg_stat_statements</code> (alert if <code>mean_exec_time &gt; 500ms</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Weekly index review: check for missing indexes on filtered columns / JSONB expressions</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query profiling in staging: profile new queries with <code>EXPLAIN ANALYZE</code> before deploying</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Document expected performance: "Query X should run in &lt; 100ms"</li>
 </ul>
 <hr />
 <h2 id="2-database-connection-pool-issues">2. Database Connection Pool Issues<a class="headerlink" href="#2-database-connection-pool-issues" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-too-many-connections-or-connection-timeout">Symptom: "Too Many Connections" or "Connection Timeout"<a class="headerlink" href="#symptom-too-many-connections-or-connection-timeout" title="Permanent link">&para;</a></h3>
+<p>FraiseQL maintains an async connection pool inside the FastAPI app. The effective maximum
+number of database connections is <code>connection_pool_size + connection_pool_max_overflow</code>.</p>
 <h3 id="diagnosis">Diagnosis<a class="headerlink" href="#diagnosis" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Check active connections
-SELECT COUNT(*) FROM pg_stat_activity;
-SELECT max_conn FROM pg_settings WHERE name = 'max_connections';</p>
-<p>-- Example: 100 max connections, 95 active → Almost exhausted</p>
-<p>-- Find slow connections
-SELECT pid, usename, state, query_start, query
-FROM pg_stat_activity
-WHERE state != 'idle'
-ORDER BY query_start;</p>
-<p>-- MySQL: Check connection count
-SHOW PROCESSLIST;
-SHOW VARIABLES LIKE 'max_connections';
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check active connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;max_connections&#39;</span><span class="p">;</span>
 
+<span class="c1">-- Example: 100 max connections, 95 active → almost exhausted</span>
+
+<span class="c1">-- Find slow / non-idle connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">query_start</span><span class="p">,</span><span class="w"> </span><span class="n">query</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">query_start</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="solutions_1">Solutions<a class="headerlink" href="#solutions_1" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Increase Pool Size</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="fraiseqltoml">FraiseQL.toml<a class="headerlink" href="#fraiseqltoml" title="Permanent link">&para;</a></h1>
-<p>[database]
-pool_size = 50  # Was 10, increase to 50
-```text</p>
-<!-- Code example in TEXT -->
+<p>Tune the pool through <code>create_fraiseql_app(...)</code> kwargs:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<p><strong>Maximum safe values:</strong></p>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>        <span class="c1"># base connections held open</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># extra connections under load</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>   <span class="c1"># seconds to wait for a free connection</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>   <span class="c1"># seconds before recycling idle connections</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Equivalently, via <code>FraiseQLConfig</code> (or the <code>FRAISEQL_</code> environment variables it reads):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Or set them from the environment (FRAISEQL_ prefix, case-insensitive)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">30</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">20</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_TIMEOUT</span><span class="o">=</span><span class="m">30</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_RECYCLE</span><span class="o">=</span><span class="m">3600</span>
+</code></pre></div>
+<p><strong>Sizing guidance:</strong></p>
 <ul>
-<li>PostgreSQL max_connections: Usually 200-1000 (depends on server)</li>
-<li>MySQL max_connections: Usually 500-10000</li>
-<li>SQLite: Not applicable (single connection)</li>
+<li>Keep <code>pool_size + max_overflow</code> comfortably below PostgreSQL's <code>max_connections</code>
+  (commonly 100-500, depending on the server).</li>
+<li>Account for <strong>every</strong> app instance/worker: total DB connections = per-instance pool max
+  × number of instances. Three instances with <code>30 + 20</code> can open 150 connections.</li>
 </ul>
-<p><strong>Solution 2: Enable Connection Pooling at Database Level</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="postgresql-use-pgbouncer">PostgreSQL: Use PgBouncer<a class="headerlink" href="#postgresql-use-pgbouncer" title="Permanent link">&para;</a></h1>
-<p>sudo apt install pgbouncer</p>
-<h1 id="configure-etcpgbouncerpgbouncerini">Configure /etc/pgbouncer/pgbouncer.ini<a class="headerlink" href="#configure-etcpgbouncerpgbouncerini" title="Permanent link">&para;</a></h1>
-<p>[databases]
-mydb = host=localhost port=5432 dbname=mydb</p>
-<p>[pgbouncer]
-pool_mode = transaction
-max_client_conn = 1000
-default_pool_size = 25
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 2: Add a Connection Pooler in Front of PostgreSQL</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Use PgBouncer when many app instances would otherwise exhaust max_connections</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>pgbouncer
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">; /etc/pgbouncer/pgbouncer.ini</span>
+<span class="k">[databases]</span>
+<span class="na">mydb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">host=localhost port=5432 dbname=mydb</span>
 
+<span class="k">[pgbouncer]</span>
+<span class="na">pool_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">transaction</span>
+<span class="na">max_client_conn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">1000</span>
+<span class="na">default_pool_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">25</span>
+</code></pre></div>
 <p><strong>Solution 3: Kill Slow/Idle Connections</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Kill connections idle &gt; 5 minutes
-SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
-WHERE state = 'idle'
-AND query_start &lt; now() - interval '5 minutes';</p>
-<p>-- MySQL: Kill long-running connections
-KILL QUERY process_id;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Kill connections idle &gt; 5 minutes</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_terminate_backend</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="s1">&#39;5 minutes&#39;</span><span class="p">;</span>
 
-<p><strong>Solution 4: Set Connection Timeout</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]
-connection_timeout_seconds = 10  # Wait max 10s for connection
-query_timeout_seconds = 30       # Abort query after 30s
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Set a server-side idle timeout instead of killing manually</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">mydb</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">idle_in_transaction_session_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;60s&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Solution 4: Set Connection and Query Timeouts</strong></p>
+<p><code>connection_pool_timeout</code> bounds how long FraiseQL waits for a free pool slot. Bound the
+query itself in PostgreSQL with <code>statement_timeout</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Abort any statement running longer than 30 seconds (per role or per database)</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;30s&#39;</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="prevention_1">Prevention<a class="headerlink" href="#prevention_1" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor pool usage: Alert at 80% capacity</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set max_client_conn based on peak load</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor pool usage: alert at 80% capacity</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Size <code>pool_size + max_overflow</code> against <code>max_connections</code> and instance count</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Regular connection review (weekly)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement query timeouts</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement statement timeouts</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Close subscriptions on disconnect</li>
 </ul>
 <hr />
 <h2 id="3-index-fragmentation">3. Index Fragmentation<a class="headerlink" href="#3-index-fragmentation" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-query-was-fast-now-slow-same-data-size">Symptom: Query Was Fast, Now Slow (Same Data Size)<a class="headerlink" href="#symptom-query-was-fast-now-slow-same-data-size" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis_1">Diagnosis<a class="headerlink" href="#diagnosis_1" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Check index bloat
-SELECT schemaname, tablename, indexname, idx_scan
-FROM pg_stat_user_indexes
-WHERE idx_scan = 0
-ORDER BY pg_relation_size(indexrelid) DESC;</p>
-<p>-- MySQL: Check index fragmentation
-SELECT object_schema, object_name, count_read, count_write
-FROM performance_schema.table_io_waits_summary_by_index_usage
-WHERE count_read &gt; 0
-ORDER BY count_read DESC;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Find unused indexes (candidates for removal) and large indexes</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span><span class="p">,</span><span class="w"> </span><span class="n">indexrelname</span><span class="p">,</span><span class="w"> </span><span class="n">idx_scan</span><span class="p">,</span>
+<span class="w">       </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">indexrelid</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">index_size</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_user_indexes</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">idx_scan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">pg_relation_size</span><span class="p">(</span><span class="n">indexrelid</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
+<span class="c1">-- Estimate table/index bloat (requires the pgstattuple extension)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pgstattuple</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgstattuple</span><span class="p">(</span><span class="s1">&#39;idx_user_created_at&#39;</span><span class="p">);</span>
+</code></pre></div>
 <h3 id="solutions_2">Solutions<a class="headerlink" href="#solutions_2" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Reindex (PostgreSQL)</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Reindex single index (requires lock)
-REINDEX INDEX idx_user_created_at;</p>
-<p>-- Reindex entire table (rebuilds all indexes)
-REINDEX TABLE users;</p>
-<p>-- Concurrent reindex (no lock, v12+)
-REINDEX INDEX CONCURRENTLY idx_user_created_at;
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Reindex</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Reindex a single index (takes a lock)</span>
+<span class="k">REINDEX</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="p">;</span>
 
-<p><strong>Solution 2: Optimize Table (MySQL)</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Defragment and rebuild indexes
-OPTIMIZE TABLE users;</p>
-<p>-- Analyze statistics
-ANALYZE TABLE users;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Reindex an entire table (rebuilds all its indexes)</span>
+<span class="k">REINDEX</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
+<span class="c1">-- Concurrent reindex (no exclusive lock, PostgreSQL 12+)</span>
+<span class="k">REINDEX</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Solution 2: VACUUM to Reclaim Dead Tuples</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Reclaim space and update visibility map (does not lock for normal VACUUM)</span>
+<span class="k">VACUUM</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">)</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+
+<span class="c1">-- VACUUM FULL rewrites the table compactly but takes an exclusive lock</span>
+<span class="k">VACUUM</span><span class="w"> </span><span class="k">FULL</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Solution 3: Regular Maintenance Schedule</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="weekly-index-maintenance">Weekly index maintenance<a class="headerlink" href="#weekly-index-maintenance" title="Permanent link">&para;</a></h1>
-<p>0 2 * * 0 FraiseQL-maintenance reindex --tables all</p>
-<h1 id="monthly-full-optimization">Monthly full optimization<a class="headerlink" href="#monthly-full-optimization" title="Permanent link">&para;</a></h1>
-<p>0 2 1 * * FraiseQL-maintenance optimize --full
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Weekly concurrent reindex of a hot table (PostgreSQL 12+)</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span><span class="m">0</span><span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;REINDEX TABLE CONCURRENTLY tb_user;&quot;</span>
 
+<span class="c1"># Daily vacuum + analyze of heavily modified tables</span>
+<span class="m">0</span><span class="w"> </span><span class="m">3</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;VACUUM (ANALYZE) tb_user; VACUUM (ANALYZE) tb_post;&quot;</span>
+</code></pre></div>
 <h3 id="prevention_2">Prevention<a class="headerlink" href="#prevention_2" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schedule weekly index maintenance</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor index bloat: Alert if &gt; 20% bloat</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use concurrent indexing operations</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Regular ANALYZE to update statistics</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schedule periodic concurrent reindexing of hot tables</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor index bloat with <code>pgstattuple</code> (alert if &gt; 20% bloat)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use concurrent indexing operations to avoid downtime</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rely on autovacuum, and run manual <code>ANALYZE</code> after large bulk loads</li>
 </ul>
 <hr />
 <h2 id="4-stale-database-statistics">4. Stale Database Statistics<a class="headerlink" href="#4-stale-database-statistics" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-query-planner-chooses-wrong-index-or-seq-scan">Symptom: Query Planner Chooses Wrong Index or Seq Scan<a class="headerlink" href="#symptom-query-planner-chooses-wrong-index-or-seq-scan" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis_2">Diagnosis<a class="headerlink" href="#diagnosis_2" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Check when statistics were last updated
-SELECT schemaname, tablename, last_vacuum, last_analyze
-FROM pg_stat_user_tables
-ORDER BY last_analyze;</p>
-<p>-- If last_analyze is very old → Update statistics</p>
-<p>-- MySQL: Check table statistics
-SELECT object_schema, object_name, count_insert, count_update, count_delete
-FROM performance_schema.table_io_waits_summary_by_table
-WHERE count_insert &gt; 10000 OR count_update &gt; 10000
-ORDER BY count_insert DESC;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check when statistics were last updated and autovacuum/analyze ran</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span><span class="p">,</span><span class="w"> </span><span class="n">last_vacuum</span><span class="p">,</span><span class="w"> </span><span class="n">last_autovacuum</span><span class="p">,</span>
+<span class="w">       </span><span class="n">last_analyze</span><span class="p">,</span><span class="w"> </span><span class="n">last_autoanalyze</span><span class="p">,</span><span class="w"> </span><span class="n">n_dead_tup</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_user_tables</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">last_analyze</span><span class="w"> </span><span class="n">NULLS</span><span class="w"> </span><span class="k">FIRST</span><span class="p">;</span>
 
+<span class="c1">-- If last_analyze / last_autoanalyze is very old → update statistics</span>
+</code></pre></div>
 <h3 id="solutions_3">Solutions<a class="headerlink" href="#solutions_3" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Update Statistics (ANALYZE)</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL
-ANALYZE users;
-ANALYZE;  -- All tables</p>
-<p>-- MySQL
-ANALYZE TABLE users;</p>
-<p>-- SQL Server
-UPDATE STATISTICS users;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">ANALYZE</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+<span class="k">ANALYZE</span><span class="p">;</span><span class="w">  </span><span class="c1">-- All tables in the current database</span>
+</code></pre></div>
+<p><strong>Solution 2: Autovacuum Configuration</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check autovacuum settings</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;autovacuum%&#39;</span><span class="p">;</span>
 
-<p><strong>Solution 2: Auto-Vacuum Configuration (PostgreSQL)</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check autovacuum settings
-SELECT name, setting FROM pg_settings WHERE name LIKE 'autovacuum%';</p>
-<p>-- Increase frequency if needed
-ALTER DATABASE mydb SET autovacuum_naptime = '30s';  -- Default 60s
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Make autovacuum more aggressive globally</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">autovacuum_naptime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;30s&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Default 60s</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 
+<span class="c1">-- Or tune a single high-churn table</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_analyze_scale_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">02</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Solution 3: Schedule Regular ANALYZE</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="hourly-analysis-of-heavily-modified-tables">Hourly analysis of heavily modified tables<a class="headerlink" href="#hourly-analysis-of-heavily-modified-tables" title="Permanent link">&para;</a></h1>
-<p>0 * * * * psql -d $DATABASE -c "ANALYZE users; ANALYZE posts;"</p>
-<h1 id="daily-full-database-analysis">Daily full database analysis<a class="headerlink" href="#daily-full-database-analysis" title="Permanent link">&para;</a></h1>
-<p>0 2 * * * psql -d $DATABASE -c "ANALYZE;"
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Hourly analysis of heavily modified tables</span>
+<span class="m">0</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;ANALYZE tb_user; ANALYZE tb_post;&quot;</span>
 
+<span class="c1"># Daily full-database analysis</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;ANALYZE;&quot;</span>
+</code></pre></div>
 <h3 id="prevention_3">Prevention<a class="headerlink" href="#prevention_3" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Enable autovacuum (PostgreSQL)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schedule regular ANALYZE: Daily for OLTP, Hourly for heavily modified tables</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor last_analyze timestamp</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Alert if statistics &gt; 24 hours old</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Keep autovacuum enabled (it is on by default)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schedule regular <code>ANALYZE</code>: daily for OLTP, hourly for heavily modified tables</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor <code>last_analyze</code> / <code>last_autoanalyze</code> timestamps</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Alert if statistics are &gt; 24 hours old on a busy table</li>
 </ul>
 <hr />
 <h2 id="5-slow-aggregation-queries">5. Slow Aggregation Queries<a class="headerlink" href="#5-slow-aggregation-queries" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-group-by-or-countdistinct-queries-taking-10-seconds">Symptom: GROUP BY or COUNT(DISTINCT) Queries Taking &gt; 10 Seconds<a class="headerlink" href="#symptom-group-by-or-countdistinct-queries-taking-10-seconds" title="Permanent link">&para;</a></h3>
+<p>FraiseQL supports <strong>runtime auto-aggregation</strong>: when a GraphQL query selects aggregate
+fields on a view-backed type, FraiseQL derives <code>GROUP BY</code> + aggregate SQL automatically
+(allowed functions: <code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MIN</code>, <code>MAX</code>, <code>ARRAY_AGG</code>, <code>STRING_AGG</code>,
+<code>BOOL_AND</code>, <code>BOOL_OR</code>, <code>JSON_AGG</code>, <code>JSONB_AGG</code>). That derived SQL still runs against your
+PostgreSQL views, so the tuning below applies. Functions outside the allowlist (e.g.
+<code>STDDEV</code>, <code>VARIANCE</code>) must be written by hand in the view SQL.</p>
 <h3 id="diagnosis_3">Diagnosis<a class="headerlink" href="#diagnosis_3" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Identify aggregation queries
-SELECT query FROM pg_stat_statements
-WHERE query LIKE '%COUNT%' OR query LIKE '%GROUP BY%'
-ORDER BY mean_time DESC LIMIT 5;</p>
-<p>-- Check if they use indexes
-EXPLAIN SELECT COUNT(DISTINCT user_id) FROM posts;
--- Look for "Seq Scan" (bad) vs "Index Only Scan" (good)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Identify aggregation queries (requires pg_stat_statements)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%count%&#39;</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%group by%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
 
+<span class="c1">-- Check whether they use indexes</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
+<span class="c1">-- Look for &quot;Seq Scan&quot; (bad) vs &quot;Index Only Scan&quot; (good)</span>
+</code></pre></div>
 <h3 id="solutions_4">Solutions<a class="headerlink" href="#solutions_4" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Add Index for Aggregation Column</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- For: COUNT(DISTINCT user_id)
-CREATE INDEX idx_posts_user_id ON posts(user_id);</p>
-<p>-- For: GROUP BY status
-CREATE INDEX idx_orders_status ON orders(status);</p>
-<p>-- For: Multiple columns in GROUP BY
-CREATE INDEX idx_user_org_status ON users(organization_id, status);
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Add Index for the Aggregation Column</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- For: COUNT(DISTINCT fk_user)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
 
-<p><strong>Solution 2: Pre-Compute with Materialized View</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="before-slow-query-in-every-request">Before: Slow query in every request<a class="headerlink" href="#before-slow-query-in-every-request" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def user_stats():
-    # SELECT user_id, COUNT(*) as post_count FROM posts GROUP BY user_id
-    # Takes 10+ seconds on 100M rows!</p>
-<h1 id="after-use-table-backed-view">After: Use table-backed view<a class="headerlink" href="#after-use-table-backed-view" title="Permanent link">&para;</a></h1>
-<p>@type
-class UserStats:
-    user_id: ID
-    post_count: int  # Pre-computed, updated hourly
-    updated_at: DateTime
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- For: GROUP BY status</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
 
-<p><strong>Solution 3: Approximate Aggregations</strong></p>
-<p>For very large datasets where approximate values acceptable:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="use-hyperloglog-instead-of-countdistinct">Use HyperLogLog instead of COUNT(DISTINCT)<a class="headerlink" href="#use-hyperloglog-instead-of-countdistinct" title="Permanent link">&para;</a></h1>
-<p>@type
-class PostStats:
-    unique_users_approx: int  # HyperLogLog count
-    # 5% error but 100x faster
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- For: multiple GROUP BY columns</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_org_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">fk_organization</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span>
+</code></pre></div>
+<p><strong>Solution 2: Pre-Compute with a Table-Backed Projection View</strong></p>
+<p>Move the aggregation out of the request path. Compute it into a <code>tv_</code> table refreshed by a
+<code>fn_</code> function or trigger, and expose the <code>tv_</code> as the read source:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span>
 
-<p><strong>Solution 4: Partition Large Tables</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Partition posts table by date
-CREATE TABLE posts_2026_01 PARTITION OF posts
-    FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');</p>
-<p>-- Aggregation on monthly partition is much faster
-SELECT COUNT(*) FROM posts_2026_01;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Aggregation is pre-computed in tv_user_stats and refreshed on a schedule;</span>
+<span class="c1"># reads no longer run COUNT/GROUP BY on every request.</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>   <span class="c1"># pre-computed</span>
+    <span class="n">updated_at</span><span class="p">:</span> <span class="n">DateTime</span>
+</code></pre></div>
+<p>You can implement the same idea with a PostgreSQL <strong>materialized view</strong> refreshed
+periodically:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">mv_user_post_counts</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">post_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_user</span><span class="p">;</span>
 
+<span class="c1">-- Refresh without blocking readers (requires a unique index on the MV)</span>
+<span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_user_post_counts</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Solution 3: Partition Large Tables</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Partition the post table by date</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post_2026_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">);</span>
+
+<span class="c1">-- Aggregation on a single monthly partition is much faster (partition pruning)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span>
+<span class="w">                              </span><span class="k">AND</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="prevention_4">Prevention<a class="headerlink" href="#prevention_4" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Profile GROUP BY queries before deploying</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Profile <code>GROUP BY</code> queries before deploying</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Create indexes on aggregation columns</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use materialized views for complex aggregations</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor query time: Alert if &gt; 5 seconds</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use <code>tv_</code> projection tables or materialized views for heavy aggregations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor query time: alert if &gt; 5 seconds</li>
 </ul>
 <hr />
 <h2 id="6-n1-query-problem">6. N+1 Query Problem<a class="headerlink" href="#6-n1-query-problem" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-many-small-queries-instead-of-one-large-query">Symptom: Many Small Queries Instead of One Large Query<a class="headerlink" href="#symptom-many-small-queries-instead-of-one-large-query" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis_4">Diagnosis<a class="headerlink" href="#diagnosis_4" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="enable-fraiseql-query-logging">Enable FraiseQL query logging<a class="headerlink" href="#enable-fraiseql-query-logging" title="Permanent link">&para;</a></h1>
-<p>export RUST_LOG=fraiseql_core=debug</p>
-<h1 id="run-problematic-query">Run problematic query<a class="headerlink" href="#run-problematic-query" title="Permanent link">&para;</a></h1>
-<h1 id="look-for-executing-select-repeated-for-each-parent-record">Look for: "Executing SELECT..." repeated for each parent record<a class="headerlink" href="#look-for-executing-select-repeated-for-each-parent-record" title="Permanent link">&para;</a></h1>
-<h1 id="example-query-100-users-then-100-queries-for-posts-101-queries">Example: Query 100 users, then 100 queries for posts = 101 queries!<a class="headerlink" href="#example-query-100-users-then-100-queries-for-posts-101-queries" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Count queries:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>grep -c "Executing SELECT" logs.txt</p>
-<h1 id="101-queries-n1-problem">101 queries → N+1 problem!<a class="headerlink" href="#101-queries-n1-problem" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p>Turn up FraiseQL's Python logging and count the SQL statements issued for a single request.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run the request, capture the app logs, then count SELECTs</span>
+uvicorn<span class="w"> </span>app:app<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>logs.txt
+grep<span class="w"> </span>-c<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;select&quot;</span><span class="w"> </span>logs.txt
+<span class="c1"># ~101 statements for 100 parents → N+1 problem</span>
+</code></pre></div>
 <h3 id="solutions_5">Solutions<a class="headerlink" href="#solutions_5" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: FraiseQL Auto-Batching</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="fraiseql-automatically-batches-nested-queries">FraiseQL automatically batches nested queries:<a class="headerlink" href="#fraiseql-automatically-batches-nested-queries" title="Permanent link">&para;</a></h1>
-<p>query {
-  users(first: 100) {
-    id
-    posts(first: 50) {  # Batched automatically!
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Compose the Nested Data Inside the View</strong></p>
+<p>The most reliable fix is to build the nested data directly into the <code>data</code> JSONB of a
+<code>v_</code>/<code>tv_</code> view using <code>jsonb_build_object</code> / <code>jsonb_agg</code>, so one read returns everything:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- v_user_with_posts: posts embedded in the user&#39;s data JSONB (one query, no N+1)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_with_posts</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">((</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">))</span>
+<span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">        </span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<p><strong>Result:</strong> ~2 queries total (users + batched posts)</p>
-<p><strong>Solution 2: Use Table-Backed View with Pre-Fetched Data</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class UserWithPosts:
-    """Denormalized view with posts pre-fetched."""
-    id: ID
-    name: str
-    posts_json: List[Post]  # Fetched in view definition
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_with_posts&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserWithPosts</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Post&quot;</span><span class="p">]</span>  <span class="c1"># fetched in the view definition, no per-row query</span>
+</code></pre></div>
+<p><strong>Solution 2: Batch a Field with a DataLoader</strong></p>
+<p>For computed/related fields resolved in Python, batch them with <code>@fraiseql.dataloader_field</code>
+to collapse N lookups into one:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Solution 3: Flatten Query Structure</strong></p>
-<p>Instead of:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users { id posts { id comments { id } } }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Do separate queries:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query { users { id } }
-query { posts { id userId } }
-query { comments { id postId } }
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">post</span><span class="p">:</span> <span class="s2">&quot;Post&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;User&quot;</span><span class="p">:</span>
+    <span class="c1"># Loaded in a single batched query for all posts in the result set.</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>Solution 3: Flatten the Query Structure</strong></p>
+<p>If deep nesting is unavoidable on a slow path, split it into separate queries the client
+joins client-side:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">userId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">postId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
 <h3 id="prevention_5">Prevention<a class="headerlink" href="#prevention_5" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor query count per request: Alert if &gt; 10 queries per request</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor query count per request: alert if &gt; 10 queries per request</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load test with large datasets (1000+ records)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Profile queries in staging: Identify N+1 before deploying</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Test queries with <code>EXPLAIN</code> to see execution plan</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Prefer view-composed nested data over per-field resolvers on hot paths</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use <code>@fraiseql.dataloader_field</code> for Python-resolved relations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Test queries with <code>EXPLAIN ANALYZE</code> to see the execution plan</li>
 </ul>
 <hr />
 <h2 id="7-network-latency-issues">7. Network Latency Issues<a class="headerlink" href="#7-network-latency-issues" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-queries-slow-even-though-database-is-fast">Symptom: Queries Slow Even Though Database is Fast<a class="headerlink" href="#symptom-queries-slow-even-though-database-is-fast" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis_5">Diagnosis<a class="headerlink" href="#diagnosis_5" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="measure-latency-to-database">Measure latency to database<a class="headerlink" href="#measure-latency-to-database" title="Permanent link">&para;</a></h1>
-<p>ping -c 10 database-host</p>
-<h1 id="normal-1-10ms">Normal: 1-10ms<a class="headerlink" href="#normal-1-10ms" title="Permanent link">&para;</a></h1>
-<h1 id="high-50ms-indicates-network-issue">High: &gt; 50ms indicates network issue<a class="headerlink" href="#high-50ms-indicates-network-issue" title="Permanent link">&para;</a></h1>
-<h1 id="measure-database-response-time">Measure database response time<a class="headerlink" href="#measure-database-response-time" title="Permanent link">&para;</a></h1>
-<p>time psql -h database-host -d mydb -c "SELECT COUNT(*) FROM users;"</p>
-<h1 id="split-time-into">Split time into:<a class="headerlink" href="#split-time-into" title="Permanent link">&para;</a></h1>
-<h1 id="-connection-time-first-line-of-output">- Connection time (first line of output)<a class="headerlink" href="#-connection-time-first-line-of-output" title="Permanent link">&para;</a></h1>
-<h1 id="-query-execution-time">- Query execution time<a class="headerlink" href="#-query-execution-time" title="Permanent link">&para;</a></h1>
-<h1 id="check-network-path">Check network path<a class="headerlink" href="#check-network-path" title="Permanent link">&para;</a></h1>
-<p>traceroute database-host</p>
-<h1 id="look-for-high-latency-at-any-hop">Look for high latency at any hop<a class="headerlink" href="#look-for-high-latency-at-any-hop" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Measure latency to the database host</span>
+ping<span class="w"> </span>-c<span class="w"> </span><span class="m">10</span><span class="w"> </span>database-host
+<span class="c1"># Normal: 1-10ms; High: &gt; 50ms indicates a network issue</span>
 
+<span class="c1"># Measure end-to-end database response time</span>
+<span class="nb">time</span><span class="w"> </span>psql<span class="w"> </span>-h<span class="w"> </span>database-host<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT COUNT(*) FROM tb_user;&quot;</span>
+
+<span class="c1"># Inspect the network path</span>
+traceroute<span class="w"> </span>database-host
+<span class="c1"># Look for high latency at any hop</span>
+</code></pre></div>
 <h3 id="solutions_6">Solutions<a class="headerlink" href="#solutions_6" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Reduce Network Roundtrips</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="before-multiple-separate-queries">Before: Multiple separate queries<a class="headerlink" href="#before-multiple-separate-queries" title="Permanent link">&para;</a></h1>
-<p>user = await db.query("SELECT * FROM users WHERE id = ?", [user_id])
-posts = await db.query("SELECT * FROM posts WHERE user_id = ?", [user_id])</p>
-<h1 id="after-single-joined-query">After: Single joined query<a class="headerlink" href="#after-single-joined-query" title="Permanent link">&para;</a></h1>
-<p>result = await db.query("""
-    SELECT u.<em>, p.</em>
-    FROM users u
-    LEFT JOIN posts p ON u.id = p.user_id
-    WHERE u.id = ?
-""", [user_id])
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 2: Use Connection Pooling Closer to App</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="deploy-pgbouncerproxysql-on-same-host-as-fraiseql">Deploy PgBouncer/ProxySQL on same host as FraiseQL<a class="headerlink" href="#deploy-pgbouncerproxysql-on-same-host-as-fraiseql" title="Permanent link">&para;</a></h1>
-<h1 id="reduces-network-roundtrips-from-100ms-to-1ms">Reduces network roundtrips from 100ms to 1ms<a class="headerlink" href="#reduces-network-roundtrips-from-100ms-to-1ms" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p>Compose related data in the view (see Section 6) so a request makes one roundtrip instead
+of several. Inside views, prefer a single joined <code>SELECT</code> over multiple subqueries:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- One roundtrip: join user and posts in the view&#39;s SELECT</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">       </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Solution 2: Co-locate the Pooler / Database with the App</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Deploy PgBouncer on the same host (or same AZ) as the FastAPI app</span>
+<span class="c1"># to cut per-connection roundtrip overhead.</span>
+</code></pre></div>
 <p><strong>Solution 3: Cache Frequently Accessed Data</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.caching]
-enabled = true
-ttl_seconds = 300  # Cache query results 5 minutes
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Use FraiseQL's PostgreSQL-backed result cache (see Section 9) for read-heavy, slow-changing
+data. Also deploy the database in the same availability zone as the application.</p>
 <h3 id="prevention_6">Prevention<a class="headerlink" href="#prevention_6" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor network latency: Alert if &gt; 50ms</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deploy database close to application (same AZ)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor network latency: alert if &gt; 50ms</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deploy database close to the application (same AZ)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Use connection pooling</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Batch queries to reduce roundtrips</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Compose nested data in views to reduce roundtrips</li>
 </ul>
 <hr />
 <h2 id="8-memory-leaks-or-growing-memory-usage">8. Memory Leaks or Growing Memory Usage<a class="headerlink" href="#8-memory-leaks-or-growing-memory-usage" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-memory-usage-increases-over-time-never-returns">Symptom: Memory Usage Increases Over Time, Never Returns<a class="headerlink" href="#symptom-memory-usage-increases-over-time-never-returns" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis_6">Diagnosis<a class="headerlink" href="#diagnosis_6" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="monitor-memory-usage">Monitor memory usage<a class="headerlink" href="#monitor-memory-usage" title="Permanent link">&para;</a></h1>
-<p>top -p <fraiseql_pid></p>
-<h1 id="look-at-res-resident-set-size">Look at RES (resident set size)<a class="headerlink" href="#look-at-res-resident-set-size" title="Permanent link">&para;</a></h1>
-<h1 id="should-be-stable-not-growing">Should be stable, not growing<a class="headerlink" href="#should-be-stable-not-growing" title="Permanent link">&para;</a></h1>
-<h1 id="check-for-open-file-handles">Check for open file handles<a class="headerlink" href="#check-for-open-file-handles" title="Permanent link">&para;</a></h1>
-<p>lsof -p <fraiseql_pid> | wc -l</p>
-<h1 id="if-growing-file-handle-leak">If growing → File handle leak<a class="headerlink" href="#if-growing-file-handle-leak" title="Permanent link">&para;</a></h1>
-<h1 id="check-for-unclosed-database-connections">Check for unclosed database connections<a class="headerlink" href="#check-for-unclosed-database-connections" title="Permanent link">&para;</a></h1>
-<p>SELECT count(*) FROM pg_stat_activity WHERE usename = 'fraiseql_user';</p>
-<h1 id="should-not-grow-over-time">Should not grow over time<a class="headerlink" href="#should-not-grow-over-time" title="Permanent link">&para;</a></h1>
-<h1 id="check-subscription-connections">Check subscription connections<a class="headerlink" href="#check-subscription-connections" title="Permanent link">&para;</a></h1>
-<p>SELECT count(*) FROM websocket_connections;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Find the uvicorn / app process and watch resident memory</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>uvicorn
+top<span class="w"> </span>-p<span class="w"> </span>&lt;app_pid&gt;<span class="w">          </span><span class="c1"># watch RES (resident set size) — should be stable</span>
 
+<span class="c1"># Check for open file handles (growing → handle leak)</span>
+lsof<span class="w"> </span>-p<span class="w"> </span>&lt;app_pid&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check for unclosed database connections from the app role</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">usename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="c1">-- Should stay near the configured pool size, not grow unbounded</span>
+</code></pre></div>
 <h3 id="solutions_7">Solutions<a class="headerlink" href="#solutions_7" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Check for Unclosed Resources</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="ensure-subscriptions-are-closed">Ensure subscriptions are closed<a class="headerlink" href="#ensure-subscriptions-are-closed" title="Permanent link">&para;</a></h1>
-<p>try:
-    async for event in subscription:
-        process_event(event)
-finally:
-    subscription.close()  # Always close</p>
-<h1 id="ensure-database-connections-returned-to-pool">Ensure database connections returned to pool<a class="headerlink" href="#ensure-database-connections-returned-to-pool" title="Permanent link">&para;</a></h1>
-<p>async with pool.acquire() as conn:
-    # Connection automatically returned when block exits
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Ensure Resources Are Released</strong></p>
+<p>The CQRS repository borrows pool connections per request and returns them automatically.
+For long-lived async generators (subscriptions), make sure the generator is closed:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Subscriptions are async generators; ensure cleanup on disconnect</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">task</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># release any external resources you opened in the generator</span>
+        <span class="o">...</span>
+</code></pre></div>
+<p><strong>Solution 2: Bound Concurrency and Query Cost</strong></p>
+<p>Limit query depth/complexity and request load through <code>FraiseQLConfig</code> rather than
+unbounded execution:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<p><strong>Solution 2: Set Resource Limits</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.limits]
-max_concurrent_queries = 1000
-max_subscription_connections = 5000
-max_result_size_bytes = 10485760  # 10MB
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Solution 3: Profile and Recycle</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Profile a Python process with a sampling profiler such as py-spy</span>
+py-spy<span class="w"> </span>top<span class="w"> </span>--pid<span class="w"> </span>&lt;app_pid&gt;
 
-<p><strong>Solution 3: Regular Memory Profiling</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="use-memory-profiler-if-supported">Use memory profiler (if supported)<a class="headerlink" href="#use-memory-profiler-if-supported" title="Permanent link">&para;</a></h1>
-<p>cargo profiling memory --duration 60s</p>
-<h1 id="restart-after-24-hours-if-needed">Restart after 24 hours if needed<a class="headerlink" href="#restart-after-24-hours-if-needed" title="Permanent link">&para;</a></h1>
-<p>systemctl restart FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># As a stop-gap, recycle workers periodically (uvicorn/gunicorn)</span>
+gunicorn<span class="w"> </span>app:app<span class="w"> </span>-k<span class="w"> </span>uvicorn.workers.UvicornWorker<span class="w"> </span>--max-requests<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--max-requests-jitter<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
 <h3 id="prevention_7">Prevention<a class="headerlink" href="#prevention_7" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor memory: Alert if growth &gt; 10%/day</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Regular service restarts: Daily or weekly</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Subscribe to all resource cleanup</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set timeouts on all connections</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor memory: alert if growth &gt; 10%/day</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Recycle workers periodically (<code>--max-requests</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Ensure subscription generators clean up on disconnect</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set complexity, rate-limit, and execution timeouts</li>
 </ul>
 <hr />
 <h2 id="9-query-caching-effectiveness">9. Query Caching Effectiveness<a class="headerlink" href="#9-query-caching-effectiveness" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-query-results-seem-stale-or-caching-not-working">Symptom: Query Results Seem Stale or Caching Not Working<a class="headerlink" href="#symptom-query-results-seem-stale-or-caching-not-working" title="Permanent link">&para;</a></h3>
+<p>FraiseQL ships a PostgreSQL-backed result cache in <code>fraiseql.caching</code>. The key pieces:</p>
+<ul>
+<li><code>PostgresCache</code> — a cache backend stored in an <code>UNLOGGED</code> PostgreSQL table (shared across
+  app instances, fast, cleared on crash — acceptable for cache data).</li>
+<li><code>ResultCache</code> + <code>CacheConfig</code> — the cache itself and its settings (<code>enabled</code>,
+  <code>default_ttl</code>, <code>max_ttl</code>, <code>cache_errors</code>, <code>key_prefix</code>). <code>CacheStats</code> exposes <code>hits</code>,
+  <code>misses</code>, and <code>hit_rate</code>.</li>
+<li><code>CachedRepository</code> — wraps the CQRS repository so <code>db.find(...)</code> is cached transparently
+  (with per-tenant key isolation), accepting <code>skip_cache=</code> and <code>cache_ttl=</code> per call.</li>
+<li><code>CascadeRule</code> + <code>SchemaAnalyzer</code> + <code>setup_auto_cascade_rules</code> — derive invalidation rules
+  from your GraphQL schema so changing one type invalidates dependent caches.</li>
+<li><code>cached_query</code> — a decorator for caching the result of an individual resolver.</li>
+</ul>
 <h3 id="diagnosis_7">Diagnosis<a class="headerlink" href="#diagnosis_7" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-cache-configuration">Check cache configuration<a class="headerlink" href="#check-cache-configuration" title="Permanent link">&para;</a></h1>
-<p>curl http://localhost:5000/health/cache</p>
-<h1 id="returns-cache-hits-misses-size">Returns: cache hits, misses, size<a class="headerlink" href="#returns-cache-hits-misses-size" title="Permanent link">&para;</a></h1>
-<h1 id="enable-cache-logging">Enable cache logging<a class="headerlink" href="#enable-cache-logging" title="Permanent link">&para;</a></h1>
-<p>export RUST_LOG=fraiseql_cache=debug</p>
-<h1 id="run-same-query-twice">Run same query twice<a class="headerlink" href="#run-same-query-twice" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:5000/graphql \
-  -d '{"query": "{ users { id } }"}'
-curl -X POST http://localhost:5000/graphql \
-  -d '{"query": "{ users { id } }"}'</p>
-<h1 id="check-logs-for-cache-hit-vs-cache-miss">Check logs for "cache hit" vs "cache miss"<a class="headerlink" href="#check-logs-for-cache-hit-vs-cache-miss" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Inspect cache statistics from a ResultCache instance</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result_cache</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="p">,</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="p">,</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Turn on cache logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql.caching&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="c1"># Then run the same query twice and look for &quot;Cache hit&quot; vs &quot;Cache miss&quot;</span>
+</code></pre></div>
 <h3 id="solutions_8">Solutions<a class="headerlink" href="#solutions_8" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Enable Query Caching</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.caching]
-enabled = true
-default_ttl_seconds = 300  # Cache 5 minutes
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">CachedRepository</span>
 
-<p><strong>Solution 2: Invalidate Cache on Mutation</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-  createUser(name: "Alice") @cache(invalidate: ["users"]) {
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Backend: an UNLOGGED PostgreSQL table shared across instances</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
 
-<p><strong>Solution 3: Adjust TTL Based on Data Freshness</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    # Cache for 5 minutes (user data doesn't change often)
-    id: ID
-    name: str</p>
-<p>@FraiseQL.type
-class InventoryLevel:
-    # Don't cache (inventory changes constantly)
-    quantity: int = field(cache=False)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Cache with a 5-minute default TTL</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
 
+<span class="c1"># Wrap the repository so reads are cached transparently</span>
+<span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Solution 2: Invalidate the Cache on Writes (Cascade Rules)</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
+
+<span class="c1"># Analyze the schema and register CASCADE invalidation rules so that, e.g.,</span>
+<span class="c1"># changing a User invalidates cached Posts that reference it.</span>
+<span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CascadeRule</span>
+
+<span class="c1"># Or declare a rule explicitly: when &quot;user&quot; changes, invalidate &quot;post&quot; caches.</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Solution 3: Tune TTL Per Read or Bypass When Needed</strong></p>
+<p><code>CachedRepository.find</code> accepts a per-call TTL and a cache bypass:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Slow-changing reference data: cache longer</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>
+
+<span class="c1"># Volatile data (e.g. inventory): bypass the cache for a fresh read</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_inventory_level&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p>The optional <code>fraiseql_rs</code> extension accelerates JSONB transformation on the read path;
+it complements, but does not replace, the result cache above.</p>
+</blockquote>
 <h3 id="prevention_8">Prevention<a class="headerlink" href="#prevention_8" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor cache effectiveness: Alert if hit rate &lt; 30%</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set appropriate TTL for each data type</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement cache invalidation on mutations</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Profile cache performance: Expected hit rate?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor cache effectiveness via <code>CacheStats.hit_rate</code> (alert if hit rate &lt; 30%)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set an appropriate TTL per data type (<code>cache_ttl</code> / <code>CacheConfig</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Register cascade invalidation rules so mutations don't serve stale reads</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Profile cache performance against an expected hit rate</li>
 </ul>
 <hr />
 <h2 id="10-production-response-checklist">10. Production Response Checklist<a class="headerlink" href="#10-production-response-checklist" title="Permanent link">&para;</a></h2>
-<p><strong>When performance issue reported:</strong></p>
+<p><strong>When a performance issue is reported:</strong></p>
 <ol class="task-list">
 <li><strong>Immediately:</strong></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check error logs for exceptions</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verify database connectivity</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check application logs for exceptions</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Verify database connectivity and pool health</li>
 <li class="task-list-item">
 <p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check if it's a known issue</p>
 </li>
 <li>
 <p><strong>Within 5 minutes:</strong></p>
 </li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Identify affected queries</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check query count: Normal load?</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Run EXPLAIN on slow query</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Identify affected queries (<code>pg_stat_statements</code>, app logs)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check request rate: normal load?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Run <code>EXPLAIN ANALYZE</code> on the slow view query</li>
 <li class="task-list-item">
 <p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Check for missing indexes</p>
 </li>
 <li>
 <p><strong>Within 15 minutes:</strong></p>
 </li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Apply temporary mitigation (cache, timeout, index)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Apply temporary mitigation (cache, statement timeout, index)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitor for improvement</li>
 <li class="task-list-item">
-<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Communicate status to team</p>
+<p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Communicate status to the team</p>
 </li>
 <li>
 <p><strong>Later:</strong></p>
 </li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Root cause analysis</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement permanent fix</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement permanent fix (index, view rewrite, projection table, cache rule)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deploy to staging first</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Gradual rollout to production</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Document in runbook</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Document in the runbook</li>
 </ol>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
@@ -5819,23 +6852,21 @@ class InventoryLevel:
 <li><strong><a href="../../guides/schema-design-best-practices/">Schema Design Best Practices</a></strong> — Designing for performance</li>
 <li><strong><a href="../../guides/common-gotchas/">Common Gotchas</a></strong> — Avoid performance pitfalls</li>
 <li><strong><a href="../../guides/monitoring/">Monitoring &amp; Observability</a></strong> — Setting up performance metrics</li>
-<li><strong><a href="../guides/view-selection-performance-testing.md">View Selection Guide</a></strong> — Testing view performance</li>
+<li><strong><a href="../../architecture/database/view-selection-guide/">View Selection Guide</a></strong> — Choosing <code>v_</code> vs <code>tv_</code> for performance</li>
 </ul>
-<p><strong>Architecture &amp; Database:</strong></p>
+<p><strong>Operations:</strong></p>
 <ul>
-<li><strong><a href="../architecture/database/database-targeting.md">Database Targeting</a></strong> — Database-specific optimization</li>
-<li><strong><a href="../architecture/database/arrow-plane.md">Arrow Plane Architecture</a></strong> — Columnar query optimization</li>
-<li><strong><a href="./observability-architecture.md">Observability Architecture</a></strong> — Runtime performance monitoring</li>
+<li><strong><a href="../observability/">Observability &amp; Monitoring</a></strong> — Runtime performance monitoring</li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

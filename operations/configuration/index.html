@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Complete configuration reference for a FraiseQL application. Settings are managed through FraiseQLConfig (pydantic), FRAISEQL_-prefixed environment variables, and create_fraiseql_app(...) keyword arguments.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/operations/configuration/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Configuration - FraiseQL Documentation</title>
+        <title>Configuration Reference - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#observability-configuration-reference" class="md-skip">
+        <a href="#configuration-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Configuration
+              Configuration Reference
             
           </span>
         </div>
@@ -4487,6 +4489,660 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#configuration-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-a-config-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building a config object
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#letting-environment-variables-drive-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Letting environment variables drive everything
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_fraiseql_app-keyword-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_fraiseql_app(...) keyword arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_max_overflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_max_overflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_recycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_recycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_echo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app_version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graphql-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphQL Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GraphQL Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introspection_policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        introspection_policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable_playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enable_playground
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playground_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        playground_tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_query_depth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        max_query_depth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        auto_camel_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query_timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache_ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cache_ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execution_timeout_ms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execution_timeout_ms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#include_execution_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        include_execution_metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb_field_limit_threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jsonb_field_limit_threshold
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turbo_router_cache_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        turbo_router_cache_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Revocation Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-persisted-queries-apq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Persisted Queries (APQ)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-and-session-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema and Session Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema and Session Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinate_distance_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coordinate_distance_method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_string_collation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_string_collation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session_variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session_variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-and-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics and Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics and Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metricsconfig-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MetricsConfig fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Privacy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-configuration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Configuration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Configuration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#small-application-100-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Small Application (&lt; 100 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-application-1001000-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium Application (100–1000 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#large-application-1000-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large Application (&gt; 1000 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-not-taking-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings not taking effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database connection errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-generated-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting generated SQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4969,6 +5625,660 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#configuration-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-a-config-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building a config object
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#letting-environment-variables-drive-everything" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Letting environment variables drive everything
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create_fraiseql_app-keyword-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_fraiseql_app(...) keyword arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_max_overflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_max_overflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_pool_recycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_pool_recycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database_echo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        database_echo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#app_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app_version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graphql-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphQL Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GraphQL Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introspection_policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        introspection_policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enable_playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enable_playground
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playground_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        playground_tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max_query_depth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        max_query_depth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        auto_camel_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query_timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache_ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cache_ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execution_timeout_ms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execution_timeout_ms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#include_execution_metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        include_execution_metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb_field_limit_threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        jsonb_field_limit_threshold
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#turbo_router_cache_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        turbo_router_cache_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Complexity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Revocation Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automatic-persisted-queries-apq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Persisted Queries (APQ)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-and-session-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema and Session Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema and Session Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default schemas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coordinate_distance_method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        coordinate_distance_method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default_string_collation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        default_string_collation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#session_variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        session_variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-and-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics and Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics and Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metricsconfig-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MetricsConfig fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Privacy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-configuration-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Configuration Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Configuration Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#small-application-100-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Small Application (&lt; 100 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-application-1001000-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium Application (100–1000 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#large-application-1000-rps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large Application (&gt; 1000 rps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings-not-taking-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings not taking effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database connection errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-generated-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting generated SQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4989,337 +6299,122 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Observability Configuration Reference
-description: This document provides complete configuration reference for FraiseQL's observability system. All settings are <strong>opt-in</strong> and carefully tuned for production safe
-keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="observability-configuration-reference">Observability Configuration Reference<a class="headerlink" href="#observability-configuration-reference" title="Permanent link">&para;</a></h1>
+<h1 id="configuration-reference">Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This document provides complete configuration reference for FraiseQL's observability system. All settings are <strong>opt-in</strong> and carefully tuned for production safety.</p>
+<p>FraiseQL is a Python runtime GraphQL framework for PostgreSQL. A FraiseQL app is
+configured at startup through a single pydantic settings object, <code>FraiseQLConfig</code>.
+You can populate it from environment variables (prefixed <code>FRAISEQL_</code>), a <code>.env</code>
+file, or directly in Python. There is no separate config file format, no CLI, and
+no build step: the GraphQL schema is assembled in memory when the FastAPI app
+starts.</p>
+<p>This document is the complete reference for <code>FraiseQLConfig</code> (the main application
+config) and <code>MetricsConfig</code> (the optional Prometheus metrics integration).</p>
 <hr />
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="minimal-configuration">Minimal Configuration<a class="headerlink" href="#minimal-configuration" title="Permanent link">&para;</a></h3>
-<p>Enable observability with defaults:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="environment-variable">Environment variable<a class="headerlink" href="#environment-variable" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_OBSERVABILITY_ENABLED=true
-export FRAISEQL_DATABASE_URL=postgres://user:pass@localhost/mydb
-```text</p>
-<!-- Code example in TEXT -->
+<p>The only required setting is the PostgreSQL connection URL. Set it via an
+environment variable:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@localhost/mydb
+</code></pre></div>
+<p>Then create the app:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<p>Or in <code>FraiseQL.toml</code>:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true</p>
-<p>[database]
-url = "postgres://user:pass@localhost/mydb"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>That's it! The system will use conservative defaults.</p>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it with uvicorn:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<p>That's it. Every other setting has a conservative default.</p>
 <hr />
 <h2 id="configuration-methods">Configuration Methods<a class="headerlink" href="#configuration-methods" title="Permanent link">&para;</a></h2>
-<p>FraiseQL supports three configuration methods (in order of precedence):</p>
+<p><code>FraiseQLConfig</code> is a <code>pydantic_settings.BaseSettings</code> subclass, so values resolve
+in this order of precedence:</p>
 <ol>
-<li><strong>Environment Variables</strong> (highest priority)</li>
-<li><strong>Configuration File</strong> (<code>FraiseQL.toml</code>)</li>
-<li><strong>Default Values</strong> (lowest priority)</li>
+<li><strong>Explicit Python values</strong> (highest priority) — passed to <code>FraiseQLConfig(...)</code>
+   or directly as <code>create_fraiseql_app(...)</code> keyword arguments.</li>
+<li><strong>Environment variables</strong> — any field can be set with a <code>FRAISEQL_</code>-prefixed,
+   case-insensitive env var (e.g. <code>FRAISEQL_DATABASE_URL</code>,
+   <code>FRAISEQL_ENVIRONMENT</code>).</li>
+<li><strong><code>.env</code> file</strong> — a <code>.env</code> file in the working directory is loaded
+   automatically.</li>
+<li><strong>Field defaults</strong> (lowest priority).</li>
 </ol>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="core-settings">Core settings<a class="headerlink" href="#core-settings" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_OBSERVABILITY_ENABLED=true
-export FRAISEQL_OBSERVABILITY_SAMPLE_RATE=0.1
-export FRAISEQL_METRICS_DATABASE_URL=postgres://...</p>
-<h1 id="retention-settings">Retention settings<a class="headerlink" href="#retention-settings" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_METRICS_RETENTION_DAYS=30
-export FRAISEQL_METRICS_BUFFER_SIZE=100</p>
-<h1 id="performance-tuning">Performance tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h1>
-<p>export FRAISEQL_METRICS_FLUSH_INTERVAL_SECS=60
-export FRAISEQL_METRICS_BATCH_SIZE=100
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="building-a-config-object">Building a config object<a class="headerlink" href="#building-a-config-object" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="configuration-file">Configuration File<a class="headerlink" href="#configuration-file" title="Permanent link">&para;</a></h3>
-<p>Create <code>FraiseQL.toml</code> in your project root:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true
-sample_rate = 0.1
-retention_days = 30</p>
-<p>[observability.metrics]
-buffer_size = 100
-flush_interval_secs = 60
-batch_size = 100</p>
-<p>[observability.database]</p>
-<h1 id="optional-separate-database-for-metrics-recommended-for-production">Optional: Separate database for metrics (recommended for production)<a class="headerlink" href="#optional-separate-database-for-metrics-recommended-for-production" title="Permanent link">&para;</a></h1>
-<p>url = "postgres://metrics:pass@metrics-db:5432/fraiseql_metrics"
-pool_size = 10
-timeout_secs = 30</p>
-<p>[observability.analysis]</p>
-<h1 id="default-thresholds-for-analyze-command">Default thresholds for analyze command<a class="headerlink" href="#default-thresholds-for-analyze-command" title="Permanent link">&para;</a></h1>
-<p>min_frequency = 1000
-min_speedup = 5.0
-min_selectivity = 0.1
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Production configuration</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">auth_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">auth_provider</span><span class="o">=</span><span class="s2">&quot;auth0&quot;</span><span class="p">,</span>
+    <span class="n">auth0_domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">auth0_api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
-<hr />
-<h2 id="core-configuration">Core Configuration<a class="headerlink" href="#core-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="observabilityenabled"><code>observability.enabled</code><a class="headerlink" href="#observabilityenabled" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>boolean</code>
-<strong>Default</strong>: <code>false</code>
-<strong>Environment</strong>: <code>FRAISEQL_OBSERVABILITY_ENABLED</code></p>
-<p>Enable or disable observability system.</p>
-<p><strong>Important</strong>: Observability is <strong>opt-in</strong> for production safety. You must explicitly enable it.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="letting-environment-variables-drive-everything">Letting environment variables drive everything<a class="headerlink" href="#letting-environment-variables-drive-everything" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@localhost/mydb
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>myapp.auth0.com
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>export FRAISEQL_OBSERVABILITY_ENABLED=true
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="observabilitysample_rate"><code>observability.sample_rate</code><a class="headerlink" href="#observabilitysample_rate" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>float</code> (0.0 - 1.0)
-<strong>Default</strong>: <code>0.1</code> (10%)
-<strong>Environment</strong>: <code>FRAISEQL_OBSERVABILITY_SAMPLE_RATE</code></p>
-<p>Percentage of queries to collect metrics for.</p>
-<p><strong>Guidelines</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Traffic Level</th>
-<th>Recommended Rate</th>
-<th>Expected Overhead</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Low (&lt; 100 qps)</td>
-<td>1.0 (100%)</td>
-<td>&lt; 2%</td>
-</tr>
-<tr>
-<td>Medium (100-1000 qps)</td>
-<td>0.1 (10%)</td>
-<td>&lt; 5%</td>
-</tr>
-<tr>
-<td>High (&gt; 1000 qps)</td>
-<td>0.01 (1%)</td>
-<td>&lt; 1%</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example</strong>:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]</p>
-<h1 id="sample-1-of-queries-in-high-traffic-production">Sample 1% of queries in high-traffic production<a class="headerlink" href="#sample-1-of-queries-in-high-traffic-production" title="Permanent link">&para;</a></h1>
-<p>sample_rate = 0.01
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Note</strong>: Even at 1% sampling, patterns are reliably detected with sufficient traffic.</p>
-<hr />
-<h3 id="observabilityretention_days"><code>observability.retention_days</code><a class="headerlink" href="#observabilityretention_days" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
-<strong>Default</strong>: <code>30</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_RETENTION_DAYS</code></p>
-<p>How long to keep metrics data before automatic cleanup.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-retention_days = 30  # Keep metrics for 30 days
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Storage Estimates</strong> (per day, 10% sampling, 1000 qps):</p>
-<table>
-<thead>
-<tr>
-<th>Database Size</th>
-<th>Metrics Storage Per Day</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Small (&lt; 10 tables)</td>
-<td>~50 MB</td>
-</tr>
-<tr>
-<td>Medium (10-50 tables)</td>
-<td>~200 MB</td>
-</tr>
-<tr>
-<td>Large (&gt; 50 tables)</td>
-<td>~500 MB</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Cleanup Query</strong> (runs daily):</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL
-DELETE FROM fraiseql_metrics.query_executions
-WHERE executed_at &lt; NOW() - INTERVAL '30 days';</p>
-<p>-- SQL Server
-DELETE FROM fraiseql_metrics.query_executions
-WHERE executed_at &lt; DATEADD(day, -30, GETDATE());
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="metrics-collection">Metrics Collection<a class="headerlink" href="#metrics-collection" title="Permanent link">&para;</a></h2>
-<h3 id="observabilitymetricsbuffer_size"><code>observability.metrics.buffer_size</code><a class="headerlink" href="#observabilitymetricsbuffer_size" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
-<strong>Default</strong>: <code>100</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_BUFFER_SIZE</code></p>
-<p>In-memory buffer size before flushing to database.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.metrics]
-buffer_size = 100  # Flush after 100 queries
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Trade-offs</strong>:</p>
-<ul>
-<li><strong>Smaller buffer</strong> (50): More frequent writes, less memory, higher DB load</li>
-<li><strong>Larger buffer</strong> (500): Fewer writes, more memory, risk of data loss on crash</li>
-</ul>
-<p><strong>Recommendation</strong>: Use default 100 for most cases.</p>
-<hr />
-<h3 id="observabilitymetricsflush_interval_secs"><code>observability.metrics.flush_interval_secs</code><a class="headerlink" href="#observabilitymetricsflush_interval_secs" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
-<strong>Default</strong>: <code>60</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_FLUSH_INTERVAL_SECS</code></p>
-<p>Maximum seconds to wait before flushing buffer (even if not full).</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.metrics]
-flush_interval_secs = 60  # Flush at least every minute
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Why needed</strong>: Ensures metrics aren't delayed indefinitely during low traffic.</p>
-<hr />
-<h3 id="observabilitymetricsbatch_size"><code>observability.metrics.batch_size</code><a class="headerlink" href="#observabilitymetricsbatch_size" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
-<strong>Default</strong>: <code>100</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_BATCH_SIZE</code></p>
-<p>Number of metrics to insert in a single database transaction.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.metrics]
-batch_size = 100
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Performance Impact</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Batch Size</th>
-<th>Inserts/sec</th>
-<th>Latency</th>
-<th>Transaction Log</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>100</td>
-<td>High</td>
-<td>Large</td>
-</tr>
-<tr>
-<td>100</td>
-<td>10,000</td>
-<td>Low</td>
-<td>Small</td>
-</tr>
-<tr>
-<td>1000</td>
-<td>50,000</td>
-<td>Very Low</td>
-<td>Tiny</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Recommendation</strong>: 100-500 for balanced performance.</p>
+<span class="c1"># Reads all FRAISEQL_-prefixed env vars / .env automatically</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">()</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="create_fraiseql_app-keyword-arguments"><code>create_fraiseql_app(...)</code> keyword arguments<a class="headerlink" href="#create_fraiseql_app-keyword-arguments" title="Permanent link">&para;</a></h3>
+<p>Some settings can also be passed directly to <code>create_fraiseql_app</code>, which builds a
+config for you. Verified keyword arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth_provider</span><span class="p">,</span>                <span class="c1"># an AuthProvider instance</span>
+    <span class="n">context_getter</span><span class="o">=</span><span class="n">get_context</span><span class="p">,</span>        <span class="c1"># custom GraphQL context builder</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>                     <span class="c1"># a FraiseQLConfig instance</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My API&quot;</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;My GraphQL API&quot;</span><span class="p">,</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>                  <span class="c1"># False enables the GraphQL playground</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">connection_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">connection_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">connection_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>There is <strong>no <code>middleware=</code> keyword argument</strong>. Add middleware with
+<code>app.add_middleware(...)</code> on the returned app, or pass your own FastAPI app via
+<code>create_fraiseql_app(app=...)</code>.</p>
 <hr />
 <h2 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="observabilitydatabaseurl"><code>observability.database.url</code><a class="headerlink" href="#observabilitydatabaseurl" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>string</code>
-<strong>Default</strong>: Same as main database
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_DATABASE_URL</code></p>
-<p>Database connection string for metrics storage.</p>
-<p><strong>Options</strong>:</p>
-<ol>
-<li><strong>Same database as application</strong> (simple):</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p># Omit this setting to use main database
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li><strong>Separate database on same server</strong> (recommended):</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-   url = "postgres://app:pass@localhost:5432/fraiseql_metrics"
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li><strong>Separate metrics server</strong> (production best practice):</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-   url = "postgres://metrics:pass@metrics-db.internal:5432/metrics"
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Benefits of Separate Database</strong>:</p>
-<ul>
-<li>✅ Isolation: Metrics don't impact application database</li>
-<li>✅ Scaling: Scale metrics storage independently</li>
-<li>✅ Retention: Different backup/retention policies</li>
-<li>✅ Security: Restricted access to metrics</li>
-</ul>
-<hr />
-<h3 id="observabilitydatabasepool_size"><code>observability.database.pool_size</code><a class="headerlink" href="#observabilitydatabasepool_size" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
-<strong>Default</strong>: <code>10</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_DB_POOL_SIZE</code></p>
-<p>Connection pool size for metrics database.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-pool_size = 10
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guidelines</strong>:</p>
+<h3 id="database_url"><code>database_url</code><a class="headerlink" href="#database_url" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>str</code> (PostgreSQL DSN)
+<strong>Required</strong>: yes
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_URL</code></p>
+<p>PostgreSQL connection URL. Must start with <code>postgresql://</code> or <code>postgres://</code>.
+Unix-domain socket URLs are also supported
+(<code>postgresql://user@/var/run/postgresql:5432/mydb</code>).</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://app:pass@localhost:5432/myapp
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost:5432/myapp&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="database_pool_size"><code>database_pool_size</code><a class="headerlink" href="#database_pool_size" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code>
+<strong>Default</strong>: <code>20</code>
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_POOL_SIZE</code></p>
+<p>Number of persistent connections kept open in the pool.</p>
 <table>
 <thead>
 <tr>
@@ -5330,706 +6425,555 @@ pool_size = 10
 </thead>
 <tbody>
 <tr>
-<td>Low (&lt; 100 qps)</td>
-<td>5</td>
+<td>Low (&lt; 100 rps)</td>
+<td>5–10</td>
 <td>Minimal connections needed</td>
 </tr>
 <tr>
-<td>Medium (100-1000 qps)</td>
-<td>10</td>
+<td>Medium (100–1000 rps)</td>
+<td>20</td>
 <td>Default works well</td>
 </tr>
 <tr>
-<td>High (&gt; 1000 qps)</td>
-<td>20</td>
-<td>More concurrent writes</td>
+<td>High (&gt; 1000 rps)</td>
+<td>40+</td>
+<td>More concurrent connections</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h3 id="observabilitydatabasetimeout_secs"><code>observability.database.timeout_secs</code><a class="headerlink" href="#observabilitydatabasetimeout_secs" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
+<h3 id="database_max_overflow"><code>database_max_overflow</code><a class="headerlink" href="#database_max_overflow" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code>
+<strong>Default</strong>: <code>10</code>
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_MAX_OVERFLOW</code></p>
+<p>Extra connections the pool may open beyond <code>database_pool_size</code> under load.</p>
+<h3 id="database_pool_timeout"><code>database_pool_timeout</code><a class="headerlink" href="#database_pool_timeout" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code> (seconds)
 <strong>Default</strong>: <code>30</code>
-<strong>Environment</strong>: <code>FRAISEQL_METRICS_DB_TIMEOUT_SECS</code></p>
-<p>Query timeout for metrics writes (seconds).</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-timeout_secs = 30
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Important</strong>: If metrics writes timeout, they're dropped (doesn't block application queries).</p>
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_POOL_TIMEOUT</code></p>
+<p>How long a request waits for a free connection before raising.</p>
+<h3 id="database_pool_recycle"><code>database_pool_recycle</code><a class="headerlink" href="#database_pool_recycle" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code> (seconds)
+<strong>Default</strong>: <code>3600</code>
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_POOL_RECYCLE</code></p>
+<p>Recycle a connection after this many seconds, even if idle. Prevents stale
+connections behind proxies and load balancers.</p>
+<h3 id="database_echo"><code>database_echo</code><a class="headerlink" href="#database_echo" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>bool</code>
+<strong>Default</strong>: <code>false</code>
+<strong>Environment</strong>: <code>FRAISEQL_DATABASE_ECHO</code></p>
+<p>Log generated SQL. Useful in development; keep off in production.</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost:5432/myapp&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
-<h2 id="analysis-configuration">Analysis Configuration<a class="headerlink" href="#analysis-configuration" title="Permanent link">&para;</a></h2>
-<p>These settings control the <code>FraiseQL-cli analyze</code> command behavior.</p>
-<h3 id="observabilityanalysismin_frequency"><code>observability.analysis.min_frequency</code><a class="headerlink" href="#observabilityanalysismin_frequency" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>integer</code>
+<h2 id="application-settings">Application Settings<a class="headerlink" href="#application-settings" title="Permanent link">&para;</a></h2>
+<h3 id="environment"><code>environment</code><a class="headerlink" href="#environment" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>"development" | "production" | "testing"</code>
+<strong>Default</strong>: <code>"development"</code>
+<strong>Environment</strong>: <code>FRAISEQL_ENVIRONMENT</code></p>
+<p>Setting <code>environment="production"</code> tightens defaults automatically: introspection
+is disabled (unless explicitly set) and the GraphQL playground is turned off.</p>
+<h3 id="app_name"><code>app_name</code><a class="headerlink" href="#app_name" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>str</code>
+<strong>Default</strong>: <code>"FraiseQL API"</code>
+<strong>Environment</strong>: <code>FRAISEQL_APP_NAME</code></p>
+<h3 id="app_version"><code>app_version</code><a class="headerlink" href="#app_version" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>str</code>
+<strong>Default</strong>: <code>"1.0.0"</code>
+<strong>Environment</strong>: <code>FRAISEQL_APP_VERSION</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;My GraphQL API&quot;</span><span class="p">,</span>
+    <span class="n">app_version</span><span class="o">=</span><span class="s2">&quot;2.3.1&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="graphql-settings">GraphQL Settings<a class="headerlink" href="#graphql-settings" title="Permanent link">&para;</a></h2>
+<h3 id="introspection_policy"><code>introspection_policy</code><a class="headerlink" href="#introspection_policy" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>IntrospectionPolicy</code> (<code>"public" | "disabled" | "authenticated"</code>)
+<strong>Default</strong>: <code>"public"</code> (forced to <code>"disabled"</code> in production unless set)
+<strong>Environment</strong>: <code>FRAISEQL_INTROSPECTION_POLICY</code></p>
+<p>Controls who may run GraphQL introspection queries.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntrospectionPolicy</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">AUTHENTICATED</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="enable_playground"><code>enable_playground</code><a class="headerlink" href="#enable_playground" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>bool</code>
+<strong>Default</strong>: <code>true</code> (forced to <code>false</code> in production unless explicitly set)
+<strong>Environment</strong>: <code>FRAISEQL_ENABLE_PLAYGROUND</code></p>
+<p>Mount the in-browser GraphQL IDE. The <code>production=False</code> flag on
+<code>create_fraiseql_app(...)</code> is the convenient way to enable it during development.</p>
+<h3 id="playground_tool"><code>playground_tool</code><a class="headerlink" href="#playground_tool" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>"graphiql" | "apollo-sandbox"</code>
+<strong>Default</strong>: <code>"graphiql"</code>
+<strong>Environment</strong>: <code>FRAISEQL_PLAYGROUND_TOOL</code></p>
+<p>Which GraphQL IDE to serve.</p>
+<h3 id="max_query_depth"><code>max_query_depth</code><a class="headerlink" href="#max_query_depth" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int | None</code>
+<strong>Default</strong>: <code>None</code> (no depth limit)
+<strong>Environment</strong>: <code>FRAISEQL_MAX_QUERY_DEPTH</code></p>
+<p>Maximum nesting depth allowed in a query.</p>
+<h3 id="auto_camel_case"><code>auto_camel_case</code><a class="headerlink" href="#auto_camel_case" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>bool</code>
+<strong>Default</strong>: <code>true</code>
+<strong>Environment</strong>: <code>FRAISEQL_AUTO_CAMEL_CASE</code></p>
+<p>Auto-convert <code>snake_case</code> Python field names to <code>camelCase</code> in the GraphQL schema.</p>
+<h3 id="query_timeout"><code>query_timeout</code><a class="headerlink" href="#query_timeout" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code> (seconds)
+<strong>Default</strong>: <code>30</code>
+<strong>Environment</strong>: <code>FRAISEQL_QUERY_TIMEOUT</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">enable_playground</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="performance-settings">Performance Settings<a class="headerlink" href="#performance-settings" title="Permanent link">&para;</a></h2>
+<h3 id="cache_ttl"><code>cache_ttl</code><a class="headerlink" href="#cache_ttl" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code> (seconds)
+<strong>Default</strong>: <code>300</code>
+<strong>Environment</strong>: <code>FRAISEQL_CACHE_TTL</code></p>
+<p>Default time-to-live for cached query results.</p>
+<h3 id="execution_timeout_ms"><code>execution_timeout_ms</code><a class="headerlink" href="#execution_timeout_ms" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code> (milliseconds)
+<strong>Default</strong>: <code>30000</code>
+<strong>Environment</strong>: <code>FRAISEQL_EXECUTION_TIMEOUT_MS</code></p>
+<p>Maximum time a query may execute before being cancelled.</p>
+<h3 id="include_execution_metadata"><code>include_execution_metadata</code><a class="headerlink" href="#include_execution_metadata" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>bool</code>
+<strong>Default</strong>: <code>false</code>
+<strong>Environment</strong>: <code>FRAISEQL_INCLUDE_EXECUTION_METADATA</code></p>
+<p>Include timing/diagnostic metadata in GraphQL responses. Useful during
+development and profiling.</p>
+<h3 id="jsonb_field_limit_threshold"><code>jsonb_field_limit_threshold</code><a class="headerlink" href="#jsonb_field_limit_threshold" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code>
+<strong>Default</strong>: <code>20</code>
+<strong>Environment</strong>: <code>FRAISEQL_JSONB_FIELD_LIMIT_THRESHOLD</code></p>
+<p>When a query selects more than this many fields, FraiseQL switches to returning
+the full <code>data</code> JSONB column instead of projecting individual paths.</p>
+<h3 id="turbo_router_cache_size"><code>turbo_router_cache_size</code><a class="headerlink" href="#turbo_router_cache_size" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>int</code>
 <strong>Default</strong>: <code>1000</code>
-<strong>CLI Flag</strong>: <code>--min-frequency</code></p>
-<p>Minimum queries per day to suggest optimization.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.analysis]
-min_frequency = 1000
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL-cli analyze --min-frequency 500  # Override default
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guidelines</strong>:</p>
+<strong>Environment</strong>: <code>FRAISEQL_TURBO_ROUTER_CACHE_SIZE</code></p>
+<p>Maximum number of prepared queries to cache for the fast-path router.</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+    <span class="n">include_execution_metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">jsonb_field_limit_threshold</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="security-settings">Security Settings<a class="headerlink" href="#security-settings" title="Permanent link">&para;</a></h2>
+<h3 id="query-complexity">Query Complexity<a class="headerlink" href="#query-complexity" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Threshold</th>
-<th>Result</th>
-<th>Use Case</th>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>100</td>
-<td>Many suggestions</td>
-<td>Development/testing</td>
+<td><code>complexity_enabled</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td><code>FRAISEQL_COMPLEXITY_ENABLED</code></td>
 </tr>
 <tr>
-<td>1000 (default)</td>
-<td>High-impact only</td>
-<td>Production</td>
+<td><code>complexity_max_score</code></td>
+<td>int</td>
+<td><code>1000</code></td>
+<td><code>FRAISEQL_COMPLEXITY_MAX_SCORE</code></td>
 </tr>
 <tr>
-<td>5000</td>
-<td>Critical paths only</td>
-<td>High-traffic apps</td>
+<td><code>complexity_max_depth</code></td>
+<td>int</td>
+<td><code>10</code></td>
+<td><code>FRAISEQL_COMPLEXITY_MAX_DEPTH</code></td>
+</tr>
+<tr>
+<td><code>complexity_default_list_size</code></td>
+<td>int</td>
+<td><code>10</code></td>
+<td><code>FRAISEQL_COMPLEXITY_DEFAULT_LIST_SIZE</code></td>
+</tr>
+<tr>
+<td><code>complexity_include_in_response</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td><code>FRAISEQL_COMPLEXITY_INCLUDE_IN_RESPONSE</code></td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h3 id="observabilityanalysismin_speedup"><code>observability.analysis.min_speedup</code><a class="headerlink" href="#observabilityanalysismin_speedup" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>float</code>
-<strong>Default</strong>: <code>5.0</code>
-<strong>CLI Flag</strong>: <code>--min-speedup</code></p>
-<p>Minimum speedup factor (e.g., 5.0 = 5x faster) to suggest optimization.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.analysis]
-min_speedup = 5.0
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL-cli analyze --min-speedup 3.0  # Lower threshold
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guidelines</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Threshold</th>
-<th>Result</th>
-<th>Trade-off</th>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>2.0</td>
-<td>Many suggestions</td>
-<td>More noise, smaller gains</td>
+<td><code>rate_limit_enabled</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_ENABLED</code></td>
 </tr>
 <tr>
-<td>5.0 (default)</td>
-<td>Clear wins</td>
-<td>Conservative, high-impact</td>
+<td><code>rate_limit_requests_per_minute</code></td>
+<td>int</td>
+<td><code>60</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</code></td>
 </tr>
 <tr>
-<td>10.0</td>
-<td>Only huge gains</td>
-<td>May miss good optimizations</td>
+<td><code>rate_limit_requests_per_hour</code></td>
+<td>int</td>
+<td><code>1000</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR</code></td>
+</tr>
+<tr>
+<td><code>rate_limit_burst_size</code></td>
+<td>int</td>
+<td><code>10</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_BURST_SIZE</code></td>
+</tr>
+<tr>
+<td><code>rate_limit_window_type</code></td>
+<td>str</td>
+<td><code>"sliding"</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_WINDOW_TYPE</code></td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h3 id="observabilityanalysismin_selectivity"><code>observability.analysis.min_selectivity</code><a class="headerlink" href="#observabilityanalysismin_selectivity" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>float</code> (0.0 - 1.0)
-<strong>Default</strong>: <code>0.1</code> (10%)
-<strong>CLI Flag</strong>: <code>--min-selectivity</code></p>
-<p>Minimum filter selectivity (% of rows filtered) for denormalization suggestions.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.analysis]
-min_selectivity = 0.1  # 10% of rows filtered
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- High selectivity (15% of rows match) → Suggest denormalization
-WHERE JSON_VALUE(dimensions, '$.region') = 'US'  -- Returns 15,000 / 100,000 rows</p>
-<p>-- Low selectivity (90% match) → Don't suggest (most rows match anyway)
-WHERE JSON_VALUE(dimensions, '$.active') = 'true'  -- Returns 90,000 / 100,000 rows
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guidelines</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">&quot;sliding&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="cors">CORS<a class="headerlink" href="#cors" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Threshold</th>
-<th>Meaning</th>
-<th>Use Case</th>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>0.01 (1%)</td>
-<td>Very selective</td>
-<td>Rare filters (e.g., VIP users)</td>
+<td><code>cors_enabled</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td><code>FRAISEQL_CORS_ENABLED</code></td>
 </tr>
 <tr>
-<td>0.1 (10%)</td>
-<td>Moderately selective</td>
-<td>Default, balanced</td>
+<td><code>cors_origins</code></td>
+<td>list[str]</td>
+<td><code>[]</code></td>
+<td><code>FRAISEQL_CORS_ORIGINS</code></td>
 </tr>
 <tr>
-<td>0.5 (50%)</td>
-<td>Low selectivity</td>
-<td>Broad filters</td>
+<td><code>cors_methods</code></td>
+<td>list[str]</td>
+<td><code>["GET", "POST"]</code></td>
+<td><code>FRAISEQL_CORS_METHODS</code></td>
+</tr>
+<tr>
+<td><code>cors_headers</code></td>
+<td>list[str]</td>
+<td><code>["Content-Type", "Authorization"]</code></td>
+<td><code>FRAISEQL_CORS_HEADERS</code></td>
 </tr>
 </tbody>
 </table>
+<p>CORS is <strong>disabled by default</strong> — the recommended pattern is to handle CORS at the
+reverse proxy. If you enable it, set explicit origins; a wildcard <code>*</code> origin in
+production triggers a warning.</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">cors_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">cors_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://app.example.com&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
-<h3 id="observabilityanalysiswindow"><code>observability.analysis.window</code><a class="headerlink" href="#observabilityanalysiswindow" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>string</code> (duration)
-<strong>Default</strong>: <code>"7d"</code>
-<strong>CLI Flag</strong>: <code>--window</code></p>
-<p>Time window for analysis.</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.analysis]
-window = "7d"  # Last 7 days
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL-cli analyze --window 30d  # Last 30 days
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Supported Formats</strong>:</p>
-<ul>
-<li><code>1d</code> - 1 day</li>
-<li><code>7d</code> - 7 days (default)</li>
-<li><code>30d</code> - 30 days</li>
-<li><code>90d</code> - 90 days</li>
-</ul>
-<p><strong>Guidelines</strong>:</p>
+<h2 id="authentication-settings">Authentication Settings<a class="headerlink" href="#authentication-settings" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Window</th>
-<th>Use Case</th>
-<th>Trade-off</th>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1d</td>
-<td>Quick check</td>
-<td>May miss weekly patterns</td>
+<td><code>auth_enabled</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td><code>FRAISEQL_AUTH_ENABLED</code></td>
 </tr>
 <tr>
-<td>7d (default)</td>
-<td>Weekly patterns</td>
-<td>Good balance</td>
+<td><code>auth_provider</code></td>
+<td><code>"auth0" \| "custom" \| "none"</code></td>
+<td><code>"none"</code></td>
+<td><code>FRAISEQL_AUTH_PROVIDER</code></td>
 </tr>
 <tr>
-<td>30d</td>
-<td>Monthly trends</td>
-<td>Includes seasonal traffic</td>
+<td><code>auth0_domain</code></td>
+<td>str | None</td>
+<td><code>None</code></td>
+<td><code>FRAISEQL_AUTH0_DOMAIN</code></td>
 </tr>
 <tr>
-<td>90d</td>
-<td>Long-term patterns</td>
-<td>May include stale data</td>
+<td><code>auth0_api_identifier</code></td>
+<td>str | None</td>
+<td><code>None</code></td>
+<td><code>FRAISEQL_AUTH0_API_IDENTIFIER</code></td>
+</tr>
+<tr>
+<td><code>auth0_algorithms</code></td>
+<td>list[str]</td>
+<td><code>["RS256"]</code></td>
+<td><code>FRAISEQL_AUTH0_ALGORITHMS</code></td>
+</tr>
+<tr>
+<td><code>dev_auth_username</code></td>
+<td>str | None</td>
+<td><code>"admin"</code></td>
+<td><code>FRAISEQL_DEV_AUTH_USERNAME</code></td>
+</tr>
+<tr>
+<td><code>dev_auth_password</code></td>
+<td>str | None</td>
+<td><code>None</code></td>
+<td><code>FRAISEQL_DEV_AUTH_PASSWORD</code></td>
 </tr>
 </tbody>
 </table>
+<p>Three provider modes exist: <code>"auth0"</code>, <code>"custom"</code>, and <code>"none"</code>. For Auth0,
+<code>auth0_domain</code> is required. For any other OIDC/JWT issuer, set
+<code>auth_provider="custom"</code> and implement an <code>AuthProvider</code> subclass (or front the
+issuer with Auth0). See the authentication guides for details.</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">auth_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">auth_provider</span><span class="o">=</span><span class="s2">&quot;auth0&quot;</span><span class="p">,</span>
+    <span class="n">auth0_domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">auth0_api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
-<h2 id="privacy-and-security">Privacy and Security<a class="headerlink" href="#privacy-and-security" title="Permanent link">&para;</a></h2>
-<h3 id="observabilityprivacycollect_arguments"><code>observability.privacy.collect_arguments</code><a class="headerlink" href="#observabilityprivacycollect_arguments" title="Permanent link">&para;</a></h3>
-<p><strong>Type</strong>: <code>boolean</code>
-<strong>Default</strong>: <code>false</code> (NEVER enabled)
-<strong>Environment</strong>: N/A (hardcoded to false)</p>
-<p>Whether to collect query arguments (variables).</p>
-<p><strong>IMPORTANT</strong>: This is <strong>always false</strong> and cannot be enabled. FraiseQL <strong>never logs</strong>:</p>
-<ul>
-<li>❌ Query arguments/variables</li>
-<li>❌ User IDs or identifiers</li>
-<li>❌ Personally Identifiable Information (PII)</li>
-<li>❌ Actual data values</li>
-</ul>
-<p><strong>What IS collected</strong>:</p>
-<ul>
-<li>✅ Query structure (operation name)</li>
-<li>✅ Execution timing</li>
-<li>✅ JSON paths accessed (e.g., "dimensions.region")</li>
-<li>✅ Result set sizes</li>
-<li>✅ Cache hit/miss</li>
-</ul>
-<hr />
-<h3 id="observabilitysecuritymetrics_table_permissions"><code>observability.security.metrics_table_permissions</code><a class="headerlink" href="#observabilitysecuritymetrics_table_permissions" title="Permanent link">&para;</a></h3>
-<p><strong>Recommendation</strong>: Restrict metrics tables to observability service only.</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create dedicated metrics user
-CREATE USER fraiseql_metrics WITH PASSWORD 'secure_password';</p>
-<p>-- Grant schema access
-GRANT USAGE ON SCHEMA fraiseql_metrics TO fraiseql_metrics;</p>
-<p>-- Grant table permissions (INSERT only for collection)
-GRANT INSERT ON fraiseql_metrics.query_executions TO fraiseql_metrics;
-GRANT INSERT ON fraiseql_metrics.jsonb_accesses TO fraiseql_metrics;</p>
-<p>-- Analysis user needs SELECT
-CREATE USER fraiseql_analyst WITH PASSWORD 'analyst_password';
-GRANT SELECT ON ALL TABLES IN SCHEMA fraiseql_metrics TO fraiseql_analyst;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQL Server</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create dedicated login and user
-CREATE LOGIN fraiseql_metrics WITH PASSWORD = 'secure_password';
-CREATE USER fraiseql_metrics FOR LOGIN fraiseql_metrics;</p>
-<p>-- Grant schema access
-GRANT SELECT, INSERT ON SCHEMA::fraiseql_metrics TO fraiseql_metrics;</p>
-<p>-- Analysis user
-CREATE LOGIN fraiseql_analyst WITH PASSWORD = 'analyst_password';
-CREATE USER fraiseql_analyst FOR LOGIN fraiseql_analyst;
-GRANT SELECT ON SCHEMA::fraiseql_metrics TO fraiseql_analyst;
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="production-configuration-examples">Production Configuration Examples<a class="headerlink" href="#production-configuration-examples" title="Permanent link">&para;</a></h2>
-<h3 id="small-application-100-qps">Small Application (&lt; 100 qps)<a class="headerlink" href="#small-application-100-qps" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true
-sample_rate = 1.0  # 100% sampling (low traffic)
-retention_days = 30</p>
-<p>[observability.metrics]
-buffer_size = 50
-flush_interval_secs = 30
-batch_size = 50</p>
-<p>[observability.analysis]
-min_frequency = 100  # Lower threshold (less traffic)
-min_speedup = 3.0
-min_selectivity = 0.1
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="medium-application-100-1000-qps">Medium Application (100-1000 qps)<a class="headerlink" href="#medium-application-100-1000-qps" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true
-sample_rate = 0.1  # 10% sampling (default)
-retention_days = 30</p>
-<p>[observability.metrics]
-buffer_size = 100
-flush_interval_secs = 60
-batch_size = 100</p>
-<p>[observability.database]</p>
-<h1 id="separate-database-recommended">Separate database recommended<a class="headerlink" href="#separate-database-recommended" title="Permanent link">&para;</a></h1>
-<p>url = "postgres://metrics:pass@metrics-db:5432/fraiseql_metrics"
-pool_size = 10</p>
-<p>[observability.analysis]
-min_frequency = 1000  # Default
-min_speedup = 5.0
-min_selectivity = 0.1
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="large-application-1000-qps">Large Application (&gt; 1000 qps)<a class="headerlink" href="#large-application-1000-qps" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-enabled = true
-sample_rate = 0.01  # 1% sampling (high traffic)
-retention_days = 14  # Shorter retention (lots of data)</p>
-<p>[observability.metrics]
-buffer_size = 200
-flush_interval_secs = 60
-batch_size = 500  # Larger batches for efficiency</p>
-<p>[observability.database]</p>
-<h1 id="separate-metrics-cluster">Separate metrics cluster<a class="headerlink" href="#separate-metrics-cluster" title="Permanent link">&para;</a></h1>
-<p>url = "postgres://metrics:pass@metrics-cluster.internal:5432/metrics"
-pool_size = 20
-timeout_secs = 30</p>
-<p>[observability.analysis]
-min_frequency = 5000  # High threshold
-min_speedup = 10.0  # Only huge wins
-min_selectivity = 0.05
-window = "30d"  # Longer window to capture patterns at 1% sampling
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="multi-database-configuration">Multi-Database Configuration<a class="headerlink" href="#multi-database-configuration" title="Permanent link">&para;</a></h3>
-<p><strong>PostgreSQL Primary + SQL Server Secondary</strong>:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]
-url = "postgres://app:pass@localhost:5432/myapp"</p>
-<p>[database.secondary]
-sql_server_url = "sqlserver://app:pass@sqlserver:1433/myapp"</p>
-<p>[observability]
-enabled = true
-sample_rate = 0.1</p>
-<h1 id="metrics-always-go-to-postgresql-best-pg_stats-support">Metrics always go to PostgreSQL (best pg_stats support)<a class="headerlink" href="#metrics-always-go-to-postgresql-best-pg_stats-support" title="Permanent link">&para;</a></h1>
-<p>[observability.database]
-url = "postgres://metrics:pass@metrics-db:5432/metrics"</p>
-<p>[observability.analysis]</p>
-<h1 id="analyzer-detects-database-type-from-query-patterns">Analyzer detects database type from query patterns<a class="headerlink" href="#analyzer-detects-database-type-from-query-patterns" title="Permanent link">&para;</a></h1>
-<h1 id="generates-appropriate-sql-for-each-database">Generates appropriate SQL for each database<a class="headerlink" href="#generates-appropriate-sql-for-each-database" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="database-schema-setup">Database Schema Setup<a class="headerlink" href="#database-schema-setup" title="Permanent link">&para;</a></h2>
-<h3 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permanent link">&para;</a></h3>
-<p>The observability system automatically creates these tables on first run:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create schema
-CREATE SCHEMA IF NOT EXISTS fraiseql_metrics;</p>
-<p>-- Query execution metrics
-CREATE TABLE fraiseql_metrics.query_executions (
-    id BIGSERIAL PRIMARY KEY,
-    query_name TEXT NOT NULL,
-    execution_time_ms FLOAT NOT NULL,
-    sql_generation_time_ms FLOAT NOT NULL,
-    db_round_trip_time_ms FLOAT NOT NULL,
-    projection_time_ms FLOAT NOT NULL,
-    rows_returned INTEGER NOT NULL,
-    cache_hit BOOLEAN NOT NULL,
-    executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);</p>
-<p>-- Index for time-series queries
-CREATE INDEX idx_query_executions_name_time
-    ON fraiseql_metrics.query_executions (query_name, executed_at DESC);</p>
-<p>-- Index for analysis queries
-CREATE INDEX idx_query_executions_time
-    ON fraiseql_metrics.query_executions (executed_at DESC);</p>
-<p>-- JSONB path access patterns
-CREATE TABLE fraiseql_metrics.jsonb_accesses (
-    id BIGSERIAL PRIMARY KEY,
-    table_name TEXT NOT NULL,
-    jsonb_column TEXT NOT NULL,
-    path TEXT NOT NULL,
-    access_type TEXT NOT NULL,  -- 'Filter', 'Sort', 'Project', 'Aggregate'
-    query_name TEXT NOT NULL,
-    selectivity FLOAT,
-    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);</p>
-<p>-- Index for pattern analysis
-CREATE INDEX idx_jsonb_accesses_lookup
-    ON fraiseql_metrics.jsonb_accesses (table_name, jsonb_column, path);</p>
-<p>-- Index for frequency counting
-CREATE INDEX idx_jsonb_accesses_time
-    ON fraiseql_metrics.jsonb_accesses (recorded_at DESC);</p>
-<p>-- Aggregated statistics (updated periodically)
-CREATE TABLE fraiseql_metrics.query_stats (
-    query_name TEXT PRIMARY KEY,
-    total_executions BIGINT NOT NULL,
-    total_time_ms FLOAT NOT NULL,
-    p50_ms FLOAT,
-    p95_ms FLOAT,
-    p99_ms FLOAT,
-    avg_rows FLOAT,
-    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="sql-server">SQL Server<a class="headerlink" href="#sql-server" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create schema
-CREATE SCHEMA fraiseql_metrics;
-GO</p>
-<p>-- Query execution metrics
-CREATE TABLE fraiseql_metrics.query_executions (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    query_name NVARCHAR(256) NOT NULL,
-    execution_time_ms FLOAT NOT NULL,
-    sql_generation_time_ms FLOAT NOT NULL,
-    db_round_trip_time_ms FLOAT NOT NULL,
-    projection_time_ms FLOAT NOT NULL,
-    rows_returned INT NOT NULL,
-    cache_hit BIT NOT NULL,
-    executed_at DATETIME2 NOT NULL DEFAULT GETDATE()
-);</p>
-<p>-- Indexes
-CREATE NONCLUSTERED INDEX idx_query_executions_name_time
-    ON fraiseql_metrics.query_executions (query_name, executed_at DESC);</p>
-<p>CREATE NONCLUSTERED INDEX idx_query_executions_time
-    ON fraiseql_metrics.query_executions (executed_at DESC);</p>
-<p>-- JSON path access patterns
-CREATE TABLE fraiseql_metrics.json_accesses (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    table_name NVARCHAR(128) NOT NULL,
-    json_column NVARCHAR(128) NOT NULL,
-    path NVARCHAR(512) NOT NULL,
-    access_type NVARCHAR(50) NOT NULL,
-    query_name NVARCHAR(256) NOT NULL,
-    selectivity FLOAT,
-    recorded_at DATETIME2 NOT NULL DEFAULT GETDATE()
-);</p>
-<p>-- Indexes
-CREATE NONCLUSTERED INDEX idx_json_accesses_lookup
-    ON fraiseql_metrics.json_accesses (table_name, json_column, path);</p>
-<p>CREATE NONCLUSTERED INDEX idx_json_accesses_time
-    ON fraiseql_metrics.json_accesses (recorded_at DESC);</p>
-<p>-- Aggregated statistics
-CREATE TABLE fraiseql_metrics.query_stats (
-    query_name NVARCHAR(256) PRIMARY KEY,
-    total_executions BIGINT NOT NULL,
-    total_time_ms FLOAT NOT NULL,
-    p50_ms FLOAT,
-    p95_ms FLOAT,
-    p99_ms FLOAT,
-    avg_rows FLOAT,
-    last_updated DATETIME2 NOT NULL DEFAULT GETDATE()
-);
-GO
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="manual-schema-creation">Manual Schema Creation<a class="headerlink" href="#manual-schema-creation" title="Permanent link">&para;</a></h2>
-<p>If auto-creation is disabled or fails:</p>
-<p><strong>PostgreSQL</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql -U fraiseql_metrics -d fraiseql_metrics -f schema/postgres_metrics.sql
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQL Server</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>sqlcmd -S localhost -U fraiseql_metrics -P password -i schema/sqlserver_metrics.sql
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="performance-tuning_1">Performance Tuning<a class="headerlink" href="#performance-tuning_1" title="Permanent link">&para;</a></h2>
-<h3 id="high-traffic-optimization">High-Traffic Optimization<a class="headerlink" href="#high-traffic-optimization" title="Permanent link">&para;</a></h3>
-<p>For applications with &gt; 10,000 qps:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-sample_rate = 0.001  # 0.1% sampling</p>
-<p>[observability.metrics]
-buffer_size = 1000
-batch_size = 1000
-flush_interval_secs = 120  # Flush every 2 minutes</p>
-<p>[observability.database]
-pool_size = 50
-timeout_secs = 10  # Fail fast
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="low-latency-requirements">Low-Latency Requirements<a class="headerlink" href="#low-latency-requirements" title="Permanent link">&para;</a></h3>
-<p>For applications where every millisecond counts:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability]
-sample_rate = 0.01  # 1% sampling</p>
-<p>[observability.metrics]</p>
-<h1 id="async-writes-with-minimal-blocking">Async writes with minimal blocking<a class="headerlink" href="#async-writes-with-minimal-blocking" title="Permanent link">&para;</a></h1>
-<p>buffer_size = 500
-flush_interval_secs = 30</p>
-<p>[observability.database]</p>
-<h1 id="separate-metrics-database-is-critical">Separate metrics database is critical<a class="headerlink" href="#separate-metrics-database-is-critical" title="Permanent link">&para;</a></h1>
-<p>url = "postgres://metrics:pass@async-metrics-db:5432/metrics"
-pool_size = 20
-timeout_secs = 5  # Drop metrics if DB is slow
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="monitoring-observability-system">Monitoring Observability System<a class="headerlink" href="#monitoring-observability-system" title="Permanent link">&para;</a></h2>
-<h3 id="metrics-to-track">Metrics to Track<a class="headerlink" href="#metrics-to-track" title="Permanent link">&para;</a></h3>
-<p><strong>Application-Level</strong> (via logs):</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Log metrics collection health
-if metrics_buffer_full {
-    warn!("Metrics buffer full, dropping oldest entries");
-}</p>
-<p>if metrics_write_timeout {
-    warn!("Metrics write timed out after {}ms", timeout_ms);
-}</p>
-<p>// Periodic stats
-info!(
-    "Metrics: collected={}, flushed={}, dropped={}, buffer_size={}",
-    collected_count, flushed_count, dropped_count, buffer_len
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Database-Level</strong> (query metrics tables):</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL: Metrics collection rate
-SELECT
-    DATE_TRUNC('hour', executed_at) AS hour,
-    COUNT(*) AS metrics_collected
-FROM fraiseql_metrics.query_executions
-WHERE executed_at &gt; NOW() - INTERVAL '24 hours'
-GROUP BY hour
-ORDER BY hour DESC;</p>
-<p>-- SQL Server: Metrics collection rate
-SELECT
-    DATEPART(hour, executed_at) AS hour,
-    COUNT(*) AS metrics_collected
-FROM fraiseql_metrics.query_executions
-WHERE executed_at &gt; DATEADD(hour, -24, GETDATE())
-GROUP BY DATEPART(hour, executed_at)
-ORDER BY hour DESC;
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="troubleshooting-configuration">Troubleshooting Configuration<a class="headerlink" href="#troubleshooting-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="issue-metrics-not-being-collected">Issue: Metrics Not Being Collected<a class="headerlink" href="#issue-metrics-not-being-collected" title="Permanent link">&para;</a></h3>
-<p><strong>Check</strong>:</p>
-<ol>
-<li>Is observability enabled?</li>
-</ol>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>echo $FRAISEQL_OBSERVABILITY_ENABLED
-   # Should output: true
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Is sample rate too low?</li>
-</ol>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>echo $FRAISEQL_OBSERVABILITY_SAMPLE_RATE
-   # Should be &gt; 0.0
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Check database connection:</li>
-</ol>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql $FRAISEQL_METRICS_DATABASE_URL -c "SELECT 1"
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Check application logs:</li>
-</ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>grep "observability" app.log
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="issue-high-memory-usage">Issue: High Memory Usage<a class="headerlink" href="#issue-high-memory-usage" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms</strong>: Application memory grows over time</p>
-<p><strong>Cause</strong>: Metrics buffer too large or not flushing</p>
-<p><strong>Solution</strong>:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.metrics]
-buffer_size = 50          # Reduce from 100
-flush_interval_secs = 30  # Flush more frequently
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="issue-database-connection-errors">Issue: Database Connection Errors<a class="headerlink" href="#issue-database-connection-errors" title="Permanent link">&para;</a></h3>
-<p><strong>Symptoms</strong>: "Failed to write metrics to database"</p>
-<p><strong>Solutions</strong>:</p>
-<ol>
-<li><strong>Increase timeout</strong>:</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-   timeout_secs = 60  # From 30
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li><strong>Increase pool size</strong>:</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-   pool_size = 20  # From 10
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li><strong>Use separate database</strong> (recommended):</li>
-</ol>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[observability.database]
-   url = "postgres://metrics-only-db:5432/metrics"
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="issue-analysis-shows-no-suggestions">Issue: Analysis Shows No Suggestions<a class="headerlink" href="#issue-analysis-shows-no-suggestions" title="Permanent link">&para;</a></h3>
-<p><strong>Causes</strong>:</p>
-<ol>
-<li><strong>Insufficient data</strong>: Run application for 24-48 hours</li>
-<li><strong>Thresholds too high</strong>: Lower them</li>
-<li><strong>No JSON usage</strong>: Observability focuses on JSON/JSONB optimization</li>
-</ol>
-<p><strong>Solution</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="lower-thresholds-temporarily">Lower thresholds temporarily<a class="headerlink" href="#lower-thresholds-temporarily" title="Permanent link">&para;</a></h1>
-<p>FraiseQL-cli analyze \
-    --min-frequency 10 \
-    --min-speedup 2.0 \
-    --window 1d
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="environment-variables-reference">Environment Variables Reference<a class="headerlink" href="#environment-variables-reference" title="Permanent link">&para;</a></h2>
-<p>Complete list of all environment variables:</p>
+<h2 id="token-revocation-settings">Token Revocation Settings<a class="headerlink" href="#token-revocation-settings" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Variable</th>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>revocation_enabled</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td><code>FRAISEQL_REVOCATION_ENABLED</code></td>
+</tr>
+<tr>
+<td><code>revocation_check_enabled</code></td>
+<td>bool</td>
+<td><code>true</code></td>
+<td><code>FRAISEQL_REVOCATION_CHECK_ENABLED</code></td>
+</tr>
+<tr>
+<td><code>revocation_ttl</code></td>
+<td>int (seconds)</td>
+<td><code>86400</code></td>
+<td><code>FRAISEQL_REVOCATION_TTL</code></td>
+</tr>
+<tr>
+<td><code>revocation_cleanup_interval</code></td>
+<td>int (seconds)</td>
+<td><code>3600</code></td>
+<td><code>FRAISEQL_REVOCATION_CLEANUP_INTERVAL</code></td>
+</tr>
+<tr>
+<td><code>revocation_store_type</code></td>
+<td>str</td>
+<td><code>"memory"</code></td>
+<td><code>FRAISEQL_REVOCATION_STORE_TYPE</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>revocation_store_type</code> accepts <code>"memory"</code> or <code>"redis"</code>. A PostgreSQL-backed
+revocation store is also available programmatically via
+<code>fraiseql.auth.token_revocation.PostgreSQLRevocationStore</code>.</p>
+<hr />
+<h2 id="automatic-persisted-queries-apq">Automatic Persisted Queries (APQ)<a class="headerlink" href="#automatic-persisted-queries-apq" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apq_mode</code></td>
+<td><code>"optional" \| "required" \| "disabled"</code></td>
+<td><code>"optional"</code></td>
+<td><code>FRAISEQL_APQ_MODE</code></td>
+</tr>
+<tr>
+<td><code>apq_storage_backend</code></td>
+<td><code>"memory" \| "postgresql" \| "custom"</code></td>
+<td><code>"memory"</code></td>
+<td><code>FRAISEQL_APQ_STORAGE_BACKEND</code></td>
+</tr>
+<tr>
+<td><code>apq_cache_responses</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td><code>FRAISEQL_APQ_CACHE_RESPONSES</code></td>
+</tr>
+<tr>
+<td><code>apq_response_cache_ttl</code></td>
+<td>int (seconds)</td>
+<td><code>600</code></td>
+<td><code>FRAISEQL_APQ_RESPONSE_CACHE_TTL</code></td>
+</tr>
+<tr>
+<td><code>apq_queries_dir</code></td>
+<td>str | None</td>
+<td><code>None</code></td>
+<td><code>FRAISEQL_APQ_QUERIES_DIR</code></td>
+</tr>
+</tbody>
+</table>
+<p>In <code>apq_mode="required"</code>, only persisted query hashes are accepted; arbitrary
+queries are rejected. Set <code>apq_queries_dir</code> to a directory of <code>.graphql</code>/<code>.gql</code>
+files to auto-register them at startup — useful for security-hardened
+deployments.</p>
+<hr />
+<h2 id="schema-and-session-settings">Schema and Session Settings<a class="headerlink" href="#schema-and-session-settings" title="Permanent link">&para;</a></h2>
+<h3 id="default-schemas">Default schemas<a class="headerlink" href="#default-schemas" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>default_query_schema</code></td>
+<td>str</td>
+<td><code>"public"</code></td>
+<td><code>FRAISEQL_DEFAULT_QUERY_SCHEMA</code></td>
+</tr>
+<tr>
+<td><code>default_mutation_schema</code></td>
+<td>str</td>
+<td><code>"public"</code></td>
+<td><code>FRAISEQL_DEFAULT_MUTATION_SCHEMA</code></td>
+</tr>
+<tr>
+<td><code>default_entity_schema</code></td>
+<td>str | None</td>
+<td><code>None</code></td>
+<td><code>FRAISEQL_DEFAULT_ENTITY_SCHEMA</code></td>
+</tr>
+</tbody>
+</table>
+<p>PostgreSQL schemas to use for query views, mutation functions, and <code>tb_*</code> entity
+tables when not specified on the decorator.</p>
+<h3 id="coordinate_distance_method"><code>coordinate_distance_method</code><a class="headerlink" href="#coordinate_distance_method" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>"postgis" | "haversine" | "earthdistance"</code>
+<strong>Default</strong>: <code>"haversine"</code>
+<strong>Environment</strong>: <code>FRAISEQL_COORDINATE_DISTANCE_METHOD</code></p>
+<p>How coordinate-distance filters are computed. <code>"haversine"</code> works without
+extensions; <code>"postgis"</code> is the most accurate but requires the PostGIS extension.</p>
+<h3 id="default_string_collation"><code>default_string_collation</code><a class="headerlink" href="#default_string_collation" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>str | None</code>
+<strong>Default</strong>: <code>None</code> (use the database default)
+<strong>Environment</strong>: <code>FRAISEQL_DEFAULT_STRING_COLLATION</code></p>
+<p>PostgreSQL collation applied to text <code>ORDER BY</code> clauses, e.g. <code>"fr_FR.utf8"</code> or
+<code>"C"</code>.</p>
+<h3 id="session_variables"><code>session_variables</code><a class="headerlink" href="#session_variables" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: <code>dict[str, str]</code>
+<strong>Default</strong>: <code>{}</code></p>
+<p>Maps request-context keys to PostgreSQL session variable names that FraiseQL sets
+via <code>SET LOCAL</code> before each query/mutation. This is how request context reaches
+your views and Row-Level Security policies:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">session_variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;locale&quot;</span><span class="p">:</span> <span class="s2">&quot;app.locale&quot;</span><span class="p">,</span> <span class="s2">&quot;timezone&quot;</span><span class="p">:</span> <span class="s2">&quot;app.timezone&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>When <code>context["locale"] == "fr-FR"</code>, the connection executes
+<code>SET LOCAL app.locale = 'fr-FR'</code>, so a view can read it:</p>
+<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.locale&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;fr-FR&#39;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="metrics-and-observability">Metrics and Observability<a class="headerlink" href="#metrics-and-observability" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships an optional Prometheus-based metrics integration in
+<code>fraiseql.monitoring</code>. It is <strong>separate</strong> from <code>FraiseQLConfig</code>: you configure it
+with a <code>MetricsConfig</code> dataclass and wire it into your FastAPI app with
+<code>setup_metrics(app, config)</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">setup_metrics</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</code></pre></div>
+<p><code>setup_metrics</code> installs request-timing middleware and mounts a Prometheus
+scrape endpoint (default <code>GET /metrics</code>).</p>
+<h3 id="metricsconfig-fields"><code>MetricsConfig</code> fields<a class="headerlink" href="#metricsconfig-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
 <th>Type</th>
 <th>Default</th>
 <th>Description</th>
@@ -6037,101 +6981,204 @@ flush_interval_secs = 30  # Flush more frequently
 </thead>
 <tbody>
 <tr>
-<td><code>FRAISEQL_OBSERVABILITY_ENABLED</code></td>
+<td><code>enabled</code></td>
 <td>bool</td>
-<td>false</td>
-<td>Enable observability</td>
+<td><code>true</code></td>
+<td>Enable metrics collection</td>
 </tr>
 <tr>
-<td><code>FRAISEQL_OBSERVABILITY_SAMPLE_RATE</code></td>
-<td>float</td>
-<td>0.1</td>
-<td>Sampling rate (0.0-1.0)</td>
+<td><code>namespace</code></td>
+<td>str</td>
+<td><code>"fraiseql"</code></td>
+<td>Prefix for all metric names</td>
 </tr>
 <tr>
-<td><code>FRAISEQL_METRICS_DATABASE_URL</code></td>
-<td>string</td>
-<td>(main DB)</td>
-<td>Metrics database URL</td>
+<td><code>metrics_path</code></td>
+<td>str</td>
+<td><code>"/metrics"</code></td>
+<td>URL path for the metrics endpoint</td>
 </tr>
 <tr>
-<td><code>FRAISEQL_METRICS_RETENTION_DAYS</code></td>
-<td>int</td>
-<td>30</td>
-<td>Metrics retention</td>
+<td><code>buckets</code></td>
+<td>list[float]</td>
+<td>latency buckets <code>[0.005 … 10]</code></td>
+<td>Histogram bucket boundaries (seconds)</td>
 </tr>
 <tr>
-<td><code>FRAISEQL_METRICS_BUFFER_SIZE</code></td>
-<td>int</td>
-<td>100</td>
-<td>In-memory buffer size</td>
+<td><code>exclude_paths</code></td>
+<td>set[str]</td>
+<td><code>{"/metrics", "/health", "/ready", "/startup"}</code></td>
+<td>Paths excluded from HTTP metrics</td>
 </tr>
 <tr>
-<td><code>FRAISEQL_METRICS_FLUSH_INTERVAL_SECS</code></td>
-<td>int</td>
-<td>60</td>
-<td>Flush interval</td>
-</tr>
-<tr>
-<td><code>FRAISEQL_METRICS_BATCH_SIZE</code></td>
-<td>int</td>
-<td>100</td>
-<td>Batch insert size</td>
-</tr>
-<tr>
-<td><code>FRAISEQL_METRICS_DB_POOL_SIZE</code></td>
-<td>int</td>
-<td>10</td>
-<td>Connection pool size</td>
-</tr>
-<tr>
-<td><code>FRAISEQL_METRICS_DB_TIMEOUT_SECS</code></td>
-<td>int</td>
-<td>30</td>
-<td>Query timeout</td>
+<td><code>labels</code></td>
+<td>dict[str, str]</td>
+<td><code>{}</code></td>
+<td>Extra labels applied to all metrics</td>
 </tr>
 </tbody>
 </table>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">setup_metrics</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">MetricsConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;myapp&quot;</span><span class="p">,</span>
+    <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="s2">&quot;graphql-api&quot;</span><span class="p">,</span> <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-west-1&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<p>Prometheus exposes the metrics in the standard text format on the configured
+path:</p>
+<div class="highlight"><pre><span></span><code># HELP fraiseql_graphql_queries_total Total GraphQL queries
+# TYPE fraiseql_graphql_queries_total counter
+fraiseql_graphql_queries_total 1
+# HELP fraiseql_graphql_query_duration_seconds Query duration
+# TYPE fraiseql_graphql_query_duration_seconds histogram
+fraiseql_graphql_query_duration_seconds_sum 0.01
+fraiseql_graphql_query_duration_seconds_count 1
+</code></pre></div>
+<h3 id="privacy">Privacy<a class="headerlink" href="#privacy" title="Permanent link">&para;</a></h3>
+<p>The metrics integration records query structure and timing only. It does <strong>not</strong>
+record query arguments/variables, user identifiers, PII, or actual data values.</p>
+<h3 id="health-checks">Health checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h3>
+<p><code>fraiseql.monitoring</code> also provides health-check helpers you can mount in your
+app:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">check_database</span><span class="p">,</span> <span class="n">check_pool_stats</span>
+
+<span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="production-configuration-examples">Production Configuration Examples<a class="headerlink" href="#production-configuration-examples" title="Permanent link">&para;</a></h2>
+<h3 id="small-application-100-rps">Small Application (&lt; 100 rps)<a class="headerlink" href="#small-application-100-rps" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="medium-application-1001000-rps">Medium Application (100–1000 rps)<a class="headerlink" href="#medium-application-1001000-rps" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@db-host:5432/myapp&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="large-application-1000-rps">Large Application (&gt; 1000 rps)<a class="headerlink" href="#large-application-1000-rps" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@db-cluster:5432/myapp&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>        <span class="c1"># fail fast under load</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">15000</span><span class="p">,</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="configuration-validation">Configuration Validation<a class="headerlink" href="#configuration-validation" title="Permanent link">&para;</a></h2>
-<p>FraiseQL validates configuration on startup:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Invalid configuration example
-[observability]
-enabled = true
-sample_rate = 1.5  # ❌ ERROR: Must be 0.0-1.0</p>
-<p>// Validation error:
-// Error: Invalid observability configuration
-//   - sample_rate must be between 0.0 and 1.0 (got 1.5)
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>FraiseQLConfig</code> validates on construction (pydantic). For example, an invalid
+database URL or a missing <code>auth0_domain</code> when <code>auth_provider="auth0"</code> raises a
+<code>ValidationError</code> immediately at startup:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<p><strong>Validation Rules</strong>:</p>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;mysql://nope&quot;</span><span class="p">)</span>  <span class="c1"># not PostgreSQL</span>
+<span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="c1"># Database URL must start with postgresql:// or postgres://</span>
+</code></pre></div>
+<p>Notable validation behavior:</p>
 <ul>
-<li><code>sample_rate</code>: 0.0 ≤ x ≤ 1.0</li>
-<li><code>retention_days</code>: &gt; 0</li>
-<li><code>buffer_size</code>: &gt; 0</li>
-<li><code>flush_interval_secs</code>: &gt; 0</li>
-<li><code>batch_size</code>: &gt; 0</li>
-<li><code>pool_size</code>: 1-100</li>
-<li><code>timeout_secs</code>: &gt; 0</li>
+<li><code>database_url</code> must start with <code>postgresql://</code> or <code>postgres://</code> (Unix sockets
+  supported).</li>
+<li>In <code>environment="production"</code>, introspection and the playground are disabled
+  unless explicitly re-enabled.</li>
+<li>A wildcard <code>*</code> CORS origin in production logs a security warning.</li>
+<li><code>auth0_domain</code> is required when <code>auth_provider="auth0"</code>.</li>
+<li>Collation and session-variable names are validated against SQL-injection
+  characters.</li>
 </ul>
+<hr />
+<h2 id="troubleshooting-configuration">Troubleshooting Configuration<a class="headerlink" href="#troubleshooting-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="settings-not-taking-effect">Settings not taking effect<a class="headerlink" href="#settings-not-taking-effect" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Confirm the env var name is <code>FRAISEQL_</code>-prefixed and uppercase:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="nv">$FRAISEQL_DATABASE_URL</span>
+</code></pre></div>
+<ol>
+<li>
+<p>Remember that explicit Python values passed to <code>FraiseQLConfig(...)</code> or
+   <code>create_fraiseql_app(...)</code> override env vars.</p>
+</li>
+<li>
+<p>If you use a <code>.env</code> file, make sure it sits in the process working directory.</p>
+</li>
+</ol>
+<h3 id="database-connection-errors">Database connection errors<a class="headerlink" href="#database-connection-errors" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Verify the URL works directly:</li>
+</ol>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span>
+</code></pre></div>
+<ol>
+<li>Increase pool capacity if you see pool-timeout errors:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="inspecting-generated-sql">Inspecting generated SQL<a class="headerlink" href="#inspecting-generated-sql" title="Permanent link">&para;</a></h3>
+<p>Turn on SQL echo in development to see what FraiseQL sends to PostgreSQL:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://app:pass@localhost/myapp&quot;</span><span class="p">,</span>
+    <span class="n">database_echo</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>For application logs, use standard Python logging (e.g. <code>LOG_LEVEL</code> in your own
+process configuration) and uvicorn's <code>--log-level</code> flag.</p>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../observability/metrics-collection.md">Metrics Collection Guide</a></strong> - What data is collected</li>
-<li><strong><a href="../observability/troubleshooting.md">Troubleshooting</a></strong> - Common issues and solutions</li>
-<li><strong><a href="../observability/">Observability Guide</a></strong> - Complete observability setup</li>
+<li><strong><a href="../observability/">Observability Guide</a></strong> — metrics, health checks, and
+  error tracking</li>
+<li><strong><a href="../../advanced/authentication/">Authentication</a></strong> — Auth0 and custom
+  providers</li>
+<li><strong><a href="../../production/deployment/">Deployment</a></strong> — running the FastAPI app in production</li>
 </ul>
-<hr />
-<p><em>Last updated: 2026-01-12</em></p>
 
 
 
 
 
 
+
+  
+  
 
 
 
