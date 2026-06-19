@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="This guide walks you through setting up Auth0 authentication with FraiseQL.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/setup-auth0/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Setup Auth0 - FraiseQL Documentation</title>
+        <title>Auth0 OAuth 2.0 / OIDC Setup Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Setup Auth0
+              Auth0 OAuth 2.0 / OIDC Setup Guide
             
           </span>
         </div>
@@ -4030,6 +4032,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-it-works-in-fraiseql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works in FraiseQL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4063,10 +4076,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-create-api-for-access-tokens" class="md-nav__link">
+  <a href="#step-3-create-api-defines-the-token-audience" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Create API (for access tokens)
+        Step 3: Create API (defines the token audience)
       
     </span>
   </a>
@@ -4078,6 +4091,244 @@
     <span class="md-ellipsis">
       
         Step 4: Configure FraiseQL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-wire-up-the-fraiseql-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Wire up the FraiseQL app
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-protect-resolvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Protect resolvers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-obtain-an-access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Obtain an access token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-call-the-graphql-endpoint-with-the-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Call the GraphQL endpoint with the token
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-roles-and-permissions-in-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Roles and permissions in tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-social-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Social login
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-multi-factor-authentication-mfa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Multi-Factor Authentication (MFA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-token-invalid_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid token" / INVALID_TOKEN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-token-has-expired-token_expired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Token has expired" / TOKEN_EXPIRED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-forbidden-permissionrole-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: FORBIDDEN (permission/role required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tokens-validate-but-roles-are-empty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tokens validate but roles are empty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectivity-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectivity check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auth0-tenant-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auth0 tenant configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4977,6 +5228,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-it-works-in-fraiseql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works in FraiseQL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5010,10 +5272,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-create-api-for-access-tokens" class="md-nav__link">
+  <a href="#step-3-create-api-defines-the-token-audience" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Create API (for access tokens)
+        Step 3: Create API (defines the token audience)
       
     </span>
   </a>
@@ -5025,6 +5287,244 @@
     <span class="md-ellipsis">
       
         Step 4: Configure FraiseQL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-wire-up-the-fraiseql-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Wire up the FraiseQL app
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-protect-resolvers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Protect resolvers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-obtain-an-access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Obtain an access token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-call-the-graphql-endpoint-with-the-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Call the GraphQL endpoint with the token
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-roles-and-permissions-in-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Roles and permissions in tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-social-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Social login
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-multi-factor-authentication-mfa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced: Multi-Factor Authentication (MFA)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-token-invalid_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid token" / INVALID_TOKEN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-token-has-expired-token_expired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Token has expired" / TOKEN_EXPIRED
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-forbidden-permissionrole-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: FORBIDDEN (permission/role required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tokens-validate-but-roles-are-empty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tokens validate but roles are empty
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectivity-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectivity check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auth0-tenant-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auth0 tenant configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -5051,15 +5551,10 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Auth0 OAuth 2.0 / OIDC Setup Guide
-description: This guide walks you through setting up Auth0 authentication with FraiseQL.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="auth0-oauth-20-oidc-setup-guide">Auth0 OAuth 2.0 / OIDC Setup Guide<a class="headerlink" href="#auth0-oauth-20-oidc-setup-guide" title="Permanent link">&para;</a></h1>
-<p>This guide walks you through setting up Auth0 authentication with FraiseQL.</p>
+<p>This guide walks you through setting up Auth0 authentication with FraiseQL. Auth0 is a
+first-class, built-in provider in FraiseQL v1: you configure it in Python (via
+<code>Auth0Config</code> / <code>Auth0Provider</code>) and authentication runs <strong>inside your FastAPI app</strong>.</p>
 <h2 id="why-auth0">Why Auth0?<a class="headerlink" href="#why-auth0" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Managed service</strong>: No infrastructure to maintain</li>
@@ -5068,356 +5563,336 @@ tags: ["documentation", "reference"]</p>
 <li><strong>Rich features</strong>: MFA, social login, passwordless auth</li>
 <li><strong>Scalability</strong>: Handles millions of authentications</li>
 </ul>
+<h2 id="how-it-works-in-fraiseql">How it works in FraiseQL<a class="headerlink" href="#how-it-works-in-fraiseql" title="Permanent link">&para;</a></h2>
+<p>FraiseQL validates the <strong>access token</strong> (a JWT) that Auth0 issues for your API. On every
+GraphQL request, the <code>Auth0Provider</code>:</p>
+<ol>
+<li>Fetches and caches Auth0's JWKS (public signing keys).</li>
+<li>Verifies the token's RS256 signature, <code>audience</code> (your API identifier), and <code>issuer</code>
+   (<code>https://your-domain.auth0.com/</code>).</li>
+<li>Builds a <code>UserContext</code> (user id, email, roles, permissions) and places it at
+   <code>info.context["user"]</code>.</li>
+</ol>
+<p>Your resolvers then enforce access with the <code>@requires_auth</code> / <code>@requires_permission</code> /
+<code>@requires_role</code> decorators. FraiseQL does <strong>not</strong> mint or store tokens itself — Auth0 (or
+your frontend SDK) handles the login redirect, callback, and token exchange; FraiseQL only
+<strong>verifies</strong> the bearer token on incoming requests.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
-<li>OAuth 2.0 and OIDC fundamentals (client credentials flow, authorization code flow, ID tokens, access tokens)</li>
+<li>OAuth 2.0 and OIDC fundamentals (authorization code flow, ID tokens, access tokens)</li>
 <li>JWT token structure and RS256 signature verification</li>
-<li>HTTP/REST APIs and callback handling</li>
+<li>HTTP/REST APIs and bearer-token authorization</li>
 <li>Auth0 tenant management and application concepts</li>
-<li>Basic networking and domain/URL understanding</li>
+<li>Basic Python / FastAPI</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
+<li>FraiseQL v1</li>
+<li>Python 3.13+</li>
 <li>curl or Postman (for API testing)</li>
-<li>A code editor for configuration files</li>
-<li>Bash or similar shell for environment variables</li>
-<li>Docker (optional, for local testing with ngrok)</li>
+<li>A code editor</li>
 </ul>
 <p><strong>Required Infrastructure:</strong></p>
 <ul>
 <li>Auth0 account (free tier available at <a href="https://auth0.com/signup">https://auth0.com/signup</a>)</li>
 <li>Auth0 tenant/domain (created automatically with account)</li>
-<li>FraiseQL server instance (local or deployed)</li>
-<li>Publicly accessible URL or ngrok tunnel for OAuth callbacks</li>
-<li>PostgreSQL database for session storage (if using custom SessionStore)</li>
-<li>Auth0 Application (to be created in Step 1)</li>
-<li>Auth0 API definition (to be created in Step 3)</li>
+<li>A FraiseQL FastAPI app (local or deployed)</li>
+<li>PostgreSQL database</li>
+<li>An Auth0 Application (for the frontend login flow — created in Step 1)</li>
+<li>An Auth0 API definition (defines the audience your tokens target — created in Step 3)</li>
 </ul>
 <p><strong>Optional but Recommended:</strong></p>
 <ul>
-<li>ngrok or Cloudflare Tunnel (for local development without deployment)</li>
-<li>Auth0 Rules/Actions for custom authorization logic</li>
+<li>A frontend Auth0 SDK (auth0-react, auth0-spa-js, etc.) to drive the login flow</li>
+<li>Auth0 Actions for custom claims (roles/permissions in the token)</li>
 <li>Auth0 Logs page for debugging authentication issues</li>
-<li>HTTPS certificate for production deployment</li>
 </ul>
-<p><strong>Time Estimate:</strong> 20-40 minutes for complete setup and first user authentication test</p>
+<p><strong>Time Estimate:</strong> 20-40 minutes for complete setup and first authenticated request</p>
 <h2 id="step-1-create-auth0-application">Step 1: Create Auth0 Application<a class="headerlink" href="#step-1-create-auth0-application" title="Permanent link">&para;</a></h2>
+<p>This application represents the client (your frontend) that logs users in.</p>
 <ol>
 <li>Go to <a href="https://manage.auth0.com">Auth0 Dashboard</a></li>
 <li>Click "Applications" (left sidebar)</li>
 <li>Click "Create Application"</li>
-<li>Enter name: "FraiseQL Server"</li>
-<li>Choose application type: <strong>Regular Web Application</strong></li>
+<li>Enter a name, e.g. "MyApp Frontend"</li>
+<li>Choose the application type that matches your frontend
+   (<strong>Single Page Application</strong> for a SPA, <strong>Regular Web Application</strong> for server-rendered)</li>
 <li>Click "Create"</li>
 </ol>
 <h2 id="step-2-configure-application-settings">Step 2: Configure Application Settings<a class="headerlink" href="#step-2-configure-application-settings" title="Permanent link">&para;</a></h2>
 <ol>
-<li>In the application settings, go to "Settings" tab</li>
-<li>Find these important values:</li>
+<li>In the application settings, go to the "Settings" tab</li>
+<li>Note these values (the frontend SDK needs them):</li>
 <li><strong>Domain</strong>: <code>your-domain.auth0.com</code></li>
 <li><strong>Client ID</strong>: (copy this)</li>
 <li>
-<p><strong>Client Secret</strong>: (copy this)</p>
+<p><strong>Client Secret</strong>: (only for Regular Web Applications)</p>
 </li>
 <li>
-<p>Scroll down to "Allowed Callback URLs" and add:</p>
+<p>Under "Allowed Callback URLs" add the URLs your frontend redirects back to after login:</p>
 </li>
 </ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>http://localhost:8000/auth/callback
-   https://yourdomain.com/auth/callback</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>http://localhost:3000/callback
+https://yourdomain.com/callback
+</code></pre></div>
 <ol>
-<li>Scroll to "Allowed Logout URLs" and add:</li>
+<li>Under "Allowed Logout URLs" add:</li>
 </ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>http://localhost:3000
-   https://yourdomain.com
-   ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>http://localhost:3000
+https://yourdomain.com
+</code></pre></div>
 <ol>
-<li>Scroll to "Allowed Web Origins" and add:</li>
+<li>Under "Allowed Web Origins" add:</li>
 </ol>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>http://localhost:3000
-   http://localhost:8000
-   https://yourdomain.com
-   ```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>http://localhost:3000
+https://yourdomain.com
+</code></pre></div>
 <ol>
 <li>Click "Save Changes"</li>
 </ol>
-<h2 id="step-3-create-api-for-access-tokens">Step 3: Create API (for access tokens)<a class="headerlink" href="#step-3-create-api-for-access-tokens" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>The login redirect and callback are handled by your <strong>frontend</strong> and Auth0. Your FraiseQL
+backend only receives the resulting access token as a <code>Bearer</code> header — it has no callback
+route of its own.</p>
+</blockquote>
+<h2 id="step-3-create-api-defines-the-token-audience">Step 3: Create API (defines the token audience)<a class="headerlink" href="#step-3-create-api-defines-the-token-audience" title="Permanent link">&para;</a></h2>
+<p>The <strong>API identifier</strong> becomes the <code>audience</code> of the access tokens FraiseQL validates.</p>
 <ol>
-<li>Click "Applications" → "APIs" (left sidebar)</li>
+<li>Go to "Applications" → "APIs" (left sidebar)</li>
 <li>Click "Create API"</li>
-<li>Enter name: "FraiseQL API"</li>
-<li>Identifier: <code>https://api.FraiseQL.example.com</code></li>
+<li>Enter a name, e.g. "MyApp API"</li>
+<li>Identifier (audience): <code>https://api.myapp.com</code> (any stable URI — it does not need to resolve)</li>
 <li>Signing algorithm: <strong>RS256</strong> (default)</li>
 <li>Click "Create"</li>
 </ol>
+<p>Keep this identifier handy — it maps to FraiseQL's <code>api_identifier</code> / <code>auth0_api_identifier</code>.</p>
 <h2 id="step-4-configure-fraiseql">Step 4: Configure FraiseQL<a class="headerlink" href="#step-4-configure-fraiseql" title="Permanent link">&para;</a></h2>
-<p>Create <code>.env</code> file:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="auth0-configuration">Auth0 Configuration<a class="headerlink" href="#auth0-configuration" title="Permanent link">&para;</a></h1>
-<p>AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_CLIENT_ID=YOUR_CLIENT_ID
-AUTH0_CLIENT_SECRET=YOUR_CLIENT_SECRET
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback</p>
-<h1 id="jwt-configuration-auth0-uses-rs256-automatically">JWT Configuration (Auth0 uses RS256 automatically)<a class="headerlink" href="#jwt-configuration-auth0-uses-rs256-automatically" title="Permanent link">&para;</a></h1>
-<p>JWT_ISSUER=https://your-domain.auth0.com/
-JWT_ALGORITHM=RS256</p>
-<h1 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL=postgres://user:password@localhost/FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
+<p>Set your settings via environment variables (prefixed with <code>FRAISEQL_</code>). For example, in a
+<code>.env</code> file:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Database</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:password@localhost/myapp
 
-<h2 id="step-5-configure-fraiseql-server">Step 5: Configure FraiseQL Server<a class="headerlink" href="#step-5-configure-fraiseql-server" title="Permanent link">&para;</a></h2>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::OidcProvider;
-use std::sync::Arc;</p>
-<h1 id="tokiomain">[tokio::main]<a class="headerlink" href="#tokiomain" title="Permanent link">&para;</a></h1>
-<p>async fn main() -&gt; Result&lt;()&gt; {
-    let domain = std::env::var("AUTH0_DOMAIN")?;
-    let issuer_url = format!("https://{}/", domain);</p>
-<div class="highlight"><pre><span></span><code>let oauth_provider = Arc::new(
-    OidcProvider::new(
-        &quot;auth0&quot;,
-        &amp;issuer_url,
-        &amp;std::env::var(&quot;AUTH0_CLIENT_ID&quot;)?,
-        &amp;std::env::var(&quot;AUTH0_CLIENT_SECRET&quot;)?,
-        &amp;std::env::var(&quot;OAUTH_REDIRECT_URI&quot;)?,
-    )
-    .await?
-);
-
-// Register auth endpoints...
-Ok(())
+<span class="c1"># Auth0 (audience = the API Identifier from Step 3)</span>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-domain.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS defaults to [&quot;RS256&quot;]</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<p>These map onto the <code>FraiseQLConfig</code> fields <code>auth_provider="auth0"</code>, <code>auth0_domain</code>,
+<code>auth0_api_identifier</code>, and <code>auth0_algorithms</code> (default <code>["RS256"]</code>).</p>
+<h2 id="step-5-wire-up-the-fraiseql-app">Step 5: Wire up the FraiseQL app<a class="headerlink" href="#step-5-wire-up-the-fraiseql-app" title="Permanent link">&para;</a></h2>
+<p>Pass an <code>Auth0Config</code> (or an <code>Auth0Provider</code>) to <code>create_fraiseql_app</code> via the <code>auth</code>
+argument. FraiseQL builds the provider and validates tokens in-process.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<h2 id="step-6-register-auth-endpoints">Step 6: Register Auth Endpoints<a class="headerlink" href="#step-6-register-auth-endpoints" title="Permanent link">&para;</a></h2>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use axum::Router;
-use fraiseql_server::auth::{
-    auth_start, auth_callback, auth_refresh, auth_logout, AuthState
-};</p>
-<p>let auth_routes = Router::new()
-    .route("/auth/start", post(auth_start))
-    .route("/auth/callback", get(auth_callback))
-    .route("/auth/refresh", post(auth_refresh))
-    .route("/auth/logout", post(auth_logout))
-    .with_state(auth_state);</p>
-<p>let app = Router::new()
-    .merge(auth_routes)
-    // ... other routes
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">myapp.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">create_user</span>
+
+<span class="n">auth</span> <span class="o">=</span> <span class="n">Auth0Config</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FRAISEQL_AUTH0_DOMAIN&quot;</span><span class="p">],</span>          <span class="c1"># &quot;your-domain.auth0.com&quot;</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FRAISEQL_AUTH0_API_IDENTIFIER&quot;</span><span class="p">],</span>  <span class="c1"># &quot;https://api.myapp.com&quot;</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FRAISEQL_DATABASE_URL&quot;</span><span class="p">],</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>   <span class="c1"># False enables the GraphQL playground</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it with any ASGI server:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<blockquote>
+<p><strong>Alternative wiring.</strong> You can construct the provider directly and pass it instead:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Provider</span>
+
+<span class="n">auth</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-domain.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+    <span class="n">cache_jwks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">database_url</span><span class="o">=...</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">)</span>
+</code></pre></div>
+<p>Or skip the <code>auth=</code> argument entirely and rely on the <code>FRAISEQL_AUTH0_*</code> environment
+variables from Step 4 (with <code>FRAISEQL_AUTH_PROVIDER=auth0</code>).</p>
+</blockquote>
+<h2 id="step-6-protect-resolvers">Step 6: Protect resolvers<a class="headerlink" href="#step-6-protect-resolvers" title="Permanent link">&para;</a></h2>
+<p>Authorization is enforced <strong>per resolver</strong> in Python. The decorators read the authenticated
+<code>UserContext</code> from <code>info.context["user"]</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span><span class="p">,</span> <span class="n">requires_permission</span><span class="p">,</span> <span class="n">requires_role</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="nd">@requires_auth</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>          <span class="c1"># a UserContext (guaranteed authenticated)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;users:write&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteUserSuccess</span> <span class="o">|</span> <span class="n">DeleteUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">DeleteUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">DeleteUserSuccess</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
+<p><code>UserContext</code> exposes <code>.user_id</code>, <code>.email</code>, <code>.name</code>, <code>.roles</code>, <code>.permissions</code>, <code>.metadata</code>,
+plus helpers <code>.has_role(...)</code>, <code>.has_permission(...)</code>, <code>.has_any_role(...)</code>, and
+<code>.has_any_permission(...)</code> for ad-hoc checks inside a resolver.</p>
+<p>When access is denied, FraiseQL returns a GraphQL error with <code>extensions.code</code> set to
+<code>"UNAUTHENTICATED"</code> (no/invalid token) or <code>"FORBIDDEN"</code> (missing role/permission) — not an
+HTTP 4xx redirect.</p>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<h3 id="1-start-login-flow">1. Start Login Flow<a class="headerlink" href="#1-start-login-flow" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "auth0"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-complete-authentication">2. Complete Authentication<a class="headerlink" href="#2-complete-authentication" title="Permanent link">&para;</a></h3>
-<p>Visit the returned authorization URL and log in with your Auth0 account.</p>
-<h3 id="3-use-tokens">3. Use Tokens<a class="headerlink" href="#3-use-tokens" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="advanced-user-management">Advanced: User Management<a class="headerlink" href="#advanced-user-management" title="Permanent link">&para;</a></h2>
-<p>Auth0 provides user management APIs. Access them via:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Get user profile from Auth0 user info endpoint
-// This is automatically done by OidcProvider::user_info()</p>
-<p>let user_info = oauth_provider.user_info(&amp;access_token).await?;
-println!("User ID: {}", user_info.id);
-println!("Email: {}", user_info.email);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="advanced-rules-and-actions">Advanced: Rules and Actions<a class="headerlink" href="#advanced-rules-and-actions" title="Permanent link">&para;</a></h2>
-<p>Auth0 Rules (legacy) or Actions allow custom logic:</p>
+<h3 id="1-obtain-an-access-token">1. Obtain an access token<a class="headerlink" href="#1-obtain-an-access-token" title="Permanent link">&para;</a></h3>
+<p>In development you can request a token for your API directly from Auth0 using the
+client-credentials grant (enable a Machine-to-Machine application authorized for your API,
+or use the "Test" tab on the API page in the dashboard):</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://your-domain.auth0.com/oauth/token<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;client_id&quot;: &quot;YOUR_M2M_CLIENT_ID&quot;,</span>
+<span class="s1">    &quot;client_secret&quot;: &quot;YOUR_M2M_CLIENT_SECRET&quot;,</span>
+<span class="s1">    &quot;audience&quot;: &quot;https://api.myapp.com&quot;,</span>
+<span class="s1">    &quot;grant_type&quot;: &quot;client_credentials&quot;</span>
+<span class="s1">  }&#39;</span>
+</code></pre></div>
+<p>In production, your <strong>frontend</strong> obtains the access token via the Auth0 login flow and sends
+it to the GraphQL endpoint.</p>
+<h3 id="2-call-the-graphql-endpoint-with-the-token">2. Call the GraphQL endpoint with the token<a class="headerlink" href="#2-call-the-graphql-endpoint-with-the-token" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;access_token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ me { id email } }&quot;}&#39;</span>
+</code></pre></div>
+<p>A request without a valid token to a protected resolver returns a GraphQL error with
+<code>extensions.code = "UNAUTHENTICATED"</code>.</p>
+<h2 id="advanced-roles-and-permissions-in-tokens">Advanced: Roles and permissions in tokens<a class="headerlink" href="#advanced-roles-and-permissions-in-tokens" title="Permanent link">&para;</a></h2>
+<p>For <code>@requires_role</code> / <code>@requires_permission</code> to work, the user's roles and permissions must
+be present in the access token. Configure this in Auth0:</p>
 <ol>
-<li>Go to "Auth Pipeline" → "Actions"</li>
-<li>Click "Create Action"</li>
-<li>Name: "Add Custom Claims"</li>
-<li>Trigger: "Post-Login"</li>
-<li>Add code:</li>
+<li>Go to "User Management" → "Roles", create roles (e.g. <code>admin</code>) and attach permissions
+   (e.g. <code>users:read</code>, <code>users:write</code>, <code>users:delete</code>) defined on your API.</li>
+<li>Assign roles to users under "User Management" → "Users".</li>
+<li>Enable "Add Permissions in the Access Token" (and optionally RBAC) on your API's settings
+   so <code>permissions</code> appears in the token. FraiseQL reads the token's <code>permissions</code> claim
+   directly into <code>UserContext.permissions</code>.</li>
 </ol>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>exports.onExecutePostLogin = async (event, api) =&gt; {
-     const namespace = 'https://FraiseQL.example.com';
-     if (event.authorization) {
-       api.idToken.setCustomClaim(<code>${namespace}/roles</code>, event.user.roles);
-       api.accessToken.setCustomClaim(<code>${namespace}/org_id</code>, event.user.org_id);
-     }
-   };
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Click "Save" → "Deploy"</li>
-</ol>
-<p>Then access in FraiseQL:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let user = auth::AuthenticatedUser { /* ... */ };
-let roles = user.get_custom_claim("https://FraiseQL.example.com/roles");
-let org_id = user.get_custom_claim("https://FraiseQL.example.com/org_id");
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="advanced-social-login">Advanced: Social Login<a class="headerlink" href="#advanced-social-login" title="Permanent link">&para;</a></h2>
+<p>For roles, add a custom claim via an Auth0 <strong>Action</strong> (Post-Login trigger). FraiseQL reads
+roles from a namespaced claim derived from your API identifier:</p>
+<div class="highlight"><pre><span></span><code><span class="nx">exports</span><span class="p">.</span><span class="nx">onExecutePostLogin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="w"> </span><span class="nx">api</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">namespace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;https://api.myapp.com/&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">roles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">authorization</span><span class="o">?</span><span class="p">.</span><span class="nx">roles</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="p">[];</span>
+<span class="w">  </span><span class="nx">api</span><span class="p">.</span><span class="nx">accessToken</span><span class="p">.</span><span class="nx">setCustomClaim</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">namespace</span><span class="si">}</span><span class="sb">roles`</span><span class="p">,</span><span class="w"> </span><span class="nx">roles</span><span class="p">);</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>Then check roles in any resolver:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="nd">@requires_auth</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_dashboard</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dashboard</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;admin role required&quot;</span><span class="p">)</span>
+    <span class="o">...</span>
+</code></pre></div>
+<h2 id="advanced-social-login">Advanced: Social login<a class="headerlink" href="#advanced-social-login" title="Permanent link">&para;</a></h2>
 <p>Auth0 supports social login (Google, GitHub, etc.). To enable:</p>
 <ol>
 <li>Go to "Authentication" → "Social"</li>
-<li>Enable desired providers (Google, GitHub, LinkedIn, etc.)</li>
-<li>Provide credentials for each provider</li>
+<li>Enable the desired providers and supply their credentials</li>
 <li>Auth0 handles the OAuth flow automatically</li>
 </ol>
-<p>Your users can now log in with their social accounts!</p>
+<p>No FraiseQL change is needed — tokens still arrive as a <code>Bearer</code> access token validated the
+same way.</p>
 <h2 id="advanced-multi-factor-authentication-mfa">Advanced: Multi-Factor Authentication (MFA)<a class="headerlink" href="#advanced-multi-factor-authentication-mfa" title="Permanent link">&para;</a></h2>
 <p>To require MFA:</p>
 <ol>
 <li>Go to "Security" → "Multi-factor Authentication"</li>
-<li>Enable desired factors (SMS, Email, Google Authenticator)</li>
+<li>Enable the desired factors (SMS, Email, Authenticator app)</li>
 <li>Configure enrollment</li>
-<li>Auth0 will prompt for MFA during login</li>
 </ol>
-<h2 id="advanced-roles-and-permissions">Advanced: Roles and Permissions<a class="headerlink" href="#advanced-roles-and-permissions" title="Permanent link">&para;</a></h2>
-<p>Set up role-based access control:</p>
-<ol>
-<li>Go to "User Management" → "Roles"</li>
-<li>Click "Create Role"</li>
-<li>Name: <code>admin</code></li>
-<li>Description: "Administrator role"</li>
-<li>Add permissions:</li>
-<li><code>read:data</code></li>
-<li><code>write:data</code></li>
-<li><code>delete:data</code></li>
-<li>Assign role to user:</li>
-<li>Go to "Users"</li>
-<li>Click user</li>
-<li>Go to "Roles" tab</li>
-<li>Add roles</li>
-</ol>
-<p>In FraiseQL, check roles:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>let user = auth::AuthenticatedUser { /* ... */ };
-if user.has_role("admin") {
-    // Admin logic
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Auth0 prompts for MFA during login; FraiseQL is unaffected.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="error-invalid-client">Error: "Invalid Client"<a class="headerlink" href="#error-invalid-client" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Client ID or secret is incorrect.</p>
+<h3 id="error-invalid-token-invalid_token">Error: "Invalid token" / <code>INVALID_TOKEN</code><a class="headerlink" href="#error-invalid-token-invalid_token" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: The token signature, audience, or issuer doesn't match.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>Copy from Auth0 dashboard exactly</li>
-<li>Verify environment variables</li>
-<li>Check no spaces or special characters</li>
+<li>Verify <code>auth0_domain</code> matches your tenant exactly (no scheme, no trailing slash).</li>
+<li>Verify <code>auth0_api_identifier</code> equals the token's <code>aud</code> claim (the API Identifier from
+  Step 3).</li>
+<li>Confirm the token was issued for <strong>this</strong> API, not just an ID token from the application.</li>
 </ul>
-<h3 id="error-redirect-uri-mismatch">Error: "Redirect URI Mismatch"<a class="headerlink" href="#error-redirect-uri-mismatch" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Callback URL doesn't match Auth0 configuration.</p>
+<h3 id="error-token-has-expired-token_expired">Error: "Token has expired" / <code>TOKEN_EXPIRED</code><a class="headerlink" href="#error-token-has-expired-token_expired" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: The access token's <code>exp</code> has passed.</p>
+<p><strong>Solution</strong>: Have the frontend refresh the token (Auth0 SDK handles this) and retry.</p>
+<h3 id="error-forbidden-permissionrole-required">Error: <code>FORBIDDEN</code> (permission/role required)<a class="headerlink" href="#error-forbidden-permissionrole-required" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: The user is authenticated but lacks the required permission or role.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>Update "Allowed Callback URLs" in settings</li>
-<li>Check for <code>http://</code> vs <code>https://</code></li>
-<li>Verify port number matches</li>
-<li>Check for trailing slashes</li>
+<li>Confirm the role/permission is assigned in Auth0.</li>
+<li>Confirm "Add Permissions in the Access Token" is enabled (for <code>permissions</code>) and your
+  Post-Login Action sets the namespaced <code>roles</code> claim (for roles).</li>
 </ul>
-<h3 id="error-invalid-scope">Error: "Invalid Scope"<a class="headerlink" href="#error-invalid-scope" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Requested scope not available.</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>Auth0 by default supports: <code>openid profile email</code></li>
-<li>For custom scopes, define in API settings</li>
-<li>Make sure API is connected to application</li>
-</ul>
-<h3 id="users-cant-log-in">Users Can't Log In<a class="headerlink" href="#users-cant-log-in" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Auth0 application not accessible or database connection failed.</p>
-<p><strong>Solution</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-auth0-connectivity">Test Auth0 connectivity<a class="headerlink" href="#test-auth0-connectivity" title="Permanent link">&para;</a></h1>
-<p>curl https://your-domain.auth0.com/.well-known/openid-configuration</p>
-<h1 id="check-fraiseql-logs-for-errors">Check FraiseQL logs for errors<a class="headerlink" href="#check-fraiseql-logs-for-errors" title="Permanent link">&para;</a></h1>
-<h1 id="verify-database_url-is-correct">Verify DATABASE_URL is correct<a class="headerlink" href="#verify-database_url-is-correct" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="tokens-validate-but-roles-are-empty">Tokens validate but roles are empty<a class="headerlink" href="#tokens-validate-but-roles-are-empty" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: Roles aren't in the access token.</p>
+<p><strong>Solution</strong>: Add the namespaced <code>roles</code> claim via an Auth0 Action (see "Roles and
+permissions in tokens" above). The namespace FraiseQL reads is
+<code>https://&lt;api_identifier&gt;/roles</code>.</p>
+<h3 id="connectivity-check">Connectivity check<a class="headerlink" href="#connectivity-check" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Confirm the tenant&#39;s OIDC metadata and JWKS are reachable</span>
+curl<span class="w"> </span>https://your-domain.auth0.com/.well-known/openid-configuration
+curl<span class="w"> </span>https://your-domain.auth0.com/.well-known/jwks.json
+</code></pre></div>
 <h2 id="production-deployment">Production Deployment<a class="headerlink" href="#production-deployment" title="Permanent link">&para;</a></h2>
-<h3 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="envprod">.env.prod<a class="headerlink" href="#envprod" title="Permanent link">&para;</a></h1>
-<p>AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_CLIENT_ID=<prod-client-id>
-AUTH0_CLIENT_SECRET=<strong-secret>
-OAUTH_REDIRECT_URI=https://api.example.com/auth/callback</p>
-<p>JWT_ISSUER=https://your-domain.auth0.com/
-JWT_ALGORITHM=RS256</p>
-<p>DATABASE_URL=postgres://user:pass@prod-db/FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="environment-configuration">Environment configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env.prod</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@prod-db/myapp
 
-<h3 id="auth0-tenant-configuration">Auth0 Tenant Configuration<a class="headerlink" href="#auth0-tenant-configuration" title="Permanent link">&para;</a></h3>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-domain.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+</code></pre></div>
+<p>Run with a production ASGI setup (for example multiple Uvicorn workers behind a proxy):</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--workers<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+<p>Set <code>production=True</code> on <code>create_fraiseql_app</code> (or <code>FRAISEQL_ENVIRONMENT=production</code>) to
+disable the playground and enable production hardening.</p>
+<h3 id="auth0-tenant-configuration">Auth0 tenant configuration<a class="headerlink" href="#auth0-tenant-configuration" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Go to "Tenant Settings"</li>
-<li>Update friendly name for production</li>
-<li>Enable "Allow Impersonation" (optional)</li>
+<li>Set a friendly name for production</li>
 <li>Configure session timeout</li>
-<li>Set custom domain (optional but recommended):</li>
-<li>Use custom domain like <code>auth.example.com</code> instead of <code>your-domain.auth0.com</code></li>
-<li>Reduces vendor lock-in risk</li>
+<li>Set a custom domain (optional but recommended): use <code>auth.example.com</code> instead of
+   <code>your-domain.auth0.com</code> — this also keeps the issuer stable if you migrate tenants</li>
 </ol>
 <h3 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
-<p>Auth0 provides logs:</p>
-<ol>
-<li>Go to "Monitoring" → "Logs"</li>
-<li>View all authentication events</li>
-<li>Set up webhooks for real-time notifications</li>
-<li>Export logs to your analytics system</li>
-</ol>
-<h3 id="backup-and-disaster-recovery">Backup and Disaster Recovery<a class="headerlink" href="#backup-and-disaster-recovery" title="Permanent link">&para;</a></h3>
-<p>Auth0 manages backups, but you should:</p>
-<ol>
-<li>Regularly export user data</li>
-<li>Keep credentials in secure vault</li>
-<li>Document configurations</li>
-<li>Test restore procedures</li>
-</ol>
+<p>Auth0 provides logs under "Monitoring" → "Logs": authentication events, failures, and
+anomaly detection. FraiseQL additionally emits security audit events (auth success/failure,
+token expired/invalid) through its audit logger.</p>
 <h2 id="cost">Cost<a class="headerlink" href="#cost" title="Permanent link">&para;</a></h2>
 <p>Auth0 pricing:</p>
 <ul>
@@ -5430,17 +5905,20 @@ JWT_ALGORITHM=RS256</p>
 <ul>
 <li><a href="https://auth0.com/docs">Auth0 Documentation</a></li>
 <li><a href="https://auth0.com/docs/api">Auth0 API Reference</a></li>
-<li><a href="https://auth0.com/docs/get-started/actions">Auth0 Rules &amp; Actions</a></li>
-<li><a href="../api-reference/">FraiseQL API Reference</a></li>
+<li><a href="https://auth0.com/docs/customize/actions">Auth0 Actions</a></li>
+<li><a href="../api-reference/">FraiseQL Authentication API Reference</a></li>
 </ul>
 <hr />
-<p><strong>Next Step</strong>: See <a href="../api-reference/">API Reference</a> for complete endpoint documentation.</p>
+<p><strong>Next Step</strong>: See <a href="../api-reference/">API Reference</a> for the full authentication API.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

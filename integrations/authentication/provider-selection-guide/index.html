@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Choose between Auth0, a custom AuthProvider, or no auth in FraiseQL v1.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/provider-selection-guide/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Provider Selection - FraiseQL Documentation</title>
+        <title>OAuth Provider Selection Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Provider Selection
+              OAuth Provider Selection Guide
             
           </span>
         </div>
@@ -3991,6 +3993,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-three-provider-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Provider Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-decision" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4014,32 +4027,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setup-operations" class="md-nav__link">
+  <a href="#capabilities-by-issuer-reached-via-the-mode-above" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Setup &amp; Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#users-teams" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Users &amp; Teams
+        Capabilities by issuer (reached via the mode above)
       
     </span>
   </a>
@@ -4052,22 +4043,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-flowchart" class="md-nav__link">
+  <a href="#mode-auth0-managed-broker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Flowchart
+        Mode: auth0 (managed broker)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision Flowchart">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-custom-any-oidc-jwt-issuer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mode: custom (any OIDC / JWT issuer)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mode: custom (any OIDC / JWT issuer)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#question-1-scale-control" class="md-nav__link">
+  <a href="#accelerated-jwt-validation-rustcustomjwtprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Question 1: Scale &amp; Control
+        Accelerated JWT validation: RustCustomJWTProvider
       
     </span>
   </a>
@@ -4075,21 +4077,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#question-2-user-base" class="md-nav__link">
+  <a href="#built-in-usernamepassword-nativeauthprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Question 2: User Base
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#question-3-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Question 3: Features
+        Built-in username/password: NativeAuthProvider
       
     </span>
   </a>
@@ -4102,22 +4093,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detailed-recommendations" class="md-nav__link">
+  <a href="#mode-none-auth-disabled" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Detailed Recommendations
+        Mode: none (auth disabled)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Detailed Recommendations">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switching-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switching Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switching Modes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#google-oauth-best-for-startups" class="md-nav__link">
+  <a href="#example-nativecustom-issuer-to-auth0" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Google OAuth (Best for Startups)
+        Example: Native/custom issuer to Auth0
       
     </span>
   </a>
@@ -4126,6 +4139,39 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorization-after-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization (after authentication)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-note-on-scram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A note on SCRAM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5039,6 +5085,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-three-provider-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Provider Modes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-decision" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5062,32 +5119,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setup-operations" class="md-nav__link">
+  <a href="#capabilities-by-issuer-reached-via-the-mode-above" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Setup &amp; Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#users-teams" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Users &amp; Teams
+        Capabilities by issuer (reached via the mode above)
       
     </span>
   </a>
@@ -5100,22 +5135,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-flowchart" class="md-nav__link">
+  <a href="#mode-auth0-managed-broker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Flowchart
+        Mode: auth0 (managed broker)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Decision Flowchart">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mode-custom-any-oidc-jwt-issuer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mode: custom (any OIDC / JWT issuer)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mode: custom (any OIDC / JWT issuer)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#question-1-scale-control" class="md-nav__link">
+  <a href="#accelerated-jwt-validation-rustcustomjwtprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Question 1: Scale &amp; Control
+        Accelerated JWT validation: RustCustomJWTProvider
       
     </span>
   </a>
@@ -5123,21 +5169,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#question-2-user-base" class="md-nav__link">
+  <a href="#built-in-usernamepassword-nativeauthprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Question 2: User Base
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#question-3-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Question 3: Features
+        Built-in username/password: NativeAuthProvider
       
     </span>
   </a>
@@ -5150,22 +5185,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#detailed-recommendations" class="md-nav__link">
+  <a href="#mode-none-auth-disabled" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Detailed Recommendations
+        Mode: none (auth disabled)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Detailed Recommendations">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switching-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switching Modes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switching Modes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#google-oauth-best-for-startups" class="md-nav__link">
+  <a href="#example-nativecustom-issuer-to-auth0" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Google OAuth (Best for Startups)
+        Example: Native/custom issuer to Auth0
       
     </span>
   </a>
@@ -5174,6 +5231,39 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorization-after-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization (after authentication)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-note-on-scram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A note on SCRAM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5197,711 +5287,392 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: OAuth Provider Selection Guide
-description: ├─ YES → Keycloak (self-hosted) or SCRAM
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="oauth-provider-selection-guide">OAuth Provider Selection Guide<a class="headerlink" href="#oauth-provider-selection-guide" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
+<p><strong>Status:</strong> Production Ready
 <strong>Audience:</strong> Architects, DevOps, Security Engineers
-<strong>Reading Time:</strong> 15-20 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<h2 id="quick-decision">Quick Decision<a class="headerlink" href="#quick-decision" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Internal Team Only?
-├─ YES → Keycloak (self-hosted) or SCRAM
-│
-Public Users?
-├─ YES → Google OAuth (easiest) or Auth0 (more features)
-│
-Need Specific IDP?
-├─ AWS Cognito → Configure as OIDC provider
-├─ Azure AD → Configure as OIDC provider
-├─ Okta → Configure as OIDC provider
-├─ GitHub (developers) → GitHub OAuth
-└─ SAML requirement? → Keycloak + SAML bridge
-```text</p>
-<!-- Code example in TEXT -->
+<strong>Reading Time:</strong> 10-15 minutes
+<strong>Last Updated:</strong> 2026-06-19</p>
+<h2 id="the-three-provider-modes">The Three Provider Modes<a class="headerlink" href="#the-three-provider-modes" title="Permanent link">&para;</a></h2>
+<p>FraiseQL v1 authentication runs <strong>inside the FastAPI app</strong> (Python). There is exactly one
+configuration knob that selects how tokens are validated — <code>auth_provider</code> on
+<code>FraiseQLConfig</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">auth_provider</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auth0&quot;</span><span class="p">,</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+</code></pre></div>
+<p>Everything else (Google, Keycloak, Cognito, Okta, Azure AD, your own issuer) is a <em>choice of
+who issues the JWT</em>, not a separate FraiseQL provider class. You reach those issuers through
+<strong>one of two paths</strong>:</p>
+<ul>
+<li><strong>Auth0</strong> brokers them for you (<code>auth_provider="auth0"</code>), or</li>
+<li>a <strong>custom <code>AuthProvider</code></strong> validates that issuer's JWTs directly (<code>auth_provider="custom"</code>).</li>
+</ul>
+<p>There is no <code>GoogleProvider</code>, <code>KeycloakProvider</code>, or <code>OidcProvider</code> class in FraiseQL.</p>
+<div class="highlight"><pre><span></span><code>                      auth_provider = ?
 
+   &quot;auth0&quot;  ───────────────────────────────────────────────
+      Managed broker. Set auth0_domain / auth0_api_identifier.
+      Auth0 fronts Google, GitHub, social, SAML, enterprise OIDC.
+
+   &quot;custom&quot; ───────────────────────────────────────────────
+      Subclass AuthProvider and validate any OIDC/JWT issuer
+      (Keycloak, Cognito, Azure AD, Okta, your own).
+      RustCustomJWTProvider = accelerated JWT validation.
+      NativeAuthProvider    = built-in username/password.
+
+   &quot;none&quot;   ───────────────────────────────────────────────
+      Auth disabled. Dev / internal only.
+</code></pre></div>
+<hr />
+<h2 id="quick-decision">Quick Decision<a class="headerlink" href="#quick-decision" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>Do you want to write/operate token validation yourself?
+├─ NO, give me a managed service that brokers Google/social/SAML
+│     └─ auth_provider = &quot;auth0&quot;
+│
+├─ YES, I have my own OIDC/JWT issuer (Keycloak, Cognito, Azure AD, Okta, in-house)
+│     └─ auth_provider = &quot;custom&quot;  → subclass AuthProvider
+│         (use RustCustomJWTProvider for fast JWKS-based JWT validation)
+│
+├─ I just need built-in username/password stored in PostgreSQL
+│     └─ auth_provider = &quot;custom&quot;  → NativeAuthProvider
+│
+└─ Local dev / fully internal, no auth needed yet
+      └─ auth_provider = &quot;none&quot;
+</code></pre></div>
 <hr />
 <h2 id="comparison-matrix">Comparison Matrix<a class="headerlink" href="#comparison-matrix" title="Permanent link">&para;</a></h2>
-<h3 id="setup-operations">Setup &amp; Operations<a class="headerlink" href="#setup-operations" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Provider</th>
+<th>Mode</th>
+<th>What it is</th>
 <th>Effort</th>
-<th>Time</th>
-<th>Complexity</th>
-<th>Cost</th>
+<th>Brokers external IdPs?</th>
+<th>Self-hosted?</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Google OAuth</strong></td>
-<td>🟢 Easy</td>
-<td>15 min</td>
-<td>🟢 Low</td>
-<td>Free</td>
+<td><strong>auth0</strong></td>
+<td>Managed Auth0 tenant validates RS256 JWTs</td>
+<td>Low</td>
+<td>Yes (Google, social, SAML, enterprise OIDC)</td>
+<td>No</td>
 </tr>
 <tr>
-<td><strong>Auth0</strong></td>
-<td>🟡 Medium</td>
-<td>30 min</td>
-<td>🟡 Medium</td>
-<td><span class="arithmatex">\(0-\)</span>2,500/mo</td>
+<td><strong>custom</strong></td>
+<td>Your <code>AuthProvider</code> subclass validates JWTs</td>
+<td>Medium</td>
+<td>Yes (any OIDC/JWT issuer you point it at)</td>
+<td>Yes (your issuer)</td>
 </tr>
 <tr>
-<td><strong>Keycloak</strong></td>
-<td>🔴 Hard</td>
-<td>2-4 hrs</td>
-<td>🔴 High</td>
-<td>Free (self-hosted)</td>
+<td><strong>custom + <code>NativeAuthProvider</code></strong></td>
+<td>Built-in username/password backed by PostgreSQL</td>
+<td>Low</td>
+<td>No (self-contained)</td>
+<td>Yes</td>
 </tr>
 <tr>
-<td><strong>SCRAM</strong></td>
-<td>🟢 Easy</td>
-<td>10 min</td>
-<td>🟢 Very Low</td>
-<td>Free</td>
-</tr>
-<tr>
-<td><strong>AWS Cognito</strong></td>
-<td>🟡 Medium</td>
-<td>45 min</td>
-<td>🟡 Medium</td>
-<td>Pay-per-auth</td>
-</tr>
-<tr>
-<td><strong>Azure AD</strong></td>
-<td>🟡 Medium</td>
-<td>45 min</td>
-<td>🟡 Medium</td>
-<td>Included w/Azure</td>
-</tr>
-<tr>
-<td><strong>Okta</strong></td>
-<td>🔴 Hard</td>
-<td>1-2 hrs</td>
-<td>🔴 High</td>
-<td>$2,000+/mo</td>
+<td><strong>none</strong></td>
+<td>Authentication disabled</td>
+<td>None</td>
+<td>N/A</td>
+<td>N/A</td>
 </tr>
 </tbody>
 </table>
-<h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<h3 id="capabilities-by-issuer-reached-via-the-mode-above">Capabilities by issuer (reached via the mode above)<a class="headerlink" href="#capabilities-by-issuer-reached-via-the-mode-above" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Feature</th>
-<th>Google</th>
 <th>Auth0</th>
-<th>Keycloak</th>
-<th>SCRAM</th>
-<th>Cognito</th>
-<th>Azure AD</th>
+<th>Keycloak (custom)</th>
+<th>Cognito (custom)</th>
+<th>Azure AD (custom)</th>
+<th>Native (custom)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>OAuth 2.0</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
+<td><strong>OIDC / JWT</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>JWT (built-in)</td>
 </tr>
 <tr>
-<td><strong>OIDC</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
+<td><strong>MFA / 2FA</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
 </tr>
 <tr>
-<td><strong>MFA/2FA</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><strong>Social Login</strong></td>
-<td>N/A</td>
-<td>✅ Multiple</td>
-<td>⚠️ Setup</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
+<td><strong>Social login</strong></td>
+<td>Yes (20+)</td>
+<td>Setup</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
 </tr>
 <tr>
 <td><strong>SAML</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>❌</td>
-<td>✅</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
 </tr>
 <tr>
-<td><strong>LDAP/AD</strong></td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-<td>⚠️ Custom</td>
-<td>❌</td>
-<td>✅</td>
+<td><strong>LDAP / AD</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
 </tr>
 <tr>
-<td><strong>Self-Hosted</strong></td>
-<td>❌</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>❌</td>
+<td><strong>Self-hosted</strong></td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
 </tr>
 <tr>
-<td><strong>Managed Service</strong></td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><strong>Role-Based Access</strong></td>
-<td>⚠️ Custom</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
-<td>✅</td>
-<td>✅</td>
-</tr>
-<tr>
-<td><strong>Custom Attributes</strong></td>
-<td>⚠️ Limited</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
-<td>✅</td>
+<td><strong>Managed service</strong></td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
 </tr>
 </tbody>
 </table>
-<h3 id="users-teams">Users &amp; Teams<a class="headerlink" href="#users-teams" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Provider</th>
-<th>Public API?</th>
-<th>Team Users?</th>
-<th>Enterprise?</th>
-<th>Compliance</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Google</strong></td>
-<td>✅ Yes</td>
-<td>⚠️ Workspace</td>
-<td>⚠️ Basic</td>
-<td>SOC 2</td>
-</tr>
-<tr>
-<td><strong>Auth0</strong></td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
-<td>SOC 2, GDPR</td>
-</tr>
-<tr>
-<td><strong>Keycloak</strong></td>
-<td>N/A</td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
-<td>Depends</td>
-</tr>
-<tr>
-<td><strong>SCRAM</strong></td>
-<td>N/A</td>
-<td>✅ Yes</td>
-<td>❌ No</td>
-<td>None</td>
-</tr>
-<tr>
-<td><strong>Cognito</strong></td>
-<td>✅ AWS only</td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
-<td>SOC 2, HIPAA</td>
-</tr>
-<tr>
-<td><strong>Azure AD</strong></td>
-<td>✅ Enterprise</td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
-<td>SOC 2, GDPR</td>
-</tr>
-</tbody>
-</table>
+<p>The FraiseQL-side wiring is the same in every "custom" column: validate the issuer's JWTs
+against its JWKS, issuer, and audience inside your <code>AuthProvider</code>.</p>
 <hr />
-<h2 id="decision-flowchart">Decision Flowchart<a class="headerlink" href="#decision-flowchart" title="Permanent link">&para;</a></h2>
-<h3 id="question-1-scale-control">Question 1: Scale &amp; Control<a class="headerlink" href="#question-1-scale-control" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Need complete control over authentication?
-├─ YES → Keycloak (self-hosted) ✅
-│        (Full ownership, highest complexity)
-│
-├─ NO: Need managed service?
-│  ├─ YES → Auth0 or Google ✅
-│  │        (Managed, less operational burden)
-│  │
-│  └─ NO: Simple password auth?
-│     └─ YES → SCRAM ✅
-│              (Simplest, lowest overhead)
-│
-└─ Enterprise infrastructure?
-   ├─ AWS → AWS Cognito ✅
-   ├─ Azure → Azure AD ✅
-   └─ Other → Use OIDC-compliant provider
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="question-2-user-base">Question 2: User Base<a class="headerlink" href="#question-2-user-base" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Public internet users?
-├─ YES → Google OAuth ✅
-│        (Easiest, familiar to users)
-│
-├─ NO: Internal team only?
-│  ├─ YES → Keycloak or SCRAM ✅
-│  │        (Self-contained)
-│  │
-│  └─ NO: Enterprise customers?
-│     └─ YES → Auth0 or Keycloak ✅
-│              (SAML, provisioning, compliance)
-│
-└─ Social login needed?
-   ├─ YES → Auth0 ✅
-   │        (Multiple providers, easy setup)
-   │
-   └─ NO → Any provider fine
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="question-3-features">Question 3: Features<a class="headerlink" href="#question-3-features" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Need MFA/2FA?
-├─ YES → Auth0, Keycloak, Cognito ✅
-│
-Need SAML?
-├─ YES → Keycloak or Auth0 ✅
-│
-Need directory sync (LDAP/AD)?
-├─ YES → Keycloak or Azure AD ✅
-│
-Need fine-grained RBAC?
-├─ YES → Auth0, Keycloak ✅
-│
-Need custom attributes?
-├─ YES → Keycloak, Auth0, SCRAM ✅
-│
-Simple auth only?
-└─ YES → Google, SCRAM ✅
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="detailed-recommendations">Detailed Recommendations<a class="headerlink" href="#detailed-recommendations" title="Permanent link">&para;</a></h2>
-<h3 id="google-oauth-best-for-startups">Google OAuth (Best for Startups)<a class="headerlink" href="#google-oauth-best-for-startups" title="Permanent link">&para;</a></h3>
+<h2 id="mode-auth0-managed-broker">Mode: <code>auth0</code> (managed broker)<a class="headerlink" href="#mode-auth0-managed-broker" title="Permanent link">&para;</a></h2>
 <p><strong>Best for:</strong></p>
 <ul>
-<li>Public users (simplest)</li>
-<li>Startups wanting quick launch</li>
-<li>Teams with Google Workspace</li>
-<li>No complex enterprise needs</li>
+<li>You want a managed service and no token-validation code.</li>
+<li>You need to broker Google, GitHub, other social logins, SAML, or enterprise OIDC behind a
+  single tenant.</li>
+<li>Public users, SaaS, or enterprise customers wanting SSO.</li>
 </ul>
-<p><strong>Why it wins:</strong></p>
-<ul>
-<li>🟢 Super easy setup (15 minutes)</li>
-<li>🟢 Familiar to users</li>
-<li>🟢 Free</li>
-<li>🟢 Minimal operational overhead</li>
-<li>🟡 Limited customization</li>
-</ul>
-<p><strong>Setup Example:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-create-google-cloud-project">1. Create Google Cloud Project<a class="headerlink" href="#1-create-google-cloud-project" title="Permanent link">&para;</a></h1>
-<h1 id="2-enable-google-api">2. Enable Google+ API<a class="headerlink" href="#2-enable-google-api" title="Permanent link">&para;</a></h1>
-<h1 id="3-create-oauth-credentials">3. Create OAuth credentials<a class="headerlink" href="#3-create-oauth-credentials" title="Permanent link">&para;</a></h1>
-<h1 id="4-copy-to-fraiseqltoml">4. Copy to FraiseQL.toml<a class="headerlink" href="#4-copy-to-fraiseqltoml" title="Permanent link">&para;</a></h1>
-<p>GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxxxx
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>How to configure</strong> — set three fields on <code>FraiseQLConfig</code> (env vars are <code>FRAISEQL_*</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span>
 
-<p><strong>Time to production:</strong> 30 minutes
-<strong>Cost:</strong> Free
-<strong>Maintenance:</strong> Minimal</p>
-<p><strong>Limitations:</strong></p>
-<ul>
-<li>Can't customize login flow</li>
-<li>Relies on Google's infrastructure</li>
-<li>GDPR: Data in US</li>
-<li>No SAML support</li>
-</ul>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
+        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+        <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>            <span class="c1"># default</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Equivalent via configuration / environment:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-tenant.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS defaults to [&quot;RS256&quot;]</span>
+</code></pre></div>
+<p>Auth0 then handles Google, social, SAML, MFA, and enterprise OIDC for you — FraiseQL only
+validates the RS256 JWT that Auth0 issues.</p>
+<p><strong>Trade-offs:</strong> managed (no ops), broad feature set, but a hosted third party and a cost tier
+beyond the free plan.</p>
+<p>See <strong><a href="../setup-auth0/">Auth0 Setup</a></strong> for the full walkthrough.</p>
 <hr />
-<h3 id="auth0-best-for-growing-companies">Auth0 (Best for Growing Companies)<a class="headerlink" href="#auth0-best-for-growing-companies" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Feature-rich authentication needs</li>
-<li>Enterprise customers</li>
-<li>Multiple social login providers</li>
-<li>Complex authorization requirements</li>
-</ul>
-<p><strong>Why it wins:</strong></p>
-<ul>
-<li>✅ Managed service (no ops)</li>
-<li>✅ SAML + OAuth 2.0</li>
-<li>✅ Social login (20+ providers)</li>
-<li>✅ MFA/2FA, device flow</li>
-<li>✅ Excellent documentation</li>
-<li>🟡 More expensive (<span class="arithmatex">\(0-\)</span>2,500/mo)</li>
-</ul>
-<p><strong>Setup Example:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-create-auth0-account">1. Create Auth0 account<a class="headerlink" href="#1-create-auth0-account" title="Permanent link">&para;</a></h1>
-<h1 id="2-create-application">2. Create application<a class="headerlink" href="#2-create-application" title="Permanent link">&para;</a></h1>
-<h1 id="3-copy-settings">3. Copy settings<a class="headerlink" href="#3-copy-settings" title="Permanent link">&para;</a></h1>
-<p>AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_CLIENT_ID=xxxxx
-AUTH0_CLIENT_SECRET=xxxxx
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="mode-custom-any-oidc-jwt-issuer">Mode: <code>custom</code> (any OIDC / JWT issuer)<a class="headerlink" href="#mode-custom-any-oidc-jwt-issuer" title="Permanent link">&para;</a></h2>
+<p>When your tokens come from Keycloak, AWS Cognito, Azure AD, Okta, or your own issuer, set
+<code>auth_provider="custom"</code> and supply an <code>AuthProvider</code>. The base class
+(<code>fraiseql.auth.AuthProvider</code>) defines two abstract methods you implement:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<p><strong>Time to production:</strong> 1-2 hours
-<strong>Cost:</strong> Free tier available, <span class="arithmatex">\(13-\)</span>2,500/mo for paid
-<strong>Maintenance:</strong> Minimal</p>
-<p><strong>Use when:</strong></p>
-<ul>
-<li>Building SaaS (most customers want SSO/SAML)</li>
-<li>Enterprise features important</li>
-<li>Want managed service reliability</li>
-<li>Multiple authentication methods needed</li>
-</ul>
-<hr />
-<h3 id="keycloak-best-for-enterprise">Keycloak (Best for Enterprise)<a class="headerlink" href="#keycloak-best-for-enterprise" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Complete control needed</li>
-<li>Self-hosted infrastructure required</li>
-<li>SAML + OIDC both needed</li>
-<li>LDAP/Active Directory integration</li>
-</ul>
-<p><strong>Why it wins:</strong></p>
-<ul>
-<li>✅ Open source (full control)</li>
-<li>✅ Self-hosted (data stays on-prem)</li>
-<li>✅ SAML + OAuth 2.0 + OIDC</li>
-<li>✅ LDAP/AD integration</li>
-<li>✅ User federation</li>
-<li>🔴 Complex setup (2-4 hours)</li>
-</ul>
-<p><strong>Setup Example:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-deploy-keycloak-docker">1. Deploy Keycloak (Docker)<a class="headerlink" href="#1-deploy-keycloak-docker" title="Permanent link">&para;</a></h1>
-<p>docker run -d \
-  -e KEYCLOAK_ADMIN=admin \
-  -e KEYCLOAK_ADMIN_PASSWORD=password \
-  -p 8080:8080 \
-  quay.io/keycloak/keycloak:latest</p>
-<h1 id="2-create-realm-and-client">2. Create realm and client<a class="headerlink" href="#2-create-realm-and-client" title="Permanent link">&para;</a></h1>
-<h1 id="3-configure-fraiseql">3. Configure FraiseQL<a class="headerlink" href="#3-configure-fraiseql" title="Permanent link">&para;</a></h1>
-<p>KEYCLOAK_URL=http://keycloak:8080
-KEYCLOAK_REALM=production
-KEYCLOAK_CLIENT_ID=FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
 
-<p><strong>Time to production:</strong> 4-8 hours (includes setup)
-<strong>Cost:</strong> Free (self-hosted) + infrastructure costs
-<strong>Maintenance:</strong> Medium (monitoring, updates, backups)</p>
-<p><strong>Use when:</strong></p>
-<ul>
-<li>Enterprise security requirements</li>
-<li>Need to integrate LDAP/AD</li>
-<li>Regulatory compliance (GDPR, HIPAA) critical</li>
-<li>Want to own authentication system</li>
-</ul>
-<hr />
-<h3 id="scram-simplest-option">SCRAM (Simplest Option)<a class="headerlink" href="#scram-simplest-option" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Internal teams only</li>
-<li>Minimal authentication needs</li>
-<li>Just username/password (no social login)</li>
-<li>Maximum simplicity</li>
-</ul>
-<p><strong>Why it wins:</strong></p>
-<ul>
-<li>🟢 Simplest possible setup</li>
-<li>🟢 No external dependencies</li>
-<li>🟢 Direct database storage</li>
-<li>🟢 No 3rd party involved</li>
-<li>🟡 No advanced features</li>
-</ul>
-<p><strong>Setup Example:</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="fraiseqltoml">FraiseQL.toml<a class="headerlink" href="#fraiseqltoml" title="Permanent link">&para;</a></h1>
-<p>[auth]
-enabled = true
-scheme = "scram"
-database_url = "postgresql://..."
-```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>Time to production:</strong> 10 minutes
-<strong>Cost:</strong> Free
-<strong>Maintenance:</strong> None (uses your database)</p>
-<p><strong>Use when:</strong></p>
-<ul>
-<li>Internal team (5-50 people)</li>
-<li>No social login needed</li>
-<li>Want complete simplicity</li>
-<li>No regulatory requirements</li>
-</ul>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyIssuerProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># Validate against your issuer&#39;s JWKS / issuer / audience and return the payload.</span>
+        <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">)</span>
+</code></pre></div>
+<p>Pass the instance to the app:</p>
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">MyIssuerProvider</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>UserContext</code> carries <code>user_id</code>, optional <code>email</code> / <code>name</code>, <code>roles</code>, <code>permissions</code>, and free
+-form <code>metadata</code>, with helpers <code>.has_role()</code>, <code>.has_permission()</code>, <code>.has_any_role()</code>, and
+<code>.has_any_permission()</code>. It is available to every resolver as <code>info.context["user"]</code>.</p>
+<h3 id="accelerated-jwt-validation-rustcustomjwtprovider">Accelerated JWT validation: <code>RustCustomJWTProvider</code><a class="headerlink" href="#accelerated-jwt-validation-rustcustomjwtprovider" title="Permanent link">&para;</a></h3>
+<p>For standard JWKS-based JWT validation you do not have to hand-roll <code>validate_token</code>.
+<code>RustCustomJWTProvider</code> validates JWTs from any custom issuer using the optional <code>fraiseql_rs</code>
+extension:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.rust_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustCustomJWTProvider</span>
+
+<span class="n">provider</span> <span class="o">=</span> <span class="n">RustCustomJWTProvider</span><span class="p">(</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://keycloak.example.com/realms/production&quot;</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;my-api&quot;</span><span class="p">,</span>
+    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">&quot;https://keycloak.example.com/realms/production/protocol/openid-connect/certs&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The same shape works for Cognito, Azure AD, Okta, or any OIDC issuer — point <code>issuer</code>,
+<code>audience</code>, and <code>jwks_url</code> at that provider's well-known endpoints. The <code>jwks_url</code> must be
+HTTPS.</p>
+<h3 id="built-in-usernamepassword-nativeauthprovider">Built-in username/password: <code>NativeAuthProvider</code><a class="headerlink" href="#built-in-usernamepassword-nativeauthprovider" title="Permanent link">&para;</a></h3>
+<p>If you only need self-contained username/password auth backed by your PostgreSQL database
+(no external IdP, no social login), use <code>NativeAuthProvider</code>. It ships a FastAPI router for
+login/registration endpoints and stores credentials in your database. This is the FraiseQL-
+native equivalent of "simplest possible auth" for an internal team.</p>
+<p><strong>Trade-offs of <code>custom</code>:</strong> full control and self-hosting, no third-party dependency for your
+issuer, but you operate the issuer (Keycloak, your DB) and own its availability and backups.</p>
+<p>See <strong><a href="../setup-keycloak/">Keycloak Setup</a></strong> and
+<strong><a href="../setup-google-oauth/">Google OAuth Setup</a></strong> for issuer-specific walkthroughs (both route
+through Auth0 or a custom provider — there is no dedicated class for either).</p>
 <hr />
-<h3 id="aws-cognito-best-for-aws-ecosystem">AWS Cognito (Best for AWS Ecosystem)<a class="headerlink" href="#aws-cognito-best-for-aws-ecosystem" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Existing AWS infrastructure</li>
-<li>Pay-per-authentication billing</li>
-<li>Already using AWS services</li>
-<li>HIPAA compliance needed</li>
-</ul>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>✅ Integrated with AWS ecosystem</li>
-<li>✅ Integrated MFA</li>
-<li>✅ Simple setup</li>
-<li>✅ Pay-per-auth (low cost at startup)</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>❌ Limited to AWS</li>
-<li>❌ No SAML</li>
-<li>❌ Vendor lock-in</li>
-<li>🟡 Limited customization</li>
-</ul>
-<p><strong>Use when:</strong></p>
-<ul>
-<li>Already committed to AWS</li>
-<li>Prefer pay-as-you-go</li>
-<li>No need for on-prem</li>
-</ul>
-<hr />
-<h3 id="azure-ad-best-for-microsoft-ecosystem">Azure AD (Best for Microsoft Ecosystem)<a class="headerlink" href="#azure-ad-best-for-microsoft-ecosystem" title="Permanent link">&para;</a></h3>
-<p><strong>Best for:</strong></p>
-<ul>
-<li>Existing Azure infrastructure</li>
-<li>Microsoft 365 integration</li>
-<li>Enterprise customers</li>
-<li>On-prem Active Directory</li>
-</ul>
-<p><strong>Pros:</strong></p>
-<ul>
-<li>✅ SAML + OAuth 2.0 + OIDC</li>
-<li>✅ Direct AD/LDAP integration</li>
-<li>✅ Enterprise support</li>
-<li>✅ Compliance certifications</li>
-</ul>
-<p><strong>Cons:</strong></p>
-<ul>
-<li>❌ Limited to Azure</li>
-<li>❌ Higher complexity</li>
-<li>❌ Vendor lock-in</li>
-</ul>
-<p><strong>Use when:</strong></p>
-<ul>
-<li>Enterprise Microsoft customer</li>
-<li>Have Active Directory</li>
-<li>SAML required</li>
-</ul>
+<h2 id="mode-none-auth-disabled">Mode: <code>none</code> (auth disabled)<a class="headerlink" href="#mode-none-auth-disabled" title="Permanent link">&para;</a></h2>
+<p><code>auth_provider="none"</code> is the default. Every request is unauthenticated and
+<code>info.context["user"]</code> is absent. Use it for local development or fully internal/trusted
+deployments. Do not ship <code>none</code> to a public surface.</p>
+<p>For development you can also enable a dev login via <code>dev_auth_username</code> /
+<code>dev_auth_password</code> instead of standing up a real provider.</p>
 <hr />
 <h2 id="decision-table">Decision Table<a class="headerlink" href="#decision-table" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Use Case</th>
-<th>Recommendation</th>
-<th>Reason</th>
+<th>Use case</th>
+<th>Mode</th>
+<th>Why</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Startup, public users</td>
-<td>Google OAuth</td>
-<td>Fastest to market</td>
+<td>Public users, want managed</td>
+<td><code>auth0</code></td>
+<td>No token code; brokers Google/social</td>
 </tr>
 <tr>
-<td>SaaS platform</td>
-<td>Auth0</td>
-<td>Enterprise features, managed</td>
+<td>SaaS needing SSO / SAML</td>
+<td><code>auth0</code></td>
+<td>SAML + enterprise OIDC via one tenant</td>
 </tr>
 <tr>
-<td>Internal team (10 people)</td>
-<td>SCRAM</td>
-<td>Simplest</td>
+<td>Self-hosted Keycloak</td>
+<td><code>custom</code></td>
+<td>Validate Keycloak JWTs (RustCustomJWTProvider)</td>
 </tr>
 <tr>
-<td>Internal team (100+ people)</td>
-<td>Keycloak</td>
-<td>Scale + control</td>
+<td>AWS Cognito user pool</td>
+<td><code>custom</code></td>
+<td>Validate Cognito JWTs via its JWKS</td>
 </tr>
 <tr>
-<td>Enterprise customer base</td>
-<td>Auth0 or Keycloak</td>
-<td>SAML + features</td>
+<td>Azure AD / Okta</td>
+<td><code>custom</code></td>
+<td>Validate that issuer's JWTs</td>
 </tr>
 <tr>
-<td>AWS infrastructure</td>
-<td>Cognito</td>
-<td>Integration</td>
+<td>Your own JWT issuer</td>
+<td><code>custom</code></td>
+<td>Subclass <code>AuthProvider</code></td>
 </tr>
 <tr>
-<td>Azure infrastructure</td>
-<td>Azure AD</td>
-<td>Integration</td>
+<td>Internal team, username/password</td>
+<td><code>custom</code> + <code>NativeAuthProvider</code></td>
+<td>Self-contained, PostgreSQL-backed</td>
 </tr>
 <tr>
-<td>Regulated industry (HIPAA)</td>
-<td>Keycloak or Cognito</td>
-<td>Compliance + control</td>
-</tr>
-<tr>
-<td>GDPR compliance critical</td>
-<td>Keycloak</td>
-<td>Data stays on-prem</td>
-</tr>
-<tr>
-<td>Need LDAP/AD sync</td>
-<td>Keycloak or Azure AD</td>
-<td>Integration</td>
+<td>Local dev / internal only</td>
+<td><code>none</code></td>
+<td>Auth disabled</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="migration-scenarios">Migration Scenarios<a class="headerlink" href="#migration-scenarios" title="Permanent link">&para;</a></h2>
-<h3 id="scenario-migrate-from-google-oauth-to-auth0">Scenario: Migrate from Google OAuth to Auth0<a class="headerlink" href="#scenario-migrate-from-google-oauth-to-auth0" title="Permanent link">&para;</a></h3>
-<p><strong>Effort:</strong> Low (1-2 hours)
-<strong>Downtime:</strong> 10-15 minutes</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-create-auth0-account-and-application">1. Create Auth0 account and application<a class="headerlink" href="#1-create-auth0-account-and-application" title="Permanent link">&para;</a></h1>
-<h1 id="2-update-fraiseqltoml-with-auth0-credentials">2. Update FraiseQL.toml with Auth0 credentials<a class="headerlink" href="#2-update-fraiseqltoml-with-auth0-credentials" title="Permanent link">&para;</a></h1>
-<h1 id="3-deploy-update">3. Deploy update<a class="headerlink" href="#3-deploy-update" title="Permanent link">&para;</a></h1>
-<h1 id="4-test-existing-sessions-from-google-remain-valid">4. Test: Existing sessions from Google remain valid<a class="headerlink" href="#4-test-existing-sessions-from-google-remain-valid" title="Permanent link">&para;</a></h1>
-<h1 id="users-who-were-authenticated-by-google">Users who were authenticated by Google:<a class="headerlink" href="#users-who-were-authenticated-by-google" title="Permanent link">&para;</a></h1>
-<h1 id="-first-login-after-migration-must-re-authenticate-with-auth0">- First login after migration must re-authenticate with Auth0<a class="headerlink" href="#-first-login-after-migration-must-re-authenticate-with-auth0" title="Permanent link">&para;</a></h1>
-<h1 id="-new-google-account-linking-handled-by-auth0">- New Google account linking handled by Auth0<a class="headerlink" href="#-new-google-account-linking-handled-by-auth0" title="Permanent link">&para;</a></h1>
-<h1 id="timeline">Timeline:<a class="headerlink" href="#timeline" title="Permanent link">&para;</a></h1>
-<h1 id="-during-update-brief-outage-users-log-out">- During update: Brief outage (users log out)<a class="headerlink" href="#-during-update-brief-outage-users-log-out" title="Permanent link">&para;</a></h1>
-<h1 id="-after-update-users-re-authenticate-once">- After update: Users re-authenticate once<a class="headerlink" href="#-after-update-users-re-authenticate-once" title="Permanent link">&para;</a></h1>
-<h1 id="-no-data-loss">- No data loss<a class="headerlink" href="#-no-data-loss" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h2 id="switching-modes">Switching Modes<a class="headerlink" href="#switching-modes" title="Permanent link">&para;</a></h2>
+<p>Provider choice is configuration, not architecture — switching modes is a config change plus a
+redeploy. The main user-facing effect is that existing tokens issued by the old provider stop
+validating, so users re-authenticate once after cutover.</p>
+<h3 id="example-nativecustom-issuer-to-auth0">Example: Native/custom issuer to Auth0<a class="headerlink" href="#example-nativecustom-issuer-to-auth0" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Before: custom issuer</span>
+<span class="n">auth</span><span class="o">=</span><span class="n">MyIssuerProvider</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 
-<h3 id="scenario-self-host-keycloak-for-enterprise">Scenario: Self-Host Keycloak for Enterprise<a class="headerlink" href="#scenario-self-host-keycloak-for-enterprise" title="Permanent link">&para;</a></h3>
-<p><strong>Effort:</strong> High (4-8 hours first time)
-<strong>Downtime:</strong> 30 minutes (scheduled)</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-deploy-keycloak-in-production">1. Deploy Keycloak in production<a class="headerlink" href="#1-deploy-keycloak-in-production" title="Permanent link">&para;</a></h1>
-<h1 id="2-set-up-database-postgresql-recommended">2. Set up database (PostgreSQL recommended)<a class="headerlink" href="#2-set-up-database-postgresql-recommended" title="Permanent link">&para;</a></h1>
-<h1 id="3-configure-realm-and-clients">3. Configure realm and clients<a class="headerlink" href="#3-configure-realm-and-clients" title="Permanent link">&para;</a></h1>
-<h1 id="4-test-with-staging-environment">4. Test with staging environment<a class="headerlink" href="#4-test-with-staging-environment" title="Permanent link">&para;</a></h1>
-<h1 id="5-sync-existing-users-if-needed">5. Sync existing users (if needed)<a class="headerlink" href="#5-sync-existing-users-if-needed" title="Permanent link">&para;</a></h1>
-<h1 id="6-update-fraiseql-to-use-keycloak">6. Update FraiseQL to use Keycloak<a class="headerlink" href="#6-update-fraiseql-to-use-keycloak" title="Permanent link">&para;</a></h1>
-<h1 id="7-gradual-rollout-10-50-100">7. Gradual rollout (10% → 50% → 100%)<a class="headerlink" href="#7-gradual-rollout-10-50-100" title="Permanent link">&para;</a></h1>
-<h1 id="timeline_1">Timeline:<a class="headerlink" href="#timeline_1" title="Permanent link">&para;</a></h1>
-<h1 id="-setup-2-4-hours">- Setup: 2-4 hours<a class="headerlink" href="#-setup-2-4-hours" title="Permanent link">&para;</a></h1>
-<h1 id="-testing-1-2-hours">- Testing: 1-2 hours<a class="headerlink" href="#-testing-1-2-hours" title="Permanent link">&para;</a></h1>
-<h1 id="-cutover-1-hour">- Cutover: 1 hour<a class="headerlink" href="#-cutover-1-hour" title="Permanent link">&para;</a></h1>
-<h1 id="-monitoring-ongoing">- Monitoring: Ongoing<a class="headerlink" href="#-monitoring-ongoing" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># After: Auth0 brokers it</span>
+<span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Deploy the change; on first request after cutover users authenticate against Auth0. No data
+migration is required on the FraiseQL side — <code>UserContext</code> is rebuilt from the new tokens.</p>
 <hr />
-<h2 id="troubleshooting-provider-selection">Troubleshooting Provider Selection<a class="headerlink" href="#troubleshooting-provider-selection" title="Permanent link">&para;</a></h2>
-<h3 id="we-chose-google-oauth-but-need-saml">"We chose Google OAuth but need SAML"<a class="headerlink" href="#we-chose-google-oauth-but-need-saml" title="Permanent link">&para;</a></h3>
-<p><strong>Options:</strong></p>
-<ol>
-<li>Migrate to Auth0 or Keycloak (2-4 hours)</li>
-<li>Accept OAuth-only limitation</li>
-<li>Use Auth0 bridge (external service)</li>
-</ol>
-<p><strong>Recommendation:</strong> Migrate if SAML critical for customers</p>
-<h3 id="keycloak-is-too-complex-to-operate">"Keycloak is too complex to operate"<a class="headerlink" href="#keycloak-is-too-complex-to-operate" title="Permanent link">&para;</a></h3>
-<p><strong>Solutions:</strong></p>
-<ol>
-<li>Use managed Keycloak service (Kloudless, etc.)</li>
-<li>Simplify: Use only OAuth 2.0 subset</li>
-<li>Migrate to Auth0 (managed alternative)</li>
-</ol>
-<h3 id="scram-doesnt-have-features-we-need">"SCRAM doesn't have features we need"<a class="headerlink" href="#scram-doesnt-have-features-we-need" title="Permanent link">&para;</a></h3>
-<p><strong>Options:</strong></p>
-<ol>
-<li>Migrate to OAuth/OIDC provider (1-2 hours)</li>
-<li>Implement features in application layer</li>
-<li>Wait for future OAuth support</li>
-</ol>
-<h3 id="were-stuck-with-legacy-provider-old-system">"We're stuck with legacy provider (old system)"<a class="headerlink" href="#were-stuck-with-legacy-provider-old-system" title="Permanent link">&para;</a></h3>
-<p><strong>Bridge Pattern:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client → New OAuth Provider (Auth0, Keycloak)
-           ↓
-         Bridge Service
-           ↓
-         Legacy LDAP/AD/Custom
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Use an OAuth provider as a bridge to your legacy system.</p>
+<h2 id="authorization-after-authentication">Authorization (after authentication)<a class="headerlink" href="#authorization-after-authentication" title="Permanent link">&para;</a></h2>
+<p>Selecting a provider only establishes <em>who the user is</em>. To control <em>what they can do</em>,
+FraiseQL gives you:</p>
+<ul>
+<li><strong>Decorators</strong> (<code>from fraiseql.auth</code>): <code>requires_auth</code>, <code>requires_permission</code>,
+  <code>requires_role</code>, <code>requires_any_role</code>, <code>requires_any_permission</code> — they read
+  <code>info.context["user"]</code>.</li>
+<li><strong>Operation authorization</strong>: an <code>Authorizer</code> attached via
+  <code>@fraiseql.query(authorizer=...)</code> / <code>@fraiseql.mutation(authorizer=...)</code> /
+  <code>@fraiseql.subscription(authorizer=...)</code>, or globally with
+  <code>create_fraiseql_app(authorizer=..., authorization_cache=...)</code>.</li>
+<li><strong>Field authorization</strong>: <code>@fraiseql.type(..., authorize_fields=...)</code> plus <code>authorize_field</code>
+  / <code>any_permission</code> / <code>combine_permissions</code>.</li>
+<li><strong>PostgreSQL Row-Level Security</strong> keyed on <code>tenant_id</code> / <code>user_id</code> flowed from
+  <code>info.context</code> into session GUCs.</li>
+</ul>
+<p>Denied access surfaces as a GraphQL error with <code>extensions.code = "FORBIDDEN"</code>.</p>
+<hr />
+<h2 id="a-note-on-scram">A note on SCRAM<a class="headerlink" href="#a-note-on-scram" title="Permanent link">&para;</a></h2>
+<p>SCRAM-SHA-256 is <strong>not</strong> a FraiseQL authentication scheme. It is PostgreSQL's own
+connection authentication — the psycopg/libpq client negotiates <code>scram-sha-256</code> based on your
+<code>pg_hba.conf</code> and <code>database_url</code>. It secures the database connection, not your GraphQL users,
+and is configured in PostgreSQL rather than in FraiseQL. See
+<strong><a href="../scram/">SCRAM / Database Connection Auth</a></strong> if you are hardening the PostgreSQL
+connection.</p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../setup-google-oauth/">Google OAuth Setup</a></strong> - Quick start</li>
-<li><strong><a href="../setup-auth0/">Auth0 Setup</a></strong> - Quick start</li>
-<li><strong><a href="../setup-keycloak/">Keycloak Setup</a></strong> - Quick start</li>
-<li><strong><a href="../security-checklist/">Security Checklist</a></strong> - Pre-production verification</li>
-<li><strong><a href="../api-reference/">API Reference</a></strong> - Complete API</li>
+<li><strong><a href="../setup-auth0/">Auth0 Setup</a></strong> — <code>auth_provider="auth0"</code> walkthrough</li>
+<li><strong><a href="../setup-google-oauth/">Google OAuth Setup</a></strong> — Google via Auth0 or a custom provider</li>
+<li><strong><a href="../setup-keycloak/">Keycloak Setup</a></strong> — Keycloak via a custom provider</li>
+<li><strong><a href="../scram/">SCRAM / Database Connection Auth</a></strong> — PostgreSQL connection security</li>
+<li><strong><a href="../security-checklist/">Security Checklist</a></strong> — pre-production verification</li>
+<li><strong><a href="../api-reference/">API Reference</a></strong> — auth providers, decorators, <code>UserContext</code></li>
 </ul>
 <hr />
-<p><strong>Remember:</strong> OAuth provider choice is not permanent. Most migrations take just a few hours. Choose based on current needs and scale up as you grow.</p>
+<p><strong>Remember:</strong> provider choice is a config setting (<code>auth_provider</code> plus a few <code>FRAISEQL_</code>
+fields or <code>create_fraiseql_app(auth=...)</code> kwargs), and switching is a redeploy away. Choose
+based on current needs and scale up as you grow.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

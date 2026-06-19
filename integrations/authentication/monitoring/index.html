@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="This guide covers monitoring, logging, and observability for FraiseQL's authentication system.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/monitoring/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Monitoring - FraiseQL Documentation</title>
+        <title>Authentication Monitoring and Observability - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Monitoring
+              Authentication Monitoring and Observability
             
           </span>
         </div>
@@ -4845,22 +4847,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#structured-logging" class="md-nav__link">
+  <a href="#structured-security-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logging
+        Structured Security Logging
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Structured Logging">
+    <nav class="md-nav" aria-label="Structured Security Logging">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#enabling-structured-logging" class="md-nav__link">
+  <a href="#configuring-the-security-logger" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enabling Structured Logging
+        Configuring the Security Logger
       
     </span>
   </a>
@@ -4868,10 +4870,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#log-format-json" class="md-nav__link">
+  <a href="#event-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Format (JSON)
+        Event Types
       
     </span>
   </a>
@@ -4889,39 +4891,11 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metrics-collection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metrics Collection
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Metrics Collection">
-      <ul class="md-nav__list">
-        
           <li class="md-nav__item">
-  <a href="#available-metrics" class="md-nav__link">
+  <a href="#log-format-json" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#accessing-metrics-via-http" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Accessing Metrics via HTTP
+        Log Format (JSON)
       
     </span>
   </a>
@@ -4934,22 +4908,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance-monitoring" class="md-nav__link">
+  <a href="#metrics-with-prometheus" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance Monitoring
+        Metrics with Prometheus
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Performance Monitoring">
+    <nav class="md-nav" aria-label="Metrics with Prometheus">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#operation-timers" class="md-nav__link">
+  <a href="#enabling-metrics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operation Timers
+        Enabling Metrics
       
     </span>
   </a>
@@ -4957,10 +4931,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#expected-performance" class="md-nav__link">
+  <a href="#auth-specific-counters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Expected Performance
+        Auth-Specific Counters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scraping-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scraping Metrics
       
     </span>
   </a>
@@ -4969,6 +4954,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-expectations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Expectations
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4995,6 +4991,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#log-based-alerting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log-Based Alerting
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5009,14 +5016,91 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Grafana Dashboard">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Tracking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-compose-with-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose with Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting-with-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting with Logs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting with Logs">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#dashboard-json" class="md-nav__link">
+  <a href="#users-cannot-log-in" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dashboard JSON
+        Users Cannot Log In
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slow-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slow Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authorization-denials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization Denials
       
     </span>
   </a>
@@ -5029,30 +5113,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#log-analysis" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Analysis
+        See Also
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Log Analysis">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#common-log-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common Log Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5076,451 +5143,524 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Authentication Monitoring and Observability
-description: This guide covers monitoring, logging, and observability for FraiseQL's authentication system.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="authentication-monitoring-and-observability">Authentication Monitoring and Observability<a class="headerlink" href="#authentication-monitoring-and-observability" title="Permanent link">&para;</a></h1>
-<p>This guide covers monitoring, logging, and observability for FraiseQL's authentication system.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides built-in support for:</p>
+<p>This guide covers monitoring, logging, and observability for FraiseQL's
+authentication system.</p>
+<p>FraiseQL v1 runs inside your FastAPI application (Python). Auth observability is
+built from two real, exported subsystems:</p>
 <ul>
-<li>Structured event logging</li>
-<li>Metrics collection</li>
-<li>Performance monitoring</li>
-<li>Error tracking</li>
+<li><strong><code>fraiseql.audit</code></strong> — a structured <strong>security event logger</strong>
+  (<code>SecurityLogger</code> / <code>SecurityEvent</code> / <code>SecurityEventType</code>) that records
+  authentication and authorization events as JSON.</li>
+<li><strong><code>fraiseql.monitoring</code></strong> — <strong>Prometheus metrics</strong> (<code>setup_metrics</code>,
+  <code>MetricsConfig</code>, <code>FraiseQLMetrics</code>), <strong>health checks</strong> (<code>HealthCheck</code>), and
+  <strong>PostgreSQL-native error tracking</strong> (<code>init_error_tracker</code>).</li>
 </ul>
-<h2 id="structured-logging">Structured Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h2>
-<p>All authentication events are logged with structured data for easy analysis.</p>
-<h3 id="enabling-structured-logging">Enabling Structured Logging<a class="headerlink" href="#enabling-structured-logging" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::AuthEvent;
-use tracing_subscriber;</p>
-<p>fn main() {
-    // Initialize tracing subscriber
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .with_target(true)
-        .init();</p>
-<div class="highlight"><pre><span></span><code>// Now all auth events are automatically logged
+<p>Everything below uses those APIs plus standard Prometheus/Grafana/log-based
+alerting. There is no separate auth server to operate — you scrape and log the
+FastAPI app.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>What you should observe for authentication:</p>
+<ul>
+<li><strong>Login success / failure</strong> — track outcomes and the failure reason.</li>
+<li><strong>Token-validation errors</strong> — expired and invalid JWTs.</li>
+<li><strong>JWKS / provider errors</strong> — failures fetching keys or reaching the IdP.</li>
+<li><strong>Rate-limit hits</strong> — repeated failures from a single IP or user.</li>
+<li><strong>Latency</strong> — token validation and provider round-trips.</li>
+</ul>
+<h2 id="structured-security-logging">Structured Security Logging<a class="headerlink" href="#structured-security-logging" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a centralized security logger. Authentication code paths already
+emit events through it — for example, <code>Auth0Provider.validate_token</code> logs
+<code>AUTH_TOKEN_EXPIRED</code>, <code>AUTH_TOKEN_INVALID</code>, and generic auth failures
+automatically. You can also emit your own events from custom providers or
+resolvers.</p>
+<h3 id="configuring-the-security-logger">Configuring the Security Logger<a class="headerlink" href="#configuring-the-security-logger" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityLogger</span><span class="p">,</span> <span class="n">set_security_logger</span>
+
+<span class="c1"># JSON security events to stdout and a rotating-friendly file path.</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">SecurityLogger</span><span class="p">(</span>
+    <span class="n">log_to_stdout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">log_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">log_file_path</span><span class="o">=</span><span class="s2">&quot;/var/log/fraiseql/security_events.log&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">set_security_logger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="log-format-json">Log Format (JSON)<a class="headerlink" href="#log-format-json" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-21T10:30:45Z",
-  "level": "INFO",
-  "event": "token_validated",
-  "user_id": "user123",
-  "provider": "google",
-  "status": "success",
-  "duration_ms": 2.5,
-  "request_id": "req-abc123"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="logging-auth-events">Logging Auth Events<a class="headerlink" href="#logging-auth-events" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::AuthEvent;</p>
-<p>let event = AuthEvent::new("login")
-    .with_user_id("user123".to_string())
-    .with_provider("google".to_string())
-    .with_request_id("req-abc123".to_string())
-    .success(50.0);</p>
-<p>event.log();
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="metrics-collection">Metrics Collection<a class="headerlink" href="#metrics-collection" title="Permanent link">&para;</a></h2>
-<p>Track authentication metrics for monitoring and alerting:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::AuthMetrics;
-use std::sync::Arc;
-use std::sync::Mutex;</p>
-<p>let metrics = Arc::new(Mutex::new(AuthMetrics::new()));</p>
-<p>// Track authentication attempt
-{
-    let mut m = metrics.lock().unwrap();
-    m.record_attempt();
-    // ... auth logic
-    m.record_success();
-}</p>
-<p>// Get metrics
-{
-    let m = metrics.lock().unwrap();
-    println!("Success rate: {:.2}%", m.success_rate());
-    println!("Total attempts: {}", m.total_auth_attempts);
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="available-metrics">Available Metrics<a class="headerlink" href="#available-metrics" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>pub struct AuthMetrics {
-    pub total_auth_attempts: u64,           // Total login attempts
-    pub successful_authentications: u64,    // Successful logins
-    pub failed_authentications: u64,        // Failed logins
-    pub tokens_issued: u64,                 // New tokens issued
-    pub tokens_refreshed: u64,              // Tokens refreshed
-    pub sessions_revoked: u64,              // Sessions revoked
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="accessing-metrics-via-http">Accessing Metrics via HTTP<a class="headerlink" href="#accessing-metrics-via-http" title="Permanent link">&para;</a></h3>
-<p>Create a metrics endpoint:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use axum::response::Json;</p>
-<p>async fn metrics_handler(
-    State(metrics): State<Arc\<Mutex\<AuthMetrics>>>,
-) -&gt; Json<AuthMetrics> {
-    let m = metrics.lock().unwrap().clone();
-    Json(m)
-}</p>
-<p>app.route("/metrics/auth", get(metrics_handler))
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Response:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl http://localhost:8000/metrics/auth</p>
-<p>{
-  "total_auth_attempts": 100,
-  "successful_authentications": 95,
-  "failed_authentications": 5,
-  "tokens_issued": 95,
-  "tokens_refreshed": 42,
-  "sessions_revoked": 38
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="performance-monitoring">Performance Monitoring<a class="headerlink" href="#performance-monitoring" title="Permanent link">&para;</a></h2>
-<h3 id="operation-timers">Operation Timers<a class="headerlink" href="#operation-timers" title="Permanent link">&para;</a></h3>
-<p>Measure operation duration:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::OperationTimer;</p>
-<p>async fn auth_callback() -&gt; Result<impl IntoResponse> {
-    let timer = OperationTimer::start("oauth_exchange");</p>
-<div class="highlight"><pre><span></span><code>// ... OAuth logic
-
-let duration_ms = timer.elapsed_ms();
-// Logs: &quot;Operation completed: oauth_exchange (45.2ms)&quot;
-Ok(response)
-</code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="expected-performance">Expected Performance<a class="headerlink" href="#expected-performance" title="Permanent link">&para;</a></h3>
+<p>The file path also reads from the <code>FRAISEQL_SECURITY_LOG_PATH</code> environment
+variable when <code>log_file_path</code> is not given. Anywhere in the app you can fetch the
+global instance with <code>get_security_logger()</code>.</p>
+<h3 id="event-types">Event Types<a class="headerlink" href="#event-types" title="Permanent link">&para;</a></h3>
+<p><code>SecurityEventType</code> (from <code>fraiseql.audit</code>) covers the auth surface you want to
+monitor:</p>
 <table>
 <thead>
 <tr>
-<th>Operation</th>
-<th>Duration</th>
-<th>Alert Threshold</th>
+<th>Event type</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>JWT Validation</td>
-<td>1-5ms</td>
-<td>&gt; 10ms</td>
+<td><code>AUTH_SUCCESS</code></td>
+<td>Successful authentication</td>
 </tr>
 <tr>
-<td>Session Lookup</td>
-<td>5-50ms</td>
-<td>&gt; 100ms</td>
+<td><code>AUTH_FAILURE</code></td>
+<td>Failed login attempt</td>
 </tr>
 <tr>
-<td>OAuth Token Exchange</td>
-<td>200-500ms</td>
-<td>&gt; 1000ms</td>
+<td><code>AUTH_TOKEN_EXPIRED</code></td>
+<td>JWT was expired</td>
 </tr>
 <tr>
-<td>User Info Retrieval</td>
-<td>100-300ms</td>
-<td>&gt; 500ms</td>
+<td><code>AUTH_TOKEN_INVALID</code></td>
+<td>JWT failed validation (signature, audience, issuer)</td>
+</tr>
+<tr>
+<td><code>AUTH_LOGOUT</code></td>
+<td>Session / token logout</td>
+</tr>
+<tr>
+<td><code>AUTHZ_DENIED</code></td>
+<td>Operation authorization denied</td>
+</tr>
+<tr>
+<td><code>AUTHZ_PERMISSION_DENIED</code></td>
+<td>Missing permission</td>
+</tr>
+<tr>
+<td><code>AUTHZ_ROLE_DENIED</code></td>
+<td>Missing role</td>
+</tr>
+<tr>
+<td><code>RATE_LIMIT_EXCEEDED</code></td>
+<td>Auth/endpoint rate limit hit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logging-auth-events">Logging Auth Events<a class="headerlink" href="#logging-auth-events" title="Permanent link">&para;</a></h3>
+<p>Convenience methods cover the common cases:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_security_logger</span>
+
+<span class="n">security</span> <span class="o">=</span> <span class="n">get_security_logger</span><span class="p">()</span>
+
+<span class="c1"># Successful login</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_auth_success</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
+    <span class="n">user_email</span><span class="o">=</span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
+    <span class="n">ip_address</span><span class="o">=</span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span>
+    <span class="n">user_agent</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user-agent&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Failed login attempt</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_auth_failure</span><span class="p">(</span>
+    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;invalid_credentials&quot;</span><span class="p">,</span>
+    <span class="n">ip_address</span><span class="o">=</span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span>
+    <span class="n">attempted_username</span><span class="o">=</span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Rate limit exceeded on an auth endpoint</span>
+<span class="n">security</span><span class="o">.</span><span class="n">log_rate_limit_exceeded</span><span class="p">(</span>
+    <span class="n">ip_address</span><span class="o">=</span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span>
+    <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">window</span><span class="o">=</span><span class="s2">&quot;1m&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>For full control, build a <code>SecurityEvent</code> directly:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SecurityEvent</span><span class="p">,</span>
+    <span class="n">SecurityEventSeverity</span><span class="p">,</span>
+    <span class="n">SecurityEventType</span><span class="p">,</span>
+    <span class="n">get_security_logger</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">get_security_logger</span><span class="p">()</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+    <span class="n">SecurityEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">SecurityEventType</span><span class="o">.</span><span class="n">AUTH_TOKEN_INVALID</span><span class="p">,</span>
+        <span class="n">severity</span><span class="o">=</span><span class="n">SecurityEventSeverity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ip_address</span><span class="o">=</span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;JWKS key not found for kid&quot;</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;auth0&quot;</span><span class="p">,</span> <span class="s2">&quot;kid&quot;</span><span class="p">:</span> <span class="s2">&quot;abc123&quot;</span><span class="p">},</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="log-format-json">Log Format (JSON)<a class="headerlink" href="#log-format-json" title="Permanent link">&para;</a></h3>
+<p>Each event is serialized to a single JSON line, ready for ingestion into Loki,
+ELK, Datadog, or any log pipeline:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth.success&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;severity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-21T10:30:45+00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;203.0.113.10&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_agent&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mozilla/5.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;request_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="metrics-with-prometheus">Metrics with Prometheus<a class="headerlink" href="#metrics-with-prometheus" title="Permanent link">&para;</a></h2>
+<p>FraiseQL exposes Prometheus metrics for the FastAPI app via <code>setup_metrics</code>,
+which installs collection middleware and a <code>/metrics</code> endpoint.</p>
+<h3 id="enabling-metrics">Enabling Metrics<a class="headerlink" href="#enabling-metrics" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">setup_metrics</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">MetricsConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>      <span class="c1"># metric name prefix</span>
+        <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span>   <span class="c1"># Prometheus scrape path</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>FraiseQLMetrics</code> records GraphQL operations, database queries, HTTP requests,
+cache activity, and errors. Because v1 auth runs as GraphQL operations and HTTP
+requests against the FastAPI app, these built-in metrics already capture auth
+traffic and latency. For example:</p>
+<ul>
+<li><code>fraiseql_http_requests_total{method,endpoint,status}</code> — request volume and
+  status codes for the GraphQL endpoint.</li>
+<li><code>fraiseql_http_request_duration_seconds</code> — request latency histogram (use
+  <code>histogram_quantile</code> for p95/p99).</li>
+<li><code>fraiseql_errors_total{error_type,error_code,operation}</code> — error counts; auth
+  failures surface here when a resolver raises.</li>
+</ul>
+<h3 id="auth-specific-counters">Auth-Specific Counters<a class="headerlink" href="#auth-specific-counters" title="Permanent link">&para;</a></h3>
+<p>For dedicated auth signals (login success/failure rate, token-validation errors,
+JWKS failures), expose your own Prometheus counters and histograms alongside the
+FraiseQL registry. These are standard <code>prometheus_client</code> objects — FraiseQL does
+not invent a fixed auth metric set:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Histogram</span>
+
+<span class="n">AUTH_ATTEMPTS</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
+    <span class="s2">&quot;fraiseql_auth_attempts_total&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Total authentication attempts&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">],</span>  <span class="c1"># success | failure</span>
+<span class="p">)</span>
+<span class="n">TOKEN_VALIDATION_ERRORS</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
+    <span class="s2">&quot;fraiseql_auth_token_errors_total&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Token validation errors&quot;</span><span class="p">,</span>
+    <span class="p">[</span><span class="s2">&quot;kind&quot;</span><span class="p">],</span>  <span class="c1"># expired | invalid | jwks_error</span>
+<span class="p">)</span>
+<span class="n">AUTH_VALIDATION_LATENCY</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
+    <span class="s2">&quot;fraiseql_auth_validation_duration_seconds&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Token validation latency&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Increment them from your auth code (or a custom <code>AuthProvider</code> subclass), keeping
+the security logger as the audit trail and Prometheus as the time series:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_security_logger</span>
+
+<span class="n">security</span> <span class="o">=</span> <span class="n">get_security_logger</span><span class="p">()</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+    <span class="n">AUTH_ATTEMPTS</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="s2">&quot;success&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+    <span class="n">security</span><span class="o">.</span><span class="n">log_auth_success</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">])</span>
+<span class="k">except</span> <span class="n">TokenExpiredError</span><span class="p">:</span>
+    <span class="n">AUTH_ATTEMPTS</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+    <span class="n">TOKEN_VALIDATION_ERRORS</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;expired&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+    <span class="k">raise</span>
+<span class="k">except</span> <span class="n">InvalidTokenError</span><span class="p">:</span>
+    <span class="n">AUTH_ATTEMPTS</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">result</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+    <span class="n">TOKEN_VALIDATION_ERRORS</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;invalid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+    <span class="k">raise</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">AUTH_VALIDATION_LATENCY</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="scraping-metrics">Scraping Metrics<a class="headerlink" href="#scraping-metrics" title="Permanent link">&para;</a></h3>
+<p>Once <code>setup_metrics</code> is installed, Prometheus scrapes the app directly:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://localhost:8000/metrics
+</code></pre></div>
+<div class="highlight"><pre><span></span><code># HELP fraiseql_http_requests_total Total HTTP requests
+# TYPE fraiseql_http_requests_total counter
+fraiseql_http_requests_total{method=&quot;POST&quot;,endpoint=&quot;/graphql&quot;,status=&quot;200&quot;} 95
+# HELP fraiseql_auth_attempts_total Total authentication attempts
+# TYPE fraiseql_auth_attempts_total counter
+fraiseql_auth_attempts_total{result=&quot;success&quot;} 95
+fraiseql_auth_attempts_total{result=&quot;failure&quot;} 5
+</code></pre></div>
+<h2 id="performance-expectations">Performance Expectations<a class="headerlink" href="#performance-expectations" title="Permanent link">&para;</a></h2>
+<p>Use these as starting points for alert thresholds; tune to your IdP and network.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Typical</th>
+<th>Alert threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JWT validation (cached JWKS)</td>
+<td>1-5 ms</td>
+<td>&gt; 10 ms</td>
+</tr>
+<tr>
+<td>JWKS key fetch (cold)</td>
+<td>50-300 ms</td>
+<td>&gt; 1000 ms</td>
+</tr>
+<tr>
+<td>Provider token exchange</td>
+<td>200-500 ms</td>
+<td>&gt; 1000 ms</td>
+</tr>
+<tr>
+<td>User info retrieval</td>
+<td>100-300 ms</td>
+<td>&gt; 500 ms</td>
 </tr>
 </tbody>
 </table>
 <h2 id="alerting-rules">Alerting Rules<a class="headerlink" href="#alerting-rules" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-alerts">Prometheus Alerts<a class="headerlink" href="#prometheus-alerts" title="Permanent link">&para;</a></h3>
-<p>Create <code>alerts.yml</code>:</p>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>groups:
-  - name: fraiseql_auth
-    interval: 30s
-    rules:
-      # High failure rate
-      - alert: AuthHighFailureRate
-        expr: |
-          (fraiseql_auth_failures_total / fraiseql_auth_attempts_total) &gt; 0.1
-        for: 5m
-        annotations:
-          summary: "High authentication failure rate"
-          description: "Auth failure rate &gt; 10% for 5 minutes"</p>
-<div class="highlight"><pre><span></span><code>  # Slow validation
-  - alert: SlowTokenValidation
-    expr: |
-      histogram_quantile(0.99, fraiseql_auth_validation_duration_ms) &gt; 10
-    for: 5m
-    annotations:
-      summary: &quot;Token validation is slow&quot;
-      description: &quot;p99 validation latency &gt; 10ms&quot;
+<p>Define alerts on the counters and histograms you expose. Create <code>alerts.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">groups</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql_auth</span>
+<span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># High auth failure rate</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AuthHighFailureRate</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">sum(rate(fraiseql_auth_attempts_total{result=&quot;failure&quot;}[5m]))</span>
+<span class="w">            </span><span class="no">/ sum(rate(fraiseql_auth_attempts_total[5m])) &gt; 0.1</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">authentication</span><span class="nv"> </span><span class="s">failure</span><span class="nv"> </span><span class="s">rate&quot;</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Auth</span><span class="nv"> </span><span class="s">failure</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">10%</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">minutes&quot;</span>
 
-  # High session revocation rate
-  - alert: HighSessionRevocation
-    expr: |
-      increase(fraiseql_sessions_revoked_total[5m]) &gt; 100
-    annotations:
-      summary: &quot;Many sessions being revoked&quot;
-      description: &quot;More than 100 sessions revoked in 5 minutes&quot;
+<span class="w">      </span><span class="c1"># Spike in token-validation errors (possible attack or IdP outage)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TokenValidationErrorSpike</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">sum(increase(fraiseql_auth_token_errors_total[5m])) &gt; 100</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Spike</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">token</span><span class="nv"> </span><span class="s">validation</span><span class="nv"> </span><span class="s">errors&quot;</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;More</span><span class="nv"> </span><span class="s">than</span><span class="nv"> </span><span class="s">100</span><span class="nv"> </span><span class="s">token</span><span class="nv"> </span><span class="s">errors</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">minutes&quot;</span>
+
+<span class="w">      </span><span class="c1"># Slow token validation</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SlowTokenValidation</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">histogram_quantile(</span>
+<span class="w">            </span><span class="no">0.99,</span>
+<span class="w">            </span><span class="no">sum(rate(fraiseql_auth_validation_duration_seconds_bucket[5m])) by (le)</span>
+<span class="w">          </span><span class="no">) &gt; 0.010</span>
+<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Token</span><span class="nv"> </span><span class="s">validation</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">slow&quot;</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p99</span><span class="nv"> </span><span class="s">validation</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">10ms&quot;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="log-based-alerting">Log-Based Alerting<a class="headerlink" href="#log-based-alerting" title="Permanent link">&para;</a></h3>
+<p>When you do not expose a dedicated counter, alert on the security event stream.
+In Loki, ELK, or Datadog, match the JSON <code>event_type</code> field:</p>
+<div class="highlight"><pre><span></span><code># Failure spike (Loki LogQL example)
+sum(count_over_time({app=&quot;fraiseql&quot;} | json | event_type=&quot;auth.failure&quot; [5m])) &gt; 100
 
+# Repeated failures from one IP (credential stuffing)
+{app=&quot;fraiseql&quot;} | json | event_type=&quot;auth.failure&quot; | ip_address=&quot;203.0.113.10&quot;
+</code></pre></div>
 <h2 id="grafana-dashboard">Grafana Dashboard<a class="headerlink" href="#grafana-dashboard" title="Permanent link">&para;</a></h2>
-<p>Import the dashboard configuration:</p>
-<h3 id="dashboard-json">Dashboard JSON<a class="headerlink" href="#dashboard-json" title="Permanent link">&para;</a></h3>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "dashboard": {
-    "title": "FraiseQL Authentication",
-    "panels": [
-      {
-        "title": "Authentication Attempts",
-        "targets": [
-          {
-            "expr": "rate(fraiseql_auth_attempts_total[5m])"
-          }
-        ]
-      },
-      {
-        "title": "Success Rate",
-        "targets": [
-          {
-            "expr": "fraiseql_auth_success_rate"
-          }
-        ]
-      },
-      {
-        "title": "Token Validation Latency",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, fraiseql_auth_validation_duration_ms)"
-          }
-        ]
-      },
-      {
-        "title": "OAuth Exchange Duration",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, fraiseql_oauth_exchange_duration_ms)"
-          }
-        ]
-      }
-    ]
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="log-analysis">Log Analysis<a class="headerlink" href="#log-analysis" title="Permanent link">&para;</a></h2>
-<h3 id="common-log-queries">Common Log Queries<a class="headerlink" href="#common-log-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Failed authentication attempts:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="in-elk-datadog-or-similar">In ELK, Datadog, or similar<a class="headerlink" href="#in-elk-datadog-or-similar" title="Permanent link">&para;</a></h1>
-<p>status: "error" AND event: "token_validation"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Slow OAuth exchanges:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>event: "oauth_exchange" AND duration_ms: &gt; 500
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>User lockout detection:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>user_id: "user123" AND status: "error" AND event: "login"
-| stats count by user_id
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h2>
-<p>Create a health check endpoint:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use axum::response::Json;</p>
-<h1 id="deriveserialize">[derive(Serialize)]<a class="headerlink" href="#deriveserialize" title="Permanent link">&para;</a></h1>
-<p>struct HealthStatus {
-    auth: String,
-    db: String,
-    oauth_provider: String,
-}</p>
-<p>async fn health_check(
-    State(auth_state): State<AuthState>,
-) -&gt; Json<HealthStatus> {
-    let oauth_ok = check_oauth_provider(&amp;auth_state).await;
-    let db_ok = check_database(&amp;auth_state).await;</p>
-<div class="highlight"><pre><span></span><code>Json(HealthStatus {
-    auth: &quot;healthy&quot;.to_string(),
-    oauth_provider: if oauth_ok { &quot;ok&quot; } else { &quot;error&quot; }.to_string(),
-    db: if db_ok { &quot;ok&quot; } else { &quot;error&quot; }.to_string(),
-})
+<p>Build panels from the metrics you expose:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;dashboard&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FraiseQL Authentication&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;panels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Auth Attempts (by result)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sum(rate(fraiseql_auth_attempts_total[5m])) by (result)&quot;</span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Failure Rate&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sum(rate(fraiseql_auth_attempts_total{result=\&quot;failure\&quot;}[5m])) / sum(rate(fraiseql_auth_attempts_total[5m]))&quot;</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Token Validation Latency (p95)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.95, sum(rate(fraiseql_auth_validation_duration_seconds_bucket[5m])) by (le))&quot;</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Token Errors (by kind)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sum(rate(fraiseql_auth_token_errors_total[5m])) by (kind)&quot;</span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
-<p>}</p>
-<p>app.route("/health/auth", get(health_check))
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="error-tracking">Error Tracking<a class="headerlink" href="#error-tracking" title="Permanent link">&para;</a></h2>
+<p>For capturing unexpected exceptions in auth code, FraiseQL provides a
+PostgreSQL-native error tracker (a Sentry-style sink that writes to your own
+database):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_error_tracker</span><span class="p">,</span> <span class="n">init_error_tracker</span>
 
-<p>Health check response:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl http://localhost:8000/health/auth</p>
-<p>{
-  "auth": "healthy",
-  "oauth_provider": "ok",
-  "db": "ok"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># At startup</span>
+<span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">)</span>
 
+<span class="c1"># In an auth code path</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">get_error_tracker</span><span class="p">()</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">tracker</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span><span class="p">})</span>
+    <span class="k">raise</span>
+</code></pre></div>
+<h2 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h2>
+<p>Use <code>HealthCheck</code> to expose readiness, including reachability of your auth
+provider's JWKS endpoint:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CheckResult</span><span class="p">,</span>
+    <span class="n">HealthCheck</span><span class="p">,</span>
+    <span class="n">HealthStatus</span><span class="p">,</span>
+    <span class="n">check_database</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_idp</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CheckResult</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;https://YOUR_DOMAIN/.well-known/jwks.json&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">resp</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">CheckResult</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;idp&quot;</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">HealthStatus</span><span class="o">.</span><span class="n">HEALTHY</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;JWKS endpoint reachable&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001</span>
+        <span class="k">return</span> <span class="n">CheckResult</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;idp&quot;</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">HealthStatus</span><span class="o">.</span><span class="n">UNHEALTHY</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;JWKS endpoint unreachable: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;idp&quot;</span><span class="p">,</span> <span class="n">check_idp</span><span class="p">)</span>
+</code></pre></div>
+<p>Wire it into a FastAPI route:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health/auth&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_auth</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://localhost:8000/health/auth
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;checks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Database connection successful&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;idp&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;JWKS endpoint reachable&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h2 id="docker-compose-with-monitoring">Docker Compose with Monitoring<a class="headerlink" href="#docker-compose-with-monitoring" title="Permanent link">&para;</a></h2>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>version: '3.8'
-services:
-  FraiseQL:
-    image: FraiseQL/server:latest
-    environment:
-      RUST_LOG: info,fraiseql_server::auth=debug
-    ports:
-      - "8000:8000"</p>
-<p>prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"</p>
-<p>grafana:
-    image: grafana/grafana:latest
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    ports:
-      - "3000:3000"</p>
-<p>loki:
-    image: grafana/loki:latest
-    ports:
-      - "3100:3100"</p>
-<p>promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - /var/log:/var/log
-    command: -config.file=/etc/promtail/config.yml
-```text</p>
-<!-- Code example in TEXT -->
+<p>Run the FastAPI app (for example with <code>uvicorn app:app</code>) next to Prometheus,
+Grafana, and Loki:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">app</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvicorn app:app --host 0.0.0.0 --port 8000</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://user:pass@db/mydb</span>
+<span class="w">      </span><span class="nt">FRAISEQL_SECURITY_LOG_PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/log/fraiseql/security_events.log</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
 
+<span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./prometheus.yml:/etc/prometheus/prometheus.yml</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;9090:9090&quot;</span>
+
+<span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:latest</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">GF_SECURITY_ADMIN_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3000:3000&quot;</span>
+
+<span class="w">  </span><span class="nt">loki</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/loki:latest</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3100:3100&quot;</span>
+
+<span class="w">  </span><span class="nt">promtail</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/promtail:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/log:/var/log</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-config.file=/etc/promtail/config.yml</span>
+</code></pre></div>
+<p>Point Prometheus at the app's <code>/metrics</code> path in <code>prometheus.yml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">scrape_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;app:8000&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Log in JSON format</strong> for easy parsing</li>
-<li><strong>Include request ID</strong> in logs for tracing</li>
-<li><strong>Monitor success rates</strong> continuously</li>
-<li><strong>Alert on anomalies</strong> (sudden spikes/drops)</li>
-<li><strong>Track latency percentiles</strong> (p50, p95, p99)</li>
-<li><strong>Audit sensitive events</strong> (login, logout, admin actions)</li>
-<li><strong>Retain logs</strong> for compliance (90+ days)</li>
-<li><strong>Anonymize PII</strong> in logs (don't log passwords, tokens)</li>
-<li><strong>Set up dashboards</strong> for on-call teams</li>
-<li><strong>Review logs regularly</strong> for security incidents</li>
+<li><strong>Log in JSON format</strong> — the security logger already emits JSON lines.</li>
+<li><strong>Include a request ID</strong> — set <code>SecurityEvent.request_id</code> for tracing.</li>
+<li><strong>Monitor success/failure rates</strong> continuously.</li>
+<li><strong>Alert on anomalies</strong> — sudden spikes in <code>AUTH_FAILURE</code> or token errors.</li>
+<li><strong>Track latency percentiles</strong> (p50, p95, p99) with histograms.</li>
+<li><strong>Audit sensitive events</strong> — login, logout, authorization denials.</li>
+<li><strong>Retain logs</strong> for compliance (90+ days).</li>
+<li><strong>Never log secrets</strong> — do not put passwords or raw tokens in metadata.</li>
+<li><strong>Set up dashboards</strong> for on-call teams.</li>
+<li><strong>Review security events regularly</strong> for incidents.</li>
 </ol>
 <h2 id="troubleshooting-with-logs">Troubleshooting with Logs<a class="headerlink" href="#troubleshooting-with-logs" title="Permanent link">&para;</a></h2>
-<h3 id="user-cant-log-in">User Can't Log In<a class="headerlink" href="#user-cant-log-in" title="Permanent link">&para;</a></h3>
-<p>Check logs for:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>error: "invalid_state"  # State validation failed
-error: "oauth_error"    # Provider error
-error: "token_expired"  # Token already expired
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="slow-authentication">Slow Authentication<a class="headerlink" href="#slow-authentication" title="Permanent link">&para;</a></h3>
-<p>Check performance logs:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>duration_ms: &gt; 500  # Identify slow operations
-event: "oauth_exchange"  # Likely provider latency
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="session-issues">Session Issues<a class="headerlink" href="#session-issues" title="Permanent link">&para;</a></h3>
-<p>Check session logs:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>event: "session_revoked"  # Track revocations
-event: "session_created"  # Track creation rate
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="metrics-integration">Metrics Integration<a class="headerlink" href="#metrics-integration" title="Permanent link">&para;</a></h2>
-<h3 id="prometheus-integration">Prometheus Integration<a class="headerlink" href="#prometheus-integration" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use prometheus::{Counter, Histogram, Registry};</p>
-<p>pub struct AuthPrometheus {
-    attempts: Counter,
-    successes: Counter,
-    failures: Counter,
-    validation_duration: Histogram,
-}</p>
-<p>impl AuthPrometheus {
-    pub fn new(registry: &amp;Registry) -&gt; Result<Self> {
-        let attempts = Counter::new("fraiseql_auth_attempts_total", "Total auth attempts")?;
-        let successes = Counter::new("fraiseql_auth_successes_total", "Successful auths")?;
-        let failures = Counter::new("fraiseql_auth_failures_total", "Failed auths")?;
-        let validation_duration = Histogram::new(
-            "fraiseql_auth_validation_duration_ms",
-            "Token validation duration",
-        )?;</p>
-<div class="highlight"><pre><span></span><code>    registry.register(Box::new(attempts.clone()))?;
-    registry.register(Box::new(successes.clone()))?;
-    registry.register(Box::new(failures.clone()))?;
-    registry.register(Box::new(validation_duration.clone()))?;
-
-    Ok(Self {
-        attempts,
-        successes,
-        failures,
-        validation_duration,
-    })
-}
+<h3 id="users-cannot-log-in">Users Cannot Log In<a class="headerlink" href="#users-cannot-log-in" title="Permanent link">&para;</a></h3>
+<p>Filter the security event stream by <code>event_type</code>:</p>
+<div class="highlight"><pre><span></span><code>event_type: &quot;auth.token_invalid&quot;   # signature / audience / issuer mismatch
+event_type: &quot;auth.token_expired&quot;   # token already expired
+event_type: &quot;auth.failure&quot;         # credential or provider error
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="slow-authentication">Slow Authentication<a class="headerlink" href="#slow-authentication" title="Permanent link">&para;</a></h3>
+<p>Check the validation latency histogram and provider round-trips:</p>
+<div class="highlight"><pre><span></span><code>histogram_quantile(0.95, sum(rate(fraiseql_auth_validation_duration_seconds_bucket[5m])) by (le))
+</code></pre></div>
+<p>A high p95 with low local CPU usually points at JWKS fetches or IdP latency.</p>
+<h3 id="authorization-denials">Authorization Denials<a class="headerlink" href="#authorization-denials" title="Permanent link">&para;</a></h3>
+<p>Track denied operations to spot over-restrictive policies or probing:</p>
+<div class="highlight"><pre><span></span><code>event_type: &quot;authz.denied&quot;
+event_type: &quot;authz.permission_denied&quot;
+event_type: &quot;authz.role_denied&quot;
+</code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../deployment/">Deployment Guide</a></li>
@@ -5528,13 +5668,16 @@ event: "session_created"  # Track creation rate
 <li><a href="../api-reference/">API Reference</a></li>
 </ul>
 <hr />
-<p><strong>Next Step</strong>: Set up monitoring dashboard and alerts for your deployment.</p>
+<p><strong>Next Step</strong>: Set up a monitoring dashboard and alerts for your deployment.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

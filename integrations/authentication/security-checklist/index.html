@@ -4556,6 +4556,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sign-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sign-Off
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5807,6 +5829,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Communication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sign-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sign-Off
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5870,8 +5914,8 @@ tags: ["documentation", "reference"]</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Refresh tokens hashed before storage (SHA256)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Sessions table uses strong indexes</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Automatic session expiry via TTL</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Revoked sessions immediately invalidated</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Session revocation tested</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Revoked tokens immediately invalidated (<code>PostgreSQLRevocationStore</code> / <code>TokenRevocationService</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Token revocation tested</li>
 </ul>
 <h3 id="token-security">Token Security<a class="headerlink" href="#token-security" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5912,6 +5956,7 @@ tags: ["documentation", "reference"]</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting enabled on /auth/start (1 req/sec per IP)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting enabled on /auth/callback (1 req/sec per IP)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting enabled on /auth/refresh (10 req/sec per IP)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting configured (<code>RateLimit</code> rules; <code>RedisRateLimitStore</code> for multi-worker deployments)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Brute force protection configured</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Failed attempts logged and monitored</li>
 </ul>
@@ -5935,11 +5980,14 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h3 id="access-control">Access Control<a class="headerlink" href="#access-control" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Admin endpoints require authentication</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Role-based access control (RBAC) configured</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Admin endpoints require authentication (<code>@requires_auth</code> / <code>@requires_role</code> / <code>@requires_permission</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Role-based access control (RBAC) configured (operation <code>Authorizer</code>, field <code>authorize_field</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Principle of least privilege applied</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Tenant isolation enforced via PostgreSQL Row-Level Security (RLS) where applicable</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> User permissions validated on each request</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Unauthorized access attempts logged</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schema introspection policy set appropriately for production (<code>introspection_policy</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> GraphQL playground disabled in production (<code>enable_playground</code> / <code>production=True</code>)</li>
 </ul>
 <h3 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5986,7 +6034,7 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h3 id="dependency-management">Dependency Management<a class="headerlink" href="#dependency-management" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Dependencies scanned monthly (e.g., <code>cargo audit</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Dependencies scanned monthly (e.g., <code>uv pip audit</code> / <code>pip-audit</code>, or Dependabot)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Security updates applied immediately</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Beta/dev dependencies removed before production</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Unused dependencies removed</li>
@@ -6127,19 +6175,14 @@ tags: ["documentation", "reference"]</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Implement preventive measures</li>
 </ol>
 <h3 id="testing-incident-response">Testing Incident Response<a class="headerlink" href="#testing-incident-response" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="simulate-breach">Simulate breach<a class="headerlink" href="#simulate-breach" title="Permanent link">&para;</a></h1>
+<p>Simulate a breach and verify recovery:</p>
 <ol>
 <li>Manually revoke all sessions</li>
 <li>Verify users can't use old tokens</li>
 <li>Verify users can log back in</li>
 <li>Document time to recovery</li>
-<li>Review logs for completeness
-```text</li>
+<li>Review logs for completeness</li>
 </ol>
-<!-- Code example in TEXT -->
-
 <h2 id="communication">Communication<a class="headerlink" href="#communication" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Security vulnerabilities reported to <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#115;&#101;&#99;&#117;&#114;&#105;&#116;&#121;&#64;&#121;&#111;&#117;&#114;&#100;&#111;&#109;&#97;&#105;&#110;&#46;&#99;&#111;&#109;">&#115;&#101;&#99;&#117;&#114;&#105;&#116;&#121;&#64;&#121;&#111;&#117;&#114;&#100;&#111;&#109;&#97;&#105;&#110;&#46;&#99;&#111;&#109;</a></li>

@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="This guide walks you through using Google as the identity provider for a FraiseQL API.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/setup-google-oauth/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Setup Google OAuth - FraiseQL Documentation</title>
+        <title>Google OAuth 2.0 Setup Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Setup Google OAuth
+              Google OAuth 2.0 Setup Guide
             
           </span>
         </div>
@@ -4069,10 +4071,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-enable-google-api" class="md-nav__link">
+  <a href="#step-2-configure-the-oauth-consent-screen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Enable Google+ API
+        Step 2: Configure the OAuth Consent Screen
       
     </span>
   </a>
@@ -4091,10 +4093,193 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-configure-fraiseql" class="md-nav__link">
+  <a href="#path-a-recommended-auth0-as-a-broker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Configure FraiseQL
+        Path A (recommended): Auth0 as a broker
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path A (recommended): Auth0 as a broker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a1-add-google-as-a-social-connection-in-auth0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A.1 Add Google as a social connection in Auth0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a2-configure-fraiseql-to-trust-auth0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A.2 Configure FraiseQL to trust Auth0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-b-custom-provider-validating-google-id-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path B: custom provider validating Google ID tokens
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path B: custom provider validating Google ID tokens">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b1-the-authprovider-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.1 The AuthProvider interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b2-implement-a-google-id-token-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.2 Implement a Google ID-token provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b3-wire-the-custom-provider-into-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.3 Wire the custom provider into the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-user-in-a-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the user in a resolver
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing the flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-redirect-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid Redirect URI"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-audience-invalid-issuer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid audience" / "Invalid issuer"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-token-signature-verification-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Token signature verification failed"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-forbidden-on-every-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "FORBIDDEN" on every request
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Resources
       
     </span>
   </a>
@@ -4977,10 +5162,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-enable-google-api" class="md-nav__link">
+  <a href="#step-2-configure-the-oauth-consent-screen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Enable Google+ API
+        Step 2: Configure the OAuth Consent Screen
       
     </span>
   </a>
@@ -4999,10 +5184,193 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-configure-fraiseql" class="md-nav__link">
+  <a href="#path-a-recommended-auth0-as-a-broker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Configure FraiseQL
+        Path A (recommended): Auth0 as a broker
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path A (recommended): Auth0 as a broker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a1-add-google-as-a-social-connection-in-auth0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A.1 Add Google as a social connection in Auth0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a2-configure-fraiseql-to-trust-auth0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A.2 Configure FraiseQL to trust Auth0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#path-b-custom-provider-validating-google-id-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Path B: custom provider validating Google ID tokens
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Path B: custom provider validating Google ID tokens">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#b1-the-authprovider-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.1 The AuthProvider interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b2-implement-a-google-id-token-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.2 Implement a Google ID-token provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b3-wire-the-custom-provider-into-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B.3 Wire the custom provider into the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-user-in-a-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the user in a resolver
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing the flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-redirect-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid Redirect URI"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-invalid-audience-invalid-issuer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Invalid audience" / "Invalid issuer"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-token-signature-verification-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Token signature verification failed"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-forbidden-on-every-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "FORBIDDEN" on every request
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Resources
       
     </span>
   </a>
@@ -5029,44 +5397,45 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Google OAuth 2.0 Setup Guide
-description: This guide walks you through setting up Google OAuth authentication with FraiseQL.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="google-oauth-20-setup-guide">Google OAuth 2.0 Setup Guide<a class="headerlink" href="#google-oauth-20-setup-guide" title="Permanent link">&para;</a></h1>
-<p>This guide walks you through setting up Google OAuth authentication with FraiseQL.</p>
+<p>This guide walks you through using <strong>Google</strong> as the identity provider for a FraiseQL
+v1 API. FraiseQL is a Python runtime GraphQL framework that runs inside your FastAPI
+app; it validates the <strong>JWT/ID tokens</strong> that arrive on each GraphQL request and turns
+them into a <code>UserContext</code> your resolvers can read. It does <strong>not</strong> run an OAuth
+authorization server itself — the browser redirect/consent dance is handled by Google
+together with either Auth0 (Path A) or your own client app (Path B).</p>
+<p>There are two honest ways to wire Google into FraiseQL:</p>
+<ul>
+<li><strong>Path A (recommended): Auth0 as a broker.</strong> Add Google as a <em>social connection</em> in
+  Auth0. Your users log in with Google, Auth0 mints its own JWT, and FraiseQL simply
+  uses <code>auth_provider="auth0"</code>. You write zero token-validation code.</li>
+<li><strong>Path B: custom provider.</strong> Set <code>auth_provider="custom"</code> and implement an
+  <code>AuthProvider</code> subclass that validates Google's ID tokens directly (Google's JWKS,
+  issuer, and your OAuth client ID as the audience).</li>
+</ul>
+<p>FraiseQL ships an <code>Auth0Provider</code> and a base <code>AuthProvider</code> ABC. There is <strong>no</strong>
+<code>GoogleProvider</code>/<code>OidcProvider</code> class — you use one of the two paths above.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
-<li>OAuth 2.0 and OIDC fundamentals (authorization code flow, ID tokens, access tokens)</li>
-<li>JWT token structure and claims</li>
-<li>HTTP/REST APIs and callbacks</li>
-<li>Basic networking and DNS (understanding of redirect URIs)</li>
+<li>OAuth 2.0 / OIDC fundamentals (authorization code flow, ID tokens, access tokens)</li>
+<li>JWT token structure and claims (<code>iss</code>, <code>aud</code>, <code>sub</code>, <code>exp</code>)</li>
+<li>HTTP/REST APIs and redirect URIs</li>
 <li>Google Cloud Console navigation and project management</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
-<li>curl or Postman (for testing endpoints)</li>
-<li>A code editor for configuration files</li>
-<li>Bash or similar shell for environment variable setup</li>
-<li>Docker (optional, for testing with ngrok tunneling)</li>
+<li>FraiseQL v1 (<code>pip install fraiseql</code> / <code>uv add fraiseql</code>)</li>
+<li>curl or a GraphQL client (for testing the API)</li>
+<li>A PostgreSQL database (FraiseQL is PostgreSQL-only)</li>
+<li>For Path A: an Auth0 tenant (free tier is fine)</li>
 </ul>
 <p><strong>Required Infrastructure:</strong></p>
 <ul>
 <li>Active Google Cloud account (free tier available)</li>
-<li>Google Cloud Project (to be created in Step 1)</li>
-<li>FraiseQL server instance (running locally or deployed)</li>
-<li>Publicly accessible URL or ngrok tunnel for OAuth callbacks</li>
-<li>PostgreSQL database for session storage (if using custom SessionStore)</li>
-</ul>
-<p><strong>Optional but Recommended:</strong></p>
-<ul>
-<li>ngrok or similar tunneling service (for local testing without deployment)</li>
-<li>HTTPS certificate for production (Let's Encrypt or your certificate authority)</li>
+<li>A Google Cloud Project (created in Step 1)</li>
+<li>A redirect URI that Google can call back — this points at <strong>Auth0</strong> (Path A) or at
+  <strong>your client application</strong> (Path B), never at FraiseQL itself</li>
 </ul>
 <p><strong>Time Estimate:</strong> 15-30 minutes for complete setup and testing</p>
 <h2 id="step-1-create-a-google-cloud-project">Step 1: Create a Google Cloud Project<a class="headerlink" href="#step-1-create-a-google-cloud-project" title="Permanent link">&para;</a></h2>
@@ -5074,319 +5443,294 @@ tags: ["documentation", "reference"]</p>
 <li>Go to <a href="https://console.cloud.google.com">Google Cloud Console</a></li>
 <li>Click the project dropdown at the top</li>
 <li>Click "NEW PROJECT"</li>
-<li>Enter project name: "FraiseQL Auth"</li>
+<li>Enter a project name, e.g. "FraiseQL Auth"</li>
 <li>Click "CREATE"</li>
 </ol>
-<h2 id="step-2-enable-google-api">Step 2: Enable Google+ API<a class="headerlink" href="#step-2-enable-google-api" title="Permanent link">&para;</a></h2>
+<h2 id="step-2-configure-the-oauth-consent-screen">Step 2: Configure the OAuth Consent Screen<a class="headerlink" href="#step-2-configure-the-oauth-consent-screen" title="Permanent link">&para;</a></h2>
 <ol>
-<li>In the Cloud Console, search for "Google+ API"</li>
-<li>Click on "Google+ API"</li>
-<li>Click "ENABLE"</li>
+<li>In the Cloud Console, open "APIs &amp; Services" → "OAuth consent screen"</li>
+<li>User Type: <strong>External</strong></li>
+<li>App name: e.g. "My FraiseQL App"</li>
+<li>User support email and developer contact: your email</li>
+<li>Add the scopes you need (typically <code>openid</code>, <code>email</code>, <code>profile</code>)</li>
+<li>Click "SAVE AND CONTINUE" through the remaining screens</li>
 </ol>
 <h2 id="step-3-create-oauth-credentials">Step 3: Create OAuth Credentials<a class="headerlink" href="#step-3-create-oauth-credentials" title="Permanent link">&para;</a></h2>
 <ol>
 <li>In the Cloud Console, go to "Credentials" (left sidebar)</li>
 <li>Click "Create Credentials" → "OAuth client ID"</li>
-<li>If prompted, configure the OAuth consent screen first:</li>
-<li>User Type: <strong>External</strong></li>
-<li>App name: "FraiseQL"</li>
-<li>User support email: <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#121;&#111;&#117;&#114;&#45;&#101;&#109;&#97;&#105;&#108;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#121;&#111;&#117;&#114;&#45;&#101;&#109;&#97;&#105;&#108;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a></li>
-<li>Developer contact: <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#121;&#111;&#117;&#114;&#45;&#101;&#109;&#97;&#105;&#108;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#121;&#111;&#117;&#114;&#45;&#101;&#109;&#97;&#105;&#108;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a></li>
-<li>Click "SAVE AND CONTINUE" through all screens</li>
-<li>Back to OAuth client ID creation:</li>
 <li>Application type: <strong>Web application</strong></li>
-<li>Name: "FraiseQL Server"</li>
-<li>Authorized JavaScript origins:<ul>
-<li><code>http://localhost:3000</code> (for local development)</li>
-<li><code>https://yourdomain.com</code> (for production)</li>
-</ul>
-</li>
-<li>Authorized redirect URIs:<ul>
-<li><code>http://localhost:8000/auth/callback</code> (dev server)</li>
-<li><code>https://yourdomain.com/auth/callback</code> (production)</li>
-</ul>
-</li>
-<li>
-<p>Click "CREATE"</p>
-</li>
-<li>
+<li>Name: e.g. "My FraiseQL Web Client"</li>
+<li><strong>Authorized JavaScript origins</strong> (your front-end origins):</li>
+<li><code>http://localhost:3000</code> (local development)</li>
+<li><code>https://yourdomain.com</code> (production)</li>
+<li><strong>Authorized redirect URIs</strong> — point these at whoever completes the OAuth flow:</li>
+<li><strong>Path A (Auth0):</strong> <code>https://YOUR_TENANT.auth0.com/login/callback</code></li>
+<li><strong>Path B (your client app):</strong> <code>http://localhost:3000/auth/callback</code> (dev) and
+     <code>https://yourdomain.com/auth/callback</code> (production)</li>
+<li>Click "CREATE"</li>
+</ol>
 <p>You'll see your credentials. Note:</p>
-</li>
+<ul>
 <li><strong>Client ID</strong>: <code>YOUR_CLIENT_ID.apps.googleusercontent.com</code></li>
 <li><strong>Client Secret</strong>: <code>YOUR_CLIENT_SECRET</code></li>
-</ol>
-<h2 id="step-4-configure-fraiseql">Step 4: Configure FraiseQL<a class="headerlink" href="#step-4-configure-fraiseql" title="Permanent link">&para;</a></h2>
-<p>Create a <code>.env</code> file in your FraiseQL server directory:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="google-oauth-configuration">Google OAuth Configuration<a class="headerlink" href="#google-oauth-configuration" title="Permanent link">&para;</a></h1>
-<p>GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback</p>
-<h1 id="jwt-configuration">JWT Configuration<a class="headerlink" href="#jwt-configuration" title="Permanent link">&para;</a></h1>
-<p>JWT_ISSUER=https://accounts.google.com
-JWT_ALGORITHM=RS256</p>
-<h1 id="session-configuration">Session Configuration<a class="headerlink" href="#session-configuration" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL=postgres://user:password@localhost/FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="step-5-update-server-configuration">Step 5: Update Server Configuration<a class="headerlink" href="#step-5-update-server-configuration" title="Permanent link">&para;</a></h2>
-<p>In your Rust code, configure the OIDC provider:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::OidcProvider;
-use std::sync::Arc;</p>
-<h1 id="tokiomain">[tokio::main]<a class="headerlink" href="#tokiomain" title="Permanent link">&para;</a></h1>
-<p>async fn main() -&gt; Result&lt;()&gt; {
-    let oauth_provider = Arc::new(
-        OidcProvider::new(
-            "google",
-            "https://accounts.google.com",
-            &amp;std::env::var("GOOGLE_CLIENT_ID")?,
-            &amp;std::env::var("GOOGLE_CLIENT_SECRET")?,
-            &amp;std::env::var("OAUTH_REDIRECT_URI")?,
-        )
-        .await?
-    );</p>
-<div class="highlight"><pre><span></span><code>// Register auth endpoints with your Axum router
-// ... rest of setup
-
-Ok(())
-</code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="step-6-register-auth-endpoints">Step 6: Register Auth Endpoints<a class="headerlink" href="#step-6-register-auth-endpoints" title="Permanent link">&para;</a></h2>
-<p>Add these routes to your Axum application:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use axum::{
-    routing::{get, post},
-    Router,
-};
-use fraiseql_server::auth::{
-    auth_start, auth_callback, auth_refresh, auth_logout,
-    AuthState, OidcProvider, PostgresSessionStore,
-};</p>
-<p>let auth_state = AuthState {
-    oauth_provider,
-    session_store: Arc::new(PostgresSessionStore::new(db_pool)),
-    state_store: Arc::new(dashmap::DashMap::new()),
-};</p>
-<p>let auth_routes = Router::new()
-    .route("/auth/start", post(auth_start))
-    .route("/auth/callback", get(auth_callback))
-    .route("/auth/refresh", post(auth_refresh))
-    .route("/auth/logout", post(auth_logout))
-    .with_state(auth_state);</p>
-<p>let app = Router::new()
-    .merge(auth_routes)
-    // ... other routes
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="step-7-test-the-flow">Step 7: Test the Flow<a class="headerlink" href="#step-7-test-the-flow" title="Permanent link">&para;</a></h2>
-<h3 id="1-start-login-flow">1. Start Login Flow<a class="headerlink" href="#1-start-login-flow" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Response:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&amp;state=..."
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-visit-the-authorization-url">2. Visit the Authorization URL<a class="headerlink" href="#2-visit-the-authorization-url" title="Permanent link">&para;</a></h3>
-<p>Open the URL in a browser. You'll see Google's login page.</p>
-<h3 id="3-complete-login">3. Complete Login<a class="headerlink" href="#3-complete-login" title="Permanent link">&para;</a></h3>
-<p>After authentication, Google will redirect to:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>http://localhost:8000/auth/callback?code=...&amp;state=...
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>This endpoint will:</p>
-<ul>
-<li>Validate the state (CSRF protection)</li>
-<li>Exchange the code for tokens</li>
-<li>Get user info from Google</li>
-<li>Create a session</li>
-<li>Return tokens</li>
 </ul>
-<p>Response:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "access_token": "access_token_...",
-  "refresh_token": "refresh_token_...",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text</p>
-<!-- Code example in TEXT -->
+<blockquote>
+<p>The redirect URI <strong>never</strong> points at the FraiseQL/GraphQL endpoint. FraiseQL only
+receives the resulting token on the <code>Authorization: Bearer ...</code> header of GraphQL
+requests — it does not handle the <code>?code=...</code> callback.</p>
+</blockquote>
+<hr />
+<h2 id="path-a-recommended-auth0-as-a-broker">Path A (recommended): Auth0 as a broker<a class="headerlink" href="#path-a-recommended-auth0-as-a-broker" title="Permanent link">&para;</a></h2>
+<p>Let Auth0 handle the OAuth dance with Google and issue its own JWTs. FraiseQL then
+validates Auth0 tokens with the built-in <code>Auth0Provider</code>.</p>
+<h3 id="a1-add-google-as-a-social-connection-in-auth0">A.1 Add Google as a social connection in Auth0<a class="headerlink" href="#a1-add-google-as-a-social-connection-in-auth0" title="Permanent link">&para;</a></h3>
+<ol>
+<li>In the Auth0 dashboard, go to "Authentication" → "Social" → "Create Connection"</li>
+<li>Choose <strong>Google / Gmail</strong></li>
+<li>Paste the <strong>Client ID</strong> and <strong>Client Secret</strong> from Step 3</li>
+<li>Enable the connection for your Auth0 application</li>
+<li>Confirm the Google redirect URI in Auth0 matches what you registered in Step 3
+   (<code>https://YOUR_TENANT.auth0.com/login/callback</code>)</li>
+</ol>
+<p>Create an <strong>API</strong> in Auth0 (Applications → APIs) and note its <strong>Identifier</strong> — this is
+the <code>audience</code> of the tokens Auth0 will issue and what FraiseQL validates against.</p>
+<h3 id="a2-configure-fraiseql-to-trust-auth0">A.2 Configure FraiseQL to trust Auth0<a class="headerlink" href="#a2-configure-fraiseql-to-trust-auth0" title="Permanent link">&para;</a></h3>
+<p>Auth0 tokens are standard RS256 JWTs validated against Auth0's JWKS. Configure FraiseQL
+via environment variables (<code>FRAISEQL_</code> prefix) or directly in code.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># PostgreSQL connection</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:password@localhost/mydb
 
-<h3 id="4-use-the-access-token">4. Use the Access Token<a class="headerlink" href="#4-use-the-access-token" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer access_token_..." \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id name } }"}'
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Auth0 (tokens are Auth0-issued; Google is upstream)</span>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>YOUR_TENANT.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.yourdomain.com
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Provider</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="5-refresh-token">5. Refresh Token<a class="headerlink" href="#5-refresh-token" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "refresh_token_..."}'
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Validate Auth0-issued JWTs (RS256 by default, JWKS fetched automatically)</span>
+<span class="n">auth</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;YOUR_TENANT.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.yourdomain.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
-<h3 id="6-logout">6. Logout<a class="headerlink" href="#6-logout" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "refresh_token_..."}'
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:password@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Run it with uvicorn like any FastAPI app:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload
+</code></pre></div>
+<p>That's it — your users sign in with Google through Auth0, and every GraphQL request
+carrying a valid Auth0 <code>Authorization: Bearer &lt;jwt&gt;</code> header gets a populated
+<code>info.context["user"]</code> (a <code>UserContext</code>).</p>
+<hr />
+<h2 id="path-b-custom-provider-validating-google-id-tokens">Path B: custom provider validating Google ID tokens<a class="headerlink" href="#path-b-custom-provider-validating-google-id-tokens" title="Permanent link">&para;</a></h2>
+<p>If you don't want Auth0, run the OAuth flow in <strong>your own client application</strong> and send
+Google's <strong>ID token</strong> to FraiseQL. Set <code>auth_provider="custom"</code> and implement an
+<code>AuthProvider</code> subclass that validates that ID token directly.</p>
+<h3 id="b1-the-authprovider-interface">B.1 The <code>AuthProvider</code> interface<a class="headerlink" href="#b1-the-authprovider-interface" title="Permanent link">&para;</a></h3>
+<p>This is the real interface from <code>src/fraiseql/auth/base.py</code>. A custom provider must
+implement two async methods; <code>get_user_context</code> is a helper you call from them.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<h2 id="frontend-integration">Frontend Integration<a class="headerlink" href="#frontend-integration" title="Permanent link">&para;</a></h2>
-<h3 id="javascripttypescript">JavaScript/TypeScript<a class="headerlink" href="#javascripttypescript" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// Start login flow
-const response = await fetch('http://localhost:8000/auth/start', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ provider: 'google' })
-});</p>
-<p>const { authorization_url } = await response.json();</p>
-<p>// Redirect user to Google
-window.location.href = authorization_url;</p>
-<p>// After user authenticates, Google redirects to your callback
-// Extract tokens from the response and store them
-const tokens = getTokensFromResponse(); // from redirect
-localStorage.setItem('accessToken', tokens.access_token);
-localStorage.setItem('refreshToken', tokens.refresh_token);</p>
-<p>// Use tokens for API requests
-const graphqlResponse = await fetch('http://localhost:8000/graphql', {
-  method: 'POST',
-  headers: {
-    'Authorization': <code>Bearer ${localStorage.getItem('accessToken')}</code>,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ query: '{ user { id } }' })
-});
-```text</p>
-<!-- Code example in TEXT -->
 
+<span class="k">class</span><span class="w"> </span><span class="nc">AuthProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a token and return its decoded payload (or raise).&quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a token and return the resolved UserContext.&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><code>UserContext</code> (also from <code>base.py</code>) is what your resolvers read off
+<code>info.context["user"]</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">UserContext</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>          <span class="c1"># required — use Google&#39;s `sub`</span>
+    <span class="n">email</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>             <span class="c1"># str | None</span>
+    <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>              <span class="c1"># str | None</span>
+    <span class="n">roles</span><span class="o">=</span><span class="p">[],</span>               <span class="c1"># list[str]</span>
+    <span class="n">permissions</span><span class="o">=</span><span class="p">[],</span>         <span class="c1"># list[str]</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{},</span>            <span class="c1"># dict[str, Any]</span>
+<span class="p">)</span>
+<span class="c1"># Helpers: .has_role(...), .has_permission(...), .has_any_role(...), .has_any_permission(...)</span>
+</code></pre></div>
+<h3 id="b2-implement-a-google-id-token-provider">B.2 Implement a Google ID-token provider<a class="headerlink" href="#b2-implement-a-google-id-token-provider" title="Permanent link">&para;</a></h3>
+<p>Validate Google's ID tokens against Google's JWKS
+(<code>https://www.googleapis.com/oauth2/v3/certs</code>), with issuer
+<code>https://accounts.google.com</code> and your OAuth <strong>client ID</strong> as the audience.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jwt</span>  <span class="c1"># PyJWT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jwt</span><span class="w"> </span><span class="kn">import</span> <span class="n">PyJWKClient</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidTokenError</span>
+
+<span class="n">GOOGLE_JWKS_URL</span> <span class="o">=</span> <span class="s2">&quot;https://www.googleapis.com/oauth2/v3/certs&quot;</span>
+<span class="n">GOOGLE_ISSUER</span> <span class="o">=</span> <span class="s2">&quot;https://accounts.google.com&quot;</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GoogleIDTokenProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate Google ID tokens directly (no Auth0 broker).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>  <span class="c1"># your OAuth client ID == the token audience</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jwks_client</span> <span class="o">=</span> <span class="n">PyJWKClient</span><span class="p">(</span><span class="n">GOOGLE_JWKS_URL</span><span class="p">,</span> <span class="n">cache_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">signing_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jwks_client</span><span class="o">.</span><span class="n">get_signing_key_from_jwt</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+                <span class="n">token</span><span class="p">,</span>
+                <span class="n">signing_key</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+                <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+                <span class="n">audience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
+                <span class="n">issuer</span><span class="o">=</span><span class="n">GOOGLE_ISSUER</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">PyJWTError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid Google ID token: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_user_context</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_user_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>            <span class="c1"># Google&#39;s stable subject id</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;email_verified&quot;</span><span class="p">:</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email_verified&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)},</span>
+        <span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p><code>PyJWKClient.get_signing_key_from_jwt</code> is synchronous; for high-throughput services
+wrap it (e.g. <code>asyncio.to_thread</code>) so it doesn't block the event loop.</p>
+</blockquote>
+<h3 id="b3-wire-the-custom-provider-into-the-app">B.3 Wire the custom provider into the app<a class="headerlink" href="#b3-wire-the-custom-provider-into-the-app" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">auth</span> <span class="o">=</span> <span class="n">GoogleIDTokenProvider</span><span class="p">(</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;YOUR_CLIENT_ID.apps.googleusercontent.com&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:password@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>            <span class="c1"># auth_provider=&quot;custom&quot; semantics — pass your AuthProvider</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Your front-end runs the Google authorization-code flow (or Google Identity Services),
+obtains the ID token, and sends it on GraphQL requests as
+<code>Authorization: Bearer &lt;google_id_token&gt;</code>.</p>
+<hr />
+<h2 id="reading-the-user-in-a-resolver">Reading the user in a resolver<a class="headerlink" href="#reading-the-user-in-a-resolver" title="Permanent link">&para;</a></h2>
+<p>Once either path is wired, the authenticated user is available on the GraphQL context.
+You can also gate operations with FraiseQL's auth decorators.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="nd">@requires_auth</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>            <span class="c1"># a UserContext (Google `sub` -&gt; user_id)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+</code></pre></div>
+<p>Denied access surfaces as a GraphQL error with <code>extensions.code = "FORBIDDEN"</code>.</p>
+<h2 id="testing-the-flow">Testing the flow<a class="headerlink" href="#testing-the-flow" title="Permanent link">&para;</a></h2>
+<p>Send a GraphQL request with the token your chosen path issued (an Auth0 JWT for Path A,
+a Google ID token for Path B):</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;your_token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ me { id email name } }&quot;}&#39;</span>
+</code></pre></div>
+<p>A valid token returns the current user; a missing or invalid token returns a GraphQL
+error with <code>extensions.code = "FORBIDDEN"</code> (or an authentication error).</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="error-invalid-redirect-uri">Error: "Invalid Redirect URI"<a class="headerlink" href="#error-invalid-redirect-uri" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: The redirect URI in your request doesn't match the configured URI.</p>
+<p><strong>Cause</strong>: The redirect URI used in the OAuth flow doesn't match what's registered in
+Google Cloud Console.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>Check the exact URL registered in Google Cloud Console</li>
-<li>Ensure <code>http://</code> vs <code>https://</code> match</li>
-<li>Ensure port number matches</li>
-<li>Check for trailing slashes</li>
+<li>Path A: the redirect URI must be your Auth0 callback
+  (<code>https://YOUR_TENANT.auth0.com/login/callback</code>).</li>
+<li>Path B: the redirect URI must be your client app's callback.</li>
+<li>Match <code>http://</code> vs <code>https://</code>, the host, the port, and trailing slashes exactly.</li>
 </ul>
-<h3 id="error-client-id-mismatch">Error: "Client ID mismatch"<a class="headerlink" href="#error-client-id-mismatch" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Client ID from the request doesn't match the one in Google Cloud.</p>
+<h3 id="error-invalid-audience-invalid-issuer">Error: "Invalid audience" / "Invalid issuer"<a class="headerlink" href="#error-invalid-audience-invalid-issuer" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: The token's <code>aud</code> or <code>iss</code> claim doesn't match what your provider expects.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>Verify the <code>GOOGLE_CLIENT_ID</code> environment variable is set correctly</li>
-<li>Copy-paste from Google Cloud Console (don't type manually)</li>
+<li>Path A: <code>auth0_api_identifier</code> must equal the Auth0 API Identifier (the <code>aud</code>).</li>
+<li>Path B: pass your Google OAuth <strong>client ID</strong> as the audience and verify
+  <code>iss == https://accounts.google.com</code>.</li>
 </ul>
-<h3 id="error-invalid-state">Error: "Invalid State"<a class="headerlink" href="#error-invalid-state" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: CSRF protection failed - state parameter doesn't match.</p>
+<h3 id="error-token-signature-verification-failed">Error: "Token signature verification failed"<a class="headerlink" href="#error-token-signature-verification-failed" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: The token isn't signed by the expected key, or JWKS is stale.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>This usually means the state cache expired (10 minutes)</li>
-<li>User took too long to authenticate</li>
-<li>Restart the login flow</li>
+<li>Confirm the JWKS URL: Auth0 (<code>https://YOUR_TENANT.auth0.com/.well-known/jwks.json</code>)
+  or Google (<code>https://www.googleapis.com/oauth2/v3/certs</code>).</li>
+<li>Ensure you're validating RS256 tokens; both Auth0 and Google use RS256 here.</li>
 </ul>
-<h3 id="error-invalid-code">Error: "Invalid Code"<a class="headerlink" href="#error-invalid-code" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Authorization code already used or expired.</p>
+<h3 id="error-forbidden-on-every-request">Error: "FORBIDDEN" on every request<a class="headerlink" href="#error-forbidden-on-every-request" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: No <code>Authorization</code> header, an expired token, or the wrong provider configured.</p>
 <p><strong>Solution</strong>:</p>
 <ul>
-<li>Authorization codes expire in 10 minutes</li>
-<li>Can only be used once</li>
-<li>Start the login flow again</li>
+<li>Send <code>Authorization: Bearer &lt;jwt&gt;</code> on the GraphQL request.</li>
+<li>Check token expiry (<code>exp</code>) and re-authenticate.</li>
+<li>Verify <code>auth_provider</code> / the <code>auth=</code> provider matches the token issuer.</li>
 </ul>
 <h2 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Client Secret</strong>: Never expose in client-side code. Only use on server.</li>
-<li><strong>HTTPS</strong>: Always use HTTPS in production. HTTP only for localhost.</li>
-<li><strong>Redirect URI</strong>: Only register intended redirect URIs in Google Console.</li>
-<li><strong>Token Storage</strong>: Store refresh tokens securely (encrypted database).</li>
-<li><strong>Token Expiry</strong>: Access tokens expire in 1 hour by default. Refresh before use.</li>
+<li><strong>Client Secret</strong>: Never expose it in client-side code. With Path A it lives only in
+   Auth0; with Path B it lives only in your server-side OAuth exchange.</li>
+<li><strong>HTTPS</strong>: Always use HTTPS in production. HTTP is acceptable only for localhost.</li>
+<li><strong>Redirect URIs</strong>: Register only the exact redirect URIs you use.</li>
+<li><strong>Audience &amp; issuer</strong>: Always validate both <code>aud</code> and <code>iss</code> — never accept a token
+   just because its signature is valid.</li>
+<li><strong>Token expiry</strong>: Honor <code>exp</code>; refresh upstream (via Auth0 or Google) as needed.</li>
 </ol>
 <h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://developers.google.com/identity/protocols/oauth2">Google OAuth 2.0 Documentation</a></li>
 <li><a href="https://developers.google.com/identity/openid-connect">OpenID Connect with Google</a></li>
+<li><a href="https://auth0.com/docs/authenticate/identity-providers/social-identity-providers/google">Auth0 Google Social Connection</a></li>
 <li><a href="../api-reference/">FraiseQL Auth API Reference</a></li>
 </ul>
-<h2 id="production-deployment">Production Deployment<a class="headerlink" href="#production-deployment" title="Permanent link">&para;</a></h2>
-<p>For production:</p>
-<ol>
-<li>Update redirect URIs in Google Cloud Console to use <code>https://yourdomain.com</code></li>
-<li>Set environment variables in your deployment:</li>
-</ol>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>GOOGLE_CLIENT_ID=prod.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=<secret>
-   OAUTH_REDIRECT_URI=https://yourdomain.com/auth/callback
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Ensure database is backed up</li>
-<li>Enable HTTPS with valid certificate</li>
-<li>Set secure cookie flags if using cookies</li>
-<li>Monitor error logs for failed authentications</li>
-</ol>
-<h2 id="testing-with-multiple-accounts">Testing with Multiple Accounts<a class="headerlink" href="#testing-with-multiple-accounts" title="Permanent link">&para;</a></h2>
-<p>Google allows multiple accounts in development:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-with-different-google-accounts-by">Test with different Google accounts by:<a class="headerlink" href="#test-with-different-google-accounts-by" title="Permanent link">&para;</a></h1>
-<h1 id="1-using-incognito-mode-for-each-account">1. Using incognito mode for each account<a class="headerlink" href="#1-using-incognito-mode-for-each-account" title="Permanent link">&para;</a></h1>
-<h1 id="2-or-explicitly-signing-out-before-each-test">2. Or explicitly signing out before each test<a class="headerlink" href="#2-or-explicitly-signing-out-before-each-test" title="Permanent link">&para;</a></h1>
-<h1 id="3-or-using-multiple-browsers">3. Or using multiple browsers<a class="headerlink" href="#3-or-using-multiple-browsers" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
-<p>Google applies rate limits:</p>
-<ul>
-<li>100,000 requests per day per project</li>
-<li>Most apps won't hit this limit</li>
-<li>If needed, request quota increase in Google Cloud Console</li>
-</ul>
 <hr />
-<p><strong>Next Step</strong>: See <a href="../api-reference/">API Reference</a> for complete endpoint documentation.</p>
+<p><strong>Next Step</strong>: See <a href="../api-reference/">API Reference</a> for the full authentication API.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

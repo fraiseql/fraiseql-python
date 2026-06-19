@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Overview of FraiseQL v1 authentication and authorization — Auth0, native, and custom JWT providers, resolver decorators, operation/field authorization, and PostgreSQL row-level security, all running inside your FastAPI app.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Overview - FraiseQL Documentation</title>
+        <title>FraiseQL Authentication & Authorization - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-authentication-system-complete-documentation" class="md-skip">
+        <a href="#fraiseql-authentication-authorization" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              FraiseQL Authentication & Authorization
             
           </span>
         </div>
@@ -3963,10 +3965,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#what-you-should-already-know" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        What you should already know
       
     </span>
   </a>
@@ -3974,22 +3976,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation-structure" class="md-nav__link">
+  <a href="#provider-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📚 Documentation Structure
+        Provider model
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="📚 Documentation Structure">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring-auth-into-your-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring auth into your app
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring auth into your app">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#auth0" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        Auth0
       
     </span>
   </a>
@@ -3997,10 +4010,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
+  <a href="#custom-native-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Implementation
+        Custom / native provider
       
     </span>
   </a>
@@ -4008,21 +4021,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#deployment-operations" class="md-nav__link">
+  <a href="#run-the-app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deployment &amp; Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-compliance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security &amp; Compliance
+        Run the app
       
     </span>
   </a>
@@ -4035,22 +4037,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#getting-started-5-minutes" class="md-nav__link">
+  <a href="#authorizing-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🚀 Getting Started (5 minutes)
+        Authorizing operations
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🚀 Getting Started (5 minutes)">
+    <nav class="md-nav" aria-label="Authorizing operations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-choose-oauth-provider" class="md-nav__link">
+  <a href="#resolver-decorators" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Choose OAuth Provider
+        Resolver decorators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operation-level-authorizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation-level Authorizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#row-level-security-multi-tenancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row-Level Security (multi-tenancy)
       
     </span>
   </a>
@@ -4059,6 +4094,50 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token revocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-in-this-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation in this section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5000,10 +5079,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#what-you-should-already-know" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        What you should already know
       
     </span>
   </a>
@@ -5011,22 +5090,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation-structure" class="md-nav__link">
+  <a href="#provider-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📚 Documentation Structure
+        Provider model
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="📚 Documentation Structure">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wiring-auth-into-your-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring auth into your app
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wiring auth into your app">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#auth0" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        Auth0
       
     </span>
   </a>
@@ -5034,10 +5124,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
+  <a href="#custom-native-provider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Implementation
+        Custom / native provider
       
     </span>
   </a>
@@ -5045,21 +5135,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#deployment-operations" class="md-nav__link">
+  <a href="#run-the-app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deployment &amp; Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-compliance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security &amp; Compliance
+        Run the app
       
     </span>
   </a>
@@ -5072,22 +5151,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#getting-started-5-minutes" class="md-nav__link">
+  <a href="#authorizing-operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🚀 Getting Started (5 minutes)
+        Authorizing operations
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🚀 Getting Started (5 minutes)">
+    <nav class="md-nav" aria-label="Authorizing operations">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-choose-oauth-provider" class="md-nav__link">
+  <a href="#resolver-decorators" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Choose OAuth Provider
+        Resolver decorators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operation-level-authorizer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation-level Authorizer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#row-level-security-multi-tenancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Row-Level Security (multi-tenancy)
       
     </span>
   </a>
@@ -5096,6 +5208,50 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token revocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-in-this-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation in this section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5119,567 +5275,307 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Authentication System - Complete Documentation
-description: Welcome to FraiseQL's comprehensive OAuth 2.0 / OIDC authentication system. This directory contains complete documentation for implementing, deploying, and main
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="fraiseql-authentication-system-complete-documentation">FraiseQL Authentication System - Complete Documentation<a class="headerlink" href="#fraiseql-authentication-system-complete-documentation" title="Permanent link">&para;</a></h1>
-<p>Welcome to FraiseQL's comprehensive OAuth 2.0 / OIDC authentication system. This directory contains complete documentation for implementing, deploying, and maintaining authentication in FraiseQL.</p>
-<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p><strong>Required Knowledge:</strong></p>
+<h1 id="fraiseql-authentication-authorization">FraiseQL Authentication &amp; Authorization<a class="headerlink" href="#fraiseql-authentication-authorization" title="Permanent link">&para;</a></h1>
+<p>This section covers how to authenticate users and authorize operations in a
+FraiseQL v1 application. FraiseQL is a Python runtime GraphQL framework for
+PostgreSQL, served over FastAPI. <strong>Authentication and authorization run inside
+your Python/FastAPI app</strong> — there is no separate auth server to deploy.</p>
+<p>At a high level you choose an <strong>auth provider</strong> (Auth0, the built-in native
+provider, or a custom one you implement), and FraiseQL puts an authenticated
+<code>UserContext</code> into <code>info.context["user"]</code> for every resolver. You then enforce
+access with decorators, an operation-level <code>Authorizer</code>, field authorization,
+and PostgreSQL Row-Level Security (RLS).</p>
+<h2 id="what-you-should-already-know">What you should already know<a class="headerlink" href="#what-you-should-already-know" title="Permanent link">&para;</a></h2>
 <ul>
-<li>OAuth 2.0 and OIDC fundamentals</li>
-<li>JWT token structure and validation</li>
-<li>HTTP/REST APIs</li>
-<li>Basic networking and DNS</li>
-<li>Your chosen auth provider's console/admin panel</li>
+<li>OAuth 2.0 / OIDC and JWT validation basics (if you use Auth0 or another issuer)</li>
+<li>GraphQL resolvers and how FraiseQL types/queries/mutations are defined</li>
+<li>PostgreSQL — especially Row-Level Security if you need multi-tenancy</li>
 </ul>
-<p><strong>Required Tools:</strong></p>
+<p><strong>Required tools:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
-<li>curl or Postman (for API testing)</li>
-<li>Configured database (PostgreSQL 14+)</li>
-<li>Node.js or Python (for SDK examples)</li>
-</ul>
-<p><strong>For Each Provider:</strong></p>
-<p><strong>Google OAuth:</strong></p>
-<ul>
-<li>Google Cloud Console account with project</li>
-<li>OAuth 2.0 credentials (Client ID and Secret)</li>
-<li>Registered redirect URIs</li>
-</ul>
-<p><strong>Auth0:</strong></p>
-<ul>
-<li>Auth0 account (free tier available)</li>
-<li>Auth0 application created</li>
-<li>Auth0 API configured</li>
-</ul>
-<p><strong>Keycloak:</strong></p>
-<ul>
-<li>Keycloak server deployed (self-hosted)</li>
-<li>Realm and client created</li>
-<li>Admin access</li>
-</ul>
-<p><strong>SCRAM:</strong></p>
-<ul>
-<li>FraiseQL configured with SCRAM support</li>
-<li>Username/password credentials</li>
-<li>TLS enabled for security</li>
-</ul>
-<p><strong>Time Estimate:</strong> 30 minutes to 2 hours depending on provider choice</p>
-<hr />
-<h2 id="documentation-structure">📚 Documentation Structure<a class="headerlink" href="#documentation-structure" title="Permanent link">&para;</a></h2>
-<h3 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>First Time Setup?</strong> → Choose your provider:</li>
-<li><a href="setup-google-oauth/">Google OAuth Setup</a> - Recommended for quick testing</li>
-<li><a href="setup-keycloak/">Keycloak Setup</a> - Self-hosted option</li>
-<li>
-<p><a href="setup-auth0/">Auth0 Setup</a> - Managed service option</p>
-</li>
-<li>
-<p><strong>Need API Details?</strong> → <a href="api-reference/">API Reference</a></p>
-</li>
-<li>Complete endpoint documentation</li>
-<li>Request/response formats</li>
-<li>Error codes and handling</li>
-<li>JavaScript/Axios examples</li>
-</ol>
-<h3 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="api-reference/">API Reference</a></strong> - Complete endpoint documentation</li>
-<li>All HTTP endpoints with examples</li>
-<li>Error handling patterns</li>
-<li>
-<p>JavaScript integration examples</p>
-</li>
-<li>
-<p><strong><a href="./implement-session-store.md">Custom SessionStore Implementation</a></strong> - Build your own backend</p>
-</li>
-<li>Redis implementation (full code)</li>
-<li>DynamoDB implementation (full code)</li>
-<li>MongoDB implementation (full code)</li>
-<li>Best practices and testing</li>
-</ul>
-<h3 id="deployment-operations">Deployment &amp; Operations<a class="headerlink" href="#deployment-operations" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="deployment/">Deployment Guide</a></strong> - Production deployment</li>
-<li>Docker Compose setup</li>
-<li>Kubernetes manifests</li>
-<li>Nginx reverse proxy</li>
-<li>SSL/TLS with Let's Encrypt</li>
-<li>Database setup and backups</li>
-<li>
-<p>Scaling and high availability</p>
-</li>
-<li>
-<p><strong><a href="monitoring/">Monitoring Guide</a></strong> - Observability</p>
-</li>
-<li>Structured logging (JSON)</li>
-<li>Prometheus metrics</li>
-<li>Grafana dashboards</li>
-<li>Health checks</li>
-<li>
-<p>Alert rules</p>
-</li>
-<li>
-<p><strong><a href="troubleshooting/">Troubleshooting Guide</a></strong> - Common issues</p>
-</li>
-<li>Login flow problems</li>
-<li>Token issues</li>
-<li>Database connectivity</li>
-<li>Performance optimization</li>
-<li>OAuth provider debugging</li>
-</ul>
-<h3 id="security-compliance">Security &amp; Compliance<a class="headerlink" href="#security-compliance" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong><a href="security-checklist/">Security Checklist</a></strong> - Production security</li>
-<li>100+ point security audit</li>
-<li>OAuth provider specifics</li>
-<li>GDPR / SOC2 / PCI-DSS</li>
-<li>Incident response</li>
-<li>Sign-off templates</li>
+<li>FraiseQL v1 installed (<code>pip install fraiseql</code> / <code>uv add fraiseql</code>)</li>
+<li>A PostgreSQL 14+ database</li>
+<li>Your chosen identity provider's console (for Auth0 or another OIDC issuer)</li>
 </ul>
 <hr />
-<h2 id="getting-started-5-minutes">🚀 Getting Started (5 minutes)<a class="headerlink" href="#getting-started-5-minutes" title="Permanent link">&para;</a></h2>
-<h3 id="step-1-choose-oauth-provider">Step 1: Choose OAuth Provider<a class="headerlink" href="#step-1-choose-oauth-provider" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="option-1-google-easiest-for-testing">Option 1: Google (easiest for testing)<a class="headerlink" href="#option-1-google-easiest-for-testing" title="Permanent link">&para;</a></h1>
-<h1 id="httpsconsolecloudgooglecom">https://console.cloud.google.com<a class="headerlink" href="#httpsconsolecloudgooglecom" title="Permanent link">&para;</a></h1>
-<h1 id="create-oauth-app-get-credentials">Create OAuth app, get credentials<a class="headerlink" href="#create-oauth-app-get-credentials" title="Permanent link">&para;</a></h1>
-<h1 id="option-2-keycloak-self-hosted">Option 2: Keycloak (self-hosted)<a class="headerlink" href="#option-2-keycloak-self-hosted" title="Permanent link">&para;</a></h1>
-<h1 id="docker-compose-up-keycloak">docker-compose up keycloak<a class="headerlink" href="#docker-compose-up-keycloak" title="Permanent link">&para;</a></h1>
-<h1 id="option-3-auth0-managed-service">Option 3: Auth0 (managed service)<a class="headerlink" href="#option-3-auth0-managed-service" title="Permanent link">&para;</a></h1>
-<h1 id="httpsmanageauth0com">https://manage.auth0.com<a class="headerlink" href="#httpsmanageauth0com" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-2-configure-fraiseql">Step 2: Configure FraiseQL<a class="headerlink" href="#step-2-configure-fraiseql" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="env-file">.env file<a class="headerlink" href="#env-file" title="Permanent link">&para;</a></h1>
-<p>GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
-JWT_ISSUER=https://accounts.google.com
-DATABASE_URL=postgres://user:pass@localhost/FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-3-register-endpoints">Step 3: Register Endpoints<a class="headerlink" href="#step-3-register-endpoints" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_server::auth::{auth_start, auth_callback, auth_refresh, auth_logout};</p>
-<p>let auth_routes = Router::new()
-    .route("/auth/start", post(auth_start))
-    .route("/auth/callback", get(auth_callback))
-    .route("/auth/refresh", post(auth_refresh))
-    .route("/auth/logout", post(auth_logout))
-    .with_state(auth_state);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-4-test-the-flow">Step 4: Test the Flow<a class="headerlink" href="#step-4-test-the-flow" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="start-login">Start login<a class="headerlink" href="#start-login" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}' | jq .authorization_url</p>
-<h1 id="visit-the-url-in-browser-authenticate">Visit the URL in browser, authenticate<a class="headerlink" href="#visit-the-url-in-browser-authenticate" title="Permanent link">&para;</a></h1>
-<h1 id="tokens-returned-in-callback-response">Tokens returned in callback response<a class="headerlink" href="#tokens-returned-in-callback-response" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="documentation-guide">📖 Documentation Guide<a class="headerlink" href="#documentation-guide" title="Permanent link">&para;</a></h2>
-<h3 id="by-role">By Role<a class="headerlink" href="#by-role" title="Permanent link">&para;</a></h3>
-<p><strong>Developers</strong></p>
-<ul>
-<li>Start: <a href="api-reference/">API Reference</a></li>
-<li>Then: <a href="setup-google-oauth/">Setup Guide</a> for your provider</li>
-<li>Reference: <a href="./implement-session-store.md">Custom SessionStore</a> if needed</li>
-</ul>
-<p><strong>DevOps / Site Reliability Engineers</strong></p>
-<ul>
-<li>Start: <a href="deployment/">Deployment Guide</a></li>
-<li>Then: <a href="monitoring/">Monitoring Guide</a></li>
-<li>Reference: <a href="troubleshooting/">Troubleshooting</a></li>
-</ul>
-<p><strong>Security / Compliance Teams</strong></p>
-<ul>
-<li>Start: <a href="security-checklist/">Security Checklist</a></li>
-<li>Reference: <a href="deployment/">Deployment Guide</a> for architecture</li>
-</ul>
-<p><strong>Support / Operations</strong></p>
-<ul>
-<li>Start: <a href="troubleshooting/">Troubleshooting Guide</a></li>
-<li>Reference: <a href="monitoring/">Monitoring Guide</a> for dashboards</li>
-</ul>
-<h3 id="by-task">By Task<a class="headerlink" href="#by-task" title="Permanent link">&para;</a></h3>
+<h2 id="provider-model">Provider model<a class="headerlink" href="#provider-model" title="Permanent link">&para;</a></h2>
+<p>FraiseQL has exactly <strong>three provider modes</strong>, selected by
+<code>auth_provider</code> (a <code>Literal["auth0", "custom", "none"]</code>, default <code>"none"</code>):</p>
 <table>
 <thead>
 <tr>
-<th>Task</th>
-<th>Document</th>
+<th>Mode</th>
+<th>Provider class</th>
+<th>When to use</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Set up OAuth with Google</td>
-<td><a href="setup-google-oauth/">setup-google-oauth.md</a></td>
+<td><code>"auth0"</code></td>
+<td><code>Auth0Provider</code> / <code>Auth0ProviderWithRevocation</code></td>
+<td>Auth0 (or any OIDC issuer fronted by Auth0)</td>
 </tr>
 <tr>
-<td>Set up Keycloak</td>
-<td><a href="setup-keycloak/">setup-keycloak.md</a></td>
+<td><code>"custom"</code></td>
+<td>a subclass of the <code>AuthProvider</code> ABC (e.g. <code>NativeAuthProvider</code>, <code>RustCustomJWTProvider</code>, or your own)</td>
+<td>username/password, or any JWT issuer you validate yourself</td>
 </tr>
 <tr>
-<td>Set up Auth0</td>
-<td><a href="setup-auth0/">setup-auth0.md</a></td>
-</tr>
-<tr>
-<td>Call auth endpoints</td>
-<td><a href="api-reference/">api-reference.md</a></td>
-</tr>
-<tr>
-<td>Build custom session store</td>
-<td><a href="./implement-session-store.md">implement-session-store.md</a></td>
-</tr>
-<tr>
-<td>Deploy to production</td>
-<td><a href="deployment/">deployment.md</a></td>
-</tr>
-<tr>
-<td>Set up monitoring</td>
-<td><a href="monitoring/">monitoring.md</a></td>
-</tr>
-<tr>
-<td>Debug issues</td>
-<td><a href="troubleshooting/">troubleshooting.md</a></td>
-</tr>
-<tr>
-<td>Pass security audit</td>
-<td><a href="security-checklist/">security-checklist.md</a></td>
+<td><code>"none"</code></td>
+<td>—</td>
+<td>no authentication (development / public APIs)</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="key-features">🔑 Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
-<p>✅ <strong>Multiple OAuth Providers</strong></p>
-<ul>
-<li>Google OAuth 2.0 / OIDC</li>
-<li>Keycloak</li>
-<li>Auth0</li>
-<li>Any OIDC-compliant provider</li>
-</ul>
-<p>✅ <strong>Security First</strong></p>
-<ul>
-<li>PKCE for authorization code flow</li>
-<li>CSRF protection via state parameter</li>
-<li>JWT signature verification</li>
-<li>Token hashing in storage</li>
-<li>Session revocation</li>
-</ul>
-<p>✅ <strong>Production Ready</strong></p>
-<ul>
-<li>Structured logging (JSON)</li>
-<li>Prometheus metrics</li>
-<li>Health checks</li>
-<li>Kubernetes deployment</li>
-<li>Docker Compose setup</li>
-<li>Database backups</li>
-</ul>
-<p>✅ <strong>Extensible</strong></p>
-<ul>
-<li>Pluggable <code>SessionStore</code> trait</li>
-<li>Pluggable <code>OAuthProvider</code> trait</li>
-<li>Custom provider implementations</li>
-<li>Multiple session backends (PostgreSQL, Redis, DynamoDB, MongoDB)</li>
-</ul>
-<p>✅ <strong>Well Documented</strong></p>
-<ul>
-<li>Setup guides for all major providers</li>
-<li>Complete API reference</li>
-<li>Implementation examples</li>
-<li>Deployment guide</li>
-<li>Security best practices</li>
-<li>Troubleshooting guide</li>
-</ul>
-<hr />
-<h2 id="architecture-overview">📊 Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─ Client (Browser/App)
-│
-├─ POST /auth/start
-│  └─ Returns authorization URL
-│
-├─ Redirects to OAuth Provider
-│  └─ User authenticates
-│
-├─ GET /auth/callback?code=...&amp;state=...
-│  ├─ Validates state (CSRF)
-│  ├─ Exchanges code for tokens
-│  ├─ Gets user info
-│  ├─ Creates session
-│  └─ Returns access &amp; refresh tokens
-│
-├─ Subsequent API Requests
-│  ├─ Authorization: Bearer <access_token>
-│  ├─ JWT Validator verifies signature
-│  ├─ Session Manager validates session
-│  └─ Request proceeds with authenticated user
-│
-├─ POST /auth/refresh
-│  ├─ Validates refresh token
-│  ├─ Creates new access token
-│  └─ Returns new token
-│
-└─ POST /auth/logout
-   ├─ Revokes session
-   └─ User logged out
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="testing">🧪 Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<h3 id="manual-testing">Manual Testing<a class="headerlink" href="#manual-testing" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="start-login-flow">Start login flow<a class="headerlink" href="#start-login-flow" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}'</p>
-<h1 id="get-authorization-url-visit-in-browser">Get authorization URL, visit in browser<a class="headerlink" href="#get-authorization-url-visit-in-browser" title="Permanent link">&para;</a></h1>
-<h1 id="complete-oauth-flow">Complete OAuth flow<a class="headerlink" href="#complete-oauth-flow" title="Permanent link">&para;</a></h1>
-<h1 id="receive-tokens-in-response">Receive tokens in response<a class="headerlink" href="#receive-tokens-in-response" title="Permanent link">&para;</a></h1>
-<h1 id="use-access-token">Use access token<a class="headerlink" href="#use-access-token" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="automated-testing">Automated Testing<a class="headerlink" href="#automated-testing" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="run-all-auth-tests">Run all auth tests<a class="headerlink" href="#run-all-auth-tests" title="Permanent link">&para;</a></h1>
-<p>cargo test -p FraiseQL-server auth:: --lib</p>
-<h1 id="run-with-logging">Run with logging<a class="headerlink" href="#run-with-logging" title="Permanent link">&para;</a></h1>
-<p>RUST_LOG=debug cargo test -p FraiseQL-server auth:: --lib -- --nocapture
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="common-issues">🚨 Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h2>
-<h3 id="invalid-redirect-uri">"Invalid Redirect URI"<a class="headerlink" href="#invalid-redirect-uri" title="Permanent link">&para;</a></h3>
-<p>See: <a href="troubleshooting/#invalid-redirect-uri-error">Troubleshooting</a></p>
-<h3 id="invalid-state">"Invalid State"<a class="headerlink" href="#invalid-state" title="Permanent link">&para;</a></h3>
-<p>See: <a href="troubleshooting/#invalid-state-error">Troubleshooting</a></p>
-<h3 id="token-expired">"Token Expired"<a class="headerlink" href="#token-expired" title="Permanent link">&para;</a></h3>
-<p>See: <a href="troubleshooting/#token-expired-on-valid-token">Troubleshooting</a></p>
-<h3 id="database-connection-issues">Database Connection Issues<a class="headerlink" href="#database-connection-issues" title="Permanent link">&para;</a></h3>
-<p>See: <a href="troubleshooting/#database-issues">Troubleshooting</a></p>
-<hr />
-<h2 id="checklist-for-deployment">📋 Checklist for Deployment<a class="headerlink" href="#checklist-for-deployment" title="Permanent link">&para;</a></h2>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Review <a href="security-checklist/">Security Checklist</a></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set up OAuth provider (Google/Keycloak/Auth0)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configure environment variables</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set up PostgreSQL database</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Run database migrations</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Configure HTTPS/TLS</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Set up monitoring and alerts</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Test complete OAuth flow</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load test authentication endpoints</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Review logs for errors</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Get security sign-off</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Deploy to production</li>
-</ul>
-<hr />
-<h2 id="configuration-reference">🔧 Configuration Reference<a class="headerlink" href="#configuration-reference" title="Permanent link">&para;</a></h2>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="oauth-provider-credentials-all-required">OAuth Provider Credentials (all required)<a class="headerlink" href="#oauth-provider-credentials-all-required" title="Permanent link">&para;</a></h1>
-<p>GOOGLE_CLIENT_ID=...                    # From Google Cloud Console
-GOOGLE_CLIENT_SECRET=...                # From Google Cloud Console
-OAUTH_REDIRECT_URI=https://...          # Exact match with provider</p>
-<h1 id="jwt-configuration">JWT Configuration<a class="headerlink" href="#jwt-configuration" title="Permanent link">&para;</a></h1>
-<p>JWT_ISSUER=https://accounts.google.com  # From OAuth provider
-JWT_ALGORITHM=RS256                     # Usually RS256</p>
-<h1 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL=postgres://user:pass@host/db
-DATABASE_POOL_SIZE=20</p>
-<h1 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h1>
-<p>RUST_LOG=info,fraiseql_server::auth=debug
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="docker-environment">Docker Environment<a class="headerlink" href="#docker-environment" title="Permanent link">&para;</a></h3>
-<p>See <a href="deployment/#docker-deployment">Deployment Guide</a> for complete setup</p>
-<h3 id="kubernetes-configuration">Kubernetes Configuration<a class="headerlink" href="#kubernetes-configuration" title="Permanent link">&para;</a></h3>
-<p>See <a href="deployment/#kubernetes-deployment">Deployment Guide</a> for manifests</p>
-<hr />
-<h2 id="getting-help">🆘 Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
+<p>There is <strong>no</strong> per-vendor provider class (no <code>GoogleProvider</code>,
+<code>KeycloakProvider</code>, or <code>OidcProvider</code>). To use Google, Keycloak, or any other
+OIDC issuer you have two honest paths:</p>
 <ol>
-<li><strong>Check the docs</strong> - Most questions covered in documentation</li>
-<li><strong>Check troubleshooting</strong> - <a href="troubleshooting/">Troubleshooting Guide</a></li>
-<li><strong>Enable debug logging</strong> - <code>RUST_LOG=debug</code></li>
-<li><strong>Create GitHub issue</strong> - <a href="https://github.com/FraiseQL/FraiseQL/issues">https://github.com/FraiseQL/FraiseQL/issues</a></li>
-<li>Include error message (no secrets)</li>
-<li>Steps to reproduce</li>
-<li>Environment details</li>
-<li>Logs with debug enabled</li>
+<li><strong>Front it with Auth0</strong> (Auth0 as the broker) and use <code>auth_provider="auth0"</code>.</li>
+<li><strong>Set <code>auth_provider="custom"</code></strong> and implement an <code>AuthProvider</code> subclass that
+   validates that issuer's JWTs against its JWKS / issuer / audience.</li>
 </ol>
+<p>All providers implement the <code>AuthProvider</code> ABC from <code>fraiseql.auth</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyJWTProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># Verify signature/issuer/audience and return the decoded claims.</span>
+        <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">)</span>
+</code></pre></div>
+<p><code>UserContext</code> carries <code>user_id</code>, optional <code>email</code>/<code>name</code>, <code>roles</code>,
+<code>permissions</code>, and a free-form <code>metadata</code> dict, with helpers
+<code>has_role</code>, <code>has_permission</code>, <code>has_any_role</code>, and <code>has_any_permission</code>.</p>
 <hr />
-<h2 id="performance-characteristics">📈 Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Operation</th>
-<th>Latency</th>
-<th>Alert Threshold</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>JWT Validation</td>
-<td>1-5ms</td>
-<td>&gt;10ms</td>
-</tr>
-<tr>
-<td>Session Lookup</td>
-<td>5-50ms</td>
-<td>&gt;100ms</td>
-</tr>
-<tr>
-<td>OAuth Token Exchange</td>
-<td>200-500ms</td>
-<td>&gt;1000ms</td>
-</tr>
-<tr>
-<td>User Info Retrieval</td>
-<td>100-300ms</td>
-<td>&gt;500ms</td>
-</tr>
-</tbody>
-</table>
+<h2 id="wiring-auth-into-your-app">Wiring auth into your app<a class="headerlink" href="#wiring-auth-into-your-app" title="Permanent link">&para;</a></h2>
+<p>Auth is configured through <code>create_fraiseql_app(...)</code> kwargs (or, equivalently,
+through <code>FraiseQLConfig</code> / <code>FRAISEQL_*</code> environment variables). There is no
+<code>fraiseql.toml</code> and no <code>[auth]</code> config block.</p>
+<h3 id="auth0">Auth0<a class="headerlink" href="#auth0" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Equivalent environment configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>myapp.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS defaults to [&quot;RS256&quot;]</span>
+</code></pre></div>
+<h3 id="custom-native-provider">Custom / native provider<a class="headerlink" href="#custom-native-provider" title="Permanent link">&para;</a></h3>
+<p>Pass any <code>AuthProvider</code> instance as <code>auth=...</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">MyJWTProvider</span><span class="p">(),</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The built-in <code>NativeAuthProvider</code> (in <code>fraiseql.auth.native</code>) supports
+username/password auth with a FastAPI router for register/login/refresh/logout
+flows. See the <a href="scram/">native auth provider guide</a> for the
+PostgreSQL connection-auth story, and the <a href="api-reference/">API reference</a>
+for endpoint details.</p>
+<h3 id="run-the-app">Run the app<a class="headerlink" href="#run-the-app" title="Permanent link">&para;</a></h3>
+<p>FraiseQL apps are ordinary ASGI/FastAPI apps — run them with Uvicorn:</p>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
 <hr />
-<h2 id="security-considerations">🔐 Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Always use HTTPS</strong> in production</li>
-<li><strong>Never expose secrets</strong> in client code</li>
-<li><strong>Store tokens securely</strong> (HTTP-only cookies)</li>
-<li><strong>Handle token expiry</strong> gracefully</li>
-<li><strong>Validate redirects</strong> in your app</li>
-<li><strong>Monitor authentication</strong> events</li>
-<li><strong>Rotate secrets</strong> regularly</li>
-<li><strong>Use strong passwords</strong> for database</li>
-</ul>
-<p>See <a href="security-checklist/">Security Checklist</a> for complete list.</p>
+<h2 id="authorizing-operations">Authorizing operations<a class="headerlink" href="#authorizing-operations" title="Permanent link">&para;</a></h2>
+<p>Once <code>info.context["user"]</code> holds a <code>UserContext</code>, you have several enforcement
+points. They compose — use whichever fits the layer of the check.</p>
+<h3 id="resolver-decorators">Resolver decorators<a class="headerlink" href="#resolver-decorators" title="Permanent link">&para;</a></h3>
+<p><code>requires_auth</code>, <code>requires_permission</code>, and <code>requires_role</code> (plus
+<code>requires_any_role</code> / <code>requires_any_permission</code>) gate a single resolver:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span><span class="p">,</span> <span class="n">requires_permission</span><span class="p">,</span> <span class="n">requires_role</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="nd">@requires_auth</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>  <span class="c1"># guaranteed authenticated</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;users:write&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteUserSuccess</span> <span class="o">|</span> <span class="n">DeleteUserError</span><span class="p">:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>A failed check raises a GraphQL error whose <code>extensions.code</code> is
+<code>UNAUTHENTICATED</code> (missing user) or <code>FORBIDDEN</code> (insufficient role/permission).</p>
+<h3 id="operation-level-authorizer">Operation-level <code>Authorizer</code><a class="headerlink" href="#operation-level-authorizer" title="Permanent link">&para;</a></h3>
+<p>For policy that lives outside the resolver, supply an <code>Authorizer</code> — a small
+object that decides whether a top-level operation may run. Attach it per
+operation or globally:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizationDecision</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TenantAuthorizer</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">operation_type</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">,</span> <span class="n">arguments</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthorizationDecision</span><span class="p">:</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Authentication required&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">()</span>
+
+
+<span class="c1"># Per operation:</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tenant_report</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Report</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+
+<span class="c1"># Globally (also works on build_fraiseql_schema):</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Report</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">tenant_report</span><span class="p">],</span>
+    <span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">(),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The framework enforces decisions <strong>fail-closed</strong>: if the authorizer raises, the
+operation is denied. <code>AuthorizationDecision.allow(filters=...)</code> can also carry
+row-scoping filters that are AND-ed into the read path. An optional
+<code>authorization_cache</code> can memoize decisions for pure-function authorizers.</p>
+<h3 id="field-authorization">Field authorization<a class="headerlink" href="#field-authorization" title="Permanent link">&para;</a></h3>
+<p>Gate individual fields with <code>authorize_field</code> (composable via
+<code>combine_permissions</code> / <code>any_permission</code>), or list them on the type via
+<code>@fraiseql.type(..., authorize_fields=...)</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">authorize_field</span>
+
+
+<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span>
+</code></pre></div>
+<h3 id="row-level-security-multi-tenancy">Row-Level Security (multi-tenancy)<a class="headerlink" href="#row-level-security-multi-tenancy" title="Permanent link">&para;</a></h3>
+<p>For tenant isolation, enforce it in PostgreSQL with RLS. FraiseQL's CQRS
+repository sets session GUCs from the request context: when <code>info.context</code>
+carries <code>tenant_id</code> (and <code>user_id</code>, <code>is_super_admin</code>, …), it issues
+<code>SET LOCAL app.tenant_id = …</code> per transaction, so your RLS policies see the
+current tenant:</p>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_invoice</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_invoice</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+</code></pre></div>
+<p>Reads can additionally pass <code>mandatory_filters={"tenant_id": ...}</code> to
+<code>db.find</code> / <code>db.count</code>.</p>
 <hr />
-<h2 id="additional-resources">📚 Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="https://tools.ietf.org/html/rfc6749">OAuth 2.0 Specification</a></li>
-<li><a href="https://openid.net/specs/openid-connect-core-1_0.html">OpenID Connect Specification</a></li>
-<li><a href="https://tools.ietf.org/html/rfc7636">PKCE (RFC 7636)</a></li>
-<li><a href="https://tools.ietf.org/html/rfc8725">JWT Best Practices (RFC 8725)</a></li>
-</ul>
+<h2 id="token-revocation">Token revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
+<p>For Auth0 (or native) deployments that need logout/blacklisting, FraiseQL ships
+a revocation subsystem in <code>fraiseql.auth</code>: <code>TokenRevocationService</code> plus an
+<code>InMemoryRevocationStore</code> or <code>PostgreSQLRevocationStore</code> (configured by
+<code>RevocationConfig</code>). <code>Auth0ProviderWithRevocation</code> wires revocation checks into
+Auth0 token validation. Revocation behavior is also controllable via
+<code>FRAISEQL_REVOCATION_*</code> settings.</p>
 <hr />
-<h2 id="document-index">📝 Document Index<a class="headerlink" href="#document-index" title="Permanent link">&para;</a></h2>
+<h2 id="documentation-in-this-section">Documentation in this section<a class="headerlink" href="#documentation-in-this-section" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Document</th>
-<th>Length</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>setup-google-oauth.md</td>
-<td>400 lines</td>
-<td>Google OAuth setup</td>
+<td><a href="provider-selection-guide/">Provider selection guide</a></td>
+<td>Choosing between Auth0, native, and custom providers</td>
 </tr>
 <tr>
-<td>setup-keycloak.md</td>
-<td>350 lines</td>
-<td>Self-hosted OIDC</td>
+<td><a href="setup-auth0/">Auth0 setup</a></td>
+<td>Configure Auth0 as your provider</td>
 </tr>
 <tr>
-<td>setup-auth0.md</td>
-<td>400 lines</td>
-<td>Managed OIDC</td>
+<td><a href="setup-google-oauth/">Google OAuth setup</a></td>
+<td>Use Google (via Auth0 or a custom provider)</td>
 </tr>
 <tr>
-<td>api-reference.md</td>
-<td>500 lines</td>
-<td>Complete API docs</td>
+<td><a href="setup-keycloak/">Keycloak setup</a></td>
+<td>Use Keycloak (via Auth0 or a custom provider)</td>
 </tr>
 <tr>
-<td>implement-session-store.md</td>
-<td>600 lines</td>
-<td>Custom backends (3 examples)</td>
+<td><a href="scram/">SCRAM / database connection auth</a></td>
+<td>PostgreSQL <code>scram-sha-256</code> connection authentication</td>
 </tr>
 <tr>
-<td>deployment.md</td>
-<td>500 lines</td>
-<td>Production deployment</td>
+<td><a href="api-reference/">API reference</a></td>
+<td>Auth endpoints, request/response shapes, error codes</td>
 </tr>
 <tr>
-<td>monitoring.md</td>
-<td>350 lines</td>
-<td>Observability setup</td>
+<td><a href="deployment/">Deployment</a></td>
+<td>Deploying an authenticated FraiseQL app</td>
 </tr>
 <tr>
-<td>security-checklist.md</td>
-<td>450 lines</td>
-<td>Security audit</td>
+<td><a href="monitoring/">Monitoring</a></td>
+<td>Logging, metrics, and health checks for auth</td>
 </tr>
 <tr>
-<td>troubleshooting.md</td>
-<td>450 lines</td>
-<td>Common issues</td>
+<td><a href="troubleshooting/">Troubleshooting</a></td>
+<td>Common auth issues and fixes</td>
 </tr>
 <tr>
-<td>README.md</td>
-<td>This file</td>
-<td>Overview</td>
+<td><a href="security-checklist/">Security checklist</a></td>
+<td>Pre-production security review</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Total: 3,000+ lines of documentation</strong></p>
 <hr />
-<h2 id="next-steps">🎯 Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Choose your OAuth provider</strong> (Google recommended for quick start)</li>
-<li><strong>Follow the setup guide</strong> for that provider</li>
-<li><strong>Set up database</strong> and run migrations</li>
-<li><strong>Test the complete flow</strong> manually</li>
-<li><strong>Deploy to production</strong> following deployment guide</li>
-<li><strong>Set up monitoring</strong> for operations</li>
-<li><strong>Run through security checklist</strong> before going live</li>
-</ol>
-<hr />
-<p><strong>Version</strong>: 1.0
-<strong>Last Updated</strong>: 2026-01-21
-<strong>Status</strong>: Production Ready ✅</p>
-<hr />
-<p>See <a href="security-checklist/">Security Checklist</a> for deployment sign-off template.</p>
-<hr />
-<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<h2 id="security-considerations">Security considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../federation/guide.md">Federation Guide</a></strong> - Multi-subgraph authentication coordination</li>
-<li><strong><a href="../../guides/production-deployment/">Production Deployment</a></strong> - Deploying authentication in production</li>
-<li><strong><a href="../../architecture/security/security-model/">Security Model</a></strong> - Authentication architecture deep dive</li>
-<li><strong><a href="monitoring/">Observability</a></strong> - Monitoring authentication events</li>
-<li><strong><a href="troubleshooting/">Troubleshooting</a></strong> - Common authentication issues</li>
+<li><strong>Always use HTTPS / TLS</strong> in production (and <code>sslmode</code> on the database URL).</li>
+<li><strong>Never expose secrets</strong> in client code or commit them to source control.</li>
+<li><strong>Validate issuer, audience, and signature</strong> for every JWT.</li>
+<li><strong>Handle token expiry</strong> gracefully; use refresh where the provider supports it.</li>
+<li><strong>Enforce tenant isolation in the database</strong> (RLS), not only in resolvers.</li>
+<li><strong>Prefer fail-closed authorizers</strong> — the framework already denies on error.</li>
+</ul>
+<p>See the <a href="security-checklist/">Security checklist</a> for the full list.</p>
+<hr />
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../guides/production-deployment/">Production Deployment</a> — deploying an authenticated app</li>
+<li><a href="../../architecture/security/security-model/">Security Model</a> — authorization architecture</li>
+<li><a href="monitoring/">Monitoring</a> — observing authentication events</li>
+<li><a href="troubleshooting/">Troubleshooting</a> — common authentication issues</li>
 </ul>
 
 
@@ -5687,6 +5583,9 @@ DATABASE_POOL_SIZE=20</p>
 
 
 
+
+  
+  
 
 
 

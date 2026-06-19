@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Production deployment guide for FraiseQL's authentication system.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/deployment/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Deployment - FraiseQL Documentation</title>
+        <title>FraiseQL Authentication Deployment Guide - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Deployment
+              FraiseQL Authentication Deployment Guide
             
           </span>
         </div>
@@ -4878,8 +4880,436 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#env-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        .env file
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-token-revocation-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Token Revocation Table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-verify-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Verify Connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dockerfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dockerfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nginx-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nginx Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssltls-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSL/TLS Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSL/TLS Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-lets-encrypt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Let's Encrypt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Deployment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backup-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backup Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-backups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Backups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restore-from-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restore from Backup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vertical Scaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgresql-connection-pool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL Connection Pool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jwks-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JWKS Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Availability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="High Availability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-region-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Region Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disaster-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disaster Recovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost Optimization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#app-wont-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        App Won't Start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-pool-exhausted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Connection Pool Exhausted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#access-denied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access Denied
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4903,68 +5333,62 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Authentication Deployment Guide
-description: Production deployment guide for FraiseQL's authentication system.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="fraiseql-authentication-deployment-guide">FraiseQL Authentication Deployment Guide<a class="headerlink" href="#fraiseql-authentication-deployment-guide" title="Permanent link">&para;</a></h1>
 <p>Production deployment guide for FraiseQL's authentication system.</p>
+<p>FraiseQL is a Python runtime GraphQL framework served over FastAPI. Authentication
+runs <strong>inside the FastAPI app</strong> (pure Python) — there is no separate auth server and
+no compile step. You deploy a standard Python ASGI application and configure auth
+through <code>FraiseQLConfig</code> / <code>FRAISEQL_</code>-prefixed environment variables.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
-<li>OAuth 2.0 and OIDC protocols</li>
-<li>Kubernetes deployment and manifests</li>
-<li>Docker and containerization</li>
+<li>OAuth 2.0 / OIDC and JWT validation</li>
+<li>Containerization (Docker) and your orchestrator (Kubernetes, ECS, etc.)</li>
+<li>Python application packaging and ASGI servers (uvicorn / gunicorn)</li>
 <li>SSL/TLS certificate management</li>
-<li>Database administration and backups</li>
-<li>Linux system administration</li>
+<li>PostgreSQL administration and backups</li>
 <li>Load balancing and reverse proxy configuration</li>
 <li>Security best practices and compliance</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
-<li>Docker 20.10+ and Docker Compose 1.29+</li>
-<li>Kubernetes 1.24+ (kubectl configured)</li>
-<li>Helm 3+ (optional, for Kubernetes deployments)</li>
+<li>FraiseQL (latest stable release) and Python 3.13+</li>
+<li><code>uvicorn</code> (and optionally <code>gunicorn</code> for multi-worker process management)</li>
+<li>Docker 20.10+ (and Docker Compose 2+) or your container runtime</li>
+<li>Kubernetes 1.24+ (kubectl configured), if deploying to Kubernetes</li>
 <li>PostgreSQL 14+ database</li>
-<li>OpenSSL or cert management tool</li>
-<li>Nginx or reverse proxy (optional)</li>
-<li>Git for configuration management</li>
+<li>OpenSSL or a certificate management tool</li>
+<li>Nginx or another reverse proxy (optional)</li>
 </ul>
 <p><strong>Required Infrastructure:</strong></p>
 <ul>
-<li>Kubernetes cluster or Docker host (for deployment)</li>
+<li>A container host or orchestrator (for deployment)</li>
 <li>PostgreSQL 14+ database (primary + replica for HA)</li>
-<li>OAuth provider (Google Cloud, Auth0, Keycloak, etc.)</li>
+<li>An OIDC/JWT issuer for production auth (Auth0, or any issuer you front with Auth0
+  or validate with a custom <code>AuthProvider</code>)</li>
 <li>Domain with DNS setup</li>
 <li>SSL/TLS certificate (Let's Encrypt, commercial CA, or internal)</li>
 <li>Load balancer or Ingress controller</li>
-<li>Network security groups/security groups properly configured</li>
-<li>Persistent storage for database</li>
+<li>Persistent storage for the database</li>
 <li>Backup storage system</li>
 </ul>
 <p><strong>Optional but Recommended:</strong></p>
 <ul>
 <li>Kubernetes cert-manager for automatic certificate renewal</li>
-<li>Helm charts for standardized deployments</li>
 <li>Container registry (Docker Hub, ECR, GCR, etc.)</li>
-<li>Secrets management system (HashiCorp Vault, AWS Secrets Manager)</li>
-<li>Monitoring and alerting infrastructure</li>
-<li>Log aggregation system</li>
+<li>A secrets management system (HashiCorp Vault, AWS Secrets Manager, GCP Secret Manager)</li>
+<li>Monitoring, alerting, and log aggregation infrastructure</li>
 <li>Disaster recovery and backup testing</li>
-<li>Kubernetes autoscaling configuration</li>
+<li>Autoscaling configuration</li>
 </ul>
-<p><strong>Time Estimate:</strong> 2-4 hours for Kubernetes deployment, 1-2 hours for Docker Compose setup</p>
+<p><strong>Time Estimate:</strong> 2-4 hours for a Kubernetes deployment, 1-2 hours for Docker Compose.</p>
 <h2 id="pre-deployment-checklist">Pre-Deployment Checklist<a class="headerlink" href="#pre-deployment-checklist" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> OAuth provider credentials configured</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database schema migrations applied</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Auth provider (Auth0 or custom JWT issuer) configured</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database schema and migrations applied</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> SSL/TLS certificates installed</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Environment variables configured</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <code>FRAISEQL_</code> environment variables configured (secrets via secret manager)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Token revocation store selected (<code>PostgreSQLRevocationStore</code> for production)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitoring and logging configured</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Backup strategy defined</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Security audit completed</li>
@@ -4972,447 +5396,434 @@ tags: ["documentation", "reference"]</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Runbook created</li>
 </ul>
 <h2 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h2>
+<p>All FraiseQL settings can be supplied as environment variables prefixed with
+<code>FRAISEQL_</code>. They map directly onto fields of <code>FraiseQLConfig</code>
+(<code>src/fraiseql/fastapi/config.py</code>), e.g. <code>FRAISEQL_AUTH_PROVIDER</code> →
+<code>auth_provider</code>, <code>FRAISEQL_AUTH0_DOMAIN</code> → <code>auth0_domain</code>.</p>
 <h3 id="production-environment-variables">Production Environment Variables<a class="headerlink" href="#production-environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="oauth-provider-google-keycloak-auth0-etc">OAuth Provider (Google, Keycloak, Auth0, etc.)<a class="headerlink" href="#oauth-provider-google-keycloak-auth0-etc" title="Permanent link">&para;</a></h1>
-<p>OAUTH_PROVIDER=google
-GOOGLE_CLIENT_ID=<prod-client-id>
-GOOGLE_CLIENT_SECRET=<prod-secret>
-OAUTH_REDIRECT_URI=https://api.yourdomain.com/auth/callback</p>
-<h1 id="for-keycloak">For Keycloak:<a class="headerlink" href="#for-keycloak" title="Permanent link">&para;</a></h1>
-<h1 id="keycloak_urlhttpskeycloakyourdomaincom">KEYCLOAK_URL=https://keycloak.yourdomain.com<a class="headerlink" href="#keycloak_urlhttpskeycloakyourdomaincom" title="Permanent link">&para;</a></h1>
-<h1 id="keycloak_realmproduction">KEYCLOAK_REALM=production<a class="headerlink" href="#keycloak_realmproduction" title="Permanent link">&para;</a></h1>
-<h1 id="keycloak_client_idfraiseql-prod">KEYCLOAK_CLIENT_ID=FraiseQL-prod<a class="headerlink" href="#keycloak_client_idfraiseql-prod" title="Permanent link">&para;</a></h1>
-<h1 id="keycloak_client_secret">KEYCLOAK_CLIENT_SECRET=<secret><a class="headerlink" href="#keycloak_client_secret" title="Permanent link">&para;</a></h1>
-<h1 id="jwt-configuration">JWT Configuration<a class="headerlink" href="#jwt-configuration" title="Permanent link">&para;</a></h1>
-<p>JWT_ISSUER=https://accounts.google.com
-JWT_ALGORITHM=RS256</p>
-<h1 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL=postgres://user:strong_password@prod-db.internal:5432/FraiseQL
-DATABASE_POOL_SIZE=20
-DATABASE_MAX_LIFETIME=1800</p>
-<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
-<p>RUST_LOG=info,fraiseql_server::auth=info
-SESSION_TIMEOUT_MINUTES=60</p>
-<h1 id="server">Server<a class="headerlink" href="#server" title="Permanent link">&para;</a></h1>
-<p>PORT=8000
-SERVER_HOST=0.0.0.0</p>
-<h1 id="https-optional">HTTPS (optional)<a class="headerlink" href="#https-optional" title="Permanent link">&para;</a></h1>
-<p>TLS_CERT_PATH=/etc/FraiseQL/certs/server.crt
-TLS_KEY_PATH=/etc/FraiseQL/certs/server.key
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Database (PostgreSQL only)</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://fraiseql_app:strong_password@prod-db.internal:5432/fraiseql
+<span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_RECYCLE</span><span class="o">=</span><span class="m">1800</span>
 
-<h3 id="envprod-file">.env.prod File<a class="headerlink" href="#envprod-file" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="create-in-your-deployment-server">Create in your deployment server<a class="headerlink" href="#create-in-your-deployment-server" title="Permanent link">&para;</a></h1>
-<p>source /etc/FraiseQL/auth.env</p>
-<h1 id="verify-critical-variables">Verify critical variables<a class="headerlink" href="#verify-critical-variables" title="Permanent link">&para;</a></h1>
-<p>echo "OAuth Provider: $OAUTH_PROVIDER"
-echo "Database: $DATABASE_URL (hidden)"
-echo "JWT Issuer: $JWT_ISSUER"
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Environment (disables playground/introspection automatically)</span>
+<span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
 
+<span class="c1"># Authentication</span>
+<span class="nv">FRAISEQL_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0<span class="w">            </span><span class="c1"># auth0 | custom | none</span>
+
+<span class="c1"># Auth0 settings (when FRAISEQL_AUTH_PROVIDER=auth0)</span>
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>myapp.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.yourdomain.com
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS=[&quot;RS256&quot;]   # defaults to RS256</span>
+
+<span class="c1"># Token revocation</span>
+<span class="nv">FRAISEQL_REVOCATION_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_REVOCATION_CHECK_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_REVOCATION_TTL</span><span class="o">=</span><span class="m">86400</span>
+
+<span class="c1"># Server (uvicorn / gunicorn) — standard ASGI server settings</span>
+<span class="nv">PORT</span><span class="o">=</span><span class="m">8000</span>
+</code></pre></div>
+<p>When <code>FRAISEQL_AUTH_PROVIDER=auth0</code>, FraiseQL auto-creates an <code>Auth0Provider</code> from
+<code>auth0_domain</code> / <code>auth0_api_identifier</code> at startup — you do not write provider code.
+For any other OIDC issuer (Google, Keycloak, etc.), either front it with Auth0 or set
+<code>FRAISEQL_AUTH_PROVIDER=custom</code> and supply an <code>AuthProvider</code> subclass that validates
+that issuer's JWTs via its JWKS/issuer/audience.</p>
+<blockquote>
+<p><strong>Secrets:</strong> never bake credentials into the image. Inject <code>FRAISEQL_DATABASE_URL</code>
+and any provider secrets at runtime from your platform's secret manager
+(Kubernetes Secrets, Vault, AWS/GCP Secrets Manager). The values above show shape,
+not real secrets.</p>
+</blockquote>
+<h3 id="env-file">.env file<a class="headerlink" href="#env-file" title="Permanent link">&para;</a></h3>
+<p>For non-container hosts, FraiseQL loads a <code>.env</code> file automatically (pydantic-settings):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Load deployment secrets into the process environment</span>
+<span class="nb">source</span><span class="w"> </span>/etc/fraiseql/auth.env
+
+<span class="c1"># Verify critical variables (avoid printing secret values)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Auth provider: </span><span class="nv">$FRAISEQL_AUTH_PROVIDER</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Auth0 domain:  </span><span class="nv">$FRAISEQL_AUTH0_DOMAIN</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Environment:   </span><span class="nv">$FRAISEQL_ENVIRONMENT</span><span class="s2">&quot;</span>
+</code></pre></div>
 <h2 id="database-setup">Database Setup<a class="headerlink" href="#database-setup" title="Permanent link">&para;</a></h2>
 <h3 id="1-create-database">1. Create Database<a class="headerlink" href="#1-create-database" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="on-postgresql-server">On PostgreSQL server<a class="headerlink" href="#on-postgresql-server" title="Permanent link">&para;</a></h1>
-<p>sudo -u postgres psql</p>
-<p>CREATE DATABASE FraiseQL;
-CREATE USER fraiseql_app WITH PASSWORD 'strong_password_here';
-ALTER ROLE fraiseql_app SET client_encoding TO 'utf8';
-ALTER ROLE fraiseql_app SET default_transaction_isolation TO 'read committed';
-ALTER ROLE fraiseql_app SET default_transaction_deferrable TO on;
-ALTER ROLE fraiseql_app SET default_time_zone TO 'UTC';</p>
-<p>GRANT ALL PRIVILEGES ON DATABASE FraiseQL TO fraiseql_app;</p>
-<p>\c FraiseQL
-GRANT ALL PRIVILEGES ON SCHEMA public TO fraiseql_app;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># On the PostgreSQL server</span>
+sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>psql
 
-<h3 id="2-create-sessions-table">2. Create Sessions Table<a class="headerlink" href="#2-create-sessions-table" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE IF NOT EXISTS _system.sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT NOT NULL,
-    refresh_token_hash TEXT NOT NULL UNIQUE,
-    issued_at BIGINT NOT NULL,
-    expires_at BIGINT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    revoked_at TIMESTAMPTZ
-);</p>
-<p>CREATE INDEX idx_sessions_user_id ON _system.sessions(user_id);
-CREATE INDEX idx_sessions_expires_at ON _system.sessions(expires_at);
-CREATE INDEX idx_sessions_revoked_at ON _system.sessions(revoked_at);</p>
-<p>-- Grant permissions
-GRANT ALL PRIVILEGES ON TABLE _system.sessions TO fraiseql_app;
-GRANT ALL PRIVILEGES ON SEQUENCE _system.sessions_id_seq TO fraiseql_app;
-```text</p>
-<!-- Code example in TEXT -->
+CREATE<span class="w"> </span>DATABASE<span class="w"> </span>fraiseql<span class="p">;</span>
+CREATE<span class="w"> </span>USER<span class="w"> </span>fraiseql_app<span class="w"> </span>WITH<span class="w"> </span>PASSWORD<span class="w"> </span><span class="s1">&#39;strong_password_here&#39;</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>client_encoding<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;utf8&#39;</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>default_transaction_isolation<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;read committed&#39;</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>timezone<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;UTC&#39;</span><span class="p">;</span>
 
+GRANT<span class="w"> </span>ALL<span class="w"> </span>PRIVILEGES<span class="w"> </span>ON<span class="w"> </span>DATABASE<span class="w"> </span>fraiseql<span class="w"> </span>TO<span class="w"> </span>fraiseql_app<span class="p">;</span>
+
+<span class="se">\c</span><span class="w"> </span>fraiseql
+GRANT<span class="w"> </span>ALL<span class="w"> </span>PRIVILEGES<span class="w"> </span>ON<span class="w"> </span>SCHEMA<span class="w"> </span>public<span class="w"> </span>TO<span class="w"> </span>fraiseql_app<span class="p">;</span>
+</code></pre></div>
+<h3 id="2-token-revocation-table">2. Token Revocation Table<a class="headerlink" href="#2-token-revocation-table" title="Permanent link">&para;</a></h3>
+<p>In production, use <code>PostgreSQLRevocationStore</code>
+(<code>src/fraiseql/auth/token_revocation.py</code>) so revocations survive restarts and are
+shared across instances. The store creates and manages its own table
+(default name <code>tb_token_revocation</code>) on first use:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.token_revocation</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgreSQLRevocationStore</span>
+
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">conninfo</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">)</span>
+<span class="n">revocation_store</span> <span class="o">=</span> <span class="n">PostgreSQLRevocationStore</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;tb_token_revocation&quot;</span><span class="p">)</span>
+<span class="c1"># The table is created lazily on first revocation/check.</span>
+</code></pre></div>
+<p>The in-memory store (<code>InMemoryRevocationStore</code>) is for development/testing only —
+revocations are lost on restart and are not shared between processes.</p>
 <h3 id="3-verify-connection">3. Verify Connection<a class="headerlink" href="#3-verify-connection" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>export DATABASE_URL="postgres://fraiseql_app:strong_password_here@prod-db.internal:5432/FraiseQL"
-psql $DATABASE_URL -c "SELECT COUNT(*) FROM _system.sessions;"
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_app:strong_password_here@prod-db.internal:5432/fraiseql&quot;</span>
+psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
+</code></pre></div>
 <h2 id="docker-deployment">Docker Deployment<a class="headerlink" href="#docker-deployment" title="Permanent link">&para;</a></h2>
+<p>FraiseQL is a Python package — the image installs <code>fraiseql</code> and runs the FastAPI
+app with an ASGI server. The optional <code>fraiseql-rs</code> acceleration ships as a prebuilt
+wheel, so <strong>no Rust toolchain and no compile step are needed</strong>.</p>
 <h3 id="dockerfile">Dockerfile<a class="headerlink" href="#dockerfile" title="Permanent link">&para;</a></h3>
-<p>```dockerfile</p>
-<!-- Code example in DOCKERFILE -->
-<p>FROM rust:1.75 AS builder</p>
-<p>WORKDIR /build
-COPY . .</p>
-<p>RUN cargo build --release -p FraiseQL-server</p>
-<p>FROM debian:bookworm-slim</p>
-<p>RUN apt-get update &amp;&amp; apt-get install -y \
-    ca-certificates \
-    libpq5 \
-    &amp;&amp; rm -rf /var/lib/apt/lists/*</p>
-<p>COPY --from=builder /build/target/release/FraiseQL-server /usr/local/bin/</p>
-<p>EXPOSE 8000</p>
-<p>ENTRYPOINT ["FraiseQL-server"]
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
 
+<span class="c"># libpq is needed by psycopg at runtime</span>
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libpq5<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+
+<span class="c"># Install FraiseQL (prebuilt wheels — no build step)</span>
+<span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+
+<span class="c"># Your application code (types, queries, mutations, the FastAPI app object)</span>
+<span class="k">COPY</span><span class="w"> </span>app/<span class="w"> </span>./app/
+
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">8000</span>
+
+<span class="c"># Run the ASGI app with multiple workers via gunicorn + uvicorn workers.</span>
+<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;gunicorn&quot;</span>,<span class="w"> </span><span class="s2">&quot;app.main:app&quot;</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">&quot;-k&quot;</span>,<span class="w"> </span><span class="s2">&quot;uvicorn.workers.UvicornWorker&quot;</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">&quot;-w&quot;</span>,<span class="w"> </span><span class="s2">&quot;4&quot;</span>,<span class="w"> </span><span class="s2">&quot;-b&quot;</span>,<span class="w"> </span><span class="s2">&quot;0.0.0.0:8000&quot;</span><span class="o">]</span>
+</code></pre></div>
+<p><code>requirements.txt</code> pins <code>fraiseql</code> (and <code>fraiseql-rs</code> for the acceleration wheel).
+For a single worker (or local development) you can run <code>uvicorn app.main:app --host 0.0.0.0 --port 8000</code> instead.</p>
+<blockquote>
+<p><code>app.main:app</code> refers to the FastAPI app returned by <code>create_fraiseql_app(...)</code>
+in your <code>app/main.py</code>. Auth is configured there (or via <code>FRAISEQL_</code> env vars).</p>
+</blockquote>
 <h3 id="docker-compose-production">Docker Compose Production<a class="headerlink" href="#docker-compose-production" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>version: '3.8'</p>
-<p>services:
-  FraiseQL:
-    image: FraiseQL/server:latest
-    container_name: FraiseQL-auth
-    restart: always
-    environment:
-      RUST_LOG: info
-      DATABASE_URL: ${DATABASE_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI}
-      JWT_ISSUER: ${JWT_ISSUER}
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/auth"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s</p>
-<p>postgres:
-    image: postgres:15-alpine
-    container_name: FraiseQL-db
-    restart: always
-    environment:
-      POSTGRES_DB: FraiseQL
-      POSTGRES_USER: fraiseql_app
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fraiseql_app"]
-      interval: 10s
-      timeout: 5s
-      retries: 5</p>
-<p>nginx:
-    image: nginx:alpine
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - FraiseQL</p>
-<p>volumes:
-  postgres_data:
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">fraiseql</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-auth</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">FRAISEQL_DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_DATABASE_URL}</span>
+<span class="w">      </span><span class="nt">FRAISEQL_ENVIRONMENT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="w">      </span><span class="nt">FRAISEQL_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">FRAISEQL_AUTH_PROVIDER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth0</span>
+<span class="w">      </span><span class="nt">FRAISEQL_AUTH0_DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_AUTH0_DOMAIN}</span>
+<span class="w">      </span><span class="nt">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_AUTH0_API_IDENTIFIER}</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost:8000/health&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">start_period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">40s</span>
 
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:15-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-db</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql_app</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${DATABASE_PASSWORD}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./init.sql:/docker-entrypoint-initdb.d/init.sql</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">fraiseql_app&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+
+<span class="w">  </span><span class="nt">nginx</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:alpine</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./nginx.conf:/etc/nginx/nginx.conf:ro</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/letsencrypt:/etc/letsencrypt:ro</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">postgres_data</span><span class="p">:</span>
+</code></pre></div>
 <h2 id="nginx-configuration">Nginx Configuration<a class="headerlink" href="#nginx-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="nginxconf">nginx.conf<a class="headerlink" href="#nginxconf" title="Permanent link">&para;</a></h3>
-<p>```nginx</p>
-<!-- Code example in NGINX -->
-<p>upstream FraiseQL {
-    server FraiseQL:8000;
-}</p>
-<p>server {
-    listen 80;
-    server_name api.yourdomain.com;</p>
-<div class="highlight"><pre><span></span><code># Redirect HTTP to HTTPS
-return 301 https://$server_name$request_uri;
+<p>FraiseQL serves GraphQL at <code>/graphql</code> and exposes <code>/health</code> (liveness) and
+<code>/ready</code> (readiness) probes. Put TLS termination and rate limiting at the proxy.</p>
+<div class="highlight"><pre><span></span><code><span class="k">upstream</span><span class="w"> </span><span class="s">fraiseql</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">server</span><span class="w"> </span><span class="n">fraiseql</span><span class="p">:</span><span class="mi">8000</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1"># Rate-limit zones (declared at http context in your nginx.conf)</span>
+<span class="k">limit_req_zone</span><span class="w"> </span><span class="nv">$binary_remote_addr</span><span class="w"> </span><span class="s">zone=api_limit:10m</span><span class="w"> </span><span class="s">rate=10r/s</span><span class="p">;</span>
+<span class="k">limit_req_zone</span><span class="w"> </span><span class="nv">$binary_remote_addr</span><span class="w"> </span><span class="s">zone=auth_limit:10m</span><span class="w"> </span><span class="s">rate=1r/s</span><span class="p">;</span>
+
+<span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">80</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="s">api.yourdomain.com</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1"># Redirect HTTP to HTTPS</span>
+<span class="w">    </span><span class="kn">return</span><span class="w"> </span><span class="mi">301</span><span class="w"> </span><span class="s">https://</span><span class="nv">$server_name$request_uri</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">server</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">listen</span><span class="w"> </span><span class="mi">443</span><span class="w"> </span><span class="s">ssl</span><span class="w"> </span><span class="s">http2</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">server_name</span><span class="w"> </span><span class="s">api.yourdomain.com</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kn">ssl_certificate</span><span class="w"> </span><span class="s">/etc/letsencrypt/live/yourdomain.com/fullchain.pem</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">ssl_certificate_key</span><span class="w"> </span><span class="s">/etc/letsencrypt/live/yourdomain.com/privkey.pem</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1"># Security headers</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">Strict-Transport-Security</span><span class="w"> </span><span class="s">&quot;max-age=31536000</span><span class="p">;</span><span class="w"> </span><span class="kn">includeSubDomains&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Content-Type-Options</span><span class="w"> </span><span class="s">&quot;nosniff&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Frame-Options</span><span class="w"> </span><span class="s">&quot;SAMEORIGIN&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-XSS-Protection</span><span class="w"> </span><span class="s">&quot;1</span><span class="p">;</span><span class="w"> </span><span class="kn">mode=block&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/graphql</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kn">limit_req</span><span class="w"> </span><span class="s">zone=api_limit</span><span class="w"> </span><span class="s">burst=20</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://fraiseql</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Real-IP</span><span class="w"> </span><span class="nv">$remote_addr</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-For</span><span class="w"> </span><span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="nv">$scheme</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="p">~</span><span class="w"> </span><span class="sr">^/(health|ready)$</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kn">access_log</span><span class="w"> </span><span class="no">off</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://fraiseql</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
-<p>}</p>
-<p>server {
-    listen 443 ssl http2;
-    server_name api.yourdomain.com;</p>
-<div class="highlight"><pre><span></span><code>ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-
-# Security headers
-add_header Strict-Transport-Security &quot;max-age=31536000; includeSubDomains&quot; always;
-add_header X-Content-Type-Options &quot;nosniff&quot; always;
-add_header X-Frame-Options &quot;SAMEORIGIN&quot; always;
-add_header X-XSS-Protection &quot;1; mode=block&quot; always;
-
-# Rate limiting
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
-limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=1r/s;
-
-location /auth/ {
-    limit_req zone=auth_limit burst=5;
-    proxy_pass http://FraiseQL;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /graphql {
-    limit_req zone=api_limit burst=20;
-    proxy_pass http://FraiseQL;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /health {
-    access_log off;
-    proxy_pass http://FraiseQL;
-}
-</code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
-
+<blockquote>
+<p>Apply a stricter <code>auth_limit</code> zone to any native-auth login routes you expose
+(from <code>fraiseql.auth.native</code>'s FastAPI router) if you use the native provider.</p>
+</blockquote>
 <h2 id="ssltls-setup">SSL/TLS Setup<a class="headerlink" href="#ssltls-setup" title="Permanent link">&para;</a></h2>
 <h3 id="using-lets-encrypt">Using Let's Encrypt<a class="headerlink" href="#using-lets-encrypt" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="install-certbot">Install certbot<a class="headerlink" href="#install-certbot" title="Permanent link">&para;</a></h1>
-<p>sudo apt-get install certbot python3-certbot-nginx</p>
-<h1 id="get-certificate">Get certificate<a class="headerlink" href="#get-certificate" title="Permanent link">&para;</a></h1>
-<p>sudo certbot certonly --standalone -d api.yourdomain.com</p>
-<h1 id="auto-renewal">Auto-renewal<a class="headerlink" href="#auto-renewal" title="Permanent link">&para;</a></h1>
-<p>sudo systemctl enable certbot.timer
-sudo systemctl start certbot.timer</p>
-<h1 id="verify-renewal">Verify renewal<a class="headerlink" href="#verify-renewal" title="Permanent link">&para;</a></h1>
-<p>sudo certbot renew --dry-run
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Install certbot</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>certbot<span class="w"> </span>python3-certbot-nginx
 
+<span class="c1"># Get certificate</span>
+sudo<span class="w"> </span>certbot<span class="w"> </span>certonly<span class="w"> </span>--standalone<span class="w"> </span>-d<span class="w"> </span>api.yourdomain.com
+
+<span class="c1"># Auto-renewal</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>certbot.timer
+sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>certbot.timer
+
+<span class="c1"># Verify renewal</span>
+sudo<span class="w"> </span>certbot<span class="w"> </span>renew<span class="w"> </span>--dry-run
+</code></pre></div>
+<p>For PostgreSQL connection security (TLS + SCRAM-SHA-256), configure <code>pg_hba.conf</code>
+and add <code>?sslmode=require</code> to your <code>FRAISEQL_DATABASE_URL</code>.</p>
 <h2 id="kubernetes-deployment">Kubernetes Deployment<a class="headerlink" href="#kubernetes-deployment" title="Permanent link">&para;</a></h2>
-<h3 id="fraiseql-deploymentyaml">FraiseQL-deployment.yaml<a class="headerlink" href="#fraiseql-deploymentyaml" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: FraiseQL
-  labels:
-    app: FraiseQL
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: FraiseQL
-  template:
-    metadata:
-      labels:
-        app: FraiseQL
-    spec:
-      containers:
-      - name: FraiseQL
-        image: FraiseQL/server:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: FraiseQL-secrets
-              key: database-url
-        - name: GOOGLE_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: FraiseQL-secrets
-              key: google-client-id
-        - name: GOOGLE_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: FraiseQL-secrets
-              key: google-client-secret
-        livenessProbe:
-          httpGet:
-            path: /health/auth
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /health/auth
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"</p>
-<hr />
-<p>apiVersion: v1
-kind: Service
-metadata:
-  name: FraiseQL
-spec:
-  selector:
-    app: FraiseQL
-  type: ClusterIP
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000</p>
-<hr />
-<p>apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: FraiseQL
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: FraiseQL
-  minReplicas: 3
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">your-registry/fraiseql:latest</span>
+<span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FRAISEQL_ENVIRONMENT</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FRAISEQL_AUTH_PROVIDER</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth0</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FRAISEQL_DATABASE_URL</span>
+<span class="w">          </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-secrets</span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database-url</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FRAISEQL_AUTH0_DOMAIN</span>
+<span class="w">          </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-secrets</span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth0-domain</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FRAISEQL_AUTH0_API_IDENTIFIER</span>
+<span class="w">          </span><span class="nt">valueFrom</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-secrets</span>
+<span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth0-api-identifier</span>
+<span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/ready</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;256Mi&quot;</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100m&quot;</span>
+<span class="w">          </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autoscaling/v2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HorizontalPodAutoscaler</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scaleTargetRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">minReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">maxReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</code></pre></div>
 <h2 id="monitoring-setup">Monitoring Setup<a class="headerlink" href="#monitoring-setup" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-configuration">Prometheus Configuration<a class="headerlink" href="#prometheus-configuration" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>global:
-  scrape_interval: 15s
-  evaluation_interval: 15s</p>
-<p>scrape_configs:
-  - job_name: 'FraiseQL'
-    static_configs:
-      - targets: ['localhost:8000']
-    metrics_path: '/metrics'
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
+<span class="w">  </span><span class="nt">evaluation_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
 
-<h3 id="grafana-dashboard">Grafana Dashboard<a class="headerlink" href="#grafana-dashboard" title="Permanent link">&para;</a></h3>
-<p>Import dashboard from <code>/docs/auth/grafana-dashboard.json</code></p>
+<span class="nt">scrape_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;fraiseql&#39;</span>
+<span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;localhost:8000&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;/metrics&#39;</span>
+</code></pre></div>
+<p>Use the <code>/health</code> and <code>/ready</code> endpoints for liveness/readiness, and your standard
+ASGI/FastAPI metrics for latency and error-rate dashboards.</p>
 <h2 id="backup-strategy">Backup Strategy<a class="headerlink" href="#backup-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="database-backups">Database Backups<a class="headerlink" href="#database-backups" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="binbash">!/bin/bash<a class="headerlink" href="#binbash" title="Permanent link">&para;</a></h1>
-<h1 id="backupsh">backup.sh<a class="headerlink" href="#backupsh" title="Permanent link">&para;</a></h1>
-<p>BACKUP_DIR="/backups/FraiseQL"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DB_NAME="FraiseQL"</p>
-<p>mkdir -p $BACKUP_DIR</p>
-<h1 id="full-backup">Full backup<a class="headerlink" href="#full-backup" title="Permanent link">&para;</a></h1>
-<p>pg_dump -h $DB_HOST -U fraiseql_app $DB_NAME | \
-  gzip &gt; <span class="arithmatex">\(BACKUP_DIR/fraiseql_\)</span>TIMESTAMP.sql.gz</p>
-<h1 id="keep-only-last-30-days">Keep only last 30 days<a class="headerlink" href="#keep-only-last-30-days" title="Permanent link">&para;</a></h1>
-<p>find $BACKUP_DIR -name "fraiseql_*.sql.gz" -mtime +30 -delete</p>
-<h1 id="upload-to-s3">Upload to S3<a class="headerlink" href="#upload-to-s3" title="Permanent link">&para;</a></h1>
-<p>aws s3 cp <span class="arithmatex">\(BACKUP_DIR/fraiseql_\)</span>TIMESTAMP.sql.gz \
-  s3://FraiseQL-backups/
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1"># backup.sh</span>
 
+<span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">&quot;/backups/fraiseql&quot;</span>
+<span class="nv">TIMESTAMP</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>
+<span class="nv">DB_NAME</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span>
+
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span>
+
+<span class="c1"># Full backup</span>
+pg_dump<span class="w"> </span>-h<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DB_HOST</span><span class="s2">&quot;</span><span class="w"> </span>-U<span class="w"> </span>fraiseql_app<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DB_NAME</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz&quot;</span>
+
+<span class="c1"># Keep only last 30 days</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;fraiseql_*.sql.gz&quot;</span><span class="w"> </span>-mtime<span class="w"> </span>+30<span class="w"> </span>-delete
+
+<span class="c1"># Upload to S3</span>
+aws<span class="w"> </span>s3<span class="w"> </span>cp<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>s3://fraiseql-backups/
+</code></pre></div>
 <p>Schedule with cron:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="run-daily-at-2-am">Run daily at 2 AM<a class="headerlink" href="#run-daily-at-2-am" title="Permanent link">&para;</a></h1>
-<p>0 2 * * * /scripts/backup.sh
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Run daily at 2 AM</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>/scripts/backup.sh
+</code></pre></div>
 <h3 id="restore-from-backup">Restore from Backup<a class="headerlink" href="#restore-from-backup" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>gunzip -c fraiseql_20260121_020000.sql.gz | \
-  psql -h prod-db.internal -U fraiseql_app FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>gunzip<span class="w"> </span>-c<span class="w"> </span>fraiseql_20260121_020000.sql.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>psql<span class="w"> </span>-h<span class="w"> </span>prod-db.internal<span class="w"> </span>-U<span class="w"> </span>fraiseql_app<span class="w"> </span>fraiseql
+</code></pre></div>
 <h2 id="scaling">Scaling<a class="headerlink" href="#scaling" title="Permanent link">&para;</a></h2>
 <h3 id="horizontal-scaling">Horizontal Scaling<a class="headerlink" href="#horizontal-scaling" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Run multiple FraiseQL instances behind load balancer</li>
-<li>Each instance connects to same database</li>
-<li>Sessions shared via PostgreSQL (or Redis)</li>
-<li>Stateless design allows easy scaling</li>
+<li>Run multiple FraiseQL app instances behind a load balancer.</li>
+<li>Each instance connects to the same PostgreSQL database.</li>
+<li>Use <code>PostgreSQLRevocationStore</code> so token revocations are shared across instances.</li>
+<li>The app is stateless (auth state lives in JWTs + PostgreSQL), so scaling is simple.</li>
+<li>Within a single instance, run multiple worker processes via
+  <code>gunicorn -k uvicorn.workers.UvicornWorker -w N</code>.</li>
 </ul>
 <h3 id="vertical-scaling">Vertical Scaling<a class="headerlink" href="#vertical-scaling" title="Permanent link">&para;</a></h3>
-<p>Adjust resource limits:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="in-kubernetes">In Kubernetes<a class="headerlink" href="#in-kubernetes" title="Permanent link">&para;</a></h1>
-<p>kubectl set resources deployment FraiseQL \
-  --limits=memory=1Gi,cpu=1000m \
-  --requests=memory=512Mi,cpu=500m
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Adjust resource limits, for example in Kubernetes:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>resources<span class="w"> </span>deployment<span class="w"> </span>fraiseql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--limits<span class="o">=</span><span class="nv">memory</span><span class="o">=</span>1Gi,cpu<span class="o">=</span>1000m<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--requests<span class="o">=</span><span class="nv">memory</span><span class="o">=</span>512Mi,cpu<span class="o">=</span>500m
+</code></pre></div>
 <h2 id="performance-tuning">Performance Tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h2>
 <h3 id="postgresql-connection-pool">PostgreSQL Connection Pool<a class="headerlink" href="#postgresql-connection-pool" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>DATABASE_POOL_SIZE=50
-DATABASE_MAX_LIFETIME=1800
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="session-cache-if-using-redis">Session Cache (if using Redis)<a class="headerlink" href="#session-cache-if-using-redis" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>REDIS_URL=redis://redis.internal:6379
-SESSION_CACHE_TTL=300
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Tune the pool via <code>FraiseQLConfig</code> / env vars:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">50</span>
+<span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">20</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_RECYCLE</span><span class="o">=</span><span class="m">1800</span>
+</code></pre></div>
+<h3 id="jwks-caching">JWKS Caching<a class="headerlink" href="#jwks-caching" title="Permanent link">&para;</a></h3>
+<p>When using Auth0 (or any JWKS-based issuer), the provider fetches and caches the
+issuer's signing keys (JWKS) so per-request token validation does not hit the issuer
+every time. Keep the app reachable to the issuer's <code>.well-known/jwks.json</code> endpoint,
+and allow outbound egress from your pods/containers to the issuer. Cached keys are
+refreshed automatically when an unknown key ID is seen (e.g. after key rotation).</p>
 <h2 id="high-availability">High Availability<a class="headerlink" href="#high-availability" title="Permanent link">&para;</a></h2>
 <h3 id="multi-region-setup">Multi-Region Setup<a class="headerlink" href="#multi-region-setup" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Region 1: Primary database
+<div class="highlight"><pre><span></span><code>Region 1: Primary database
 Region 2: Read replica
-Region 3: Standby replica</p>
-<p>Failover: Automatic via RDS
-```text</p>
-<!-- Code example in TEXT -->
+Region 3: Standby replica
 
+Failover: managed PostgreSQL service or your replication tooling
+</code></pre></div>
+<p>Because auth runs inside each stateless app instance and revocations live in
+PostgreSQL, app-tier HA is just "run more replicas across zones". Database HA is the
+critical piece — use a primary + replica with automated failover.</p>
 <h3 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">&para;</a></h3>
 <ul>
 <li>RPO (Recovery Point Objective): 5 minutes</li>
@@ -5422,58 +5833,56 @@ Region 3: Standby replica</p>
 <h2 id="cost-optimization">Cost Optimization<a class="headerlink" href="#cost-optimization" title="Permanent link">&para;</a></h2>
 <p><strong>Development</strong>:</p>
 <ul>
-<li>Single instance</li>
+<li>Single app instance / single worker</li>
 <li>Shared database</li>
-<li>~$50/month</li>
+<li>In-memory revocation store</li>
 </ul>
 <p><strong>Production</strong>:</p>
 <ul>
-<li>3x instances (HA)</li>
-<li>PostgreSQL managed service</li>
-<li>Monitoring and backups</li>
-<li>~$500/month</li>
+<li>3x app instances (HA), multiple workers each</li>
+<li>Managed PostgreSQL (primary + replica)</li>
+<li><code>PostgreSQLRevocationStore</code>, monitoring, and backups</li>
 </ul>
 <h2 id="monitoring-dashboard">Monitoring Dashboard<a class="headerlink" href="#monitoring-dashboard" title="Permanent link">&para;</a></h2>
 <p>Key metrics to monitor:</p>
 <ol>
 <li><strong>Availability</strong>: % uptime (target: 99.9%)</li>
 <li><strong>Latency</strong>: p50, p95, p99 (target: &lt;100ms)</li>
-<li><strong>Errors</strong>: Error rate (target: &lt;1%)</li>
-<li><strong>Capacity</strong>: CPU, memory, connections</li>
+<li><strong>Errors</strong>: error rate (target: &lt;1%)</li>
+<li><strong>Capacity</strong>: CPU, memory, database connections</li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="service-wont-start">Service Won't Start<a class="headerlink" href="#service-wont-start" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-logs">Check logs<a class="headerlink" href="#check-logs" title="Permanent link">&para;</a></h1>
-<p>docker logs FraiseQL</p>
-<h1 id="check-database-connection">Check database connection<a class="headerlink" href="#check-database-connection" title="Permanent link">&para;</a></h1>
-<p>psql $DATABASE_URL -c "SELECT 1"</p>
-<h1 id="check-oauth-provider">Check OAuth provider<a class="headerlink" href="#check-oauth-provider" title="Permanent link">&para;</a></h1>
-<p>curl https://accounts.google.com/.well-known/openid-configuration
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="app-wont-start">App Won't Start<a class="headerlink" href="#app-wont-start" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check logs</span>
+docker<span class="w"> </span>logs<span class="w"> </span>fraiseql
 
+<span class="c1"># Check database connection</span>
+psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span>
+
+<span class="c1"># Check the auth issuer is reachable (Auth0 example)</span>
+curl<span class="w"> </span><span class="s2">&quot;https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/openid-configuration&quot;</span>
+</code></pre></div>
+<p>A missing <code>auth0_domain</code>/<code>auth0_api_identifier</code> with <code>FRAISEQL_AUTH_PROVIDER=auth0</code>
+raises a configuration error at startup — set both env vars.</p>
 <h3 id="high-latency">High Latency<a class="headerlink" href="#high-latency" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-database-slow-queries">Check database slow queries<a class="headerlink" href="#check-database-slow-queries" title="Permanent link">&para;</a></h1>
-<p>SELECT * FROM pg_stat_statements ORDER BY total_time DESC;</p>
-<h1 id="check-oauth-provider-latency">Check OAuth provider latency<a class="headerlink" href="#check-oauth-provider-latency" title="Permanent link">&para;</a></h1>
-<p>time curl https://accounts.google.com/.well-known/openid-configuration
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check database slow queries (requires pg_stat_statements)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_exec_time</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check auth issuer latency (Auth0 example)</span>
+<span class="nb">time</span><span class="w"> </span>curl<span class="w"> </span><span class="s2">&quot;https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/jwks.json&quot;</span>
+</code></pre></div>
 <h3 id="database-connection-pool-exhausted">Database Connection Pool Exhausted<a class="headerlink" href="#database-connection-pool-exhausted" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="increase-pool-size">Increase pool size<a class="headerlink" href="#increase-pool-size" title="Permanent link">&para;</a></h1>
-<p>DATABASE_POOL_SIZE=100</p>
-<h1 id="check-active-connections">Check active connections<a class="headerlink" href="#check-active-connections" title="Permanent link">&para;</a></h1>
-<p>psql -c "SELECT count(*) FROM pg_stat_activity;"
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Increase pool size</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">100</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check active connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="access-denied">Access Denied<a class="headerlink" href="#access-denied" title="Permanent link">&para;</a></h3>
+<p>Denied operations surface as a GraphQL error with
+<code>extensions.code = "FORBIDDEN"</code> (not an HTTP 4xx). Check the user's roles/permissions
+in the JWT and the <code>@requires_permission</code> / <code>@requires_role</code> / <code>Authorizer</code> rules on
+the affected operations.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../monitoring/">Monitoring Guide</a></li>
@@ -5488,6 +5897,9 @@ Region 3: Standby replica</p>
 
 
 
+
+  
+  
 
 
 

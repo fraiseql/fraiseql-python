@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Complete reference for FraiseQL's Python authentication and authorization API.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/api-reference/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Api reference - FraiseQL Documentation</title>
+        <title>FraiseQL Authentication API Reference - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Api reference
+              FraiseQL Authentication API Reference
             
           </span>
         </div>
@@ -4834,33 +4836,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#base-url" class="md-nav__link">
+  <a href="#providers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Base URL
+        Providers
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#endpoints" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Endpoints
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Endpoints">
+    <nav class="md-nav" aria-label="Providers">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-post-authstart" class="md-nav__link">
+  <a href="#authprovider-base-abc" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. POST /auth/start
+        AuthProvider (base ABC)
       
     </span>
   </a>
@@ -4868,10 +4859,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-get-authcallback" class="md-nav__link">
+  <a href="#auth0provider-auth0config" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. GET /auth/callback
+        Auth0Provider / Auth0Config
       
     </span>
   </a>
@@ -4879,10 +4870,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-post-authrefresh" class="md-nav__link">
+  <a href="#auth0providerwithrevocation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. POST /auth/refresh
+        Auth0ProviderWithRevocation
       
     </span>
   </a>
@@ -4890,10 +4881,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-post-authlogout" class="md-nav__link">
+  <a href="#nativeauthprovider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. POST /auth/logout
+        NativeAuthProvider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rustcustomjwtprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RustCustomJWTProvider
       
     </span>
   </a>
@@ -4906,22 +4908,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#authentication" class="md-nav__link">
+  <a href="#usercontext" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authentication
+        UserContext
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Authentication">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolver-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolver decorators
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operation-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operation authorization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operation authorization">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#bearer-token" class="md-nav__link">
+  <a href="#authorizer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bearer Token
+        Authorizer
       
     </span>
   </a>
@@ -4929,21 +4953,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#optional-authentication" class="md-nav__link">
+  <a href="#authorizationdecision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional Authentication
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#token-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token Format
+        AuthorizationDecision
       
     </span>
   </a>
@@ -4956,30 +4969,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-handling" class="md-nav__link">
+  <a href="#field-authorization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Handling
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Error Handling">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#error-codes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error Codes
+        Field authorization
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token revocation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate limiting
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4992,22 +5010,38 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Variables
+        Error handling
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#security-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security best practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5031,701 +5065,649 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: FraiseQL Authentication API Reference
-description: Complete API documentation for FraiseQL's OAuth 2.0 / OIDC authentication system.
-keywords: ["framework", "directives", "types", "sdk", "schema", "scalars", "monitoring", "api"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="fraiseql-authentication-api-reference">FraiseQL Authentication API Reference<a class="headerlink" href="#fraiseql-authentication-api-reference" title="Permanent link">&para;</a></h1>
-<p>Complete API documentation for FraiseQL's OAuth 2.0 / OIDC authentication system.</p>
-<h2 id="base-url">Base URL<a class="headerlink" href="#base-url" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Development: http://localhost:8000
-Production: https://api.yourdomain.com
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h2>
-<h3 id="1-post-authstart">1. POST /auth/start<a class="headerlink" href="#1-post-authstart" title="Permanent link">&para;</a></h3>
-<p>Initiate the OAuth authentication flow.</p>
-<p><strong>Request</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "provider": "google"
-  }'
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Request Body</strong></p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>provider</code></td>
-<td>string</td>
-<td>No</td>
-<td>OAuth provider name (default: "default")</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Response (200 OK)</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&amp;state=..."
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response Fields</strong></p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>authorization_url</code></td>
-<td>string</td>
-<td>URL to redirect user to for authentication</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Error Responses</strong></p>
-<table>
-<thead>
-<tr>
-<th>Status</th>
-<th>Error</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>500</td>
-<td><code>auth_error</code></td>
-<td>OAuth provider configuration error</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Usage</strong></p>
-<ol>
-<li>Redirect user to the returned <code>authorization_url</code></li>
-<li>User authenticates with the provider</li>
-<li>Provider redirects to <code>/auth/callback</code> with code and state</li>
-</ol>
+<p>FraiseQL's authentication and authorization run <strong>inside your FastAPI app, in
+Python</strong>. There is no Rust auth router and no separate auth server: you pass a
+provider (or configuration) to <code>create_fraiseql_app(...)</code>, and FraiseQL resolves
+the bearer token on each GraphQL request into a <code>UserContext</code> available at
+<code>info.context["user"]</code>. Denied access surfaces as a GraphQL error whose
+<code>extensions.code</code> is <code>UNAUTHENTICATED</code> or <code>FORBIDDEN</code> — never an out-of-band HTTP
+status from a router you do not control.</p>
+<p>This page documents the public Python surface. For step-by-step setup, see the
+<a href="../setup-auth0/">Auth0</a>, <a href="../setup-google-oauth/">Google OAuth</a>, and
+<a href="../setup-keycloak/">Keycloak</a> guides.</p>
 <hr />
-<h3 id="2-get-authcallback">2. GET /auth/callback<a class="headerlink" href="#2-get-authcallback" title="Permanent link">&para;</a></h3>
-<p>OAuth provider redirects here after user authentication.</p>
-<p><strong>Query Parameters</strong></p>
+<h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
+<p>A provider validates an incoming token and turns it into a <code>UserContext</code>. All
+providers subclass <code>AuthProvider</code>.</p>
+<h3 id="authprovider-base-abc"><code>AuthProvider</code> (base ABC)<a class="headerlink" href="#authprovider-base-abc" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span>
+</code></pre></div>
+<p><code>AuthProvider</code> (<code>src/fraiseql/auth/base.py</code>) is the abstract base every provider
+implements. Subclass it to support any OIDC/JWT issuer.</p>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Required</th>
+<th>Method</th>
+<th>Signature</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>code</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>Authorization code from provider</td>
+<td><code>validate_token</code></td>
+<td><code>async validate_token(self, token: str) -&gt; dict</code></td>
+<td>Validate the token and return its decoded payload. Raise <code>AuthenticationError</code> on failure. <strong>Abstract.</strong></td>
 </tr>
 <tr>
-<td><code>state</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>CSRF protection state parameter</td>
-</tr>
-<tr>
-<td><code>error</code></td>
-<td>string</td>
-<td>No</td>
-<td>Error code if authentication failed</td>
-</tr>
-<tr>
-<td><code>error_description</code></td>
-<td>string</td>
-<td>No</td>
-<td>Detailed error message</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example Request</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GET http://localhost:8000/auth/callback?code=4/0A...&amp;state=xyz123
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response (200 OK)</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "access_token": "access_token_user123_3600_uuid",
-  "refresh_token": "base64_encoded_refresh_token",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response Fields</strong></p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>access_token</code></td>
-<td>string</td>
-<td>JWT token for API requests (1 hour expiry)</td>
+<td><code>get_user_from_token</code></td>
+<td><code>async get_user_from_token(self, token: str) -&gt; UserContext</code></td>
+<td>Build a <code>UserContext</code> for the bearer of <code>token</code>. <strong>Abstract.</strong></td>
 </tr>
 <tr>
 <td><code>refresh_token</code></td>
-<td>string</td>
-<td>Token to refresh access token (7 days expiry)</td>
+<td><code>async refresh_token(self, refresh_token: str) -&gt; tuple[str, str]</code></td>
+<td>Optional. Returns <code>(new_access_token, new_refresh_token)</code>. Raises <code>NotImplementedError</code> by default.</td>
 </tr>
 <tr>
-<td><code>token_type</code></td>
-<td>string</td>
-<td>Always "Bearer"</td>
-</tr>
-<tr>
-<td><code>expires_in</code></td>
-<td>number</td>
-<td>Seconds until access token expires</td>
+<td><code>revoke_token</code></td>
+<td><code>async revoke_token(self, token: str) -&gt; None</code></td>
+<td>Optional. Raises <code>NotImplementedError</code> by default.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Error Responses</strong></p>
-<table>
-<thead>
-<tr>
-<th>Status</th>
-<th>Error</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>400</td>
-<td><code>invalid_state</code></td>
-<td>State parameter invalid or expired</td>
-</tr>
-<tr>
-<td>500</td>
-<td><code>oauth_error</code></td>
-<td>Provider error during token exchange</td>
-</tr>
-<tr>
-<td>502</td>
-<td><code>oauth_error</code></td>
-<td>Provider unreachable</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Security Notes</strong></p>
-<ul>
-<li>State parameter is validated (10 minute expiry)</li>
-<li>Code can only be used once</li>
-<li>Code expires in 10 minutes</li>
-</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">jwt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomJWTProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secret</span> <span class="o">=</span> <span class="n">secret</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;HS256&quot;</span><span class="p">])</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">)</span>
+</code></pre></div>
+<p>Pass any provider instance to <code>create_fraiseql_app(auth=...)</code>.</p>
+<h3 id="auth0provider-auth0config"><code>Auth0Provider</code> / <code>Auth0Config</code><a class="headerlink" href="#auth0provider-auth0config" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span><span class="p">,</span> <span class="n">Auth0Provider</span>
+</code></pre></div>
+<p><code>Auth0Provider</code> (<code>src/fraiseql/auth/auth0.py</code>) validates Auth0-issued JWTs.
+It fetches and caches the tenant JWKS, validates with <code>RS256</code> by default, and
+extracts roles/permissions from Auth0 claims.</p>
+<div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>   <span class="c1"># default</span>
+    <span class="n">cache_jwks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>        <span class="c1"># default</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>Auth0Config</code> is a plain configuration holder you can pass to
+<code>create_fraiseql_app(auth=...)</code> (FraiseQL builds the provider from it):</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">Auth0Config</span><span class="p">(</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>         <span class="c1"># optional, Management API only</span>
+    <span class="n">client_secret</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># optional, Management API only</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>        <span class="c1"># defaults to [&quot;RS256&quot;]</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="auth0providerwithrevocation"><code>Auth0ProviderWithRevocation</code><a class="headerlink" href="#auth0providerwithrevocation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0ProviderWithRevocation</span>
+</code></pre></div>
+<p><code>Auth0ProviderWithRevocation</code> (<code>src/fraiseql/auth/auth0_with_revocation.py</code>) is
+an <code>Auth0Provider</code> mixed with <code>TokenRevocationMixin</code>, so validated tokens are
+additionally checked against a revocation store (see
+<a href="#token-revocation">Token revocation</a>).</p>
+<h3 id="nativeauthprovider"><code>NativeAuthProvider</code><a class="headerlink" href="#nativeauthprovider" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">NativeAuthProvider</span><span class="p">,</span> <span class="n">TokenManager</span>
+</code></pre></div>
+<p><code>NativeAuthProvider</code> (<code>src/fraiseql/auth/native/provider.py</code>) implements
+PostgreSQL-backed username/password authentication using its own <code>TokenManager</code>
+and a <code>psycopg</code> connection pool. It ships with a FastAPI router
+(<code>src/fraiseql/auth/native/router.py</code>, tag <code>"auth"</code>) exposing endpoints such as
+<code>/register</code>, <code>/login</code>, <code>/refresh</code>, <code>/me</code>, and <code>/logout</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">NativeAuthProvider</span><span class="p">(</span>
+    <span class="n">token_manager</span><span class="o">=</span><span class="n">token_manager</span><span class="p">,</span>   <span class="c1"># TokenManager instance</span>
+    <span class="n">db_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>                  <span class="c1"># AsyncConnectionPool</span>
+    <span class="n">schema</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>               <span class="c1"># default</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="rustcustomjwtprovider"><code>RustCustomJWTProvider</code><a class="headerlink" href="#rustcustomjwtprovider" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.rust_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustCustomJWTProvider</span>
+</code></pre></div>
+<p><code>RustCustomJWTProvider</code> (<code>src/fraiseql/auth/rust_provider.py</code>) validates JWTs
+from a custom issuer using the optional <code>fraiseql_rs</code> extension for faster
+validation. It is still a Python-facing <code>AuthProvider</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">RustCustomJWTProvider</span><span class="p">(</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://issuer.example.com/&quot;</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">&quot;https://issuer.example.com/.well-known/jwks.json&quot;</span><span class="p">,</span>  <span class="c1"># must be HTTPS</span>
+    <span class="n">roles_claim</span><span class="o">=</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span>            <span class="c1"># default</span>
+    <span class="n">permissions_claim</span><span class="o">=</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span>  <span class="c1"># default</span>
+<span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p>Any OIDC/JWT issuer (Google, Keycloak, Okta, …) is supported through one of two
+honest paths: front it with Auth0 and use <code>Auth0Provider</code>, or set
+<code>auth_provider="custom"</code> and implement an <code>AuthProvider</code> subclass that validates
+that issuer's tokens via its JWKS/issuer/audience. There is no dedicated
+<code>GoogleProvider</code>, <code>KeycloakProvider</code>, or <code>OidcProvider</code> class.</p>
+</blockquote>
 <hr />
-<h3 id="3-post-authrefresh">3. POST /auth/refresh<a class="headerlink" href="#3-post-authrefresh" title="Permanent link">&para;</a></h3>
-<p>Refresh an expired access token using a refresh token.</p>
-<p><strong>Request</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "base64_encoded_refresh_token"
-  }'
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Request Body</strong></p>
+<h2 id="usercontext"><code>UserContext</code><a class="headerlink" href="#usercontext" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserContext</span>
+</code></pre></div>
+<p><code>UserContext</code> (<code>src/fraiseql/auth/base.py</code>) is the authenticated principal
+available at <code>info.context["user"]</code> in every resolver.</p>
+<div class="highlight"><pre><span></span><code><span class="n">UserContext</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">roles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">permissions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+<span class="p">)</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
+<th>Method</th>
+<th>Returns</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>refresh_token</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>Refresh token from previous login</td>
+<td><code>has_role(role)</code></td>
+<td><code>bool</code></td>
+<td>User has the given role.</td>
+</tr>
+<tr>
+<td><code>has_permission(permission)</code></td>
+<td><code>bool</code></td>
+<td>User has the given permission.</td>
+</tr>
+<tr>
+<td><code>has_any_role(roles)</code></td>
+<td><code>bool</code></td>
+<td>User has at least one of <code>roles</code>.</td>
+</tr>
+<tr>
+<td><code>has_any_permission(permissions)</code></td>
+<td><code>bool</code></td>
+<td>User has at least one of <code>permissions</code>.</td>
+</tr>
+<tr>
+<td><code>has_all_roles(roles)</code></td>
+<td><code>bool</code></td>
+<td>User has every role in <code>roles</code>.</td>
+</tr>
+<tr>
+<td><code>has_all_permissions(permissions)</code></td>
+<td><code>bool</code></td>
+<td>User has every permission in <code>permissions</code>.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Response (200 OK)</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "access_token": "new_access_token_...",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response Fields</strong></p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>access_token</code></td>
-<td>string</td>
-<td>New JWT token for API requests</td>
-</tr>
-<tr>
-<td><code>token_type</code></td>
-<td>string</td>
-<td>Always "Bearer"</td>
-</tr>
-<tr>
-<td><code>expires_in</code></td>
-<td>number</td>
-<td>Seconds until new token expires</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Error Responses</strong></p>
-<table>
-<thead>
-<tr>
-<th>Status</th>
-<th>Error</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>401</td>
-<td><code>token_not_found</code></td>
-<td>Refresh token doesn't exist</td>
-</tr>
-<tr>
-<td>401</td>
-<td><code>session_revoked</code></td>
-<td>Session has been revoked</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example Usage (JavaScript)</strong></p>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>const response = await fetch('/auth/refresh', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    refresh_token: localStorage.getItem('refreshToken')
-  })
-});</p>
-<p>const { access_token, expires_in } = await response.json();
-localStorage.setItem('accessToken', access_token);
-// Schedule refresh before expiry
-setTimeout(() =&gt; refreshToken(), expires_in * 1000 - 300000);
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_profile</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;member&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+</code></pre></div>
 <hr />
-<h3 id="4-post-authlogout">4. POST /auth/logout<a class="headerlink" href="#4-post-authlogout" title="Permanent link">&para;</a></h3>
-<p>Logout and revoke the session.</p>
-<p><strong>Request</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "base64_encoded_refresh_token"
-  }'
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Request Body</strong></p>
+<h2 id="resolver-decorators">Resolver decorators<a class="headerlink" href="#resolver-decorators" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span><span class="p">,</span> <span class="n">requires_permission</span><span class="p">,</span> <span class="n">requires_role</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_any_permission</span><span class="p">,</span> <span class="n">requires_any_role</span>
+</code></pre></div>
+<p>These decorators (<code>src/fraiseql/auth/decorators.py</code>) guard a resolver by reading
+<code>info.context["user"]</code>. A missing/invalid user raises a <code>GraphQLError</code> with
+<code>extensions.code = "UNAUTHENTICATED"</code>; an authenticated-but-unauthorized user
+raises one with <code>extensions.code = "FORBIDDEN"</code>.</p>
 <table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Description</th>
+<th>Decorator</th>
+<th>Signature</th>
+<th>Guard</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>refresh_token</code></td>
-<td>string</td>
-<td>No</td>
-<td>Token to revoke (if not provided, revokes all)</td>
+<td><code>requires_auth</code></td>
+<td><code>@requires_auth</code> (bare)</td>
+<td>A <code>UserContext</code> is present.</td>
+</tr>
+<tr>
+<td><code>requires_permission</code></td>
+<td><code>@requires_permission("posts:write")</code></td>
+<td><code>user.has_permission(...)</code>.</td>
+</tr>
+<tr>
+<td><code>requires_role</code></td>
+<td><code>@requires_role("admin")</code></td>
+<td><code>user.has_role(...)</code>.</td>
+</tr>
+<tr>
+<td><code>requires_any_permission</code></td>
+<td><code>@requires_any_permission("a", "b")</code></td>
+<td><code>user.has_any_permission([...])</code>.</td>
+</tr>
+<tr>
+<td><code>requires_any_role</code></td>
+<td><code>@requires_any_role("admin", "moderator")</code></td>
+<td><code>user.has_any_role([...])</code>.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Response (204 No Content)</strong></p>
-<p>No response body.</p>
-<p><strong>Error Responses</strong></p>
-<table>
-<thead>
-<tr>
-<th>Status</th>
-<th>Error</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>401</td>
-<td><code>session_error</code></td>
-<td>Session not found</td>
-</tr>
-</tbody>
-</table>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;posts:write&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreatePostSuccess</span> <span class="o">|</span> <span class="n">CreatePostError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="o">...</span>
+</code></pre></div>
 <hr />
-<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
-<h3 id="bearer-token">Bearer Token<a class="headerlink" href="#bearer-token" title="Permanent link">&para;</a></h3>
-<p>Include the access token in the <code>Authorization</code> header:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer access_token_..." \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="optional-authentication">Optional Authentication<a class="headerlink" href="#optional-authentication" title="Permanent link">&para;</a></h3>
-<p>Some endpoints support optional authentication. Missing auth returns results for public data only.</p>
-<h3 id="token-format">Token Format<a class="headerlink" href="#token-format" title="Permanent link">&para;</a></h3>
-<p>Access tokens are JWT tokens containing:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "sub": "user123",              // User ID from provider
-  "iat": 1234567890,             // Issued at timestamp
-  "exp": 1234571490,             // Expiration timestamp
-  "iss": "https://provider.com", // Issuer URL
-  "aud": ["api"],                // Audience
-  "email": "user@example.com",   // Custom claims from provider
-  "name": "User Name"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
-<p>All errors follow a consistent format:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [
-    {
-      "message": "Authentication token has expired",
-      "extensions": {
-        "code": "token_expired"
-      }
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="error-codes">Error Codes<a class="headerlink" href="#error-codes" title="Permanent link">&para;</a></h3>
+<h2 id="operation-authorization">Operation authorization<a class="headerlink" href="#operation-authorization" title="Permanent link">&para;</a></h2>
+<p>For richer, context-driven decisions (row scoping, multi-tenant rules), supply an
+<code>Authorizer</code> instead of, or in addition to, the decorators above.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">Authorizer</span><span class="p">,</span> <span class="n">AuthorizationDecision</span>
+</code></pre></div>
+<p><code>Authorizer</code> and <code>AuthorizationDecision</code> live in
+<code>src/fraiseql/security/authorization.py</code>.</p>
+<h3 id="authorizer"><code>Authorizer</code><a class="headerlink" href="#authorizer" title="Permanent link">&para;</a></h3>
+<p><code>Authorizer</code> is a structural protocol — implement a single method (sync or async):</p>
+<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">operation_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>    <span class="c1"># &quot;query&quot; | &quot;mutation&quot; | &quot;subscription&quot;</span>
+    <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthorizationDecision</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p>Return <code>True</code>/<code>False</code> (sugar) or an <code>AuthorizationDecision</code>. Enforcement is
+<strong>fail-closed</strong>: if no authorizer is configured the operation is allowed, but if
+your authorizer raises (anything other than a <code>GraphQLError</code>) the operation is
+<strong>denied</strong>, and the raw exception is logged, never surfaced to the client.</p>
+<h3 id="authorizationdecision"><code>AuthorizationDecision</code><a class="headerlink" href="#authorizationdecision" title="Permanent link">&para;</a></h3>
+<p><code>AuthorizationDecision</code> is an immutable value with two constructors:</p>
 <table>
 <thead>
 <tr>
-<th>Code</th>
-<th>HTTP Status</th>
+<th>Constructor</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuthorizationDecision.allow(*, filters=None)</code></td>
+<td>Allow. Optional <code>filters</code> are AND-ed into the repository's <code>mandatory_filters</code> on the read path (ignored on mutations).</td>
+</tr>
+<tr>
+<td><code>AuthorizationDecision.deny(*, code="FORBIDDEN", message=None)</code></td>
+<td>Deny. <code>code</code> is surfaced as <code>extensions.code</code>.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TenantAuthorizer</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">operation_type</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;UNAUTHENTICATED&quot;</span><span class="p">)</span>
+        <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">()</span>
+        <span class="c1"># Scope every read to the caller&#39;s tenant.</span>
+        <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">})</span>
+</code></pre></div>
+<p>Attach an authorizer per operation or globally:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">documents</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Document</span><span class="p">]:</span>
+    <span class="o">...</span>
+
+<span class="c1"># Or as the global default for every operation:</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Document</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">documents</span><span class="p">],</span>
+    <span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">(),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>@fraiseql.mutation(authorizer=...)</code> and <code>@fraiseql.subscription(authorizer=...)</code>
+work the same way. A per-operation authorizer overrides the global default.
+<code>create_fraiseql_app(..., authorization_cache=...)</code> (and
+<code>build_fraiseql_schema(authorizer=...)</code>) are also available; caching is opt-in
+because always-evaluating is the safe default.</p>
+<hr />
+<h2 id="field-authorization">Field authorization<a class="headerlink" href="#field-authorization" title="Permanent link">&para;</a></h2>
+<p>Gate individual fields with <code>authorize_field</code> and the combinators in
+<code>src/fraiseql/security/field_auth.py</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">authorize_field</span><span class="p">,</span> <span class="n">any_permission</span><span class="p">,</span> <span class="n">combine_permissions</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Signature</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>token_expired</code></td>
-<td>401</td>
-<td>Access token expired</td>
+<td><code>authorize_field</code></td>
+<td><code>authorize_field(permission_check, *, error_message=None)</code></td>
+<td>Decorator wrapping a field resolver; runs <code>permission_check(info, ...)</code> first and denies with a <code>FieldAuthorizationError</code> if it returns falsy.</td>
 </tr>
 <tr>
-<td><code>invalid_signature</code></td>
-<td>401</td>
-<td>Token signature invalid</td>
+<td><code>any_permission</code></td>
+<td><code>any_permission(*checks)</code></td>
+<td>Combine checks with <strong>OR</strong> — passes if any check passes.</td>
 </tr>
 <tr>
-<td><code>invalid_token</code></td>
-<td>401</td>
-<td>Token format invalid</td>
-</tr>
-<tr>
-<td><code>token_not_found</code></td>
-<td>401</td>
-<td>Refresh token not found</td>
-</tr>
-<tr>
-<td><code>session_revoked</code></td>
-<td>401</td>
-<td>Session was revoked</td>
-</tr>
-<tr>
-<td><code>invalid_state</code></td>
-<td>400</td>
-<td>CSRF state validation failed</td>
-</tr>
-<tr>
-<td><code>oauth_error</code></td>
-<td>500</td>
-<td>OAuth provider error</td>
-</tr>
-<tr>
-<td><code>auth_error</code></td>
-<td>500</td>
-<td>Internal authentication error</td>
+<td><code>combine_permissions</code></td>
+<td><code>combine_permissions(*checks)</code></td>
+<td>Combine checks with <strong>AND</strong> — passes only if all checks pass.</td>
 </tr>
 </tbody>
 </table>
+<p>A <em>check</em> is any callable taking <code>info</code> (and optionally <code>root</code>) that returns a
+<code>bool</code> or an <code>AuthorizationDecision</code> (sync or async).</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
+    <span class="nd">@authorize_field</span><span class="p">(</span><span class="n">any_permission</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_admin&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="k">lambda</span> <span class="n">info</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">root</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_email</span>
+</code></pre></div>
+<p>You can also list fields to gate automatically against the configured
+<code>Authorizer</code> via the type decorator:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;phone&quot;</span><span class="p">])</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">phone</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p>Each listed field is checked with <code>operation_type="field"</code> and
+<code>operation_name="User.email"</code> (etc.) before its resolver runs. This is a no-op
+unless an authorizer is configured.</p>
+<hr />
+<h2 id="token-revocation">Token revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
+<p>For stateful logout / "revoke all sessions", use the revocation API in
+<code>src/fraiseql/auth/token_revocation.py</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InMemoryRevocationStore</span><span class="p">,</span>
+    <span class="n">PostgreSQLRevocationStore</span><span class="p">,</span>
+    <span class="n">RevocationConfig</span><span class="p">,</span>
+    <span class="n">TokenRevocationService</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InMemoryRevocationStore</code></td>
+<td><code>InMemoryRevocationStore()</code> — process-local store, for development/tests.</td>
+</tr>
+<tr>
+<td><code>PostgreSQLRevocationStore</code></td>
+<td><code>PostgreSQLRevocationStore(pool, table_name="tb_token_revocation")</code> — production store; creates and indexes its table on first use.</td>
+</tr>
+<tr>
+<td><code>RevocationConfig</code></td>
+<td><code>RevocationConfig(enabled=True, check_revocation=True, ttl=86400, cleanup_interval=3600)</code> — service configuration.</td>
+</tr>
+<tr>
+<td><code>TokenRevocationService</code></td>
+<td><code>TokenRevocationService(store, config=None)</code> — orchestrates revocation and periodic cleanup.</td>
+</tr>
+<tr>
+<td><code>TokenRevocationMixin</code></td>
+<td>Mix into a provider to check revocation during <code>validate_token</code> (used by <code>Auth0ProviderWithRevocation</code>).</td>
+</tr>
+</tbody>
+</table>
+<p>Both stores implement the same async interface: <code>revoke_token(token_id, user_id)</code>,
+<code>is_revoked(token_id)</code>, <code>revoke_all_user_tokens(user_id)</code>, <code>cleanup_expired()</code>,
+and <code>get_revoked_count()</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">store</span> <span class="o">=</span> <span class="n">PostgreSQLRevocationStore</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
+<span class="n">service</span> <span class="o">=</span> <span class="n">TokenRevocationService</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">RevocationConfig</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
+
+<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>                       <span class="c1"># begins the background cleanup loop</span>
+<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">revoke_token</span><span class="p">(</span><span class="n">token_payload</span><span class="p">)</span>   <span class="c1"># token_payload must carry &quot;jti&quot; and &quot;sub&quot;</span>
+<span class="n">revoked</span> <span class="o">=</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">is_token_revoked</span><span class="p">(</span><span class="n">token_payload</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">revoke_all_user_tokens</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="rate-limiting">Rate limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
+<p>FraiseQL ships a Python rate limiter in <code>src/fraiseql/security/rate_limiting.py</code>
+(an ASGI middleware — there is no Rust/<code>tower</code> limiter). Use it to protect auth
+endpoints from brute force.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RateLimit</span><span class="p">,</span>
+    <span class="n">RateLimitRule</span><span class="p">,</span>
+    <span class="n">RateLimitStrategy</span><span class="p">,</span>
+    <span class="n">RateLimitStore</span><span class="p">,</span>
+    <span class="n">RedisRateLimitStore</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Signature / fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RateLimit</code></td>
+<td><code>RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)</code> — <code>window</code> is in seconds.</td>
+</tr>
+<tr>
+<td><code>RateLimitRule</code></td>
+<td><code>RateLimitRule(path_pattern, rate_limit, key_func=None, exempt_func=None, message=None)</code>.</td>
+</tr>
+<tr>
+<td><code>RateLimitStrategy</code></td>
+<td><code>FIXED_WINDOW</code>, <code>SLIDING_WINDOW</code>, <code>TOKEN_BUCKET</code>.</td>
+</tr>
+<tr>
+<td><code>RateLimitStore</code></td>
+<td>In-memory store with TTL (default backend).</td>
+</tr>
+<tr>
+<td><code>RedisRateLimitStore</code></td>
+<td><code>RedisRateLimitStore(redis_client)</code> — distributed backend for multi-process deployments.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="n">login_rule</span> <span class="o">=</span> <span class="n">RateLimitRule</span><span class="p">(</span>
+    <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/auth/login&quot;</span><span class="p">,</span>
+    <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">RateLimitStrategy</span><span class="o">.</span><span class="n">SLIDING_WINDOW</span><span class="p">),</span>
+    <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Too many login attempts, please try again shortly.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>create_default_rate_limit_rules()</code> and <code>setup_rate_limiting(...)</code> provide a
+ready-made set of rules and wiring.</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="oauth-provider">OAuth Provider<a class="headerlink" href="#oauth-provider" title="Permanent link">&para;</a></h1>
-<p>GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-KEYCLOAK_CLIENT_ID=...
-KEYCLOAK_CLIENT_SECRET=...
-AUTH0_CLIENT_ID=...
-AUTH0_CLIENT_SECRET=...</p>
-<h1 id="urls">URLs<a class="headerlink" href="#urls" title="Permanent link">&para;</a></h1>
-<p>OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
-KEYCLOAK_URL=http://localhost:8080
-AUTH0_DOMAIN=your-domain.auth0.com</p>
-<h1 id="jwt">JWT<a class="headerlink" href="#jwt" title="Permanent link">&para;</a></h1>
-<p>JWT_ISSUER=https://provider.com
-JWT_ALGORITHM=RS256</p>
-<h1 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL=postgres://user:pass@localhost/FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
+<p>Auth is configured through <code>FraiseQLConfig</code> (pydantic, <code>FRAISEQL_</code>-prefixed
+environment variables) or directly via <code>create_fraiseql_app(...)</code> keyword
+arguments — never a TOML file.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth_enabled</code></td>
+<td><code>bool = True</code></td>
+<td>Enable authentication.</td>
+</tr>
+<tr>
+<td><code>auth_provider</code></td>
+<td><code>Literal["auth0", "custom", "none"] = "none"</code></td>
+<td>Which provider mode to use.</td>
+</tr>
+<tr>
+<td><code>auth0_domain</code></td>
+<td><code>str \| None = None</code></td>
+<td>Auth0 tenant domain (required when <code>auth_provider="auth0"</code>).</td>
+</tr>
+<tr>
+<td><code>auth0_api_identifier</code></td>
+<td><code>str \| None = None</code></td>
+<td>Auth0 API identifier / audience.</td>
+</tr>
+<tr>
+<td><code>auth0_algorithms</code></td>
+<td><code>list[str] = ["RS256"]</code></td>
+<td>Allowed JWT algorithms.</td>
+</tr>
+<tr>
+<td><code>dev_auth_username</code></td>
+<td><code>str \| None = None</code></td>
+<td>Development login username.</td>
+</tr>
+<tr>
+<td><code>dev_auth_password</code></td>
+<td><code>str \| None = None</code></td>
+<td>Development login password.</td>
+</tr>
+<tr>
+<td><code>revocation_enabled</code></td>
+<td><code>bool = True</code></td>
+<td>Enable token revocation checks.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="configuration-file">Configuration File<a class="headerlink" href="#configuration-file" title="Permanent link">&para;</a></h3>
-<p>Optionally, use a configuration file:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[auth.google]
-issuer = "https://accounts.google.com"
-client_id_env = "GOOGLE_CLIENT_ID"
-client_secret_env = "GOOGLE_CLIENT_SECRET"
-redirect_uri = "http://localhost:8000/auth/callback"</p>
-<p>[auth.keycloak]
-issuer = "http://localhost:8080/realms/FraiseQL"
-client_id_env = "KEYCLOAK_CLIENT_ID"
-client_secret_env = "KEYCLOAK_CLIENT_SECRET"
-redirect_uri = "http://localhost:8000/auth/callback"
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<h3 id="complete-login-flow-javascript">Complete Login Flow (JavaScript)<a class="headerlink" href="#complete-login-flow-javascript" title="Permanent link">&para;</a></h3>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>// 1. Start login
-const startResponse = await fetch('/auth/start', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ provider: 'google' })
-});</p>
-<p>const { authorization_url } = await startResponse.json();</p>
-<p>// 2. Redirect user
-window.location.href = authorization_url;</p>
-<p>// 3. Handle callback (provider redirects to your app)
-// Extract tokens from URL or session
-const tokens = getTokensFromCallback();
-localStorage.setItem('accessToken', tokens.access_token);
-localStorage.setItem('refreshToken', tokens.refresh_token);</p>
-<p>// 4. Use access token for API requests
-const graphqlResponse = await fetch('/graphql', {
-  method: 'POST',
-  headers: {
-    'Authorization': <code>Bearer ${localStorage.getItem('accessToken')}</code>,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    query: '{ user { id email name } }'
-  })
-});</p>
-<p>const data = await graphqlResponse.json();
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="token-refresh-javascript">Token Refresh (JavaScript)<a class="headerlink" href="#token-refresh-javascript" title="Permanent link">&para;</a></h3>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>async function refreshAccessToken() {
-  const refreshToken = localStorage.getItem('refreshToken');</p>
-<p>const response = await fetch('/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
-  });</p>
-<p>if (response.ok) {
-    const { access_token, expires_in } = await response.json();
-    localStorage.setItem('accessToken', access_token);</p>
-<div class="highlight"><pre><span></span><code>// Schedule next refresh
-setTimeout(refreshAccessToken, (expires_in - 300) * 1000);
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
+        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>} else {
-    // Refresh failed, require re-login
-    logout();
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="logout-javascript">Logout (JavaScript)<a class="headerlink" href="#logout-javascript" title="Permanent link">&para;</a></h3>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>async function logout() {
-  const refreshToken = localStorage.getItem('refreshToken');</p>
-<p>await fetch('/auth/logout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
-  });</p>
-<p>localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  window.location.href = '/';
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="with-axios">With Axios<a class="headerlink" href="#with-axios" title="Permanent link">&para;</a></h3>
-<p>```javascript</p>
-<!-- Code example in JAVASCRIPT -->
-<p>import axios from 'axios';</p>
-<p>const api = axios.create({
-  baseURL: 'http://localhost:8000'
-});</p>
-<p>// Add token to requests
-api.interceptors.request.use(config =&gt; {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = <code>Bearer ${token}</code>;
-  }
-  return config;
-});</p>
-<p>// Handle token expiry
-api.interceptors.response.use(
-  response =&gt; response,
-  async error =&gt; {
-    if (error.response?.status === 401) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry request with new token
-        return api.request(error.config);
-      } else {
-        logout();
-      }
-    }
-    return Promise.reject(error);
-  }
-);</p>
-<p>// Usage
-const user = await api.post('/graphql', {
-  query: '{ user { id } }'
-});
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Equivalent environment-variable configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>myapp.auth0.com
+<span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@localhost/mydb
+</code></pre></div>
+<blockquote>
+<p>Only three provider modes exist (<code>auth0</code>, <code>custom</code>, <code>none</code>). For a custom
+issuer, set <code>auth_provider="custom"</code> and pass your <code>AuthProvider</code> subclass to
+<code>create_fraiseql_app(auth=...)</code>.</p>
+</blockquote>
 <hr />
-<h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
-<p>Currently no built-in rate limiting. For production, add rate limiting middleware:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Example with tower rate limiter
-use tower_governor::governor::RateLimiter;</p>
-<p>let rate_limiter = RateLimiter::direct(Quota::per_second(100));
-let layer = GovernorLayer {
-  limiter: rate_limiter,
-  error_handler: default_error_handler,
-};</p>
-<p>app = app.layer(layer);
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<p>Authentication and authorization failures are returned as standard GraphQL
+errors with a stable <code>extensions.code</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Permission &#39;posts:write&#39; required&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>extensions.code</code></th>
+<th>Raised by</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UNAUTHENTICATED</code></td>
+<td><code>requires_auth</code> and the other resolver decorators</td>
+<td>No valid <code>UserContext</code> on the request.</td>
+</tr>
+<tr>
+<td><code>FORBIDDEN</code></td>
+<td>resolver decorators, <code>Authorizer</code> deny, <code>AuthorizationDecision.deny()</code></td>
+<td>Authenticated but not permitted.</td>
+</tr>
+<tr>
+<td><code>FIELD_AUTHORIZATION_ERROR</code></td>
+<td><code>authorize_field</code></td>
+<td>Field-level check denied access.</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
+<h2 id="security-best-practices">Security best practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Always use HTTPS</strong> in production</li>
-<li><strong>Never expose client secrets</strong> in client code</li>
-<li><strong>Store tokens securely</strong>:</li>
-<li>Use HTTP-only cookies (more secure than localStorage)</li>
-<li>Or localStorage with content security policy</li>
-<li><strong>Handle token expiry</strong> gracefully</li>
-<li><strong>Validate redirects</strong> in your app</li>
-<li><strong>Log authentication events</strong> for audit trail</li>
-<li><strong>Use PKCE</strong> for mobile/native apps (FraiseQL supports this)</li>
+<li><strong>Always use HTTPS</strong> in production.</li>
+<li><strong>Never expose client secrets</strong> in client-side code.</li>
+<li><strong>Validate audience and issuer</strong> in custom <code>AuthProvider</code> subclasses.</li>
+<li><strong>Rate-limit auth endpoints</strong> with the Python rate limiter above.</li>
+<li><strong>Use token revocation</strong> for logout and "revoke all sessions".</li>
+<li><strong>Fail closed</strong> — rely on the built-in fail-closed authorizer enforcement;
+   never let an exception in an authorizer turn into an allow.</li>
+<li><strong>Log authentication events</strong> for your audit trail.</li>
 </ol>
-<hr />
-<h2 id="supported-providers">Supported Providers<a class="headerlink" href="#supported-providers" title="Permanent link">&para;</a></h2>
-<ul>
-<li>✅ Google</li>
-<li>✅ Keycloak</li>
-<li>✅ Auth0</li>
-<li>✅ Any OIDC-compliant provider</li>
-</ul>
-<p>To add custom provider, implement <code>OAuthProvider</code> trait.</p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../setup-auth0/">Auth0 Setup</a></li>
 <li><a href="../setup-google-oauth/">Google OAuth Setup</a></li>
 <li><a href="../setup-keycloak/">Keycloak Setup</a></li>
-<li><a href="../setup-auth0/">Auth0 Setup</a></li>
-<li><a href="./implement-session-store.md">Custom SessionStore Implementation</a></li>
+<li><a href="../provider-selection-guide/">Provider Selection Guide</a></li>
+<li><a href="../security-checklist/">Security Checklist</a></li>
+<li><a href="../scram/">PostgreSQL Connection Auth (SCRAM)</a></li>
 </ul>
-<hr />
-<p><strong>Last Updated</strong>: 2026-01-21
-<strong>Version</strong>: 1.0</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

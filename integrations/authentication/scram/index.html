@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Secure the FraiseQL-to-PostgreSQL database connection with SCRAM-SHA-256, PostgreSQL's modern challenge-response password authentication.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/integrations/authentication/scram/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Scram - FraiseQL Documentation</title>
+        <title>PostgreSQL SCRAM Authentication - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scram
+              PostgreSQL SCRAM Authentication
             
           </span>
         </div>
@@ -4842,14 +4844,58 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#postgresql-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL side
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PostgreSQL side">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#scram-variants" class="md-nav__link">
+  <a href="#1-enable-scram-password-encryption" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SCRAM Variants
+        1. Enable SCRAM password encryption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-require-scram-in-pg_hbaconf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Require SCRAM in pg_hba.conf
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-roles-with-scram-hashed-passwords" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create roles with SCRAM-hashed passwords
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-verify-the-role-uses-scram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Verify the role uses SCRAM
       
     </span>
   </a>
@@ -4862,30 +4908,68 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#fraiseql-client-side" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Prerequisites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#postgresql-version-requirements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PostgreSQL Version Requirements
+        FraiseQL / client side
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#recommend-tls-alongside-scram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommend TLS alongside SCRAM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrating-from-md5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating from MD5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security best practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4909,344 +4993,183 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: PostgreSQL SCRAM Authentication
-description: FraiseQL supports SCRAM (Salted Challenge Response Authentication Mechanism) authentication for secure connections to PostgreSQL databases.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="postgresql-scram-authentication">PostgreSQL SCRAM Authentication<a class="headerlink" href="#postgresql-scram-authentication" title="Permanent link">&para;</a></h1>
-<p>FraiseQL supports SCRAM (Salted Challenge Response Authentication Mechanism) authentication for secure connections to PostgreSQL databases.</p>
+<p>SCRAM-SHA-256 is PostgreSQL's modern, secure password authentication method. It
+replaces the older, vulnerable MD5 scheme. FraiseQL connects to PostgreSQL with
+<a href="https://www.psycopg.org/">psycopg</a> (libpq), which negotiates SCRAM-SHA-256 with
+the server automatically — there is no FraiseQL-specific code or configuration
+involved.</p>
+<blockquote>
+<p><strong>Database auth, not application auth.</strong> This page is about authenticating
+<em>FraiseQL's own connection to PostgreSQL</em>. It is unrelated to authenticating
+your API's end users (JWT / Auth0 / custom providers) — for that, see
+<a href="../">Authentication overview</a>.</p>
+</blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>SCRAM is the modern, secure authentication method for PostgreSQL. It replaces the older, vulnerable MD5 authentication scheme.</p>
-<h3 id="scram-variants">SCRAM Variants<a class="headerlink" href="#scram-variants" title="Permanent link">&para;</a></h3>
+<p>SCRAM (Salted Challenge Response Authentication Mechanism) lets the psycopg
+client prove it knows the database role's password without ever sending the
+password in plaintext. Configuration is entirely on the <strong>PostgreSQL side</strong>
+(<code>postgresql.conf</code>, <code>pg_hba.conf</code>, role passwords); FraiseQL only needs a valid
+<code>database_url</code>.</p>
 <table>
 <thead>
 <tr>
 <th>Method</th>
 <th>RFC</th>
 <th>PostgreSQL</th>
-<th>Channel Binding</th>
-<th>Security</th>
+<th>Channel binding</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>SCRAM-SHA-256</strong></td>
-<td><a href="https://tools.ietf.org/html/rfc5802">RFC 5802</a></td>
+<td><a href="https://datatracker.ietf.org/doc/html/rfc5802">RFC 5802</a></td>
 <td>10+</td>
-<td>❌ No</td>
-<td>✅ <strong>Recommended</strong></td>
+<td>No</td>
 </tr>
 <tr>
 <td><strong>SCRAM-SHA-256-PLUS</strong></td>
-<td><a href="https://tools.ietf.org/html/rfc5802">RFC 5802</a></td>
-<td>11+</td>
-<td>✅ Yes</td>
-<td>✅ <strong>Best</strong></td>
+<td><a href="https://datatracker.ietf.org/doc/html/rfc5802">RFC 5802</a></td>
+<td>11+ (with TLS)</td>
+<td>Yes</td>
 </tr>
 </tbody>
 </table>
-<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<h3 id="postgresql-version-requirements">PostgreSQL Version Requirements<a class="headerlink" href="#postgresql-version-requirements" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>SCRAM-SHA-256</strong>: PostgreSQL 10 or later</li>
-<li><strong>SCRAM-SHA-256-PLUS</strong>: PostgreSQL 11 or later (with TLS channel binding)</li>
-</ul>
-<p>Check your PostgreSQL version:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql --version</p>
-<h1 id="or-from-within-psql">or from within psql:<a class="headerlink" href="#or-from-within-psql" title="Permanent link">&para;</a></h1>
-<p>SELECT version();
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="postgresql-side">PostgreSQL side<a class="headerlink" href="#postgresql-side" title="Permanent link">&para;</a></h2>
+<h3 id="1-enable-scram-password-encryption">1. Enable SCRAM password encryption<a class="headerlink" href="#1-enable-scram-password-encryption" title="Permanent link">&para;</a></h3>
+<p>Set <code>password_encryption</code> so PostgreSQL stores password hashes in SCRAM format:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check the current setting</span>
+<span class="k">SHOW</span><span class="w"> </span><span class="n">password_encryption</span><span class="p">;</span>
+<span class="c1">-- Want: scram-sha-256  (md5 is deprecated)</span>
 
-<h3 id="user-password-configuration">User Password Configuration<a class="headerlink" href="#user-password-configuration" title="Permanent link">&para;</a></h3>
-<p>Ensure PostgreSQL is configured to use SCRAM for password authentication:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check current password_encryption setting
-SHOW password_encryption;
--- Output: scram-sha-256 (or md5, which is deprecated)</p>
-<p>-- Set to SCRAM-SHA-256
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();</p>
-<p>-- Reset user password to apply new authentication method
-ALTER USER fraiseql_user PASSWORD 'new_secure_password';
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="basic-scram-authentication">Basic SCRAM Authentication<a class="headerlink" href="#basic-scram-authentication" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]</p>
-<h1 id="postgresql-connection-string-with-scram-authentication">PostgreSQL connection string with SCRAM authentication<a class="headerlink" href="#postgresql-connection-string-with-scram-authentication" title="Permanent link">&para;</a></h1>
-<p>url = "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>FraiseQL automatically:</p>
-<ol>
-<li>Extracts the username and password from the connection string</li>
-<li>Negotiates SCRAM-SHA-256 with the PostgreSQL server</li>
-<li>Performs secure challenge-response authentication</li>
-<li>Encrypts the password during transmission (never sent in plain text)</li>
-</ol>
-<h3 id="with-tlsssl-scram-sha-256-plus">With TLS/SSL (SCRAM-SHA-256-PLUS)<a class="headerlink" href="#with-tlsssl-scram-sha-256-plus" title="Permanent link">&para;</a></h3>
-<p>For the most secure configuration with channel binding:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]</p>
-<h1 id="postgresql-connection-string-with-scram-sha-256-plus">PostgreSQL connection string with SCRAM-SHA-256-PLUS<a class="headerlink" href="#postgresql-connection-string-with-scram-sha-256-plus" title="Permanent link">&para;</a></h1>
-<p>url = "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"</p>
-<p>[tls]
-enabled = true
-ca_cert = "/path/to/ca.crt"
-client_cert = "/path/to/client.crt"
-client_key = "/path/to/client.key"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>When both TLS and SCRAM are enabled:</p>
-<ol>
-<li>TLS connection is established first</li>
-<li>SCRAM-SHA-256-PLUS negotiates with TLS channel binding</li>
-<li>Authentication is tied to the TLS session (prevents replay attacks)</li>
-</ol>
-<h2 id="security-features">Security Features<a class="headerlink" href="#security-features" title="Permanent link">&para;</a></h2>
-<h3 id="scram-sha-256">SCRAM-SHA-256<a class="headerlink" href="#scram-sha-256" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>Advantages:</strong></p>
-<ul>
-<li>Password is never sent in plaintext</li>
-<li>Uses SHA-256 hashing with salt</li>
-<li>Each password is hashed with a unique salt</li>
-<li>Multiple iterations prevent dictionary attacks (default: 4096 PBKDF2 iterations)</li>
-<li>Resistant to brute-force attacks</li>
-<li>Resistant to timing attacks</li>
-</ul>
-<p>✅ <strong>Protection Against:</strong></p>
-<ul>
-<li>Plaintext password exposure</li>
-<li>Rainbow tables</li>
-<li>Dictionary attacks</li>
-<li>Brute-force attacks</li>
-<li>Timing-based password guessing</li>
-</ul>
-<h3 id="scram-sha-256-plus">SCRAM-SHA-256-PLUS<a class="headerlink" href="#scram-sha-256-plus" title="Permanent link">&para;</a></h3>
-<p>Adds <strong>channel binding</strong> for additional security:</p>
-<p>✅ <strong>Additional Protection:</strong></p>
-<ul>
-<li>Binds authentication to TLS certificate</li>
-<li>Prevents MITM attacks on the authentication layer</li>
-<li>Prevents key compromise attacks</li>
-<li>Authenticates the server through the TLS channel</li>
-</ul>
-<h2 id="migration-from-md5">Migration from MD5<a class="headerlink" href="#migration-from-md5" title="Permanent link">&para;</a></h2>
-<p>If your PostgreSQL instance uses MD5 authentication:</p>
-<h3 id="step-1-update-postgresql">Step 1: Update PostgreSQL<a class="headerlink" href="#step-1-update-postgresql" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="on-postgresql-server">On PostgreSQL server<a class="headerlink" href="#on-postgresql-server" title="Permanent link">&para;</a></h1>
-<p>sudo systemctl stop postgresql
-sudo apt-get install postgresql-14  # or later version
-sudo systemctl start postgresql
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-2-configure-scram">Step 2: Configure SCRAM<a class="headerlink" href="#step-2-configure-scram" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Connect as superuser
-sudo -u postgres psql</p>
-<p>-- Set SCRAM as default
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-3-reset-user-passwords">Step 3: Reset User Passwords<a class="headerlink" href="#step-3-reset-user-passwords" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- For each user, reset password to apply SCRAM
-ALTER USER fraiseql_user PASSWORD 'secure_password';
-ALTER USER other_user PASSWORD 'their_secure_password';
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-4-verify-migration">Step 4: Verify Migration<a class="headerlink" href="#step-4-verify-migration" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check that users are now using SCRAM
-SELECT usename, usepassword FROM pg_user WHERE usename = 'fraiseql_user';
--- Output should show: <span class="arithmatex">\(SCRAM-SHA-256\)</span>... (not md5...)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-5-update-fraiseql-configuration">Step 5: Update FraiseQL Configuration<a class="headerlink" href="#step-5-update-fraiseql-configuration" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="update-connection-string-if-credentials-changed">Update connection string if credentials changed<a class="headerlink" href="#update-connection-string-if-credentials-changed" title="Permanent link">&para;</a></h1>
-<p>[database]
-url = "postgresql://fraiseql_user:new_password@localhost:5432/fraiseql_db"
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="password-requirements">Password Requirements<a class="headerlink" href="#password-requirements" title="Permanent link">&para;</a></h2>
-<p>FraiseQL securely handles passwords:</p>
-<h3 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Strong Passwords</strong>: Use 16+ character passwords with mixed case, numbers, and symbols</li>
-<li><strong>Unique Passwords</strong>: Don't reuse passwords across systems</li>
-<li><strong>Regular Rotation</strong>: Change database passwords every 90 days</li>
-<li><strong>No Logging</strong>: Passwords are never logged or printed to console</li>
-</ol>
-<h3 id="memory-security">Memory Security<a class="headerlink" href="#memory-security" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses the <code>zeroize</code> crate to:</p>
-<ul>
-<li>Immediately zero password memory after use</li>
-<li>Prevent password fragments in memory dumps</li>
-<li>Automatic on drop (no manual cleanup needed)</li>
-</ul>
-<h2 id="testing-scram-configuration">Testing SCRAM Configuration<a class="headerlink" href="#testing-scram-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="test-connection">Test Connection<a class="headerlink" href="#test-connection" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-with-psql-first">Test with psql first<a class="headerlink" href="#test-with-psql-first" title="Permanent link">&para;</a></h1>
-<p>psql postgresql://fraiseql_user:password@localhost:5432/fraiseql_db</p>
-<h1 id="if-successful-fraiseql-should-also-connect">If successful, FraiseQL should also connect<a class="headerlink" href="#if-successful-fraiseql-should-also-connect" title="Permanent link">&para;</a></h1>
-<p>FraiseQL-server start
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="test-with-fraiseql">Test with FraiseQL<a class="headerlink" href="#test-with-fraiseql" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>use fraiseql_core::database::ConnectionPool;</p>
-<h1 id="tokiomain">[tokio::main]<a class="headerlink" href="#tokiomain" title="Permanent link">&para;</a></h1>
-<p>async fn main() {
-    let config = ConnectionConfig {
-        database_url: "postgresql://fraiseql_user:password@localhost:5432/fraiseql_db".to_string(),
-        ..Default::default()
-    };</p>
-<div class="highlight"><pre><span></span><code>let pool = ConnectionPool::new(config).await.expect(&quot;Connection failed&quot;);
-println!(&quot;✅ SCRAM authentication successful&quot;);
+<span class="c1">-- Enable SCRAM-SHA-256 (postgresql.conf, or via ALTER SYSTEM)</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scram-sha-256&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 </code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<p>This only governs <em>newly set</em> passwords. Existing roles keep their old hashes
+until their passwords are reset (see step 3).</p>
+<h3 id="2-require-scram-in-pg_hbaconf">2. Require SCRAM in <code>pg_hba.conf</code><a class="headerlink" href="#2-require-scram-in-pg_hbaconf" title="Permanent link">&para;</a></h3>
+<p><code>pg_hba.conf</code> decides the authentication method per connection. Use
+<code>scram-sha-256</code> for the host/database/role FraiseQL connects as:</p>
+<div class="highlight"><pre><span></span><code># TYPE  DATABASE   USER             ADDRESS         METHOD
+host    mydb       fraiseql_user    10.0.0.0/24     scram-sha-256
+hostssl mydb       fraiseql_user    0.0.0.0/0       scram-sha-256
+</code></pre></div>
+<p>Reload after editing:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
+</code></pre></div>
+<p>Use <code>hostssl</code> to additionally require TLS for that connection (recommended — see
+<a href="#recommend-tls-alongside-scram">Recommend TLS alongside SCRAM</a>).</p>
+<h3 id="3-create-roles-with-scram-hashed-passwords">3. Create roles with SCRAM-hashed passwords<a class="headerlink" href="#3-create-roles-with-scram-hashed-passwords" title="Permanent link">&para;</a></h3>
+<p>With <code>password_encryption = scram-sha-256</code> active, any password you set is stored
+as a SCRAM verifier:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- New role</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">LOGIN</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
 
-<h3 id="verify-authentication-method">Verify Authentication Method<a class="headerlink" href="#verify-authentication-method" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="view-the-authentication-message-from-server">View the authentication message from server<a class="headerlink" href="#view-the-authentication-message-from-server" title="Permanent link">&para;</a></h1>
-<p>RUST_LOG=fraiseql_wire::auth=debug FraiseQL-server start</p>
-<h1 id="should-show">Should show:<a class="headerlink" href="#should-show" title="Permanent link">&para;</a></h1>
-<h1 id="debug-authenticationsasl-with-mechanisms-scram-sha-256">[DEBUG] AuthenticationSASL with mechanisms: ["SCRAM-SHA-256"]<a class="headerlink" href="#debug-authenticationsasl-with-mechanisms-scram-sha-256" title="Permanent link">&para;</a></h1>
-<h1 id="debug-scram-sha-256-authentication-successful">[DEBUG] SCRAM-SHA-256 authentication successful<a class="headerlink" href="#debug-scram-sha-256-authentication-successful" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Re-hash an existing role&#39;s password (also use \password in psql, which</span>
+<span class="c1">-- never echoes the password into history or logs)</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>In <code>psql</code>, prefer the <code>\password</code> meta-command — it prompts interactively and
+rehashes using the server's current <code>password_encryption</code>:</p>
+<div class="highlight"><pre><span></span><code>\password fraiseql_user
+</code></pre></div>
+<h3 id="4-verify-the-role-uses-scram">4. Verify the role uses SCRAM<a class="headerlink" href="#4-verify-the-role-uses-scram" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The stored verifier should begin with SCRAM-SHA-256$</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">rolname</span><span class="p">,</span><span class="w"> </span><span class="n">rolpassword</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="c1">-- e.g. SCRAM-SHA-256$4096:...   (not md5...)</span>
+</code></pre></div>
+<h2 id="fraiseql-client-side">FraiseQL / client side<a class="headerlink" href="#fraiseql-client-side" title="Permanent link">&para;</a></h2>
+<p>FraiseQL connects through psycopg using a standard <code>database_url</code>. SCRAM is
+negotiated by libpq automatically; you do not write or configure any
+authentication code in FraiseQL.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="scram-authentication-failed">"SCRAM authentication failed"<a class="headerlink" href="#scram-authentication-failed" title="Permanent link">&para;</a></h3>
-<p><strong>Possible causes:</strong></p>
-<ol>
-<li>Wrong password</li>
-<li>User doesn't exist in PostgreSQL</li>
-<li>PostgreSQL not configured for SCRAM</li>
-<li>Network connectivity issues</li>
-</ol>
-<p><strong>Solution:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-with-psql-first_1">Test with psql first<a class="headerlink" href="#test-with-psql-first_1" title="Permanent link">&para;</a></h1>
-<p>psql postgresql://fraiseql_user:password@localhost:5432/fraiseql_db</p>
-<h1 id="check-postgresql-logs">Check PostgreSQL logs<a class="headerlink" href="#check-postgresql-logs" title="Permanent link">&para;</a></h1>
-<p>tail -f /var/log/postgresql/postgresql.log
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="password-authentication-failed">"Password authentication failed"<a class="headerlink" href="#password-authentication-failed" title="Permanent link">&para;</a></h3>
-<p><strong>Possible cause:</strong> PostgreSQL still using MD5</p>
-<p><strong>Solution:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check authentication method
-SHOW password_encryption;</p>
-<p>-- If output is 'md5', migrate to SCRAM:
-ALTER SYSTEM SET password_encryption = 'scram-sha-256';
-SELECT pg_reload_conf();
-ALTER USER fraiseql_user PASSWORD 'new_password';
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="connection-refused">"Connection refused"<a class="headerlink" href="#connection-refused" title="Permanent link">&para;</a></h3>
-<p><strong>Possible causes:</strong></p>
-<ol>
-<li>PostgreSQL not running</li>
-<li>Firewall blocking port 5432</li>
-<li>PostgreSQL listening on different interface</li>
-</ol>
-<p><strong>Solution:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-if-postgresql-is-running">Check if PostgreSQL is running<a class="headerlink" href="#check-if-postgresql-is-running" title="Permanent link">&para;</a></h1>
-<p>systemctl status postgresql</p>
-<h1 id="check-what-postgresql-is-listening-on">Check what PostgreSQL is listening on<a class="headerlink" href="#check-what-postgresql-is-listening-on" title="Permanent link">&para;</a></h1>
-<p>ss -tlnp | grep postgres</p>
-<h1 id="or">or<a class="headerlink" href="#or" title="Permanent link">&para;</a></h1>
-<p>netstat -tlnp | grep postgres
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
-<p>SCRAM authentication adds minimal overhead:</p>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>If <code>psql</code> with the same URL connects successfully against a SCRAM-configured
+server, FraiseQL will too — the negotiation is identical.</p>
+<p>Keep credentials out of source control. Pass the URL via an environment variable
+(FraiseQL also reads <code>FRAISEQL_DATABASE_URL</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:</span><span class="k">$(</span>vault<span class="w"> </span>kv<span class="w"> </span>get<span class="w"> </span>-field<span class="o">=</span>password<span class="w"> </span>secret/fraiseql/db<span class="k">)</span><span class="s2">@db.internal:5432/mydb&quot;</span>
+</code></pre></div>
+<h2 id="recommend-tls-alongside-scram">Recommend TLS alongside SCRAM<a class="headerlink" href="#recommend-tls-alongside-scram" title="Permanent link">&para;</a></h2>
+<p>SCRAM protects the <em>password</em>, but on its own it does not encrypt query traffic
+or authenticate the server. Add TLS for both:</p>
+<div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span>
+        <span class="s2">&quot;?sslmode=verify-full&amp;sslrootcert=/etc/ssl/certs/ca.crt&quot;</span>
+    <span class="p">),</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
 <ul>
-<li><strong>Handshake time</strong>: ~10-50ms depending on network</li>
-<li><strong>PBKDF2 iterations</strong>: Default 4096 (can be tuned)</li>
-<li><strong>Memory</strong>: ~1KB per authentication session</li>
-<li><strong>CPU</strong>: Negligible (modern CPUs handle SHA-256 efficiently)</li>
+<li><code>sslmode=verify-full</code> encrypts the connection <strong>and</strong> verifies the server's
+  certificate against <code>sslrootcert</code> (preventing MITM). Use this in production.</li>
+<li>On PostgreSQL 11+, a TLS connection enables <strong>SCRAM-SHA-256-PLUS</strong> channel
+  binding, which ties authentication to the TLS session and defeats relay
+  attacks. libpq selects it automatically when both ends support it.</li>
+<li>Pair <code>sslmode=verify-full</code> with <code>hostssl ... scram-sha-256</code> lines in
+  <code>pg_hba.conf</code> so the server rejects any non-TLS or non-SCRAM attempt.</li>
 </ul>
-<p>For applications with thousands of connections, use connection pooling:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]
-url = "postgresql://..."</p>
-<p>[pool]
-max_connections = 100
-min_idle = 10
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="migrating-from-md5">Migrating from MD5<a class="headerlink" href="#migrating-from-md5" title="Permanent link">&para;</a></h2>
+<p>If existing roles still use MD5:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 1. Switch the default to SCRAM</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scram-sha-256&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 
-<h2 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
+<span class="c1">-- 2. Re-hash each role by resetting its password</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 3. Confirm the verifier is now SCRAM</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">rolname</span><span class="p">,</span><span class="w"> </span><span class="n">rolpassword</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+</code></pre></div>
+<p>Then change the <code>pg_hba.conf</code> method from <code>md5</code> to <code>scram-sha-256</code> and
+<code>SELECT pg_reload_conf();</code>. FraiseQL needs no changes unless the password itself
+changed — in which case update the <code>database_url</code>.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p><strong>"SCRAM authentication failed" / "password authentication failed"</strong>
+Test the exact URL with <code>psql</code> first — FraiseQL uses the same negotiation:</p>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span><span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span>
+</code></pre></div>
+<p>If <code>psql</code> also fails, the cause is on the PostgreSQL side (wrong password, role
+missing, role still on MD5, or a <code>pg_hba.conf</code> line that does not match). Check
+that the role's verifier starts with <code>SCRAM-SHA-256$</code> (step 4) and that
+<code>pg_hba.conf</code> uses <code>scram-sha-256</code> for that host/database/user.</p>
+<p><strong>Server still negotiates MD5</strong>
+The role's password was set before <code>password_encryption</code> was switched. Re-run
+<code>ALTER ROLE ... PASSWORD ...</code> to rehash it.</p>
+<p><strong>"connection refused"</strong>
+PostgreSQL is not reachable — check that it is running, that it listens on the
+expected interface (<code>listen_addresses</code>), and that no firewall blocks port 5432.
+This is a connectivity issue, not an authentication one.</p>
+<h2 id="security-best-practices">Security best practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Use SCRAM-SHA-256-PLUS</strong> when possible (with TLS)</li>
-<li><strong>Enable TLS</strong> for all connections to PostgreSQL</li>
-<li><strong>Use strong passwords</strong> (16+ characters, mixed case)</li>
-<li><strong>Rotate passwords regularly</strong> (every 90 days)</li>
-<li><strong>Monitor authentication failures</strong> in PostgreSQL logs</li>
-<li><strong>Separate database credentials</strong> from application code (use environment variables)</li>
-<li><strong>Use connection pooling</strong> to limit authentication overhead</li>
-<li><strong>Audit authentication events</strong> for security monitoring</li>
+<li>Set <code>password_encryption = scram-sha-256</code> and use <code>scram-sha-256</code> lines in
+   <code>pg_hba.conf</code> for every FraiseQL connection; remove any <code>md5</code>/<code>trust</code> lines.</li>
+<li>Require TLS with <code>sslmode=verify-full</code> so SCRAM-SHA-256-PLUS channel binding
+   is used and traffic is encrypted.</li>
+<li>Give FraiseQL a dedicated, least-privileged database role.</li>
+<li>Use a long, unique, randomly generated password and rotate it periodically.</li>
+<li>Keep the <code>database_url</code> in an environment variable or secrets manager, never
+   in source control.</li>
+<li>Monitor PostgreSQL logs for repeated authentication failures.</li>
 </ol>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="dont-put-passwords-in-code">Don't put passwords in code<a class="headerlink" href="#dont-put-passwords-in-code" title="Permanent link">&para;</a></h1>
-<p>export DATABASE_URL="postgresql://fraiseql_user:password@localhost:5432/fraiseql_db"</p>
-<h1 id="or-use-a-secrets-manager">Or use a secrets manager<a class="headerlink" href="#or-use-a-secrets-manager" title="Permanent link">&para;</a></h1>
-<p>export DATABASE_PASSWORD=$(vault kv get -field=password secret/FraiseQL/db)
-```text</p>
-<!-- Code example in TEXT -->
-
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://www.postgresql.org/docs/current/sql-syntax-lexical.html">PostgreSQL Documentation: SCRAM-SHA-256 Authentication</a></li>
-<li><a href="https://tools.ietf.org/html/rfc5802">RFC 5802: SCRAM (Salted Challenge Response Authentication Mechanism)</a></li>
-<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html">OWASP: Authentication Cheat Sheet</a></li>
-<li><a href="https://www.postgresql.org/docs/current/sql-createrole.html">PostgreSQL Security Documentation</a></li>
+<li><a href="https://www.postgresql.org/docs/current/auth-password.html">PostgreSQL: Password Authentication (SCRAM)</a></li>
+<li><a href="https://www.postgresql.org/docs/current/auth-pg-hba-conf.html">PostgreSQL: The pg_hba.conf File</a></li>
+<li><a href="https://www.postgresql.org/docs/current/libpq-ssl.html">PostgreSQL: SSL Support (libpq sslmode)</a></li>
+<li><a href="https://datatracker.ietf.org/doc/html/rfc5802">RFC 5802: SCRAM</a></li>
+<li><a href="../">Authentication overview (application/user auth)</a></li>
 </ul>
 
 
@@ -5254,6 +5177,9 @@ min_idle = 10
 
 
 
+
+  
+  
 
 
 
