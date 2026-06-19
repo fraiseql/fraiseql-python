@@ -1,513 +1,309 @@
-<!-- Skip to main content -->
+---
+title: FraiseQL Authentication & Authorization
+description: Overview of FraiseQL v1 authentication and authorization — Auth0, native, and custom JWT providers, resolver decorators, operation/field authorization, and PostgreSQL row-level security, all running inside your FastAPI app.
+keywords: ["fraiseql", "authentication", "authorization", "auth0", "jwt", "rbac", "row-level-security"]
+tags: ["documentation", "integrations", "authentication"]
 ---
 
-title: FraiseQL Authentication System - Complete Documentation
-description: Welcome to FraiseQL's comprehensive OAuth 2.0 / OIDC authentication system. This directory contains complete documentation for implementing, deploying, and main
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
-tags: ["documentation", "reference"]
----
+# FraiseQL Authentication & Authorization
 
-# FraiseQL Authentication System - Complete Documentation
+This section covers how to authenticate users and authorize operations in a
+FraiseQL v1 application. FraiseQL is a Python runtime GraphQL framework for
+PostgreSQL, served over FastAPI. **Authentication and authorization run inside
+your Python/FastAPI app** — there is no separate auth server to deploy.
 
-Welcome to FraiseQL's comprehensive OAuth 2.0 / OIDC authentication system. This directory contains complete documentation for implementing, deploying, and maintaining authentication in FraiseQL.
+At a high level you choose an **auth provider** (Auth0, the built-in native
+provider, or a custom one you implement), and FraiseQL puts an authenticated
+`UserContext` into `info.context["user"]` for every resolver. You then enforce
+access with decorators, an operation-level `Authorizer`, field authorization,
+and PostgreSQL Row-Level Security (RLS).
 
-## Prerequisites
+## What you should already know
 
-**Required Knowledge:**
+- OAuth 2.0 / OIDC and JWT validation basics (if you use Auth0 or another issuer)
+- GraphQL resolvers and how FraiseQL types/queries/mutations are defined
+- PostgreSQL — especially Row-Level Security if you need multi-tenancy
 
-- OAuth 2.0 and OIDC fundamentals
-- JWT token structure and validation
-- HTTP/REST APIs
-- Basic networking and DNS
-- Your chosen auth provider's console/admin panel
+**Required tools:**
 
-**Required Tools:**
-
-- FraiseQL v2.0.0-alpha.1 or later
-- curl or Postman (for API testing)
-- Configured database (PostgreSQL 14+)
-- Node.js or Python (for SDK examples)
-
-**For Each Provider:**
-
-**Google OAuth:**
-
-- Google Cloud Console account with project
-- OAuth 2.0 credentials (Client ID and Secret)
-- Registered redirect URIs
-
-**Auth0:**
-
-- Auth0 account (free tier available)
-- Auth0 application created
-- Auth0 API configured
-
-**Keycloak:**
-
-- Keycloak server deployed (self-hosted)
-- Realm and client created
-- Admin access
-
-**SCRAM:**
-
-- FraiseQL configured with SCRAM support
-- Username/password credentials
-- TLS enabled for security
-
-**Time Estimate:** 30 minutes to 2 hours depending on provider choice
+- FraiseQL v1 installed (`pip install fraiseql` / `uv add fraiseql`)
+- A PostgreSQL 14+ database
+- Your chosen identity provider's console (for Auth0 or another OIDC issuer)
 
 ---
 
-## 📚 Documentation Structure
+## Provider model
 
-### Quick Start
+FraiseQL has exactly **three provider modes**, selected by
+`auth_provider` (a `Literal["auth0", "custom", "none"]`, default `"none"`):
 
-1. **First Time Setup?** → Choose your provider:
-   - [Google OAuth Setup](./setup-google-oauth.md) - Recommended for quick testing
-   - [Keycloak Setup](./setup-keycloak.md) - Self-hosted option
-   - [Auth0 Setup](./setup-auth0.md) - Managed service option
+| Mode | Provider class | When to use |
+|------|----------------|-------------|
+| `"auth0"` | `Auth0Provider` / `Auth0ProviderWithRevocation` | Auth0 (or any OIDC issuer fronted by Auth0) |
+| `"custom"` | a subclass of the `AuthProvider` ABC (e.g. `NativeAuthProvider`, `RustCustomJWTProvider`, or your own) | username/password, or any JWT issuer you validate yourself |
+| `"none"` | — | no authentication (development / public APIs) |
 
-2. **Need API Details?** → [API Reference](./api-reference.md)
-   - Complete endpoint documentation
-   - Request/response formats
-   - Error codes and handling
-   - JavaScript/Axios examples
+There is **no** per-vendor provider class (no `GoogleProvider`,
+`KeycloakProvider`, or `OidcProvider`). To use Google, Keycloak, or any other
+OIDC issuer you have two honest paths:
 
-### Implementation
+1. **Front it with Auth0** (Auth0 as the broker) and use `auth_provider="auth0"`.
+2. **Set `auth_provider="custom"`** and implement an `AuthProvider` subclass that
+   validates that issuer's JWTs against its JWKS / issuer / audience.
 
-- **[API Reference](./api-reference.md)** - Complete endpoint documentation
-  - All HTTP endpoints with examples
-  - Error handling patterns
-  - JavaScript integration examples
+All providers implement the `AuthProvider` ABC from `fraiseql.auth`:
 
-- **[Custom SessionStore Implementation](./implement-session-store.md)** - Build your own backend
-  - Redis implementation (full code)
-  - DynamoDB implementation (full code)
-  - MongoDB implementation (full code)
-  - Best practices and testing
+```python
+from typing import Any
 
-### Deployment & Operations
+from fraiseql.auth import AuthProvider, UserContext
 
-- **[Deployment Guide](./deployment.md)** - Production deployment
-  - Docker Compose setup
-  - Kubernetes manifests
-  - Nginx reverse proxy
-  - SSL/TLS with Let's Encrypt
-  - Database setup and backups
-  - Scaling and high availability
 
-- **[Monitoring Guide](./monitoring.md)** - Observability
-  - Structured logging (JSON)
-  - Prometheus metrics
-  - Grafana dashboards
-  - Health checks
-  - Alert rules
+class MyJWTProvider(AuthProvider):
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        # Verify signature/issuer/audience and return the decoded claims.
+        ...
 
-- **[Troubleshooting Guide](./troubleshooting.md)** - Common issues
-  - Login flow problems
-  - Token issues
-  - Database connectivity
-  - Performance optimization
-  - OAuth provider debugging
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return UserContext(
+            user_id=payload["sub"],
+            email=payload.get("email"),
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+        )
+```
 
-### Security & Compliance
-
-- **[Security Checklist](./security-checklist.md)** - Production security
-  - 100+ point security audit
-  - OAuth provider specifics
-  - GDPR / SOC2 / PCI-DSS
-  - Incident response
-  - Sign-off templates
+`UserContext` carries `user_id`, optional `email`/`name`, `roles`,
+`permissions`, and a free-form `metadata` dict, with helpers
+`has_role`, `has_permission`, `has_any_role`, and `has_any_permission`.
 
 ---
 
-## 🚀 Getting Started (5 minutes)
+## Wiring auth into your app
 
-### Step 1: Choose OAuth Provider
+Auth is configured through `create_fraiseql_app(...)` kwargs (or, equivalently,
+through `FraiseQLConfig` / `FRAISEQL_*` environment variables). There is no
+`fraiseql.toml` and no `[auth]` config block.
+
+### Auth0
+
+```python
+import fraiseql
+from fraiseql.auth import Auth0Config
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    auth=Auth0Config(
+        domain="myapp.auth0.com",
+        api_identifier="https://api.myapp.com",
+    ),
+    production=True,
+)
+```
+
+Equivalent environment configuration:
 
 ```bash
-<!-- Code example in BASH -->
-# Option 1: Google (easiest for testing)
-# https://console.cloud.google.com
-# Create OAuth app, get credentials
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=myapp.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.myapp.com
+# FRAISEQL_AUTH0_ALGORITHMS defaults to ["RS256"]
+```
 
-# Option 2: Keycloak (self-hosted)
-# docker-compose up keycloak
+### Custom / native provider
 
-# Option 3: Auth0 (managed service)
-# https://manage.auth0.com
-```text
-<!-- Code example in TEXT -->
+Pass any `AuthProvider` instance as `auth=...`:
 
-### Step 2: Configure FraiseQL
+```python
+from fraiseql.fastapi import create_fraiseql_app
 
-```bash
-<!-- Code example in BASH -->
-# .env file
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
-JWT_ISSUER=https://accounts.google.com
-DATABASE_URL=postgres://user:pass@localhost/FraiseQL
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    auth=MyJWTProvider(),
+    production=True,
+)
+```
 
-### Step 3: Register Endpoints
+The built-in `NativeAuthProvider` (in `fraiseql.auth.native`) supports
+username/password auth with a FastAPI router for register/login/refresh/logout
+flows. See the [native auth provider guide](./scram.md) for the
+PostgreSQL connection-auth story, and the [API reference](./api-reference.md)
+for endpoint details.
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::auth::{auth_start, auth_callback, auth_refresh, auth_logout};
+### Run the app
 
-let auth_routes = Router::new()
-    .route("/auth/start", post(auth_start))
-    .route("/auth/callback", get(auth_callback))
-    .route("/auth/refresh", post(auth_refresh))
-    .route("/auth/logout", post(auth_logout))
-    .with_state(auth_state);
-```text
-<!-- Code example in TEXT -->
-
-### Step 4: Test the Flow
+FraiseQL apps are ordinary ASGI/FastAPI apps — run them with Uvicorn:
 
 ```bash
-<!-- Code example in BASH -->
-# Start login
-curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}' | jq .authorization_url
-
-# Visit the URL in browser, authenticate
-# Tokens returned in callback response
-```text
-<!-- Code example in TEXT -->
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
 ---
 
-## 📖 Documentation Guide
+## Authorizing operations
 
-### By Role
+Once `info.context["user"]` holds a `UserContext`, you have several enforcement
+points. They compose — use whichever fits the layer of the check.
 
-**Developers**
+### Resolver decorators
 
-- Start: [API Reference](./api-reference.md)
-- Then: [Setup Guide](./setup-google-oauth.md) for your provider
-- Reference: [Custom SessionStore](./implement-session-store.md) if needed
+`requires_auth`, `requires_permission`, and `requires_role` (plus
+`requires_any_role` / `requires_any_permission`) gate a single resolver:
 
-**DevOps / Site Reliability Engineers**
+```python
+import fraiseql
+from fraiseql.auth import requires_auth, requires_permission, requires_role
 
-- Start: [Deployment Guide](./deployment.md)
-- Then: [Monitoring Guide](./monitoring.md)
-- Reference: [Troubleshooting](./troubleshooting.md)
 
-**Security / Compliance Teams**
+@fraiseql.query
+@requires_auth
+async def me(info) -> User:
+    user = info.context["user"]  # guaranteed authenticated
+    db = info.context["db"]
+    return await db.find_one("v_user", id=user.user_id)
 
-- Start: [Security Checklist](./security-checklist.md)
-- Reference: [Deployment Guide](./deployment.md) for architecture
 
-**Support / Operations**
+@fraiseql.mutation
+@requires_permission("users:write")
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    ...
 
-- Start: [Troubleshooting Guide](./troubleshooting.md)
-- Reference: [Monitoring Guide](./monitoring.md) for dashboards
 
-### By Task
+@fraiseql.mutation
+@requires_role("admin")
+async def delete_user(info, id: ID) -> DeleteUserSuccess | DeleteUserError:
+    ...
+```
 
-| Task | Document |
-|------|----------|
-| Set up OAuth with Google | [setup-google-oauth.md](./setup-google-oauth.md) |
-| Set up Keycloak | [setup-keycloak.md](./setup-keycloak.md) |
-| Set up Auth0 | [setup-auth0.md](./setup-auth0.md) |
-| Call auth endpoints | [api-reference.md](./api-reference.md) |
-| Build custom session store | [implement-session-store.md](./implement-session-store.md) |
-| Deploy to production | [deployment.md](./deployment.md) |
-| Set up monitoring | [monitoring.md](./monitoring.md) |
-| Debug issues | [troubleshooting.md](./troubleshooting.md) |
-| Pass security audit | [security-checklist.md](./security-checklist.md) |
+A failed check raises a GraphQL error whose `extensions.code` is
+`UNAUTHENTICATED` (missing user) or `FORBIDDEN` (insufficient role/permission).
 
----
+### Operation-level `Authorizer`
 
-## 🔑 Key Features
+For policy that lives outside the resolver, supply an `Authorizer` — a small
+object that decides whether a top-level operation may run. Attach it per
+operation or globally:
 
-✅ **Multiple OAuth Providers**
+```python
+from fraiseql.security import AuthorizationDecision
 
-- Google OAuth 2.0 / OIDC
-- Keycloak
-- Auth0
-- Any OIDC-compliant provider
 
-✅ **Security First**
+class TenantAuthorizer:
+    async def authorize_operation(
+        self, *, context, operation_type, operation_name, arguments
+    ) -> AuthorizationDecision:
+        user = context.get("user")
+        if user is None:
+            return AuthorizationDecision.deny(message="Authentication required")
+        return AuthorizationDecision.allow()
 
-- PKCE for authorization code flow
-- CSRF protection via state parameter
-- JWT signature verification
-- Token hashing in storage
-- Session revocation
 
-✅ **Production Ready**
+# Per operation:
+@fraiseql.query(authorizer=TenantAuthorizer())
+async def tenant_report(info) -> list[Report]:
+    ...
 
-- Structured logging (JSON)
-- Prometheus metrics
-- Health checks
-- Kubernetes deployment
-- Docker Compose setup
-- Database backups
 
-✅ **Extensible**
+# Globally (also works on build_fraiseql_schema):
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[Report],
+    queries=[tenant_report],
+    authorizer=TenantAuthorizer(),
+)
+```
 
-- Pluggable `SessionStore` trait
-- Pluggable `OAuthProvider` trait
-- Custom provider implementations
-- Multiple session backends (PostgreSQL, Redis, DynamoDB, MongoDB)
+The framework enforces decisions **fail-closed**: if the authorizer raises, the
+operation is denied. `AuthorizationDecision.allow(filters=...)` can also carry
+row-scoping filters that are AND-ed into the read path. An optional
+`authorization_cache` can memoize decisions for pure-function authorizers.
 
-✅ **Well Documented**
+### Field authorization
 
-- Setup guides for all major providers
-- Complete API reference
-- Implementation examples
-- Deployment guide
-- Security best practices
-- Troubleshooting guide
+Gate individual fields with `authorize_field` (composable via
+`combine_permissions` / `any_permission`), or list them on the type via
+`@fraiseql.type(..., authorize_fields=...)`:
 
----
+```python
+from fraiseql.security import authorize_field
 
-## 📊 Architecture Overview
 
-```text
-<!-- Code example in TEXT -->
-┌─ Client (Browser/App)
-│
-├─ POST /auth/start
-│  └─ Returns authorization URL
-│
-├─ Redirects to OAuth Provider
-│  └─ User authenticates
-│
-├─ GET /auth/callback?code=...&state=...
-│  ├─ Validates state (CSRF)
-│  ├─ Exchanges code for tokens
-│  ├─ Gets user info
-│  ├─ Creates session
-│  └─ Returns access & refresh tokens
-│
-├─ Subsequent API Requests
-│  ├─ Authorization: Bearer <access_token>
-│  ├─ JWT Validator verifies signature
-│  ├─ Session Manager validates session
-│  └─ Request proceeds with authenticated user
-│
-├─ POST /auth/refresh
-│  ├─ Validates refresh token
-│  ├─ Creates new access token
-│  └─ Returns new token
-│
-└─ POST /auth/logout
-   ├─ Revokes session
-   └─ User logged out
-```text
-<!-- Code example in TEXT -->
+@authorize_field(lambda info: info.context.get("user") is not None)
+async def email(user: User, info) -> str:
+    return user.email
+```
+
+### Row-Level Security (multi-tenancy)
+
+For tenant isolation, enforce it in PostgreSQL with RLS. FraiseQL's CQRS
+repository sets session GUCs from the request context: when `info.context`
+carries `tenant_id` (and `user_id`, `is_super_admin`, …), it issues
+`SET LOCAL app.tenant_id = …` per transaction, so your RLS policies see the
+current tenant:
+
+```sql
+ALTER TABLE tb_invoice ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON tb_invoice
+    USING (tenant_id = current_setting('app.tenant_id')::uuid);
+```
+
+Reads can additionally pass `mandatory_filters={"tenant_id": ...}` to
+`db.find` / `db.count`.
 
 ---
 
-## 🧪 Testing
+## Token revocation
 
-### Manual Testing
-
-```bash
-<!-- Code example in BASH -->
-# Start login flow
-curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}'
-
-# Get authorization URL, visit in browser
-# Complete OAuth flow
-# Receive tokens in response
-
-# Use access token
-curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text
-<!-- Code example in TEXT -->
-
-### Automated Testing
-
-```bash
-<!-- Code example in BASH -->
-# Run all auth tests
-cargo test -p FraiseQL-server auth:: --lib
-
-# Run with logging
-RUST_LOG=debug cargo test -p FraiseQL-server auth:: --lib -- --nocapture
-```text
-<!-- Code example in TEXT -->
+For Auth0 (or native) deployments that need logout/blacklisting, FraiseQL ships
+a revocation subsystem in `fraiseql.auth`: `TokenRevocationService` plus an
+`InMemoryRevocationStore` or `PostgreSQLRevocationStore` (configured by
+`RevocationConfig`). `Auth0ProviderWithRevocation` wires revocation checks into
+Auth0 token validation. Revocation behavior is also controllable via
+`FRAISEQL_REVOCATION_*` settings.
 
 ---
 
-## 🚨 Common Issues
+## Documentation in this section
 
-### "Invalid Redirect URI"
-
-See: [Troubleshooting](./troubleshooting.md#invalid-redirect-uri-error)
-
-### "Invalid State"
-
-See: [Troubleshooting](./troubleshooting.md#invalid-state-error)
-
-### "Token Expired"
-
-See: [Troubleshooting](./troubleshooting.md#token-expired-on-valid-token)
-
-### Database Connection Issues
-
-See: [Troubleshooting](./troubleshooting.md#database-issues)
+| Document | Purpose |
+|----------|---------|
+| [Provider selection guide](./provider-selection-guide.md) | Choosing between Auth0, native, and custom providers |
+| [Auth0 setup](./setup-auth0.md) | Configure Auth0 as your provider |
+| [Google OAuth setup](./setup-google-oauth.md) | Use Google (via Auth0 or a custom provider) |
+| [Keycloak setup](./setup-keycloak.md) | Use Keycloak (via Auth0 or a custom provider) |
+| [SCRAM / database connection auth](./scram.md) | PostgreSQL `scram-sha-256` connection authentication |
+| [API reference](./api-reference.md) | Auth endpoints, request/response shapes, error codes |
+| [Deployment](./deployment.md) | Deploying an authenticated FraiseQL app |
+| [Monitoring](./monitoring.md) | Logging, metrics, and health checks for auth |
+| [Troubleshooting](./troubleshooting.md) | Common auth issues and fixes |
+| [Security checklist](./security-checklist.md) | Pre-production security review |
 
 ---
 
-## 📋 Checklist for Deployment
+## Security considerations
 
-- [ ] Review [Security Checklist](./security-checklist.md)
-- [ ] Set up OAuth provider (Google/Keycloak/Auth0)
-- [ ] Configure environment variables
-- [ ] Set up PostgreSQL database
-- [ ] Run database migrations
-- [ ] Configure HTTPS/TLS
-- [ ] Set up monitoring and alerts
-- [ ] Test complete OAuth flow
-- [ ] Load test authentication endpoints
-- [ ] Review logs for errors
-- [ ] Get security sign-off
-- [ ] Deploy to production
+- **Always use HTTPS / TLS** in production (and `sslmode` on the database URL).
+- **Never expose secrets** in client code or commit them to source control.
+- **Validate issuer, audience, and signature** for every JWT.
+- **Handle token expiry** gracefully; use refresh where the provider supports it.
+- **Enforce tenant isolation in the database** (RLS), not only in resolvers.
+- **Prefer fail-closed authorizers** — the framework already denies on error.
+
+See the [Security checklist](./security-checklist.md) for the full list.
 
 ---
 
-## 🔧 Configuration Reference
+## See also
 
-### Environment Variables
-
-```bash
-<!-- Code example in BASH -->
-# OAuth Provider Credentials (all required)
-GOOGLE_CLIENT_ID=...                    # From Google Cloud Console
-GOOGLE_CLIENT_SECRET=...                # From Google Cloud Console
-OAUTH_REDIRECT_URI=https://...          # Exact match with provider
-
-# JWT Configuration
-JWT_ISSUER=https://accounts.google.com  # From OAuth provider
-JWT_ALGORITHM=RS256                     # Usually RS256
-
-# Database
-DATABASE_URL=postgres://user:pass@host/db
-DATABASE_POOL_SIZE=20
-
-# Logging
-RUST_LOG=info,fraiseql_server::auth=debug
-```text
-<!-- Code example in TEXT -->
-
-### Docker Environment
-
-See [Deployment Guide](./deployment.md#docker-deployment) for complete setup
-
-### Kubernetes Configuration
-
-See [Deployment Guide](./deployment.md#kubernetes-deployment) for manifests
-
----
-
-## 🆘 Getting Help
-
-1. **Check the docs** - Most questions covered in documentation
-2. **Check troubleshooting** - [Troubleshooting Guide](./troubleshooting.md)
-3. **Enable debug logging** - `RUST_LOG=debug`
-4. **Create GitHub issue** - <https://github.com/FraiseQL/FraiseQL/issues>
-   - Include error message (no secrets)
-   - Steps to reproduce
-   - Environment details
-   - Logs with debug enabled
-
----
-
-## 📈 Performance Characteristics
-
-| Operation | Latency | Alert Threshold |
-|-----------|---------|-----------------|
-| JWT Validation | 1-5ms | >10ms |
-| Session Lookup | 5-50ms | >100ms |
-| OAuth Token Exchange | 200-500ms | >1000ms |
-| User Info Retrieval | 100-300ms | >500ms |
-
----
-
-## 🔐 Security Considerations
-
-- **Always use HTTPS** in production
-- **Never expose secrets** in client code
-- **Store tokens securely** (HTTP-only cookies)
-- **Handle token expiry** gracefully
-- **Validate redirects** in your app
-- **Monitor authentication** events
-- **Rotate secrets** regularly
-- **Use strong passwords** for database
-
-See [Security Checklist](./security-checklist.md) for complete list.
-
----
-
-## 📚 Additional Resources
-
-- [OAuth 2.0 Specification](https://tools.ietf.org/html/rfc6749)
-- [OpenID Connect Specification](https://openid.net/specs/openid-connect-core-1_0.html)
-- [PKCE (RFC 7636)](https://tools.ietf.org/html/rfc7636)
-- [JWT Best Practices (RFC 8725)](https://tools.ietf.org/html/rfc8725)
-
----
-
-## 📝 Document Index
-
-| Document | Length | Purpose |
-|----------|--------|---------|
-| setup-google-oauth.md | 400 lines | Google OAuth setup |
-| setup-keycloak.md | 350 lines | Self-hosted OIDC |
-| setup-auth0.md | 400 lines | Managed OIDC |
-| api-reference.md | 500 lines | Complete API docs |
-| implement-session-store.md | 600 lines | Custom backends (3 examples) |
-| deployment.md | 500 lines | Production deployment |
-| monitoring.md | 350 lines | Observability setup |
-| security-checklist.md | 450 lines | Security audit |
-| troubleshooting.md | 450 lines | Common issues |
-| README.md | This file | Overview |
-
-**Total: 3,000+ lines of documentation**
-
----
-
-## 🎯 Next Steps
-
-1. **Choose your OAuth provider** (Google recommended for quick start)
-2. **Follow the setup guide** for that provider
-3. **Set up database** and run migrations
-4. **Test the complete flow** manually
-5. **Deploy to production** following deployment guide
-6. **Set up monitoring** for operations
-7. **Run through security checklist** before going live
-
----
-
-**Version**: 1.0
-**Last Updated**: 2026-01-21
-**Status**: Production Ready ✅
-
----
-
-See [Security Checklist](./security-checklist.md) for deployment sign-off template.
-
----
-
-## See Also
-
-- **[Federation Guide](../federation/guide.md)** - Multi-subgraph authentication coordination
-- **[Production Deployment](../../guides/production-deployment.md)** - Deploying authentication in production
-- **[Security Model](../../architecture/security/security-model.md)** - Authentication architecture deep dive
-- **[Observability](./monitoring.md)** - Monitoring authentication events
-- **[Troubleshooting](./troubleshooting.md)** - Common authentication issues
+- [Production Deployment](../../guides/production-deployment.md) — deploying an authenticated app
+- [Security Model](../../architecture/security/security-model.md) — authorization architecture
+- [Monitoring](./monitoring.md) — observing authentication events
+- [Troubleshooting](./troubleshooting.md) — common authentication issues

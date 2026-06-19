@@ -1,551 +1,534 @@
-<!-- Skip to main content -->
 ---
 
 title: FraiseQL Authentication API Reference
-description: Complete API documentation for FraiseQL's OAuth 2.0 / OIDC authentication system.
-keywords: ["framework", "directives", "types", "sdk", "schema", "scalars", "monitoring", "api"]
+description: Complete reference for FraiseQL's Python authentication and authorization API.
+keywords: ["framework", "authentication", "authorization", "providers", "decorators", "api"]
 tags: ["documentation", "reference"]
 ---
 
 # FraiseQL Authentication API Reference
 
-Complete API documentation for FraiseQL's OAuth 2.0 / OIDC authentication system.
+FraiseQL's authentication and authorization run **inside your FastAPI app, in
+Python**. There is no Rust auth router and no separate auth server: you pass a
+provider (or configuration) to `create_fraiseql_app(...)`, and FraiseQL resolves
+the bearer token on each GraphQL request into a `UserContext` available at
+`info.context["user"]`. Denied access surfaces as a GraphQL error whose
+`extensions.code` is `UNAUTHENTICATED` or `FORBIDDEN` — never an out-of-band HTTP
+status from a router you do not control.
 
-## Base URL
-
-```text
-<!-- Code example in TEXT -->
-Development: http://localhost:8000
-Production: https://api.yourdomain.com
-```text
-<!-- Code example in TEXT -->
-
-## Endpoints
-
-### 1. POST /auth/start
-
-Initiate the OAuth authentication flow.
-
-**Request**
-
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "provider": "google"
-  }'
-```text
-<!-- Code example in TEXT -->
-
-**Request Body**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `provider` | string | No | OAuth provider name (default: "default") |
-
-**Response (200 OK)**
-
-```json
-<!-- Code example in JSON -->
-{
-  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=..."
-}
-```text
-<!-- Code example in TEXT -->
-
-**Response Fields**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `authorization_url` | string | URL to redirect user to for authentication |
-
-**Error Responses**
-
-| Status | Error | Description |
-|--------|-------|-------------|
-| 500 | `auth_error` | OAuth provider configuration error |
-
-**Usage**
-
-1. Redirect user to the returned `authorization_url`
-2. User authenticates with the provider
-3. Provider redirects to `/auth/callback` with code and state
+This page documents the public Python surface. For step-by-step setup, see the
+[Auth0](./setup-auth0.md), [Google OAuth](./setup-google-oauth.md), and
+[Keycloak](./setup-keycloak.md) guides.
 
 ---
 
-### 2. GET /auth/callback
+## Providers
 
-OAuth provider redirects here after user authentication.
+A provider validates an incoming token and turns it into a `UserContext`. All
+providers subclass `AuthProvider`.
 
-**Query Parameters**
+### `AuthProvider` (base ABC)
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `code` | string | Yes | Authorization code from provider |
-| `state` | string | Yes | CSRF protection state parameter |
-| `error` | string | No | Error code if authentication failed |
-| `error_description` | string | No | Detailed error message |
+```python
+from fraiseql.auth import AuthProvider
+```
 
-**Example Request**
+`AuthProvider` (`src/fraiseql/auth/base.py`) is the abstract base every provider
+implements. Subclass it to support any OIDC/JWT issuer.
 
-```text
-<!-- Code example in TEXT -->
-GET http://localhost:8000/auth/callback?code=4/0A...&state=xyz123
-```text
-<!-- Code example in TEXT -->
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `validate_token` | `async validate_token(self, token: str) -> dict` | Validate the token and return its decoded payload. Raise `AuthenticationError` on failure. **Abstract.** |
+| `get_user_from_token` | `async get_user_from_token(self, token: str) -> UserContext` | Build a `UserContext` for the bearer of `token`. **Abstract.** |
+| `refresh_token` | `async refresh_token(self, refresh_token: str) -> tuple[str, str]` | Optional. Returns `(new_access_token, new_refresh_token)`. Raises `NotImplementedError` by default. |
+| `revoke_token` | `async revoke_token(self, token: str) -> None` | Optional. Raises `NotImplementedError` by default. |
 
-**Response (200 OK)**
+```python
+from typing import Any
 
-```json
-<!-- Code example in JSON -->
-{
-  "access_token": "access_token_user123_3600_uuid",
-  "refresh_token": "base64_encoded_refresh_token",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text
-<!-- Code example in TEXT -->
+import jwt
 
-**Response Fields**
+from fraiseql.auth import AuthProvider, UserContext
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `access_token` | string | JWT token for API requests (1 hour expiry) |
-| `refresh_token` | string | Token to refresh access token (7 days expiry) |
-| `token_type` | string | Always "Bearer" |
-| `expires_in` | number | Seconds until access token expires |
 
-**Error Responses**
+class CustomJWTProvider(AuthProvider):
+    def __init__(self, secret: str) -> None:
+        self.secret = secret
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| 400 | `invalid_state` | State parameter invalid or expired |
-| 500 | `oauth_error` | Provider error during token exchange |
-| 502 | `oauth_error` | Provider unreachable |
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        return jwt.decode(token, self.secret, algorithms=["HS256"])
 
-**Security Notes**
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return UserContext(
+            user_id=payload["sub"],
+            email=payload.get("email"),
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+        )
+```
 
-- State parameter is validated (10 minute expiry)
-- Code can only be used once
-- Code expires in 10 minutes
+Pass any provider instance to `create_fraiseql_app(auth=...)`.
 
----
+### `Auth0Provider` / `Auth0Config`
 
-### 3. POST /auth/refresh
+```python
+from fraiseql.auth import Auth0Config, Auth0Provider
+```
 
-Refresh an expired access token using a refresh token.
+`Auth0Provider` (`src/fraiseql/auth/auth0.py`) validates Auth0-issued JWTs.
+It fetches and caches the tenant JWKS, validates with `RS256` by default, and
+extracts roles/permissions from Auth0 claims.
 
-**Request**
+```python
+provider = Auth0Provider(
+    domain="myapp.auth0.com",
+    api_identifier="https://api.myapp.com",
+    algorithms=["RS256"],   # default
+    cache_jwks=True,        # default
+)
+```
 
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "base64_encoded_refresh_token"
-  }'
-```text
-<!-- Code example in TEXT -->
+`Auth0Config` is a plain configuration holder you can pass to
+`create_fraiseql_app(auth=...)` (FraiseQL builds the provider from it):
 
-**Request Body**
+```python
+config = Auth0Config(
+    domain="myapp.auth0.com",
+    api_identifier="https://api.myapp.com",
+    client_id=None,         # optional, Management API only
+    client_secret=None,     # optional, Management API only
+    algorithms=None,        # defaults to ["RS256"]
+)
+```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `refresh_token` | string | Yes | Refresh token from previous login |
+### `Auth0ProviderWithRevocation`
 
-**Response (200 OK)**
+```python
+from fraiseql.auth import Auth0ProviderWithRevocation
+```
 
-```json
-<!-- Code example in JSON -->
-{
-  "access_token": "new_access_token_...",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text
-<!-- Code example in TEXT -->
+`Auth0ProviderWithRevocation` (`src/fraiseql/auth/auth0_with_revocation.py`) is
+an `Auth0Provider` mixed with `TokenRevocationMixin`, so validated tokens are
+additionally checked against a revocation store (see
+[Token revocation](#token-revocation)).
 
-**Response Fields**
+### `NativeAuthProvider`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `access_token` | string | New JWT token for API requests |
-| `token_type` | string | Always "Bearer" |
-| `expires_in` | number | Seconds until new token expires |
+```python
+from fraiseql.auth.native import NativeAuthProvider, TokenManager
+```
 
-**Error Responses**
+`NativeAuthProvider` (`src/fraiseql/auth/native/provider.py`) implements
+PostgreSQL-backed username/password authentication using its own `TokenManager`
+and a `psycopg` connection pool. It ships with a FastAPI router
+(`src/fraiseql/auth/native/router.py`, tag `"auth"`) exposing endpoints such as
+`/register`, `/login`, `/refresh`, `/me`, and `/logout`.
 
-| Status | Error | Description |
-|--------|-------|-------------|
-| 401 | `token_not_found` | Refresh token doesn't exist |
-| 401 | `session_revoked` | Session has been revoked |
+```python
+provider = NativeAuthProvider(
+    token_manager=token_manager,   # TokenManager instance
+    db_pool=pool,                  # AsyncConnectionPool
+    schema="public",               # default
+)
+```
 
-**Example Usage (JavaScript)**
+### `RustCustomJWTProvider`
 
-```javascript
-<!-- Code example in JAVASCRIPT -->
-const response = await fetch('/auth/refresh', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    refresh_token: localStorage.getItem('refreshToken')
-  })
-});
+```python
+from fraiseql.auth.rust_provider import RustCustomJWTProvider
+```
 
-const { access_token, expires_in } = await response.json();
-localStorage.setItem('accessToken', access_token);
-// Schedule refresh before expiry
-setTimeout(() => refreshToken(), expires_in * 1000 - 300000);
-```text
-<!-- Code example in TEXT -->
+`RustCustomJWTProvider` (`src/fraiseql/auth/rust_provider.py`) validates JWTs
+from a custom issuer using the optional `fraiseql_rs` extension for faster
+validation. It is still a Python-facing `AuthProvider`.
 
----
+```python
+provider = RustCustomJWTProvider(
+    issuer="https://issuer.example.com/",
+    audience="https://api.myapp.com",
+    jwks_url="https://issuer.example.com/.well-known/jwks.json",  # must be HTTPS
+    roles_claim="roles",            # default
+    permissions_claim="permissions",  # default
+)
+```
 
-### 4. POST /auth/logout
-
-Logout and revoke the session.
-
-**Request**
-
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "base64_encoded_refresh_token"
-  }'
-```text
-<!-- Code example in TEXT -->
-
-**Request Body**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `refresh_token` | string | No | Token to revoke (if not provided, revokes all) |
-
-**Response (204 No Content)**
-
-No response body.
-
-**Error Responses**
-
-| Status | Error | Description |
-|--------|-------|-------------|
-| 401 | `session_error` | Session not found |
+> Any OIDC/JWT issuer (Google, Keycloak, Okta, …) is supported through one of two
+> honest paths: front it with Auth0 and use `Auth0Provider`, or set
+> `auth_provider="custom"` and implement an `AuthProvider` subclass that validates
+> that issuer's tokens via its JWKS/issuer/audience. There is no dedicated
+> `GoogleProvider`, `KeycloakProvider`, or `OidcProvider` class.
 
 ---
 
-## Authentication
+## `UserContext`
 
-### Bearer Token
+```python
+from fraiseql.auth import UserContext
+```
 
-Include the access token in the `Authorization` header:
+`UserContext` (`src/fraiseql/auth/base.py`) is the authenticated principal
+available at `info.context["user"]` in every resolver.
 
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer access_token_..." \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text
-<!-- Code example in TEXT -->
+```python
+UserContext(
+    user_id: str,
+    email: str | None = None,
+    name: str | None = None,
+    roles: list[str] = [],
+    permissions: list[str] = [],
+    metadata: dict[str, Any] = {},
+)
+```
 
-### Optional Authentication
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `has_role(role)` | `bool` | User has the given role. |
+| `has_permission(permission)` | `bool` | User has the given permission. |
+| `has_any_role(roles)` | `bool` | User has at least one of `roles`. |
+| `has_any_permission(permissions)` | `bool` | User has at least one of `permissions`. |
+| `has_all_roles(roles)` | `bool` | User has every role in `roles`. |
+| `has_all_permissions(permissions)` | `bool` | User has every permission in `permissions`. |
 
-Some endpoints support optional authentication. Missing auth returns results for public data only.
-
-### Token Format
-
-Access tokens are JWT tokens containing:
-
-```json
-<!-- Code example in JSON -->
-{
-  "sub": "user123",              // User ID from provider
-  "iat": 1234567890,             // Issued at timestamp
-  "exp": 1234571490,             // Expiration timestamp
-  "iss": "https://provider.com", // Issuer URL
-  "aud": ["api"],                // Audience
-  "email": "user@example.com",   // Custom claims from provider
-  "name": "User Name"
-}
-```text
-<!-- Code example in TEXT -->
+```python
+@fraiseql.query
+async def my_profile(info) -> User | None:
+    user = info.context.get("user")
+    if user is None or not user.has_role("member"):
+        return None
+    db = info.context["db"]
+    return await db.find_one("v_user", id=user.user_id)
+```
 
 ---
 
-## Error Handling
+## Resolver decorators
 
-All errors follow a consistent format:
+```python
+from fraiseql.auth import requires_auth, requires_permission, requires_role
+from fraiseql.auth.decorators import requires_any_permission, requires_any_role
+```
 
-```json
-<!-- Code example in JSON -->
-{
-  "errors": [
-    {
-      "message": "Authentication token has expired",
-      "extensions": {
-        "code": "token_expired"
-      }
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+These decorators (`src/fraiseql/auth/decorators.py`) guard a resolver by reading
+`info.context["user"]`. A missing/invalid user raises a `GraphQLError` with
+`extensions.code = "UNAUTHENTICATED"`; an authenticated-but-unauthorized user
+raises one with `extensions.code = "FORBIDDEN"`.
 
-### Error Codes
+| Decorator | Signature | Guard |
+|-----------|-----------|-------|
+| `requires_auth` | `@requires_auth` (bare) | A `UserContext` is present. |
+| `requires_permission` | `@requires_permission("posts:write")` | `user.has_permission(...)`. |
+| `requires_role` | `@requires_role("admin")` | `user.has_role(...)`. |
+| `requires_any_permission` | `@requires_any_permission("a", "b")` | `user.has_any_permission([...])`. |
+| `requires_any_role` | `@requires_any_role("admin", "moderator")` | `user.has_any_role([...])`. |
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `token_expired` | 401 | Access token expired |
-| `invalid_signature` | 401 | Token signature invalid |
-| `invalid_token` | 401 | Token format invalid |
-| `token_not_found` | 401 | Refresh token not found |
-| `session_revoked` | 401 | Session was revoked |
-| `invalid_state` | 400 | CSRF state validation failed |
-| `oauth_error` | 500 | OAuth provider error |
-| `auth_error` | 500 | Internal authentication error |
+```python
+@fraiseql.mutation
+@requires_permission("posts:write")
+async def create_post(info, input: CreatePostInput) -> CreatePostSuccess | CreatePostError:
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_post", {...})
+    ...
+```
+
+---
+
+## Operation authorization
+
+For richer, context-driven decisions (row scoping, multi-tenant rules), supply an
+`Authorizer` instead of, or in addition to, the decorators above.
+
+```python
+from fraiseql.security import Authorizer, AuthorizationDecision
+```
+
+`Authorizer` and `AuthorizationDecision` live in
+`src/fraiseql/security/authorization.py`.
+
+### `Authorizer`
+
+`Authorizer` is a structural protocol — implement a single method (sync or async):
+
+```python
+async def authorize_operation(
+    self,
+    *,
+    context: dict[str, Any],
+    operation_type: str,    # "query" | "mutation" | "subscription"
+    operation_name: str,
+    arguments: dict[str, Any],
+) -> AuthorizationDecision | bool:
+    ...
+```
+
+Return `True`/`False` (sugar) or an `AuthorizationDecision`. Enforcement is
+**fail-closed**: if no authorizer is configured the operation is allowed, but if
+your authorizer raises (anything other than a `GraphQLError`) the operation is
+**denied**, and the raw exception is logged, never surfaced to the client.
+
+### `AuthorizationDecision`
+
+`AuthorizationDecision` is an immutable value with two constructors:
+
+| Constructor | Effect |
+|-------------|--------|
+| `AuthorizationDecision.allow(*, filters=None)` | Allow. Optional `filters` are AND-ed into the repository's `mandatory_filters` on the read path (ignored on mutations). |
+| `AuthorizationDecision.deny(*, code="FORBIDDEN", message=None)` | Deny. `code` is surfaced as `extensions.code`. |
+
+```python
+class TenantAuthorizer:
+    async def authorize_operation(self, *, context, operation_type, operation_name, arguments):
+        user = context.get("user")
+        if user is None:
+            return AuthorizationDecision.deny(code="UNAUTHENTICATED")
+        tenant_id = context.get("tenant_id")
+        if tenant_id is None:
+            return AuthorizationDecision.deny()
+        # Scope every read to the caller's tenant.
+        return AuthorizationDecision.allow(filters={"tenant_id": tenant_id})
+```
+
+Attach an authorizer per operation or globally:
+
+```python
+@fraiseql.query(authorizer=TenantAuthorizer())
+async def documents(info) -> list[Document]:
+    ...
+
+# Or as the global default for every operation:
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[Document],
+    queries=[documents],
+    authorizer=TenantAuthorizer(),
+)
+```
+
+`@fraiseql.mutation(authorizer=...)` and `@fraiseql.subscription(authorizer=...)`
+work the same way. A per-operation authorizer overrides the global default.
+`create_fraiseql_app(..., authorization_cache=...)` (and
+`build_fraiseql_schema(authorizer=...)`) are also available; caching is opt-in
+because always-evaluating is the safe default.
+
+---
+
+## Field authorization
+
+Gate individual fields with `authorize_field` and the combinators in
+`src/fraiseql/security/field_auth.py`.
+
+```python
+from fraiseql.security import authorize_field, any_permission, combine_permissions
+```
+
+| Symbol | Signature | Description |
+|--------|-----------|-------------|
+| `authorize_field` | `authorize_field(permission_check, *, error_message=None)` | Decorator wrapping a field resolver; runs `permission_check(info, ...)` first and denies with a `FieldAuthorizationError` if it returns falsy. |
+| `any_permission` | `any_permission(*checks)` | Combine checks with **OR** — passes if any check passes. |
+| `combine_permissions` | `combine_permissions(*checks)` | Combine checks with **AND** — passes only if all checks pass. |
+
+A *check* is any callable taking `info` (and optionally `root`) that returns a
+`bool` or an `AuthorizationDecision` (sync or async).
+
+```python
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+
+    @fraiseql.field
+    @authorize_field(any_permission(
+        lambda info: info.context.get("is_admin", False),
+        lambda info, root: info.context.get("user_id") == root.id,
+    ))
+    def email(self) -> str:
+        return self._email
+```
+
+You can also list fields to gate automatically against the configured
+`Authorizer` via the type decorator:
+
+```python
+@fraiseql.type(sql_source="v_user", jsonb_column="data", authorize_fields=["email", "phone"])
+class User:
+    id: ID
+    email: str
+    phone: str
+```
+
+Each listed field is checked with `operation_type="field"` and
+`operation_name="User.email"` (etc.) before its resolver runs. This is a no-op
+unless an authorizer is configured.
+
+---
+
+## Token revocation
+
+For stateful logout / "revoke all sessions", use the revocation API in
+`src/fraiseql/auth/token_revocation.py`.
+
+```python
+from fraiseql.auth import (
+    InMemoryRevocationStore,
+    PostgreSQLRevocationStore,
+    RevocationConfig,
+    TokenRevocationService,
+)
+```
+
+| Symbol | Purpose |
+|--------|---------|
+| `InMemoryRevocationStore` | `InMemoryRevocationStore()` — process-local store, for development/tests. |
+| `PostgreSQLRevocationStore` | `PostgreSQLRevocationStore(pool, table_name="tb_token_revocation")` — production store; creates and indexes its table on first use. |
+| `RevocationConfig` | `RevocationConfig(enabled=True, check_revocation=True, ttl=86400, cleanup_interval=3600)` — service configuration. |
+| `TokenRevocationService` | `TokenRevocationService(store, config=None)` — orchestrates revocation and periodic cleanup. |
+| `TokenRevocationMixin` | Mix into a provider to check revocation during `validate_token` (used by `Auth0ProviderWithRevocation`). |
+
+Both stores implement the same async interface: `revoke_token(token_id, user_id)`,
+`is_revoked(token_id)`, `revoke_all_user_tokens(user_id)`, `cleanup_expired()`,
+and `get_revoked_count()`.
+
+```python
+store = PostgreSQLRevocationStore(pool)
+service = TokenRevocationService(store, RevocationConfig(ttl=3600))
+
+await service.start()                       # begins the background cleanup loop
+await service.revoke_token(token_payload)   # token_payload must carry "jti" and "sub"
+revoked = await service.is_token_revoked(token_payload)
+await service.revoke_all_user_tokens(user_id)
+await service.stop()
+```
+
+---
+
+## Rate limiting
+
+FraiseQL ships a Python rate limiter in `src/fraiseql/security/rate_limiting.py`
+(an ASGI middleware — there is no Rust/`tower` limiter). Use it to protect auth
+endpoints from brute force.
+
+```python
+from fraiseql.security import (
+    RateLimit,
+    RateLimitRule,
+    RateLimitStrategy,
+    RateLimitStore,
+    RedisRateLimitStore,
+)
+```
+
+| Symbol | Signature / fields |
+|--------|--------------------|
+| `RateLimit` | `RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)` — `window` is in seconds. |
+| `RateLimitRule` | `RateLimitRule(path_pattern, rate_limit, key_func=None, exempt_func=None, message=None)`. |
+| `RateLimitStrategy` | `FIXED_WINDOW`, `SLIDING_WINDOW`, `TOKEN_BUCKET`. |
+| `RateLimitStore` | In-memory store with TTL (default backend). |
+| `RedisRateLimitStore` | `RedisRateLimitStore(redis_client)` — distributed backend for multi-process deployments. |
+
+```python
+login_rule = RateLimitRule(
+    path_pattern="/auth/login",
+    rate_limit=RateLimit(requests=5, window=60, strategy=RateLimitStrategy.SLIDING_WINDOW),
+    message="Too many login attempts, please try again shortly.",
+)
+```
+
+`create_default_rate_limit_rules()` and `setup_rate_limiting(...)` provide a
+ready-made set of rules and wiring.
 
 ---
 
 ## Configuration
 
-### Environment Variables
+Auth is configured through `FraiseQLConfig` (pydantic, `FRAISEQL_`-prefixed
+environment variables) or directly via `create_fraiseql_app(...)` keyword
+arguments — never a TOML file.
+
+| Field | Type / default | Description |
+|-------|----------------|-------------|
+| `auth_enabled` | `bool = True` | Enable authentication. |
+| `auth_provider` | `Literal["auth0", "custom", "none"] = "none"` | Which provider mode to use. |
+| `auth0_domain` | `str \| None = None` | Auth0 tenant domain (required when `auth_provider="auth0"`). |
+| `auth0_api_identifier` | `str \| None = None` | Auth0 API identifier / audience. |
+| `auth0_algorithms` | `list[str] = ["RS256"]` | Allowed JWT algorithms. |
+| `dev_auth_username` | `str \| None = None` | Development login username. |
+| `dev_auth_password` | `str \| None = None` | Development login password. |
+| `revocation_enabled` | `bool = True` | Enable token revocation checks. |
+
+```python
+from fraiseql.auth import Auth0Config
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    auth=Auth0Config(
+        domain="myapp.auth0.com",
+        api_identifier="https://api.myapp.com",
+    ),
+)
+```
+
+Equivalent environment-variable configuration:
 
 ```bash
-<!-- Code example in BASH -->
-# OAuth Provider
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-KEYCLOAK_CLIENT_ID=...
-KEYCLOAK_CLIENT_SECRET=...
-AUTH0_CLIENT_ID=...
-AUTH0_CLIENT_SECRET=...
+FRAISEQL_AUTH_ENABLED=true
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=myapp.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.myapp.com
+FRAISEQL_DATABASE_URL=postgresql://user:pass@localhost/mydb
+```
 
-# URLs
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
-KEYCLOAK_URL=http://localhost:8080
-AUTH0_DOMAIN=your-domain.auth0.com
-
-# JWT
-JWT_ISSUER=https://provider.com
-JWT_ALGORITHM=RS256
-
-# Database
-DATABASE_URL=postgres://user:pass@localhost/FraiseQL
-```text
-<!-- Code example in TEXT -->
-
-### Configuration File
-
-Optionally, use a configuration file:
-
-```toml
-<!-- Code example in TOML -->
-[auth.google]
-issuer = "https://accounts.google.com"
-client_id_env = "GOOGLE_CLIENT_ID"
-client_secret_env = "GOOGLE_CLIENT_SECRET"
-redirect_uri = "http://localhost:8000/auth/callback"
-
-[auth.keycloak]
-issuer = "http://localhost:8080/realms/FraiseQL"
-client_id_env = "KEYCLOAK_CLIENT_ID"
-client_secret_env = "KEYCLOAK_CLIENT_SECRET"
-redirect_uri = "http://localhost:8000/auth/callback"
-```text
-<!-- Code example in TEXT -->
+> Only three provider modes exist (`auth0`, `custom`, `none`). For a custom
+> issuer, set `auth_provider="custom"` and pass your `AuthProvider` subclass to
+> `create_fraiseql_app(auth=...)`.
 
 ---
 
-## Examples
+## Error handling
 
-### Complete Login Flow (JavaScript)
+Authentication and authorization failures are returned as standard GraphQL
+errors with a stable `extensions.code`:
 
-```javascript
-<!-- Code example in JAVASCRIPT -->
-// 1. Start login
-const startResponse = await fetch('/auth/start', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ provider: 'google' })
-});
-
-const { authorization_url } = await startResponse.json();
-
-// 2. Redirect user
-window.location.href = authorization_url;
-
-// 3. Handle callback (provider redirects to your app)
-// Extract tokens from URL or session
-const tokens = getTokensFromCallback();
-localStorage.setItem('accessToken', tokens.access_token);
-localStorage.setItem('refreshToken', tokens.refresh_token);
-
-// 4. Use access token for API requests
-const graphqlResponse = await fetch('/graphql', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    query: '{ user { id email name } }'
-  })
-});
-
-const data = await graphqlResponse.json();
-```text
-<!-- Code example in TEXT -->
-
-### Token Refresh (JavaScript)
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-async function refreshAccessToken() {
-  const refreshToken = localStorage.getItem('refreshToken');
-
-  const response = await fetch('/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
-  });
-
-  if (response.ok) {
-    const { access_token, expires_in } = await response.json();
-    localStorage.setItem('accessToken', access_token);
-
-    // Schedule next refresh
-    setTimeout(refreshAccessToken, (expires_in - 300) * 1000);
-  } else {
-    // Refresh failed, require re-login
-    logout();
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### Logout (JavaScript)
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-async function logout() {
-  const refreshToken = localStorage.getItem('refreshToken');
-
-  await fetch('/auth/logout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
-  });
-
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  window.location.href = '/';
-}
-```text
-<!-- Code example in TEXT -->
-
-### With Axios
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'http://localhost:8000'
-});
-
-// Add token to requests
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle token expiry
-api.interceptors.response.use(
-  response => response,
-  async error => {
-    if (error.response?.status === 401) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
-        // Retry request with new token
-        return api.request(error.config);
-      } else {
-        logout();
+```json
+{
+  "errors": [
+    {
+      "message": "Permission 'posts:write' required",
+      "extensions": {
+        "code": "FORBIDDEN"
       }
     }
-    return Promise.reject(error);
-  }
-);
+  ]
+}
+```
 
-// Usage
-const user = await api.post('/graphql', {
-  query: '{ user { id } }'
-});
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Rate Limiting
-
-Currently no built-in rate limiting. For production, add rate limiting middleware:
-
-```rust
-<!-- Code example in RUST -->
-// Example with tower rate limiter
-use tower_governor::governor::RateLimiter;
-
-let rate_limiter = RateLimiter::direct(Quota::per_second(100));
-let layer = GovernorLayer {
-  limiter: rate_limiter,
-  error_handler: default_error_handler,
-};
-
-app = app.layer(layer);
-```text
-<!-- Code example in TEXT -->
+| `extensions.code` | Raised by | Meaning |
+|-------------------|-----------|---------|
+| `UNAUTHENTICATED` | `requires_auth` and the other resolver decorators | No valid `UserContext` on the request. |
+| `FORBIDDEN` | resolver decorators, `Authorizer` deny, `AuthorizationDecision.deny()` | Authenticated but not permitted. |
+| `FIELD_AUTHORIZATION_ERROR` | `authorize_field` | Field-level check denied access. |
 
 ---
 
-## Security Best Practices
+## Security best practices
 
-1. **Always use HTTPS** in production
-2. **Never expose client secrets** in client code
-3. **Store tokens securely**:
-   - Use HTTP-only cookies (more secure than localStorage)
-   - Or localStorage with content security policy
-4. **Handle token expiry** gracefully
-5. **Validate redirects** in your app
-6. **Log authentication events** for audit trail
-7. **Use PKCE** for mobile/native apps (FraiseQL supports this)
-
----
-
-## Supported Providers
-
-- ✅ Google
-- ✅ Keycloak
-- ✅ Auth0
-- ✅ Any OIDC-compliant provider
-
-To add custom provider, implement `OAuthProvider` trait.
+1. **Always use HTTPS** in production.
+2. **Never expose client secrets** in client-side code.
+3. **Validate audience and issuer** in custom `AuthProvider` subclasses.
+4. **Rate-limit auth endpoints** with the Python rate limiter above.
+5. **Use token revocation** for logout and "revoke all sessions".
+6. **Fail closed** — rely on the built-in fail-closed authorizer enforcement;
+   never let an exception in an authorizer turn into an allow.
+7. **Log authentication events** for your audit trail.
 
 ---
 
 ## See Also
 
+- [Auth0 Setup](./setup-auth0.md)
 - [Google OAuth Setup](./setup-google-oauth.md)
 - [Keycloak Setup](./setup-keycloak.md)
-- [Auth0 Setup](./setup-auth0.md)
-- [Custom SessionStore Implementation](./implement-session-store.md)
-
----
-
-**Last Updated**: 2026-01-21
-**Version**: 1.0
+- [Provider Selection Guide](./provider-selection-guide.md)
+- [Security Checklist](./security-checklist.md)
+- [PostgreSQL Connection Auth (SCRAM)](./scram.md)
