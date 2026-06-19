@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL's error handling model is deterministic, predictable, and classifiable. Unlike traditional GraphQL servers where error handling varies by resolver, FraiseQL has a unified, classifiable error model.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/reliability/error-handling-model/">
@@ -2072,15 +2074,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-compile-time-errors-schema-definition-phase" class="md-nav__link">
+  <a href="#21-schema-validation-errors-app-startup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Compile-Time Errors (Schema Definition Phase)
+        2.1 Schema-Validation Errors (App Startup)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2.1 Compile-Time Errors (Schema Definition Phase)">
+    <nav class="md-nav" aria-label="2.1 Schema-Validation Errors (App Startup)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2189,10 +2191,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#225-federation-errors" class="md-nav__link">
+  <a href="#225-subscriptionevent-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2.5 Federation Errors
+        2.2.5 Subscription/Event Errors
       
     </span>
   </a>
@@ -2200,21 +2202,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#226-subscriptionevent-errors" class="md-nav__link">
+  <a href="#226-internal-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2.6 Subscription/Event Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#227-internal-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2.7 Internal Errors
+        2.2.6 Internal Errors
       
     </span>
   </a>
@@ -2454,8 +2445,108 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#73-error-context-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Error Context Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-error-codes-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Error Codes Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Error Codes Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-complete-error-code-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Complete Error Code Catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-error-evolution-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Error Evolution &amp; Stability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Error Evolution &amp; Stability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-error-code-stability-guarantee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Error Code Stability Guarantee
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-deprecation-of-error-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Deprecation of Error Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5419,15 +5510,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#21-compile-time-errors-schema-definition-phase" class="md-nav__link">
+  <a href="#21-schema-validation-errors-app-startup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.1 Compile-Time Errors (Schema Definition Phase)
+        2.1 Schema-Validation Errors (App Startup)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2.1 Compile-Time Errors (Schema Definition Phase)">
+    <nav class="md-nav" aria-label="2.1 Schema-Validation Errors (App Startup)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5536,10 +5627,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#225-federation-errors" class="md-nav__link">
+  <a href="#225-subscriptionevent-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2.5 Federation Errors
+        2.2.5 Subscription/Event Errors
       
     </span>
   </a>
@@ -5547,21 +5638,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#226-subscriptionevent-errors" class="md-nav__link">
+  <a href="#226-internal-errors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2.6 Subscription/Event Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#227-internal-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2.7 Internal Errors
+        2.2.6 Internal Errors
       
     </span>
   </a>
@@ -5801,8 +5881,108 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#73-error-context-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Error Context Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-error-codes-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Error Codes Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Error Codes Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-complete-error-code-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Complete Error Code Catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-error-evolution-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Error Evolution &amp; Stability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Error Evolution &amp; Stability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-error-code-stability-guarantee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Error Code Stability Guarantee
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-deprecation-of-error-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Deprecation of Error Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5826,180 +6006,147 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Error Handling Model
-description: FraiseQL's error handling model is <strong>deterministic, predictable, and classifiable</strong>. Unlike traditional GraphQL servers where error handling varies by resolver
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="error-handling-model">Error Handling Model<a class="headerlink" href="#error-handling-model" title="Permanent link">&para;</a></h1>
 <p><strong>Version:</strong> 1.0
 <strong>Status:</strong> Complete
-<strong>Date:</strong> January 11, 2026
 <strong>Audience:</strong> All developers, integrators, operations engineers, architecture reviewers</p>
 <hr />
 <h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's error handling model is <strong>deterministic, predictable, and classifiable</strong>. Unlike traditional GraphQL servers where error handling varies by resolver implementation, FraiseQL has a unified, specification-driven error model.</p>
-<p><strong>Core principle:</strong> All errors are either <strong>preventable</strong> (caught at compile time) or <strong>recoverable</strong> (clear classification at runtime).</p>
+<p>FraiseQL's error handling model is <strong>deterministic, predictable, and classifiable</strong>. Unlike traditional GraphQL servers where error handling varies by resolver implementation, FraiseQL has a unified, classifiable error model.</p>
+<p>FraiseQL v1 is a Python runtime framework: you define types, queries, and mutations with decorators, and the GraphQL schema is <strong>built in memory at application startup</strong> and served over FastAPI. There is no compile step and no build artifact. Errors fall into two broad phases:</p>
+<p><strong>Core principle:</strong> All errors are either <strong>preventable</strong> (caught when the schema is validated at app startup) or <strong>recoverable</strong> (clearly classified at runtime).</p>
 <h3 id="11-design-philosophy">1.1 Design Philosophy<a class="headerlink" href="#11-design-philosophy" title="Permanent link">&para;</a></h3>
 <p><strong>No surprises.</strong> Clients should never encounter unexpected error types or inconsistent error formats.</p>
 <p><strong>Classifiable.</strong> Every error falls into a well-defined category with clear semantics.</p>
-<p><strong>Remediable.</strong> Every error either tells you exactly how to fix it (compile-time) or how to recover from it (runtime).</p>
+<p><strong>Remediable.</strong> Every error either tells you exactly how to fix it (schema-validation errors) or how to recover from it (runtime errors).</p>
 <p><strong>Auditable.</strong> Error context includes enough information for debugging without leaking sensitive data.</p>
 <hr />
 <h2 id="2-error-categories">2. Error Categories<a class="headerlink" href="#2-error-categories" title="Permanent link">&para;</a></h2>
-<h3 id="21-compile-time-errors-schema-definition-phase">2.1 Compile-Time Errors (Schema Definition Phase)<a class="headerlink" href="#21-compile-time-errors-schema-definition-phase" title="Permanent link">&para;</a></h3>
-<p><strong>When:</strong> During schema authoring and compilation
-<strong>Who sees them:</strong> Schema authors, build systems
-<strong>Recovery:</strong> Fix schema, recompile
-<strong>Visibility:</strong> Never reaches clients</p>
+<h3 id="21-schema-validation-errors-app-startup">2.1 Schema-Validation Errors (App Startup)<a class="headerlink" href="#21-schema-validation-errors-app-startup" title="Permanent link">&para;</a></h3>
+<p><strong>When:</strong> While the schema is being assembled and validated at application startup
+<strong>Who sees them:</strong> Schema authors, operators starting the app
+<strong>Recovery:</strong> Fix the Python type/query/mutation definitions or the database, then restart
+<strong>Visibility:</strong> Never reaches clients — the app fails to start</p>
+<p>FraiseQL validates the in-memory schema as <code>build_fraiseql_schema(...)</code> / <code>create_fraiseql_app(...)</code> runs. If a type is missing, a view does not exist, or a column does not match, startup fails with a clear message. No partially valid schema is ever served.</p>
 <h4 id="211-schema-validation-errors">2.1.1 Schema Validation Errors<a class="headerlink" href="#211-schema-validation-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Category: SCHEMA_INVALID
-Code: E_SCHEMA_<subtype>_<number></p>
-<p>Examples:
+<div class="highlight"><pre><span></span><code>Category: SCHEMA_INVALID
+Code: E_SCHEMA_&lt;subtype&gt;_&lt;number&gt;
+
+Examples:
   E_SCHEMA_TYPE_NOT_DEFINED_001
   E_SCHEMA_FIELD_NOT_FOUND_002
-  E_SCHEMA_BINDING_MISSING_003
+  E_SCHEMA_SOURCE_MISSING_003
   E_SCHEMA_OPERATOR_UNSUPPORTED_004
   E_SCHEMA_AUTHORIZATION_INVALID_005
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Causes:</strong></p>
 <ul>
-<li>Type referenced but not declared</li>
-<li>Field referenced but not in database view</li>
-<li>Query/mutation without binding</li>
-<li>WHERE operator not supported by target database</li>
-<li>Authorization rule references non-existent auth context field</li>
+<li>Type referenced but not declared with <code>@fraiseql.type</code></li>
+<li>Field referenced but not present in the backing database view</li>
+<li>Query/mutation without an <code>sql_source</code></li>
+<li>WHERE operator not supported by PostgreSQL</li>
+<li>Authorization rule references a non-existent auth context field</li>
 </ul>
 <p><strong>Example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Error: Schema compilation failed
+<div class="highlight"><pre><span></span><code>Error: Schema validation failed at startup
   Type: Type closure violation
   Code: E_SCHEMA_TYPE_NOT_DEFINED_001
-  Query 'users' returns 'list[User]'
-  Type 'User' is not defined
-  Suggestion: Add @FraiseQL.type class User or check spelling
+  Query &#39;users&#39; returns &#39;list[User]&#39;
+  Type &#39;User&#39; is not defined
+  Suggestion: Add @fraiseql.type class User or check spelling
   File: schema.py, line 42
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h4 id="212-database-binding-errors">2.1.2 Database Binding Errors<a class="headerlink" href="#212-database-binding-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Category: BINDING_INVALID
-Code: E_BINDING_<subtype>_<number></p>
-<p>Examples:
+<div class="highlight"><pre><span></span><code>Category: BINDING_INVALID
+Code: E_BINDING_&lt;subtype&gt;_&lt;number&gt;
+
+Examples:
   E_BINDING_VIEW_NOT_FOUND_010
   E_BINDING_COLUMN_NOT_FOUND_011
   E_BINDING_TYPE_MISMATCH_012
-  E_BINDING_PROCEDURE_SIGNATURE_MISMATCH_013
-```text</p>
-<!-- Code example in TEXT -->
-
+  E_BINDING_FUNCTION_SIGNATURE_MISMATCH_013
+</code></pre></div>
 <p><strong>Causes:</strong></p>
 <ul>
-<li>Binding references view that doesn't exist in database</li>
-<li>Field maps to column that doesn't exist</li>
-<li>Field type doesn't match database column type</li>
-<li>Mutation input doesn't match stored procedure parameters</li>
+<li>A type's <code>sql_source</code> references a view (<code>v_</code>/<code>tv_</code>) that does not exist in the database</li>
+<li>Field maps to a column that does not exist in the view's <code>data</code> JSONB</li>
+<li>Field type does not match the database column type</li>
+<li>A mutation calls a PostgreSQL <code>fn_</code> function whose signature does not match the input</li>
 </ul>
 <p><strong>Example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Error: Database binding failed
+<div class="highlight"><pre><span></span><code>Error: Database binding failed at startup
   Type: View not found
   Code: E_BINDING_VIEW_NOT_FOUND_010
-  Query 'users' bound to view 'v_user_missing'
+  Query &#39;users&#39; bound to view &#39;v_user_missing&#39;
   Database: postgresql (localhost:5432/mydb)
-  Suggestion: Create view v_user or fix binding to existing view
+  Suggestion: Create view v_user or fix sql_source to an existing view
   Available views: v_user, v_user_archived, v_user_deleted
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h4 id="213-capability-errors">2.1.3 Capability Errors<a class="headerlink" href="#213-capability-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Category: DATABASE_CAPABILITY_UNSUPPORTED
-Code: E_CAPABILITY_<database>_<operator></p>
-<p>Examples:
-  E_CAPABILITY_SQLITE_REGEX_001
-  E_CAPABILITY_MYSQL_COSINE_DISTANCE_002
-  E_CAPABILITY_SQLSERVER_JSONB_CONTAINS_003
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Category: DATABASE_CAPABILITY_UNSUPPORTED
+Code: E_CAPABILITY_&lt;operator&gt;_&lt;number&gt;
 
+Examples:
+  E_CAPABILITY_VECTOR_DISTANCE_001
+  E_CAPABILITY_TRIGRAM_SIMILARITY_002
+  E_CAPABILITY_GEOSPATIAL_CONTAINS_003
+</code></pre></div>
 <p><strong>Causes:</strong></p>
 <ul>
-<li>Schema uses operator not supported by target database</li>
-<li>Database lacks required extension (pgvector, PostGIS)</li>
+<li>Schema uses an operator that requires a PostgreSQL extension that is not installed</li>
+<li>Database lacks a required extension (<code>pgvector</code>, <code>pg_trgm</code>, PostGIS)</li>
 </ul>
 <p><strong>Example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Error: Operator not supported by database
+<div class="highlight"><pre><span></span><code>Error: Operator requires a missing PostgreSQL extension
   Type: Database capability mismatch
-  Code: E_CAPABILITY_SQLITE_REGEX_001
-  Operator: _regex (regular expression matching)
-  Target database: sqlite
-  Field: User.email
-  Suggestion: Use _like operator instead, or target postgresql
-```text</p>
-<!-- Code example in TEXT -->
-
+  Code: E_CAPABILITY_VECTOR_DISTANCE_001
+  Operator: _cosine_distance (vector similarity)
+  Field: Document.embedding
+  Suggestion: Install the pgvector extension (CREATE EXTENSION vector), or use a supported operator
+</code></pre></div>
 <h4 id="214-authorization-configuration-errors">2.1.4 Authorization Configuration Errors<a class="headerlink" href="#214-authorization-configuration-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Category: AUTHORIZATION_INVALID
-Code: E_AUTH_<subtype>_<number></p>
-<p>Examples:
+<div class="highlight"><pre><span></span><code>Category: AUTHORIZATION_INVALID
+Code: E_AUTH_&lt;subtype&gt;_&lt;number&gt;
+
+Examples:
   E_AUTH_CONTEXT_FIELD_NOT_FOUND_020
   E_AUTH_ROLE_UNDEFINED_021
   E_AUTH_RULE_CIRCULAR_DEPENDENCY_022
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Causes:</strong></p>
 <ul>
-<li>Authorization rule references non-existent auth context field</li>
-<li>Authorization rule references undefined role</li>
+<li>Authorization rule references a non-existent auth context field</li>
+<li>Authorization rule references an undefined role</li>
 <li>Authorization rules have circular dependencies</li>
 </ul>
+<p>See <a href="../../../foundation/10-error-handling-validation/"><code>../../foundation/10-error-handling-validation.md</code></a> for how validation and authorization are wired into the schema, and <a href="../../../specs/schema-conventions/"><code>../../specs/schema-conventions.md</code></a> for the database naming conventions (<code>tb_</code>, <code>v_</code>, <code>tv_</code>, <code>fn_</code>) referenced above.</p>
 <hr />
 <h3 id="22-runtime-errors-querymutationsubscription-execution">2.2 Runtime Errors (Query/Mutation/Subscription Execution)<a class="headerlink" href="#22-runtime-errors-querymutationsubscription-execution" title="Permanent link">&para;</a></h3>
 <p><strong>When:</strong> During runtime query execution
 <strong>Who sees them:</strong> Client applications
 <strong>Recovery:</strong> Application-specific (retry, notify user, log, etc.)
-<strong>Visibility:</strong> Always returned in GraphQL error list</p>
+<strong>Visibility:</strong> Always returned in the GraphQL error list</p>
 <h4 id="221-validation-errors">2.2.1 Validation Errors<a class="headerlink" href="#221-validation-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: VALIDATION_FAILED
-Code: E_VALIDATION_<subtype></p>
-<p>Structure:
+Code: E_VALIDATION_&lt;subtype&gt;
+
+Structure:
 {
-  "errors": [{
-    "message": "Human-readable error message",
-    "extensions": {
-      "code": "E_VALIDATION_QUERY_MALFORMED_100",
-      "category": "VALIDATION_FAILED",
-      "remediable": true,
-      "retryable": false,
-      "user_actionable": true,
-      "timestamp": "2026-01-11T15:35:00Z",
-      "trace_id": "req_550e8400"
+  &quot;errors&quot;: [{
+    &quot;message&quot;: &quot;Human-readable error message&quot;,
+    &quot;extensions&quot;: {
+      &quot;code&quot;: &quot;E_VALIDATION_QUERY_MALFORMED_100&quot;,
+      &quot;category&quot;: &quot;VALIDATION_FAILED&quot;,
+      &quot;remediable&quot;: true,
+      &quot;retryable&quot;: false,
+      &quot;user_actionable&quot;: true,
+      &quot;timestamp&quot;: &quot;2026-01-11T15:35:00Z&quot;,
+      &quot;trace_id&quot;: &quot;req_550e8400&quot;
     }
   }]
 }
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
@@ -6064,36 +6211,29 @@ Code: E_VALIDATION_<subtype></p>
 </tbody>
 </table>
 <p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Field 'invalid_field' not found on type 'User'",
-    "locations": [{"line": 2, "column": 5}],
-    "extensions": {
-      "code": "E_VALIDATION_QUERY_MALFORMED_100",
-      "category": "VALIDATION_FAILED",
-      "remediable": true,
-      "retryable": false,
-      "user_actionable": true,
-      "available_fields": ["id", "name", "email", "posts"],
-      "suggestion": "Did you mean 'name'?"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Field &#39;invalid_field&#39; not found on type &#39;User&#39;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;locations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">}],</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_VALIDATION_QUERY_MALFORMED_100&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VALIDATION_FAILED&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;user_actionable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;available_fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;posts&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Did you mean &#39;name&#39;?&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h4 id="222-authorization-errors">2.2.2 Authorization Errors<a class="headerlink" href="#222-authorization-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: AUTHORIZATION_DENIED
-Code: E_AUTH_<subtype></p>
-<p>Structure: Same as validation errors above
-```text</p>
-<!-- Code example in TEXT -->
+Code: E_AUTH_&lt;subtype&gt;
 
+Structure: Same as validation errors above
+</code></pre></div>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
@@ -6158,41 +6298,36 @@ Code: E_AUTH_<subtype></p>
 </tbody>
 </table>
 <p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Insufficient permissions to query 'adminUsers'",
-    "extensions": {
-      "code": "E_AUTH_INSUFFICIENT_PERMISSIONS_202",
-      "category": "AUTHORIZATION_DENIED",
-      "remediable": false,
-      "retryable": false,
-      "user_actionable": false,
-      "required_role": "admin",
-      "user_role": "user"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Insufficient permissions to query &#39;adminUsers&#39;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_AUTH_INSUFFICIENT_PERMISSIONS_202&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AUTHORIZATION_DENIED&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;user_actionable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;required_role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;user_role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h4 id="223-database-execution-errors">2.2.3 Database Execution Errors<a class="headerlink" href="#223-database-execution-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: DATABASE_ERROR
-Code: E_DB_<database>_<error_class></p>
-<p>Structure: Same as others
-```text</p>
-<!-- Code example in TEXT -->
+Code: E_DB_&lt;error_class&gt;_&lt;number&gt;
 
+Structure: Same as others
+</code></pre></div>
+<p>These surface when a query reads a <code>v_</code>/<code>tv_</code> view, or when a mutation calls a PostgreSQL <code>fn_</code> function. PostgreSQL reports failures via SQLSTATE codes; FraiseQL maps them onto the codes below and includes the underlying <code>SQLSTATE &lt;code&gt;</code> note in the extensions when available.</p>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
 <tr>
 <th>Subtype</th>
 <th>Code</th>
+<th>SQLSTATE</th>
 <th>Cause</th>
 <th>Retryable</th>
 <th>Example</th>
@@ -6201,63 +6336,72 @@ Code: E_DB_<database>_<error_class></p>
 <tbody>
 <tr>
 <td>CONNECTION_FAILED</td>
-<td>E_DB_POSTGRES_CONNECTION_FAILED_300</td>
+<td>E_DB_CONNECTION_FAILED_300</td>
+<td>08006</td>
 <td>Cannot connect to database</td>
 <td><strong>Yes</strong></td>
 <td>Connection timeout, network down</td>
 </tr>
 <tr>
 <td>CONNECTION_POOL_EXHAUSTED</td>
-<td>E_DB_MYSQL_POOL_EXHAUSTED_301</td>
+<td>E_DB_POOL_EXHAUSTED_301</td>
+<td>—</td>
 <td>No available connections</td>
 <td><strong>Yes</strong></td>
 <td>All connections in use, retry later</td>
 </tr>
 <tr>
 <td>QUERY_TIMEOUT</td>
-<td>E_DB_SQLSERVER_QUERY_TIMEOUT_302</td>
-<td>Query execution exceeded timeout</td>
+<td>E_DB_QUERY_TIMEOUT_302</td>
+<td>57014</td>
+<td>Statement exceeded <code>statement_timeout</code></td>
 <td><strong>Yes</strong></td>
 <td>Long-running query, retry or optimize</td>
 </tr>
 <tr>
 <td>DEADLOCK</td>
-<td>E_DB_POSTGRES_DEADLOCK_303</td>
+<td>E_DB_DEADLOCK_303</td>
+<td>40P01</td>
 <td>Transaction deadlock detected</td>
 <td><strong>Yes</strong></td>
 <td>Concurrent transaction conflict</td>
 </tr>
 <tr>
 <td>CONSTRAINT_VIOLATION</td>
-<td>E_DB_MYSQL_CONSTRAINT_VIOLATION_304</td>
+<td>E_DB_CONSTRAINT_VIOLATION_304</td>
+<td>23505 / 23503</td>
 <td>Unique/foreign key constraint violated</td>
 <td>No</td>
 <td>Duplicate key, referential integrity</td>
 </tr>
 <tr>
-<td>SYNTAX_ERROR</td>
-<td>E_DB_SQLITE_SYNTAX_ERROR_305</td>
-<td>Generated SQL is malformed</td>
-<td>No</td>
-<td>Compiler bug or unsupported operation</td>
+<td>SERIALIZATION_FAILURE</td>
+<td>E_DB_SERIALIZATION_FAILURE_305</td>
+<td>40001</td>
+<td>Could not serialize concurrent transactions</td>
+<td><strong>Yes</strong></td>
+<td>Retry the transaction</td>
 </tr>
 <tr>
 <td>PERMISSION_DENIED</td>
-<td>E_DB_POSTGRES_PERMISSION_DENIED_306</td>
-<td>Database user lacks permission</td>
+<td>E_DB_PERMISSION_DENIED_306</td>
+<td>42501</td>
+<td>Database role lacks permission</td>
 <td>No</td>
 <td>Misconfigured database credentials</td>
 </tr>
 <tr>
 <td>OUT_OF_MEMORY</td>
-<td>E_DB_SQLSERVER_OUT_OF_MEMORY_307</td>
+<td>E_DB_OUT_OF_MEMORY_307</td>
+<td>53200</td>
 <td>Database ran out of memory</td>
 <td><strong>Yes</strong></td>
 <td>Query too large, reduce batch size</td>
 </tr>
 <tr>
 <td>DISK_FULL</td>
-<td>E_DB_MYSQL_DISK_FULL_308</td>
+<td>E_DB_DISK_FULL_308</td>
+<td>53100</td>
 <td>Database disk full</td>
 <td><strong>Yes</strong></td>
 <td>Free up disk space</td>
@@ -6265,6 +6409,7 @@ Code: E_DB_<database>_<error_class></p>
 <tr>
 <td>UNKNOWN</td>
 <td>E_DB_UNKNOWN_ERROR_309</td>
+<td>—</td>
 <td>Unclassified database error</td>
 <td><strong>Yes</strong></td>
 <td>See error details</td>
@@ -6272,61 +6417,53 @@ Code: E_DB_<database>_<error_class></p>
 </tbody>
 </table>
 <p><strong>Example (Retryable):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Database connection timeout after 5s",
-    "extensions": {
-      "code": "E_DB_POSTGRES_CONNECTION_FAILED_300",
-      "category": "DATABASE_ERROR",
-      "remediable": false,
-      "retryable": true,
-      "retry_after_ms": 1000,
-      "database": "postgresql",
-      "host": "db.example.com",
-      "port": 5432,
-      "attempt": 1,
-      "max_attempts": 3
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Database connection timeout after 5s&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_DB_CONNECTION_FAILED_300&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DATABASE_ERROR&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retry_after_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;sqlstate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;08006&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;db.example.com&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5432</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;attempt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;max_attempts&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Example (Non-Retryable):</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Unique constraint violation on users.email",
-    "extensions": {
-      "code": "E_DB_MYSQL_CONSTRAINT_VIOLATION_304",
-      "category": "DATABASE_ERROR",
-      "remediable": true,
-      "retryable": false,
-      "user_actionable": true,
-      "constraint": "unique_email",
-      "table": "users",
-      "field": "email",
-      "value": "user@example.com",
-      "suggestion": "Email already exists. Use a different email or recover account."
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Unique constraint violation on users.email&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_DB_CONSTRAINT_VIOLATION_304&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DATABASE_ERROR&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;user_actionable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;sqlstate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;23505&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;constraint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unique_email&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;field&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Email already exists. Use a different email or recover account.&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>A mutation's <code>fn_</code> function can also signal a domain failure in its returned JSONB (for example, <code>{"success": false, "message": "...", "code": "VALIDATION_ERROR"}</code>). The resolver translates that into a typed <code>@fraiseql.error</code> result, which is then surfaced in the GraphQL response. This is distinct from a raw PostgreSQL execution error: a domain failure is an expected, recoverable outcome, while a SQLSTATE error indicates the statement itself could not run.</p>
 <h4 id="224-execution-logic-errors">2.2.4 Execution Logic Errors<a class="headerlink" href="#224-execution-logic-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: EXECUTION_ERROR
-Code: E_EXEC_<subtype></p>
-<p>Structure: Same as others
-```text</p>
-<!-- Code example in TEXT -->
+Code: E_EXEC_&lt;subtype&gt;
 
+Structure: Same as others
+</code></pre></div>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
@@ -6342,9 +6479,9 @@ Code: E_EXEC_<subtype></p>
 <tr>
 <td>FIELD_NOT_FOUND</td>
 <td>E_EXEC_FIELD_NOT_FOUND_400</td>
-<td>Field doesn't exist in result</td>
+<td>Field absent from the view's <code>data</code> JSONB</td>
 <td>No</td>
-<td>Compiler bug</td>
+<td>View out of sync with schema</td>
 </tr>
 <tr>
 <td>PROJECTION_FAILED</td>
@@ -6384,117 +6521,29 @@ Code: E_EXEC_<subtype></p>
 </tbody>
 </table>
 <p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Query result would exceed maximum size of 100MB",
-    "extensions": {
-      "code": "E_EXEC_LIMIT_EXCEEDED_405",
-      "category": "EXECUTION_ERROR",
-      "remediable": true,
-      "retryable": false,
-      "user_actionable": true,
-      "limit_bytes": 104857600,
-      "estimated_size_bytes": 250000000,
-      "suggestion": "Use pagination with smaller batch size or add more filters"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="225-federation-errors">2.2.5 Federation Errors<a class="headerlink" href="#225-federation-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
-Category: FEDERATION_ERROR
-Code: E_FED_<subtype></p>
-<p>Structure: Same as others
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Error Types:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Subtype</th>
-<th>Code</th>
-<th>Cause</th>
-<th>Retryable</th>
-<th>Example</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ENTITY_RESOLUTION_FAILED</td>
-<td>E_FED_ENTITY_RESOLUTION_FAILED_500</td>
-<td>Cannot resolve federated entity</td>
-<td><strong>Yes</strong></td>
-<td>Subgraph unavailable</td>
-</tr>
-<tr>
-<td>ENTITY_NOT_FOUND</td>
-<td>E_FED_ENTITY_NOT_FOUND_501</td>
-<td>Federated entity doesn't exist</td>
-<td>No</td>
-<td>Entity ID invalid or deleted</td>
-</tr>
-<tr>
-<td>SUBGRAPH_UNAVAILABLE</td>
-<td>E_FED_SUBGRAPH_UNAVAILABLE_502</td>
-<td>Federation subgraph unreachable</td>
-<td><strong>Yes</strong></td>
-<td>Network/DNS issue</td>
-</tr>
-<tr>
-<td>SUBGRAPH_TIMEOUT</td>
-<td>E_FED_SUBGRAPH_TIMEOUT_503</td>
-<td>Subgraph response too slow</td>
-<td><strong>Yes</strong></td>
-<td>Slow subgraph, retry</td>
-</tr>
-<tr>
-<td>ENTITY_TYPE_MISMATCH</td>
-<td>E_FED_TYPE_MISMATCH_504</td>
-<td>Entity has unexpected type</td>
-<td>No</td>
-<td>Schema mismatch</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Federation subgraph 'orders' unreachable",
-    "extensions": {
-      "code": "E_FED_SUBGRAPH_UNAVAILABLE_502",
-      "category": "FEDERATION_ERROR",
-      "remediable": false,
-      "retryable": true,
-      "retry_after_ms": 2000,
-      "subgraph": "orders",
-      "subgraph_url": "https://orders.internal/graphql",
-      "attempt": 1,
-      "max_attempts": 3
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="226-subscriptionevent-errors">2.2.6 Subscription/Event Errors<a class="headerlink" href="#226-subscriptionevent-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query result would exceed maximum size of 100MB&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_EXEC_LIMIT_EXCEEDED_405&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EXECUTION_ERROR&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;user_actionable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;limit_bytes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">104857600</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;estimated_size_bytes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">250000000</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Use pagination with smaller batch size or add more filters&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="225-subscriptionevent-errors">2.2.5 Subscription/Event Errors<a class="headerlink" href="#225-subscriptionevent-errors" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: SUBSCRIPTION_ERROR
-Code: E_SUB_<subtype></p>
-<p>Structure: Same as others (sent to client over WebSocket)
-```text</p>
-<!-- Code example in TEXT -->
+Code: E_SUB_&lt;subtype&gt;
 
+Structure: Same as others (sent to client over WebSocket)
+</code></pre></div>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
@@ -6552,39 +6601,32 @@ Code: E_SUB_<subtype></p>
 </tbody>
 </table>
 <p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "type": "error",
-  "id": "1",
-  "payload": {
-    "errors": [{
-      "message": "WebSocket connection closed unexpectedly",
-      "extensions": {
-        "code": "E_SUB_CONNECTION_CLOSED_604",
-        "category": "SUBSCRIPTION_ERROR",
-        "remediable": false,
-        "retryable": true,
-        "close_code": 1006,
-        "reason": "connection lost",
-        "reconnect_after_ms": 1000
-      }
-    }]
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="227-internal-errors">2.2.7 Internal Errors<a class="headerlink" href="#227-internal-errors" title="Permanent link">&para;</a></h4>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>GraphQL error
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;WebSocket connection closed unexpectedly&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_SUB_CONNECTION_CLOSED_604&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUBSCRIPTION_ERROR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;close_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1006</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connection lost&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;reconnect_after_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="226-internal-errors">2.2.6 Internal Errors<a class="headerlink" href="#226-internal-errors" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>GraphQL error
 Category: INTERNAL_ERROR
-Code: E_INTERNAL_<subtype></p>
-<p>Structure: Same as others
-```text</p>
-<!-- Code example in TEXT -->
+Code: E_INTERNAL_&lt;subtype&gt;
 
+Structure: Same as others
+</code></pre></div>
 <p><strong>Error Types:</strong></p>
 <table>
 <thead>
@@ -6598,29 +6640,22 @@ Code: E_INTERNAL_<subtype></p>
 </thead>
 <tbody>
 <tr>
-<td>COMPILED_SCHEMA_INVALID</td>
-<td>E_INTERNAL_SCHEMA_INVALID_700</td>
-<td>Compiled schema corrupted or invalid</td>
+<td>RESOLVER_FAILED</td>
+<td>E_INTERNAL_RESOLVER_FAILED_700</td>
+<td>A resolver raised an unexpected exception</td>
 <td>No</td>
-<td>Deployment/upgrade bug</td>
-</tr>
-<tr>
-<td>RUNTIME_PANIC</td>
-<td>E_INTERNAL_PANIC_701</td>
-<td>Runtime encountered unexpected condition</td>
-<td>No</td>
-<td>Compiler/runtime bug</td>
+<td>Bug in resolver code</td>
 </tr>
 <tr>
 <td>CACHE_CORRUPTED</td>
-<td>E_INTERNAL_CACHE_CORRUPTED_702</td>
+<td>E_INTERNAL_CACHE_CORRUPTED_701</td>
 <td>Cache backend returned invalid data</td>
 <td><strong>Yes</strong></td>
 <td>Cache corruption, retry</td>
 </tr>
 <tr>
 <td>UNKNOWN_ERROR</td>
-<td>E_INTERNAL_UNKNOWN_ERROR_703</td>
+<td>E_INTERNAL_UNKNOWN_ERROR_702</td>
 <td>Unclassified internal error</td>
 <td><strong>Yes</strong></td>
 <td>Unknown issue, retry</td>
@@ -6628,63 +6663,54 @@ Code: E_INTERNAL_<subtype></p>
 </tbody>
 </table>
 <p><strong>Example:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "Internal server error: unexpected panic",
-    "extensions": {
-      "code": "E_INTERNAL_PANIC_701",
-      "category": "INTERNAL_ERROR",
-      "remediable": false,
-      "retryable": false,
-      "timestamp": "2026-01-11T15:35:00Z",
-      "trace_id": "req_550e8400",
-      "stack_trace": "Available only in debug mode",
-      "support_link": "https://github.com/FraiseQL/FraiseQL/issues"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Internal server error&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_INTERNAL_RESOLVER_FAILED_700&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INTERNAL_ERROR&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T15:35:00Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req_550e8400&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;stack_trace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Available only in debug mode&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;support_link&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://github.com/fraiseql/fraiseql/issues&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="3-error-response-format">3. Error Response Format<a class="headerlink" href="#3-error-response-format" title="Permanent link">&para;</a></h2>
 <h3 id="31-standard-graphql-error-response">3.1 Standard GraphQL Error Response<a class="headerlink" href="#31-standard-graphql-error-response" title="Permanent link">&para;</a></h3>
 <p>All runtime errors follow the GraphQL spec with FraiseQL extensions:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [
-    {
-      "message": "Human-readable error message",
-      "locations": [
-        {"line": 1, "column": 1}
-      ],
-      "path": ["users", 0, "name"],
-      "extensions": {
-        "code": "E_VALIDATION_QUERY_MALFORMED_100",
-        "category": "VALIDATION_FAILED",
-        "remediable": true,
-        "retryable": false,
-        "user_actionable": true,
-        "timestamp": "2026-01-11T15:35:00Z",
-        "trace_id": "req_550e8400",</p>
-<div class="highlight"><pre><span></span><code>    // Context-specific fields (optional)
-    &quot;suggestion&quot;: &quot;Did you mean field &#39;email&#39;?&quot;,
-    &quot;available_options&quot;: [&quot;id&quot;, &quot;name&quot;, &quot;email&quot;],
-    &quot;retry_after_ms&quot;: null,
-    &quot;attempt&quot;: 1,
-    &quot;max_attempts&quot;: 3
-  }
-}
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Human-readable error message&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;locations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;users&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_VALIDATION_QUERY_MALFORMED_100&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VALIDATION_FAILED&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;remediable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;user_actionable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T15:35:00Z&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req_550e8400&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;suggestion&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Did you mean field &#39;email&#39;?&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;available_options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;retry_after_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;attempt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_attempts&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
 </code></pre></div>
-<p>],
-  "data": null
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>The fields under <code>extensions</code> after <code>trace_id</code> are context-specific and optional; they appear only when relevant to the error.</p>
 <h3 id="32-error-context-fields">3.2 Error Context Fields<a class="headerlink" href="#32-error-context-fields" title="Permanent link">&para;</a></h3>
 <p><strong>Always included:</strong></p>
 <ul>
@@ -6696,23 +6722,23 @@ Code: E_INTERNAL_<subtype></p>
 </ul>
 <p><strong>Conditional fields:</strong></p>
 <ul>
-<li><code>remediable</code> — Can client fix this? (schema/query fixes)</li>
-<li><code>retryable</code> — Should client retry? (transient errors)</li>
-<li><code>user_actionable</code> — Should client show to user? (not security details)</li>
+<li><code>remediable</code> — Can the client fix this? (schema/query fixes)</li>
+<li><code>retryable</code> — Should the client retry? (transient errors)</li>
+<li><code>user_actionable</code> — Should the client show this to a user? (not security details)</li>
 <li><code>suggestion</code> — How to fix it</li>
 <li><code>retry_after_ms</code> — Milliseconds to wait before retry</li>
 </ul>
 <p><strong>Context-specific:</strong></p>
 <ul>
-<li><code>database</code> — Which database (E_DB_* errors)</li>
-<li><code>constraint</code> — Which constraint violated (database errors)</li>
+<li><code>sqlstate</code> — The PostgreSQL SQLSTATE code (<code>E_DB_*</code> errors)</li>
+<li><code>constraint</code> — Which constraint was violated (database errors)</li>
 <li><code>field</code> — Which field caused the error</li>
 <li><code>available_options</code> — Valid choices for this field</li>
 </ul>
 <h3 id="33-sensitive-data-redaction">3.3 Sensitive Data Redaction<a class="headerlink" href="#33-sensitive-data-redaction" title="Permanent link">&para;</a></h3>
 <p><strong>Never expose:</strong></p>
 <ul>
-<li>SQL queries (even if query is client-safe)</li>
+<li>SQL queries (even if the query is client-safe)</li>
 <li>Internal file paths</li>
 <li>Stack traces (unless debug mode)</li>
 <li>Database credentials</li>
@@ -6721,16 +6747,16 @@ Code: E_INTERNAL_<subtype></p>
 </ul>
 <p><strong>Safe to expose:</strong></p>
 <ul>
-<li>Field names (part of schema)</li>
+<li>Field names (part of the schema)</li>
 <li>Constraint names (helps debugging)</li>
 <li>Error codes (for client classification)</li>
-<li>Database type (postgresql, mysql, etc.)</li>
+<li>SQLSTATE codes (standard PostgreSQL classification)</li>
 <li>Operation type (query, mutation, subscription)</li>
 </ul>
 <hr />
 <h2 id="4-error-classification-rules">4. Error Classification Rules<a class="headerlink" href="#4-error-classification-rules" title="Permanent link">&para;</a></h2>
 <h3 id="41-remediable-vs-non-remediable">4.1 Remediable vs Non-Remediable<a class="headerlink" href="#41-remediable-vs-non-remediable" title="Permanent link">&para;</a></h3>
-<p><strong>Remediable:</strong> Error indicates client code/schema is wrong. Client can fix it.</p>
+<p><strong>Remediable:</strong> The error indicates client code or schema is wrong. The client can fix it.</p>
 <p>Examples:</p>
 <ul>
 <li>Invalid query syntax</li>
@@ -6738,7 +6764,7 @@ Code: E_INTERNAL_<subtype></p>
 <li>Constraint violation</li>
 <li>Deprecated field usage</li>
 </ul>
-<p><strong>Non-Remediable:</strong> Error indicates system state issue. Client cannot fix it.</p>
+<p><strong>Non-Remediable:</strong> The error indicates a system state issue. The client cannot fix it.</p>
 <p>Examples:</p>
 <ul>
 <li>Database connection failure</li>
@@ -6747,16 +6773,16 @@ Code: E_INTERNAL_<subtype></p>
 <li>Internal server error</li>
 </ul>
 <h3 id="42-retryable-vs-non-retryable">4.2 Retryable vs Non-Retryable<a class="headerlink" href="#42-retryable-vs-non-retryable" title="Permanent link">&para;</a></h3>
-<p><strong>Retryable:</strong> Error is transient. Retrying may succeed.</p>
+<p><strong>Retryable:</strong> The error is transient. Retrying may succeed.</p>
 <p>Examples:</p>
 <ul>
 <li>Database connection timeout</li>
 <li>Connection pool exhausted</li>
-<li>Query timeout (retry with better query)</li>
-<li>Subgraph unavailable</li>
+<li>Query timeout (retry with a better query)</li>
+<li>Serialization failure (SQLSTATE 40001)</li>
 <li>Event buffer overflow</li>
 </ul>
-<p><strong>Non-Retryable:</strong> Error is deterministic. Retrying will fail identically.</p>
+<p><strong>Non-Retryable:</strong> The error is deterministic. Retrying will fail identically.</p>
 <p>Examples:</p>
 <ul>
 <li>Schema validation error</li>
@@ -6765,186 +6791,173 @@ Code: E_INTERNAL_<subtype></p>
 <li>Invalid query syntax</li>
 </ul>
 <h3 id="43-user-actionable-vs-hidden">4.3 User-Actionable vs Hidden<a class="headerlink" href="#43-user-actionable-vs-hidden" title="Permanent link">&para;</a></h3>
-<p><strong>User-Actionable:</strong> Error message safe to show end-users.</p>
+<p><strong>User-Actionable:</strong> The error message is safe to show end users.</p>
 <p>Examples:</p>
 <ul>
 <li>"Email already exists"</li>
 <li>"You don't have permission to access this"</li>
 <li>"Invalid input format"</li>
 </ul>
-<p><strong>Hidden:</strong> Error message for developers only, not end-users.</p>
+<p><strong>Hidden:</strong> The error message is for developers only, not end users.</p>
 <p>Examples:</p>
 <ul>
-<li>"Database connection lost" (not user's problem)</li>
+<li>"Database connection lost" (not the user's problem)</li>
 <li>"Query timeout after 30s" (implementation detail)</li>
-<li>"Insufficient permissions" (doesn't explain why)</li>
+<li>"Insufficient permissions" (does not explain why)</li>
 </ul>
 <hr />
 <h2 id="5-error-propagation">5. Error Propagation<a class="headerlink" href="#5-error-propagation" title="Permanent link">&para;</a></h2>
 <h3 id="51-query-execution-error-propagation">5.1 Query Execution Error Propagation<a class="headerlink" href="#51-query-execution-error-propagation" title="Permanent link">&para;</a></h3>
 <p>When an error occurs during query execution, FraiseQL follows this strategy:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query: { user { id name } posts { id title } }</p>
-<p>Execution:
+<div class="highlight"><pre><span></span><code>Query: { user { id name } posts { id title } }
+
+Execution:
   1. Fetch user (succeeds)
-  2. Fetch posts (fails with DATABASE_ERROR)</p>
-<p>Result:
+  2. Fetch posts (fails with DATABASE_ERROR)
+
+Result:
 {
-  "errors": [{
-    "message": "Database connection lost",
-    "path": ["user", "posts"],
-    "extensions": { ... }
+  &quot;errors&quot;: [{
+    &quot;message&quot;: &quot;Database connection lost&quot;,
+    &quot;path&quot;: [&quot;user&quot;, &quot;posts&quot;],
+    &quot;extensions&quot;: { ... }
   }],
-  "data": {
-    "user": {
-      "id": "123",
-      "name": "Alice",
-      "posts": null  // Field set to null due to error
+  &quot;data&quot;: {
+    &quot;user&quot;: {
+      &quot;id&quot;: &quot;123&quot;,
+      &quot;name&quot;: &quot;Alice&quot;,
+      &quot;posts&quot;: null
     }
   }
 }
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Rule:</strong> Field with error is set to <code>null</code> in partial response. Parent queries continue executing. This allows clients to use partial data.</p>
+</code></pre></div>
+<p><strong>Rule:</strong> The field with the error is set to <code>null</code> in the partial response. Parent queries continue executing. This allows clients to use partial data.</p>
 <h3 id="52-mutation-error-propagation">5.2 Mutation Error Propagation<a class="headerlink" href="#52-mutation-error-propagation" title="Permanent link">&para;</a></h3>
-<p>Mutations are <strong>atomic</strong>: if ANY part fails, the entire mutation fails with no partial data.</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Mutation: mutation {
-  createUser(name: "Bob", email: "bob@example.com") { id }
-  createPost(title: "Hello", userId: "123") { id }
-}</p>
-<p>Execution:
-  1. Create user (succeeds, userId = 999)
-  2. Create post (fails with CONSTRAINT_VIOLATION - userId invalid)</p>
-<p>Result:
-{
-  "errors": [{
-    "message": "Foreign key constraint violated: userId not found",
-    "path": ["createPost"],
-    "extensions": { ... }
-  }],
-  "data": null  // ENTIRE mutation fails, no partial data
+<p>Mutations are <strong>atomic</strong>: if any part fails, the entire mutation fails with no partial data. Each mutation runs inside a PostgreSQL transaction in its <code>fn_</code> function, so a failure rolls back every write.</p>
+<div class="highlight"><pre><span></span><code>Mutation: mutation {
+  createUser(input: {name: &quot;Bob&quot;, email: &quot;bob@example.com&quot;}) { ... on CreateUserSuccess { user { id } } }
+  createPost(input: {title: &quot;Hello&quot;, userId: &quot;123&quot;}) { ... on CreatePostSuccess { post { id } } }
 }
-```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>Rule:</strong> Mutations provide all-or-nothing semantics. If any part fails, all changes roll back (database transaction semantics).</p>
-<h3 id="53-subscription-error-propagation">5.3 Subscription Error Propagation<a class="headerlink" href="#53-subscription-error-propagation" title="Permanent link">&para;</a></h3>
-<p>Subscription errors are <strong>per-event</strong>. One event's error doesn't stop subscription.</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Subscription: subscription {
-  orderCreated { id amount }
-}</p>
-<p>Event 1: Success
+Execution:
+  1. Create user (succeeds)
+  2. Create post (fails with CONSTRAINT_VIOLATION - userId invalid)
+
+Result:
 {
-  "type": "next",
-  "id": "1",
-  "payload": {
-    "data": {
-      "orderCreated": {"id": "ord_1", "amount": 100}
+  &quot;errors&quot;: [{
+    &quot;message&quot;: &quot;Foreign key constraint violated: userId not found&quot;,
+    &quot;path&quot;: [&quot;createPost&quot;],
+    &quot;extensions&quot;: { &quot;code&quot;: &quot;E_DB_CONSTRAINT_VIOLATION_304&quot;, &quot;sqlstate&quot;: &quot;23503&quot;, ... }
+  }],
+  &quot;data&quot;: null
+}
+</code></pre></div>
+<p><strong>Rule:</strong> Mutations provide all-or-nothing semantics. If any part fails, all changes roll back via the database transaction.</p>
+<h3 id="53-subscription-error-propagation">5.3 Subscription Error Propagation<a class="headerlink" href="#53-subscription-error-propagation" title="Permanent link">&para;</a></h3>
+<p>Subscription errors are <strong>per-event</strong>. One event's error does not stop the subscription.</p>
+<div class="highlight"><pre><span></span><code>Subscription: subscription {
+  orderCreated { id amount }
+}
+
+Event 1: Success
+{
+  &quot;type&quot;: &quot;next&quot;,
+  &quot;id&quot;: &quot;1&quot;,
+  &quot;payload&quot;: {
+    &quot;data&quot;: {
+      &quot;orderCreated&quot;: {&quot;id&quot;: &quot;ord_1&quot;, &quot;amount&quot;: 100}
     }
   }
-}</p>
-<p>Event 2: Authorization error
+}
+
+Event 2: Authorization error
 {
-  "type": "error",
-  "id": "2",
-  "payload": {
-    "errors": [{
-      "message": "Insufficient permissions for this order",
-      "extensions": { "code": "E_AUTH_ROW_LEVEL_SECURITY_DENIED_204", ... }
+  &quot;type&quot;: &quot;error&quot;,
+  &quot;id&quot;: &quot;2&quot;,
+  &quot;payload&quot;: {
+    &quot;errors&quot;: [{
+      &quot;message&quot;: &quot;Insufficient permissions for this order&quot;,
+      &quot;extensions&quot;: { &quot;code&quot;: &quot;E_AUTH_ROW_LEVEL_SECURITY_DENIED_204&quot;, ... }
     }]
   }
-}</p>
-<p>Event 3: Success (continues after error)
+}
+
+Event 3: Success (continues after error)
 {
-  "type": "next",
-  "id": "3",
-  "payload": {
-    "data": {
-      "orderCreated": {"id": "ord_3", "amount": 250}
+  &quot;type&quot;: &quot;next&quot;,
+  &quot;id&quot;: &quot;3&quot;,
+  &quot;payload&quot;: {
+    &quot;data&quot;: {
+      &quot;orderCreated&quot;: {&quot;id&quot;: &quot;ord_3&quot;, &quot;amount&quot;: 250}
     }
   }
 }
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Rule:</strong> Subscription continues after error. One error event doesn't close subscription (unless close_code indicates connection close).</p>
+</code></pre></div>
+<p><strong>Rule:</strong> A subscription continues after an error. One error event does not close the subscription (unless <code>close_code</code> indicates a connection close).</p>
+<p>For how these semantics interact with transactional guarantees, see <a href="../consistency-model/"><code>./consistency-model.md</code></a>. For recovery procedures when database or transport errors occur, see <a href="../failure-modes-and-recovery/"><code>./failure-modes-and-recovery.md</code></a>.</p>
 <hr />
 <h2 id="6-error-handling-for-clients">6. Error Handling for Clients<a class="headerlink" href="#6-error-handling-for-clients" title="Permanent link">&para;</a></h2>
 <h3 id="61-recommended-client-error-handling">6.1 Recommended Client Error Handling<a class="headerlink" href="#61-recommended-client-error-handling" title="Permanent link">&para;</a></h3>
-<p><strong>Step 1: Check for errors in response</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>response = await client.execute(query)
-if response.get("errors"):
-    # Handle errors
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Step 1: Check for errors in the response</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">):</span>
+    <span class="c1"># Handle errors</span>
+    <span class="o">...</span>
+</code></pre></div>
 <p><strong>Step 2: Classify errors by category</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>for error in response["errors"]:
-    code = error["extensions"]["code"]
-    category = error["extensions"]["category"]</p>
-<div class="highlight"><pre><span></span><code>if category == &quot;VALIDATION_FAILED&quot;:
-    # Fix query and retry immediately
-    pass
-elif category == &quot;AUTHORIZATION_DENIED&quot;:
-    # Request authentication, then retry
-    pass
-elif category == &quot;DATABASE_ERROR&quot; and error[&quot;extensions&quot;][&quot;retryable&quot;]:
-    # Exponential backoff retry
-    pass
-elif category == &quot;INTERNAL_ERROR&quot;:
-    # Log and notify support
-    pass
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]:</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">error</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">]</span>
+    <span class="n">category</span> <span class="o">=</span> <span class="n">error</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">][</span><span class="s2">&quot;category&quot;</span><span class="p">]</span>
 
+    <span class="k">if</span> <span class="n">category</span> <span class="o">==</span> <span class="s2">&quot;VALIDATION_FAILED&quot;</span><span class="p">:</span>
+        <span class="c1"># Fix query and retry immediately</span>
+        <span class="o">...</span>
+    <span class="k">elif</span> <span class="n">category</span> <span class="o">==</span> <span class="s2">&quot;AUTHORIZATION_DENIED&quot;</span><span class="p">:</span>
+        <span class="c1"># Request authentication, then retry</span>
+        <span class="o">...</span>
+    <span class="k">elif</span> <span class="n">category</span> <span class="o">==</span> <span class="s2">&quot;DATABASE_ERROR&quot;</span> <span class="ow">and</span> <span class="n">error</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">][</span><span class="s2">&quot;retryable&quot;</span><span class="p">]:</span>
+        <span class="c1"># Exponential backoff retry</span>
+        <span class="o">...</span>
+    <span class="k">elif</span> <span class="n">category</span> <span class="o">==</span> <span class="s2">&quot;INTERNAL_ERROR&quot;</span><span class="p">:</span>
+        <span class="c1"># Log and notify support</span>
+        <span class="o">...</span>
+</code></pre></div>
 <p><strong>Step 3: Implement retry logic</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>async def retry_query(query, max_attempts=3, backoff_base=1000):
-    for attempt in range(1, max_attempts + 1):
-        response = await client.execute(query)</p>
-<div class="highlight"><pre><span></span><code>    if not response.get(&quot;errors&quot;):
-        return response  # Success
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
-    retryable_errors = [
-        e for e in response[&quot;errors&quot;]
-        if e[&quot;extensions&quot;].get(&quot;retryable&quot;)
-    ]
 
-    if not retryable_errors:
-        return response  # Non-retryable, give up
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retry_query</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">backoff_base</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">response</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_attempts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
-    if attempt &lt; max_attempts:
-        wait_ms = response[&quot;errors&quot;][0][&quot;extensions&quot;].get(
-            &quot;retry_after_ms&quot;,
-            backoff_base * (2 ** (attempt - 1))
-        )
-        await asyncio.sleep(wait_ms / 1000)
-    else:
-        return response  # Max attempts reached
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">response</span>  <span class="c1"># Success</span>
+
+        <span class="n">retryable_errors</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retryable&quot;</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">retryable_errors</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span>  <span class="c1"># Non-retryable, give up</span>
+
+        <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">max_attempts</span><span class="p">:</span>
+            <span class="n">wait_ms</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;extensions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;retry_after_ms&quot;</span><span class="p">,</span>
+                <span class="n">backoff_base</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">attempt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_ms</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span>  <span class="c1"># Max attempts reached</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="62-error-display-to-end-users">6.2 Error Display to End-Users<a class="headerlink" href="#62-error-display-to-end-users" title="Permanent link">&para;</a></h3>
 <p><strong>Show these errors to users:</strong></p>
 <ul>
 <li>Validation errors with suggestions (query/input fixes)</li>
 <li>Constraint violations ("Email already exists")</li>
 <li>Authorization denials (general message, not details)</li>
-<li>Timeouts (with retry option)</li>
+<li>Timeouts (with a retry option)</li>
 </ul>
 <p><strong>Hide these errors from users:</strong></p>
 <ul>
@@ -6952,83 +6965,74 @@ elif category == &quot;INTERNAL_ERROR&quot;:
 <li>Internal stack traces</li>
 <li>SQL queries</li>
 <li>Auth token issues</li>
-<li>Internal server errors (show support contact instead)</li>
+<li>Internal server errors (show a support contact instead)</li>
 </ul>
 <hr />
 <h2 id="7-debugging-troubleshooting">7. Debugging &amp; Troubleshooting<a class="headerlink" href="#7-debugging-troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="71-using-trace-ids">7.1 Using Trace IDs<a class="headerlink" href="#71-using-trace-ids" title="Permanent link">&para;</a></h3>
 <p>Every error includes a <code>trace_id</code> for correlation:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client sees:
+<div class="highlight"><pre><span></span><code>Client sees:
 {
-  "errors": [{
-    "message": "Database connection failed",
-    "extensions": {
-      "trace_id": "req_550e8400"
+  &quot;errors&quot;: [{
+    &quot;message&quot;: &quot;Database connection failed&quot;,
+    &quot;extensions&quot;: {
+      &quot;trace_id&quot;: &quot;req_550e8400&quot;
     }
   }]
-}</p>
-<p>Server logs:
+}
+
+Server logs:
 [2026-01-11 15:35:00] TRACE req_550e8400: query { users { id } }
 [2026-01-11 15:35:01] ERROR req_550e8400: connection timeout after 5s
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Use trace_id to:</strong></p>
 <ul>
 <li>Correlate client-side errors with server logs</li>
-<li>Track error through entire system (across services in federation)</li>
+<li>Track an error through the system</li>
 <li>Debug transient errors that are hard to reproduce</li>
 </ul>
 <h3 id="72-debug-mode">7.2 Debug Mode<a class="headerlink" href="#72-debug-mode" title="Permanent link">&para;</a></h3>
-<p>FraiseQL can enable debug mode to include additional error context:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<h1 id="enable-debug-mode-dev-environments-only">Enable debug mode (dev environments only!)<a class="headerlink" href="#enable-debug-mode-dev-environments-only" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_DEBUG=true</p>
-<p>Response with debug mode:
+<p>FraiseQL can run with debug mode enabled to include additional error context. Set <code>production=False</code> in <code>create_fraiseql_app(...)</code> or the <code>FRAISEQL_DEBUG</code> environment variable in development environments only:</p>
+<div class="highlight"><pre><span></span><code># Enable debug mode (dev environments only)
+FRAISEQL_DEBUG=true
+
+Response with debug mode:
 {
-  "errors": [{
-    "message": "Query timeout",
-    "extensions": {
-      "code": "E_DB_POSTGRES_QUERY_TIMEOUT_302",
-      "stack_trace": [
-        "FraiseQL::runtime::execute_query (src/runtime.rs:312)",
-        "FraiseQL::db::execute (src/db.rs:45)",
-        "postgres::client::query (src/db/postgres.rs:128)"
+  &quot;errors&quot;: [{
+    &quot;message&quot;: &quot;Query timeout&quot;,
+    &quot;extensions&quot;: {
+      &quot;code&quot;: &quot;E_DB_QUERY_TIMEOUT_302&quot;,
+      &quot;sqlstate&quot;: &quot;57014&quot;,
+      &quot;traceback&quot;: [
+        &quot;fraiseql/db.py:312 in find&quot;,
+        &quot;psycopg/cursor_async.py:128 in execute&quot;
       ],
-      "query": "SELECT ... FROM users WHERE id = $1",
-      "bindings": ["12345"],
-      "duration_ms": 30001
+      &quot;query&quot;: &quot;SELECT data FROM v_user WHERE id = $1&quot;,
+      &quot;bindings&quot;: [&quot;12345&quot;],
+      &quot;duration_ms&quot;: 30001
     }
   }]
 }
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="73-error-context-logging">7.3 Error Context Logging<a class="headerlink" href="#73-error-context-logging" title="Permanent link">&para;</a></h3>
 <p>Enable structured logging to capture error context:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "timestamp": "2026-01-11T15:35:00Z",
-  "level": "ERROR",
-  "trace_id": "req_550e8400",
-  "category": "DATABASE_ERROR",
-  "code": "E_DB_POSTGRES_DEADLOCK_303",
-  "operation": "mutation",
-  "query_hash": "5f5a3c2b1e0d9f8c",
-  "database": "postgresql",
-  "user_id": "user_123",
-  "tenant_id": "org_456",
-  "attempt": 2,
-  "duration_ms": 5234,
-  "retryable": true
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T15:35:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ERROR&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;req_550e8400&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DATABASE_ERROR&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_DB_DEADLOCK_303&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;sqlstate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;40P01&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mutation&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;query_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5f5a3c2b1e0d9f8c&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;tenant_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;org_456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;attempt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5234</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="8-error-codes-reference">8. Error Codes Reference<a class="headerlink" href="#8-error-codes-reference" title="Permanent link">&para;</a></h2>
 <h3 id="81-complete-error-code-catalog">8.1 Complete Error Code Catalog<a class="headerlink" href="#81-complete-error-code-catalog" title="Permanent link">&para;</a></h3>
@@ -7077,49 +7081,40 @@ elif category == &quot;INTERNAL_ERROR&quot;:
 <td>6</td>
 </tr>
 <tr>
-<td>E_FED_* (500-504)</td>
-<td>Federation</td>
-<td>5</td>
-</tr>
-<tr>
 <td>E_SUB_* (600-605)</td>
 <td>Subscriptions</td>
 <td>6</td>
 </tr>
 <tr>
-<td>E_INTERNAL_* (700-703)</td>
+<td>E_INTERNAL_* (700-702)</td>
 <td>Internal errors</td>
-<td>4</td>
+<td>3</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Total:</strong> 150+ distinct error codes</p>
 <hr />
 <h2 id="9-error-evolution-stability">9. Error Evolution &amp; Stability<a class="headerlink" href="#9-error-evolution-stability" title="Permanent link">&para;</a></h2>
 <h3 id="91-error-code-stability-guarantee">9.1 Error Code Stability Guarantee<a class="headerlink" href="#91-error-code-stability-guarantee" title="Permanent link">&para;</a></h3>
-<p><strong>Error codes are stable:</strong> Once assigned, error codes will never change.</p>
+<p><strong>Error codes are stable:</strong> Once assigned, an error code will never change meaning.</p>
 <p><strong>Adding errors:</strong> New error codes may be added in minor releases (X.Y.Z → X.Y+1.Z).</p>
 <p><strong>Removing errors:</strong> Error codes are never removed, only deprecated.</p>
-<p><strong>Example:</strong> If E_DB_POSTGRES_CONNECTION_FAILED_300 is used today, it will have the same meaning in v2.1, v3.0, v10.0, etc.</p>
+<p><strong>Example:</strong> If <code>E_DB_CONNECTION_FAILED_300</code> is used today, it will have the same meaning in 1.10, 1.11, and later releases.</p>
+<p>See <a href="../versioning-strategy/"><code>./versioning-strategy.md</code></a> for the full compatibility and deprecation policy.</p>
 <h3 id="92-deprecation-of-error-types">9.2 Deprecation of Error Types<a class="headerlink" href="#92-deprecation-of-error-types" title="Permanent link">&para;</a></h3>
-<p>When an error becomes obsolete, it's marked deprecated:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "errors": [{
-    "message": "...",
-    "extensions": {
-      "code": "E_OLD_ERROR_123",
-      "deprecated": true,
-      "deprecated_since": "v2.3.0",
-      "use_instead": "E_NEW_ERROR_456",
-      "removal_date": "2027-01-11"
-    }
-  }]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>When an error becomes obsolete, it is marked deprecated:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_OLD_ERROR_123&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;deprecated&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;deprecated_since&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.5.0&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;use_instead&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E_NEW_ERROR_456&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;removal_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2027-01-11&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="10-non-goals">10. Non-Goals<a class="headerlink" href="#10-non-goals" title="Permanent link">&para;</a></h2>
 <p><strong>Error handling explicitly does NOT:</strong></p>
@@ -7128,18 +7123,18 @@ elif category == &quot;INTERNAL_ERROR&quot;:
 <li>Hide all error details (debugging requires transparency)</li>
 <li>Support custom error codes (standard codes only)</li>
 <li>Provide error translation per locale (use standard codes)</li>
-<li>Guarantee error message format changes (messages evolve)</li>
+<li>Guarantee error message format stability (messages evolve)</li>
 </ul>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>FraiseQL's error handling is <strong>deterministic and classifiable</strong>:</p>
 <ul>
-<li>✅ All errors fall into well-defined categories</li>
-<li>✅ Each error code is stable and never changes</li>
-<li>✅ Errors include actionable context (retry, remediable, user-actionable)</li>
-<li>✅ Partial results possible (queries), atomic results (mutations)</li>
-<li>✅ Clients can implement robust error handling</li>
-<li>✅ Operations can debug using trace IDs and structured logs</li>
+<li>All errors fall into well-defined categories</li>
+<li>Each error code is stable and never changes meaning</li>
+<li>Errors include actionable context (retry, remediable, user-actionable)</li>
+<li>Partial results are possible for queries; mutations are atomic</li>
+<li>Clients can implement robust error handling</li>
+<li>Operations can debug using trace IDs and structured logs</li>
 </ul>
 <p><strong>Golden rule:</strong> If the error code is the same, the error is the same. Clients can build deterministic error handling logic.</p>
 <hr />
@@ -7150,6 +7145,9 @@ elif category == &quot;INTERNAL_ERROR&quot;:
 
 
 
+
+  
+  
 
 
 

@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL v1 inherits PostgreSQL's strict serializable consistency. This document specifies the consistency guarantees clients can rely on.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/reliability/consistency-model/">
@@ -2027,10 +2029,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-consistency-levels-supported" class="md-nav__link">
+  <a href="#12-consistency-foundation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 Consistency Levels Supported
+        1.2 Consistency Foundation
       
     </span>
   </a>
@@ -2077,6 +2079,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#212-consistency-logical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 Consistency (Logical)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#213-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 Isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#214-durability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.4 Durability
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2084,6 +2119,361 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-read-after-write-consistency-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Read-After-Write Consistency (RAW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-read-your-writes-consistency-ryw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Read-Your-Writes Consistency (RYW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-monotonic-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Monotonic Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-read-replicas-deployment-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Read Replicas (Deployment Note)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-write-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Write Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Write Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-serialized-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Serialized Writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-multi-statement-atomicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Multi-Statement Atomicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-write-conflicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Write Conflicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-subscription-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Subscription Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Subscription Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-event-ordering-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Event Ordering Guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-event-delivery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Event Delivery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-no-cross-entity-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 No Cross-Entity Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-caching-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Caching Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Caching Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-cache-invalidation-on-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Cache Invalidation on Write
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-cache-ttl-time-to-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Cache TTL (Time-to-Live)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-cache-coherence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Cache Coherence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-consistency-under-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Consistency Under Failures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Consistency Under Failures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-database-unavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Database Unavailable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-connection-lost-mid-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Connection Lost Mid-Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-server-crash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Server Crash
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-strong-consistency-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Strong Consistency by Default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-consistency-levels-by-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Consistency Levels by Operation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-consistency-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Consistency Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Consistency Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-assuming-stale-reads-against-the-primary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Assuming Stale Reads Against the Primary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-assuming-global-event-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Assuming Global Event Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-expecting-fraiseql-to-route-to-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Expecting FraiseQL to Route to Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documents
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5058,10 +5448,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-consistency-levels-supported" class="md-nav__link">
+  <a href="#12-consistency-foundation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 Consistency Levels Supported
+        1.2 Consistency Foundation
       
     </span>
   </a>
@@ -5108,6 +5498,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#212-consistency-logical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.2 Consistency (Logical)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#213-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.3 Isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#214-durability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1.4 Durability
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5115,6 +5538,361 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-read-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Read Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Read Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-read-after-write-consistency-raw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Read-After-Write Consistency (RAW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-read-your-writes-consistency-ryw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Read-Your-Writes Consistency (RYW)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-monotonic-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Monotonic Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-read-replicas-deployment-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Read Replicas (Deployment Note)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-write-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Write Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Write Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-serialized-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Serialized Writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-multi-statement-atomicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Multi-Statement Atomicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-write-conflicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Write Conflicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-subscription-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Subscription Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Subscription Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-event-ordering-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Event Ordering Guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-event-delivery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Event Delivery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-no-cross-entity-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 No Cross-Entity Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-caching-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Caching Consistency
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Caching Consistency">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-cache-invalidation-on-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Cache Invalidation on Write
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-cache-ttl-time-to-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Cache TTL (Time-to-Live)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-cache-coherence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Cache Coherence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-consistency-under-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Consistency Under Failures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Consistency Under Failures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-database-unavailable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Database Unavailable
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-connection-lost-mid-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Connection Lost Mid-Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-server-crash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Server Crash
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-strong-consistency-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Strong Consistency by Default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-consistency-levels-by-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Consistency Levels by Operation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-consistency-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Consistency Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Consistency Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-assuming-stale-reads-against-the-primary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Assuming Stale Reads Against the Primary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-assuming-global-event-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Assuming Global Event Ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-expecting-fraiseql-to-route-to-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Expecting FraiseQL to Route to Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documents
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5138,97 +5916,81 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Consistency Model
-description: FraiseQL provides <strong>strict serializable consistency</strong> within a single database instance and <strong>causal consistency</strong> across federated instances. This document spe
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="consistency-model">Consistency Model<a class="headerlink" href="#consistency-model" title="Permanent link">&para;</a></h1>
-<p><strong>Version:</strong> 1.0
-<strong>Status:</strong> Complete
-<strong>Date:</strong> January 11, 2026
+<p><strong>Status:</strong> Stable
 <strong>Audience:</strong> Architects, database engineers, enterprise evaluators</p>
 <hr />
 <h2 id="1-overview">1. Overview<a class="headerlink" href="#1-overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides <strong>strict serializable consistency</strong> within a single database instance and <strong>causal consistency</strong> across federated instances. This document specifies the consistency guarantees clients can rely on.</p>
+<p>FraiseQL v1 is a Python runtime GraphQL framework backed by a <strong>single PostgreSQL
+database</strong>. Its consistency guarantees are exactly PostgreSQL's consistency
+guarantees: FraiseQL does not add a consistency layer of its own, and it does not
+weaken what PostgreSQL provides.</p>
 <h3 id="11-core-principle">1.1 Core Principle<a class="headerlink" href="#11-core-principle" title="Permanent link">&para;</a></h3>
 <blockquote>
-<p><strong>What the database guarantees, FraiseQL guarantees.</strong></p>
+<p><strong>What PostgreSQL guarantees, FraiseQL guarantees.</strong></p>
 </blockquote>
-<p>FraiseQL does not weaken database consistency. If the database provides serializable transactions, FraiseQL preserves that. If the database provides eventual consistency, FraiseQL preserves that.</p>
-<h3 id="12-consistency-levels-supported">1.2 Consistency Levels Supported<a class="headerlink" href="#12-consistency-levels-supported" title="Permanent link">&para;</a></h3>
+<p>FraiseQL queries call PostgreSQL read views (<code>v_</code>/<code>tv_</code>) and mutations call
+PostgreSQL functions (<code>fn_</code>). Every statement runs inside a PostgreSQL transaction,
+so the ACID and isolation properties you configure on the database are the
+properties your GraphQL API exposes.</p>
+<h3 id="12-consistency-foundation">1.2 Consistency Foundation<a class="headerlink" href="#12-consistency-foundation" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Database</th>
-<th>Consistency Level</th>
-<th>Isolation</th>
-<th>Multi-Version</th>
-<th>TTL</th>
+<th>Property</th>
+<th>PostgreSQL Mechanism</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>PostgreSQL</strong></td>
-<td>Serializable</td>
-<td>✅ Full ACID</td>
-<td>✅ MVCC</td>
-<td>N/A</td>
+<td>Atomicity</td>
+<td>Transactional <code>BEGIN</code>/<code>COMMIT</code>, all-or-nothing</td>
 </tr>
 <tr>
-<td><strong>MySQL</strong></td>
-<td>Serializable</td>
-<td>✅ Full ACID</td>
-<td>✅ InnoDB MVCC</td>
-<td>N/A</td>
+<td>Consistency (logical)</td>
+<td>Constraints, foreign keys, check constraints</td>
 </tr>
 <tr>
-<td><strong>SQL Server</strong></td>
-<td>Serializable</td>
-<td>✅ Full ACID</td>
-<td>✅ Snapshot</td>
-<td>N/A</td>
+<td>Isolation</td>
+<td>MVCC, Read Committed by default, Serializable available</td>
 </tr>
 <tr>
-<td><strong>SQLite</strong></td>
-<td>Serializable</td>
-<td>✅ Full ACID</td>
-<td>⚠️ Limited</td>
-<td>N/A</td>
+<td>Durability</td>
+<td>Write-ahead logging (WAL)</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="2-single-database-consistency-primary-guarantee">2. Single-Database Consistency (Primary Guarantee)<a class="headerlink" href="#2-single-database-consistency-primary-guarantee" title="Permanent link">&para;</a></h2>
 <h3 id="21-acid-transaction-guarantees">2.1 ACID Transaction Guarantees<a class="headerlink" href="#21-acid-transaction-guarantees" title="Permanent link">&para;</a></h3>
-<p>FraiseQL queries and mutations respect the database's ACID properties:</p>
+<p>FraiseQL queries and mutations respect PostgreSQL's ACID properties.</p>
 <h4 id="211-atomicity">2.1.1 Atomicity<a class="headerlink" href="#211-atomicity" title="Permanent link">&para;</a></h4>
-<p><strong>What it means:</strong> Mutation either fully succeeds or fully fails. No partial updates.</p>
-<p><strong>Scope:</strong> Single mutation operation</p>
+<p><strong>What it means:</strong> A mutation either fully succeeds or fully fails. No partial
+updates.</p>
+<p><strong>Scope:</strong> A single mutation, which executes one <code>fn_</code> PostgreSQL function inside
+one transaction.</p>
 <ul>
-<li>Mutation: <code>createUser(name: "Bob", email: "bob@example.com")</code></li>
-<li>All side effects apply, or none apply</li>
-<li>No partial state visible to other queries</li>
+<li>All side effects of the function apply, or none apply.</li>
+<li>No partial state is visible to other queries.</li>
 </ul>
 <p><strong>Guarantee:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="before-mutation">Before mutation<a class="headerlink" href="#before-mutation" title="Permanent link">&para;</a></h1>
-<p>SELECT COUNT(*) FROM users  # 100</p>
-<h1 id="mutation-fails-email-constraint-violation">Mutation fails (email constraint violation)<a class="headerlink" href="#mutation-fails-email-constraint-violation" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createUser(name: "Bob", email: "duplicate@example.com") { id }
-}</p>
-<h1 id="after-mutation">After mutation<a class="headerlink" href="#after-mutation" title="Permanent link">&para;</a></h1>
-<p>SELECT COUNT(*) FROM users  # Still 100 (no partial insert)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1">-- Before mutation</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span><span class="w">  </span><span class="c1">-- 100</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c"># Mutation fails (email uniqueness constraint violation)</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;duplicate@example.com&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- After mutation</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Still 100 (no partial insert)</span>
+</code></pre></div>
 <h4 id="212-consistency-logical">2.1.2 Consistency (Logical)<a class="headerlink" href="#212-consistency-logical" title="Permanent link">&para;</a></h4>
 <p><strong>What it means:</strong> Database integrity constraints are never violated.</p>
-<p><strong>Scope:</strong> All queries, mutations, subscriptions</p>
+<p><strong>Scope:</strong> All queries, mutations, and subscriptions.</p>
 <ul>
 <li>Foreign key constraints enforced</li>
 <li>Unique constraints enforced</li>
@@ -5236,19 +5998,19 @@ tags: ["documentation", "reference"]</p>
 <li>Referential integrity maintained</li>
 </ul>
 <p><strong>Guarantee:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="foreign-key-constraint-orderuser_id-userid">Foreign key constraint: order.user_id → user.id<a class="headerlink" href="#foreign-key-constraint-orderuser_id-userid" title="Permanent link">&para;</a></h1>
-<h1 id="this-mutation-will-fail-invalid-user_id">This mutation will fail (invalid user_id):<a class="headerlink" href="#this-mutation-will-fail-invalid-user_id" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createOrder(user_id: 9999, amount: 100) { id }  # Returns error
-}</p>
-<h1 id="after-error-database-state-is-unchanged">After error, database state is unchanged<a class="headerlink" href="#after-error-database-state-is-unchanged" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c"># Foreign key constraint: tb_order.fk_user → tb_user.pk_user</span>
+<span class="c"># This mutation fails because the referenced user does not exist:</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createOrder</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;00000000-0000-0000-0000-000000009999&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateOrderSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateOrderError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c"># After the error, database state is unchanged.</span>
+</code></pre></div>
 <h4 id="213-isolation">2.1.3 Isolation<a class="headerlink" href="#213-isolation" title="Permanent link">&para;</a></h4>
-<p><strong>What it means:</strong> Concurrent operations don't interfere with each other.</p>
+<p><strong>What it means:</strong> Concurrent operations do not interfere with each other beyond
+what the configured isolation level permits.</p>
 <p><strong>Isolation levels</strong> (in order of strictness):</p>
 <table>
 <thead>
@@ -5257,440 +6019,317 @@ tags: ["documentation", "reference"]</p>
 <th>Dirty Reads</th>
 <th>Non-Repeatable</th>
 <th>Phantom</th>
-<th>Implementation</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Read Uncommitted</strong></td>
-<td>❌ Not in FraiseQL</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
+<td>Prevented</td>
+<td>Possible</td>
+<td>Possible</td>
+<td>PostgreSQL treats this as Read Committed</td>
 </tr>
 <tr>
 <td><strong>Read Committed</strong></td>
-<td>✅ Prevented</td>
-<td>⚠️ Possible</td>
-<td>⚠️ Possible</td>
+<td>Prevented</td>
+<td>Possible</td>
+<td>Possible</td>
 <td>PostgreSQL default</td>
 </tr>
 <tr>
 <td><strong>Repeatable Read</strong></td>
-<td>✅ Prevented</td>
-<td>✅ Prevented</td>
-<td>⚠️ Possible</td>
-<td>MySQL default</td>
+<td>Prevented</td>
+<td>Prevented</td>
+<td>Prevented (PostgreSQL)</td>
+<td>Snapshot isolation</td>
 </tr>
 <tr>
 <td><strong>Serializable</strong></td>
-<td>✅ Prevented</td>
-<td>✅ Prevented</td>
-<td>✅ Prevented</td>
-<td>✅ FraiseQL default</td>
+<td>Prevented</td>
+<td>Prevented</td>
+<td>Prevented</td>
+<td>Serializable Snapshot Isolation (SSI)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>FraiseQL isolation guarantee:</strong> Queries and mutations operate at <strong>Serializable</strong> isolation level.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="two-concurrent-mutations-serializable-isolation">Two concurrent mutations (serializable isolation)<a class="headerlink" href="#two-concurrent-mutations-serializable-isolation" title="Permanent link">&para;</a></h1>
-<h1 id="client-a">Client A:<a class="headerlink" href="#client-a" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  updateUser(id: 1, name: "Alice Update 1") { name }
-}</p>
-<h1 id="client-b">Client B:<a class="headerlink" href="#client-b" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  updateUser(id: 1, name: "Alice Update 2") { name }
-}</p>
-<h1 id="result-one-succeeds-one-fails-conflict-detected">Result: One succeeds, one fails (conflict detected)<a class="headerlink" href="#result-one-succeeds-one-fails-conflict-detected" title="Permanent link">&para;</a></h1>
-<h1 id="never-both-succeed-with-mixed-updates">Never: Both succeed with mixed updates<a class="headerlink" href="#never-both-succeed-with-mixed-updates" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>FraiseQL isolation:</strong> Each request runs at PostgreSQL's configured isolation
+level (Read Committed by default). If your <code>fn_</code> functions or session require
+stronger guarantees, set <code>SET TRANSACTION ISOLATION LEVEL SERIALIZABLE</code> (or
+configure it on the connection) inside the database; FraiseQL faithfully reflects
+whatever PostgreSQL is configured to enforce.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Two concurrent mutations updating the same row</span>
+<span class="c"># Client A:</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice Update 1&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
+<span class="c"># Client B:</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice Update 2&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="p">}</span>
+
+<span class="c"># Under Serializable isolation: one commits, the other fails with a</span>
+<span class="c"># serialization conflict and can be retried. Under Read Committed:</span>
+<span class="c"># the second write overwrites the first (last-writer-wins).</span>
+</code></pre></div>
 <h4 id="214-durability">2.1.4 Durability<a class="headerlink" href="#214-durability" title="Permanent link">&para;</a></h4>
-<p><strong>What it means:</strong> Once mutation succeeds, it persists even after failure.</p>
-<p><strong>Scope:</strong> Confirmed mutations</p>
+<p><strong>What it means:</strong> Once a mutation succeeds, the change persists even after a
+crash.</p>
+<p><strong>Scope:</strong> Confirmed mutations.</p>
 <ul>
-<li>Mutation returns success response (in GraphQL <code>data</code> field, not <code>errors</code>)</li>
-<li>Database has written change to durable storage</li>
-<li>Change survives server restart, power loss, etc.</li>
+<li>The mutation returns a success result (in the GraphQL <code>data</code> field, not <code>errors</code>).</li>
+<li>PostgreSQL has flushed the change to durable storage via the WAL.</li>
+<li>The change survives a server restart or power loss.</li>
 </ul>
 <p><strong>Guarantee:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="mutation-succeeds-returns-in-data-field">Mutation succeeds (returns in data field)<a class="headerlink" href="#mutation-succeeds-returns-in-data-field" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createUser(name: "Bob") { id }
-  # Response received by client with data: { createUser: { id: 123 } }
-}</p>
-<h1 id="server-crashes-immediately-after">Server crashes immediately after<a class="headerlink" href="#server-crashes-immediately-after" title="Permanent link">&para;</a></h1>
-<h1 id="database-restart-change-still-there">Database restart: Change still there<a class="headerlink" href="#database-restart-change-still-there" title="Permanent link">&para;</a></h1>
-<h1 id="later-query">Later query:<a class="headerlink" href="#later-query" title="Permanent link">&para;</a></h1>
-<p>query {
-  user(id: 123) { name }  # Returns "Bob"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c"># Mutation succeeds (returns in data field)</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;bob@example.com&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c"># The client receives data: { createUser: { user: { id: &quot;...&quot; } } }</span>
 
+<span class="c"># The server crashes immediately afterward.</span>
+<span class="c"># After PostgreSQL restarts, the change is still present:</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Returns &quot;Bob&quot;</span>
+</code></pre></div>
 <p><strong>Non-guarantee:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="mutation-fails-returns-in-errors-field">Mutation fails (returns in errors field)<a class="headerlink" href="#mutation-fails-returns-in-errors-field" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createUser(name: "Alice", email: "duplicate@example.com") { id }
-  # Response received with errors: [...], data: null
-}</p>
-<h1 id="server-crashes">Server crashes<a class="headerlink" href="#server-crashes" title="Permanent link">&para;</a></h1>
-<h1 id="database-restart-change-was-never-applied-not-durable">Database restart: Change was never applied (not durable)<a class="headerlink" href="#database-restart-change-was-never-applied-not-durable" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c"># Mutation fails (returns in the errors field or as a typed error union)</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;duplicate@example.com&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c"># data: null on the field / typed error returned</span>
 
+<span class="c"># If the server crashes now, the change was never applied</span>
+<span class="c"># (it was never committed, so there is nothing to be durable).</span>
+</code></pre></div>
 <hr />
 <h2 id="3-read-consistency">3. Read Consistency<a class="headerlink" href="#3-read-consistency" title="Permanent link">&para;</a></h2>
 <h3 id="31-read-after-write-consistency-raw">3.1 Read-After-Write Consistency (RAW)<a class="headerlink" href="#31-read-after-write-consistency-raw" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> After a write succeeds, subsequent reads see the write.</p>
-<p><strong>Scope:</strong> Same client connection</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="write-succeeds">Write succeeds<a class="headerlink" href="#write-succeeds" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  updateUser(id: 1, name: "Alice") { name }
-  # Response: data: { updateUser: { name: "Alice" } }
-}</p>
-<h1 id="subsequent-read-sees-the-write">Subsequent read sees the write<a class="headerlink" href="#subsequent-read-sees-the-write" title="Permanent link">&para;</a></h1>
-<p>query {
-  user(id: 1) { name }  # Returns "Alice"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>What it means:</strong> After a write commits, subsequent reads see the write.</p>
+<p><strong>Scope:</strong> A single PostgreSQL primary.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Write commits</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
-<p><strong>Strong guarantee:</strong> Applies at all times, for all clients.</p>
+<span class="c"># A subsequent read sees the write</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Returns &quot;Alice&quot;</span>
+</code></pre></div>
+<p><strong>Guarantee:</strong> Against a single PostgreSQL primary, read-after-write is
+immediate. A committed write is visible to every later read of that primary.</p>
 <h3 id="32-read-your-writes-consistency-ryw">3.2 Read-Your-Writes Consistency (RYW)<a class="headerlink" href="#32-read-your-writes-consistency-ryw" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Client always sees results of its own writes, even if different server processes handle the requests.</p>
-<p><strong>Scope:</strong> Same authenticated user</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="request-1-write-to-server-a">Request 1: Write to Server A<a class="headerlink" href="#request-1-write-to-server-a" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  updateUserProfile(name: "NewName") { name }
-}</p>
-<h1 id="request-2-read-from-server-b-different-process">Request 2: Read from Server B (different process)<a class="headerlink" href="#request-2-read-from-server-b-different-process" title="Permanent link">&para;</a></h1>
-<p>query {
-  me { name }  # Returns "NewName"
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>What it means:</strong> A client always sees the results of its own committed writes.</p>
+<p><strong>Scope:</strong> A single PostgreSQL primary.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Request 1: write</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUserProfile</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;NewName&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
-<p><strong>Implementation:</strong> Achieved via:</p>
-<ul>
-<li>Database replication (all writes go to primary)</li>
-<li>Session affinity (client sticky to server)</li>
-<li>Causal token tracking (server sends version, client tracks)</li>
-</ul>
+<span class="c"># Request 2: read (any FraiseQL worker, same database)</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">me</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Returns &quot;NewName&quot;</span>
+</code></pre></div>
+<p>Because every FraiseQL worker reads from the same PostgreSQL primary, multiple
+application processes do not break read-your-writes: the database is the single
+source of truth.</p>
 <h3 id="33-monotonic-reads">3.3 Monotonic Reads<a class="headerlink" href="#33-monotonic-reads" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Client never sees a version of data earlier than a previous read.</p>
-<p><strong>Scope:</strong> Same client over time</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="read-1-user-has-5-posts">Read 1: User has 5 posts<a class="headerlink" href="#read-1-user-has-5-posts" title="Permanent link">&para;</a></h1>
-<p>query { user(id: 1) { posts { count } } }</p>
-<h1 id="returns-5">Returns: 5<a class="headerlink" href="#returns-5" title="Permanent link">&para;</a></h1>
-<h1 id="wait-1-second-some-other-client-adds-a-post">Wait 1 second, some other client adds a post<a class="headerlink" href="#wait-1-second-some-other-client-adds-a-post" title="Permanent link">&para;</a></h1>
-<h1 id="read-2-user-still-sees-5-posts-at-worst">Read 2: User still sees 5 posts (at worst)<a class="headerlink" href="#read-2-user-still-sees-5-posts-at-worst" title="Permanent link">&para;</a></h1>
-<p>query { user(id: 1) { posts { count } } }</p>
-<h1 id="returns-5-5-or-6-never-less-than-5">Returns: &gt;= 5 (5 or 6, never less than 5)<a class="headerlink" href="#returns-5-5-or-6-never-less-than-5" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p><strong>What it means:</strong> A client never sees a version of data earlier than a previous
+read.</p>
+<p><strong>Scope:</strong> A single PostgreSQL primary.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Read 1: user has 5 posts</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">totalCount</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Returns 5</span>
 
-<p><strong>Strong guarantee:</strong> FraiseQL never shows older versions of data.</p>
-<h3 id="34-consistent-prefix-reads">3.4 Consistent Prefix Reads<a class="headerlink" href="#34-consistent-prefix-reads" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Client sees causally-consistent sequence of updates, not out-of-order.</p>
-<p><strong>Scope:</strong> Related data across reads</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="event-1-create-order-id-100">Event 1: Create order (id: 100)<a class="headerlink" href="#event-1-create-order-id-100" title="Permanent link">&para;</a></h1>
-<p>mutation { createOrder(user_id: 1, amount: 100) { id } }</p>
-<h1 id="event-2-create-order-update-status-shipped">Event 2: Create order update (status: shipped)<a class="headerlink" href="#event-2-create-order-update-status-shipped" title="Permanent link">&para;</a></h1>
-<p>mutation { updateOrder(id: 100, status: "shipped") { status } }</p>
-<h1 id="client-reads">Client reads:<a class="headerlink" href="#client-reads" title="Permanent link">&para;</a></h1>
-<p>query { order(id: 100) { status } }</p>
-<h1 id="never-sees-order-doesnt-exist-yet-would-be-out-of-order">Never sees: order doesn't exist yet (would be out-of-order)<a class="headerlink" href="#never-sees-order-doesnt-exist-yet-would-be-out-of-order" title="Permanent link">&para;</a></h1>
-<h1 id="always-sees-order-with-status-shipped-or-not-created-yet">Always sees: order with status = "shipped" (or not created yet)<a class="headerlink" href="#always-sees-order-with-status-shipped-or-not-created-yet" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="c"># Another client adds a post.</span>
 
+<span class="c"># Read 2: still at least 5</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">totalCount</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Returns &gt;= 5, never &lt; 5</span>
+</code></pre></div>
+<p>Against a single primary, committed data does not disappear, so reads are
+monotonic by construction.</p>
+<h3 id="34-read-replicas-deployment-note">3.4 Read Replicas (Deployment Note)<a class="headerlink" href="#34-read-replicas-deployment-note" title="Permanent link">&para;</a></h3>
+<p>PostgreSQL supports streaming <strong>read replicas</strong> as a deployment option. Replicas
+apply WAL asynchronously and therefore lag the primary, so reads served by a
+replica are <strong>eventually consistent</strong> with respect to recent writes on the
+primary.</p>
+<p>This is a property of your PostgreSQL deployment, <strong>not a FraiseQL feature</strong>:</p>
+<ul>
+<li>FraiseQL connects to whatever <code>database_url</code> you give it via a single
+  <code>psycopg_pool.AsyncConnectionPool</code>. It does <strong>not</strong> route queries to replicas,
+  split reads from writes, or perform automatic failover.</li>
+<li>If you point FraiseQL at a replica, reads can be stale relative to the primary.
+  If you point it at the primary (the common single-node setup), all of the
+  read-consistency guarantees in 3.1-3.3 hold.</li>
+<li>Read/write splitting and failover are handled below FraiseQL, for example by a
+  connection proxy (PgBouncer, pgpool) or your infrastructure, and are out of
+  scope for the framework.</li>
+</ul>
 <hr />
 <h2 id="4-write-consistency">4. Write Consistency<a class="headerlink" href="#4-write-consistency" title="Permanent link">&para;</a></h2>
-<h3 id="41-serializable-writes">4.1 Serializable Writes<a class="headerlink" href="#41-serializable-writes" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Concurrent writes are serialized (don't interleave).</p>
-<p><strong>Scope:</strong> All mutations</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="concurrent-mutations-on-same-row">Concurrent mutations on same row<a class="headerlink" href="#concurrent-mutations-on-same-row" title="Permanent link">&para;</a></h1>
-<h1 id="client-a-update-user-set-balance-balance-100-where-id-1">Client A: UPDATE user SET balance = balance - 100 WHERE id = 1<a class="headerlink" href="#client-a-update-user-set-balance-balance-100-where-id-1" title="Permanent link">&para;</a></h1>
-<h1 id="client-b-update-user-set-balance-balance-50-where-id-1">Client B: UPDATE user SET balance = balance - 50 WHERE id = 1<a class="headerlink" href="#client-b-update-user-set-balance-balance-50-where-id-1" title="Permanent link">&para;</a></h1>
-<h1 id="initial-balance-1000">Initial balance: 1000<a class="headerlink" href="#initial-balance-1000" title="Permanent link">&para;</a></h1>
-<h1 id="result-one-succeeds-first-second-uses-updated-value">Result: One succeeds first, second uses updated value<a class="headerlink" href="#result-one-succeeds-first-second-uses-updated-value" title="Permanent link">&para;</a></h1>
-<h1 id="possible-a-succeeds-900-b-succeeds-850">Possible: A succeeds (900), B succeeds (850) ✅<a class="headerlink" href="#possible-a-succeeds-900-b-succeeds-850" title="Permanent link">&para;</a></h1>
-<h1 id="never-both-use-original-900-and-950">Never: Both use original (900 and 950) ❌<a class="headerlink" href="#never-both-use-original-900-and-950" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h3 id="41-serialized-writes">4.1 Serialized Writes<a class="headerlink" href="#41-serialized-writes" title="Permanent link">&para;</a></h3>
+<p><strong>What it means:</strong> Concurrent writes to the same row do not interleave; PostgreSQL
+serializes them.</p>
+<p><strong>Scope:</strong> All mutations.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Concurrent mutations on the same row, each implemented by a fn_ function:</span>
+<span class="c">#   fn_debit_balance: UPDATE tb_user SET balance = balance - $1 WHERE id = $2</span>
+<span class="c"># Client A: debit 100</span>
+<span class="c"># Client B: debit 50</span>
+<span class="c"># Initial balance: 1000</span>
 
-<h3 id="42-transaction-isolation-for-multi-statement">4.2 Transaction Isolation for Multi-Statement<a class="headerlink" href="#42-transaction-isolation-for-multi-statement" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Multi-statement mutations are atomic.</p>
-<p><strong>Scope:</strong> Multiple queries within single mutation (future feature)</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>mutation {
-  # Statement 1
-  createOrder(user_id: 1) { id }
-  # Statement 2
-  updateUser(id: 1, balance: balance - 100) { balance }
-  # Statement 3
-  createAuditLog(action: "order_created") { id }</p>
-<p># All succeed or all fail together
-  # No partial state visible
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c"># PostgreSQL row locks serialize the two updates:</span>
+<span class="c"># Possible: A then B -&gt; 900 then 850</span>
+<span class="c"># Never: both read 1000 independently -&gt; 900 and 950</span>
+</code></pre></div>
+<h3 id="42-multi-statement-atomicity">4.2 Multi-Statement Atomicity<a class="headerlink" href="#42-multi-statement-atomicity" title="Permanent link">&para;</a></h3>
+<p><strong>What it means:</strong> A mutation's PostgreSQL function may perform many statements;
+they all commit together or all roll back.</p>
+<p><strong>Scope:</strong> A single <code>fn_</code> function call.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Inside fn_create_order, all statements share one transaction:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="n">p_input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">  </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(...);</span><span class="w">          </span><span class="c1">-- statement 1</span>
+<span class="w">  </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">;</span><span class="w">      </span><span class="c1">-- statement 2</span>
+<span class="w">  </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_audit_log</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(...);</span><span class="w">      </span><span class="c1">-- statement 3</span>
+<span class="w">  </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="p">...);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<p>If any statement raises, the entire function rolls back and the mutation returns a
+typed error. No partial state is ever visible.</p>
 <h3 id="43-write-conflicts">4.3 Write Conflicts<a class="headerlink" href="#43-write-conflicts" title="Permanent link">&para;</a></h3>
-<p><strong>What it means:</strong> Conflicting writes are detected and one fails.</p>
-<p><strong>Scope:</strong> Concurrent modifications</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="client-a-updateuserid-1-name-alice-version-5">Client A: updateUser(id: 1, name: "Alice", version: 5)<a class="headerlink" href="#client-a-updateuserid-1-name-alice-version-5" title="Permanent link">&para;</a></h1>
-<h1 id="client-b-updateuserid-1-name-bob-version-5">Client B: updateUser(id: 1, name: "Bob", version: 5)<a class="headerlink" href="#client-b-updateuserid-1-name-bob-version-5" title="Permanent link">&para;</a></h1>
-<h1 id="both-use-same-version-5">Both use same version (5)<a class="headerlink" href="#both-use-same-version-5" title="Permanent link">&para;</a></h1>
-<h1 id="result-a-succeeds-version-6-b-fails-with-conflict-error">Result: A succeeds (version → 6), B fails with conflict error<a class="headerlink" href="#result-a-succeeds-version-6-b-fails-with-conflict-error" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>What it means:</strong> Conflicting concurrent writes are detected and one of them
+fails, so it can be retried.</p>
+<p><strong>Scope:</strong> Concurrent modifications, when using optimistic concurrency.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Optimistic concurrency inside fn_update_user using a version column:</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_expected_version</span><span class="p">;</span>
+<span class="c1">-- 0 rows affected =&gt; caller&#39;s version was stale =&gt; return a conflict error</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c"># Client A: updateUser(id, name: &quot;Alice&quot;, expectedVersion: 5)</span>
+<span class="c"># Client B: updateUser(id, name: &quot;Bob&quot;,   expectedVersion: 5)</span>
+<span class="c"># A commits first (version -&gt; 6). B&#39;s UPDATE matches 0 rows and</span>
+<span class="c"># returns a typed conflict error.</span>
+</code></pre></div>
+<p>Optimistic concurrency is a pattern you implement inside your <code>fn_</code> functions; see
+<a href="../error-handling-model/">Error Handling Model</a> for how conflicts surface as
+typed errors.</p>
 <hr />
-<h2 id="5-multi-database-consistency-federation">5. Multi-Database Consistency (Federation)<a class="headerlink" href="#5-multi-database-consistency-federation" title="Permanent link">&para;</a></h2>
-<h3 id="51-causal-consistency-guarantee">5.1 Causal Consistency Guarantee<a class="headerlink" href="#51-causal-consistency-guarantee" title="Permanent link">&para;</a></h3>
-<p>When FraiseQL fetches federated entities from multiple databases, it provides <strong>causal consistency</strong>:</p>
-<p><strong>Definition:</strong> If operation A causally affects operation B, every observer sees A before B.</p>
-<p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="database-1-users">Database 1: Users<a class="headerlink" href="#database-1-users" title="Permanent link">&para;</a></h1>
-<h1 id="database-2-orders">Database 2: Orders<a class="headerlink" href="#database-2-orders" title="Permanent link">&para;</a></h1>
-<h1 id="operation-a-create-order-in-database-2">Operation A: Create order in Database 2<a class="headerlink" href="#operation-a-create-order-in-database-2" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createOrder(user_id: 1) { id }  # → order_123
-}</p>
-<h1 id="operation-b-query-user-their-orders-from-both-databases">Operation B: Query user + their orders (from both databases)<a class="headerlink" href="#operation-b-query-user-their-orders-from-both-databases" title="Permanent link">&para;</a></h1>
-<p>query {
-  user(id: 1) {
-    name
-    orders { id }  # Includes order_123
-  }
-}</p>
-<h1 id="causal-guarantee">Causal guarantee:<a class="headerlink" href="#causal-guarantee" title="Permanent link">&para;</a></h1>
-<h1 id="-client-always-sees-order_123-in-the-users-orders">- Client always sees order_123 in the user's orders<a class="headerlink" href="#-client-always-sees-order_123-in-the-users-orders" title="Permanent link">&para;</a></h1>
-<h1 id="-never-sees-state-before-order-was-created">- Never sees state before order was created<a class="headerlink" href="#-never-sees-state-before-order-was-created" title="Permanent link">&para;</a></h1>
-<h1 id="-even-if-databases-are-replicas-with-lag">- Even if databases are replicas with lag<a class="headerlink" href="#-even-if-databases-are-replicas-with-lag" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h2 id="5-subscription-consistency">5. Subscription Consistency<a class="headerlink" href="#5-subscription-consistency" title="Permanent link">&para;</a></h2>
+<h3 id="51-event-ordering-guarantees">5.1 Event Ordering Guarantees<a class="headerlink" href="#51-event-ordering-guarantees" title="Permanent link">&para;</a></h3>
+<p>Subscriptions provide <strong>per-entity ordering</strong> of events.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Subscription on a single order</span>
+<span class="k">subscription</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">orderUpdated</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Events for the same entity are ordered:
+  Event 1: status = &quot;pending&quot;   (timestamp: T1)
+  Event 2: status = &quot;shipped&quot;   (timestamp: T2)
+  Event 3: status = &quot;delivered&quot; (timestamp: T3)
 
-<h3 id="52-consistency-across-databases">5.2 Consistency Across Databases<a class="headerlink" href="#52-consistency-across-databases" title="Permanent link">&para;</a></h3>
-<p><strong>Single-Database Query (Strict Serializable):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database: PostgreSQL
-Consistency: Serializable ACID
-Latency: &lt;10ms
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Federated Query (Causal Consistent):</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database 1: PostgreSQL (Users)
-Database 2: MySQL (Orders)
-Consistency: Causal
-Latency: &lt;100ms (slower due to coordination)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Trade-off:</strong> Federation sacrifices strict serializability for scalability.</p>
-<h3 id="53-no-cross-database-transactions">5.3 No Cross-Database Transactions<a class="headerlink" href="#53-no-cross-database-transactions" title="Permanent link">&para;</a></h3>
-<p><strong>Important:</strong> FraiseQL does NOT provide distributed transactions across federated databases.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="this-does-not-have-cross-database-atomicity">This does NOT have cross-database atomicity:<a class="headerlink" href="#this-does-not-have-cross-database-atomicity" title="Permanent link">&para;</a></h1>
-<p>mutation {
-  createUser(name: "Alice") { id }  # Database 1
-  createOrder(user_id: NEW_ID) { id }  # Database 2
-}</p>
-<h1 id="why-distributed-2-phase-commit-is-too-expensive">Why: Distributed 2-phase commit is too expensive<a class="headerlink" href="#why-distributed-2-phase-commit-is-too-expensive" title="Permanent link">&para;</a></h1>
-<h1 id="if-operation-fails-rollback-may-be-partial">If operation fails: Rollback may be partial<a class="headerlink" href="#if-operation-fails-rollback-may-be-partial" title="Permanent link">&para;</a></h1>
-<h1 id="instead-client-should-handle-failure">Instead: Client should handle failure<a class="headerlink" href="#instead-client-should-handle-failure" title="Permanent link">&para;</a></h1>
-<p>if not mutation_succeeded:
-  client should retry both or roll back manually
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="54-federation-via-database-linking-optimized">5.4 Federation via Database Linking (Optimized)<a class="headerlink" href="#54-federation-via-database-linking-optimized" title="Permanent link">&para;</a></h3>
-<p>When using database-level federation (FDW, Linked Servers), consistency is <strong>stricter</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="postgresql-fdw-federation">PostgreSQL FDW federation<a class="headerlink" href="#postgresql-fdw-federation" title="Permanent link">&para;</a></h1>
-<h1 id="both-databases-postgresql">Both databases: PostgreSQL<a class="headerlink" href="#both-databases-postgresql" title="Permanent link">&para;</a></h1>
-<p>Consistency: Serializable ACID (via FDW)</p>
-<h1 id="vs-http-federation">vs HTTP federation<a class="headerlink" href="#vs-http-federation" title="Permanent link">&para;</a></h1>
-<h1 id="any-databases-via-http">Any databases, via HTTP<a class="headerlink" href="#any-databases-via-http" title="Permanent link">&para;</a></h1>
-<p>Consistency: Causal
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="6-subscription-consistency">6. Subscription Consistency<a class="headerlink" href="#6-subscription-consistency" title="Permanent link">&para;</a></h2>
-<h3 id="61-event-ordering-guarantees">6.1 Event Ordering Guarantees<a class="headerlink" href="#61-event-ordering-guarantees" title="Permanent link">&para;</a></h3>
-<p>Subscriptions provide <strong>per-entity ordering</strong> of events:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="subscription-orderupdatedwhere-id-100">Subscription: orderUpdated(where: { id: 100 })<a class="headerlink" href="#subscription-orderupdatedwhere-id-100" title="Permanent link">&para;</a></h1>
-<p>orderUpdated { id, status, timestamp }</p>
-<h1 id="events-for-same-entity-are-ordered">Events for same entity are ordered:<a class="headerlink" href="#events-for-same-entity-are-ordered" title="Permanent link">&para;</a></h1>
-<p>Event 1: status = "pending" (timestamp: T1)
-Event 2: status = "shipped" (timestamp: T2)
-Event 3: status = "delivered" (timestamp: T3)</p>
-<h1 id="client-always-sees-events-in-this-order">Client always sees events in this order<a class="headerlink" href="#client-always-sees-events-in-this-order" title="Permanent link">&para;</a></h1>
-<h1 id="never-event-3-before-event-1">Never: Event 3 before Event 1<a class="headerlink" href="#never-event-3-before-event-1" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="62-event-delivery-consistency">6.2 Event Delivery Consistency<a class="headerlink" href="#62-event-delivery-consistency" title="Permanent link">&para;</a></h3>
-<p><strong>At-least-once delivery:</strong></p>
+The client always sees them in this order; never Event 3 before Event 1.
+</code></pre></div>
+<h3 id="52-event-delivery">5.2 Event Delivery<a class="headerlink" href="#52-event-delivery" title="Permanent link">&para;</a></h3>
+<p>Delivery is <strong>at-least-once</strong>:</p>
 <ul>
-<li>Events are delivered at least once</li>
-<li>Client may receive duplicates (same event twice)</li>
-<li>Client should be idempotent</li>
+<li>Each event is delivered at least once.</li>
+<li>A client may receive a duplicate (for example after a network retry).</li>
+<li>Clients should be idempotent and de-duplicate by event identifier.</li>
 </ul>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="same-event-delivered-twice-network-retry">Same event delivered twice (network retry)<a class="headerlink" href="#same-event-delivered-twice-network-retry" title="Permanent link">&para;</a></h1>
-<p>{
-  "event_id": "evt_12345",
-  "data": { "id": 100, "status": "shipped" }
-}
-{
-  "event_id": "evt_12345",  # Same ID
-  "data": { "id": 100, "status": "shipped" }
-}</p>
-<h1 id="client-should-check-event_id-and-skip-duplicates">Client should check event_id and skip duplicates<a class="headerlink" href="#client-should-check-event_id-and-skip-duplicates" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evt_12345&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shipped&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">{</span><span class="w"> </span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evt_12345&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shipped&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>The client checks <code>eventId</code> and skips events it has already processed.</p>
+<h3 id="53-no-cross-entity-ordering">5.3 No Cross-Entity Ordering<a class="headerlink" href="#53-no-cross-entity-ordering" title="Permanent link">&para;</a></h3>
+<p>Events from different entities may arrive out of order:</p>
+<div class="highlight"><pre><span></span><code>Database timeline:
+  T1: Order A updated -&gt; Event 1
+  T2: User B updated  -&gt; Event 2
+  T3: Order C updated -&gt; Event 3
 
-<h3 id="63-no-cross-entity-ordering">6.3 No Cross-Entity Ordering<a class="headerlink" href="#63-no-cross-entity-ordering" title="Permanent link">&para;</a></h3>
-<p>Events from different entities may arrive out-of-order:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="subscription-orderupdated-userupdated">Subscription: orderUpdated + userUpdated<a class="headerlink" href="#subscription-orderupdated-userupdated" title="Permanent link">&para;</a></h1>
-<h1 id="database-timeline">Database timeline:<a class="headerlink" href="#database-timeline" title="Permanent link">&para;</a></h1>
-<p>T1: Order 100 updated → Event A
-T2: User 5 updated → Event B
-T3: Order 200 updated → Event C</p>
-<h1 id="client-may-receive">Client may receive:<a class="headerlink" href="#client-may-receive" title="Permanent link">&para;</a></h1>
-<p>Event B, Event C, Event A  # Out of original order!</p>
-<h1 id="why-events-are-per-entity-ordered-not-globally-ordered">Why: Events are per-entity ordered, not globally ordered<a class="headerlink" href="#why-events-are-per-entity-ordered-not-globally-ordered" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+A client subscribed to multiple entities may receive: Event 2, Event 3, Event 1.
+Events are per-entity ordered, not globally ordered.
+</code></pre></div>
+<p>See <a href="../../realtime/subscriptions/">Subscriptions</a> for the full subscription model.</p>
 <hr />
-<h2 id="7-caching-consistency">7. Caching Consistency<a class="headerlink" href="#7-caching-consistency" title="Permanent link">&para;</a></h2>
-<h3 id="71-cache-invalidation-on-write">7.1 Cache Invalidation on Write<a class="headerlink" href="#71-cache-invalidation-on-write" title="Permanent link">&para;</a></h3>
-<p>When a mutation succeeds, all related cache entries are invalidated:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="initial-query-cached">Initial query (cached)<a class="headerlink" href="#initial-query-cached" title="Permanent link">&para;</a></h1>
-<p>query { user(id: 1) { name posts { id } } }</p>
-<h1 id="cache-key-user1-user1posts">Cache key: user:1, user:1:posts<a class="headerlink" href="#cache-key-user1-user1posts" title="Permanent link">&para;</a></h1>
-<h1 id="cached-result-namealice-posts100-101">Cached result: name="Alice", posts=[100, 101]<a class="headerlink" href="#cached-result-namealice-posts100-101" title="Permanent link">&para;</a></h1>
-<h1 id="mutation">Mutation<a class="headerlink" href="#mutation" title="Permanent link">&para;</a></h1>
-<p>mutation { updateUser(id: 1, name: "Bob") { name } }</p>
-<h1 id="automatic-cache-invalidation">Automatic cache invalidation:<a class="headerlink" href="#automatic-cache-invalidation" title="Permanent link">&para;</a></h1>
-<h1 id="-user1-invalidated">- user:1 invalidated ✓<a class="headerlink" href="#-user1-invalidated" title="Permanent link">&para;</a></h1>
-<h1 id="-user1posts-invalidated">- user:1:posts invalidated ✓<a class="headerlink" href="#-user1posts-invalidated" title="Permanent link">&para;</a></h1>
-<h1 id="-relateduser1-queries-invalidated">- related:user:1 queries invalidated ✓<a class="headerlink" href="#-relateduser1-queries-invalidated" title="Permanent link">&para;</a></h1>
-<h1 id="next-query-cache-miss-fresh-from-database">Next query (cache miss, fresh from database)<a class="headerlink" href="#next-query-cache-miss-fresh-from-database" title="Permanent link">&para;</a></h1>
-<p>query { user(id: 1) { name } }</p>
-<h1 id="cache-hit-namebob">Cache hit: name="Bob"<a class="headerlink" href="#cache-hit-namebob" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<h2 id="6-caching-consistency">6. Caching Consistency<a class="headerlink" href="#6-caching-consistency" title="Permanent link">&para;</a></h2>
+<h3 id="61-cache-invalidation-on-write">6.1 Cache Invalidation on Write<a class="headerlink" href="#61-cache-invalidation-on-write" title="Permanent link">&para;</a></h3>
+<p>When a mutation commits, related cache entries are invalidated so subsequent reads
+reflect the new state.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Initial query, result cached</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># Cached: name=&quot;Alice&quot;, posts=[...]</span>
 
-<h3 id="72-cache-ttl-time-to-live">7.2 Cache TTL (Time-to-Live)<a class="headerlink" href="#72-cache-ttl-time-to-live" title="Permanent link">&para;</a></h3>
-<p>Some queries use stale-cache-acceptable-time (SCAT):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="query-cached-for-60-seconds-max">Query cached for 60 seconds max<a class="headerlink" href="#query-cached-for-60-seconds-max" title="Permanent link">&para;</a></h1>
-<p>query @cacheControl(maxAge: 60) {
-  products { id name }
-}</p>
-<h1 id="fresh-if-query-60s-old">Fresh if: query &lt; 60s old<a class="headerlink" href="#fresh-if-query-60s-old" title="Permanent link">&para;</a></h1>
-<h1 id="stale-if-query-60s-old-re-fetch-from-database">Stale if: query &gt; 60s old, re-fetch from database<a class="headerlink" href="#stale-if-query-60s-old-re-fetch-from-database" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="c"># Mutation</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># Related cache entries for that user are invalidated.</span>
 
-<h3 id="73-cache-coherence">7.3 Cache Coherence<a class="headerlink" href="#73-cache-coherence" title="Permanent link">&para;</a></h3>
-<p><strong>Strong cache coherence:</strong> All clients see consistent cache results.</p>
+<span class="c"># Next query reads fresh data from PostgreSQL</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># name=&quot;Bob&quot;</span>
+</code></pre></div>
+<h3 id="62-cache-ttl-time-to-live">6.2 Cache TTL (Time-to-Live)<a class="headerlink" href="#62-cache-ttl-time-to-live" title="Permanent link">&para;</a></h3>
+<p>Cached results may carry a maximum age. A result younger than its TTL is served
+from cache; once it expires, the next read re-fetches from PostgreSQL.</p>
+<div class="highlight"><pre><span></span><code>Cache entry max age: 60 seconds
+  age &lt; 60s  -&gt; served from cache
+  age &gt;= 60s -&gt; stale, re-fetched from the database
+</code></pre></div>
+<h3 id="63-cache-coherence">6.3 Cache Coherence<a class="headerlink" href="#63-cache-coherence" title="Permanent link">&para;</a></h3>
+<p>In a single-node deployment, the cache is invalidated on write, so reads after a
+committed mutation observe the new value. In a multi-worker deployment, configure
+a shared cache backend so invalidations are visible to all workers; otherwise each
+worker maintains its own cache and stale entries persist only until their TTL
+expires.</p>
+<hr />
+<h2 id="7-consistency-under-failures">7. Consistency Under Failures<a class="headerlink" href="#7-consistency-under-failures" title="Permanent link">&para;</a></h2>
+<h3 id="71-database-unavailable">7.1 Database Unavailable<a class="headerlink" href="#71-database-unavailable" title="Permanent link">&para;</a></h3>
+<p><strong>Query:</strong> Returns an error, no partial data.</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># PostgreSQL is unreachable -&gt; error; data is null.</span>
+</code></pre></div>
+<p><strong>Mutation:</strong> Returns an error, no changes applied.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="c"># PostgreSQL is unreachable -&gt; error; the database is unchanged.</span>
+</code></pre></div>
+<h3 id="72-connection-lost-mid-request">7.2 Connection Lost Mid-Request<a class="headerlink" href="#72-connection-lost-mid-request" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Cache invalidations are broadcast</li>
-<li>All servers invalidate same keys</li>
-<li>No stale data persists across servers</li>
+<li><strong>Before the response is sent:</strong> The client sees an error; if the transaction
+  did not commit, no data changed.</li>
+<li><strong>After the response is sent:</strong> The data is consistent because PostgreSQL has
+  already committed.</li>
 </ul>
+<h3 id="73-server-crash">7.3 Server Crash<a class="headerlink" href="#73-server-crash" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Committed mutations:</strong> Persisted by PostgreSQL (WAL durability).</li>
+<li><strong>Cache:</strong> Rebuilt from PostgreSQL after restart.</li>
+<li><strong>In-flight requests:</strong> Clients receive errors and should retry.</li>
+</ul>
+<p>See <a href="../failure-modes-and-recovery/">Failure Modes and Recovery</a> for detailed
+recovery procedures.</p>
 <hr />
-<h2 id="8-consistency-under-failures">8. Consistency Under Failures<a class="headerlink" href="#8-consistency-under-failures" title="Permanent link">&para;</a></h2>
-<h3 id="81-database-unavailable">8.1 Database Unavailable<a class="headerlink" href="#81-database-unavailable" title="Permanent link">&para;</a></h3>
-<p><strong>Query:</strong> Returns error, no partial data</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>query { user(id: 1) { name } }</p>
-<h1 id="database-is-down">Database is down<a class="headerlink" href="#database-is-down" title="Permanent link">&para;</a></h1>
-<h1 id="returns-error-data-null">Returns: ERROR, data: null<a class="headerlink" href="#returns-error-data-null" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Mutation:</strong> Returns error, no changes applied</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>mutation { updateUser(id: 1, name: "Bob") { name } }</p>
-<h1 id="database-is-down_1">Database is down<a class="headerlink" href="#database-is-down_1" title="Permanent link">&para;</a></h1>
-<h1 id="returns-error-data-null_1">Returns: ERROR, data: null<a class="headerlink" href="#returns-error-data-null_1" title="Permanent link">&para;</a></h1>
-<h1 id="database-unchanged">Database unchanged<a class="headerlink" href="#database-unchanged" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="82-connection-lost-mid-query">8.2 Connection Lost Mid-Query<a class="headerlink" href="#82-connection-lost-mid-query" title="Permanent link">&para;</a></h3>
-<p><strong>Before response sent:</strong> Client sees error, no data
-<strong>After response sent:</strong> Data is consistent (database committed)</p>
-<h3 id="83-server-crash">8.3 Server Crash<a class="headerlink" href="#83-server-crash" title="Permanent link">&para;</a></h3>
-<p><strong>Durable mutations:</strong> Persisted to database (ACID durability)
-<strong>Cache:</strong> Invalidated on restart (refreshed from database)
-<strong>In-flight requests:</strong> Clients receive errors, must retry</p>
+<h2 id="8-strong-consistency-by-default">8. Strong Consistency by Default<a class="headerlink" href="#8-strong-consistency-by-default" title="Permanent link">&para;</a></h2>
+<p>Against a single PostgreSQL primary, FraiseQL is <strong>immediately consistent</strong>: a
+committed write is visible to the very next read.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="n">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Sees &quot;Alice&quot; immediately</span>
+</code></pre></div>
+<p>If you need eventual consistency for a particular workload (for example fan-out to
+external systems or read offloading to replicas), build it explicitly with
+subscriptions plus downstream services, or with a replica deployment as described
+in section 3.4. FraiseQL itself does not silently relax consistency.</p>
 <hr />
-<h2 id="9-eventual-consistency-not-provided">9. Eventual Consistency (Not Provided)<a class="headerlink" href="#9-eventual-consistency-not-provided" title="Permanent link">&para;</a></h2>
-<p><strong>Important:</strong> FraiseQL does NOT provide eventual consistency by default.</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="this-is-not-eventually-consistent">This is NOT eventually consistent:<a class="headerlink" href="#this-is-not-eventually-consistent" title="Permanent link">&para;</a></h1>
-<p>mutation { updateUser(id: 1, name: "Alice") }
-query { user(id: 1) { name } }  # Sees "Alice" immediately</p>
-<h1 id="fraiseql-always-returns-immediately-consistent-results">FraiseQL always returns immediately-consistent results<a class="headerlink" href="#fraiseql-always-returns-immediately-consistent-results" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>If you need eventual consistency:</strong> Use event-driven architecture with subscriptions + external systems.</p>
-<hr />
-<h2 id="10-consistency-levels-by-operation">10. Consistency Levels by Operation<a class="headerlink" href="#10-consistency-levels-by-operation" title="Permanent link">&para;</a></h2>
+<h2 id="9-consistency-levels-by-operation">9. Consistency Levels by Operation<a class="headerlink" href="#9-consistency-levels-by-operation" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Operation</th>
-<th>Consistency</th>
+<th>Consistency (single primary)</th>
 <th>Isolation</th>
 <th>Write Atomicity</th>
 <th>Read Freshness</th>
@@ -5699,260 +6338,112 @@ query { user(id: 1) { name } }  # Sees "Alice" immediately</p>
 <tbody>
 <tr>
 <td><strong>Query</strong></td>
-<td>Serializable</td>
-<td>Serializable</td>
+<td>Strong</td>
+<td>PostgreSQL level</td>
 <td>N/A</td>
 <td>Immediate</td>
 </tr>
 <tr>
 <td><strong>Mutation</strong></td>
-<td>Serializable</td>
-<td>Serializable</td>
-<td>Atomic</td>
+<td>Strong</td>
+<td>PostgreSQL level</td>
+<td>Atomic (per <code>fn_</code>)</td>
 <td>Immediate</td>
 </tr>
 <tr>
 <td><strong>Subscription</strong></td>
 <td>Per-entity ordered</td>
-<td>Serializable</td>
+<td>PostgreSQL level</td>
 <td>N/A</td>
 <td>At-least-once</td>
 </tr>
 <tr>
-<td><strong>Federated Query</strong></td>
-<td>Causal</td>
-<td>Serializable per DB</td>
-<td>N/A</td>
-<td>Causal</td>
-</tr>
-<tr>
-<td><strong>Federated Mutation</strong></td>
-<td>Causal</td>
-<td>Serializable per DB</td>
-<td>Per-DB atomic</td>
-<td>Causal</td>
-</tr>
-<tr>
 <td><strong>Cached Query</strong></td>
 <td>Within TTL</td>
-<td>Serializable</td>
+<td>PostgreSQL level</td>
 <td>N/A</td>
-<td>Max TTL stale</td>
+<td>At most TTL stale</td>
+</tr>
+<tr>
+<td><strong>Replica Read</strong></td>
+<td>Eventual (replica lag)</td>
+<td>PostgreSQL level</td>
+<td>N/A</td>
+<td>Lag-bounded</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="11-consistency-configuration">11. Consistency Configuration<a class="headerlink" href="#11-consistency-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="111-per-query-consistency-control">11.1 Per-Query Consistency Control<a class="headerlink" href="#111-per-query-consistency-control" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>query @consistency(level: "serializable") {
-  user(id: 1) { name }
-}</p>
-<h1 id="levels">Levels:<a class="headerlink" href="#levels" title="Permanent link">&para;</a></h1>
-<h1 id="-serializable-default-strongest-consistency">- "serializable" (default): Strongest consistency<a class="headerlink" href="#-serializable-default-strongest-consistency" title="Permanent link">&para;</a></h1>
-<h1 id="-causal-federation-weaker-but-faster">- "causal" (federation): Weaker but faster<a class="headerlink" href="#-causal-federation-weaker-but-faster" title="Permanent link">&para;</a></h1>
-<h1 id="-eventual-future-weakest-but-fastest">- "eventual" (future): Weakest but fastest<a class="headerlink" href="#-eventual-future-weakest-but-fastest" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="112-per-mutation-consistency-control">11.2 Per-Mutation Consistency Control<a class="headerlink" href="#112-per-mutation-consistency-control" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>mutation @consistency(level: "serializable", timeout: 30000) {
-  updateUser(id: 1, name: "Bob") { name }
-}</p>
-<h1 id="options">Options:<a class="headerlink" href="#options" title="Permanent link">&para;</a></h1>
-<h1 id="-timeout-max-time-to-wait-for-lock-ms">- timeout: Max time to wait for lock (ms)<a class="headerlink" href="#-timeout-max-time-to-wait-for-lock-ms" title="Permanent link">&para;</a></h1>
-<h1 id="-retry-auto-retry-on-conflict-truefalse">- retry: Auto-retry on conflict (true/false)<a class="headerlink" href="#-retry-auto-retry-on-conflict-truefalse" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="12-consistency-guarantees-by-database">12. Consistency Guarantees by Database<a class="headerlink" href="#12-consistency-guarantees-by-database" title="Permanent link">&para;</a></h2>
-<h3 id="121-postgresql">12.1 PostgreSQL<a class="headerlink" href="#121-postgresql" title="Permanent link">&para;</a></h3>
-<p><strong>Consistency Level:</strong> Serializable ACID
-<strong>Mechanism:</strong> Serializable Snapshot Isolation (SSI)
-<strong>Guarantee:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ Serializable isolation
-✅ MVCC (Multi-Version Concurrency Control)
-✅ Write-ahead logging (durability)
-✅ Atomic transactions
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="122-mysql-innodb">12.2 MySQL (InnoDB)<a class="headerlink" href="#122-mysql-innodb" title="Permanent link">&para;</a></h3>
-<p><strong>Consistency Level:</strong> Repeatable Read (default) → Serializable (FraiseQL default)
-<strong>Mechanism:</strong> MVCC + Gap locks
-<strong>Guarantee:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ Serializable isolation (with locks)
-✅ MVCC
-✅ Binary logging (durability)
-✅ Atomic transactions
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="123-sql-server">12.3 SQL Server<a class="headerlink" href="#123-sql-server" title="Permanent link">&para;</a></h3>
-<p><strong>Consistency Level:</strong> Serializable ACID
-<strong>Mechanism:</strong> Snapshot isolation + row versioning
-<strong>Guarantee:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ Serializable isolation
-✅ Snapshot isolation available
-✅ Write-ahead logging (durability)
-✅ Atomic transactions
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="124-sqlite">12.4 SQLite<a class="headerlink" href="#124-sqlite" title="Permanent link">&para;</a></h3>
-<p><strong>Consistency Level:</strong> Serializable ACID
-<strong>Mechanism:</strong> Write-ahead logging + locking
-<strong>Guarantee:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>⚠️ Limited MVCC (single file)
-✅ Atomic transactions
-✅ Durability
-❌ Limited concurrency (file-level locking)
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="13-consistency-anti-patterns">13. Consistency Anti-Patterns<a class="headerlink" href="#13-consistency-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="131-assuming-eventual-consistency">13.1 Assuming Eventual Consistency<a class="headerlink" href="#131-assuming-eventual-consistency" title="Permanent link">&para;</a></h3>
-<p><strong>❌ WRONG:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="this-is-not-eventually-consistent_1">This is NOT eventually consistent!<a class="headerlink" href="#this-is-not-eventually-consistent_1" title="Permanent link">&para;</a></h1>
-<p>mutation { updateUser(id: 1, name: "Alice") }
-time.sleep(1)
-result = query { user(id: 1) { name } }</p>
-<h1 id="assuming-result-might-be-stale">Assuming result might be stale<a class="headerlink" href="#assuming-result-might-be-stale" title="Permanent link">&para;</a></h1>
-<h1 id="result-always-sees-alice-immediately">Result: Always sees "Alice" immediately<a class="headerlink" href="#result-always-sees-alice-immediately" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>✅ RIGHT:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>mutation { updateUser(id: 1, name: "Alice") }</p>
-<h1 id="result-always-consistent-immediately-no-need-to-wait">Result: Always consistent immediately, no need to wait<a class="headerlink" href="#result-always-consistent-immediately-no-need-to-wait" title="Permanent link">&para;</a></h1>
-<p>result = query { user(id: 1) { name } }  # Sees "Alice"
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="132-assuming-cross-database-transactions">13.2 Assuming Cross-Database Transactions<a class="headerlink" href="#132-assuming-cross-database-transactions" title="Permanent link">&para;</a></h3>
-<p><strong>❌ WRONG:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>mutation {
-  createUser(name: "Alice") { id }  # Database 1
-  createOrder(user_id: NEW_ID) { id }  # Database 2
-}</p>
-<h1 id="assuming-both-succeed-or-both-fail">Assuming both succeed or both fail<a class="headerlink" href="#assuming-both-succeed-or-both-fail" title="Permanent link">&para;</a></h1>
-<h1 id="actually-may-partially-succeed">Actually: May partially succeed<a class="headerlink" href="#actually-may-partially-succeed" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>✅ RIGHT:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="handle-failure-manually">Handle failure manually<a class="headerlink" href="#handle-failure-manually" title="Permanent link">&para;</a></h1>
-<p>try {
-  user = mutation { createUser(name: "Alice") { id } }
-  order = mutation { createOrder(user_id: user.id) { id } }
-} catch error {
-  # May have created user but not order
-  # Client should rollback/compensate
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="133-assuming-global-event-ordering">13.3 Assuming Global Event Ordering<a class="headerlink" href="#133-assuming-global-event-ordering" title="Permanent link">&para;</a></h3>
-<p><strong>❌ WRONG:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>subscription {
-  orderUpdated { id, status }
-  userUpdated { name }
-}</p>
-<h1 id="assuming-events-are-globally-ordered-by-timestamp">Assuming events are globally ordered by timestamp<a class="headerlink" href="#assuming-events-are-globally-ordered-by-timestamp" title="Permanent link">&para;</a></h1>
-<h1 id="actually-only-per-entity-ordered">Actually: Only per-entity ordered<a class="headerlink" href="#actually-only-per-entity-ordered" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>✅ RIGHT:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>subscription {
-  orderUpdated { id, status, timestamp }
-}</p>
-<h1 id="use-timestamp-to-order-events-in-client">Use timestamp to order events in client<a class="headerlink" href="#use-timestamp-to-order-events-in-client" title="Permanent link">&para;</a></h1>
-<p>events.sort(key=lambda e: e["timestamp"])
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="14-consistency-sla-service-level-agreement">14. Consistency SLA (Service Level Agreement)<a class="headerlink" href="#14-consistency-sla-service-level-agreement" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Metric</th>
-<th>Target</th>
-<th>Measured</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Serializable consistency</strong></td>
-<td>99.99%</td>
-<td>All mutations</td>
-</tr>
-<tr>
-<td><strong>Read-after-write latency</strong></td>
-<td>&lt;10ms</td>
-<td>p99</td>
-</tr>
-<tr>
-<td><strong>ACID durability</strong></td>
-<td>100%</td>
-<td>Confirmed mutations</td>
-</tr>
-<tr>
-<td><strong>Causal consistency (federation)</strong></td>
-<td>99.9%</td>
-<td>Federated queries</td>
-</tr>
-<tr>
-<td><strong>Cache coherence</strong></td>
-<td>99.99%</td>
-<td>Cross-server caches</td>
-</tr>
-</tbody>
-</table>
+<h2 id="10-consistency-anti-patterns">10. Consistency Anti-Patterns<a class="headerlink" href="#10-consistency-anti-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="101-assuming-stale-reads-against-the-primary">10.1 Assuming Stale Reads Against the Primary<a class="headerlink" href="#101-assuming-stale-reads-against-the-primary" title="Permanent link">&para;</a></h3>
+<p><strong>Wrong:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># This is NOT necessary against a single primary.</span>
+<span class="n">mutation</span> <span class="p">{</span> <span class="n">updateUser</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="p">{</span> <span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span> <span class="p">})</span> <span class="p">{</span> <span class="o">...</span> <span class="p">}</span> <span class="p">}</span>
+<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># waiting for &quot;propagation&quot;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">query</span> <span class="p">{</span> <span class="n">user</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span> <span class="p">{</span> <span class="n">name</span> <span class="p">}</span> <span class="p">}</span>
+</code></pre></div>
+<p><strong>Right:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">mutation</span> <span class="p">{</span> <span class="n">updateUser</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="p">{</span> <span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span> <span class="p">})</span> <span class="p">{</span> <span class="o">...</span> <span class="p">}</span> <span class="p">}</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">query</span> <span class="p">{</span> <span class="n">user</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span> <span class="p">{</span> <span class="n">name</span> <span class="p">}</span> <span class="p">}</span>  <span class="c1"># Sees &quot;Alice&quot; immediately</span>
+</code></pre></div>
+<h3 id="102-assuming-global-event-ordering">10.2 Assuming Global Event Ordering<a class="headerlink" href="#102-assuming-global-event-ordering" title="Permanent link">&para;</a></h3>
+<p><strong>Wrong:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">subscription</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">orderUpdated</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">userUpdated</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c"># Assuming events arrive in global timestamp order.</span>
+</code></pre></div>
+<p><strong>Right:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">subscription</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">orderUpdated</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="n">timestamp</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Order events on the client using their timestamps.</span>
+<span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="103-expecting-fraiseql-to-route-to-replicas">10.3 Expecting FraiseQL to Route to Replicas<a class="headerlink" href="#103-expecting-fraiseql-to-route-to-replicas" title="Permanent link">&para;</a></h3>
+<p><strong>Wrong:</strong> Assuming FraiseQL load-balances reads across replicas or fails over
+automatically.</p>
+<p><strong>Right:</strong> FraiseQL connects to one <code>database_url</code>. Read/write splitting,
+failover, and replica routing belong to your PostgreSQL deployment or a connection
+proxy in front of it.</p>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p><strong>FraiseQL consistency model:</strong></p>
-<p>✅ <strong>Single database:</strong> Serializable ACID (strict)
-✅ <strong>Federated:</strong> Causal consistency (weaker but scalable)
-✅ <strong>Subscriptions:</strong> Per-entity ordered (eventual delivery)
-✅ <strong>Caching:</strong> Strong cache coherence
-✅ <strong>Durability:</strong> Write-ahead logging
-✅ <strong>Atomicity:</strong> All-or-nothing mutations</p>
-<p><strong>Golden rule:</strong> What the database guarantees, FraiseQL guarantees. Nothing more, nothing less.</p>
+<p>FraiseQL v1 consistency model:</p>
+<ul>
+<li><strong>Single PostgreSQL primary:</strong> strong, immediately consistent reads after
+  committed writes.</li>
+<li><strong>Isolation:</strong> whatever PostgreSQL is configured to enforce (Read Committed by
+  default, Serializable available).</li>
+<li><strong>Mutations:</strong> atomic per <code>fn_</code> function; all-or-nothing.</li>
+<li><strong>Durability:</strong> PostgreSQL write-ahead logging.</li>
+<li><strong>Subscriptions:</strong> per-entity ordered, at-least-once delivery.</li>
+<li><strong>Caching:</strong> invalidated on write, otherwise bounded by TTL.</li>
+<li><strong>Replicas/failover:</strong> a PostgreSQL deployment concern, not a FraiseQL feature.</li>
+</ul>
+<p><strong>Golden rule:</strong> What PostgreSQL guarantees, FraiseQL guarantees. Nothing more,
+nothing less.</p>
 <hr />
-<p><em>End of Consistency Model</em></p>
+<h2 id="related-documents">Related Documents<a class="headerlink" href="#related-documents" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../error-handling-model/">Error Handling Model</a></li>
+<li><a href="../failure-modes-and-recovery/">Failure Modes and Recovery</a></li>
+<li><a href="../versioning-strategy/">Versioning Strategy</a></li>
+<li><a href="../../realtime/subscriptions/">Subscriptions</a></li>
+<li><a href="../../database/view-selection-guide/">View Selection Guide</a></li>
+<li><a href="../../../foundation/12-performance-characteristics/">Performance Characteristics</a></li>
+<li><a href="../../../specs/schema-conventions/">Schema Conventions</a>
+</content>
+</invoke></li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 
