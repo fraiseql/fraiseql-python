@@ -100,7 +100,7 @@ Complete overview of all FraiseQL capabilities.
 | **Event Sourcing** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md) | [complete_cqrs_blog](../../examples/complete_cqrs_blog/) |
 | **Domain Events** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md#domain-events) | [blog_enterprise](../../examples/blog_enterprise/) |
 | **CQRS Architecture** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
-| **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/enterprise.md) | [saas-starter](../../examples/saas-starter/) |
+| **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/README.md) | [saas-starter](../../examples/saas-starter/) |
 
 ---
 
