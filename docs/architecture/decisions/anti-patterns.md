@@ -1,23 +1,35 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL Anti-Patterns: What NOT to Do
-description: This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO
-keywords: ["workflow", "design", "scalability", "saas", "performance", "realtime", "patterns", "ecommerce"]
+title: "FraiseQL Anti-Patterns: What NOT to Do"
+description: This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO do.
+keywords: ["anti-patterns", "design", "scalability", "performance", "n+1", "pagination", "postgresql", "views"]
 tags: ["documentation", "reference"]
 ---
 
 # FraiseQL Anti-Patterns: What NOT to Do
 
-**Date:** January 2026
-**Status:** Complete System Specification
 **Audience:** Developers, architects, technical leads
 
 ---
 
 ## Executive Summary
 
-This document catalogs anti-patterns—designs that seem reasonable but lead to problems in practice. Learning what NOT to do is as important as learning what TO do.
+This document catalogs anti-patterns—designs that seem reasonable but lead to
+problems in practice. Learning what NOT to do is as important as learning what
+TO do.
+
+FraiseQL v1 is a **Python runtime GraphQL framework for PostgreSQL**. You
+declare types and resolvers with decorators (`@fraiseql.type`,
+`@fraiseql.query`, `@fraiseql.mutation`); the schema is built in memory at app
+startup and served over FastAPI. The architecture is CQRS:
+
+- **Reads** come from PostgreSQL **read views** (`v_`) or table-backed
+  projection views (`tv_`) via `db.find` / `db.find_one`.
+- **Writes** run through PostgreSQL **functions** (`fn_`) via
+  `db.execute_function` — all write business logic lives in the database.
+
+Most of the anti-patterns below boil down to one root cause: *fighting the
+CQRS model* by pushing logic into the Python layer that belongs in your views
+and functions.
 
 Each anti-pattern includes:
 
@@ -32,20 +44,19 @@ Each anti-pattern includes:
 
 ### 1.1 Deep Nested Queries (N+1 Problem)
 
-**Anti-pattern**: Design without considering query depth
+**Anti-pattern**: Resolving nested relationships one row at a time
 
 ```graphql
-<!-- Code example in GraphQL -->
 # ❌ WRONG: Dangerous nesting depth
 query GetUserWithEverything {
   user(id: "user-1") {
     id
     name
-    posts {                    # 1 JOIN
+    posts {                    # 1 query
       id
-      comments {              # 1 JOIN per post (N+1!)
+      comments {              # 1 query per post (N+1!)
         id
-        author {              # 1 JOIN per comment (N+1+1!)
+        author {              # 1 query per comment (N+1+1!)
           id
           name
         }
@@ -53,26 +64,66 @@ query GetUserWithEverything {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Problem:**
 
-- For 10 posts with 5 comments each = 50 database queries
-- Exponential explosion with deeper nesting
-- Can timeout or crash database
+- For 10 posts with 5 comments each = 50+ database round trips
+- Explosion gets worse with deeper nesting
+- Can time out or overload the database
 
 **Symptoms:**
 
-- Queries timeout despite small result set
-- Database CPU spikes with simple queries
-- "Query too complex" errors
+- Queries time out despite a small result set
+- Database CPU spikes on a single GraphQL request
+- Per-field resolvers each issue their own `SELECT`
 
-**Solution**: Limit query depth
+**Solution A — compose nesting inside the view.** In FraiseQL, the natural fix
+is to build the nested shape once in your `v_`/`tv_` view's `data` JSONB, so a
+single `db.find` returns the whole tree:
+
+```sql
+-- A read view that pre-composes posts (and their comment counts) as JSONB.
+CREATE VIEW v_user AS
+SELECT
+    u.id,                                      -- public UUID (the GraphQL id)
+    jsonb_build_object(
+        'id',    u.id,
+        'name',  u.name,
+        'posts', (
+            SELECT jsonb_agg(jsonb_build_object(
+                'id',           p.id,
+                'title',        p.title,
+                'commentCount', (SELECT count(*) FROM tb_comment c
+                                 WHERE c.fk_post = p.pk_post)
+            ))
+            FROM tb_post p
+            WHERE p.fk_user = u.pk_user
+        )
+    ) AS data
+FROM tb_user u;
+```
+
+**Solution B — batch the field with a dataloader.** When a field genuinely
+needs a separate resolver, use `@fraiseql.dataloader_field` so FraiseQL batches
+the lookups into one query instead of N:
+
+```python
+import fraiseql
+
+@fraiseql.dataloader_field
+async def author(info, comment: Comment) -> User:
+    # Called once per comment, but FraiseQL collects the keys and issues a
+    # single batched load — turning N+1 queries into 1.
+    db = info.context["db"]
+    return await db.find_one("v_user", id=comment.author_id)
+```
+
+**Solution C — cap depth and page nested lists.** Keep request shapes sane and
+always paginate nested collections:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# ✅ CORRECT: Controlled nesting (2-3 levels max)
+# ✅ CORRECT: Controlled nesting, paginated nested lists, aggregates not joins
 query GetUserWithPosts {
   user(id: "user-1") {
     id
@@ -80,43 +131,23 @@ query GetUserWithPosts {
     posts(limit: 20) {
       id
       title
-      commentCount  # Aggregated, not nested
+      commentCount  # Aggregated in the view, not nested + counted in app
     }
   }
 }
+```
 
-# Separate query for comments if needed
-query GetPostComments($postId: ID!) {
-  post(id: $postId) {
-    id
-    comments(limit: 50) {
-      id
-      content
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Implementation**: Set max query depth at compile time
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.schema_rule(max_query_depth=3)
-class MySchema:
-    pass
-```text
-<!-- Code example in TEXT -->
+**Cost of ignoring:** unpredictable latency, database saturation under load, and
+GraphQL requests that work in dev but melt in production.
 
 ---
 
 ### 1.2 Unbounded Result Sets
 
-**Anti-pattern**: Queries without LIMIT
+**Anti-pattern**: Queries (and views) without a `LIMIT`
 
 ```graphql
-<!-- Code example in GraphQL -->
-# ❌ WRONG: No limit, returns all rows
+# ❌ WRONG: No limit, returns every row in the view
 query GetAllUsers {
   users {
     id
@@ -124,26 +155,44 @@ query GetAllUsers {
     email
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+```python
+# ❌ WRONG: resolver hands the whole view back, no bound
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")   # could be millions of rows
+```
 
 **Problem:**
 
-- Returns millions of rows
-- Timeouts, memory exhaustion
-- Network overload (10GB+ response)
+- Returns the entire table behind the view
+- Memory exhaustion and timeouts
+- Huge response payloads saturate the network
 
 **Symptoms:**
 
 - Server runs out of memory
 - Client connection hangs
-- Database performance tanks
+- Database and app latency spike together
 
-**Solution**: Always use pagination
+**Solution**: Always paginate — accept `limit`/`offset` (or cursor args) and
+push them into the read:
+
+```python
+# ✅ CORRECT: bounded read with a sane default cap
+@fraiseql.query
+async def users(info, limit: int = 50, offset: int = 0) -> list[User]:
+    db = info.context["db"]
+    limit = min(limit, 200)   # hard ceiling regardless of client request
+    return await db.find("v_user", limit=limit, offset=offset)
+```
+
+For client-driven paging, expose a cursor connection:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# ✅ CORRECT: Paginated with cursor
+# ✅ CORRECT: paginated with a cursor connection
 query GetUsers($first: Int!, $after: String) {
   users(first: $first, after: $after) {
     edges {
@@ -156,295 +205,412 @@ query GetUsers($first: Int!, $after: String) {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+**Cost of ignoring:** a single innocent-looking query can OOM the process or
+stall every other request sharing the connection pool.
 
 ---
 
-### 1.3 Synchronous Side Effects in Mutations
+### 1.3 Business Logic in Python Instead of `fn_` Functions
 
-**Anti-pattern**: Block mutation completion on side effects
+**Anti-pattern**: Implementing write logic (validation, derived state,
+multi-row updates) in the Python resolver instead of a PostgreSQL function
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Mutation waits for external service
-@FraiseQL.mutation
-def create_order(input: OrderInput) -> Order:
-    # Create order
-    order = db.insert("orders", input)
+# ❌ WRONG: mutation logic lives in Python, runs many round trips,
+#          and is not transactional
+@fraiseql.mutation
+async def create_order(info, input: CreateOrderInput) -> CreateOrderSuccess:
+    db = info.context["db"]
 
-    # Wait for email service (blocking)
-    email_service.send_confirmation(order.id)  # 2 seconds!
+    # Validate by hand, in the app
+    customer = await db.find_one("v_customer", id=input.customer_id)
+    if customer is None:
+        return CreateOrderError(message="unknown customer")
 
-    # Wait for analytics (blocking)
-    analytics.log_event("order_created", order)  # 1 second!
+    # Several separate writes — not atomic, racy
+    order = await db.execute_function("fn_insert_order_row", {...})
+    for line in input.lines:
+        await db.execute_function("fn_insert_order_line", {...})
+    await db.execute_function("fn_recompute_order_total", {"id": order["id"]})
 
-    # Total: 3 seconds (should be 50ms)
-    return order
-```text
-<!-- Code example in TEXT -->
+    return CreateOrderSuccess(order=Order(**order))
+```
 
 **Problem:**
 
-- Mutation latency includes side effect latency
-- External service slowness delays user feedback
-- Failed external services block entire operation
+- Multi-step writes are not atomic — a failure midway leaves partial state
+- Validation rules drift from the database's own constraints
+- Every step is a network round trip; latency stacks up
+- The same logic gets re-implemented (inconsistently) in every caller
 
 **Symptoms:**
 
-- Mutations taking 1-5 seconds
-- User sees spinning wheel
-- Dependent systems failure crashes mutations
+- Resolvers are long and full of `if`/`await db...` chains
+- Bugs where half an operation "took" and half didn't
+- Business rules enforced in Python but missing at the SQL layer
 
-**Solution**: Make side effects async
+**Solution**: Put the write logic in one `fn_` PostgreSQL function. The resolver
+just validates the shape of the input and calls it; the function does
+validation, the writes, and returns a JSONB result in a single transaction:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Async side effects
-@FraiseQL.mutation
-async def create_order(input: OrderInput) -> Order:
-    # Create order (synchronous, fast)
-    order = await db.insert("orders", input)
-
-    # Schedule side effects (fire and forget)
-    asyncio.create_task(
-        email_service.send_confirmation(order.id)
+# ✅ CORRECT: resolver is thin; the database owns the write
+@fraiseql.mutation
+async def create_order(
+    info, input: CreateOrderInput
+) -> CreateOrderSuccess | CreateOrderError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_order",
+        {"customer_id": input.customer_id, "lines": input.lines},
     )
-    asyncio.create_task(
-        analytics.log_event("order_created", order)
-    )
+    if not result.get("success"):
+        return CreateOrderError(
+            message=result.get("message", "failed"),
+            code=result.get("code", "VALIDATION_ERROR"),
+        )
+    return CreateOrderSuccess(order=Order(**result["order"]))
+```
 
-    # Return immediately
-    return order
+```sql
+-- fn_create_order does the validation + all writes atomically and returns JSONB.
+CREATE FUNCTION fn_create_order(p_customer_id uuid, p_lines jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_order_id uuid;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM tb_customer WHERE id = p_customer_id) THEN
+        RETURN jsonb_build_object('success', false,
+                                  'code', 'UNKNOWN_CUSTOMER',
+                                  'message', 'unknown customer');
+    END IF;
 
-# Mutation latency: 50ms (as it should be)
-```text
-<!-- Code example in TEXT -->
+    INSERT INTO tb_order (fk_customer)
+    SELECT pk_customer FROM tb_customer WHERE id = p_customer_id
+    RETURNING id INTO v_order_id;
+
+    INSERT INTO tb_order_line (fk_order, sku, qty)
+    SELECT (SELECT pk_order FROM tb_order WHERE id = v_order_id),
+           line->>'sku', (line->>'qty')::int
+    FROM jsonb_array_elements(p_lines) AS line;
+
+    RETURN jsonb_build_object('success', true,
+                              'order', (SELECT data FROM v_order WHERE id = v_order_id));
+END;
+$$;
+```
+
+**Cost of ignoring:** non-atomic writes, duplicated and divergent business
+rules, and slow mutations that fan out into many round trips. See
+[design principles](../../foundation/04-design-principles.md) for the rationale
+behind keeping write logic in the database.
+
+---
+
+### 1.4 Synchronous Blocking Side Effects in Resolvers
+
+**Anti-pattern**: Block resolver completion on a slow external call
+
+```python
+# ❌ WRONG: mutation waits on an external service inside the request path
+@fraiseql.mutation
+async def create_order(
+    info, input: CreateOrderInput
+) -> CreateOrderSuccess | CreateOrderError:
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_order", {...})
+
+    # Blocks the whole request on third-party I/O
+    email_service.send_confirmation(result["order"]["id"])   # 2 seconds!
+    analytics.log_event("order_created", result["order"])    # 1 second!
+
+    return CreateOrderSuccess(order=Order(**result["order"]))
+```
+
+**Problem:**
+
+- Request latency now includes every side-effect's latency
+- A slow or failing third party degrades or breaks the mutation
+- The user waits on work that has nothing to do with the response
+
+**Symptoms:**
+
+- Mutations taking seconds instead of tens of milliseconds
+- Outages in a notification/analytics provider taking down writes
+- Tail latency dominated by external calls
+
+**Solution**: Get the durable write done in PostgreSQL, then dispatch side
+effects out of the request path. The most robust approach keeps the dispatch
+*inside the transaction's reach* by recording intent in the database (an outbox
+row written by `fn_create_order`) and draining it with a separate worker:
+
+```sql
+-- fn_create_order also enqueues the side effect transactionally.
+INSERT INTO tb_outbox (kind, payload)
+VALUES ('order_confirmation',
+        jsonb_build_object('order_id', v_order_id));
+```
+
+A background worker (a separate process, not the GraphQL request) reads
+`tb_outbox` and performs the email/analytics calls with retries. The resolver
+returns as soon as the database commits:
+
+```python
+# ✅ CORRECT: the request path only does the durable write
+@fraiseql.mutation
+async def create_order(
+    info, input: CreateOrderInput
+) -> CreateOrderSuccess | CreateOrderError:
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_order", {...})
+    if not result.get("success"):
+        return CreateOrderError(message=result.get("message", "failed"))
+    return CreateOrderSuccess(order=Order(**result["order"]))
+```
+
+If you genuinely must dispatch from the process, hand the work to your own
+worker/queue — never `await` a slow third party inside the resolver, and never
+fire untracked background tasks whose failures vanish silently.
+
+**Cost of ignoring:** user-visible latency tied to systems you don't control,
+and side effects that are either blocking *or* silently dropped on failure.
 
 ---
 
 ## 2. Authorization Anti-Patterns
 
-### 2.1 Authorization in Application Code (Not Schema)
+### 2.1 Scattered Authorization in Resolver Code
 
-**Anti-pattern**: Put authorization logic in business logic
+**Anti-pattern**: Re-checking permissions ad hoc in every resolver
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Authorization scattered in code
-@FraiseQL.query
-def get_user(id: ID) -> User:
-    user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [id])
+# ❌ WRONG: authorization scattered and easy to forget
+@fraiseql.query
+async def get_user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    user = await db.find_one("v_user", id=id)
 
-    # Check authorization in code
-    if user.created_by_user_id != current_user_id:
-        if not current_user.is_admin:
-            raise PermissionError("Not authorized")
-
+    current = info.context["current_user"]
+    if user.created_by != current.id and not current.is_admin:
+        raise PermissionError("Not authorized")
     return user
 
-@FraiseQL.mutation
-def delete_user(id: ID) -> bool:
-    # Different check in different place
-    user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [id])
-    if user.id != current_user_id and not current_user.is_admin:
+@fraiseql.mutation
+async def delete_user(info, id: ID) -> bool:
+    # A *different* check, written by hand, in a different place
+    db = info.context["db"]
+    current = info.context["current_user"]
+    target = await db.find_one("v_user", id=id)
+    if target.id != current.id and not current.is_admin:
         raise PermissionError("Not authorized")
-
-    db.delete("tb_user", id)
+    await db.execute_function("fn_delete_user", {"id": id})
     return True
-```text
-<!-- Code example in TEXT -->
+```
 
 **Problem:**
 
-- Authorization rules scattered everywhere
-- Impossible to audit (where are all checks?)
-- Easy to forget authorization (security hole)
-- Hard to maintain (change rule = find all places)
+- Rules are duplicated and drift apart between operations
+- Impossible to audit — there is no single place that says "who can do what"
+- Easy to forget a check on a new resolver (a silent security hole)
 
 **Symptoms:**
 
-- Authorization inconsistency between operations
-- Security audits find missing checks
-- Accidental exposure of sensitive data
+- Inconsistent behavior between similar operations
+- Security reviews keep finding missing checks
+- Accidental exposure of records a user shouldn't see
 
-**Solution**: Declare authorization in schema
+**Solution**: Declare authorization once via an `Authorizer` and attach it to
+the operation, instead of re-implementing checks inline:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Authorization in schema (compile-time checked)
-@FraiseQL.type
-@FraiseQL.authorize(rule="owner_or_admin")
-class User:
-    id: ID
-    email: str
-    created_by_user_id: UUID  # UUID v4 for GraphQL ID
+# ✅ CORRECT: one authorizer, attached declaratively
+from fraiseql import Authorizer
 
-@FraiseQL.query
-@FraiseQL.authorize(rule="owner_or_admin")
-def get_user(id: ID) -> User:
-    # Authorization already checked (compile-time)
-    # Code is clean, authorization is auditable
-    return db.query_one(..., [id])
+owner_or_admin = OwnerOrAdminAuthorizer()   # implements Authorizer
 
-@FraiseQL.mutation
-@FraiseQL.authorize(rule="owner_or_admin")
-def delete_user(id: ID) -> bool:
-    # Same rule everywhere (consistent)
-    db.delete("tb_user", id)
-    return True
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query(authorizer=owner_or_admin)
+async def get_user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", id=id)
+
+@fraiseql.mutation
+async def delete_user(
+    info, input: DeleteUserInput
+) -> DeleteUserSuccess | DeleteUserError:
+    # The same rule is enforced by fn_delete_user as well — see below.
+    db = info.context["db"]
+    result = await db.execute_function("fn_delete_user", {"id": input.id})
+    if not result.get("success"):
+        return DeleteUserError(message=result.get("message", "forbidden"))
+    return DeleteUserSuccess(id=input.id)
+```
+
+Defense in depth: enforce the *data* boundary in PostgreSQL too. `fn_delete_user`
+should refuse the operation (and your views should filter by tenant/owner) so a
+missed check in the app cannot leak data. Field-level authorization is available
+via `@fraiseql.type(..., authorize_fields=...)` and the
+`@fraiseql.field`/`@fraiseql.dataloader_field` resolver path.
+
+> **Resolver-bypass note:** authorization attached to a resolver only runs when
+> that resolver runs. Cached or batched paths can shortcut the per-field
+> resolver, so always enforce the authoritative boundary in the database
+> (`fn_` functions and tenant-scoped views), not in the resolver alone.
+
+**Cost of ignoring:** an unauditable patchwork of checks, one forgotten `if`
+away from a breach.
 
 ---
 
-### 2.2 Trusting Client-Provided Authorization
+### 2.2 Trusting Client-Provided Identity or Role
 
-**Anti-pattern**: Trust user role from GraphQL input
+**Anti-pattern**: Reading the caller's role from GraphQL input
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Client provides their role (can be forged)
-@FraiseQL.query
-def get_admin_panel() -> AdminPanel:
-    # Check role from GraphQL input (client can lie!)
-    if input.user_role == "admin":
-        return admin_panel_data
-
+# ❌ WRONG: the client tells you their role (and can lie)
+@fraiseql.query
+async def admin_panel(info, role: str) -> AdminPanel:
+    if role == "admin":               # forgeable!
+        return build_admin_panel(info)
     raise PermissionError()
-```text
-<!-- Code example in TEXT -->
+```
 
 **Problem:**
 
-- Client can modify GraphQL to claim any role
-- Security boundary is client-side (non-existent)
-- Any user can become admin
+- Anyone can send `role: "admin"` in the variables
+- The security boundary is on the client (i.e. nonexistent)
+- Privilege escalation is trivial
 
 **Symptoms:**
 
-- Users access restricted data
-- Audit shows unauthorized access
-- Security breach
+- Users reaching data their role shouldn't allow
+- Audit logs showing unauthorized access
+- A breach waiting to happen
 
-**Solution**: Derive authorization from verified token
+**Solution**: Derive identity and role from the verified request context (a
+validated JWT or session), never from operation arguments:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Server derives role from verified token
-@FraiseQL.query
-@FraiseQL.authorize(rule="admin_only")
-def get_admin_panel() -> AdminPanel:
-    # Authorization derived from verified JWT
-    # Client cannot forge role
-    return admin_panel_data
-```text
-<!-- Code example in TEXT -->
+# ✅ CORRECT: identity comes from the verified context, not the input
+@fraiseql.query(authorizer=AdminOnlyAuthorizer())
+async def admin_panel(info) -> AdminPanel:
+    # info.context["current_user"] was populated from a verified token by
+    # auth middleware; the client cannot forge it.
+    return build_admin_panel(info)
+```
+
+**Cost of ignoring:** any user can impersonate any role; there is effectively no
+access control at all.
 
 ---
 
 ## 3. Caching Anti-Patterns
 
-### 3.1 Cache Without Invalidation
+FraiseQL v1 ships a real PostgreSQL-backed result cache
+(`cached_query`, `ResultCache` / `CachedRepository`, with `CascadeRule` and
+`setup_auto_cascade_rules` for invalidation). The anti-patterns are about using
+it carelessly.
 
-**Anti-pattern**: Cache but never invalidate
+### 3.1 Caching Without Invalidation
+
+**Anti-pattern**: Cache query results but never invalidate them on write
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Cache set to 1 hour, never invalidated
-FraiseQL.cache.set(
-    f"product:{product_id}",
-    product_data,
-    ttl=3600  # 1 hour
-)
+# ❌ WRONG: a long TTL with no invalidation path
+from fraiseql.caching import cached_query
 
-# User updates product price
-mutation UpdateProduct {
-  updateProduct(id: "product-1", price: 150) {
-    price
-  }
-}
+@fraiseql.query
+async def product(info, id: ID) -> Product | None:
+    db = info.context["db"]
+    return await cached_query(
+        db, "v_product", id=id, ttl=3600,   # 1 hour
+    )
+```
 
-# Cache not invalidated!
-# Next query still sees old price (for up to 1 hour)
-```text
-<!-- Code example in TEXT -->
+```graphql
+# A mutation updates the price...
+mutation { updateProduct(input: {id: "p-1", price: 150}) { product { price } } }
+# ...but nothing invalidates product:p-1, so queries serve the stale price
+# for up to an hour.
+```
 
 **Problem:**
 
-- Stale data served to users
-- Data inconsistency between instances
-- User sees old data, confused
+- Stale results served after a write
+- Reads and writes disagree
+- Users see old data and lose trust in the API
 
 **Symptoms:**
 
-- Users report stale data
-- Updates not visible immediately
-- Cache hits show old values
+- "I updated it but it still shows the old value"
+- Cache hits returning superseded data
+- Inconsistency that "fixes itself" after the TTL expires
 
-**Solution**: Invalidate on write
+**Solution**: Tie invalidation to the write with cascade rules so that mutating
+a `tv_`/`v_` source invalidates the dependent cached queries automatically:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Invalidate on mutation
-@FraiseQL.mutation
-async def update_product(id: ID, input: UpdateInput) -> Product:
-    # Update database
-    product = await db.update("products", id, input)
+# ✅ CORRECT: register cascade rules so writes invalidate dependent reads
+from fraiseql.caching import ResultCache, CascadeRule, setup_auto_cascade_rules
 
-    # Invalidate related caches immediately
-    cache.invalidate(f"product:{id}")
-    cache.invalidate("featured_products")
-    cache.invalidate(f"products_by_category:{product.category}")
+cache = ResultCache(...)
+setup_auto_cascade_rules(cache)          # derive rules from the schema, or:
+cache.add_cascade_rule(
+    CascadeRule(source="tv_product", invalidates=["v_product", "v_featured"])
+)
+```
 
-    return product
-```text
-<!-- Code example in TEXT -->
+When `fn_update_product` writes the product, the cascade rule clears the cached
+`v_product` and `v_featured` entries. See
+[state management](./state-management.md) for the full caching/invalidation
+model.
+
+**Cost of ignoring:** the cache becomes a correctness bug, not a performance
+win.
 
 ---
 
-### 3.2 Caching Sensitive Data
+### 3.2 Caching Sensitive Data Carelessly
 
-**Anti-pattern**: Cache PII without safeguards
+**Anti-pattern**: Cache PII or per-tenant data under a guessable, unscoped key
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Cache user email (PII)
-cache.set(f"user:{user_id}", user_data)  # Contains email!
-
-# In multi-tenant system, another tenant might hit same cache
-# if they guess the key (or keys are leaked in logs)
-```text
-<!-- Code example in TEXT -->
+# ❌ WRONG: caches email (PII) under a key with no tenant scope
+cache.set(f"user:{user_id}", user_with_email)
+```
 
 **Problem:**
 
-- PII leakage between users
-- Privacy violation, compliance issue
-- Cannot be forgotten (cache persists)
+- PII lingers in a shared cache outside your access controls
+- In a multi-tenant system, an unscoped key can collide or leak across tenants
+- "Right to be forgotten" is hard when copies live in cache
 
 **Symptoms:**
 
-- Audit findings of PII in cache
-- GDPR/privacy violations
-- Users see other users' emails
+- Audits finding PII in cache storage
+- Privacy/compliance violations
+- One tenant's data surfacing for another
 
-**Solution**: Don't cache PII (or cache carefully)
+**Solution**: Cache only what is safe to share, scope keys by tenant, and keep
+sensitive fields on a short or no TTL:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Cache public data only
-cache.set(f"user:{user_id}", {
+# ✅ CORRECT: cache public projection, tenant-scoped key, sensitive data excluded
+cache.set(f"tenant:{tenant_id}:user:{user_id}", {
     "id": user_id,
     "name": "Alice",
     "avatar_url": "https://...",
-    # NO email, no phone, no sensitive data
+    # no email, no phone, no tokens
 })
+```
 
-# Sensitive data fetched separately (not cached)
-# Or cached with very short TTL (30 seconds)
-```text
-<!-- Code example in TEXT -->
+The cleanest version is to keep sensitive columns out of the cached `v_`/`tv_`
+view's `data` JSONB entirely, and never put internal keys (`pk_`/`fk_`) anywhere
+near the cache.
+
+**Cost of ignoring:** a privacy incident and a cache you can't safely purge.
 
 ---
 
@@ -455,445 +621,429 @@ cache.set(f"user:{user_id}", {
 **Anti-pattern**: Optimize before measuring
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Complex optimization before profiling
-@FraiseQL.query
-def get_users():
-    # Manual batch loading (complex)
-    batch_size = 1000
-    users = []
-    for i in range(0, total_users, batch_size):
-        users.extend(
-            db.query(f"SELECT * FROM users LIMIT {batch_size} OFFSET {i}")
-        )
-    return users
-
-# Measurements show: This is SLOWER than simple query
-# Because: Offset pagination is O(n), not O(1)
-# Real fix: Use keyset pagination (1 query, not n queries)
-```text
-<!-- Code example in TEXT -->
+# ❌ WRONG: hand-rolled offset batching, never profiled
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    out: list[User] = []
+    for i in range(0, 100_000, 1000):
+        out.extend(await db.find("v_user", limit=1000, offset=i))
+    return out
+# Offset pagination is O(n) in the offset — this is *slower*, not faster,
+# and it still returns an unbounded result set (see 1.2).
+```
 
 **Problem:**
 
-- Wasted effort on wrong bottleneck
-- Complex code harder to maintain
-- Solution might be slower than original
+- Effort spent on the wrong bottleneck
+- More complex code, no measured benefit
+- The "optimization" can be slower than the naive version
 
 **Symptoms:**
 
-- Optimization makes things slower
-- Complexity increases without benefit
-- Time wasted on wrong problems
+- Changes that add complexity without moving the numbers
+- Optimizations made on a hunch, not a profile
 
-**Solution**: Profile first, optimize based on data
+**Solution**: Measure first. In FraiseQL the bottleneck is almost always the
+SQL behind a view, so look there — usually it's a missing index:
 
-```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Profile, identify bottleneck, optimize
-# Profile shows: Database query taking 95% of time
-# Root cause: Missing index on filter column
-# Fix: Add index (simple, high impact)
+```sql
+-- Profile (EXPLAIN ANALYZE the view query) shows a seq scan on the filter column.
+CREATE INDEX idx_user_status ON tb_user (status);
+-- One line; 500ms -> 50ms. No application change needed.
+```
 
-CREATE INDEX idx_user_status ON tb_user(status);
+See [performance characteristics](../../foundation/12-performance-characteristics.md)
+for what to measure and the expected shapes of fast vs slow queries.
 
-# Speedup: 500ms → 50ms (10x faster, 1 line of SQL)
-```text
-<!-- Code example in TEXT -->
+**Cost of ignoring:** time burned on non-bottlenecks while the real one (an
+index, or an over-fetching view) goes untouched.
 
 ---
 
-### 4.2 Over-Replication
+### 4.2 Ignoring Indexes and Over-Fetching in Views
 
-**Anti-pattern**: Replicate data everywhere
+**Anti-pattern**: Building wide views that scan whole tables and select columns
+nobody asked for
 
-```python
-<!-- Code example in Python -->
-# ❌ WRONG: Replicate same data to 10 read replicas
-Configuration:
-  ├─ Primary database (writes)
-  ├─ Read replica 1
-  ├─ Read replica 2
-  ├─ Read replica 3
-  ├─ Read replica 4
-  ├─ Read replica 5
-  ├─ Read replica 6
-  ├─ Read replica 7
-  ├─ Read replica 8
-  ├─ Read replica 9
-  └─ Read replica 10
+```sql
+-- ❌ WRONG: builds a fat data blob and filters on an unindexed column
+CREATE VIEW v_order AS
+SELECT
+    o.id,
+    jsonb_build_object(
+        'id',        o.id,
+        'status',    o.status,
+        'lines',     (SELECT jsonb_agg(...) FROM tb_order_line ...),
+        'history',   (SELECT jsonb_agg(...) FROM tb_order_event ...),  -- huge, rarely read
+        'rawAudit',  o.audit_blob                                      -- never requested
+    ) AS data
+FROM tb_order o;
 
-# Problem: Replication lag, storage bloat, complexity
-```text
-<!-- Code example in TEXT -->
+SELECT data FROM v_order WHERE data->>'status' = 'OPEN';   -- can't use an index
+```
 
 **Problem:**
 
-- Replication lag grows with replicas
-- Storage cost multiplied
-- Complexity in managing 11 instances
-- Diminishing returns (beyond 3-5 replicas)
+- The view materializes far more JSONB than any query selects
+- Filtering on a JSONB expression bypasses ordinary column indexes
+- Sequential scans on large tables for routine queries
 
 **Symptoms:**
 
-- High replication lag (>10 seconds)
-- Huge storage costs
-- Difficult operational overhead
+- Slow reads that `EXPLAIN ANALYZE` shows as seq scans
+- High memory churn building JSONB that's immediately discarded
+- A "simple" list query that's mysteriously expensive
 
-**Solution**: Right-size replica count
+**Solution**: Keep filterable columns as real, indexed columns on the view;
+build heavy sub-objects only where they're actually needed (or in a dedicated
+`tv_` projection refreshed out of band):
 
-```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Minimal replicas for needs
-Configuration:
-  ├─ Primary database (writes): Handles mutations
-  ├─ Read replica 1: Handles queries (local datacenter)
-  ├─ Read replica 2: Handles Arrow analytics (separate)
-  └─ Read replica 3: Disaster recovery (warm standby)
+```sql
+-- ✅ CORRECT: expose an indexed status column; keep the heavy bits out of the list view
+CREATE VIEW v_order AS
+SELECT
+    o.id,
+    o.status,                                  -- real column → indexable filter
+    jsonb_build_object('id', o.id, 'status', o.status, 'total', o.total) AS data
+FROM tb_order o;
 
-# Replication lag: <1 second
-# Storage: Manageable
-# Complexity: Operationally reasonable
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_order_status ON tb_order (status);
+-- Order history / audit live in a separate detail view fetched only when asked for.
+```
+
+**Cost of ignoring:** every list query pays for data it throws away, and the
+database can't use indexes for the filters that matter.
 
 ---
 
 ## 5. Data Modeling Anti-Patterns
 
-### 5.1 Storing Derived Data Without Updates
+### 5.1 Storing Derived Data Without Updating It
 
-**Anti-pattern**: Calculate once, store forever
+**Anti-pattern**: Compute a derived value once and store it as a plain column
+that nothing keeps current
 
-```python
-<!-- Code example in Python -->
-# ❌ WRONG: Calculate user score, store, never update
-user = {
-    "id": "user-1",
-    "name": "Alice",
-    "score": 100  # Calculated once, never updated
-}
-
-# User does activities
-# Score should update
-# But it's stale in database
-
-# Query assumes score is current (it's not!)
-```text
-<!-- Code example in TEXT -->
+```sql
+-- ❌ WRONG: score is computed at insert and then drifts
+CREATE TABLE tb_user (
+    pk_user bigint GENERATED ALWAYS AS IDENTITY,
+    id      uuid DEFAULT gen_random_uuid(),
+    name    text,
+    score   int      -- set once, never recomputed as activity accrues
+);
+```
 
 **Problem:**
 
-- Stale derived data
-- Inconsistency with calculated value
-- Hard to know when last updated
+- The stored value diverges from reality over time
+- Readers assume it's current; it isn't
+- No signal that it's stale
 
 **Symptoms:**
 
-- User score doesn't match their activities
-- Reports show wrong aggregates
-- Users confused by stale data
+- Aggregates and scores that don't match the underlying rows
+- "The number is wrong" reports that can't be reproduced from the data
+- Inconsistency between the column and a fresh `COUNT(*)`
 
-**Solution**: Use database view or trigger
+**Solution**: Compute on read in a view, or maintain it in the database with a
+trigger or projection table — never leave it to chance:
 
-```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Calculate on-demand (view) or auto-update (trigger)
-
-# Option 1: View (calculate on read)
-CREATE VIEW v_user_stats AS
+```sql
+-- Option A: compute on read in the view's data JSONB
+CREATE VIEW v_user AS
 SELECT
     u.id,
-    u.name,
-    COUNT(a.id) as score
-FROM tb_user u
-LEFT JOIN tb_activity a ON u.id = a.user_id
-GROUP BY u.id;
+    jsonb_build_object(
+        'id',    u.id,
+        'name',  u.name,
+        'score', (SELECT count(*) FROM tb_activity a WHERE a.fk_user = u.pk_user)
+    ) AS data
+FROM tb_user u;
 
-# Option 2: Trigger (update on write)
-CREATE TRIGGER update_user_score
-AFTER INSERT ON tb_activity
-FOR EACH ROW
+-- Option B: maintain it on write with a trigger (when reads must be cheap)
+CREATE FUNCTION fn_bump_user_score() RETURNS trigger
+LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE tb_user
-    SET score = (SELECT COUNT(*) FROM tb_activity WHERE user_id = NEW.user_id)
-    WHERE id = NEW.user_id;
+       SET score = (SELECT count(*) FROM tb_activity WHERE fk_user = NEW.fk_user)
+     WHERE pk_user = NEW.fk_user;
+    RETURN NEW;
 END;
-```text
-<!-- Code example in TEXT -->
+$$;
+
+CREATE TRIGGER trg_bump_user_score
+AFTER INSERT ON tb_activity
+FOR EACH ROW EXECUTE FUNCTION fn_bump_user_score();
+```
+
+For heavy aggregates, a `tv_` projection table refreshed by a function/trigger
+is the table-backed version of the same idea. See the
+[aggregation model](../analytics/aggregation-model.md) for derived-data
+patterns and FraiseQL's runtime auto-aggregation.
+
+**Cost of ignoring:** silently wrong numbers that erode trust and are painful to
+reconcile after the fact.
 
 ---
 
 ## 6. Concurrency Anti-Patterns
 
-### 6.1 Optimistic Locking Without Version Check
+### 6.1 Updating Without a Version (or Conditional) Check
 
-**Anti-pattern**: Update without checking version
+**Anti-pattern**: Read-then-write without guarding against a concurrent update
 
-```python
-<!-- Code example in Python -->
-# ❌ WRONG: Race condition possible
-# Thread 1: Read user (version: 1)
-user = db.query_one("SELECT * FROM tb_user WHERE id = $1", [user_id])
-
-# Thread 2: Update user (version: 1 → 2)
-db.update("tb_user", user_id, {"name": "Bob", "version": 2})
-
-# Thread 1: Update without checking version
-db.update("tb_user", user_id, {"email": "alice@example.com", "version": 1})
-
-# Result: Race condition, version conflict
 ```text
-<!-- Code example in TEXT -->
+# ❌ WRONG: lost-update race
+Tx 1: read user (version 1)
+Tx 2: update user, version 1 -> 2
+Tx 1: update user using its stale copy, clobbering Tx 2's change
+```
 
 **Problem:**
 
-- Lost updates (Thread 1 overwrites Thread 2)
-- Data corruption
-- No conflict detection
+- Lost updates: the last writer silently overwrites the others
+- No conflict is detected or reported
+- Data corruption that's invisible until someone notices missing changes
 
 **Symptoms:**
 
-- Users report updates being lost
-- Data inconsistency
-- Stale data overwrites newer data
+- "My edit disappeared"
+- Fields reverting to older values
+- Non-reproducible inconsistencies under load
 
-**Solution**: Check version before update
+**Solution**: Make the write conditional inside the `fn_` function — increment a
+`version` column and update only when the version still matches, returning a
+conflict result when it doesn't:
 
-```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Optimistic locking with version check
-user = db.query_one(
-    "SELECT id, name, email, version FROM tb_user WHERE id = $1",
-    [user_id]
-)
+```sql
+-- ✅ CORRECT: optimistic concurrency enforced in the database
+CREATE FUNCTION fn_update_user_email(p_id uuid, p_email text, p_version int)
+RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_rows int;
+BEGIN
+    UPDATE tb_user
+       SET email = p_email,
+           version = version + 1
+     WHERE id = p_id
+       AND version = p_version;      -- only if nobody else moved it
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
 
-# Update with version check
-result = db.execute(
-    "UPDATE tb_user SET email = $1, version = version + 1 "
-    "WHERE id = $2 AND version = $3",
-    ["newemail@example.com", user_id, user.version]
-)
+    IF v_rows = 0 THEN
+        RETURN jsonb_build_object('success', false, 'code', 'CONFLICT',
+                                  'message', 'version mismatch, refresh and retry');
+    END IF;
+    RETURN jsonb_build_object('success', true);
+END;
+$$;
+```
 
-if result.rowcount == 0:
-    raise ConflictError("Version mismatch, refresh and retry")
-```text
-<!-- Code example in TEXT -->
+The resolver passes the client's `version` through and surfaces the conflict as
+a typed error result. See the
+[consistency model](../reliability/consistency-model.md) for transaction and
+concurrency guarantees.
+
+**Cost of ignoring:** silent data loss under concurrency that's nearly
+impossible to debug after the fact.
 
 ---
 
 ## 7. Subscription Anti-Patterns
 
-### 7.1 Subscribing to All Events
+FraiseQL v1 subscriptions are real and WebSocket-based: `@fraiseql.subscription`
+decorates an **async generator** whose yielded values are streamed to the
+client. The event source is *your* generator — it can be backed by PostgreSQL
+`LISTEN/NOTIFY`, polling, or an external stream.
 
-**Anti-pattern**: Get all events, filter on client
+### 7.1 Subscribing to Everything and Filtering on the Client
+
+**Anti-pattern**: Stream all events and let the client throw most away
 
 ```graphql
-<!-- Code example in GraphQL -->
-# ❌ WRONG: Subscribe to ALL events, filter on client
+# ❌ WRONG: subscribe to all events, filter in the browser
 subscription OnAllEvents {
-  events {
-    type
-    timestamp
-    data
-  }
+  events { type timestamp data }
 }
-
-# Client filters
-if (event.type === "order_created") {
-  handleOrderCreated(event);
-}
-```text
-<!-- Code example in TEXT -->
+```
 
 **Problem:**
 
-- Network bloat (receiving events you don't care about)
-- Buffer overflow (too many events)
-- Wasted bandwidth
+- The server pushes events every client doesn't care about
+- Bandwidth and client CPU wasted on filtering
+- Slow consumers fall behind and connections drop
 
 **Symptoms:**
 
-- WebSocket connection drops (buffer full)
-- Network usage very high
-- Client CPU high (filtering all events)
+- WebSocket disconnects under event volume
+- High network usage for a handful of relevant events
+- Client-side filtering logic that mirrors what the server already knows
 
-**Solution**: Filter on server
+**Solution**: Filter at the source — take arguments in the subscription
+generator and only `yield` matching events (FraiseQL also provides a
+`subscription_filter` helper):
 
-```graphql
-<!-- Code example in GraphQL -->
-# ✅ CORRECT: Subscribe to specific events (filtered on server)
-subscription OnOrderCreated {
-  orderCreated {
-    id
-    total
-    user { id name }
-  }
-}
+```python
+# ✅ CORRECT: filter server-side; only matching events leave the server
+from collections.abc import AsyncGenerator
 
-# Server only sends order created events
-# No buffer overflow
-# Network efficient
-```text
-<!-- Code example in TEXT -->
+@fraiseql.subscription
+async def order_created(info, customer_id: UUID) -> AsyncGenerator[Order, None]:
+    async for order in watch_orders():
+        if order.customer_id == customer_id:
+            yield order
+```
+
+**Cost of ignoring:** dropped connections and wasted bandwidth that gets worse
+as traffic grows.
 
 ---
 
-### 7.2 No Heartbeat Handling
+### 7.2 Ignoring Connection Liveness
 
-**Anti-pattern**: Assume subscription always connected
+**Anti-pattern**: Assume a WebSocket subscription stays healthy forever
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: No heartbeat, connection silently dies
+# ❌ WRONG: no liveness handling; a dead connection looks "subscribed"
 subscription = await client.subscribe(query)
-
 async for event in subscription:
-    process_event(event)  # Dies silently if disconnected
-```text
-<!-- Code example in TEXT -->
+    process_event(event)   # silently stops if the socket is half-open
+```
 
 **Problem:**
 
-- Connection dies silently
-- Client thinks still connected
-- Missed events
+- A half-open connection delivers no events but looks connected
+- The client believes it's live and misses updates
+- No recovery without a manual refresh
 
 **Symptoms:**
 
-- Subscription appears active but receives no events
-- User doesn't know they missed events
-- Must manually refresh
+- A subscription that's "active" but quietly stops updating
+- Users unaware they've missed events
+- Reconnects only after someone notices
 
-**Solution**: Implement heartbeat/ping
+**Solution**: Use the GraphQL-over-WebSocket transport's keepalive
+(`graphql-transport-ws` ping/pong) and reconnect on missed pongs. On the server,
+FraiseQL's `WebSocketConnection` / `SubscriptionManager` handle the protocol;
+on the client, enable ping and re-subscribe on disconnect:
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Heartbeat keeps connection alive
-subscription = await client.subscribe(query)
+# ✅ CORRECT: client monitors liveness and reconnects
+subscription = await client.subscribe(query, keepalive=30)
 
-async def monitor_subscription():
+async def watch_liveness():
     while subscription.is_active:
-        if time.time() - subscription.last_message > 30:
-            # No message in 30 seconds, send ping
-            subscription.ping()
+        if time.monotonic() - subscription.last_message > 60:
+            await subscription.reconnect()
         await asyncio.sleep(10)
+```
 
-async for event in subscription:
-    subscription.last_message = time.time()
-    process_event(event)
-```text
-<!-- Code example in TEXT -->
+**Cost of ignoring:** users silently stop receiving real-time updates and don't
+find out until it matters.
 
 ---
 
 ## 8. Testing Anti-Patterns
 
-### 8.1 Testing Without Authorization
+### 8.1 Testing Behavior but Skipping Authorization
 
-**Anti-pattern**: Test queries/mutations but skip authorization
+**Anti-pattern**: Test the happy path and never test who is allowed to do it
 
 ```python
-<!-- Code example in Python -->
-# ❌ WRONG: Test query without checking authorization
-def test_get_user():
-    result = query(GetUserQuery, variables={"id": "user-1"})
-    assert result.user.name == "Alice"
-    # Missing: Authorization test!
-
-def test_delete_user():
-    result = mutation(DeleteUserMutation, variables={"id": "user-1"})
-    assert result.success == True
-    # Missing: Test that non-owner cannot delete!
-```text
-<!-- Code example in TEXT -->
+# ❌ WRONG: only asserts the result, never the access boundary
+async def test_get_user():
+    result = await run_query(GET_USER, variables={"id": "user-1"})
+    assert result.data["user"]["name"] == "Alice"
+    # No test that a different user is rejected!
+```
 
 **Problem:**
 
-- Authorization bypassed in tests
-- Security hole not caught
-- Test passes but production fails
+- Authorization regressions sail through the test suite
+- A removed or broken check is caught only in production
+- The security boundary is the least-tested part of the system
 
 **Symptoms:**
 
-- Tests pass but users report access denied
-- Security audit finds authorization not tested
-- Production bugs
+- Green tests, but real users hit (or bypass) access errors
+- Security reviews finding untested authorization paths
 
-**Solution**: Test authorization explicitly
+**Solution**: Test both the allowed and the denied case explicitly, with the
+caller identity coming from context (as it does in production):
 
 ```python
-<!-- Code example in Python -->
-# ✅ CORRECT: Test with and without authorization
-def test_get_user_authorized():
-    # User can access their own user
-    result = query(GetUserQuery, user_id="user-1", variables={"id": "user-1"})
-    assert result.user.name == "Alice"
+# ✅ CORRECT: assert both the grant and the denial
+async def test_get_user_owner_allowed():
+    result = await run_query(GET_USER, current_user="user-1",
+                             variables={"id": "user-1"})
+    assert result.data["user"]["name"] == "Alice"
 
-def test_get_user_unauthorized():
-    # User cannot access other user
-    result = query(GetUserQuery, user_id="user-1", variables={"id": "user-2"})
-    assert result.errors[0].code == "E_AUTH_PERMISSION_401"
+async def test_get_user_other_denied():
+    result = await run_query(GET_USER, current_user="user-1",
+                             variables={"id": "user-2"})
+    assert result.errors[0].extensions["code"] == "FORBIDDEN"
 
-def test_delete_user_admin():
-    # Admin can delete any user
-    result = mutation(DeleteUserMutation, user_role="admin", variables={"id": "user-1"})
-    assert result.success == True
+async def test_delete_user_non_owner_denied():
+    result = await run_mutation(DELETE_USER, current_user="user-1",
+                                variables={"input": {"id": "user-2"}})
+    assert result.data["deleteUser"]["__typename"] == "DeleteUserError"
+```
 
-def test_delete_user_non_owner():
-    # Non-owner cannot delete
-    result = mutation(DeleteUserMutation, user_id="user-1", variables={"id": "user-2"})
-    assert result.errors[0].code == "E_AUTH_PERMISSION_401"
-```text
-<!-- Code example in TEXT -->
+Also test the database boundary: a `fn_` function or tenant-scoped view should
+refuse a forbidden operation even if the resolver check were removed.
+
+**Cost of ignoring:** the most security-critical behavior is the only behavior
+nobody verifies.
 
 ---
 
-## 9. Deployment Anti-Patterns
+## 9. Operational Anti-Patterns
 
-### 9.1 Schema Mismatch Between Instances
+### 9.1 Skipping Health Checks on Deploy
 
-**Anti-pattern**: Different instances using different schema versions
+**Anti-pattern**: Route traffic to a new instance before it can actually serve
+requests
 
 ```text
-<!-- Code example in TEXT -->
-Production deployment:
-├─ Instance 1: CompiledSchema v2.0.0
-├─ Instance 2: CompiledSchema v2.0.0
-├─ Instance 3: CompiledSchema v2.0.1 (oops!)
-└─ Load balancer: Routes to all 3
+# ❌ WRONG: traffic shifts the moment the process starts
+1. Start new app process
+2. Load balancer immediately routes to it
+3. ...but startup (schema build, DB pool warm-up) isn't done
+4. First requests fail or hang
+```
 
-Problem: Instance 3 has different behavior
-```text
-<!-- Code example in TEXT -->
+The FraiseQL schema is built **in memory at startup** from your decorators and
+the live database connection — there is no compiled artifact to ship or version.
+What can differ between instances is the *running code* and the *database it
+points at*, so an instance is only ready once it has built its schema and
+connected.
 
 **Problem:**
 
-- Different query plans per instance
-- Non-deterministic results
-- Hard to debug (works on some instances, fails on others)
+- Requests hit an instance that isn't finished starting
+- Errors during the warm-up window
+- Confusing "works on one pod, fails on another" reports
 
 **Symptoms:**
 
-- Some instances work, others fail
-- Errors are random (instance-dependent)
-- User sees different results on refresh
+- Spikes of errors right after each deploy
+- Failures correlated with newly-added instances
+- Intermittent failures behind a load balancer
 
-**Solution**: Atomic deployments
+**Solution**: Gate traffic on a readiness check, and roll instances so old ones
+keep serving until new ones are ready and pointed at a compatible database:
 
 ```text
-<!-- Code example in TEXT -->
-Correct deployment:
+# ✅ CORRECT: ready-gated rollout
+1. Start new app process (builds schema, warms the connection pool)
+2. Readiness probe passes only after startup completes
+3. Load balancer routes to it; an old instance is drained
+4. Apply DB migrations before/with the rollout so views/functions are compatible
+```
 
-1. Deploy new code version
-2. Wait for ready signal (health check)
-3. Verify schema matches
-4. Then route traffic
-
-All instances have identical schema
-All instances behave identically
-```text
-<!-- Code example in TEXT -->
+**Cost of ignoring:** every deploy produces a burst of user-facing errors and
+flaky, instance-dependent behavior.
 
 ---
 
@@ -901,22 +1051,34 @@ All instances behave identically
 
 Before shipping code, check:
 
-- ❌ Deep query nesting? (max 3 levels)
-- ❌ Unbounded result sets? (always paginate)
-- ❌ Synchronous side effects? (make async)
-- ❌ Authorization in code? (declare in schema)
-- ❌ Trusting client input? (verify server-side)
-- ❌ Cache without invalidation? (invalidate on write)
-- ❌ Caching sensitive data? (don't)
-- ❌ Optimizing before profiling? (profile first)
-- ❌ Subscription to all events? (filter server-side)
-- ❌ Tests without authorization? (test both cases)
-- ❌ Schema mismatch across instances? (atomic deployments)
+- ❌ Per-row nested resolvers? (compose in the view or use `@fraiseql.dataloader_field`)
+- ❌ Unbounded result sets? (always paginate, with a hard ceiling)
+- ❌ Write logic in Python? (put it in a `fn_` function, atomically)
+- ❌ Blocking side effects in resolvers? (use an outbox / out-of-band worker)
+- ❌ Authorization scattered in resolvers? (declare an `Authorizer`; enforce in the DB too)
+- ❌ Trusting client-provided role/identity? (derive it from the verified context)
+- ❌ Caching without invalidation? (use `CascadeRule` / `setup_auto_cascade_rules`)
+- ❌ Caching sensitive data carelessly? (scope keys, exclude PII)
+- ❌ Optimizing before profiling? (measure the SQL; usually it's an index)
+- ❌ Filterable data buried in JSONB? (keep indexed columns; trim the view)
+- ❌ Derived data stored and forgotten? (compute in a view, or maintain via trigger)
+- ❌ Writes without a version check? (conditional update in the `fn_` function)
+- ❌ Subscriptions that send everything? (filter in the async generator)
+- ❌ No connection-liveness handling? (keepalive + reconnect)
+- ❌ Tests that skip authorization? (test both grant and denial)
+- ❌ Routing traffic before readiness? (gate on a health check)
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: January 2026
-**Status**: Complete specification for framework v2.x
+Learn from others' mistakes. Avoid these patterns and your FraiseQL application
+will be safer, faster, and far easier to reason about.
 
-Learn from others' mistakes. Avoid these patterns and your application will be safer and faster.
+## Related Documentation
+
+- [State management](./state-management.md) — caching and invalidation model
+- [Error handling model](../reliability/error-handling-model.md)
+- [Consistency model](../reliability/consistency-model.md)
+- [View selection guide](../database/view-selection-guide.md) — `v_` vs `tv_` reads
+- [Aggregation model](../analytics/aggregation-model.md)
+- [Design principles](../../foundation/04-design-principles.md)
+- [Performance characteristics](../../foundation/12-performance-characteristics.md)
