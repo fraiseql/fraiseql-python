@@ -1,6 +1,4 @@
-<!-- Skip to main content -->
 ---
-
 title: Connection Pool Tuning Guide
 description: Connection pooling is essential for GraphQL API performance. A properly tuned connection pool can improve throughput by 2-3x and reduce latency variance.
 keywords: []
@@ -9,13 +7,69 @@ tags: ["documentation", "reference"]
 
 # Connection Pool Tuning Guide
 
-**Version**: 2.0.0-a1
-**Framework**: deadpool-postgres (async connection pool)
+**Framework**: FraiseQL (Python, FastAPI) over psycopg's async connection pool
 **Impact**: Critical for production performance
 
 ## Overview
 
 Connection pooling is essential for GraphQL API performance. A properly tuned connection pool can improve throughput by 2-3x and reduce latency variance.
+
+FraiseQL uses [psycopg](https://www.psycopg.org/psycopg3/)'s `AsyncConnectionPool` to manage PostgreSQL connections. The pool is created once at application startup and shared across every GraphQL request, so connections are reused instead of being opened and closed per request.
+
+## How FraiseQL Configures the Pool
+
+You configure the pool through `create_fraiseql_app(...)` keyword arguments:
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    connection_pool_size=20,        # base connections
+    connection_pool_max_overflow=10,  # extra connections under burst load
+    connection_pool_timeout=30.0,   # seconds to wait for a free connection
+    connection_pool_recycle=3600,   # seconds before an idle connection is recycled
+)
+```
+
+These kwargs map onto fields of `FraiseQLConfig`, which can also be set directly or via `FRAISEQL_`-prefixed environment variables:
+
+| `create_fraiseql_app` kwarg | `FraiseQLConfig` field | Environment variable | Default |
+|-----------------------------|------------------------|----------------------|---------|
+| `connection_pool_size` | `database_pool_size` | `FRAISEQL_DATABASE_POOL_SIZE` | 20 (10 in dev) |
+| `connection_pool_max_overflow` | `database_max_overflow` | `FRAISEQL_DATABASE_MAX_OVERFLOW` | 10 |
+| `connection_pool_timeout` | `database_pool_timeout` | `FRAISEQL_DATABASE_POOL_TIMEOUT` | 30 |
+| `connection_pool_recycle` | `database_pool_recycle` | `FRAISEQL_DATABASE_POOL_RECYCLE` | 3600 |
+
+Internally, the psycopg pool's `max_size` is `database_pool_size + database_max_overflow`. The pool keeps a small number of connections warm and grows up to `max_size` under load.
+
+### Configuring via `FraiseQLConfig`
+
+```python
+from fraiseql import FraiseQLConfig
+from fraiseql.fastapi import create_fraiseql_app
+
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=20,
+    database_max_overflow=10,
+    database_pool_timeout=30,
+    database_pool_recycle=3600,
+)
+
+app = create_fraiseql_app(types=[User], config=config)
+```
+
+### Configuring via environment variables
+
+```bash
+export FRAISEQL_DATABASE_POOL_SIZE=20
+export FRAISEQL_DATABASE_MAX_OVERFLOW=10
+export FRAISEQL_DATABASE_POOL_TIMEOUT=30
+export FRAISEQL_DATABASE_POOL_RECYCLE=3600
+```
 
 ## Current Configuration
 
@@ -23,23 +77,23 @@ Connection pooling is essential for GraphQL API performance. A properly tuned co
 
 | Setting | Value | Notes |
 |---------|-------|-------|
-| **Max Connections** | 10 | Good for small-medium apps |
-| **Initialization** | Lazy | Connections created on-demand |
-| **Recycling** | Fast | Connections reused immediately |
-| **Idle Timeout** | 900s | Connections dropped after 15 minutes idle |
+| **Pool size** | 20 (10 in dev) | Base connections kept available |
+| **Max overflow** | 10 | Extra connections allowed under burst load |
+| **Max connections** | `pool_size + max_overflow` | Effective psycopg `max_size` |
+| **Acquire timeout** | 30s | Wait time for a free connection before erroring |
+| **Recycle** | 3600s | Idle connections recycled after 1 hour |
+| **Initialization** | Eager warm-up | A few connections opened at startup |
 
 ### What This Means
 
 ```text
-<!-- Code example in TEXT -->
 Behavior:
 
-1. Server starts with 0 connections
-2. First request creates 1 connection
-3. Pool grows to max_size (10) as needed
-4. Unused connections closed after 15 minutes
-```text
-<!-- Code example in TEXT -->
+1. App startup opens a small number of warm connections
+2. The pool grows toward max_size (pool_size + max_overflow) as needed
+3. Requests acquire a connection, run their query, and return it
+4. Idle connections are recycled after database_pool_recycle seconds
+```
 
 ## Tuning by Workload
 
@@ -53,14 +107,14 @@ Behavior:
 
 **Configuration**:
 
-```rust
-<!-- Code example in RUST -->
-let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    5  // Small pool is sufficient
-).await?;
-```text
-<!-- Code example in TEXT -->
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    connection_pool_size=5,          # small pool is sufficient
+    connection_pool_max_overflow=2,
+)
+```
 
 **Expected Metrics**:
 
@@ -78,14 +132,14 @@ let adapter = PostgresAdapter::with_pool_size(
 
 **Configuration** (Recommended):
 
-```rust
-<!-- Code example in RUST -->
-let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    20  // Default 10 is often too small
-).await?;
-```text
-<!-- Code example in TEXT -->
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    connection_pool_size=20,         # default 10 in dev is often too small
+    connection_pool_max_overflow=10,
+)
+```
 
 **Expected Metrics**:
 
@@ -103,14 +157,20 @@ let adapter = PostgresAdapter::with_pool_size(
 
 **Configuration**:
 
-```rust
-<!-- Code example in RUST -->
-let adapter = PostgresAdapter::with_pool_size(
-    connection_string,
-    50 + num_cpus::get() as usize  // Scale with CPU cores
-).await?;
-```text
-<!-- Code example in TEXT -->
+```python
+import os
+
+# Scale the base pool with CPU cores, leave headroom in overflow
+cores = os.cpu_count() or 4
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    connection_pool_size=50 + cores,
+    connection_pool_max_overflow=20,
+    connection_pool_timeout=60.0,
+)
+```
 
 **Expected Metrics**:
 
@@ -124,49 +184,43 @@ let adapter = PostgresAdapter::with_pool_size(
 ### Rule of Thumb
 
 ```text
-<!-- Code example in TEXT -->
-max_pool_size = (core_count × 2) + effective_spindle_count
+max_connections = pool_size + max_overflow ≈ (core_count × 2) + effective_spindle_count
 
 For typical cloud VMs:
 
 - 2 cores:  5 connections
-- 4 cores:  10 connections (default)
-- 8 cores:  20 connections
+- 4 cores:  10 connections (dev default)
+- 8 cores:  20 connections (prod default)
 - 16 cores: 35 connections
 - 32 cores: 65 connections
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Rationale
 
 Each connection:
 
 - Occupies ~1-2 MB of database memory
-- Requires PostgreSQL backend process (~5-10 MB)
+- Requires a PostgreSQL backend process (~5-10 MB)
 - Handles one query at a time
 
-Too small pool → Requests queue, latency increases
-Too large pool → Wasted memory, database may struggle
+Too small a pool → Requests queue, latency increases
+Too large a pool → Wasted memory, database may struggle
+
+### Stay under PostgreSQL `max_connections`
+
+The total connections opened across all FraiseQL instances must stay comfortably below PostgreSQL's `max_connections` (default 100). Reserve headroom for superuser sessions, migrations, and other clients.
+
+```sql
+-- Check the server limit
+SHOW max_connections;
+
+-- Reserve some connections for superusers
+SHOW superuser_reserved_connections;
+```
+
+If you run `N` application instances, then `N × (pool_size + max_overflow)` must be less than `max_connections - superuser_reserved_connections`. When that ceiling is too low for your fleet, put a connection pooler (PgBouncer) in front of PostgreSQL instead of raising `max_connections` indefinitely.
 
 ## Monitoring Pool Health
-
-### Key Metrics
-
-```rust
-<!-- Code example in RUST -->
-let metrics = adapter.pool_metrics();
-
-println!("Total connections:  {}", metrics.total_connections);
-println!("Idle connections:   {}", metrics.idle_connections);
-println!("Active connections: {}", metrics.active_connections);
-println!("Waiting requests:   {}", metrics.waiting_requests);
-
-// Calculate utilization
-let utilization = (metrics.active_connections as f64
-    / metrics.total_connections as f64) * 100.0;
-println!("Pool utilization: {:.1}%", utilization);
-```text
-<!-- Code example in TEXT -->
 
 ### Health Signals
 
@@ -177,355 +231,224 @@ println!("Pool utilization: {:.1}%", utilization);
 | Idle Connections | >0 | = 0 | - |
 | Acquisition Time | < 1ms | 1-10ms | > 10ms |
 
-### How to Monitor
+### Diagnose with `pg_stat_activity`
 
-**Option 1: Debug Logging**
+PostgreSQL exposes live connection state in `pg_stat_activity`. Use it to see how many backends your application is actually holding and what they are doing.
 
-```rust
-<!-- Code example in RUST -->
-// Add monitoring to your GraphQL handler
-async fn handle_graphql(req: GraphQLRequest) -> Result<String> {
-    let before = Instant::now();
-    let metrics_before = executor.adapter.pool_metrics();
+```sql
+-- Count connections per state for your application
+SELECT state, count(*)
+FROM pg_stat_activity
+WHERE datname = 'mydb'
+GROUP BY state
+ORDER BY count(*) DESC;
+```
 
-    let result = executor.execute(&req.query, &req.variables).await?;
+```sql
+-- Find long-running or idle-in-transaction connections
+SELECT pid, state, wait_event_type, wait_event,
+       now() - state_change AS time_in_state,
+       left(query, 80) AS query
+FROM pg_stat_activity
+WHERE datname = 'mydb'
+  AND state <> 'idle'
+ORDER BY time_in_state DESC;
+```
 
-    let metrics_after = executor.adapter.pool_metrics();
-    let elapsed = before.elapsed();
+If you see many `idle in transaction` connections, an application code path is holding a connection without committing — that starves the pool. If `active` connections are pinned at `max_size` while requests queue, the pool is too small for the load.
 
-    if elapsed.as_millis() > 100 {
-        eprintln!(
-            "Slow query ({:.1}ms): active={}, waiting={}",
-            elapsed.as_secs_f64() * 1000.0,
-            metrics_after.active_connections,
-            metrics_after.waiting_requests
-        );
-    }
+### Application-side monitoring
 
-    Ok(result)
-}
-```text
-<!-- Code example in TEXT -->
+The psycopg `AsyncConnectionPool` exposes runtime statistics. The FraiseQL app holds a single shared pool; you can read its stats for dashboards:
 
-**Option 2: Prometheus Metrics**
+```python
+from fraiseql.fastapi.dependencies import get_db_pool
 
-```rust
-<!-- Code example in RUST -->
-// Export pool metrics to Prometheus
-prometheus::histogram_timer!("pool_acquisition_time_ms", {
-    executor.adapter.execute_query(query).await?
-});
+pool = get_db_pool()
+stats = pool.get_stats()  # psycopg pool statistics dict
 
-prometheus::gauge!("pool_active_connections",
-    executor.adapter.pool_metrics().active_connections as i64);
-```text
-<!-- Code example in TEXT -->
+# Useful keys include:
+#   pool_size              - connections currently in the pool
+#   pool_available         - idle connections ready to hand out
+#   requests_waiting       - requests queued for a connection
+#   requests_wait_ms       - cumulative time spent waiting
+print(stats)
+```
 
-**Option 3: Structured Logging**
-
-```rust
-<!-- Code example in RUST -->
-// Log pool state with every query
-tracing::info!(
-    pool_metrics = ?executor.adapter.pool_metrics(),
-    query_latency_ms = ?elapsed.as_millis(),
-    "GraphQL query executed"
-);
-```text
-<!-- Code example in TEXT -->
+Export these into Prometheus, structured logs, or your APM of choice. A persistently non-zero `requests_waiting` is the clearest signal that the pool is undersized.
 
 ## Optimization Techniques
 
-### 1. Pre-warm the Pool
+### 1. Keep connections warm
 
-Initialize connections on startup:
+FraiseQL keeps a small number of connections open at startup so the first requests do not pay a cold-start penalty. For latency-sensitive services, raise the base `connection_pool_size` so the pool rarely has to open new connections under load.
 
-```rust
-<!-- Code example in RUST -->
-async fn initialize_adapter(connection_string: &str) -> Result<PostgresAdapter> {
-    let adapter = PostgresAdapter::with_pool_size(connection_string, 20).await?;
+**Benefit**: Eliminates cold-start latency spikes.
 
-    // Pre-warm by creating initial connections
-    for _ in 0..5 {
-        adapter.health_check().await?;
-    }
+### 2. Recycle idle connections
 
-    println!("Pool initialized with 5 connections");
-    Ok(adapter)
-}
-```text
-<!-- Code example in TEXT -->
+`connection_pool_recycle` (default 3600s) caps how long an idle connection lives before it is replaced. This guards against connections that have been silently dropped by the database, a firewall, or PgBouncer.
 
-**Benefit**: Eliminates cold-start latency spike
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    connection_pool_recycle=300,  # recycle idle connections every 5 minutes
+)
+```
 
-### 2. Connection Recycling
+**Benefit**: Avoids using connections the server has already closed.
 
-Fast recycling is already enabled. Verify:
+### 3. Share one pool across the whole app
 
-```rust
-<!-- Code example in RUST -->
-cfg.manager = Some(ManagerConfig {
-    recycling_method: RecyclingMethod::Fast,  // Reuse immediately
-});
-```text
-<!-- Code example in TEXT -->
+FraiseQL creates exactly one pool per application and shares it across all GraphQL requests. Do not create additional pools or open ad-hoc connections per request — that defeats pooling and exhausts PostgreSQL backends.
 
-**Benefit**: Faster connection reuse, lower latency
+```python
+# ✅ GOOD - one app, one shared pool
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    connection_pool_size=20,
+)
 
-### 3. Tune Idle Timeout
+# ❌ BAD - opening a fresh connection per request bypasses the pool
+# import psycopg
+# async def handler():
+#     conn = await psycopg.AsyncConnection.connect("postgresql://localhost/mydb")
+#     ...
+```
 
-```rust
-<!-- Code example in RUST -->
-// Default: 900 seconds (15 minutes)
-// Reduces unnecessary cleanup for long-lived connections
-cfg.manager = Some(ManagerConfig {
-    recycling_method: RecyclingMethod::Fast,
-});
+### 4. Reduce how long each query holds a connection
 
-// For high-churn workloads, reduce timeout:
-// cfg.manager = Some(ManagerConfig {
-//     idle_timeout: Some(Duration::from_secs(300)),  // 5 minutes
-// });
-```text
-<!-- Code example in TEXT -->
+A connection is held for the duration of a query. Faster queries return connections sooner, so the same pool serves more traffic.
 
-**Benefit**: Reduces idle connection overhead
+- Push field selection into the `v_`/`tv_` view `data` JSONB so only requested fields are read.
+- Add indexes that support your `WHERE` clauses and joins.
+- Avoid `idle in transaction` by keeping transactions short.
 
-### 4. Use Connection Pooling in Client Code
+**Benefit**: Higher effective throughput from the same pool size.
 
-```rust
-<!-- Code example in RUST -->
-// ✅ GOOD - Use single adapter instance
-let adapter = Arc::new(PostgresAdapter::new(connection_string).await?);
+## Using PgBouncer
 
-#[tokio::main]
-async fn main() {
-    // Share adapter across handlers
-    let adapter = adapter.clone();
+When you run many application instances, raising each pool's size eventually exhausts PostgreSQL's `max_connections`. [PgBouncer](https://www.pgbouncer.org/) sits between FraiseQL and PostgreSQL and multiplexes many client connections onto a small set of server connections.
 
-    for _ in 0..100 {
-        let adapter = adapter.clone();
-        tokio::spawn(async move {
-            adapter.execute_query(query).await
-        });
-    }
-}
-```text
-<!-- Code example in TEXT -->
+Recommended setup:
 
-```rust
-<!-- Code example in RUST -->
-// ❌ BAD - Create new pool per request
-async fn handle_request() {
-    // Creates new connection pool each time!
-    let adapter = PostgresAdapter::new(connection_string).await?;
-    adapter.execute_query(query).await
-}
-```text
-<!-- Code example in TEXT -->
+- Run PgBouncer in **transaction pooling** mode for GraphQL workloads (a server connection is assigned per transaction, not per client session).
+- Point `database_url` at PgBouncer's listen address instead of PostgreSQL directly.
+- Keep FraiseQL's `connection_pool_size` modest per instance, since PgBouncer absorbs the burst.
 
-### 5. Batch Queries When Possible
+```ini
+# pgbouncer.ini
+[databases]
+mydb = host=127.0.0.1 port=5432 dbname=mydb
 
-```rust
-<!-- Code example in RUST -->
-// ❌ SLOW - Each query gets different connection
-for user_id in user_ids {
-    let result = adapter.execute_where_query(
-        "v_user",
-        Some(&where_clause),
-        None,
-        None
-    ).await?;
-    process_result(result);
-}
+[pgbouncer]
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 25
+```
 
-// ✅ FAST - Batch reduces connection churn
-let results = futures::future::join_all(
-    user_ids.iter().map(|id| {
-        let clause = build_clause(id);
-        adapter.execute_where_query("v_user", Some(&clause), None, None)
-    })
-).await;
-```text
-<!-- Code example in TEXT -->
+```python
+# Point FraiseQL at PgBouncer (default port 6432)
+app = create_fraiseql_app(
+    database_url="postgresql://localhost:6432/mydb",
+    types=[User],
+    connection_pool_size=10,
+)
+```
 
-**Benefit**: Reduces connection acquisition overhead
+In transaction pooling mode, avoid features that require session state across statements (for example, server-side prepared statements that outlive a transaction). psycopg's defaults work well behind PgBouncer for FraiseQL's per-transaction CQRS access pattern.
 
 ## Troubleshooting
 
 ### Problem: "Too many connections" Error
 
-**Symptom**: Queries fail with connection pool exhaustion
+**Symptom**: PostgreSQL rejects connections with `FATAL: sorry, too many clients already`, or pool acquisition times out.
 
-**Cause**: Pool size too small for load
+**Cause**: The combined pool size across all instances exceeds PostgreSQL `max_connections`, or the pool is too small for the load.
 
 **Solutions**:
 
-1. **Increase pool size**:
+1. **Right-size the pool** for a single instance:
 
-   ```rust
-<!-- Code example in RUST -->
-   // From 10 to 30
-   let adapter = PostgresAdapter::with_pool_size(
-       connection_string,
-       30
-   ).await?;
+   ```python
+   app = create_fraiseql_app(
+       database_url="postgresql://localhost/mydb",
+       types=[User],
+       connection_pool_size=30,
+       connection_pool_max_overflow=10,
+   )
+   ```
+
+2. **Reduce query latency** (slow queries hold connections longer):
+
    ```text
-<!-- Code example in TEXT -->
-
-2. **Reduce query latency** (queries hold connections longer if slow):
-
-   ```text
-<!-- Code example in TEXT -->
-   Enable SQL projection (already done) ✅
    Add database indexes
    Optimize WHERE clauses
-   ```text
-<!-- Code example in TEXT -->
+   Keep field selection inside view JSONB
+   ```
 
-3. **Load balance** across multiple servers:
-
-   ```text
-<!-- Code example in TEXT -->
-   Server A: 8 connections
-   Server B: 8 connections
-   Total: 16 connections to database
-   (vs 16 from single server)
-   ```text
-<!-- Code example in TEXT -->
+3. **Add PgBouncer** so many instances share a small set of server connections (see above), rather than raising `max_connections` without limit.
 
 ### Problem: High Latency with Low CPU Usage
 
-**Symptom**: p95 latency > 100ms even with low CPU
+**Symptom**: p95 latency > 100ms even with low CPU.
 
-**Cause**: Connections are the bottleneck
+**Cause**: Connections are the bottleneck — requests are queuing for a free connection.
 
-**Solution**: Check pool metrics
+**Solution**: Check whether requests are waiting on the pool and whether backends are pinned:
 
-```rust
-<!-- Code example in RUST -->
-let metrics = adapter.pool_metrics();
-if metrics.waiting_requests > 0 {
-    // Requests are waiting for connections
-    // Increase pool size
-}
-```text
-<!-- Code example in TEXT -->
+```sql
+SELECT state, count(*)
+FROM pg_stat_activity
+WHERE datname = 'mydb'
+GROUP BY state;
+```
 
-### Problem: Connection Leaks (Pool Never Shrinks)
+If `active` is pinned at `max_size` and your app reports non-zero `requests_waiting`, increase `connection_pool_size` (and/or `connection_pool_max_overflow`).
 
-**Symptom**: `total_connections` keeps growing
+### Problem: Connections Stuck "idle in transaction"
 
-**Cause**: Connections not being returned to pool (bug in code)
+**Symptom**: `pg_stat_activity` shows many `idle in transaction` backends and the pool drains.
 
-**Solution**: Ensure `DatabaseAdapter` calls are awaited properly
+**Cause**: A code path opens a transaction and does not commit or roll back promptly.
 
-```rust
-<!-- Code example in RUST -->
-// ❌ WRONG - Connection held indefinitely
-let result = adapter.execute_query(query);  // Not awaited!
+**Solution**: Ensure repository calls are awaited and transactions are short. FraiseQL's repository commits per operation; custom `fn_` calls and manual transactions must complete promptly so connections return to the pool.
 
-// ✅ CORRECT - Connection returned after await
-let result = adapter.execute_query(query).await?;
-```text
-<!-- Code example in TEXT -->
-
-## Configuration Reference
-
-### Creating Custom Pool Configuration
-
-```rust
-<!-- Code example in RUST -->
-use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod};
-
-pub async fn create_adapter_with_config(
-    connection_string: &str,
-    max_connections: usize,
-) -> Result<PostgresAdapter> {
-    let mut cfg = Config::new();
-    cfg.url = Some(connection_string.to_string());
-
-    cfg.manager = Some(ManagerConfig {
-        recycling_method: RecyclingMethod::Fast,
-    });
-
-    cfg.pool = Some(deadpool_postgres::PoolConfig::new(max_connections));
-
-    let pool = cfg.create_pool(
-        Some(deadpool_postgres::Runtime::Tokio1),
-        tokio_postgres::NoTls
-    )?;
-
-    Ok(PostgresAdapter::from_pool(pool))
-}
-```text
-<!-- Code example in TEXT -->
-
-## Benchmarking Pool Performance
-
-### Simple Benchmark
-
-```rust
-<!-- Code example in RUST -->
-#[tokio::test]
-async fn bench_pool_acquisition() {
-    let adapter = PostgresAdapter::with_pool_size(
-        "postgresql://...",
-        20
-    ).await.unwrap();
-
-    let iterations = 1000;
-    let start = Instant::now();
-
-    for _ in 0..iterations {
-        let _ = adapter.health_check().await;
-    }
-
-    let elapsed = start.elapsed();
-    let per_acquisition = elapsed.as_micros() / iterations;
-
-    println!("Connection acquisition: {}µs", per_acquisition);
-    assert!(per_acquisition < 1000, "Should be < 1ms");
-}
-```text
-<!-- Code example in TEXT -->
-
-### Expected Results
-
-```text
-<!-- Code example in TEXT -->
-Pool size: 10
-Acquisition time: 10-50µs (when connection available)
-Acquisition time: 100-500µs (when creating new connection)
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Find the offenders
+SELECT pid, now() - state_change AS idle_for, left(query, 80) AS query
+FROM pg_stat_activity
+WHERE datname = 'mydb' AND state = 'idle in transaction'
+ORDER BY idle_for DESC;
+```
 
 ## Production Checklist
 
-- [ ] Pool size configured based on core count
-- [ ] Pre-warming enabled on startup
-- [ ] Monitoring/logging in place
-- [ ] Health check passes on startup
-- [ ] Load testing confirms pool is adequate
-- [ ] Alerts configured for pool exhaustion
-- [ ] Idle timeout appropriate for workload
-- [ ] Connection recycling fast method enabled
+- [ ] Pool size configured based on core count and instance count
+- [ ] `pool_size + max_overflow × instance_count` stays under PostgreSQL `max_connections`
+- [ ] PgBouncer (transaction pooling) used when running many instances
+- [ ] Connection recycle interval appropriate for your network/firewall
+- [ ] `pg_stat_activity` and pool stats monitored / alerted on
+- [ ] Load testing confirms the pool is adequate
+- [ ] Alerts configured for pool exhaustion and `idle in transaction`
 
 ## Next Steps
 
-1. **Measure your workload**: Monitor pool metrics
-2. **Profile queries**: Identify slow queries
-3. **Optimize**: Use SQL projection (already done)
-4. **Re-tune**: Adjust pool size based on metrics
-5. **Monitor production**: Track pool health
+1. **Measure your workload**: Watch `pg_stat_activity` and psycopg pool stats under real traffic.
+2. **Profile queries**: Identify slow queries that hold connections too long.
+3. **Optimize**: Push field selection into view JSONB and add indexes.
+4. **Re-tune**: Adjust `connection_pool_size` / `connection_pool_max_overflow` based on metrics.
+5. **Scale out**: Add PgBouncer before raising PostgreSQL `max_connections`.
 
 ## Related Documentation
 
-- [SQL Projection Optimization](./projection-optimization.md) - Reduce query latency
-- [Performance Baselines](./projection-baseline-results.md) - Benchmark data
-- [Architecture](../architecture/) - How database connections work
+- [Performance Guide](./performance-guide.md) - End-to-end performance tuning
+- [Caching](./caching.md) - PostgreSQL-backed result caching
+- [Request Flow](../architecture/request-flow.md) - How a request acquires a connection
 
 ---
 
-**Last Updated**: 2026-01-31
-**Framework**: deadpool-postgres v0.14+
+**Last Updated**: 2026-06-19
+**Framework**: FraiseQL over psycopg `AsyncConnectionPool`
