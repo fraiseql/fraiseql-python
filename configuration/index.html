@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Complete configuration reference for FraiseQL security, networking, and operational settings.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/configuration/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Index - FraiseQL Documentation</title>
+        <title>Configuration Guide - FraiseQL Documentation</title>
       
     
     
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Index
+              Configuration Guide
             
           </span>
         </div>
@@ -4873,6 +4875,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#configuration-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4880,6 +4893,67 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Priority
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#production-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#development-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enterprise-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enterprise Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4903,82 +4977,101 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Configuration Guide
-description: Complete configuration reference for FraiseQL security, networking, and operational settings.
-keywords: []
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="configuration-guide">Configuration Guide<a class="headerlink" href="#configuration-guide" title="Permanent link">&para;</a></h1>
 <p>Complete configuration reference for FraiseQL security, networking, and operational settings.</p>
+<p>FraiseQL v1 is a Python runtime framework. Configuration is plain Python and environment
+variables — there is <strong>no <code>fraiseql.toml</code></strong> and <strong>no compile step</strong>. Settings are resolved
+at app startup by <code>FraiseQLConfig</code>, a <code>pydantic-settings</code> model, and applied when you call
+<code>create_fraiseql_app(...)</code>.</p>
 <h2 id="quick-navigation">Quick Navigation<a class="headerlink" href="#quick-navigation" title="Permanent link">&para;</a></h2>
 <h3 id="security-configuration">Security Configuration<a class="headerlink" href="#security-configuration" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><a href="security-configuration.md">Security Configuration</a></strong> — Overview of all security settings</li>
 <li><strong><a href="tls-configuration/">TLS/SSL Configuration</a></strong> — Configure HTTPS and mutual TLS</li>
 <li><strong><a href="rate-limiting/">Rate Limiting</a></strong> — Brute-force protection and request throttling</li>
-<li><strong><a href="security-runtime-initialization.md">Runtime Security Initialization</a></strong> — Initialize security subsystems at startup</li>
 </ul>
 <h3 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><a href="postgresql-authentication/">PostgreSQL Authentication</a></strong> — PostgreSQL connection and authentication</li>
 </ul>
-<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<p>FraiseQL uses <code>FRAISEQL_</code> prefixed environment variables:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_ENABLE_TLS=true
-FRAISEQL_TLS_CERT=/path/to/cert.pem
-FRAISEQL_TLS_KEY=/path/to/key.pem</p>
-<h1 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_RATE_LIMIT_ENABLED=true
-FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=100</p>
-<h1 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_DATABASE_URL=postgresql://user:pass@localhost/db
-FRAISEQL_DATABASE_POOL_SIZE=20
-FRAISEQL_DATABASE_POOL_TIMEOUT=30
-```text</p>
-<!-- Code example in TEXT -->
-
-<h2 id="configuration-priority">Configuration Priority<a class="headerlink" href="#configuration-priority" title="Permanent link">&para;</a></h2>
+<h2 id="configuration-sources">Configuration Sources<a class="headerlink" href="#configuration-sources" title="Permanent link">&para;</a></h2>
+<p>FraiseQL reads settings from three places:</p>
 <ol>
-<li><strong>Compiled schema</strong> (<code>schema.compiled.json</code> security section) — Default values</li>
-<li><strong>Config file</strong> (<code>FraiseQL.toml</code>) — Override defaults</li>
-<li><strong>Environment variables</strong> — Override config file (for production secrets)</li>
+<li><strong><code>create_fraiseql_app(...)</code> keyword arguments</strong> — passed directly in Python.</li>
+<li><strong>A <code>FraiseQLConfig</code> instance</strong> — a <code>pydantic-settings</code> model you can build and pass
+   via <code>create_fraiseql_app(config=...)</code>.</li>
+<li><strong><code>FRAISEQL_</code>-prefixed environment variables</strong> (and a <code>.env</code> file) — read automatically
+   by <code>FraiseQLConfig</code> (<code>env_prefix="FRAISEQL_"</code>, <code>env_file=".env"</code>).</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<p><code>FraiseQLConfig</code> reads any <code>FRAISEQL_</code>-prefixed environment variable (or matching key in a
+local <code>.env</code> file):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Database</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@localhost/db
+<span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_TIMEOUT</span><span class="o">=</span><span class="m">30</span>
+
+<span class="c1"># Security</span>
+<span class="nv">FRAISEQL_ENABLE_TLS</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_TLS_CERT</span><span class="o">=</span>/path/to/cert.pem
+<span class="nv">FRAISEQL_TLS_KEY</span><span class="o">=</span>/path/to/key.pem
+
+<span class="c1"># Rate Limiting</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="o">=</span><span class="m">100</span>
+</code></pre></div>
+<h2 id="configuration-priority">Configuration Priority<a class="headerlink" href="#configuration-priority" title="Permanent link">&para;</a></h2>
+<p>Later sources win, so explicit code overrides ambient configuration:</p>
+<ol>
+<li><strong>Defaults</strong> — built into <code>FraiseQLConfig</code>.</li>
+<li><strong><code>FRAISEQL_</code> environment variables / <code>.env</code></strong> — override defaults (handy for secrets).</li>
+<li><strong>A <code>FraiseQLConfig</code> instance</strong> — overrides env-derived values you set explicitly.</li>
+<li><strong><code>create_fraiseql_app(...)</code> keyword arguments</strong> — override everything else.</li>
 </ol>
 <h2 id="common-scenarios">Common Scenarios<a class="headerlink" href="#common-scenarios" title="Permanent link">&para;</a></h2>
 <h3 id="production-setup">Production Setup<a class="headerlink" href="#production-setup" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Enable TLS: <a href="tls-configuration/">TLS Configuration</a></li>
 <li>Set rate limits: <a href="rate-limiting/">Rate Limiting</a></li>
-<li>Configure security: <a href="security-configuration.md">Security Configuration</a></li>
-<li>Database connection: <a href="postgresql-authentication/">PostgreSQL Authentication</a></li>
+<li>Configure the database connection: <a href="postgresql-authentication/">PostgreSQL Authentication</a></li>
+<li>Pass <code>production=True</code> to <code>create_fraiseql_app(...)</code> to disable the GraphQL playground</li>
 </ol>
 <h3 id="development-setup">Development Setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Disable TLS (use HTTP)</li>
 <li>Increase rate limits for testing</li>
 <li>Use minimal security hardening</li>
-<li>Local database connection</li>
+<li>Local database connection, with <code>production=False</code> to enable the playground</li>
 </ol>
 <h3 id="enterprise-deployment">Enterprise Deployment<a class="headerlink" href="#enterprise-deployment" title="Permanent link">&para;</a></h3>
 <ol>
 <li>mTLS for service-to-service communication</li>
 <li>Strict rate limiting</li>
 <li>Security audit logging enabled</li>
-<li>KMS for field-level encryption</li>
+<li>PostgreSQL connection hardening (<code>sslmode</code>, <code>pg_hba.conf</code>)</li>
 </ol>
-<hr />
-<p><strong>Version</strong>: v2.0.0-alpha.1
-<strong>Last Updated</strong>: February 5, 2026</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

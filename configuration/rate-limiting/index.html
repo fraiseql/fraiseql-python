@@ -4864,6 +4864,189 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#programmatic-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Programmatic Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-instance-deployments-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Instance Deployments (Redis)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-extraction-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Extraction Strategy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Extraction Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-authenticated-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Authenticated Requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-unauthenticated-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Unauthenticated Requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-ip-address-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. IP Address Resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response Headers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graphql-aware-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GraphQL-Aware Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disabling-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disabling Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -4899,239 +5082,326 @@ tags: ["documentation", "reference"]</p>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
 <li>HTTP request fundamentals (status codes, headers)</li>
-<li>Rate limiting algorithms (token bucket, leaky bucket)</li>
-<li>TOML configuration file syntax</li>
+<li>Rate limiting strategies (fixed window, sliding window, token bucket)</li>
+<li>Python and FastAPI basics</li>
 <li>Authentication concepts (IP-based vs user-based rate limiting)</li>
 <li>DoS attack patterns and mitigation strategies</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
-<li>A text editor for <code>FraiseQL.toml</code> configuration</li>
+<li>FraiseQL v1 (PostgreSQL)</li>
+<li>Python 3.13+</li>
 <li>curl or Postman (for testing rate limit headers)</li>
-<li>Bash or similar shell for configuration management</li>
 </ul>
 <p><strong>Required Infrastructure:</strong></p>
 <ul>
-<li>FraiseQL server instance (configured with rate limiting enabled)</li>
-<li>PostgreSQL or similar database (for storing rate limit state)</li>
-<li>Network connectivity to test HTTP endpoints</li>
+<li>A FraiseQL FastAPI application (built with <code>create_fraiseql_app</code>)</li>
+<li>PostgreSQL (FraiseQL's database)</li>
+<li>Redis (optional, for shared rate limit state across multiple app instances)</li>
 </ul>
 <p><strong>Optional but Recommended:</strong></p>
 <ul>
 <li>Monitoring tools (Prometheus, Grafana) to track rate limit violations</li>
 <li>API gateway (Kong, Tyk) for additional rate limiting at proxy level</li>
-<li>Distributed rate limiting backend (Redis) for multi-instance deployments</li>
+<li>Redis for distributed rate limiting in multi-instance deployments</li>
 <li>Logging aggregation (ELK, Splunk) for rate limit event analysis</li>
 </ul>
 <p><strong>Time Estimate:</strong> 15-30 minutes for basic configuration, 1-2 hours for production tuning</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Rate limiting is implemented using a token bucket algorithm with support for:</p>
+<p>Rate limiting in FraiseQL is implemented as FastAPI middleware
+(<code>fraiseql.security.RateLimitMiddleware</code>). It supports:</p>
 <ul>
-<li><strong>Per-IP rate limiting</strong>: Limits requests from individual client IPs</li>
-<li><strong>Per-user rate limiting</strong>: Limits requests from authenticated users</li>
-<li><strong>Configurable burst capacity</strong>: Allows temporary traffic spikes</li>
-<li><strong>Response headers</strong>: Clients can check remaining quota via HTTP headers</li>
+<li><strong>Per-IP rate limiting</strong>: limits requests from individual client IPs</li>
+<li><strong>Per-user rate limiting</strong>: limits requests from authenticated users (keyed on
+  <code>request.state.user_id</code> when set by the auth layer, falling back to IP)</li>
+<li><strong>Multiple strategies</strong>: fixed window, sliding window, and token bucket</li>
+<li><strong>GraphQL-aware limits</strong>: separate limits per operation type (query / mutation /
+  subscription) and per estimated query complexity</li>
+<li><strong>Response headers</strong>: clients can check their quota via HTTP headers</li>
+<li><strong>Pluggable stores</strong>: in-memory by default, or Redis for shared state</li>
 </ul>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Rate limiting configuration is defined in your server configuration file:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[rate_limit]</p>
-<h1 id="enabledisable-rate-limiting">Enable/disable rate limiting<a class="headerlink" href="#enabledisable-rate-limiting" title="Permanent link">&para;</a></h1>
-<p>enabled = true</p>
-<h1 id="requests-per-second-per-ip-address">Requests per second per IP address<a class="headerlink" href="#requests-per-second-per-ip-address" title="Permanent link">&para;</a></h1>
-<p>rps_per_ip = 100</p>
-<h1 id="requests-per-second-per-authenticated-user">Requests per second per authenticated user<a class="headerlink" href="#requests-per-second-per-authenticated-user" title="Permanent link">&para;</a></h1>
-<p>rps_per_user = 1000</p>
-<h1 id="maximum-burst-capacity-tokens-accumulated">Maximum burst capacity (tokens accumulated)<a class="headerlink" href="#maximum-burst-capacity-tokens-accumulated" title="Permanent link">&para;</a></h1>
-<p>burst_size = 500</p>
-<h1 id="cleanup-interval-for-stale-entries-seconds">Cleanup interval for stale entries (seconds)<a class="headerlink" href="#cleanup-interval-for-stale-entries-seconds" title="Permanent link">&para;</a></h1>
-<p>cleanup_interval_secs = 300
-```text</p>
-<!-- Code example in TEXT -->
+<p>The simplest way to enable rate limiting is through <code>FraiseQLConfig</code>. Settings can be
+provided in code or via <code>FRAISEQL_</code>-prefixed environment variables, then passed to
+<code>create_fraiseql_app(config=...)</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="default-values">Default Values<a class="headerlink" href="#default-values" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>enabled</code>: <code>true</code></li>
-<li><code>rps_per_ip</code>: 100 req/sec</li>
-<li><code>rps_per_user</code>: 1000 req/sec</li>
-<li><code>burst_size</code>: 500 requests</li>
-<li><code>cleanup_interval_secs</code>: 300 seconds (5 minutes)</li>
-</ul>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="c1"># Rate limiting (defaults shown)</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_hour</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">rate_limit_burst_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">&quot;sliding&quot;</span><span class="p">,</span>   <span class="c1"># &quot;sliding&quot; or &quot;fixed&quot;</span>
+    <span class="n">rate_limit_whitelist</span><span class="o">=</span><span class="p">[],</span>            <span class="c1"># IPs/keys never rate limited</span>
+    <span class="n">rate_limit_blacklist</span><span class="o">=</span><span class="p">[],</span>            <span class="c1"># IPs/keys always rejected</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+</code></pre></div>
+<p>The same settings as environment variables:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="o">=</span><span class="m">60</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR</span><span class="o">=</span><span class="m">1000</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_BURST_SIZE</span><span class="o">=</span><span class="m">10</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_WINDOW_TYPE</span><span class="o">=</span>sliding
+</code></pre></div>
+<h3 id="configuration-fields">Configuration Fields<a class="headerlink" href="#configuration-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rate_limit_enabled</code></td>
+<td><code>bool</code></td>
+<td><code>True</code></td>
+<td>Enable/disable rate limiting</td>
+</tr>
+<tr>
+<td><code>rate_limit_requests_per_minute</code></td>
+<td><code>int</code></td>
+<td><code>60</code></td>
+<td>Allowed requests per minute</td>
+</tr>
+<tr>
+<td><code>rate_limit_requests_per_hour</code></td>
+<td><code>int</code></td>
+<td><code>1000</code></td>
+<td>Allowed requests per hour</td>
+</tr>
+<tr>
+<td><code>rate_limit_burst_size</code></td>
+<td><code>int</code></td>
+<td><code>10</code></td>
+<td>Burst capacity (token-bucket strategy)</td>
+</tr>
+<tr>
+<td><code>rate_limit_window_type</code></td>
+<td><code>str</code></td>
+<td><code>"sliding"</code></td>
+<td>Window strategy: <code>"sliding"</code> or <code>"fixed"</code></td>
+</tr>
+<tr>
+<td><code>rate_limit_whitelist</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>IPs/keys never rate limited</td>
+</tr>
+<tr>
+<td><code>rate_limit_blacklist</code></td>
+<td><code>list[str]</code></td>
+<td><code>[]</code></td>
+<td>IPs/keys always rejected</td>
+</tr>
+</tbody>
+</table>
+<h2 id="programmatic-setup">Programmatic Setup<a class="headerlink" href="#programmatic-setup" title="Permanent link">&para;</a></h2>
+<p>For finer control (custom per-path rules, a Redis-backed store, multi-instance
+deployments) wire the middleware yourself with <code>setup_rate_limiting</code>. It is exported from
+<code>fraiseql.security</code>, takes the FastAPI app returned by <code>create_fraiseql_app</code>, and installs
+<code>RateLimitMiddleware</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RateLimit</span><span class="p">,</span>
+    <span class="n">RateLimitRule</span><span class="p">,</span>
+    <span class="n">RateLimitStrategy</span><span class="p">,</span>
+    <span class="n">setup_rate_limiting</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">custom_rules</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># Throttle the GraphQL endpoint</span>
+    <span class="n">RateLimitRule</span><span class="p">(</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
+        <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;GraphQL rate limit exceeded&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="c1"># Tighter limit on auth endpoints (5 requests / 5 minutes)</span>
+    <span class="n">RateLimitRule</span><span class="p">(</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/auth/*&quot;</span><span class="p">,</span>
+        <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Authentication rate limit exceeded&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">setup_rate_limiting</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">custom_rules</span><span class="o">=</span><span class="n">custom_rules</span><span class="p">,</span>
+    <span class="n">default_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>RateLimit</code> accepts a <code>strategy</code> (<code>RateLimitStrategy.FIXED_WINDOW</code>,
+<code>RateLimitStrategy.SLIDING_WINDOW</code>, or <code>RateLimitStrategy.TOKEN_BUCKET</code>) and an optional
+<code>burst</code> value for the token-bucket strategy:</p>
+<div class="highlight"><pre><span></span><code><span class="n">RateLimit</span><span class="p">(</span>
+    <span class="n">requests</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+    <span class="n">burst</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="n">RateLimitStrategy</span><span class="o">.</span><span class="n">TOKEN_BUCKET</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>If you do not pass <code>custom_rules</code>, FraiseQL installs a sensible set via
+<code>create_default_rate_limit_rules()</code> (GraphQL, <code>/auth/*</code>, and <code>/api/*</code> patterns).</p>
+<h3 id="multi-instance-deployments-redis">Multi-Instance Deployments (Redis)<a class="headerlink" href="#multi-instance-deployments-redis" title="Permanent link">&para;</a></h3>
+<p>The in-memory store keeps counters per process, so each app instance enforces limits
+independently. To share state across instances, pass a Redis client — <code>setup_rate_limiting</code>
+then uses <code>RedisRateLimitStore</code> automatically:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_rate_limiting</span>
+
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">)</span>
+
+<span class="n">setup_rate_limiting</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">redis_client</span><span class="o">=</span><span class="n">redis_client</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="key-extraction-strategy">Key Extraction Strategy<a class="headerlink" href="#key-extraction-strategy" title="Permanent link">&para;</a></h2>
 <p>Rate limits are applied using the following key extraction logic:</p>
 <h3 id="1-authenticated-requests">1. Authenticated Requests<a class="headerlink" href="#1-authenticated-requests" title="Permanent link">&para;</a></h3>
-<p>For requests with authentication credentials:</p>
+<p>For requests with an authenticated user (the auth layer sets <code>request.state.user_id</code>):</p>
 <ul>
-<li><strong>Key</strong>: User ID</li>
-<li><strong>Limit</strong>: <code>rps_per_user</code> (higher limit)</li>
-<li><strong>Use case</strong>: Trusted authenticated users get higher quotas</li>
+<li><strong>Key</strong>: <code>user:&lt;user_id&gt;</code></li>
+<li><strong>Use case</strong>: authenticated users are tracked individually</li>
 </ul>
 <h3 id="2-unauthenticated-requests">2. Unauthenticated Requests<a class="headerlink" href="#2-unauthenticated-requests" title="Permanent link">&para;</a></h3>
 <p>For requests without authentication:</p>
 <ul>
-<li><strong>Key</strong>: Client IP address</li>
-<li><strong>Limit</strong>: <code>rps_per_ip</code> (lower limit)</li>
-<li><strong>Use case</strong>: Protects against anonymous abuse</li>
+<li><strong>Key</strong>: <code>ip:&lt;client_ip&gt;</code></li>
+<li><strong>Use case</strong>: protects against anonymous abuse</li>
 </ul>
 <h3 id="3-ip-address-resolution">3. IP Address Resolution<a class="headerlink" href="#3-ip-address-resolution" title="Permanent link">&para;</a></h3>
-<p>When extracting the client IP address:</p>
+<p>When extracting the client IP address, the middleware checks, in order:</p>
 <ol>
-<li><strong>Direct Connections</strong> (no proxy):</li>
-<li>
-<p>Use the source IP from the socket connection directly</p>
-</li>
-<li>
-<p><strong>Behind Untrusted Proxies</strong>:</p>
-</li>
-<li>Ignore <code>X-Forwarded-For</code> header</li>
-<li>Use the proxy server's IP as the rate limit key</li>
-<li>
-<p><strong>Why</strong>: Clients cannot spoof IPs through untrusted intermediaries</p>
-</li>
-<li>
-<p><strong>Behind Trusted Proxies</strong> (configured):</p>
-</li>
-<li>Trust the <code>X-Forwarded-For</code> header</li>
-<li>Use the client's real IP from the header</li>
-<li><strong>Why</strong>: Trusted proxies (load balancers, reverse proxies) are configured to only forward legitimate client IPs</li>
+<li>The first entry of the <code>X-Forwarded-For</code> header (if present)</li>
+<li>The <code>X-Real-IP</code> header (if present)</li>
+<li>The direct socket peer address (<code>request.client.host</code>)</li>
 </ol>
-<h2 id="configuration-for-proxy-environments">Configuration for Proxy Environments<a class="headerlink" href="#configuration-for-proxy-environments" title="Permanent link">&para;</a></h2>
-<p>To support rate limiting through proxies, configure trusted proxy IP ranges:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[rate_limit]
-enabled = true
-rps_per_ip = 100
-rps_per_user = 1000</p>
-<h1 id="trusted-proxies-that-can-set-x-forwarded-for-header">Trusted proxies that can set X-Forwarded-For header<a class="headerlink" href="#trusted-proxies-that-can-set-x-forwarded-for-header" title="Permanent link">&para;</a></h1>
-<p>trusted_proxies = [
-    "10.0.0.0/8",          # Internal load balancer (10.0.0.0 - 10.255.255.255)
-    "172.16.0.0/12",       # VPC CIDR (172.16.0.0 - 172.31.255.255)
-    "203.0.113.0/24",      # CDN egress IPs
-    "203.0.113.5/32",      # Specific trusted reverse proxy
-]
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>allowlist only known proxies</strong>: Only add IPs/CIDRs of proxies you control</li>
-<li><strong>Use specific IPs when possible</strong>: Prefer individual IPs over large CIDR blocks</li>
-<li><strong>Monitor proxy configurations</strong>: Update if infrastructure changes</li>
-<li><strong>Test rate limiting</strong>: Verify correct keys are used before deployment</li>
-</ol>
+<blockquote>
+<p><strong>Security note:</strong> <code>X-Forwarded-For</code> and <code>X-Real-IP</code> are client-supplied and can be
+spoofed. Only trust them when your application sits behind a proxy you control that
+overwrites these headers. When exposed directly, strip or ignore them at the proxy so the
+socket peer address is used.</p>
+</blockquote>
 <h2 id="response-headers">Response Headers<a class="headerlink" href="#response-headers" title="Permanent link">&para;</a></h2>
-<p>When a request is accepted, FraiseQL includes rate limit information in HTTP response headers:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>X-RateLimit-Limit: 100          # Maximum requests per second
-X-RateLimit-Remaining: 45       # Remaining requests in current window
-Retry-After: 60                 # Seconds to wait before retrying (when limited)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Example client handling:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import time
-import requests</p>
-<p>def graphql_request(url, query):
-    while True:
-        response = requests.post(url, json={"query": query})</p>
-<div class="highlight"><pre><span></span><code>    if response.status_code == 429:  # Too Many Requests
-        wait_time = int(response.headers.get(&quot;Retry-After&quot;, &quot;60&quot;))
-        print(f&quot;Rate limited, retrying in {wait_time}s&quot;)
-        time.sleep(wait_time)
-        continue
-
-    return response.json()
+<p>When a request is rejected, the middleware returns HTTP <code>429</code> with the following headers:</p>
+<div class="highlight"><pre><span></span><code>Retry-After: 60           # Seconds to wait before retrying
+X-RateLimit-Limit: 100    # Maximum requests in the window
+X-RateLimit-Window: 60    # Window length in seconds
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>The JSON body of a rejected non-GraphQL request looks like:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rate Limit Exceeded&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Rate limit exceeded&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retry_after&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>GraphQL operations that exceed a limit return a GraphQL error with
+<code>extensions.code = "RATE_LIMITED"</code>.</p>
+<p>Example client handling:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-<h2 id="token-bucket-algorithm">Token Bucket Algorithm<a class="headerlink" href="#token-bucket-algorithm" title="Permanent link">&para;</a></h2>
-<p>The implementation uses a token bucket algorithm:</p>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">graphql_request</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>  <span class="c1"># Too Many Requests</span>
+            <span class="n">wait_time</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Retry-After&quot;</span><span class="p">,</span> <span class="s2">&quot;60&quot;</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rate limited, retrying in </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</code></pre></div>
+<h2 id="graphql-aware-limits">GraphQL-Aware Limits<a class="headerlink" href="#graphql-aware-limits" title="Permanent link">&para;</a></h2>
+<p>For <code>POST /graphql</code>, the middleware applies additional limits via <code>GraphQLRateLimiter</code>:</p>
+<ul>
+<li><strong>Per operation type</strong>: separate buckets for <code>query</code>, <code>mutation</code>, and <code>subscription</code>.</li>
+<li><strong>Per estimated complexity</strong>: queries are bucketed into <code>low</code> / <code>medium</code> / <code>high</code> tiers
+  (based on nesting depth and field count), each with its own limit.</li>
+</ul>
+<p>A request must pass both the operation-type limit and the complexity limit. These limits
+are keyed on the authenticated user when available, otherwise on the client IP.</p>
+<h2 id="strategies">Strategies<a class="headerlink" href="#strategies" title="Permanent link">&para;</a></h2>
+<p><code>RateLimitStrategy</code> controls how requests are counted:</p>
 <ol>
-<li>Each IP/user gets a "bucket" of tokens</li>
-<li>Bucket capacity = <code>burst_size</code></li>
-<li>Tokens refill at <code>rps_per_ip</code> or <code>rps_per_user</code> tokens per second</li>
-<li>Each request costs 1 token</li>
-<li>If bucket has tokens, request is allowed and 1 token is consumed</li>
-<li>If bucket is empty, request is rejected with 429 status</li>
+<li><strong>Fixed window</strong> (<code>FIXED_WINDOW</code>): a counter resets at the start of each window.</li>
+<li><strong>Sliding window</strong> (<code>SLIDING_WINDOW</code>): smooths counting across the window boundary.</li>
+<li><strong>Token bucket</strong> (<code>TOKEN_BUCKET</code>): each key gets a bucket of up to <code>burst</code> tokens that
+   refills over the window; each request consumes one token. This allows short bursts while
+   bounding the long-run rate.</li>
 </ol>
-<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<p>With <code>rps_per_ip=100</code> and <code>burst_size=500</code>:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Initial: [████████████████████] 500 tokens
-After 1 request: [███████████████████] 499 tokens
-After 100 requests: [████] 400 tokens
-1 second later: [██████] 500 tokens (refilled)
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Set the application-wide strategy with <code>rate_limit_window_type</code>, or per rule via the
+<code>strategy</code> argument to <code>RateLimit</code>.</p>
 <h2 id="disabling-rate-limiting">Disabling Rate Limiting<a class="headerlink" href="#disabling-rate-limiting" title="Permanent link">&para;</a></h2>
-<p>To disable rate limiting (not recommended for production):</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[rate_limit]
-enabled = false
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Rate limiting can also be disabled at runtime by setting <code>enabled=false</code> in the configuration before server startup.</p>
+<p>To disable rate limiting (not recommended for production), set the flag in config:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Or via environment variable:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">false</span>
+</code></pre></div>
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
-<p>Monitor rate limiting activity through logging:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Debug level logs IP limit violations
-debug!(ip = "192.168.1.100", "Rate limit exceeded for IP");</p>
-<p>// Warn level logs user limit violations
-warn!(user_id = "user123", "Rate limit exceeded for user");
-```text</p>
-<!-- Code example in TEXT -->
+<p>Rate limit violations are recorded through FraiseQL's security logger (see
+<code>fraiseql.audit.get_security_logger</code>). Each violation logs the client IP, endpoint, the
+limit and window, and — when known — the user ID and operation metadata.</p>
+<p>Configure visibility through Python's standard <code>logging</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
-<p>Enable debug logging to see rate limit activity:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>RUST_LOG=fraiseql_server::middleware::rate_limit=debug
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql.security&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<p>Pipe these logs into your aggregation stack (ELK, Splunk, etc.) and alert on spikes in
+<code>429</code> responses to catch abuse or misconfigured clients.</p>
 <h2 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>DoS Protection</strong>: Rate limiting helps prevent DoS attacks but should be combined with other protections (firewall rules, WAF)</p>
+<p><strong>DoS Protection</strong>: Rate limiting helps prevent DoS attacks but should be combined with
+   other protections (firewall rules, WAF).</p>
 </li>
 <li>
-<p><strong>Proxy Spoofing</strong>: Always allowlist specific trusted proxies. Never trust <code>X-Forwarded-For</code> from untrusted sources</p>
+<p><strong>Proxy Spoofing</strong>: <code>X-Forwarded-For</code> / <code>X-Real-IP</code> are client-controlled. Only trust
+   them behind a proxy you control that overwrites them; otherwise strip them at the proxy.</p>
 </li>
 <li>
-<p><strong>Distributed Attacks</strong>: Rate limiting is per-server instance. Use shared backend (Redis) for distributed rate limiting in multi-server deployments</p>
+<p><strong>Distributed Attacks</strong>: the in-memory store is per app instance. Use a Redis-backed
+   store (<code>RedisRateLimitStore</code>) for shared limits across multiple instances.</p>
 </li>
 <li>
-<p><strong>User ID Extraction</strong>: Ensure user authentication is correct and user IDs cannot be forged</p>
+<p><strong>User ID Extraction</strong>: ensure authentication is correct and <code>request.state.user_id</code>
+   cannot be forged before relying on per-user limits.</p>
 </li>
 <li>
-<p><strong>Clock Skew</strong>: Uses system time for token refill. Significant clock skew can affect accuracy</p>
+<p><strong>Clock Skew</strong>: counting uses system time. Significant clock skew between instances can
+   affect accuracy when sharing state.</p>
 </li>
 </ol>
 <h2 id="testing-rate-limiting">Testing Rate Limiting<a class="headerlink" href="#testing-rate-limiting" title="Permanent link">&para;</a></h2>
-<p>Test the implementation:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-ip-based-limiting">Test IP-based limiting<a class="headerlink" href="#test-ip-based-limiting" title="Permanent link">&para;</a></h1>
-<p>for i in {1..110}; do
-    curl -s http://localhost:4000/graphql -d '{"query":"{ users { id } }"}' \
-         -H "Content-Type: application/json"
-    echo "Request $i"
-done
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>The 101st+ requests should return HTTP 429 (Too Many Requests).</p>
+<p>Test the implementation against the default per-minute limit:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Send more requests than the per-minute limit allows</span>
+<span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">110</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;:&quot;{ users { id } }&quot;}&#39;</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Request </span><span class="nv">$i</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+</code></pre></div>
+<p>Once the configured limit is exceeded, further requests return HTTP <code>429</code> (Too Many
+Requests).</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://tools.ietf.org/html/rfc6585">RFC 6585 - HTTP 429 Too Many Requests</a></li>
