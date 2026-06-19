@@ -1,392 +1,259 @@
-<!-- Skip to main content -->
 ---
-
-title: Distributed Tracing in FraiseQL v2
-description: FraiseQL v2 provides comprehensive distributed tracing support for tracking requests across service boundaries. Built on W3C Trace Context standards, it enables
+title: Distributed Tracing in FraiseQL
+description: FraiseQL provides OpenTelemetry-based distributed tracing for tracking GraphQL requests across service boundaries. Built on W3C Trace Context standards, it enables end-to-end request correlation, performance analysis, and debugging.
 keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
 tags: ["documentation", "reference"]
 ---
 
-# Distributed Tracing in FraiseQL v2
+# Distributed Tracing in FraiseQL
 
 ## Overview
 
-FraiseQL v2 provides comprehensive distributed tracing support for tracking requests across service boundaries. Built on W3C Trace Context standards, it enables end-to-end request correlation, performance analysis, and debugging in microservice architectures.
+FraiseQL provides distributed tracing built on [OpenTelemetry](https://opentelemetry.io/). It instruments your FraiseQL application — running as a FastAPI app under `uvicorn` — so you can track GraphQL operations across the full request lifecycle: HTTP request, GraphQL execution, and the PostgreSQL queries underneath.
+
+Trace context propagates using the W3C Trace Context standard, so traces stitch together across service boundaries and into any backend you point at (Jaeger, Zipkin, or any OTLP collector).
 
 ## Key Features
 
+- **OpenTelemetry-based**: Standard SDK, standard exporters, no proprietary wire format
 - **W3C Trace Context Support**: Standard-compliant trace propagation across services
-- **Request Correlation**: Unique trace IDs for following requests through entire system
-- **Span Management**: Track individual operations within a trace
-- **Cross-cutting Context**: Baggage for sharing metadata across services
-- **Event Tracking**: Record significant events during request execution
-- **Status Tracking**: Track operation success, errors, and completion
-- **Zero External Dependencies**: No vendor lock-in, works with any tracing backend
+- **HTTP request tracing**: Each request gets a span via `TracingMiddleware`
+- **GraphQL operation tracing**: Query and mutation spans with operation type and name
+- **PostgreSQL auto-instrumentation**: psycopg queries are traced automatically
+- **Configurable sampling**: Trace a fraction of traffic in high-volume scenarios
+- **Path exclusion**: Skip health/metrics/docs endpoints from tracing
+- **Variable sanitization**: Redact sensitive GraphQL variables before they reach a span
 
-## Architecture
+## Installation
 
-### Core Components
+Tracing depends on the OpenTelemetry SDK and exporters. Install the tracing extra (and the exporter for your backend):
 
-#### TraceContext
+```bash
+# OpenTelemetry SDK + OTLP/Jaeger exporters and psycopg instrumentation
+pip install "fraiseql[tracing]"
 
-Main context for request propagation across service boundaries.
+# Or install the OpenTelemetry packages directly
+pip install opentelemetry-sdk \
+    opentelemetry-exporter-otlp \
+    opentelemetry-instrumentation-psycopg
+```
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+If OpenTelemetry is not installed, FraiseQL's tracing degrades to a no-op: `setup_tracing` and the tracer still work, but no spans are emitted.
 
-// Create new trace
-let ctx = TraceContext::new();
-println!("Trace: {}", ctx.trace_id);
+## Quick Start
 
-// Create child context (for downstream service calls)
-let child = ctx.child_span();
-assert_eq!(child.trace_id, ctx.trace_id); // Same trace
-assert_ne!(child.span_id, ctx.span_id);   // Different span
+Create your app with `create_fraiseql_app`, then call `setup_tracing` on the returned FastAPI app:
 
-// Add cross-cutting context
-let ctx_with_baggage = ctx
-    .with_baggage("user_id".to_string(), "user123".to_string())
-    .with_baggage("tenant".to_string(), "acme".to_string());
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-// Check baggage
-assert_eq!(ctx_with_baggage.baggage_item("user_id"), Some("user_id"));
-```text
-<!-- Code example in TEXT -->
-
-#### TraceSpan
-
-Individual operation within a trace.
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceSpan;
-
-let span = TraceSpan::new(
-    "trace-id".to_string(),
-    "GetUser".to_string()
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,
 )
-.add_attribute("db.system".to_string(), "postgresql".to_string())
-.add_attribute("http.status_code".to_string(), "200".to_string());
 
-// Add events
-let event = TraceEvent::new("query_executed".to_string())
-    .with_attribute("rows".to_string(), "1".to_string());
+# Enable distributed tracing on the FastAPI app
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="my-graphql-api",
+        service_version="1.4.0",
+        deployment_environment="production",
+        export_format="otlp",
+        export_endpoint="http://otel-collector:4317",
+        sample_rate=1.0,
+    ),
+)
+```
 
-let span = span.add_event(event);
+Run it with `uvicorn`:
 
-// Mark as complete
-let mut span = span;
-span.finish();
-assert!(span.end_time_ms.is_some());
-```text
-<!-- Code example in TEXT -->
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
-#### TraceEvent
+`setup_tracing(app, config)` adds `TracingMiddleware` to the app (when `config.enabled` is true) and returns a `FraiseQLTracer`. The middleware opens a SERVER span per request, extracts inbound W3C trace context from the request headers, and automatically instruments psycopg so each PostgreSQL query becomes a child span.
 
-Significant event during span execution.
+## Configuration
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceEvent;
+All configuration lives on the `TracingConfig` dataclass (`from fraiseql.tracing import TracingConfig`). These are the real, verified fields:
 
-let event = TraceEvent::new("cache_miss".to_string())
-    .with_attribute("cache_key".to_string(), "query:user:123".to_string())
-    .with_attribute("cache_type".to_string(), "redis".to_string());
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | `bool` | `True` | Master switch; when `False`, no middleware is added |
+| `service_name` | `str` | `"fraiseql"` | Reported as `service.name` on the OTel resource |
+| `service_version` | `str` | `"unknown"` | Reported as `service.version` |
+| `deployment_environment` | `str` | `"development"` | Reported as `deployment.environment` |
+| `sample_rate` | `float` | `1.0` | Fraction of traces to sample (`0.0`–`1.0`) |
+| `export_endpoint` | `str \| None` | `None` | Collector endpoint; no exporter is attached if unset |
+| `export_format` | `str` | `"otlp"` | One of `"otlp"`, `"jaeger"`, `"zipkin"` |
+| `export_timeout_ms` | `int` | `30000` | Export timeout in milliseconds |
+| `propagate_traces` | `bool` | `True` | Inject/extract W3C trace context on headers |
+| `exclude_paths` | `set[str]` | `{"/health", "/ready", "/metrics", "/docs", "/openapi.json"}` | Request paths skipped by the middleware |
+| `attributes` | `dict[str, Any]` | `{}` | Custom attributes added to every span and the resource |
 
-println!("Event: {} at {}", event.name, event.timestamp_ms);
-```text
-<!-- Code example in TEXT -->
+`sample_rate` must be between `0.0` and `1.0`, and `export_format` must be one of `otlp`, `jaeger`, `zipkin` — both are validated when the config is constructed.
 
-#### SpanStatus
+Example with custom resource attributes and a reduced sample rate:
 
-Status enumeration for span execution.
+```python
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::SpanStatus;
+config = TracingConfig(
+    service_name="orders-api",
+    service_version="2.1.0",
+    deployment_environment="production",
+    export_format="otlp",
+    export_endpoint="http://otel-collector:4317",
+    sample_rate=0.1,                       # sample 10% of traffic
+    exclude_paths={"/health", "/metrics"},  # override the default exclusions
+    attributes={"team": "payments", "region": "eu-west-1"},
+)
 
-// Successful execution
-let status = SpanStatus::Ok;
+setup_tracing(app, config)
+```
 
-// Error case
-let error_status = SpanStatus::Error {
-    message: "Database connection timeout".to_string()
-};
+## How It Works
 
-println!("Status: {}", error_status);
-```text
-<!-- Code example in TEXT -->
+### HTTP request spans
 
-## Usage Examples
+`TracingMiddleware` wraps every non-excluded request:
 
-### Basic Request Tracing
+1. Extracts inbound W3C trace context from the request headers (when `propagate_traces` is on).
+2. Starts a SERVER span named `"{method} {path}"`.
+3. Records HTTP attributes (`http.method`, `http.target`, `http.scheme`, `http.host`, `http.status_code`).
+4. Marks the span as an error and records the exception if the handler raises or returns a 4xx/5xx status.
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+### PostgreSQL query spans
 
-// Incoming request
-let trace_ctx = TraceContext::new();
-println!("Trace ID: {}", trace_ctx.trace_id);
-println!("Span ID: {}", trace_ctx.span_id);
+When tracing is enabled and OpenTelemetry is installed, `FraiseQLTracer` calls `PsycopgInstrumentor().instrument()` once. From then on, every PostgreSQL query issued through psycopg — including the reads against your `v_`/`tv_` views and the `fn_` function calls behind mutations — is captured as a CLIENT span with `db.system = "postgresql"` and the SQL statement attached.
 
-// Log with tracing context
-tracing::info!(
-    trace_id = %trace_ctx.trace_id,
-    span_id = %trace_ctx.span_id,
-    "Processing GraphQL query"
-);
-```text
-<!-- Code example in TEXT -->
+### GraphQL operation spans
 
-### W3C Trace Context Headers
+`get_tracer()` returns the global `FraiseQLTracer`. Its context managers let you wrap GraphQL work explicitly:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+```python
+from fraiseql.tracing import get_tracer
 
-// Create trace
-let trace = TraceContext::new();
+tracer = get_tracer()
 
-// Generate W3C traceparent header for HTTP requests
-let header = trace.to_w3c_traceparent();
-println!("traceparent: {}", header);
-// Output: "traceparent: 00-abc123def456789012345678901234ab-fedcba9876543210-01"
+# Trace a query operation
+with tracer.trace_graphql_query("GetUser", query_text, variables):
+    result = await execute_query()
 
-// Send downstream
-// GET /api/users HTTP/1.1
-// traceparent: 00-abc123def456789012345678901234ab-fedcba9876543210-01
+# Trace a mutation operation
+with tracer.trace_graphql_mutation("CreateUser", query_text, variables):
+    result = await execute_mutation()
 
-// Parse incoming header
-let incoming_header = "00-abc123def456789012345678901234ab-fedcba9876543210-01";
-let downstream_trace = TraceContext::from_w3c_traceparent(incoming_header)
-    .expect("Valid traceparent header");
+# Trace a database operation directly
+with tracer.trace_database_query("SELECT", "v_user", sql):
+    rows = await run_sql(sql)
+```
 
-// Same trace, different span
-assert_eq!(downstream_trace.trace_id, trace.trace_id);
-assert_eq!(downstream_trace.parent_span_id, Some(trace.span_id));
-```text
-<!-- Code example in TEXT -->
+Each manager sets the relevant attributes (`graphql.operation.type`, `graphql.operation.name`, `graphql.document`, or `db.system`/`db.table`/`db.statement`), records exceptions, and sets an error status on failure.
 
-### Baggage for Cross-cutting Context
+### Decorator helpers
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+`trace_graphql_operation` and `trace_database_query` are decorators for wrapping your own functions. They work on both sync and async callables and reuse the global tracer:
 
-// Add authentication and organizational context
-let trace = TraceContext::new()
-    .with_baggage("user_id".to_string(), "user_456".to_string())
-    .with_baggage("tenant_id".to_string(), "tenant_789".to_string())
-    .with_baggage("request_priority".to_string(), "high".to_string());
+```python
+from fraiseql.tracing import trace_graphql_operation, trace_database_query
 
-// Access baggage
-println!("User: {}", trace.baggage_item("user_id").unwrap_or("unknown"));
+@trace_graphql_operation("query", "ListUsers")
+async def list_users(query: str = "", variables: dict | None = None) -> list[User]:
+    ...
 
-// Baggage inherited by child spans
-let child = trace.child_span();
-assert_eq!(child.baggage_item("user_id"), Some("user_456"));
-assert_eq!(child.baggage_item("tenant_id"), Some("tenant_789"));
-```text
-<!-- Code example in TEXT -->
+@trace_database_query("SELECT", "v_user")
+async def fetch_users(sql: str) -> list[dict]:
+    ...
+```
 
-### Span Lifecycle
+### GraphQL-aware tracing and variable sanitization
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::{TraceSpan, SpanStatus, TraceEvent};
+For finer GraphQL tracing — operation-type detection, query truncation, and per-resolver spans — use `GraphQLTracer` with its own `GraphQLTracingConfig`:
 
-let trace_id = "trace-12345".to_string();
+```python
+from fraiseql.tracing import GraphQLTracer, GraphQLTracingConfig
 
-// Create span
-let mut span = TraceSpan::new(trace_id, "ExecuteQuery".to_string())
-    .with_parent_span("parent-span-id".to_string())
-    .add_attribute("query_type".to_string(), "SELECT".to_string());
+gql_tracer = GraphQLTracer(
+    GraphQLTracingConfig(
+        trace_resolvers=True,
+        include_variables=False,    # keep variables out of spans by default
+        sanitize_variables=True,    # redact sensitive values if included
+        max_query_length=1000,      # truncate long query documents
+    )
+)
 
-// Record events during execution
-span = span.add_event(
-    TraceEvent::new("parse_complete".to_string())
-);
+with gql_tracer.trace_query("GetUser", query_text, variables):
+    result = await execute_query()
+```
 
-span = span.add_event(
-    TraceEvent::new("validation_complete".to_string())
-);
+When `include_variables` is enabled, values whose keys match the sanitize patterns (`password`, `token`, `secret`, `key`, `auth`, `credential`, `api_key`, `apikey`, `session`, `cookie`, `authorization`) are replaced with `[REDACTED]` before being recorded.
 
-span = span.add_event(
-    TraceEvent::new("execution_start".to_string())
-        .with_attribute("row_count".to_string(), "42".to_string())
-);
+## Integration with Tracing Backends
 
-// Mark completion
-span.finish();
-println!("Duration: {:?}ms", span.duration_ms());
+FraiseQL exports through standard OpenTelemetry exporters. Pick a backend by setting `export_format` and pointing `export_endpoint` at the right collector.
 
-// Success status
-span = span.set_ok();
-```text
-<!-- Code example in TEXT -->
+### OTLP collector (recommended)
 
-### Error Tracking in Traces
+```python
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::{TraceSpan, SpanStatus};
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="my-api",
+        export_format="otlp",
+        export_endpoint="http://otel-collector:4317",
+    ),
+)
+```
 
-let mut span = TraceSpan::new("trace-123".to_string(), "DatabaseQuery".to_string());
+An OTLP collector can fan traces out to Jaeger, Tempo, Datadog, Honeycomb, or any OTLP-compatible backend without changing your application code.
 
-// Something fails
-let error_result = "SELECT * FROM nonexistent_table".parse::<String>();
+### Jaeger
 
-if let Err(e) = error_result {
-    // Record error in span
-    span = span.set_error(format!("SQL Parse Error: {}", e));
-}
+```python
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-span.finish();
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="my-api",
+        export_format="jaeger",
+        export_endpoint="jaeger-agent:6831",  # host:port
+    ),
+)
+```
 
-// Check status
-match &span.status {
-    SpanStatus::Error { message } => {
-        println!("Query failed: {}", message);
-    },
-    _ => println!("Unexpected status")
-}
-```text
-<!-- Code example in TEXT -->
-
-### Request Context Integration
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::{TraceContext, RequestContext, RequestId};
-
-// Create request-scoped context
-let trace = TraceContext::new();
-let mut request_ctx = RequestContext::new()
-    .with_operation("GetUser".to_string())
-    .with_user_id("user123".to_string());
-
-// Correlate trace and request
-tracing::info!(
-    trace_id = %trace.trace_id,
-    span_id = %trace.span_id,
-    operation = %request_ctx.operation.as_ref().unwrap_or(&"unknown".to_string()),
-    user_id = %request_ctx.user_id.as_ref().unwrap_or(&"unknown".to_string()),
-    "Query initiated"
-);
-```text
-<!-- Code example in TEXT -->
-
-## Integration with Tracing Systems
-
-### Jaeger (OpenTelemetry)
-
-Export trace context to Jaeger:
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
-
-let trace = TraceContext::new();
-
-// Send to Jaeger collector
-// POST http://jaeger-collector:14268/api/traces
-let payload = serde_json::json!({
-    "traceID": trace.trace_id,
-    "spans": [
-        {
-            "spanID": trace.span_id,
-            "operationName": "GraphQLQuery",
-            "startTime": chrono::Utc::now().timestamp_millis(),
-            "tags": [
-                {"key": "span.kind", "vStr": "internal"},
-                {"key": "component", "vStr": "FraiseQL"}
-            ]
-        }
-    ]
-});
-```text
-<!-- Code example in TEXT -->
+For `jaeger`, the endpoint is parsed as `host:port` for the Jaeger agent.
 
 ### Zipkin
 
-Export to Zipkin:
+```python
+from fraiseql.tracing import setup_tracing, TracingConfig
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="my-api",
+        export_format="zipkin",
+        export_endpoint="http://zipkin:9411/api/v2/spans",
+    ),
+)
+```
 
-let trace = TraceContext::new();
-
-// Format for Zipkin v2 API
-let span = serde_json::json!({
-    "traceId": trace.trace_id,
-    "id": trace.span_id,
-    "name": "query",
-    "timestamp": chrono::Utc::now().timestamp_micros(),
-    "tags": {
-        "http.status_code": "200",
-        "span.kind": "SPAN_KIND_INTERNAL"
-    }
-});
-```text
-<!-- Code example in TEXT -->
-
-### Datadog
-
-Integrate with Datadog:
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
-
-let trace = TraceContext::new();
-
-// Use as correlation ID in Datadog
-tracing::info!(
-    dd_trace_id = %trace.trace_id,
-    dd_span_id = %trace.span_id,
-    "Event for Datadog correlation"
-);
-```text
-<!-- Code example in TEXT -->
-
-### Custom Backend
-
-Implement custom trace exporter:
-
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::{TraceContext, TraceSpan};
-
-pub struct CustomTraceExporter;
-
-impl CustomTraceExporter {
-    pub async fn export_span(span: TraceSpan) -> Result<(), String> {
-        // Convert to your backend format
-        let payload = serde_json::json!({
-            "trace_id": span.trace_id,
-            "span_id": span.span_id,
-            "operation": span.operation,
-            "duration_ms": span.duration_ms(),
-            "status": span.status.to_string(),
-        });
-
-        // Send to backend
-        // POST to custom collector
-        Ok(())
-    }
-}
-```text
-<!-- Code example in TEXT -->
+The Zipkin exporter is optional. If it is not installed, FraiseQL logs a warning and falls back to no exporter — install a compatible `opentelemetry-exporter-zipkin` to enable it.
 
 ## W3C Trace Context Format
 
-FraiseQL uses the W3C Trace Context standard for interoperability:
+FraiseQL relies on OpenTelemetry's default W3C Trace Context propagation for interoperability. Downstream and upstream services exchange the `traceparent` header:
 
 ```text
-<!-- Code example in TEXT -->
 Header: traceparent
 Format: version-traceid-spanid-traceflags
 
@@ -395,109 +262,80 @@ traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
 
 Components:
 
-- 00: Version (always 00 for current version)
+- 00: Version (always 00 for the current version)
 - 0af7651916cd43dd8448eb211c80319c: Trace ID (32 hex digits)
 - b7ad6b7169203331: Span ID (16 hex digits)
 - 01: Trace flags (2 hex digits)
   - 0x01: Sampled
   - 0x00: Not sampled
-```text
-<!-- Code example in TEXT -->
+```
+
+When `propagate_traces` is enabled, the middleware extracts this header on inbound requests, and the tracer can inject it on outbound calls via `tracer.inject_context(headers)`.
 
 ## Sampling Strategy
 
-Control trace sampling for high-volume scenarios:
+Control trace volume with `sample_rate`. FraiseQL uses OpenTelemetry's `TraceIdRatioBased` sampler under the hood:
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::TraceContext;
+```python
+from fraiseql.tracing import TracingConfig
 
-// Sample all traces
-let trace = TraceContext::new();
-assert!(trace.is_sampled());
+# Sample everything (development / low traffic)
+TracingConfig(sample_rate=1.0)
 
-// Disable sampling
-let mut trace = TraceContext::new();
-trace.set_sampled(false);
-assert!(!trace.is_sampled());
+# Sample 10% of traffic (high-volume production)
+TracingConfig(sample_rate=0.1)
 
-// Implement sampling policy
-fn should_sample(user_id: Option<&str>, priority: Option<&str>) -> bool {
-    // Always sample authenticated users
-    if user_id.is_some() {
-        return true;
-    }
+# Disable tracing entirely
+TracingConfig(enabled=False)
+```
 
-    // Always sample high-priority requests
-    if priority == Some("high") {
-        return true;
-    }
-
-    // Sample 10% of other requests
-    rand::random::<f64>() < 0.1
-}
-```text
-<!-- Code example in TEXT -->
+Start at `1.0` in development and lower the rate as traffic grows. Because the sampler is trace-ID based, a sampling decision is consistent across all services that share a trace.
 
 ## Performance Considerations
 
-### Memory Usage
-
-- TraceContext: ~400 bytes (including baggage)
-- TraceSpan: ~600 bytes (with events)
-- Negligible overhead per request
-
-### CPU Usage
-
-- Trace ID generation: < 1 microsecond
-- Header parsing: < 5 microseconds
-- No blocking operations
+- **PostgreSQL spans** are produced by the standard psycopg instrumentation; overhead is dominated by export, not capture.
+- **Sampling** is the primary lever for high-volume systems — lower `sample_rate` to reduce both CPU and export cost.
+- **Batched export**: spans are flushed through a `BatchSpanProcessor`, so export happens off the request path.
+- **Excluded paths** (`exclude_paths`) keep health checks and metrics scrapes out of your trace data.
 
 ## Best Practices
 
-1. **Always Create Traces**: Every request should have a trace ID
-2. **Propagate Headers**: Forward W3C headers to downstream services
-3. **Add Context**: Use baggage for authentication and organizational data
-4. **Record Events**: Document significant operations in spans
-5. **Monitor Sampling**: Adjust sampling based on traffic patterns
-6. **Correlate Logs**: Include trace ID in all log entries
-7. **Set Timeouts**: Configure appropriate spans timeouts
-8. **Handle Errors**: Record error details in span status
+1. **Name your service**: set `service_name`, `service_version`, and `deployment_environment` so traces are easy to filter.
+2. **Use an OTLP collector**: export via OTLP and let the collector route to your backend(s).
+3. **Tune sampling**: lower `sample_rate` as traffic grows; keep `1.0` in development.
+4. **Exclude noise**: keep health/metrics/docs paths in `exclude_paths`.
+5. **Never leak secrets**: keep `include_variables=False` (or `sanitize_variables=True`) so credentials never reach a span.
+6. **Propagate context**: leave `propagate_traces=True` so multi-service requests correlate end to end.
+7. **Correlate logs**: include the trace ID in your structured log records.
 
 ## Troubleshooting
 
-### Trace Not Appearing
+### No traces appearing
 
-- Verify trace ID propagation across services
-- Check W3C header format: `00-{32-hex}-{16-hex}-{2-hex}`
-- Ensure sampled flag is set correctly
-- Verify backend collector is receiving traces
+- Confirm OpenTelemetry is installed (`pip install "fraiseql[tracing]"`); without it, tracing is a no-op.
+- Confirm `enabled=True` and that `export_endpoint` points at a reachable collector.
+- Check the request path is not in `exclude_paths`.
+- Verify `sample_rate` is greater than `0.0`.
 
-### Missing Span Context
+### Missing PostgreSQL query spans
 
-- Check if TraceContext was created before span
-- Verify parent_span_id is set correctly
-- Ensure baggage is preserved across service boundaries
+- Ensure the psycopg instrumentation package is installed.
+- Confirm `setup_tracing` ran (psycopg is instrumented when the tracer initializes with `enabled=True`).
+
+### Broken cross-service correlation
+
+- Verify `propagate_traces=True` on both services.
+- Check the `traceparent` header is forwarded by any proxy in front of the app.
+- Confirm the header format: `00-{32-hex}-{16-hex}-{2-hex}`.
 
 ## Testing
 
-All tracing components are fully tested:
+Tracing has full unit coverage. Run the tracing tests with pytest:
 
 ```bash
-<!-- Code example in BASH -->
-# Run tracing tests
-cargo test -p FraiseQL-server --lib tracing
+# Run the tracing tests
+uv run pytest tests/ -k tracing
 
-# Run all tests
-cargo test -p FraiseQL-server --lib
-```text
-<!-- Code example in TEXT -->
-
-## Future Enhancements
-
-- OpenTelemetry integration
-- Automatic instrumentation
-- Metrics export from traces
-- Performance profiling via traces
-- Distributed sampling strategies
-- Automatic error grouping
+# Run the full test suite
+uv run pytest tests/
+```

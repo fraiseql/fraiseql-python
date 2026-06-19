@@ -2,57 +2,40 @@
 ---
 
 title: Operations Guide
-description: Complete guide for deploying, monitoring, and maintaining FraiseQL in production environments.
-keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
+description: Guide for deploying, monitoring, and maintaining a FraiseQL (Python/FastAPI/PostgreSQL) application in production.
+keywords: ["deployment", "monitoring", "performance", "observability", "troubleshooting"]
 tags: ["documentation", "reference"]
 ---
 
 # Operations Guide
 
-Complete guide for deploying, monitoring, and maintaining FraiseQL in production environments.
+Operating a FraiseQL application in production. FraiseQL builds its GraphQL schema in
+memory at startup and serves it from a FastAPI app (run under an ASGI server such as
+`uvicorn`) backed by PostgreSQL. These pages cover configuring observability, tracing,
+and tuning query performance.
 
-## Quick Navigation
+## In This Section
 
-### Core Guides
+- **[Observability](observability.md)** — Metrics, logging, and health signals for the running FastAPI app.
+- **[Distributed Tracing](distributed-tracing.md)** — Trace requests across the app and into PostgreSQL.
+- **[Observability Configuration](configuration.md)** — Configuration reference for the observability features.
+- **[Performance Tuning Runbook](performance-tuning-runbook.md)** — Diagnose and optimize GraphQL/PostgreSQL query performance.
 
-- **[Deployment Guide](../deployment/guide.md)** — Deploy FraiseQL to production
-- **[Operations Guide](guide.md)** — Day-to-day operations and maintenance
-- **[Observability Guide](observability.md)** — Monitoring, metrics, and observability
+## Related Guides
 
-### Infrastructure & Integration
-
-- **[Distributed Tracing](distributed-tracing.md)** — Set up distributed tracing
-- **[Structured Logging](structured-logging.md)** — Configure structured logging
-- **[Configuration Guide](../configuration/)** — Security, TLS, rate limiting
-
-### Reference
-
-- **[Health Checks](reference/health-checks.md)** — Health check endpoints and patterns
-- **[Metrics Reference](reference/metrics.md)** — Prometheus metrics catalog
-
-### Advanced
-
-- **[Observability Architecture](observability-architecture.md)** — Deep dive into observability design
-- **[Configuration](configuration.md)** — Advanced observability configuration
-- **[Analysis Guide](analysis-guide.md)** — Analyzing observability data
+- **[Production Deployment](../guides/production-deployment.md)** — Deploy the FastAPI app to production.
+- **[Monitoring](../guides/monitoring.md)** — Day-to-day monitoring guidance.
+- **[TLS Configuration](../configuration/tls-configuration.md)** — Terminate TLS for the app.
+- **[Rate Limiting](../configuration/rate-limiting.md)** — Protect endpoints from abuse.
+- **[PostgreSQL Authentication](../configuration/postgresql-authentication.md)** — Secure the database connection.
 
 ## Running in Production
 
-1. **Deploy**: Follow [Deployment Guide](../deployment/guide.md)
-2. **Configure**: Set up [TLS](../configuration/tls-configuration.md), [Rate Limiting](../configuration/rate-limiting.md)
-3. **Monitor**: Enable [metrics](../guides/monitoring.md) and [distributed tracing](distributed-tracing.md)
-4. **Maintain**: Use [operations guide](guide.md) for day-to-day tasks
-
-## Federation
-
-For multi-database federation operations, see [Federation Guide](../integrations/federation/).
+1. **Deploy** — Run the FastAPI app under an ASGI server (`uvicorn app:app`) following the [Production Deployment](../guides/production-deployment.md) guide.
+2. **Secure** — Configure [TLS](../configuration/tls-configuration.md), [rate limiting](../configuration/rate-limiting.md), and [PostgreSQL authentication](../configuration/postgresql-authentication.md).
+3. **Observe** — Enable [observability](observability.md) and [distributed tracing](distributed-tracing.md).
+4. **Tune** — Use the [Performance Tuning Runbook](performance-tuning-runbook.md) to diagnose slow queries.
 
 ## Support
 
-- **Troubleshooting**: See [main troubleshooting guide](../troubleshooting.md)
-- **Known Limitations**: See [alpha limitations](../alpha-limitations.md)
-
----
-
-**Version**: v2.0.0
-**Last Updated**: February 1, 2026
+- **Troubleshooting**: See the [troubleshooting guide](../guides/troubleshooting.md).
