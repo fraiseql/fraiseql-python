@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Physically stored, pre-composed JSONB projections for high-performance nested GraphQL reads.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/database/tv-table-pattern/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>TV-Table Pattern - FraiseQL Documentation</title>
+        <title>tv_* Table Pattern: Table-Backed JSON Views - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TV-Table Pattern
+              tv_* Table Pattern: Table-Backed JSON Views
             
           </span>
         </div>
@@ -1253,7 +1255,7 @@
   <a href="#use-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ✅ Use tv_* when
+        Use tv_* when
       
     </span>
   </a>
@@ -1264,7 +1266,7 @@
   <a href="#dont-use-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ❌ Don't use tv_* when
+        Don't use tv_* when
       
     </span>
   </a>
@@ -1292,7 +1294,7 @@
   <a href="#scenario-complex-user-profile-with-posts-comments-and-likes-10k-users" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenario: Complex User Profile with Posts, Comments, and Likes (10K users)
+        Scenario: complex user profile with posts, comments, and likes (10K users)
       
     </span>
   </a>
@@ -1303,7 +1305,7 @@
   <a href="#query-breakdown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Breakdown
+        Query breakdown
       
     </span>
   </a>
@@ -1331,7 +1333,7 @@
   <a href="#basic-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Structure
+        Basic structure
       
     </span>
   </a>
@@ -1342,7 +1344,7 @@
   <a href="#jsonb-composition-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JSONB Composition Pattern
+        JSONB composition pattern
       
     </span>
   </a>
@@ -1370,7 +1372,7 @@
   <a href="#option-1-trigger-based-real-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 1: Trigger-Based (Real-Time)
+        Option 1: Trigger-based (real-time)
       
     </span>
   </a>
@@ -1381,7 +1383,7 @@
   <a href="#option-2-scheduled-batch-low-overhead" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2: Scheduled Batch (Low Overhead)
+        Option 2: Scheduled batch (low overhead)
       
     </span>
   </a>
@@ -1392,7 +1394,7 @@
   <a href="#option-3-command-based-explicit-refresh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 3: Command-Based Explicit Refresh
+        Option 3: Command-based explicit refresh
       
     </span>
   </a>
@@ -1431,7 +1433,7 @@
   <a href="#step-1-create-intermediate-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Create Intermediate Views
+        Step 1: Create intermediate views
       
     </span>
   </a>
@@ -1439,10 +1441,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-create-tv_-table" class="md-nav__link">
+  <a href="#step-2-create-the-tv_-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Create tv_* Table
+        Step 2: Create the tv_* table
       
     </span>
   </a>
@@ -1453,7 +1455,7 @@
   <a href="#step-3-initial-population" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Initial Population
+        Step 3: Initial population
       
     </span>
   </a>
@@ -1461,10 +1463,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-update-graphql-schema" class="md-nav__link">
+  <a href="#step-4-point-the-graphql-type-at-the-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Update GraphQL Schema
+        Step 4: Point the GraphQL type at the table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-monitor-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Monitor performance
       
     </span>
   </a>
@@ -1473,6 +1486,172 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations-and-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations and Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Limitations and Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refresh-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staleness-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-drift-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema drift risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cascading-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cascading triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-tv_-table-empty-after-trigger-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: tv_* table empty after trigger creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-tv_-data-stale-after-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: tv_* data stale after writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-high-cpu-from-cascading-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: high CPU from cascading triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-jsonb-composition-mismatch-with-the-graphql-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: JSONB composition mismatch with the GraphQL schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5227,7 +5406,7 @@
   <a href="#use-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ✅ Use tv_* when
+        Use tv_* when
       
     </span>
   </a>
@@ -5238,7 +5417,7 @@
   <a href="#dont-use-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ❌ Don't use tv_* when
+        Don't use tv_* when
       
     </span>
   </a>
@@ -5266,7 +5445,7 @@
   <a href="#scenario-complex-user-profile-with-posts-comments-and-likes-10k-users" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenario: Complex User Profile with Posts, Comments, and Likes (10K users)
+        Scenario: complex user profile with posts, comments, and likes (10K users)
       
     </span>
   </a>
@@ -5277,7 +5456,7 @@
   <a href="#query-breakdown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Breakdown
+        Query breakdown
       
     </span>
   </a>
@@ -5305,7 +5484,7 @@
   <a href="#basic-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Structure
+        Basic structure
       
     </span>
   </a>
@@ -5316,7 +5495,7 @@
   <a href="#jsonb-composition-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JSONB Composition Pattern
+        JSONB composition pattern
       
     </span>
   </a>
@@ -5344,7 +5523,7 @@
   <a href="#option-1-trigger-based-real-time" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 1: Trigger-Based (Real-Time)
+        Option 1: Trigger-based (real-time)
       
     </span>
   </a>
@@ -5355,7 +5534,7 @@
   <a href="#option-2-scheduled-batch-low-overhead" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2: Scheduled Batch (Low Overhead)
+        Option 2: Scheduled batch (low overhead)
       
     </span>
   </a>
@@ -5366,7 +5545,7 @@
   <a href="#option-3-command-based-explicit-refresh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 3: Command-Based Explicit Refresh
+        Option 3: Command-based explicit refresh
       
     </span>
   </a>
@@ -5405,7 +5584,7 @@
   <a href="#step-1-create-intermediate-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Create Intermediate Views
+        Step 1: Create intermediate views
       
     </span>
   </a>
@@ -5413,10 +5592,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-create-tv_-table" class="md-nav__link">
+  <a href="#step-2-create-the-tv_-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Create tv_* Table
+        Step 2: Create the tv_* table
       
     </span>
   </a>
@@ -5427,7 +5606,7 @@
   <a href="#step-3-initial-population" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Initial Population
+        Step 3: Initial population
       
     </span>
   </a>
@@ -5435,10 +5614,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-update-graphql-schema" class="md-nav__link">
+  <a href="#step-4-point-the-graphql-type-at-the-table" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Update GraphQL Schema
+        Step 4: Point the GraphQL type at the table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-monitor-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Monitor performance
       
     </span>
   </a>
@@ -5447,6 +5637,172 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limitations-and-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations and Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Limitations and Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refresh-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#staleness-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Staleness risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-drift-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema drift risk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cascading-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cascading triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-tv_-table-empty-after-trigger-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: tv_* table empty after trigger creation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-tv_-data-stale-after-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: tv_* data stale after writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-high-cpu-from-cascading-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: high CPU from cascading triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-jsonb-composition-mismatch-with-the-graphql-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: JSONB composition mismatch with the GraphQL schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5470,342 +5826,320 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: tv_* Table Pattern: Table-Backed JSON Views
-description: - Physical storage on disk (materialized JSONB data)
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="tv_-table-pattern-table-backed-json-views">tv_* Table Pattern: Table-Backed JSON Views<a class="headerlink" href="#tv_-table-pattern-table-backed-json-views" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p><strong>tv_* tables</strong> are PostgreSQL-specific, materialized table-backed views that pre-compute and physically store pre-composed JSONB data structures for high-performance GraphQL query execution on complex nested data.</p>
-<p><strong>Analogous to</strong>: <code>ta_*</code> tables for Arrow plane (analytics), but <code>tv_*</code> for JSON plane (GraphQL).</p>
-<p><strong>Key difference</strong>: Unlike logical views (<code>v_*</code>), tv_* tables are actual PostgreSQL tables with:</p>
+<p><strong><code>tv_*</code> tables</strong> are PostgreSQL tables that pre-compute and physically store a
+pre-composed <code>data</code> JSONB column for high-performance GraphQL reads over complex,
+deeply nested data. A <code>tv_*</code> table looks exactly like a <code>v_*</code> read view to FraiseQL
+(<code>id</code> + <code>data</code> JSONB), but the JSONB is materialized on disk instead of being
+composed on every query.</p>
+<p><strong>Key difference from logical views (<code>v_*</code>):</strong> unlike a logical view, a <code>tv_*</code>
+relation is a real table with:</p>
 <ul>
-<li>Physical storage on disk (materialized JSONB data)</li>
-<li>Trigger-based or scheduled refresh mechanism</li>
-<li>Denormalized JSONB composition for complex queries</li>
-<li>5-50x faster query performance on deeply nested data</li>
+<li>Physical storage on disk (materialized <code>data</code> JSONB)</li>
+<li>A trigger-based or scheduled refresh mechanism</li>
+<li>Denormalized JSONB composition for complex nested queries</li>
+<li>Substantially faster read performance on deeply nested data</li>
 </ul>
+<p>FraiseQL queries a <code>tv_*</code> table the same way it queries a <code>v_*</code> view — via
+<code>db.find("tv_user_profile")</code> / <code>db.find_one(...)</code> from a <code>@fraiseql.query</code>
+resolver. Choosing between <code>v_*</code> and <code>tv_*</code> is purely a database design decision;
+the GraphQL layer is unchanged.</p>
 <h2 id="when-to-use-tv_-tables">When to Use tv_* Tables<a class="headerlink" href="#when-to-use-tv_-tables" title="Permanent link">&para;</a></h2>
-<h3 id="use-tv_-when">✅ <strong>Use tv_* when</strong><a class="headerlink" href="#use-tv_-when" title="Permanent link">&para;</a></h3>
+<h3 id="use-tv_-when">Use tv_* when<a class="headerlink" href="#use-tv_-when" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Complex JSONB composition</strong> with multiple JOINs (3+ related entities)</li>
-<li><strong>Deep nesting</strong> required (e.g., User → Posts → Comments → Likes)</li>
+<li><strong>Deep nesting</strong> is required (e.g., User → Posts → Comments → Likes)</li>
 <li><strong>High-frequency read, low-frequency write</strong> workloads</li>
 <li><strong>Pre-aggregated dashboards</strong> with complex data structures</li>
-<li><strong>GraphQL queries</strong> with consistent nested patterns</li>
+<li><strong>GraphQL queries</strong> follow consistent nested patterns</li>
 <li><strong>GraphQL subscriptions</strong> need fast access to composed data</li>
 </ul>
-<h3 id="dont-use-tv_-when">❌ <strong>Don't use tv_* when</strong><a class="headerlink" href="#dont-use-tv_-when" title="Permanent link">&para;</a></h3>
+<h3 id="dont-use-tv_-when">Don't use tv_* when<a class="headerlink" href="#dont-use-tv_-when" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Simple queries</strong> (single or 2-table joins) - use <code>v_*</code> logical views instead</li>
-<li><strong>Frequently changing data</strong> with millisecond latency requirements</li>
-<li><strong>Storage is constrained</strong> (tv_* duplicates JSONB data)</li>
-<li><strong>Dynamic query patterns</strong> where composition varies by request</li>
+<li><strong>Simple queries</strong> (single or 2-table joins) — use a <code>v_*</code> logical view instead</li>
+<li><strong>Frequently changing data</strong> with millisecond freshness requirements</li>
+<li><strong>Storage is constrained</strong> (a <code>tv_*</code> table duplicates the JSONB data)</li>
+<li><strong>Dynamic query patterns</strong> where the composition varies per request</li>
 </ul>
 <h2 id="performance-comparison">Performance Comparison<a class="headerlink" href="#performance-comparison" title="Permanent link">&para;</a></h2>
-<h3 id="scenario-complex-user-profile-with-posts-comments-and-likes-10k-users">Scenario: Complex User Profile with Posts, Comments, and Likes (10K users)<a class="headerlink" href="#scenario-complex-user-profile-with-posts-comments-and-likes-10k-users" title="Permanent link">&para;</a></h3>
+<h3 id="scenario-complex-user-profile-with-posts-comments-and-likes-10k-users">Scenario: complex user profile with posts, comments, and likes (10K users)<a class="headerlink" href="#scenario-complex-user-profile-with-posts-comments-and-likes-10k-users" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Metric</th>
-<th>v_user_full (View)</th>
-<th>tv_user_profile (Table)</th>
+<th><code>v_user_full</code> (view)</th>
+<th><code>tv_user_profile</code> (table)</th>
 <th>Improvement</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Query time</td>
-<td>2-5s</td>
-<td>100-200ms</td>
-<td><strong>10-50x faster</strong></td>
+<td>2–5 s</td>
+<td>100–200 ms</td>
+<td>10–50x faster</td>
 </tr>
 <tr>
 <td>JSONB composition</td>
 <td>Real-time (multiple JOINs)</td>
 <td>Pre-computed</td>
-<td><strong>Zero JOIN cost</strong></td>
+<td>Zero JOIN cost</td>
 </tr>
 <tr>
 <td>Memory usage</td>
-<td>500MB-1GB</td>
-<td>150-300MB</td>
-<td><strong>3-6x lower</strong></td>
+<td>500 MB–1 GB</td>
+<td>150–300 MB</td>
+<td>3–6x lower</td>
 </tr>
 <tr>
 <td>CPU</td>
-<td>50-80%</td>
-<td>5-10%</td>
-<td><strong>5-16x reduction</strong></td>
+<td>50–80%</td>
+<td>5–10%</td>
+<td>5–16x reduction</td>
 </tr>
 </tbody>
 </table>
-<h3 id="query-breakdown">Query Breakdown<a class="headerlink" href="#query-breakdown" title="Permanent link">&para;</a></h3>
-<p><strong>Logical view (v_user_full)</strong> - Real-time composition:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Fetch user (1ms)</li>
-<li>Fetch posts (2-3s via JOIN)</li>
-<li>Compose posts array (500-800ms)</li>
-<li>Fetch comments per post (1-2s via subqueries)</li>
-<li>Compose comments array (300-500ms)</li>
-<li>Fetch likes per comment (1-2s)</li>
-<li>Build final JSONB (200-300ms)
+<h3 id="query-breakdown">Query breakdown<a class="headerlink" href="#query-breakdown" title="Permanent link">&para;</a></h3>
+<p><strong>Logical view (<code>v_user_full</code>)</strong> — real-time composition:</p>
+<div class="highlight"><pre><span></span><code>1. Fetch user (1ms)
+2. Fetch posts (2-3s via JOIN)
+3. Compose posts array (500-800ms)
+4. Fetch comments per post (1-2s via subqueries)
+5. Compose comments array (300-500ms)
+6. Fetch likes per comment (1-2s)
+7. Build final JSONB (200-300ms)
 Total: 5-10 seconds
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
-
-<p><strong>Table-backed view (tv_user_profile)</strong> - Pre-computed:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>Fetch pre-composed JSONB (100-200ms)
+</code></pre></div>
+<p><strong>Table-backed view (<code>tv_user_profile</code>)</strong> — pre-computed:</p>
+<div class="highlight"><pre><span></span><code>1. Fetch pre-composed JSONB (100-200ms)
 Total: 100-200ms
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h2 id="ddl-pattern">DDL Pattern<a class="headerlink" href="#ddl-pattern" title="Permanent link">&para;</a></h2>
-<h3 id="basic-structure">Basic Structure<a class="headerlink" href="#basic-structure" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- 1. Create physical table with pre-composed JSONB
-CREATE TABLE tv_user_profile (
-    id TEXT NOT NULL PRIMARY KEY,
-    data JSONB NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (id) REFERENCES tb_user(id) ON DELETE CASCADE
-);</p>
-<p>-- 2. Create index for faster lookups
-CREATE INDEX idx_tv_user_profile_data_gin
-    ON tv_user_profile USING GIN(data);</p>
-<p>-- 3. Create refresh trigger for near-real-time updates
-CREATE TRIGGER trg_refresh_tv_user_profile
-    AFTER INSERT OR UPDATE OR DELETE ON tb_user
-    FOR EACH ROW
-    EXECUTE FUNCTION refresh_tv_user_profile_trigger();
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="basic-structure">Basic structure<a class="headerlink" href="#basic-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 1. Create physical table with pre-composed JSONB</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span>
+<span class="p">);</span>
 
-<h3 id="jsonb-composition-pattern">JSONB Composition Pattern<a class="headerlink" href="#jsonb-composition-pattern" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Helper view to compose nested data (intermediate step)
-CREATE VIEW v_user_posts_composed AS
-SELECT
-    fk_user,
-    jsonb_agg(
-        jsonb_build_object(
-            'id', p.id,
-            'title', p.title,
-            'content', p.content,
-            'createdAt', p.created_at,
-            'comments', COALESCE(comments.data, '[]'::jsonb)
-        )
-        ORDER BY p.created_at DESC
-    ) AS posts_data
-FROM v_post p
-LEFT JOIN (
-    -- Pre-aggregate comments per post
-    SELECT
-        fk_post,
-        jsonb_agg(
-            jsonb_build_object(
-                'id', c.id,
-                'text', c.text,
-                'createdAt', c.created_at
-            )
-            ORDER BY c.created_at DESC
-        ) AS data
-    FROM v_comment
-    GROUP BY fk_post
-) comments ON comments.fk_post = p.pk_post
-GROUP BY fk_user;</p>
-<p>-- Main table-backed view with pre-composed JSONB
-CREATE TABLE tv_user_profile (
-    id TEXT NOT NULL PRIMARY KEY,
-    data JSONB NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (id) REFERENCES tb_user(id) ON DELETE CASCADE
-);</p>
-<p>-- Insert pre-composed data
-INSERT INTO tv_user_profile (id, data)
-SELECT
-    u.id,
-    u.data || jsonb_build_object(
-        'posts', COALESCE(p.posts_data, '[]'::jsonb)
-    ) AS data,
-    NOW()
-FROM v_user u
-LEFT JOIN v_user_posts_composed p ON p.fk_user = u.pk_user
-ON CONFLICT (id) DO UPDATE SET
-    data = EXCLUDED.data,
-    updated_at = NOW();
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- 2. Create index for faster lookups</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tv_user_profile_data_gin</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
 
+<span class="c1">-- 3. Create refresh trigger for near-real-time updates</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile_trigger</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="jsonb-composition-pattern">JSONB composition pattern<a class="headerlink" href="#jsonb-composition-pattern" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Helper view to compose nested data (intermediate step)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">comments</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">        </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">posts_data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="n">p</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="c1">-- Pre-aggregate comments per post</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">fk_post</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_agg</span><span class="p">(</span>
+<span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">            </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_comment</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_post</span>
+<span class="p">)</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">comments</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_user</span><span class="p">;</span>
+
+<span class="c1">-- Main table-backed view with pre-composed JSONB</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span>
+<span class="p">);</span>
+
+<span class="c1">-- Insert pre-composed data</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">posts_data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
+<span class="w">    </span><span class="n">NOW</span><span class="p">()</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
+<span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
+</code></pre></div>
 <h2 id="refresh-strategies">Refresh Strategies<a class="headerlink" href="#refresh-strategies" title="Permanent link">&para;</a></h2>
-<p>Choose based on your latency and overhead requirements:</p>
-<h3 id="option-1-trigger-based-real-time">Option 1: Trigger-Based (Real-Time)<a class="headerlink" href="#option-1-trigger-based-real-time" title="Permanent link">&para;</a></h3>
-<p><strong>Best for</strong>: GraphQL subscriptions, &lt;1min latency requirements</p>
-<p><strong>Characteristics</strong>:</p>
+<p>Choose based on your latency and overhead requirements.</p>
+<h3 id="option-1-trigger-based-real-time">Option 1: Trigger-based (real-time)<a class="headerlink" href="#option-1-trigger-based-real-time" title="Permanent link">&para;</a></h3>
+<p><strong>Best for:</strong> GraphQL subscriptions, sub-minute latency requirements.</p>
+<p><strong>Characteristics:</strong></p>
 <ul>
 <li>Fires after every INSERT/UPDATE/DELETE on source tables</li>
-<li>Latency: &lt;100ms per operation</li>
-<li>Overhead: Per-row cost (scales with write volume)</li>
-<li>Control: Fully automatic</li>
+<li>Latency: &lt;100 ms per operation</li>
+<li>Overhead: per-row cost (scales with write volume)</li>
+<li>Control: fully automatic</li>
 </ul>
-<p><strong>Implementation</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION refresh_tv_user_profile_trigger()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Recompute JSONB for affected user
-    INSERT INTO tv_user_profile (id, data, updated_at)
-    SELECT
-        u.id,
-        u.data || jsonb_build_object(
-            'posts', COALESCE(p.posts_data, '[]'::jsonb)
-        ) AS data,
-        NOW()
-    FROM v_user u
-    LEFT JOIN v_user_posts_composed p ON p.fk_user = u.pk_user
-    WHERE u.id = NEW.id OR (TG_OP = 'DELETE' AND u.id = OLD.id)
-    ON CONFLICT (id) DO UPDATE SET
-        data = EXCLUDED.data,
-        updated_at = NOW();</p>
-<div class="highlight"><pre><span></span><code>RETURN NEW;
-</code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;</p>
-<p>CREATE TRIGGER trg_refresh_tv_user_profile
-    AFTER INSERT OR UPDATE OR DELETE ON tb_user
-    FOR EACH ROW
-    EXECUTE FUNCTION refresh_tv_user_profile_trigger();</p>
-<p>-- Also trigger on related table changes
-CREATE TRIGGER trg_refresh_tv_user_profile_on_post
-    AFTER INSERT OR UPDATE OR DELETE ON tb_post
-    FOR EACH ROW
-    EXECUTE FUNCTION refresh_tv_user_profile_trigger();</p>
-<p>CREATE TRIGGER trg_refresh_tv_user_profile_on_comment
-    AFTER INSERT OR UPDATE OR DELETE ON tb_comment
-    FOR EACH ROW
-    EXECUTE FUNCTION refresh_tv_user_profile_trigger();
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Implementation:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile_trigger</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="c1">-- Recompute JSONB for affected user</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">posts_data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
+<span class="w">        </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="p">(</span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;DELETE&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
+<span class="w">        </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
+<span class="w">        </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
 
-<h3 id="option-2-scheduled-batch-low-overhead">Option 2: Scheduled Batch (Low Overhead)<a class="headerlink" href="#option-2-scheduled-batch-low-overhead" title="Permanent link">&para;</a></h3>
-<p><strong>Best for</strong>: Nightly dashboards, acceptable staleness (minutes to hours)</p>
-<p><strong>Characteristics</strong>:</p>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile_trigger</span><span class="p">();</span>
+
+<span class="c1">-- Also trigger on related table changes</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile_on_post</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile_trigger</span><span class="p">();</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile_on_comment</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile_trigger</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="option-2-scheduled-batch-low-overhead">Option 2: Scheduled batch (low overhead)<a class="headerlink" href="#option-2-scheduled-batch-low-overhead" title="Permanent link">&para;</a></h3>
+<p><strong>Best for:</strong> nightly dashboards, acceptable staleness (minutes to hours).</p>
+<p><strong>Characteristics:</strong></p>
 <ul>
 <li>Batched refresh at fixed intervals</li>
-<li>Latency: Minutes to hours</li>
-<li>Overhead: Batch cost (no per-row overhead)</li>
-<li>Control: Scheduled via pg_cron</li>
+<li>Latency: minutes to hours</li>
+<li>Overhead: batch cost (no per-row overhead)</li>
+<li>Control: scheduled via pg_cron</li>
 </ul>
-<p><strong>Implementation</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Enable pg_cron extension
-CREATE EXTENSION IF NOT EXISTS pg_cron;</p>
-<p>-- Schedule refresh every 5 minutes
-SELECT cron.schedule(
-    'refresh-tv-user-profile',
-    '*/5 * * * *',  -- Every 5 minutes
-    'SELECT refresh_tv_user_profile();'
-);</p>
-<p>-- Batch refresh function
-CREATE OR REPLACE FUNCTION refresh_tv_user_profile()
-RETURNS TABLE(rows_inserted BIGINT, rows_updated BIGINT) AS $$
-DECLARE
-    v_inserted BIGINT := 0;
-    v_updated BIGINT := 0;
-BEGIN
-    -- Upsert all user profiles
-    WITH upsert AS (
-        INSERT INTO tv_user_profile (id, data, updated_at)
-        SELECT
-            u.id,
-            u.data || jsonb_build_object(
-                'posts', COALESCE(p.posts_data, '[]'::jsonb)
-            ) AS data,
-            NOW()
-        FROM v_user u
-        LEFT JOIN v_user_posts_composed p ON p.fk_user = u.pk_user
-        ON CONFLICT (id) DO UPDATE SET
-            data = EXCLUDED.data,
-            updated_at = NOW()
-        RETURNING (xmax = 0) AS inserted
-    )
-    SELECT COUNT(*) FILTER (WHERE inserted) INTO v_inserted FROM upsert;</p>
-<div class="highlight"><pre><span></span><code>GET DIAGNOSTICS v_updated = ROW_COUNT;
-v_updated := v_updated - v_inserted;
+<p><strong>Implementation:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Enable pg_cron extension</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pg_cron</span><span class="p">;</span>
 
-RETURN QUERY SELECT v_inserted, v_updated;
+<span class="c1">-- Schedule refresh every 5 minutes</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">&#39;refresh-tv-user-profile&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">&#39;*/5 * * * *&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Every 5 minutes</span>
+<span class="w">    </span><span class="s1">&#39;SELECT refresh_tv_user_profile();&#39;</span>
+<span class="p">);</span>
+
+<span class="c1">-- Batch refresh function</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">TABLE</span><span class="p">(</span><span class="n">rows_inserted</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w"> </span><span class="n">rows_updated</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_inserted</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_updated</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="c1">-- Upsert all user profiles</span>
+<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="n">upsert</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="w">        </span><span class="k">SELECT</span>
+<span class="w">            </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">posts_data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
+<span class="w">            </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">        </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">        </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
+<span class="w">            </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
+<span class="w">            </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">        </span><span class="n">RETURNING</span><span class="w"> </span><span class="p">(</span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">inserted</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">inserted</span><span class="p">)</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_inserted</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">upsert</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_updated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_updated</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_updated</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">v_inserted</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">QUERY</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">v_inserted</span><span class="p">,</span><span class="w"> </span><span class="n">v_updated</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="option-3-command-based-explicit-refresh">Option 3: Command-Based Explicit Refresh<a class="headerlink" href="#option-3-command-based-explicit-refresh" title="Permanent link">&para;</a></h3>
-<p><strong>Best for</strong>: Development, bulk data loads, manual ETL</p>
-<p><strong>Characteristics</strong>:</p>
+<h3 id="option-3-command-based-explicit-refresh">Option 3: Command-based explicit refresh<a class="headerlink" href="#option-3-command-based-explicit-refresh" title="Permanent link">&para;</a></h3>
+<p><strong>Best for:</strong> development, bulk data loads, manual ETL.</p>
+<p><strong>Characteristics:</strong></p>
 <ul>
 <li>Manual refresh on demand</li>
-<li>Latency: On-demand</li>
-<li>Overhead: Only when called</li>
-<li>Control: Explicit API calls</li>
+<li>Latency: on-demand</li>
+<li>Overhead: only when called</li>
+<li>Control: explicit invocation</li>
 </ul>
-<p><strong>Implementation</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE OR REPLACE FUNCTION refresh_tv_user_profile(user_id_filter UUID DEFAULT NULL)
-RETURNS TABLE(rows_inserted BIGINT, rows_updated BIGINT) AS $$
-DECLARE
-    v_inserted BIGINT := 0;
-    v_updated BIGINT := 0;
-BEGIN
-    -- Upsert specified profiles (or all if no filter)
-    WITH upsert AS (
-        INSERT INTO tv_user_profile (id, data, updated_at)
-        SELECT
-            u.id,
-            u.data || jsonb_build_object(
-                'posts', COALESCE(p.posts_data, '[]'::jsonb)
-            ) AS data,
-            NOW()
-        FROM v_user u
-        LEFT JOIN v_user_posts_composed p ON p.fk_user = u.pk_user
-        WHERE user_id_filter IS NULL OR u.id = user_id_filter
-        ON CONFLICT (id) DO UPDATE SET
-            data = EXCLUDED.data,
-            updated_at = NOW()
-        RETURNING (xmax = 0) AS inserted
-    )
-    SELECT COUNT(*) FILTER (WHERE inserted) INTO v_inserted FROM upsert;</p>
-<div class="highlight"><pre><span></span><code>GET DIAGNOSTICS v_updated = ROW_COUNT;
-v_updated := v_updated - v_inserted;
+<p><strong>Implementation:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">(</span><span class="n">user_id_filter</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">TABLE</span><span class="p">(</span><span class="n">rows_inserted</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w"> </span><span class="n">rows_updated</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_inserted</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_updated</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="c1">-- Upsert specified profiles (or all if no filter)</span>
+<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="n">upsert</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="w">        </span><span class="k">SELECT</span>
+<span class="w">            </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">posts_data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
+<span class="w">            </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">        </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span>
+<span class="w">        </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">        </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id_filter</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_id_filter</span>
+<span class="w">        </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
+<span class="w">            </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
+<span class="w">            </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">        </span><span class="n">RETURNING</span><span class="w"> </span><span class="p">(</span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">inserted</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">inserted</span><span class="p">)</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_inserted</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">upsert</span><span class="p">;</span>
 
-RETURN QUERY SELECT v_inserted, v_updated;
+<span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_updated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_updated</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_updated</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">v_inserted</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">QUERY</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">v_inserted</span><span class="p">,</span><span class="w"> </span><span class="n">v_updated</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="c1">-- Usage: Refresh specific user profile</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">(</span><span class="s1">&#39;550e8400-e29b-41d4-a716-446655440000&#39;</span><span class="p">::</span><span class="n">UUID</span><span class="p">);</span>
+
+<span class="c1">-- Usage: Refresh all profiles</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">();</span>
 </code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Usage: Refresh specific user profile
-SELECT * FROM refresh_tv_user_profile('550e8400-e29b-41d4-a716-446655440000'::UUID);</p>
-<p>-- Usage: Refresh all profiles
-SELECT * FROM refresh_tv_user_profile();
-```text</p>
-<!-- Code example in TEXT -->
-
 <h2 id="refresh-strategy-decision-matrix">Refresh Strategy Decision Matrix<a class="headerlink" href="#refresh-strategy-decision-matrix" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -5827,19 +6161,19 @@ SELECT * FROM refresh_tv_user_profile();
 <td>Low (&lt;100/min)</td>
 <td>High</td>
 <td>Simple</td>
-<td>Scheduled (15min)</td>
+<td>Scheduled (15 min)</td>
 </tr>
 <tr>
-<td>Medium (100-1K/min)</td>
+<td>Medium (100–1K/min)</td>
 <td>High</td>
 <td>Complex</td>
 <td>Trigger-based + batch cleanup</td>
 </tr>
 <tr>
-<td>Medium (100-1K/min)</td>
+<td>Medium (100–1K/min)</td>
 <td>High</td>
 <td>Simple</td>
-<td>Scheduled (5-15min)</td>
+<td>Scheduled (5–15 min)</td>
 </tr>
 <tr>
 <td>High (&gt;1K/min)</td>
@@ -5850,168 +6184,158 @@ SELECT * FROM refresh_tv_user_profile();
 </tbody>
 </table>
 <h2 id="migration-guide">Migration Guide<a class="headerlink" href="#migration-guide" title="Permanent link">&para;</a></h2>
-<h3 id="step-1-create-intermediate-views">Step 1: Create Intermediate Views<a class="headerlink" href="#step-1-create-intermediate-views" title="Permanent link">&para;</a></h3>
-<p>Create helper views for composition logic (reusable across tv_*, REST APIs, etc.):</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql -h localhost -U postgres fraiseql_dev &lt; examples/sql/postgres/v_user_posts_composed.sql
-psql -h localhost -U postgres fraiseql_dev &lt; examples/sql/postgres/v_user_profile_composed.sql
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-1-create-intermediate-views">Step 1: Create intermediate views<a class="headerlink" href="#step-1-create-intermediate-views" title="Permanent link">&para;</a></h3>
+<p>Create helper views for the composition logic (reusable across <code>tv_*</code> tables,
+other reports, etc.):</p>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>fraiseql_dev<span class="w"> </span>&lt;<span class="w"> </span>examples/sql/v_user_posts_composed.sql
+psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>fraiseql_dev<span class="w"> </span>&lt;<span class="w"> </span>examples/sql/v_user_profile_composed.sql
+</code></pre></div>
+<h3 id="step-2-create-the-tv_-table">Step 2: Create the tv_* table<a class="headerlink" href="#step-2-create-the-tv_-table" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>fraiseql_dev<span class="w"> </span>&lt;<span class="w"> </span>examples/sql/tv_user_profile.sql
+</code></pre></div>
+<h3 id="step-3-initial-population">Step 3: Initial population<a class="headerlink" href="#step-3-initial-population" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Populate table from logical view</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">();</span>
 
-<h3 id="step-2-create-tv_-table">Step 2: Create tv_* Table<a class="headerlink" href="#step-2-create-tv_-table" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql -h localhost -U postgres fraiseql_dev &lt; examples/sql/postgres/tv_user_profile.sql
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Verify row counts</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">tv_profile_count</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">v_user_count</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="p">;</span>
 
-<h3 id="step-3-initial-population">Step 3: Initial Population<a class="headerlink" href="#step-3-initial-population" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Populate table from logical view
-SELECT * FROM refresh_tv_user_profile();</p>
-<p>-- Verify row counts
-SELECT COUNT(<em>) as tv_profile_count FROM tv_user_profile;
-SELECT COUNT(</em>) as v_user_count FROM v_user;</p>
-<p>-- They should be equal
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- They should be equal</span>
+</code></pre></div>
+<h3 id="step-4-point-the-graphql-type-at-the-table">Step 4: Point the GraphQL type at the table<a class="headerlink" href="#step-4-point-the-graphql-type-at-the-table" title="Permanent link">&para;</a></h3>
+<p>Bind the <code>User</code> type to <code>tv_user_profile</code> instead of <code>v_user</code>. The <code>data</code> JSONB
+column is read exactly as for a logical view, so only <code>sql_source</code> changes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<h3 id="step-4-update-graphql-schema">Step 4: Update GraphQL Schema<a class="headerlink" href="#step-4-update-graphql-schema" title="Permanent link">&para;</a></h3>
-<p>In your authoring layer (Python/TypeScript), bind the <code>User</code> type to use <code>tv_user_profile</code> instead of <code>v_user</code>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="before-uses-v_user-logical-view">Before: Uses v_user (logical view)<a class="headerlink" href="#before-uses-v_user-logical-view" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type()
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    posts: list[Post]</p>
-<h1 id="after-uses-tv_user_profile-table-backed-view">After: Uses tv_user_profile (table-backed view)<a class="headerlink" href="#after-uses-tv_user_profile-table-backed-view" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type(view="tv_user_profile")
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    posts: list[Post]
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Before: reads v_user (logical view, real-time composition)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span>
 
-<h3 id="step-5-monitor-performance">Step 5: Monitor Performance<a class="headerlink" href="#step-5-monitor-performance" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check staleness (how old is the pre-computed data?)
-SELECT MAX(updated_at) - NOW() as staleness
-FROM tv_user_profile;</p>
-<p>-- Monitor refresh function performance
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM refresh_tv_user_profile();</p>
-<p>-- Check data accuracy (profile count should match user count)
-SELECT
-    (SELECT COUNT(<em>) FROM tv_user_profile) as profiles,
-    (SELECT COUNT(</em>) FROM v_user) as users,
-    (SELECT COUNT(<em>) FROM tv_user_profile) = (SELECT COUNT(</em>) FROM v_user) as counts_match;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># After: reads tv_user_profile (table-backed, pre-composed JSONB)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_profile&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span>
+</code></pre></div>
+<p>Query resolvers do not change — they still call <code>db.find(...)</code> against the
+configured source at runtime:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;tv_user_profile&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-5-monitor-performance">Step 5: Monitor performance<a class="headerlink" href="#step-5-monitor-performance" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check staleness (how old is the pre-computed data?)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="n">updated_at</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">staleness</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
 
+<span class="c1">-- Monitor refresh function performance</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span><span class="w"> </span><span class="n">BUFFERS</span><span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">();</span>
+
+<span class="c1">-- Check data accuracy (profile count should match user count)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">profiles</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">users</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">counts_match</span><span class="p">;</span>
+</code></pre></div>
 <h2 id="limitations-and-considerations">Limitations and Considerations<a class="headerlink" href="#limitations-and-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="storage">Storage<a class="headerlink" href="#storage" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Data duplication</strong>: tv_<em>tables duplicate JSONB from tb_</em> tables</li>
-<li><strong>Storage overhead</strong>: Typically 20-50% of source data size (JSONB is less dense than columnar)</li>
-<li><strong>Index overhead</strong>: GIN indexes add ~5-10% overhead</li>
+<li><strong>Data duplication</strong>: <code>tv_*</code> tables duplicate JSONB derived from <code>tb_*</code> tables.</li>
+<li><strong>Storage overhead</strong>: typically 20–50% of source data size.</li>
+<li><strong>Index overhead</strong>: GIN indexes add roughly 5–10% overhead.</li>
 </ul>
-<h3 id="refresh-latency">Refresh Latency<a class="headerlink" href="#refresh-latency" title="Permanent link">&para;</a></h3>
+<h3 id="refresh-latency">Refresh latency<a class="headerlink" href="#refresh-latency" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Trigger-based</strong>: &lt;100ms per operation (suitable for real-time GraphQL)</li>
-<li><strong>Scheduled batch</strong>: Minutes (suitable for dashboards)</li>
-<li><strong>Manual refresh</strong>: On-demand (suitable for development/testing)</li>
+<li><strong>Trigger-based</strong>: &lt;100 ms per operation (suitable for real-time GraphQL).</li>
+<li><strong>Scheduled batch</strong>: minutes (suitable for dashboards).</li>
+<li><strong>Manual refresh</strong>: on-demand (suitable for development/testing).</li>
 </ul>
-<h3 id="staleness-risk">Staleness Risk<a class="headerlink" href="#staleness-risk" title="Permanent link">&para;</a></h3>
+<h3 id="staleness-risk">Staleness risk<a class="headerlink" href="#staleness-risk" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Trigger-based</strong>: Nearly real-time (slight delay during high-volume writes)</li>
-<li><strong>Scheduled batch</strong>: By design (e.g., 5-minute staleness)</li>
-<li><strong>Manual refresh</strong>: Until explicitly called</li>
+<li><strong>Trigger-based</strong>: nearly real-time (slight delay during high-volume writes).</li>
+<li><strong>Scheduled batch</strong>: by design (e.g., 5-minute staleness).</li>
+<li><strong>Manual refresh</strong>: stale until explicitly refreshed.</li>
 </ul>
-<h3 id="schema-drift-risk">Schema Drift Risk<a class="headerlink" href="#schema-drift-risk" title="Permanent link">&para;</a></h3>
+<h3 id="schema-drift-risk">Schema drift risk<a class="headerlink" href="#schema-drift-risk" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>JSONB structure must match GraphQL schema</strong>: Mismatch causes validation errors</li>
-<li><strong>Nested entity changes</strong>: Changes to related entities (Post, Comment) require trigger updates</li>
-<li><strong>Mitigation</strong>: Comprehensive unit and integration tests verify schema consistency</li>
+<li><strong>JSONB structure must match the GraphQL schema</strong>: a mismatch causes validation errors.</li>
+<li><strong>Nested entity changes</strong>: changes to related entities (Post, Comment) require trigger updates.</li>
+<li><strong>Mitigation</strong>: unit and integration tests verify schema consistency.</li>
 </ul>
-<h3 id="cascading-triggers">Cascading Triggers<a class="headerlink" href="#cascading-triggers" title="Permanent link">&para;</a></h3>
+<h3 id="cascading-triggers">Cascading triggers<a class="headerlink" href="#cascading-triggers" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Multiple triggers (on user, post, comment) can create overhead</li>
-<li>Consider batch refresh if write volume is very high (&gt;1K/min)</li>
-<li>Monitor trigger execution time</li>
+<li>Multiple triggers (on user, post, comment) can create overhead.</li>
+<li>Consider batch refresh when write volume is very high (&gt;1K/min).</li>
+<li>Monitor trigger execution time.</li>
 </ul>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Use intermediate composed views</strong> for reusability (also useful for REST APIs)</li>
-<li><strong>Test trigger logic</strong> before production deployment with high-volume writes</li>
-<li><strong>Monitor staleness</strong> with <code>updated_at</code> column</li>
-<li><strong>Use command-based refresh</strong> for bulk import verification</li>
-<li><strong>Schedule batch refresh</strong> as fallback for trigger failures</li>
-<li><strong>Keep tv_* schema synchronized</strong> with GraphQL schema definitions</li>
-<li><strong>Document refresh strategy</strong> in architecture decisions</li>
-<li><strong>Use JSONB indexes</strong> (GIN) for faster queries</li>
-<li><strong>Benchmark vs. logical view</strong> to confirm performance improvement</li>
+<li><strong>Use intermediate composed views</strong> for reusability.</li>
+<li><strong>Test trigger logic</strong> before deploying to high-volume write workloads.</li>
+<li><strong>Monitor staleness</strong> with the <code>updated_at</code> column.</li>
+<li><strong>Use command-based refresh</strong> for bulk-import verification.</li>
+<li><strong>Schedule a batch refresh</strong> as a fallback for trigger failures.</li>
+<li><strong>Keep the <code>tv_*</code> JSONB shape synchronized</strong> with the GraphQL type definition.</li>
+<li><strong>Document the chosen refresh strategy</strong> in architecture decisions.</li>
+<li><strong>Use GIN indexes</strong> on the <code>data</code> column for faster queries.</li>
+<li><strong>Benchmark against the logical view</strong> to confirm the performance gain.</li>
 </ol>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="issue-tv_-table-empty-after-trigger-creation">Issue: tv_* table empty after trigger creation<a class="headerlink" href="#issue-tv_-table-empty-after-trigger-creation" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Trigger only fires on future changes, not existing data.</p>
-<p><strong>Solution</strong>: Run initial population:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT * FROM refresh_tv_user_profile();
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Cause:</strong> the trigger only fires on future changes, not existing data.</p>
+<p><strong>Solution:</strong> run the initial population.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">();</span>
+</code></pre></div>
 <h3 id="issue-tv_-data-stale-after-writes">Issue: tv_* data stale after writes<a class="headerlink" href="#issue-tv_-data-stale-after-writes" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Trigger not firing or delayed.</p>
-<p><strong>Solution</strong>: Check trigger status:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT * FROM information_schema.triggers
-WHERE trigger_name LIKE 'trg_refresh_tv%';</p>
-<p>-- Manually refresh
-SELECT * FROM refresh_tv_user_profile();
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Cause:</strong> the trigger is not firing or is delayed.</p>
+<p><strong>Solution:</strong> check trigger status.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">information_schema</span><span class="p">.</span><span class="n">triggers</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">trigger_name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;trg_refresh_tv%&#39;</span><span class="p">;</span>
 
-<h3 id="issue-high-cpu-from-cascading-triggers">Issue: High CPU from cascading triggers<a class="headerlink" href="#issue-high-cpu-from-cascading-triggers" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: Multiple triggers (on related tables) causing many refreshes.</p>
-<p><strong>Solution</strong>: Switch to batched refresh:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Drop per-row triggers
-DROP TRIGGER IF EXISTS trg_refresh_tv_user_profile_on_post ON tb_post;
-DROP TRIGGER IF EXISTS trg_refresh_tv_user_profile_on_comment ON tb_comment;</p>
-<p>-- Schedule batch refresh instead
-SELECT cron.schedule('refresh-tv-profile', '*/5 * * * *', 'SELECT refresh_tv_user_profile();');
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Manually refresh</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">();</span>
+</code></pre></div>
+<h3 id="issue-high-cpu-from-cascading-triggers">Issue: high CPU from cascading triggers<a class="headerlink" href="#issue-high-cpu-from-cascading-triggers" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> multiple triggers (on related tables) cause many refreshes.</p>
+<p><strong>Solution:</strong> switch to a batched refresh.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Drop per-row triggers</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile_on_post</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile_on_comment</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span><span class="p">;</span>
 
-<h3 id="issue-jsonb-composition-mismatch-with-graphql-schema">Issue: JSONB composition mismatch with GraphQL schema<a class="headerlink" href="#issue-jsonb-composition-mismatch-with-graphql-schema" title="Permanent link">&para;</a></h3>
-<p><strong>Cause</strong>: DDL changed without updating schema binding.</p>
-<p><strong>Solution</strong>:</p>
+<span class="c1">-- Schedule batch refresh instead</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">&#39;refresh-tv-profile&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;*/5 * * * *&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;SELECT refresh_tv_user_profile();&#39;</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="issue-jsonb-composition-mismatch-with-the-graphql-schema">Issue: JSONB composition mismatch with the GraphQL schema<a class="headerlink" href="#issue-jsonb-composition-mismatch-with-the-graphql-schema" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the DDL changed without updating the type binding.</p>
+<p><strong>Solution:</strong></p>
 <ol>
-<li>Update PostgreSQL DDL (helper views + tv_* table)</li>
-<li>Update GraphQL schema binding (authoring layer)</li>
-<li>Re-populate tv_* table</li>
-<li>Run integration tests to verify</li>
+<li>Update the PostgreSQL DDL (helper views + <code>tv_*</code> table).</li>
+<li>Update the <code>@fraiseql.type</code> binding (<code>sql_source</code> / field set).</li>
+<li>Re-populate the <code>tv_*</code> table.</li>
+<li>Run integration tests to verify.</li>
 </ol>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<p>See <code>/home/lionel/code/FraiseQL/examples/sql/postgres/</code> for complete DDL examples:</p>
+<p>See <code>examples/sql/</code> for complete DDL examples:</p>
 <ul>
-<li><code>tv_user_profile.sql</code> - User profile with nested posts and comments</li>
-<li><code>tv_order_summary.sql</code> - Order with line items and customer details</li>
+<li><code>tv_user_profile.sql</code> — user profile with nested posts and comments</li>
+<li><code>tv_order_summary.sql</code> — order with line items and customer details</li>
 </ul>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../view-selection-guide/">View Selection Guide</a></li>
 <li><a href="../../../specs/schema-conventions/">Schema Conventions</a></li>
-<li><a href="../../architecture/">FraiseQL Database Architecture</a></li>
+<li><a href="../../../reference/naming-patterns/">Naming Patterns</a></li>
+<li><a href="../../../foundation/03-database-centric-architecture/">Database-Centric Architecture</a>
+</content>
+</invoke></li>
 </ul>
 
 
@@ -6019,6 +6343,9 @@ SELECT cron.schedule('refresh-tv-profile', '*/5 * * * *', 'SELECT refresh_tv_use
 
 
 
+
+  
+  
 
 
 

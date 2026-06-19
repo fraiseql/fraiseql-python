@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL v1 derives GROUP BY and aggregate SQL at runtime from the GraphQL field selection, executing server-side against your PostgreSQL v_/tv_ views.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/analytics/aggregation-model/">
@@ -2254,14 +2256,136 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Aggregate Functions">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-by-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GROUP BY Semantics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GROUP BY Semantics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-functions-all-databases" class="md-nav__link">
+  <a href="#how-auto-aggregation-works-at-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Functions (All Databases)
+        How auto-aggregation works at runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#having-clause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HAVING Clause
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporal-bucketing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal Bucketing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditional-aggregates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional Aggregates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aggregate-typed-columns-where-you-can" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregate typed columns where you can
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index-measures-used-in-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Index measures used in aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSONB dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#native-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native Dimensions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Native Dimensions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
       
     </span>
   </a>
@@ -2283,7 +2407,7 @@
   <a href="#mixed-grouping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixed Grouping
+        Mixed grouping
       
     </span>
   </a>
@@ -2294,7 +2418,7 @@
   <a href="#backward-compatibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backward Compatibility
+        Backward compatibility
       
     </span>
   </a>
@@ -2318,10 +2442,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
+  <a href="#related-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Related Specifications
+        Related Documentation
       
     </span>
   </a>
@@ -5064,14 +5188,136 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Aggregate Functions">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#group-by-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GROUP BY Semantics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GROUP BY Semantics">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-functions-all-databases" class="md-nav__link">
+  <a href="#how-auto-aggregation-works-at-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Functions (All Databases)
+        How auto-aggregation works at runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#having-clause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HAVING Clause
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#temporal-bucketing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Temporal Bucketing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditional-aggregates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditional Aggregates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aggregate-typed-columns-where-you-can" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aggregate typed columns where you can
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index-measures-used-in-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Index measures used in aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSONB dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#native-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native Dimensions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Native Dimensions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problem
       
     </span>
   </a>
@@ -5093,7 +5339,7 @@
   <a href="#mixed-grouping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mixed Grouping
+        Mixed grouping
       
     </span>
   </a>
@@ -5104,7 +5350,7 @@
   <a href="#backward-compatibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backward Compatibility
+        Backward compatibility
       
     </span>
   </a>
@@ -5128,10 +5374,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
+  <a href="#related-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Related Specifications
+        Related Documentation
       
     </span>
   </a>
@@ -5158,417 +5404,215 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Aggregation Model
-description: FraiseQL v2 supports <strong>database-native aggregations</strong> through compile-time schema analysis and runtime SQL generation. All aggregations execute server-side in t
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="aggregation-model">Aggregation Model<a class="headerlink" href="#aggregation-model" title="Permanent link">&para;</a></h1>
-<p><strong>Version:</strong> 1.0
-<strong>Status:</strong> Complete
-<strong>Audience:</strong> Compiler developers, runtime engineers, SDK users
-<strong>Date:</strong> January 12, 2026</p>
+<p><strong>Status:</strong> Stable
+<strong>Audience:</strong> Runtime engineers, SDK users, DBAs
+<strong>Database:</strong> PostgreSQL</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL v2 supports <strong>database-native aggregations</strong> through compile-time schema analysis and runtime SQL generation. All aggregations execute server-side in the database, leveraging native SQL performance.</p>
-<p><strong>Key Principle</strong>: No joins. All dimensions must be denormalized into the <code>data</code> JSONB column at ETL time.</p>
+<p>FraiseQL v1 supports <strong>runtime auto-aggregation</strong>. When a GraphQL query selects
+aggregate fields on a view-backed type, FraiseQL inspects the field selection and
+derives the corresponding <code>GROUP BY</code> + aggregate SQL <strong>at request time</strong>, then
+executes it server-side against your PostgreSQL <code>v_</code>/<code>tv_</code> view. The aggregation
+logic lives in <code>_derive_auto_aggregation</code> / <code>_parse_aggregation_expr</code> in
+<code>src/fraiseql/db.py</code>.</p>
+<p>There is no compiler and no build step: nothing is generated ahead of time. The
+GraphQL field selection drives the SQL, and PostgreSQL does the heavy lifting.</p>
+<p><strong>Key principle</strong>: aggregation happens inside the database. You model the
+measures and dimensions in a <code>v_</code>/<code>tv_</code> view, and FraiseQL pushes the grouping
+and aggregate functions down to that view.</p>
+<p>You define the type with a normal <code>@fraiseql.type</code> decorator pointing at the
+view:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sales&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sales</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
+</code></pre></div>
+<p>When you run a query that selects aggregate fields, FraiseQL builds the
+<code>GROUP BY</code> query for you. You can always fall back to writing the aggregation
+directly in the view's SQL if you need full control.</p>
 <hr />
 <h2 id="aggregate-functions">Aggregate Functions<a class="headerlink" href="#aggregate-functions" title="Permanent link">&para;</a></h2>
-<h3 id="supported-functions-all-databases">Supported Functions (All Databases)<a class="headerlink" href="#supported-functions-all-databases" title="Permanent link">&para;</a></h3>
-<p><strong>Basic Aggregates</strong>:</p>
+<p>FraiseQL derives the following PostgreSQL aggregate functions from the field
+selection:</p>
 <ul>
-<li><code>COUNT(*)</code> - Count all rows</li>
-<li><code>COUNT(field)</code> - Count non-null values in field</li>
-<li><code>COUNT(DISTINCT field)</code> - Count unique values</li>
-<li><code>SUM(field)</code> - Sum all values</li>
-<li><code>AVG(field)</code> - Average of values</li>
-<li><code>MIN(field)</code> - Minimum value</li>
-<li><code>MAX(field)</code> - Maximum value</li>
+<li><code>COUNT(*)</code> — count all rows</li>
+<li><code>COUNT(field)</code> — count non-null values in a field</li>
+<li><code>COUNT(DISTINCT field)</code> — count unique values</li>
+<li><code>SUM(field)</code> — sum of values</li>
+<li><code>AVG(field)</code> — average of values</li>
+<li><code>MIN(field)</code> — minimum value</li>
+<li><code>MAX(field)</code> — maximum value</li>
+<li><code>STDDEV(field)</code> — standard deviation</li>
+<li><code>VARIANCE(field)</code> — variance</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
+<p>These are standard PostgreSQL aggregates. Any aggregate expression PostgreSQL
+understands can also be written by hand inside a <code>v_</code>/<code>tv_</code> view if you need
+something beyond the derived set.</p>
+<p><strong>Example</strong> — an aggregate query expressed directly in SQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_count</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">unique_customers</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_revenue</span><span class="p">,</span>
 <span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_revenue</span><span class="p">,</span>
 <span class="w">    </span><span class="k">MIN</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">min_revenue</span><span class="p">,</span>
-<span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">max_revenue</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">###</span><span class="w"> </span><span class="k">Database</span><span class="o">-</span><span class="k">Specific</span><span class="w"> </span><span class="n">Extensions</span>
-
-<span class="o">**</span><span class="n">PostgreSQL</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">STDDEV</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">deviation</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">VARIANCE</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Variance</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">PERCENTILE_CONT</span><span class="p">(</span><span class="n">fraction</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Continuous</span><span class="w"> </span><span class="n">percentile</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">PERCENTILE_DISC</span><span class="p">(</span><span class="n">fraction</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Discrete</span><span class="w"> </span><span class="n">percentile</span>
-
-<span class="o">**</span><span class="n">MySQL</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">GROUP_CONCAT</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Concatenate</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">delimiter</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">STDDEV</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">deviation</span><span class="w"> </span><span class="p">(</span><span class="n">limited</span><span class="w"> </span><span class="n">support</span><span class="p">)</span>
-
-<span class="o">**</span><span class="n">SQLite</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">-</span><span class="w"> </span><span class="n">Limited</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">basic</span><span class="w"> </span><span class="n">functions</span><span class="w"> </span><span class="k">only</span><span class="w"> </span><span class="p">(</span><span class="k">COUNT</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">,</span><span class="w"> </span><span class="k">MIN</span><span class="p">,</span><span class="w"> </span><span class="k">MAX</span><span class="p">)</span>
-
-<span class="o">**</span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">STDEV</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="o">`</span><span class="n">STDEVP</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Standard</span><span class="w"> </span><span class="n">deviation</span><span class="w"> </span><span class="p">(</span><span class="n">sample</span><span class="o">/</span><span class="n">population</span><span class="p">)</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">VAR</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="o">`</span><span class="n">VARP</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Variance</span><span class="w"> </span><span class="p">(</span><span class="n">sample</span><span class="o">/</span><span class="n">population</span><span class="p">)</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">Semantics</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Compilation</span><span class="w"> </span><span class="n">Strategy</span>
-
-<span class="k">When</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">compiler</span><span class="w"> </span><span class="n">encounters</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">fact</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="p">(</span><span class="n">marked</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="o">`</span><span class="n">fact_table</span><span class="o">=</span><span class="k">True</span><span class="o">`</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">schema</span><span class="p">):</span>
-
-<span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="n">Introspect</span><span class="w"> </span><span class="k">Table</span><span class="w"> </span><span class="k">Structure</span><span class="o">**</span><span class="p">:</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Identify</span><span class="w"> </span><span class="n">measure</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="p">(</span><span class="nb">numeric</span><span class="w"> </span><span class="n">types</span><span class="p">:</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">,</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">)</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Detect</span><span class="w"> </span><span class="o">`</span><span class="k">data</span><span class="o">`</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">dimensions</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Identify</span><span class="w"> </span><span class="n">denormalized</span><span class="w"> </span><span class="n">filter</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="p">(</span><span class="n">indexed</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">columns</span><span class="p">)</span>
-
-<span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="n">Generate</span><span class="w"> </span><span class="n">GroupByExecutionPlan</span><span class="o">**</span><span class="p">:</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">clause</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">extraction</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">dimensions</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="k">Aggregate</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">calls</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">measure</span><span class="w"> </span><span class="n">columns</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Optional</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="n">filters</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">aggregated</span><span class="w"> </span><span class="n">results</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Optional</span><span class="w"> </span><span class="n">temporal</span><span class="w"> </span><span class="n">bucketing</span><span class="w"> </span><span class="p">(</span><span class="n">DATE_TRUNC</span><span class="p">,</span><span class="w"> </span><span class="n">DATE_FORMAT</span><span class="p">,</span><span class="w"> </span><span class="n">strftime</span><span class="p">)</span>
-
-<span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="n">Validate</span><span class="o">**</span><span class="p">:</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="k">Grouping</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">exist</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="k">structure</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Measure</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="nb">numeric</span><span class="w"> </span><span class="n">types</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">paths</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="k">valid</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">database</span><span class="w"> </span><span class="n">target</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Runtime</span><span class="w"> </span><span class="n">Execution</span>
-
-<span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="n">Parse</span><span class="w"> </span><span class="n">GraphQL</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">request</span>
-<span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="n">Generate</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">statement</span><span class="w"> </span><span class="k">with</span><span class="p">:</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">clause</span><span class="w"> </span><span class="n">extracting</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">dimensions</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="k">Aggregate</span><span class="w"> </span><span class="n">functions</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">measure</span><span class="w"> </span><span class="n">columns</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Optional</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="n">filters</span>
-<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Optional</span><span class="w"> </span><span class="n">temporal</span><span class="w"> </span><span class="n">bucketing</span>
-<span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="k">Lower</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">database</span><span class="o">-</span><span class="k">specific</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">dialect</span>
-<span class="mi">4</span><span class="p">.</span><span class="w"> </span><span class="k">Execute</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="k">database</span><span class="w"> </span><span class="p">(</span><span class="n">server</span><span class="o">-</span><span class="n">side</span><span class="w"> </span><span class="n">aggregation</span><span class="p">)</span>
-<span class="mi">5</span><span class="p">.</span><span class="w"> </span><span class="k">Return</span><span class="w"> </span><span class="n">aggregated</span><span class="w"> </span><span class="n">results</span>
-
-<span class="o">**</span><span class="n">Example</span><span class="o">**</span><span class="p">:</span>
-
-<span class="n">GraphQL</span><span class="p">:</span>
-
-<span class="o">```</span><span class="n">graphql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in GraphQL --&gt;</span>
-<span class="n">query</span><span class="w"> </span><span class="err">{</span>
-<span class="w">  </span><span class="n">sales_aggregate</span><span class="p">(</span>
-<span class="w">    </span><span class="n">groupBy</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">category</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="w"> </span><span class="err">}</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">max_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">STDDEV</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_stddev</span><span class="p">,</span>
+<span class="w">    </span><span class="n">VARIANCE</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_variance</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="group-by-semantics">GROUP BY Semantics<a class="headerlink" href="#group-by-semantics" title="Permanent link">&para;</a></h2>
+<h3 id="how-auto-aggregation-works-at-runtime">How auto-aggregation works at runtime<a class="headerlink" href="#how-auto-aggregation-works-at-runtime" title="Permanent link">&para;</a></h3>
+<p>When a GraphQL query selects aggregate fields on a view-backed type, FraiseQL:</p>
+<ol>
+<li>
+<p><strong>Parses the field selection</strong>: it identifies which selected fields are
+   dimensions (grouping keys) and which are aggregate expressions (e.g.
+   <code>SUM(revenue)</code>).</p>
+</li>
+<li>
+<p><strong>Derives the <code>GROUP BY</code></strong>: dimensions become the <code>GROUP BY</code> keys. JSONB
+   dimensions are extracted with <code>data-&gt;&gt;'field'</code>; native SQL columns declared
+   as native dimensions use direct column references (see
+   <a href="#native-dimensions">Native Dimensions</a>).</p>
+</li>
+<li>
+<p><strong>Builds the aggregate SELECT</strong>: each aggregate field becomes an aggregate
+   function call on the underlying measure column or JSONB measure path.</p>
+</li>
+<li>
+<p><strong>Executes server-side</strong>: the derived SQL runs against your PostgreSQL view
+   and returns aggregated rows.</p>
+</li>
+</ol>
+<p>The function names are validated against an allowlist before SQL is built, so a
+field selection can never inject an arbitrary function.</p>
+<p><strong>Example</strong></p>
+<p>GraphQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">sales</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">category</span>
 <span class="w">    </span><span class="n">region</span>
-<span class="w">    </span><span class="n">revenue_sum</span>
-<span class="w">    </span><span class="k">count</span>
-<span class="w">  </span><span class="err">}</span>
-<span class="err">}</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="k">Generated</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="p">(</span><span class="n">PostgreSQL</span><span class="p">):</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">revenueSum</span>
+<span class="w">    </span><span class="n">count</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Derived SQL (PostgreSQL):</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="n">Clause</span>
-
-<span class="n">The</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="n">clause</span><span class="w"> </span><span class="n">filters</span><span class="w"> </span><span class="n">aggregated</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="k">after</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="p">.</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Compilation</span>
-
-<span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="n">Validate</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="n">Ensure</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">references</span><span class="w"> </span><span class="k">only</span><span class="w"> </span><span class="n">aggregated</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="k">grouping</span><span class="w"> </span><span class="n">keys</span>
-<span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="n">Generate</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="n">Post</span><span class="o">-</span><span class="n">aggregation</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">clause</span>
-<span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="o">**</span><span class="k">Lower</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="k">Database</span><span class="o">-</span><span class="k">specific</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="n">syntax</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Example</span>
-
-<span class="n">GraphQL</span><span class="p">:</span>
-
-<span class="o">```</span><span class="n">graphql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in GraphQL --&gt;</span>
-<span class="n">query</span><span class="w"> </span><span class="err">{</span>
-<span class="w">  </span><span class="n">sales_aggregate</span><span class="p">(</span>
-<span class="w">    </span><span class="n">groupBy</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">category</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="w"> </span><span class="err">}</span><span class="p">,</span>
-<span class="w">    </span><span class="k">having</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">revenue_sum_gte</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="err">}</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
-<span class="w">    </span><span class="n">category</span>
-<span class="w">    </span><span class="n">revenue_sum</span>
-<span class="w">  </span><span class="err">}</span>
-<span class="err">}</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="k">Generated</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="p">(</span><span class="n">PostgreSQL</span><span class="p">):</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
+</code></pre></div>
+<p>If you prefer, you can encapsulate exactly the same shape inside a <code>tv_</code> view
+and have FraiseQL read pre-aggregated rows directly.</p>
+<hr />
+<h2 id="having-clause">HAVING Clause<a class="headerlink" href="#having-clause" title="Permanent link">&para;</a></h2>
+<p>The <code>HAVING</code> clause filters aggregated results after <code>GROUP BY</code>. Express it
+inside the view's SQL, where it filters on aggregate expressions or grouping
+keys.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span>
-<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
-<span class="c1">-- Parameters: [10000]</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="n">Temporal</span><span class="w"> </span><span class="n">Bucketing</span>
-
-<span class="n">Temporal</span><span class="w"> </span><span class="n">bucketing</span><span class="w"> </span><span class="n">groups</span><span class="w"> </span><span class="n">timestamps</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">intervals</span><span class="w"> </span><span class="p">(</span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="n">week</span><span class="p">,</span><span class="w"> </span><span class="k">month</span><span class="p">,</span><span class="w"> </span><span class="n">etc</span><span class="p">.).</span>
-
-<span class="o">###</span><span class="w"> </span><span class="k">Database</span><span class="o">-</span><span class="k">Specific</span><span class="w"> </span><span class="n">Functions</span>
-
-<span class="o">**</span><span class="n">PostgreSQL</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">    </span><span class="c1">-- Day bucket</span>
-<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;week&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">   </span><span class="c1">-- Week bucket</span>
-<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">  </span><span class="c1">-- Month bucket</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
+</code></pre></div>
+<p><code>HAVING</code> references only aggregated fields or grouping keys — the same rule
+PostgreSQL enforces.</p>
+<hr />
+<h2 id="temporal-bucketing">Temporal Bucketing<a class="headerlink" href="#temporal-bucketing" title="Permanent link">&para;</a></h2>
+<p>Group timestamps into intervals (day, week, month, quarter, year) using
+PostgreSQL's <code>DATE_TRUNC</code>. Bucket inside the view's SQL so the truncated value
+becomes a stable grouping key.</p>
+<div class="highlight"><pre><span></span><code><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">     </span><span class="c1">-- Day bucket</span>
+<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;week&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">    </span><span class="c1">-- Week bucket</span>
+<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">   </span><span class="c1">-- Month bucket</span>
 <span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;quarter&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="c1">-- Quarter bucket</span>
-<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">   </span><span class="c1">-- Year bucket</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">**</span><span class="n">MySQL</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="n">DATE_FORMAT</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%Y-%m-%d&#39;</span><span class="p">)</span><span class="w">      </span><span class="c1">-- Day bucket</span>
-<span class="n">DATE_FORMAT</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%Y-%m&#39;</span><span class="p">)</span><span class="w">         </span><span class="c1">-- Month bucket</span>
-<span class="n">DATE_FORMAT</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%Y&#39;</span><span class="p">)</span><span class="w">            </span><span class="c1">-- Year bucket</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">**</span><span class="n">SQLite</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%d&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">  </span><span class="c1">-- Day bucket</span>
-<span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">     </span><span class="c1">-- Month bucket</span>
-<span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">        </span><span class="c1">-- Year bucket</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">**</span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="n">DATEPART</span><span class="p">(</span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">     </span><span class="c1">-- Day component</span>
-<span class="n">DATEPART</span><span class="p">(</span><span class="n">week</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">    </span><span class="c1">-- Week component</span>
-<span class="n">DATEPART</span><span class="p">(</span><span class="k">month</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">   </span><span class="c1">-- Month component</span>
-<span class="n">DATEPART</span><span class="p">(</span><span class="n">quarter</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="c1">-- Quarter component</span>
-<span class="n">DATEPART</span><span class="p">(</span><span class="k">year</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">    </span><span class="c1">-- Year component</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Supported</span><span class="w"> </span><span class="n">Buckets</span>
-
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="k">second</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="w"> </span><span class="k">only</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="k">minute</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="p">,</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">hour</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="p">,</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="k">day</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">All</span><span class="w"> </span><span class="n">databases</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">week</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">All</span><span class="w"> </span><span class="n">databases</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="k">month</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">All</span><span class="w"> </span><span class="n">databases</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="n">quarter</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="p">,</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span>
-<span class="o">-</span><span class="w"> </span><span class="o">`</span><span class="k">year</span><span class="o">`</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">All</span><span class="w"> </span><span class="n">databases</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Example</span>
-
-<span class="n">GraphQL</span><span class="p">:</span>
-
-<span class="o">```</span><span class="n">graphql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in GraphQL --&gt;</span>
-<span class="n">query</span><span class="w"> </span><span class="err">{</span>
-<span class="w">  </span><span class="n">sales_aggregate</span><span class="p">(</span>
-<span class="w">    </span><span class="n">groupBy</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">:</span><span class="w"> </span><span class="k">true</span><span class="w"> </span><span class="err">}</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
-<span class="w">    </span><span class="n">occurred_at_day</span>
-<span class="w">    </span><span class="n">revenue_sum</span>
-<span class="w">  </span><span class="err">}</span>
-<span class="err">}</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="k">Generated</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="p">(</span><span class="n">PostgreSQL</span><span class="p">):</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
+<span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w">    </span><span class="c1">-- Year bucket</span>
+</code></pre></div>
+<p><strong>Example</strong> — a per-day revenue view:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="n">Conditional</span><span class="w"> </span><span class="n">Aggregates</span>
-
-<span class="n">Conditional</span><span class="w"> </span><span class="n">aggregates</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="n">filters</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">individual</span><span class="w"> </span><span class="k">aggregate</span><span class="w"> </span><span class="n">functions</span><span class="p">.</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="w"> </span><span class="p">(</span><span class="n">FILTER</span><span class="w"> </span><span class="n">Clause</span><span class="p">)</span>
-
-<span class="n">PostgreSQL</span><span class="w"> </span><span class="n">supports</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">native</span><span class="w"> </span><span class="o">`</span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">...)</span><span class="o">`</span><span class="w"> </span><span class="n">syntax</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
+</code></pre></div>
+<p>For richer temporal grouping (week-of-year, fiscal periods, holiday flags),
+materialize the buckets as columns in your view or a calendar table — see
+<a href="../calendar-dimensions/">Calendar Dimensions</a>.</p>
+<hr />
+<h2 id="conditional-aggregates">Conditional Aggregates<a class="headerlink" href="#conditional-aggregates" title="Permanent link">&para;</a></h2>
+<p>Conditional aggregates apply a filter to an individual aggregate function.
+PostgreSQL's native <code>FILTER (WHERE ...)</code> clause expresses these cleanly inside a
+view:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_orders</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">completed_revenue</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled_revenue</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
+</code></pre></div>
+<p>You can expose each filtered aggregate as a separate column in the view, then
+select them as ordinary fields in GraphQL.</p>
+<hr />
+<h2 id="performance-characteristics">Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h2>
+<h3 id="aggregate-typed-columns-where-you-can">Aggregate typed columns where you can<a class="headerlink" href="#aggregate-typed-columns-where-you-can" title="Permanent link">&para;</a></h3>
+<p>Aggregating a typed numeric column is far faster than parsing values out of
+JSONB on every row. Where a measure is queried often, keep it as a real column
+in the view (or in the underlying <code>tv_</code> projection table) rather than reaching
+into <code>data</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Fast: aggregating a typed column</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
+<span class="c1">-- ~0.2 ms over 1M rows</span>
 
-<span class="o">###</span><span class="w"> </span><span class="n">MySQL</span><span class="o">/</span><span class="n">SQLite</span><span class="o">/</span><span class="k">SQL</span><span class="w"> </span><span class="n">Server</span><span class="w"> </span><span class="p">(</span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">Emulation</span><span class="p">)</span>
-
-<span class="n">Other</span><span class="w"> </span><span class="n">databases</span><span class="w"> </span><span class="n">emulate</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">SELECT</span>
-<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_orders</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">END</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">completed_revenue</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;cancelled&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">END</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cancelled_revenue</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">GraphQL</span><span class="w"> </span><span class="n">API</span>
-
-<span class="o">```</span><span class="n">graphql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in GraphQL --&gt;</span>
-<span class="n">query</span><span class="w"> </span><span class="err">{</span>
-<span class="w">  </span><span class="n">sales_aggregate</span><span class="w"> </span><span class="err">{</span>
-<span class="w">    </span><span class="k">count</span>
-<span class="w">    </span><span class="n">revenue_sum</span>
-<span class="w">    </span><span class="n">completed_revenue</span><span class="p">:</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">(</span>
-<span class="w">      </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">_eq</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;completed&quot;</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
-<span class="w">    </span><span class="p">)</span>
-<span class="w">    </span><span class="n">cancelled_revenue</span><span class="p">:</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">(</span>
-<span class="w">      </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="w"> </span><span class="n">_eq</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;cancelled&quot;</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
-<span class="w">    </span><span class="p">)</span>
-<span class="w">  </span><span class="err">}</span>
-<span class="err">}</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="n">Performance</span><span class="w"> </span><span class="k">Characteristics</span>
-
-<span class="o">###</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="k">Column</span><span class="w"> </span><span class="n">Aggregation</span>
-
-<span class="o">**</span><span class="mi">10</span><span class="o">-</span><span class="mi">100</span><span class="n">x</span><span class="w"> </span><span class="n">faster</span><span class="w"> </span><span class="k">than</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">aggregation</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">-</span><span class="w"> </span><span class="n">Direct</span><span class="w"> </span><span class="k">access</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">typed</span><span class="w"> </span><span class="nb">numeric</span><span class="w"> </span><span class="n">columns</span>
-<span class="o">-</span><span class="w"> </span><span class="n">B</span><span class="o">-</span><span class="n">tree</span><span class="w"> </span><span class="n">indexes</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">measure</span><span class="w"> </span><span class="n">columns</span>
-<span class="o">-</span><span class="w"> </span><span class="k">Database</span><span class="w"> </span><span class="n">native</span><span class="w"> </span><span class="n">aggregation</span><span class="w"> </span><span class="n">optimizations</span>
-
-<span class="o">**</span><span class="n">Example</span><span class="o">**</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="c1">-- ✅ FAST: SQL column aggregation</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
-<span class="c1">-- Execution time: 0.2ms (1M rows)</span>
-
-<span class="c1">-- ❌ SLOW: JSONB aggregation (if measures were in JSONB)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
-<span class="c1">-- Execution time: 45ms (1M rows)</span>
-<span class="c1">-- 225x slower!</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Indexed</span><span class="w"> </span><span class="n">Measures</span>
-
-<span class="k">For</span><span class="w"> </span><span class="n">common</span><span class="w"> </span><span class="n">aggregation</span><span class="w"> </span><span class="n">queries</span><span class="p">,</span><span class="w"> </span><span class="k">create</span><span class="w"> </span><span class="n">indexes</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">measure</span><span class="w"> </span><span class="n">columns</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_revenue</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">revenue</span><span class="p">);</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_quantity</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">(</span><span class="n">quantity</span><span class="p">);</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">**</span><span class="k">Result</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="n">Near</span><span class="o">-</span><span class="n">instantaneous</span><span class="w"> </span><span class="n">aggregations</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">queries</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">selective</span><span class="w"> </span><span class="n">filters</span><span class="p">.</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">Dimensions</span>
-
-<span class="n">JSONB</span><span class="w"> </span><span class="n">extraction</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">slower</span><span class="w"> </span><span class="k">than</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">columns</span><span class="p">,</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">provides</span><span class="w"> </span><span class="n">flexibility</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="c1">-- Moderate speed: JSONB extraction for grouping</span>
-<span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="o">**</span><span class="n">Optimization</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="o">`</span><span class="k">data</span><span class="o">`</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="p">(</span><span class="n">PostgreSQL</span><span class="p">):</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in SQL --&gt;</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_data_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
-<span class="o">```</span><span class="nb">text</span>
-<span class="o">&lt;!</span><span class="c1">-- Code example in TEXT --&gt;</span>
-
-<span class="c1">---</span>
-
-<span class="o">##</span><span class="w"> </span><span class="n">Native</span><span class="w"> </span><span class="n">Dimensions</span>
-
-<span class="k">When</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">mixes</span><span class="w"> </span><span class="n">native</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="k">g</span><span class="p">.</span><span class="w"> </span><span class="o">`</span><span class="n">period_date</span><span class="w"> </span><span class="nb">DATE</span><span class="o">`</span><span class="p">,</span><span class="w"> </span><span class="o">`</span><span class="n">category_id</span><span class="w"> </span><span class="n">UUID</span><span class="o">`</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="o">`</span><span class="k">data</span><span class="o">`</span><span class="w"> </span><span class="k">column</span><span class="p">,</span><span class="w"> </span><span class="n">native</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">declared</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">**</span><span class="n">native</span><span class="w"> </span><span class="n">dimensions</span><span class="o">**</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="n">avoid</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="n">extraction</span><span class="w"> </span><span class="n">overhead</span><span class="p">.</span>
-
-<span class="o">###</span><span class="w"> </span><span class="n">Problem</span>
-
-<span class="k">By</span><span class="w"> </span><span class="k">default</span><span class="p">,</span><span class="w"> </span><span class="k">all</span><span class="w"> </span><span class="n">dimension</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">auto</span><span class="o">-</span><span class="n">aggregation</span><span class="w"> </span><span class="k">are</span><span class="w"> </span><span class="n">extracted</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">JSONB</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="c1">-- Default: extracts from JSONB even though period_date is a real column</span>
+<span class="c1">-- Slower: parsing the measure out of JSONB on every row</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
+<span class="c1">-- ~45 ms over 1M rows</span>
+</code></pre></div>
+<h3 id="index-measures-used-in-aggregations">Index measures used in aggregations<a class="headerlink" href="#index-measures-used-in-aggregations" title="Permanent link">&para;</a></h3>
+<p>For frequent aggregations with selective filters, index the measure columns of
+the backing table:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_revenue</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_sales</span><span class="p">(</span><span class="n">revenue</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_quantity</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_sales</span><span class="p">(</span><span class="n">quantity</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="jsonb-dimensions">JSONB dimensions<a class="headerlink" href="#jsonb-dimensions" title="Permanent link">&para;</a></h3>
+<p>Grouping by a JSONB path is slower than grouping by a typed column, but it is
+flexible. A GIN index on the <code>data</code> column helps:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_data_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_sales</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
+</code></pre></div>
+<p>When a dimension is hot, prefer promoting it to a native column and declaring it
+as a native dimension (next section).</p>
+<hr />
+<h2 id="native-dimensions">Native Dimensions<a class="headerlink" href="#native-dimensions" title="Permanent link">&para;</a></h2>
+<p>When a view mixes native SQL columns (e.g. <code>period_date DATE</code>,
+<code>category_id UUID</code>) with a JSONB <code>data</code> column, native columns can be declared
+as <strong>native dimensions</strong> so auto-aggregation groups on the real column instead
+of extracting it from JSONB.</p>
+<h3 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h3>
+<p>By default, dimension columns are extracted from JSONB. If <code>period_date</code> is
+really a column, that is both slower (the btree index on the column can't be
+used) and, for ordering, incorrect — <code>ORDER BY "data" -&gt; 'period_date'</code>
+references the raw <code>data</code> column, which is not in <code>GROUP BY</code>, and PostgreSQL
+rejects the query:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Default: extracts from JSONB even though period_date is a real column</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">json_build_object</span><span class="p">(</span><span class="s1">&#39;period_date&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;data&quot;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;period_date&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_orders_by_period</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;data&quot;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;period_date&#39;</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;data&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s1">&#39;period_date&#39;</span>
 </code></pre></div>
-<p>This has two issues:</p>
-<ol>
-<li><strong>Performance</strong>: btree indexes on native columns cannot be used</li>
-<li><strong>Correctness</strong>: <code>ORDER BY "data" -&gt; 'period_date'</code> references the raw <code>data</code> column, which is not in <code>GROUP BY</code> — PostgreSQL rejects the query</li>
-</ol>
 <h3 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">&para;</a></h3>
-<p>Declare native columns in the <code>native_dimensions</code> key of the aggregation metadata:</p>
+<p>Declare the native columns in the <code>native_dimensions</code> key of the aggregation
+metadata:</p>
 <div class="highlight"><pre><span></span><code><span class="n">register_type_for_view</span><span class="p">(</span>
     <span class="s2">&quot;v_orders_by_period&quot;</span><span class="p">,</span> <span class="n">OrderPeriodType</span><span class="p">,</span>
     <span class="n">has_jsonb_data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -5579,7 +5623,8 @@ tags: ["documentation", "reference"]</p>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>FraiseQL generates correct SQL using column references instead of JSONB extraction:</p>
+<p>FraiseQL then groups and orders on the native columns directly, using column
+references and a table alias instead of JSONB extraction:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Native dimensions: uses column refs and table alias</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">json_build_object</span><span class="p">(</span>
 <span class="w">    </span><span class="s1">&#39;period_date&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="ss">&quot;period_date&quot;</span><span class="p">,</span>
@@ -5591,52 +5636,56 @@ tags: ["documentation", "reference"]</p>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="ss">&quot;period_date&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="ss">&quot;category_id&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;data&quot;</span><span class="o">-&gt;</span><span class="s1">&#39;dimensions&#39;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;subcategory&#39;</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="ss">&quot;period_date&quot;</span>
 </code></pre></div>
-<h3 id="mixed-grouping">Mixed Grouping<a class="headerlink" href="#mixed-grouping" title="Permanent link">&para;</a></h3>
-<p>Native and JSONB dimensions coexist in the same query. Native dimensions use <code>t."col"</code>, JSONB dimensions use <code>"data"-&gt;&gt;'field'</code>. The table automatically receives an <code>AS t</code> alias when native dimensions are present.</p>
-<h3 id="backward-compatibility">Backward Compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h3>
-<p>Existing metadata without <code>native_dimensions</code> behaves identically. The key is optional and defaults to an empty list.</p>
+<h3 id="mixed-grouping">Mixed grouping<a class="headerlink" href="#mixed-grouping" title="Permanent link">&para;</a></h3>
+<p>Native and JSONB dimensions coexist in the same query. Native dimensions use
+<code>t."col"</code>, JSONB dimensions use <code>"data"-&gt;&gt;'field'</code>. The table automatically
+receives an <code>AS t</code> alias when native dimensions are present.</p>
+<h3 id="backward-compatibility">Backward compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h3>
+<p>Existing metadata without <code>native_dimensions</code> behaves identically. The key is
+optional and defaults to an empty list.</p>
 <hr />
 <h2 id="no-joins-principle">No Joins Principle<a class="headerlink" href="#no-joins-principle" title="Permanent link">&para;</a></h2>
-<p><strong>Critical</strong>: FraiseQL does not support joins. All dimensional data must be denormalized into the <code>data</code> JSONB column at ETL time.</p>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- ❌ NOT SUPPORTED: Joining dimension tables
-SELECT
-    s.revenue,
-    p.category
-FROM tf_sales s
-JOIN td_products p ON s.product_id = p.id;</p>
-<p>-- ✅ CORRECT: Denormalized dimensions in JSONB
-SELECT
-    revenue,
-    data-&gt;&gt;'product_category' AS category
-FROM tf_sales;
--- Category was denormalized at ETL time by DBA/data team
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>ETL Responsibility</strong>:</p>
-<ul>
-<li>FraiseQL provides GraphQL query interface over existing tables</li>
-<li>DBA/data team creates ETL pipelines to populate <code>tf_</code> tables</li>
-<li>Dimensional data is denormalized from <code>td_</code> tables into <code>tf_</code> tables' <code>data</code> column</li>
-</ul>
+<p>FraiseQL reads from a single view per query — it does not join across types at
+read time. All dimensional data should already be present in the view, either as
+native columns or denormalized into the <code>data</code> JSONB column. Do the joins once,
+inside the view's SQL (or in the process that refreshes a <code>tv_</code> projection),
+not per request.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The view does the join once, server-side</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product_category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;product_category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_products</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">fk_product</span><span class="p">;</span>
+</code></pre></div>
+<p>GraphQL queries then aggregate over <code>v_sales</code> without any further joins.</p>
+<p><strong>Data-modeling responsibility</strong>: the DBA / data team designs the <code>v_</code>/<code>tv_</code>
+views and any ETL or refresh process that keeps a <code>tv_</code> projection up to date.
+FraiseQL provides the runtime GraphQL interface and the auto-aggregation on top.</p>
 <hr />
-<h2 id="related-specifications">Related Specifications<a class="headerlink" href="#related-specifications" title="Permanent link">&para;</a></h2>
+<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Fact-Dimension Pattern</strong> (<code>fact-dimension-pattern.md</code>) - Fact table structure and patterns</li>
-<li><strong>Aggregation Operators</strong> (<code>../specs/aggregation-operators.md</code>) - Complete operator reference by database</li>
-<li><strong>Capability Manifest</strong> (<code>../specs/capability-manifest.md</code>) - Database-specific operator availability</li>
-<li><strong>Window Functions</strong> (<code>window-functions.md</code>) - Phase 5 analytical functions</li>
+<li><a href="../fact-dimension-pattern/">Fact-Dimension Pattern</a> — fact and dimension table design for analytics views</li>
+<li><a href="../calendar-dimensions/">Calendar Dimensions</a> — temporal dimensions and calendar tables</li>
+<li><a href="../window-functions/">Window Functions</a> — ranking and running totals as raw-SQL view patterns</li>
+<li><a href="../../database/view-selection-guide/">View Selection Guide</a> — choosing between <code>v_</code> and <code>tv_</code> views</li>
+<li><a href="../../../specs/aggregation-operators/">Aggregation Operators</a> — operator reference</li>
+<li><a href="../../../specs/schema-conventions/">Schema Conventions</a> — naming and schema conventions</li>
 </ul>
-<hr />
 
 
 
 
 
 
+
+  
+  
 
 
 

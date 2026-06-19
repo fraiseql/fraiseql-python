@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL exposes GraphQL reads through PostgreSQL views. This guide helps you choose between a logical view (v_*) and a table-backed projection view (tv_*).">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/database/view-selection-guide/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>View Selection Guide - FraiseQL Documentation</title>
+        <title>View Selection Guide: Choosing Between v_* and tv_* - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#view-selection-guide-choosing-between-v_-tv_-va_-and-ta_" class="md-skip">
+        <a href="#view-selection-guide-choosing-between-v_-and-tv_" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              View Selection Guide
+              View Selection Guide: Choosing Between v_* and tv_*
             
           </span>
         </div>
@@ -1210,17 +1212,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#view-patterns-at-a-glance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        View Patterns at a Glance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#decision-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1239,34 +1230,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Quick Reference by Scenario">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#graphql-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphQL Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#analytics-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Analytics Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1333,21 +1296,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#migrate-from-v_to-tv_-when" class="md-nav__link">
+  <a href="#migrate-from-v_-to-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migrate from v_to tv_ when
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migrate-from-va_to-ta_-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migrate from va_to ta_ when
+        Migrate from v_* to tv_* when
       
     </span>
   </a>
@@ -1371,33 +1323,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#migration-path-examples" class="md-nav__link">
+  <a href="#migration-path-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Path Examples
+        Migration Path Example
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Migration Path Examples">
+    <nav class="md-nav" aria-label="Migration Path Example">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-1-complex-user-profile-v_-tv_" class="md-nav__link">
+  <a href="#complex-user-profile-v_-tv_" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 1: Complex User Profile (v_→ tv_)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-2-large-analytics-dataset-va_-ta_" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example 2: Large Analytics Dataset (va_→ ta_)
+        Complex User Profile (v_* → tv_*)
       
     </span>
   </a>
@@ -1410,41 +1351,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#client-api-patterns" class="md-nav__link">
+  <a href="#client-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Client API Patterns
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client API Patterns">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#graphql-json-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphQL (JSON Plane)
+        Client API
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#arrow-flight-analytics-plane" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#decision-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arrow Flight (Analytics Plane)
+        Decision Checklist
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#performance-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5212,17 +5158,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#view-patterns-at-a-glance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        View Patterns at a Glance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#decision-tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5241,34 +5176,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Quick Reference by Scenario">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#graphql-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphQL Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#analytics-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Analytics Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5335,21 +5242,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#migrate-from-v_to-tv_-when" class="md-nav__link">
+  <a href="#migrate-from-v_-to-tv_-when" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migrate from v_to tv_ when
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migrate-from-va_to-ta_-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migrate from va_to ta_ when
+        Migrate from v_* to tv_* when
       
     </span>
   </a>
@@ -5373,33 +5269,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#migration-path-examples" class="md-nav__link">
+  <a href="#migration-path-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Path Examples
+        Migration Path Example
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Migration Path Examples">
+    <nav class="md-nav" aria-label="Migration Path Example">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-1-complex-user-profile-v_-tv_" class="md-nav__link">
+  <a href="#complex-user-profile-v_-tv_" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example 1: Complex User Profile (v_→ tv_)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-2-large-analytics-dataset-va_-ta_" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example 2: Large Analytics Dataset (va_→ ta_)
+        Complex User Profile (v_* → tv_*)
       
     </span>
   </a>
@@ -5412,41 +5297,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#client-api-patterns" class="md-nav__link">
+  <a href="#client-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Client API Patterns
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client API Patterns">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#graphql-json-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphQL (JSON Plane)
+        Client API
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#arrow-flight-analytics-plane" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#decision-checklist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arrow Flight (Analytics Plane)
+        Decision Checklist
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#performance-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5470,22 +5360,15 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: View Selection Guide: Choosing Between v_<em>, tv_</em>, va_<em>, and ta_</em>
-description: FraiseQL supports <strong>four distinct view patterns</strong> across two query planes. This guide helps you choose the right pattern for your use case.
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="view-selection-guide-choosing-between-v_-tv_-va_-and-ta_">View Selection Guide: Choosing Between v_<em>, tv_</em>, va_<em>, and ta_</em><a class="headerlink" href="#view-selection-guide-choosing-between-v_-tv_-va_-and-ta_" title="Permanent link">&para;</a></h1>
+<h1 id="view-selection-guide-choosing-between-v_-and-tv_">View Selection Guide: Choosing Between v_* and tv_*<a class="headerlink" href="#view-selection-guide-choosing-between-v_-and-tv_" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL supports <strong>four distinct view patterns</strong> across two query planes. This guide helps you choose the right pattern for your use case.</p>
-<h2 id="view-patterns-at-a-glance">View Patterns at a Glance<a class="headerlink" href="#view-patterns-at-a-glance" title="Permanent link">&para;</a></h2>
+<p>In FraiseQL v1, every GraphQL read resolves against a PostgreSQL view that returns a
+<code>data</code> JSONB column. There are <strong>two view patterns</strong> to choose from, and the choice is
+the single biggest lever for read performance. This guide helps you pick the right one.</p>
 <table>
 <thead>
 <tr>
 <th>Pattern</th>
-<th>Plane</th>
 <th>Type</th>
 <th>Storage</th>
 <th>Use Case</th>
@@ -5496,8 +5379,7 @@ tags: ["documentation", "reference"]</p>
 <tbody>
 <tr>
 <td><code>v_*</code></td>
-<td>JSON</td>
-<td>Logical</td>
+<td>Logical view</td>
 <td>None</td>
 <td>Simple GraphQL queries</td>
 <td>Medium (100-500ms)</td>
@@ -5505,78 +5387,53 @@ tags: ["documentation", "reference"]</p>
 </tr>
 <tr>
 <td><code>tv_*</code></td>
-<td>JSON</td>
-<td>Table</td>
-<td>JSONB</td>
+<td>Table-backed projection</td>
+<td>JSONB table</td>
 <td>Complex nested GraphQL</td>
 <td>Fast (50-200ms)</td>
 <td>Trigger/scheduled refresh</td>
 </tr>
-<tr>
-<td><code>va_*</code></td>
-<td>Arrow</td>
-<td>Logical</td>
-<td>None</td>
-<td>Simple analytics queries</td>
-<td>Medium (500ms-5s)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>ta_*</code></td>
-<td>Arrow</td>
-<td>Table</td>
-<td>Columnar</td>
-<td>Large-scale analytics</td>
-<td>Very Fast (50-100ms)</td>
-<td>Trigger/scheduled refresh</td>
-</tr>
 </tbody>
 </table>
+<p>A <code>v_*</code> view composes its <code>data</code> JSONB at query time with a plain <code>SELECT</code>. A <code>tv_*</code> view
+is a real table holding pre-composed JSONB, refreshed by triggers or a scheduled job —
+you pay storage and refresh cost up front to make reads fast and predictable.</p>
+<p>Both are bound to a GraphQL type the same way, at runtime, when the app starts:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p>Switching a type from a logical view to a table-backed projection is just a one-line
+change to <code>sql_source</code> — clients never see the difference.</p>
 <h2 id="decision-tree">Decision Tree<a class="headerlink" href="#decision-tree" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>START: What query plane are you working in?</p>
-<p>├─ JSON PLANE (GraphQL queries)
-│  ├─ Simple query? (1-2 tables, flat structure)
-│  │  └─ YES → Use v_*
-│  │        Why: No JOIN overhead, instant to deploy
-│  │        Example: Query single user or user list
-│  │
-│  └─ Complex query? (3+ tables, nested data)
-│     ├─ HIGH read volume (&gt;100 reqs/sec)?
-│     │  └─ Use tv_* (table-backed)
-│     │     Why: Pre-computed JSONB, sub-second latency
-│     │     Example: User profiles with posts/comments
-│     │
-│     └─ LOW read volume (&lt;100 reqs/sec)?
-│        ├─ Query time &gt; 1 second?
-│        │  └─ Use tv_* (table-backed)
-│        │     Why: Composition cost exceeds storage cost
-│        │
-│        └─ Query time &lt; 1 second?
-│           └─ Use v_* (logical)
-│              Why: Storage overhead not justified
+<div class="highlight"><pre><span></span><code>START: How complex is the read?
+
+├─ Simple query? (1-2 tables, flat structure)
+│  └─ YES → Use v_*
+│        Why: No JOIN overhead, nothing to maintain
+│        Example: Query a single user or a user list
 │
-└─ ARROW PLANE (Analytics queries)
-   ├─ Small dataset? (&lt;100K rows)
-   │  └─ Use va_* (logical)
-   │     Why: No storage overhead, simple to maintain
-   │     Example: Daily sales summary (10K rows)
+└─ Complex query? (3+ tables, nested data)
+   ├─ HIGH read volume (&gt;100 reqs/sec)?
+   │  └─ Use tv_* (table-backed projection)
+   │     Why: Pre-composed JSONB, sub-second latency
+   │     Example: User profiles with posts/comments
    │
-   └─ Large dataset? (&gt;1M rows)
+   └─ LOW read volume (&lt;100 reqs/sec)?
       ├─ Query time &gt; 1 second?
-      │  └─ Use ta_* (table-backed)
-      │     Why: Columnar format, BRIN indexes
-      │     Example: 10M historical transactions
+      │  └─ Use tv_* (table-backed projection)
+      │     Why: Composition cost exceeds storage cost
       │
       └─ Query time &lt; 1 second?
-         └─ Use va_* (logical)
+         └─ Use v_* (logical view)
             Why: Storage overhead not justified
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h2 id="quick-reference-by-scenario">Quick Reference by Scenario<a class="headerlink" href="#quick-reference-by-scenario" title="Permanent link">&para;</a></h2>
-<h3 id="graphql-queries">GraphQL Queries<a class="headerlink" href="#graphql-queries" title="Permanent link">&para;</a></h3>
 <p><strong>Simple Cases (Use v_*)</strong>:</p>
 <ul>
 <li>✅ Query single user by ID → <code>v_user</code></li>
@@ -5590,19 +5447,6 @@ tags: ["documentation", "reference"]</p>
 <li>✅ Dashboard requiring pre-aggregated data</li>
 <li>✅ GraphQL subscriptions (real-time updates)</li>
 </ul>
-<h3 id="analytics-queries">Analytics Queries<a class="headerlink" href="#analytics-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Small Datasets (Use va_*)</strong>:</p>
-<ul>
-<li>✅ Daily sales summary (computed once per day)</li>
-<li>✅ Weekly user metrics (5K rows)</li>
-<li>✅ Monthly revenue report (1K rows)</li>
-</ul>
-<p><strong>Large Datasets (Use ta_*)</strong>:</p>
-<ul>
-<li>✅ 10M+ transaction history</li>
-<li>✅ 100K+ event stream (append-only)</li>
-<li>✅ Time-series analytics (millions of data points)</li>
-</ul>
 <h2 id="performance-comparison-matrix">Performance Comparison Matrix<a class="headerlink" href="#performance-comparison-matrix" title="Permanent link">&para;</a></h2>
 <h3 id="query-execution-time-lower-is-better">Query Execution Time (Lower is Better)<a class="headerlink" href="#query-execution-time-lower-is-better" title="Permanent link">&para;</a></h3>
 <table>
@@ -5611,8 +5455,6 @@ tags: ["documentation", "reference"]</p>
 <th>Query Type</th>
 <th>v_*</th>
 <th>tv_*</th>
-<th>va_*</th>
-<th>ta_*</th>
 </tr>
 </thead>
 <tbody>
@@ -5620,43 +5462,16 @@ tags: ["documentation", "reference"]</p>
 <td>Single entity (User by ID)</td>
 <td><strong>50-100ms</strong></td>
 <td>50-100ms</td>
-<td>-</td>
-<td>-</td>
 </tr>
 <tr>
 <td>Entity with 1 related (User + Posts)</td>
 <td>100-300ms</td>
 <td><strong>100-200ms</strong></td>
-<td>-</td>
-<td>-</td>
 </tr>
 <tr>
 <td>Entity with 3+ related (User + Posts + Comments + Likes)</td>
 <td>2-5s</td>
 <td><strong>50-200ms</strong></td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
-<td>Analytics: 10K rows, simple filter</td>
-<td>-</td>
-<td>-</td>
-<td><strong>100-200ms</strong></td>
-<td>100-150ms</td>
-</tr>
-<tr>
-<td>Analytics: 1M rows, range query</td>
-<td>-</td>
-<td>-</td>
-<td>2-10s</td>
-<td><strong>50-100ms</strong></td>
-</tr>
-<tr>
-<td>Analytics: 100M rows, aggregation</td>
-<td>-</td>
-<td>-</td>
-<td>&gt;30s</td>
-<td><strong>200-500ms</strong></td>
 </tr>
 </tbody>
 </table>
@@ -5667,8 +5482,6 @@ tags: ["documentation", "reference"]</p>
 <th>Scenario</th>
 <th>v_*</th>
 <th>tv_*</th>
-<th>va_*</th>
-<th>ta_*</th>
 </tr>
 </thead>
 <tbody>
@@ -5676,29 +5489,11 @@ tags: ["documentation", "reference"]</p>
 <td>1K records with deep nesting</td>
 <td>50-100MB</td>
 <td><strong>20-30MB</strong></td>
-<td>-</td>
-<td>-</td>
 </tr>
 <tr>
 <td>10K records with deep nesting</td>
 <td>500-800MB</td>
 <td><strong>100-200MB</strong></td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
-<td>100K row analytics query</td>
-<td>-</td>
-<td>-</td>
-<td>200-500MB</td>
-<td><strong>50-100MB</strong></td>
-</tr>
-<tr>
-<td>10M row analytics query</td>
-<td>-</td>
-<td>-</td>
-<td>2-5GB</td>
-<td><strong>500MB-1GB</strong></td>
 </tr>
 </tbody>
 </table>
@@ -5720,276 +5515,135 @@ tags: ["documentation", "reference"]</p>
 <tr>
 <td><code>tv_*</code></td>
 <td>20-50%</td>
-<td>JSONB pre-composition</td>
-</tr>
-<tr>
-<td><code>va_*</code></td>
-<td>0%</td>
-<td>No storage (logical view)</td>
-</tr>
-<tr>
-<td><code>ta_*</code></td>
-<td>10-30%</td>
-<td>Columnar format, BRIN indexes</td>
+<td>JSONB pre-composition stored in a table</td>
 </tr>
 </tbody>
 </table>
 <h2 id="when-to-migrate">When to Migrate<a class="headerlink" href="#when-to-migrate" title="Permanent link">&para;</a></h2>
-<h3 id="migrate-from-v_to-tv_-when">Migrate from v_<em>to tv_</em> when<a class="headerlink" href="#migrate-from-v_to-tv_-when" title="Permanent link">&para;</a></h3>
+<h3 id="migrate-from-v_-to-tv_-when">Migrate from v_* to tv_* when<a class="headerlink" href="#migrate-from-v_-to-tv_-when" title="Permanent link">&para;</a></h3>
 <p>✅ <strong>GraphQL query times exceed 1 second</strong></p>
 <ul>
 <li>Measure: Run production queries and log execution time</li>
-<li>Action: Create tv_* table with pre-composed JSONB</li>
+<li>Action: Create a <code>tv_*</code> table with pre-composed JSONB</li>
 <li>Benefit: 10-50x faster queries</li>
 </ul>
 <p>✅ <strong>Query complexity has 3+ JOINs</strong></p>
 <ul>
-<li>Indicator: Query hits database for nested data multiple times</li>
-<li>Action: Pre-compose nested data into tv_* JSONB</li>
-<li>Benefit: Single table scan vs. multiple JOINs</li>
+<li>Indicator: Query composes nested data from multiple tables on every read</li>
+<li>Action: Pre-compose nested data into a <code>tv_*</code> JSONB column</li>
+<li>Benefit: Single indexed lookup vs. multiple JOINs</li>
 </ul>
-<p>✅ <strong>High read volume (&gt;100 requests/sec) to same data structure</strong></p>
+<p>✅ <strong>High read volume (&gt;100 requests/sec) to the same data structure</strong></p>
 <ul>
 <li>Indicator: Database CPU high during peak traffic</li>
-<li>Action: Cache computations in tv_* table</li>
+<li>Action: Cache the composition in a <code>tv_*</code> table</li>
 <li>Benefit: Query cost moves from compute-heavy to storage-read</li>
 </ul>
 <p>✅ <strong>Real-time GraphQL subscriptions require fast updates</strong></p>
 <ul>
-<li>Indicator: Subscription latency varies based on nesting depth</li>
-<li>Action: Trigger-based tv_* refresh ensures consistent latency</li>
+<li>Indicator: Subscription latency varies with nesting depth</li>
+<li>Action: Trigger-based <code>tv_*</code> refresh ensures consistent latency</li>
 <li>Benefit: Subscription updates in &lt;100ms</li>
 </ul>
-<h3 id="migrate-from-va_to-ta_-when">Migrate from va_<em>to ta_</em> when<a class="headerlink" href="#migrate-from-va_to-ta_-when" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>Analytics query times exceed 1 second</strong></p>
-<ul>
-<li>Measure: Run EXPLAIN on Arrow queries</li>
-<li>Action: Create ta_* table with columnar storage</li>
-<li>Benefit: 50-100x faster on time-series queries</li>
-</ul>
-<p>✅ <strong>Dataset larger than 1M rows</strong></p>
-<ul>
-<li>Indicator: VA query memory usage &gt; 1GB</li>
-<li>Action: Use BRIN indexes on time-series columns</li>
-<li>Benefit: Queries scan fewer pages</li>
-</ul>
-<p>✅ <strong>Read volume high, staleness acceptable</strong></p>
-<ul>
-<li>Indicator: Multiple concurrent analytics queries affecting other workloads</li>
-<li>Action: Batch refresh ta_* tables during off-hours</li>
-<li>Benefit: Analytics isolated from OLTP</li>
-</ul>
 <h3 id="dont-migrate-when">Don't Migrate when<a class="headerlink" href="#dont-migrate-when" title="Permanent link">&para;</a></h3>
-<p>❌ <strong>Query already fast</strong> (&lt;500ms for GraphQL, &lt;1s for analytics)</p>
+<p>❌ <strong>Query already fast</strong> (&lt;500ms)</p>
 <ul>
-<li>Keep logical views unless write overhead forces migration</li>
+<li>Keep the logical view unless write overhead forces migration</li>
 </ul>
 <p>❌ <strong>Storage is severely constrained</strong></p>
 <ul>
-<li>Keep logical views; optimize queries instead</li>
+<li>Keep the logical view; optimize the underlying query instead</li>
 </ul>
 <p>❌ <strong>Write volume is unpredictable</strong></p>
 <ul>
-<li>Triggers may become overhead; use scheduled batch instead</li>
+<li>Refresh triggers may become overhead; use a scheduled batch refresh instead</li>
 </ul>
-<h2 id="migration-path-examples">Migration Path Examples<a class="headerlink" href="#migration-path-examples" title="Permanent link">&para;</a></h2>
-<h3 id="example-1-complex-user-profile-v_-tv_">Example 1: Complex User Profile (v_<em>→ tv_</em>)<a class="headerlink" href="#example-1-complex-user-profile-v_-tv_" title="Permanent link">&para;</a></h3>
+<h2 id="migration-path-example">Migration Path Example<a class="headerlink" href="#migration-path-example" title="Permanent link">&para;</a></h2>
+<h3 id="complex-user-profile-v_-tv_">Complex User Profile (v_* → tv_*)<a class="headerlink" href="#complex-user-profile-v_-tv_" title="Permanent link">&para;</a></h3>
 <p><strong>Current State</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- v_user_full: Logical view with real-time composition
--- Query time: 3-5 seconds
-SELECT * FROM v_user_full WHERE id = ?;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1">-- v_user_full: logical view with real-time composition</span>
+<span class="c1">-- Query time: 3-5 seconds</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user_full</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Problem</strong>: Users reported slow profile loading on high-traffic pages.</p>
-<p><strong>Decision</strong>: Migrate to tv_* for pre-composed data.</p>
+<p><strong>Decision</strong>: Migrate to a <code>tv_*</code> table-backed projection for pre-composed data.</p>
 <p><strong>Implementation</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Step 1: Create intermediate composed views (helper)
-CREATE VIEW v_user_posts_composed AS ...
-CREATE VIEW v_user_full_composed AS ...</p>
-<p>-- Step 2: Create tv_user_profile table
-CREATE TABLE tv_user_profile AS SELECT * FROM v_user_full_composed;</p>
-<p>-- Step 3: Add refresh trigger
-CREATE TRIGGER trg_refresh_tv_user_profile ON tb_user ...</p>
-<p>-- Step 4: Update GraphQL binding
-@FraiseQL.type(view="tv_user_profile")
-class User: ...</p>
-<p>-- Step 5: Verify performance
--- Query time: 100-200ms ✅
--- User experience: 25-50x faster ✅
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Step 1: Create the projection table holding pre-composed JSONB</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user_full</span><span class="p">;</span>
 
+<span class="c1">-- Step 2: Keep it fresh with a trigger on the source write table</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_refresh_tv_user_profile</span><span class="p">();</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Step 3: Point the GraphQL type at the projection view (runtime binding)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_profile&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Post&quot;</span><span class="p">]</span>
+</code></pre></div>
 <p><strong>Before/After</strong>:</p>
 <ul>
 <li><strong>Before</strong>: 3-5 second page load + database spike during peak traffic</li>
 <li><strong>After</strong>: 100-200ms page load, consistent performance</li>
 </ul>
-<h3 id="example-2-large-analytics-dataset-va_-ta_">Example 2: Large Analytics Dataset (va_<em>→ ta_</em>)<a class="headerlink" href="#example-2-large-analytics-dataset-va_-ta_" title="Permanent link">&para;</a></h3>
-<p><strong>Current State</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- va_orders: Logical view over 10M rows
--- Query time: 5-10 seconds
-SELECT * FROM va_orders WHERE created_at &gt;= ? AND created_at &lt; ?;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Problem</strong>: BI dashboard queries timing out, blocking other queries.</p>
-<p><strong>Decision</strong>: Migrate to ta_* for optimized columnar storage.</p>
-<p><strong>Implementation</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Step 1: Create ta_orders table with BRIN indexes
-CREATE TABLE ta_orders (
-    id TEXT PRIMARY KEY,
-    total NUMERIC,
-    created_at TIMESTAMPTZ,
-    ...
-);
-CREATE INDEX idx_ta_orders_created_at_brin ON ta_orders USING BRIN(created_at);</p>
-<p>-- Step 2: Populate from va_orders
-INSERT INTO ta_orders SELECT * FROM va_orders;</p>
-<p>-- Step 3: Add refresh trigger (or scheduled batch)
-CREATE TRIGGER trg_refresh_ta_orders ON tb_order ...</p>
-<p>-- Step 4: Update Arrow schema binding
-registry.get("ta_orders")</p>
-<p>-- Step 5: Verify performance
--- Query time: 50-100ms ✅
--- Memory: 500MB-1GB (vs 2-5GB) ✅
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Before/After</strong>:</p>
+<h2 id="client-api">Client API<a class="headerlink" href="#client-api" title="Permanent link">&para;</a></h2>
+<p>Clients never choose a view. They issue the same GraphQL query regardless of whether the
+type is backed by a <code>v_*</code> or a <code>tv_*</code> view — the server-side binding determines which one
+runs:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">      </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="n">text</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>To move from a logical view to a projection view, change only <code>sql_source</code>:</p>
 <ul>
-<li><strong>Before</strong>: 5-10 second queries, dashboard timeouts, other queries blocked</li>
-<li><strong>After</strong>: 50-100ms queries, instant dashboard, no impact to OLTP</li>
+<li>Simple queries: <code>@fraiseql.type(sql_source="v_user", jsonb_column="data")</code></li>
+<li>Complex queries: <code>@fraiseql.type(sql_source="tv_user_profile", jsonb_column="data")</code></li>
 </ul>
-<h2 id="client-api-patterns">Client API Patterns<a class="headerlink" href="#client-api-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="graphql-json-plane">GraphQL (JSON Plane)<a class="headerlink" href="#graphql-json-plane" title="Permanent link">&para;</a></h3>
-<p>Clients don't explicitly choose views; the schema binding determines which view to use:</p>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// Client query (same for both v_* and tv_*)
-const query = gql<code>query {
-    user(id: "550e8400...") {
-      id
-      name
-      posts {
-        id
-        title
-        comments {
-          id
-          text
-        }
-      }
-    }
-  }</code>;</p>
-<p>// FraiseQL schema binding (server-side)
-@FraiseQL.type(view="tv_user_profile")  // Uses tv_* for performance
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    posts: list[Post]
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>When to use which</strong>:</p>
-<ul>
-<li>Simple queries: <code>@FraiseQL.type(view="v_user")</code> (no view specified)</li>
-<li>Complex queries: <code>@FraiseQL.type(view="tv_user_profile")</code> (explicit view)</li>
-</ul>
-<h3 id="arrow-flight-analytics-plane">Arrow Flight (Analytics Plane)<a class="headerlink" href="#arrow-flight-analytics-plane" title="Permanent link">&para;</a></h3>
-<p>Clients explicitly choose the view when creating tickets:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import pyarrow.flight as flight</p>
-<p>client = flight.connect("grpc://localhost:50051")</p>
-<h1 id="use-logical-view-va_orders">Use logical view (va_orders)<a class="headerlink" href="#use-logical-view-va_orders" title="Permanent link">&para;</a></h1>
-<p>ticket_small = {
-    "view": "va_orders",  # Explicit choice
-    "filter": "created_at &gt; '2026-01-01'",
-    "limit": 10000
-}
-stream = client.do_get(flight.Ticket(json.dumps(ticket_small).encode()))</p>
-<h1 id="use-table-backed-view-ta_orders">Use table-backed view (ta_orders)<a class="headerlink" href="#use-table-backed-view-ta_orders" title="Permanent link">&para;</a></h1>
-<p>ticket_large = {
-    "view": "ta_orders",  # Explicit choice - faster for large datasets
-    "filter": "created_at &gt; '2026-01-01'",
-    "limit": 1000000
-}
-stream = client.do_get(flight.Ticket(json.dumps(ticket_large).encode()))
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>View Discovery</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="list-available-views">List available views<a class="headerlink" href="#list-available-views" title="Permanent link">&para;</a></h1>
-<p>views = client.list_flights(criteria=None)
-for flight_info in views:
-    print(f"View: {flight_info.name}")
-    print(f"  Type: {'table' if flight_info.name.startswith('ta_') else 'logical'}")
-    print(f"  Rows: {flight_info.total_records}")
-```text</p>
-<!-- Code example in TEXT -->
-
 <h2 id="decision-checklist">Decision Checklist<a class="headerlink" href="#decision-checklist" title="Permanent link">&para;</a></h2>
 <p>Before creating a new view, answer these questions:</p>
-<h3 id="for-graphql-json-plane">For GraphQL (JSON Plane)<a class="headerlink" href="#for-graphql-json-plane" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is the query for a single entity? → Use <code>v_*</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Does the query require 3+ JOINs? → Consider <code>tv_*</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Are query times &gt; 1 second? → Use <code>tv_*</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is read volume &gt; 100 reqs/sec to this view? → Use <code>tv_*</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Can you accept 100-300ms latency? → Use <code>v_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need real-time subscriptions? → Use <code>tv_*</code> with triggers</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need real-time subscriptions? → Use <code>tv_*</code> with refresh triggers</li>
 </ul>
-<p><strong>Recommendation</strong>: Default to <code>v_*</code>. Migrate to <code>tv_*</code> only if performance metrics require it.</p>
-<h3 id="for-arrow-flight-analytics">For Arrow Flight (Analytics)<a class="headerlink" href="#for-arrow-flight-analytics" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is the dataset &lt; 100K rows? → Use <code>va_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is query time &lt; 1 second? → Use <code>va_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is the dataset &gt; 1M rows? → Use <code>ta_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Are query times &gt; 1 second? → Use <code>ta_*</code></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is storage constrained? → Use <code>va_*</code></li>
-</ul>
-<p><strong>Recommendation</strong>: Default to <code>va_*</code>. Migrate to <code>ta_*</code> for large datasets.</p>
+<p><strong>Recommendation</strong>: Default to <code>v_*</code>. Migrate to <code>tv_*</code> only when production metrics
+require it.</p>
 <h2 id="performance-testing">Performance Testing<a class="headerlink" href="#performance-testing" title="Permanent link">&para;</a></h2>
-<h3 id="test-graphql-performance-v_vs-tv_">Test GraphQL Performance (v_<em>vs tv_</em>)<a class="headerlink" href="#test-graphql-performance-v_vs-tv_" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Measure v_* execution time
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM v_user_full WHERE id = ?;
--- Note query time (look for "Execution Time")</p>
-<p>-- Measure tv_* execution time
-EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM tv_user_profile WHERE id = ?;
--- Should be 10-50x faster
-```text</p>
-<!-- Code example in TEXT -->
+<p>Measure both views with <code>EXPLAIN (ANALYZE, BUFFERS)</code> and compare the reported
+<strong>Execution Time</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Measure the logical view</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span><span class="w"> </span><span class="n">BUFFERS</span><span class="p">)</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user_full</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
 
-<h3 id="test-analytics-performance-va_vs-ta_">Test Analytics Performance (va_<em>vs ta_</em>)<a class="headerlink" href="#test-analytics-performance-va_vs-ta_" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Measure va_* execution time
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM va_orders WHERE created_at &gt;= ? AND created_at &lt; ?;</p>
-<p>-- Measure ta_* execution time
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM ta_orders WHERE created_at &gt;= ? AND created_at &lt; ?;
--- Should be 50-100x faster for large datasets
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Measure the table-backed projection (should be 10-50x faster)</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="p">(</span><span class="k">ANALYZE</span><span class="p">,</span><span class="w"> </span><span class="n">BUFFERS</span><span class="p">)</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+</code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../tv-table-pattern/">tv_* Table Pattern (JSON Plane Details)</a></li>
+<li><a href="../tv-table-pattern/">tv_* Table Pattern</a></li>
 <li><a href="../../../specs/schema-conventions/">Schema Conventions</a></li>
-<li><a href="../../architecture/">FraiseQL Database Architecture</a></li>
+<li><a href="../../../reference/naming-patterns/">Naming Patterns</a></li>
+<li><a href="../../analytics/aggregation-model/">Aggregation Model</a></li>
+<li><a href="../../../foundation/03-database-centric-architecture/">Database-Centric Architecture</a></li>
 </ul>
 
 
@@ -5997,6 +5651,9 @@ SELECT * FROM ta_orders WHERE created_at &gt;= ? AND created_at &lt; ?;
 
 
 
+
+  
+  
 
 
 

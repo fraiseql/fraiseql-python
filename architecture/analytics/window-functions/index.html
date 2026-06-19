@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="How to use PostgreSQL window functions (ROW_NUMBER, RANK, LAG, LEAD, running totals, moving averages) inside your v_/tv_ view SQL and expose the computed columns through the view's data JSONB so FraiseQL serves them like any other field.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/architecture/analytics/window-functions/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Window Functions - FraiseQL Documentation</title>
+        <title>Window Functions in FraiseQL Views - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#window-functions-architecture" class="md-skip">
+        <a href="#window-functions-in-fraiseql-views" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Window Functions
+              Window Functions in FraiseQL Views
             
           </span>
         </div>
@@ -2263,10 +2265,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#the-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        The Pattern
       
     </span>
   </a>
@@ -2374,102 +2376,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#compilation-strategy" class="md-nav__link">
+  <a href="#evaluation-order" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compilation Strategy
+        Evaluation Order
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Compilation Strategy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#compiler-tasks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compiler Tasks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#runtime-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Runtime Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-specific-support" class="md-nav__link">
+  <a href="#postgresql-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database-Specific Support
+        PostgreSQL Support
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Database-Specific Support">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#postgresql" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PostgreSQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mysql-80" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MySQL (8.0+)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlite-325" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLite (3.25+)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-server" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL Server
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2580,10 +2504,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#window-function-evaluation" class="md-nav__link">
+  <a href="#cost-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Window Function Evaluation
+        Cost Notes
       
     </span>
   </a>
@@ -2607,49 +2531,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-api-proposed" class="md-nav__link">
+  <a href="#related-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphQL API (Proposed)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="GraphQL API (Proposed)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#query-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Query Structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-query" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Query
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Specifications
+        Related Documentation
       
     </span>
   </a>
@@ -5345,10 +5230,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#the-pattern" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        The Pattern
       
     </span>
   </a>
@@ -5456,102 +5341,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#compilation-strategy" class="md-nav__link">
+  <a href="#evaluation-order" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compilation Strategy
+        Evaluation Order
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Compilation Strategy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#compiler-tasks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compiler Tasks
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#runtime-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Runtime Execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-specific-support" class="md-nav__link">
+  <a href="#postgresql-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database-Specific Support
+        PostgreSQL Support
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Database-Specific Support">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#postgresql" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        PostgreSQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mysql-80" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        MySQL (8.0+)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlite-325" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLite (3.25+)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-server" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL Server
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5662,10 +5469,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#window-function-evaluation" class="md-nav__link">
+  <a href="#cost-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Window Function Evaluation
+        Cost Notes
       
     </span>
   </a>
@@ -5689,49 +5496,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-api-proposed" class="md-nav__link">
+  <a href="#related-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphQL API (Proposed)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="GraphQL API (Proposed)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#query-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Query Structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-query" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Query
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-specifications" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Specifications
+        Related Documentation
       
     </span>
   </a>
@@ -5758,655 +5526,400 @@
   
 
 
-<!-- Skip to main content -->
+<h1 id="window-functions-in-fraiseql-views">Window Functions in FraiseQL Views<a class="headerlink" href="#window-functions-in-fraiseql-views" title="Permanent link">&para;</a></h1>
+<p>Window functions (analytical functions) perform calculations across rows related to
+the current row, using an <code>OVER</code> clause to define the window. Unlike aggregate
+functions with <code>GROUP BY</code>, window functions return a value for <strong>every</strong> row.</p>
+<p>In FraiseQL v1, window functions are <strong>not</strong> a GraphQL feature — they are plain
+PostgreSQL. You write them inside the <code>SELECT</code> of your <code>v_</code>/<code>tv_</code> read view, fold the
+computed columns into the view's <code>data</code> JSONB with <code>jsonb_build_object(...)</code>, and
+FraiseQL serves them at runtime like any other field. There is no special syntax, no
+decorator, and nothing to configure: the work happens in your view SQL.</p>
 <hr />
-<p>title: Window Functions Architecture
-description: Window functions (analytical functions) perform calculations across rows related to the current row, using an OVER clause to define the window. Unlike aggregate
-keywords: ["design", "scalability", "performance", "patterns", "security"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="window-functions-architecture">Window Functions Architecture<a class="headerlink" href="#window-functions-architecture" title="Permanent link">&para;</a></h1>
-<p><strong>Version:</strong> 1.0
-<strong>Status:</strong> Implemented
-<strong>Audience:</strong> Compiler developers, runtime engineers, SDK users
-<strong>Date:</strong> January 18, 2026</p>
-<hr />
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Window functions (analytical functions) perform calculations across rows related to the current row, using an OVER clause to define the window. Unlike aggregate functions with GROUP BY, window functions return a value for EVERY row.</p>
-<p><strong>Status</strong>: Implemented in FraiseQL v2</p>
+<h2 id="the-pattern">The Pattern<a class="headerlink" href="#the-pattern" title="Permanent link">&para;</a></h2>
+<p>A FraiseQL read view always exposes a public <code>id</code> (UUID) column plus a <code>data</code> JSONB
+column. To surface a window function, compute it in a subquery (or CTE) and reference
+its result when building <code>data</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_ranked</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;product&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">s</span><span class="p">.</span><span class="n">product_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;rank_in_category&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span>
+<span class="w">            </span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;running_total&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">                </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
+<p>A <code>@fraiseql.type(sql_source="v_sales_ranked")</code> then exposes <code>rankInCategory</code> and
+<code>runningTotal</code> as ordinary scalar fields — FraiseQL reads them straight out of <code>data</code>.</p>
+<p>For heavy or frequently-queried calculations, materialize the same SELECT as a <code>tv_</code>
+table-backed view refreshed by a function or trigger (see
+<a href="../../database/tv-table-pattern/">tv-table pattern</a>).</p>
 <hr />
 <h2 id="window-function-categories">Window Function Categories<a class="headerlink" href="#window-function-categories" title="Permanent link">&para;</a></h2>
 <h3 id="1-ranking-functions">1. Ranking Functions<a class="headerlink" href="#1-ranking-functions" title="Permanent link">&para;</a></h3>
 <p>Assign ranks to rows within partitions.</p>
 <ul>
-<li><code>ROW_NUMBER()</code> - Unique sequential number (1, 2, 3, 4...)</li>
-<li><code>RANK()</code> - Ranking with gaps for ties (1, 2, 2, 4...)</li>
-<li><code>DENSE_RANK()</code> - Ranking without gaps (1, 2, 2, 3...)</li>
-<li><code>NTILE(n)</code> - Divide rows into n buckets (quartiles, deciles, etc.)</li>
-<li><code>PERCENT_RANK()</code> - Relative rank from 0.0 to 1.0</li>
-<li><code>CUME_DIST()</code> - Cumulative distribution (0.0 to 1.0)</li>
+<li><code>ROW_NUMBER()</code> — Unique sequential number (1, 2, 3, 4...)</li>
+<li><code>RANK()</code> — Ranking with gaps for ties (1, 2, 2, 4...)</li>
+<li><code>DENSE_RANK()</code> — Ranking without gaps (1, 2, 2, 3...)</li>
+<li><code>NTILE(n)</code> — Divide rows into n buckets (quartiles, deciles, etc.)</li>
+<li><code>PERCENT_RANK()</code> — Relative rank from 0.0 to 1.0</li>
+<li><code>CUME_DIST()</code> — Cumulative distribution (0.0 to 1.0)</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    revenue,
-    ROW_NUMBER() OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY revenue DESC) AS row_num,
-    RANK() OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY revenue DESC) AS rank,
-    DENSE_RANK() OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY revenue DESC) AS dense_rank
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_rankings</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;row_num&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;rank&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">RANK</span><span class="p">()</span><span class="w">       </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;dense_rank&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">DENSE_RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="2-value-functions">2. Value Functions<a class="headerlink" href="#2-value-functions" title="Permanent link">&para;</a></h3>
 <p>Access values from other rows in the window.</p>
 <ul>
-<li><code>LAG(field, offset, default)</code> - Access previous row value</li>
-<li><code>LEAD(field, offset, default)</code> - Access next row value</li>
-<li><code>FIRST_VALUE(field)</code> - First value in window</li>
-<li><code>LAST_VALUE(field)</code> - Last value in window</li>
-<li><code>NTH_VALUE(field, n)</code> - Nth value in window</li>
+<li><code>LAG(field, offset, default)</code> — Access previous row value</li>
+<li><code>LEAD(field, offset, default)</code> — Access next row value</li>
+<li><code>FIRST_VALUE(field)</code> — First value in window</li>
+<li><code>LAST_VALUE(field)</code> — Last value in window</li>
+<li><code>NTH_VALUE(field, n)</code> — Nth value in window</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    occurred_at,
-    revenue,
-    LAG(revenue, 1) OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY occurred_at) AS prev_day_revenue,
-    LEAD(revenue, 1) OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY occurred_at) AS next_day_revenue
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_deltas</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">                </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;occurred_at&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;prev_day_revenue&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">LAG</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w">  </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;next_day_revenue&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">LEAD</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="3-aggregate-functions-as-windows">3. Aggregate Functions as Windows<a class="headerlink" href="#3-aggregate-functions-as-windows" title="Permanent link">&para;</a></h3>
 <p>Apply aggregate functions with window semantics (running totals, moving averages).</p>
 <ul>
-<li><code>SUM(field) OVER (...)</code> - Running total</li>
-<li><code>AVG(field) OVER (...)</code> - Moving average</li>
-<li><code>COUNT(*) OVER (...)</code> - Running count</li>
-<li><code>MIN(field) OVER (...)</code> - Running minimum</li>
-<li><code>MAX(field) OVER (...)</code> - Running maximum</li>
+<li><code>SUM(field) OVER (...)</code> — Running total</li>
+<li><code>AVG(field) OVER (...)</code> — Moving average</li>
+<li><code>COUNT(*) OVER (...)</code> — Running count</li>
+<li><code>MIN(field) OVER (...)</code> — Running minimum</li>
+<li><code>MAX(field) OVER (...)</code> — Running maximum</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    occurred_at,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data-&gt;&gt;'category'
-        ORDER BY occurred_at
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-    ) AS running_total
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_running</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">          </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;occurred_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;running_total&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">                </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="window-specification">Window Specification<a class="headerlink" href="#window-specification" title="Permanent link">&para;</a></h2>
 <h3 id="partition-by">PARTITION BY<a class="headerlink" href="#partition-by" title="Permanent link">&para;</a></h3>
-<p>Divides rows into partitions (groups). Window function applies separately to each partition.</p>
-<p><strong>Syntax</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>OVER (PARTITION BY column1, column2, ...)
-```text</p>
-<!-- Code example in TEXT -->
+<p>Divides rows into partitions (groups). The window function applies separately to each
+partition.</p>
+<div class="highlight"><pre><span></span><code><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">column1</span><span class="p">,</span><span class="w"> </span><span class="n">column2</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Row number within each category</span>
+<span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Row number within each category
-ROW_NUMBER() OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY revenue DESC)</p>
-<p>-- No partition = single global window
-ROW_NUMBER() OVER (ORDER BY revenue DESC)
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- No partition = single global window</span>
+<span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="order-by">ORDER BY<a class="headerlink" href="#order-by" title="Permanent link">&para;</a></h3>
-<p>Defines row ordering within each partition. Required for ranking functions and frame clauses.</p>
-<p><strong>Syntax</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>OVER (PARTITION BY ... ORDER BY column1 [ASC|DESC], column2 [ASC|DESC], ...)
-```text</p>
-<!-- Code example in TEXT -->
+<p>Defines row ordering within each partition. Required for ranking functions and frame
+clauses.</p>
+<div class="highlight"><pre><span></span><code><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">column1</span><span class="w"> </span><span class="p">[</span><span class="k">ASC</span><span class="o">|</span><span class="k">DESC</span><span class="p">],</span><span class="w"> </span><span class="n">column2</span><span class="w"> </span><span class="p">[</span><span class="k">ASC</span><span class="o">|</span><span class="k">DESC</span><span class="p">],</span><span class="w"> </span><span class="p">...)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Rank by revenue descending within category</span>
+<span class="n">RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Rank by revenue descending within category
-RANK() OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY revenue DESC)</p>
-<p>-- Running total ordered by date
-SUM(revenue) OVER (PARTITION BY data-&gt;&gt;'category' ORDER BY occurred_at ASC)
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Running total ordered by date</span>
+<span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="w"> </span><span class="k">ASC</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="frame-clauses">Frame Clauses<a class="headerlink" href="#frame-clauses" title="Permanent link">&para;</a></h3>
-<p>Define which rows are included in the window frame relative to current row. Used with aggregate window functions.</p>
+<p>Define which rows are included in the window frame relative to the current row. Used
+with aggregate window functions.</p>
 <p><strong>Frame Types</strong>:</p>
 <ul>
-<li><code>ROWS</code> - Physical row-based window (count rows)</li>
-<li><code>RANGE</code> - Logical value-based window (based on ORDER BY value)</li>
-<li><code>GROUPS</code> - Group-based window (PostgreSQL only)</li>
+<li><code>ROWS</code> — Physical row-based window (count rows)</li>
+<li><code>RANGE</code> — Logical value-based window (based on the <code>ORDER BY</code> value)</li>
+<li><code>GROUPS</code> — Group-based window</li>
 </ul>
 <p><strong>Frame Boundaries</strong>:</p>
 <ul>
-<li><code>UNBOUNDED PRECEDING</code> - Start of partition</li>
-<li><code>n PRECEDING</code> - n rows/range units before current</li>
-<li><code>CURRENT ROW</code> - Current row</li>
-<li><code>n FOLLOWING</code> - n rows/range units after current</li>
-<li><code>UNBOUNDED FOLLOWING</code> - End of partition</li>
+<li><code>UNBOUNDED PRECEDING</code> — Start of partition</li>
+<li><code>n PRECEDING</code> — n rows/range units before current</li>
+<li><code>CURRENT ROW</code> — Current row</li>
+<li><code>n FOLLOWING</code> — n rows/range units after current</li>
+<li><code>UNBOUNDED FOLLOWING</code> — End of partition</li>
 </ul>
 <p><strong>Default Frame</strong> (if not specified):</p>
 <ul>
-<li>With ORDER BY: <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></li>
-<li>Without ORDER BY: <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code></li>
+<li>With <code>ORDER BY</code>: <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></li>
+<li>Without <code>ORDER BY</code>: <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code></li>
 </ul>
-<p><strong>Examples</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Cumulative sum (all rows up to current)
-SUM(revenue) OVER (
-    PARTITION BY data-&gt;&gt;'category'
-    ORDER BY occurred_at
-    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-)</p>
-<p>-- 7-day moving average (last 7 rows including current)
-AVG(revenue) OVER (
-    PARTITION BY data-&gt;&gt;'category'
-    ORDER BY occurred_at
-    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-)</p>
-<p>-- Centered 3-row moving average (current ± 1 row)
-AVG(revenue) OVER (
-    PARTITION BY data-&gt;&gt;'category'
-    ORDER BY occurred_at
-    ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
-)</p>
-<p>-- All rows in partition (default without ORDER BY)
-SUM(revenue) OVER (
-    PARTITION BY data-&gt;&gt;'category'
-    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Cumulative sum (all rows up to current)</span>
+<span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="p">)</span>
 
+<span class="c1">-- 7-day moving average (last 7 rows including current)</span>
+<span class="k">AVG</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="p">)</span>
+
+<span class="c1">-- Centered 3-row moving average (current ± 1 row)</span>
+<span class="k">AVG</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">FOLLOWING</span>
+<span class="p">)</span>
+
+<span class="c1">-- All rows in partition (default without ORDER BY)</span>
+<span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">FOLLOWING</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
-<h2 id="compilation-strategy">Compilation Strategy<a class="headerlink" href="#compilation-strategy" title="Permanent link">&para;</a></h2>
-<h3 id="compiler-tasks">Compiler Tasks<a class="headerlink" href="#compiler-tasks" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Parse Window Function Specifications</strong> from schema decorators</li>
-<li><strong>Validate Columns</strong>:</li>
-<li>PARTITION BY columns exist in table</li>
-<li>ORDER BY columns exist in table</li>
-<li>Field references are valid</li>
-<li><strong>Generate Window Clause SQL</strong>:</li>
-<li>Build OVER clause with PARTITION BY, ORDER BY, frame</li>
-<li><strong>Database-Specific Lowering</strong>:</li>
-<li>Adjust syntax for target database</li>
-<li>Validate frame clause support</li>
-</ol>
-<h3 id="runtime-execution">Runtime Execution<a class="headerlink" href="#runtime-execution" title="Permanent link">&para;</a></h3>
-<ol>
-<li>Apply WHERE filters first (before window functions)</li>
-<li>Compute window functions (database-side)</li>
-<li>Apply HAVING if present (after aggregates)</li>
-<li>Apply final ORDER BY and LIMIT</li>
-<li>Return results with window columns</li>
-</ol>
-<p><strong>Execution Order</strong>:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>WHERE → GROUP BY → HAVING → Window Functions → ORDER BY → LIMIT
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="evaluation-order">Evaluation Order<a class="headerlink" href="#evaluation-order" title="Permanent link">&para;</a></h2>
+<p>PostgreSQL evaluates window functions at a fixed point in the query pipeline. Knowing
+this order matters when you combine them with filters and aggregates inside a view:</p>
+<div class="highlight"><pre><span></span><code>WHERE → GROUP BY → HAVING → Window Functions → ORDER BY → LIMIT
+</code></pre></div>
+<ul>
+<li><code>WHERE</code> filters rows <strong>before</strong> window functions see them.</li>
+<li><code>GROUP BY</code> / <code>HAVING</code> aggregate <strong>before</strong> window functions run, so a window can
+  operate over already-aggregated rows (e.g. <code>LAG(SUM(revenue), 12)</code>).</li>
+<li>Because window functions run after <code>WHERE</code>, you cannot filter on a window result in
+  the same query level — wrap the view (or a subquery) and filter the outer level (see
+  <a href="#4-top-n-per-category">Top-N Per Category</a>).</li>
+</ul>
 <hr />
-<h2 id="database-specific-support">Database-Specific Support<a class="headerlink" href="#database-specific-support" title="Permanent link">&para;</a></h2>
-<h3 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permanent link">&para;</a></h3>
-<p><strong>Support Level</strong>: ✅ Full</p>
-<p><strong>Features</strong>:</p>
+<h2 id="postgresql-support">PostgreSQL Support<a class="headerlink" href="#postgresql-support" title="Permanent link">&para;</a></h2>
+<p>PostgreSQL has full window-function support, which is everything these patterns need:</p>
 <ul>
-<li>All ranking functions (ROW_NUMBER, RANK, DENSE_RANK, NTILE, PERCENT_RANK, CUME_DIST)</li>
-<li>All value functions (LAG, LEAD, FIRST_VALUE, LAST_VALUE, NTH_VALUE)</li>
-<li>All frame types (ROWS, RANGE, GROUPS)</li>
-<li>EXCLUDE clause (EXCLUDE CURRENT ROW, EXCLUDE GROUP, EXCLUDE TIES, EXCLUDE NO OTHERS)</li>
+<li>All ranking functions (<code>ROW_NUMBER</code>, <code>RANK</code>, <code>DENSE_RANK</code>, <code>NTILE</code>, <code>PERCENT_RANK</code>, <code>CUME_DIST</code>)</li>
+<li>All value functions (<code>LAG</code>, <code>LEAD</code>, <code>FIRST_VALUE</code>, <code>LAST_VALUE</code>, <code>NTH_VALUE</code>)</li>
+<li>All frame types (<code>ROWS</code>, <code>RANGE</code>, <code>GROUPS</code>)</li>
+<li>The <code>EXCLUDE</code> clause (<code>EXCLUDE CURRENT ROW</code>, <code>EXCLUDE GROUP</code>, <code>EXCLUDE TIES</code>, <code>EXCLUDE NO OTHERS</code>)</li>
 </ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data-&gt;&gt;'category'
-        ORDER BY occurred_at
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-        EXCLUDE CURRENT ROW
-    ) AS cumulative_revenue_excluding_current
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mysql-80">MySQL (8.0+)<a class="headerlink" href="#mysql-80" title="Permanent link">&para;</a></h3>
-<p><strong>Support Level</strong>: ✅ Near-full (requires MySQL 8.0+)</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li>All ranking functions</li>
-<li>All value functions</li>
-<li>Frame types: ROWS, RANGE</li>
-<li>❌ No GROUPS frame type</li>
-<li>❌ No EXCLUDE clause</li>
-</ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    JSON_EXTRACT(data, '<span class="arithmatex">\(.category') AS category,
-    revenue,
-    ROW_NUMBER() OVER (PARTITION BY JSON_EXTRACT(data, '\)</span>.category') ORDER BY revenue DESC) AS rank
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sqlite-325">SQLite (3.25+)<a class="headerlink" href="#sqlite-325" title="Permanent link">&para;</a></h3>
-<p><strong>Support Level</strong>: ✅ Good (requires SQLite 3.25+, released 2018)</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li>All ranking functions</li>
-<li>All value functions</li>
-<li>Frame types: ROWS, RANGE</li>
-<li>❌ No GROUPS frame type</li>
-<li>❌ No EXCLUDE clause</li>
-</ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    json_extract(data, '<span class="arithmatex">\(.category') AS category,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY json_extract(data, '\)</span>.category')
-        ORDER BY occurred_at
-        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) AS moving_avg_7d
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="sql-server">SQL Server<a class="headerlink" href="#sql-server" title="Permanent link">&para;</a></h3>
-<p><strong>Support Level</strong>: ✅ Full</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li>All ranking functions</li>
-<li>All value functions (LAG, LEAD, FIRST_VALUE, LAST_VALUE)</li>
-<li>Frame types: ROWS, RANGE</li>
-<li>❌ No GROUPS frame type</li>
-<li>❌ No EXCLUDE clause</li>
-</ul>
-<p><strong>Example</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    JSON_VALUE(data, '<span class="arithmatex">\(.category') AS category,
-    revenue,
-    LAG(revenue, 1) OVER (
-        PARTITION BY JSON_VALUE(data, '\)</span>.category')
-        ORDER BY occurred_at
-    ) AS prev_day_revenue
-FROM tf_sales;
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_excluded</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;cumulative_revenue_excluding_current&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">                </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">                </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">                </span><span class="n">EXCLUDE</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
+<p>Each example below is the body of a view's <code>SELECT</code>. Wrap it in
+<code>CREATE VIEW v_... AS SELECT s.id, jsonb_build_object(...) AS data FROM ...</code> to expose
+the result through FraiseQL.</p>
 <h3 id="1-running-totals">1. Running Totals<a class="headerlink" href="#1-running-totals" title="Permanent link">&para;</a></h3>
-<p>Calculate cumulative sum up to current row.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    occurred_at,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data-&gt;&gt;'category'
-        ORDER BY occurred_at
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-    ) AS cumulative_revenue
-FROM tf_sales
-ORDER BY data-&gt;&gt;'category', occurred_at;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Calculate a cumulative sum up to the current row.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">        </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">        </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cumulative_revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="2-moving-averages">2. Moving Averages<a class="headerlink" href="#2-moving-averages" title="Permanent link">&para;</a></h3>
-<p>Calculate average over sliding window (e.g., 7-day moving average).</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'category' AS category,
-    occurred_at::DATE AS day,
-    SUM(revenue) AS daily_revenue,
-    AVG(SUM(revenue)) OVER (
-        PARTITION BY data-&gt;&gt;'category'
-        ORDER BY occurred_at::DATE
-        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) AS moving_avg_7d
-FROM tf_sales
-GROUP BY data-&gt;&gt;'category', occurred_at::DATE
-ORDER BY data-&gt;&gt;'category', occurred_at::DATE;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Calculate an average over a sliding window (e.g. a 7-day moving average). Note the
+window runs over already-aggregated daily totals.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">daily_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">))</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">        </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span>
+<span class="w">        </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">moving_avg_7d</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="3-year-over-year-comparison">3. Year-Over-Year Comparison<a class="headerlink" href="#3-year-over-year-comparison" title="Permanent link">&para;</a></h3>
-<p>Compare current period to same period last year using LAG.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    DATE_TRUNC('month', occurred_at) AS month,
-    SUM(revenue) AS monthly_revenue,
-    LAG(SUM(revenue), 12) OVER (ORDER BY DATE_TRUNC('month', occurred_at)) AS same_month_last_year,
-    SUM(revenue) - LAG(SUM(revenue), 12) OVER (ORDER BY DATE_TRUNC('month', occurred_at)) AS yoy_change
-FROM tf_sales
-GROUP BY DATE_TRUNC('month', occurred_at)
-ORDER BY month;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Compare the current period to the same period last year using <code>LAG</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">month</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">monthly_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">same_month_last_year</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">12</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">yoy_change</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">month</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="4-top-n-per-category">4. Top-N Per Category<a class="headerlink" href="#4-top-n-per-category" title="Permanent link">&para;</a></h3>
-<p>Rank items within each category and filter to top N.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT * FROM (
-    SELECT
-        data-&gt;&gt;'category' AS category,
-        data-&gt;&gt;'product_name' AS product,
-        SUM(revenue) AS total_revenue,
-        ROW_NUMBER() OVER (
-            PARTITION BY data-&gt;&gt;'category'
-            ORDER BY SUM(revenue) DESC
-        ) AS rank
-    FROM tf_sales
-    GROUP BY data-&gt;&gt;'category', data-&gt;&gt;'product_name'
-) ranked
-WHERE rank &lt;= 10
-ORDER BY category, rank;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Rank items within each category and filter to the top N. Because window results cannot
+be filtered at the same query level, compute the rank in an inner subquery and filter
+the outer one.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="n">s</span><span class="p">.</span><span class="n">product_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product</span><span class="p">,</span>
+<span class="w">        </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_revenue</span><span class="p">,</span>
+<span class="w">        </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span>
+<span class="w">            </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span>
+<span class="w">        </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">product_name</span>
+<span class="p">)</span><span class="w"> </span><span class="n">ranked</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">rank</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="5-percentile-ranking">5. Percentile Ranking<a class="headerlink" href="#5-percentile-ranking" title="Permanent link">&para;</a></h3>
-<p>Assign percentile ranks to rows.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    data-&gt;&gt;'product_name' AS product,
-    SUM(revenue) AS total_revenue,
-    PERCENT_RANK() OVER (ORDER BY SUM(revenue) DESC) AS percentile_rank,
-    NTILE(4) OVER (ORDER BY SUM(revenue) DESC) AS quartile
-FROM tf_sales
-GROUP BY data-&gt;&gt;'product_name'
-ORDER BY total_revenue DESC;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Assign percentile ranks and quartiles to rows.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">product_name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PERCENT_RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">percentile_rank</span><span class="p">,</span>
+<span class="w">    </span><span class="n">NTILE</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w">       </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quartile</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">product_name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_revenue</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="6-trend-analysis">6. Trend Analysis<a class="headerlink" href="#6-trend-analysis" title="Permanent link">&para;</a></h3>
-<p>Compare to previous period to identify trends.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT
-    occurred_at::DATE AS day,
-    SUM(revenue) AS daily_revenue,
-    LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE) AS prev_day_revenue,
-    SUM(revenue) - LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE) AS day_over_day_change,
-    ROUND(
-        100.0 * (SUM(revenue) - LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE)) /
-        NULLIF(LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE), 0),
-        2
-    ) AS day_over_day_pct
-FROM tf_sales
-GROUP BY occurred_at::DATE
-ORDER BY occurred_at::DATE;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Compare to the previous period to identify trends.</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">daily_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">prev_day_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">day_over_day_change</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span>
+<span class="w">        </span><span class="mi">100</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">))</span><span class="w"> </span><span class="o">/</span>
+<span class="w">        </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">LAG</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
+<span class="w">        </span><span class="mi">2</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">day_over_day_pct</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="n">s</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">::</span><span class="nb">DATE</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="indexing-strategy">Indexing Strategy<a class="headerlink" href="#indexing-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>PARTITION BY Columns</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Index columns used in PARTITION BY
-CREATE INDEX idx_sales_category ON tf_sales ((dimensions-&gt;&gt;'category'));
-```text</p>
-<!-- Code example in TEXT -->
+<p>Index the columns your windows partition and order by. Window functions read the table
+in partition/order sequence, so matching indexes let PostgreSQL avoid extra sorts.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Index columns used in PARTITION BY</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_category</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="p">(</span><span class="n">category</span><span class="p">);</span>
 
-<p><strong>ORDER BY Columns</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Index columns used in ORDER BY within window
-CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Index columns used in ORDER BY within the window</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_occurred</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="p">(</span><span class="n">occurred_at</span><span class="p">);</span>
 
-<p><strong>Composite Indexes</strong>:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Composite index for common window pattern
-CREATE INDEX idx_sales_category_occurred
-    ON tf_sales ((dimensions-&gt;&gt;'category'), occurred_at);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="window-function-evaluation">Window Function Evaluation<a class="headerlink" href="#window-function-evaluation" title="Permanent link">&para;</a></h3>
-<p><strong>Execution Order</strong>:</p>
-<ol>
-<li>WHERE clause filters rows</li>
-<li>GROUP BY aggregates (if present)</li>
-<li>HAVING filters aggregated results (if present)</li>
-<li><strong>Window functions compute</strong> ← Happens here</li>
-<li>Final ORDER BY sorts results</li>
-<li>LIMIT/OFFSET applies</li>
-</ol>
-<p><strong>Performance Impact</strong>:</p>
+<span class="c1">-- Composite index for a common (partition, order) pattern</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_category_occurred</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sales</span><span class="w"> </span><span class="p">(</span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="cost-notes">Cost Notes<a class="headerlink" href="#cost-notes" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Window functions evaluated AFTER WHERE/GROUP BY/HAVING</li>
-<li>Can be expensive for large windows (UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)</li>
-<li>Proper indexes on PARTITION BY and ORDER BY columns critical</li>
+<li>Window functions are evaluated <strong>after</strong> <code>WHERE</code>/<code>GROUP BY</code>/<code>HAVING</code>, so filtering
+  early reduces the rows the window has to scan.</li>
+<li>Large frames (<code>UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code>) are more expensive than
+  bounded frames.</li>
+<li>Proper indexes on <code>PARTITION BY</code> and <code>ORDER BY</code> columns are critical for large tables.</li>
 </ul>
 <h3 id="optimization-tips">Optimization Tips<a class="headerlink" href="#optimization-tips" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Use Specific Frame Clauses</strong>:</li>
+<li><strong>Use specific frame clauses</strong> — bound the frame whenever the calculation allows it:</li>
 </ol>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- ❌ SLOW: Large frame
-   SUM(revenue) OVER (
-       ORDER BY occurred_at
-       ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-   )</p>
-<p>-- ✅ FAST: Bounded frame
-   SUM(revenue) OVER (
-       ORDER BY occurred_at
-       ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-   )
-   ```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Slower: unbounded frame</span>
+<span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">UNBOUNDED</span><span class="w"> </span><span class="n">FOLLOWING</span>
+<span class="p">)</span>
 
+<span class="c1">-- Faster: bounded frame</span>
+<span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="w">    </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
+<span class="p">)</span>
+</code></pre></div>
 <ol>
-<li><strong>Partition Data Appropriately</strong>:</li>
-<li>Balance partition size (not too large, not too many)</li>
 <li>
-<p>Use meaningful partitions (category, region, etc.)</p>
+<p><strong>Partition data appropriately</strong> — balance partition size (not too large, not too
+   many) and use meaningful partitions (category, region, etc.).</p>
 </li>
 <li>
-<p><strong>Consider Materialized Views</strong>:</p>
+<p><strong>Promote heavy views to <code>tv_</code> table-backed views</strong> — for window calculations that
+   are queried often, precompute them into a <code>tv_</code> projection table refreshed by a
+   function or trigger, rather than recomputing on every read. See
+   <a href="../../database/tv-table-pattern/">tv-table pattern</a> and the
+   <a href="../../database/view-selection-guide/">view-selection guide</a> for when to choose a
+   plain <code>v_</code> view versus a <code>tv_</code> table.</p>
+</li>
+<li>
+<p><strong>Reduce data volume first</strong> — prefer <code>ROWS BETWEEN 6 PRECEDING</code> over
+   <code>UNBOUNDED PRECEDING</code> when possible, and use a <code>WHERE</code> clause to shrink the input
+   before window computation.</p>
 </li>
 </ol>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- For frequently-used window calculations
-   CREATE MATERIALIZED VIEW mv_sales_running_totals AS
-   SELECT
-       data-&gt;&gt;'category' AS category,
-       occurred_at,
-       revenue,
-       SUM(revenue) OVER (
-           PARTITION BY data-&gt;&gt;'category'
-           ORDER BY occurred_at
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-       ) AS cumulative_revenue
-   FROM tf_sales;</p>
-<p>CREATE INDEX idx_mv_category_occurred
-       ON mv_sales_running_totals(category, occurred_at);
-   ```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li><strong>Limit Window Size</strong>:</li>
-<li>Prefer <code>ROWS BETWEEN 6 PRECEDING</code> over <code>UNBOUNDED PRECEDING</code> when possible</li>
-<li>Use WHERE clause to reduce data volume before window computation</li>
-</ol>
 <hr />
-<h2 id="graphql-api-proposed">GraphQL API (Proposed)<a class="headerlink" href="#graphql-api-proposed" title="Permanent link">&para;</a></h2>
-<p><strong>Status</strong>: Proposed for future enhancement</p>
-<h3 id="query-structure">Query Structure<a class="headerlink" href="#query-structure" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>input WindowFunctionInput {
-  function: WindowFunction!
-  field: String
-  alias: String!
-  partition_by: [String!]
-  order_by: [OrderByInput!]
-  frame: WindowFrameInput
-  offset: Int  # For LAG/LEAD
-  default: JSON  # For LAG/LEAD default value
-}</p>
-<p>enum WindowFunction {
-  # Ranking
-  ROW_NUMBER
-  RANK
-  DENSE_RANK
-  NTILE
-  PERCENT_RANK
-  CUME_DIST</p>
-<p># Value
-  LAG
-  LEAD
-  FIRST_VALUE
-  LAST_VALUE
-  NTH_VALUE</p>
-<p># Aggregates
-  SUM
-  AVG
-  COUNT
-  MIN
-  MAX
-}</p>
-<p>input WindowFrameInput {
-  type: WindowFrameType!
-  start: WindowFrameBoundary!
-  end: WindowFrameBoundary!
-}</p>
-<p>enum WindowFrameType {
-  ROWS
-  RANGE
-  GROUPS  # PostgreSQL only
-}</p>
-<p>input WindowFrameBoundary {
-  type: BoundaryType!
-  offset: Int
-}</p>
-<p>enum BoundaryType {
-  UNBOUNDED_PRECEDING
-  N_PRECEDING
-  CURRENT_ROW
-  N_FOLLOWING
-  UNBOUNDED_FOLLOWING
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="example-query">Example Query<a class="headerlink" href="#example-query" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  sales_window(
-    select: ["category", "occurred_at", "revenue"]
-    windows: [
-      {
-        function: ROW_NUMBER
-        alias: "rank_by_revenue"
-        partition_by: ["category"]
-        order_by: [{field: "revenue", direction: DESC}]
-      }
-      {
-        function: SUM
-        field: "revenue"
-        alias: "running_total"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-        frame: {
-          type: ROWS
-          start: {type: UNBOUNDED_PRECEDING}
-          end: {type: CURRENT_ROW}
-        }
-      }
-      {
-        function: AVG
-        field: "revenue"
-        alias: "moving_avg_7d"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-        frame: {
-          type: ROWS
-          start: {type: N_PRECEDING, offset: 6}
-          end: {type: CURRENT_ROW}
-        }
-      }
-      {
-        function: LAG
-        field: "revenue"
-        offset: 1
-        alias: "prev_day_revenue"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-      }
-    ]
-    where: {occurred_at: {_gte: "2026-01-01"}}
-    orderBy: [{field: "category"}, {field: "occurred_at"}]
-  ) {
-    category
-    occurred_at
-    revenue
-    rank_by_revenue
-    running_total
-    moving_avg_7d
-    prev_day_revenue
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="related-specifications">Related Specifications<a class="headerlink" href="#related-specifications" title="Permanent link">&para;</a></h2>
+<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Aggregation Model</strong> (<code>aggregation-model.md</code>) - GROUP BY and basic aggregates</li>
-<li><strong>Window Operators Reference</strong> (<code>../specs/window-operators.md</code>) - Complete function reference</li>
-<li><strong>Analytics Patterns</strong> (<code>../guides/analytics-patterns.md</code>) - Practical examples</li>
+<li><a href="../aggregation-model/">Aggregation Model</a> — <code>GROUP BY</code>, <code>HAVING</code>, and basic aggregates</li>
+<li><a href="../fact-dimension-pattern/">Fact / Dimension Pattern</a> — modeling fact tables for analytics</li>
+<li><a href="../calendar-dimensions/">Calendar Dimensions</a> — date attributes for time-based windows</li>
+<li><a href="../../database/tv-table-pattern/">tv-table Pattern</a> — materializing heavy views into projection tables</li>
+<li><a href="../../database/view-selection-guide/">View Selection Guide</a> — choosing <code>v_</code> vs <code>tv_</code></li>
 </ul>
-<hr />
-<p><em>End of Window Functions Architecture</em></p>
 
 
 
 
 
 
+
+  
+  
 
 
 
