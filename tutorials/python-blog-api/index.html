@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Build a complete PostgreSQL-backed Blog API by authoring types, queries, and mutations as Python decorators and serving them at runtime with FastAPI.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/tutorials/python-blog-api/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Python Blog API - FraiseQL Documentation</title>
+        <title>Building a Blog API with FraiseQL: Schema Authoring in Python - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Python Blog API
+              Building a Blog API with FraiseQL: Schema Authoring in Python
             
           </span>
         </div>
@@ -3658,22 +3660,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-1-database-schema-sql" class="md-nav__link">
+  <a href="#part-1-the-postgresql-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 1: Database Schema (SQL)
+        Part 1: The PostgreSQL Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 1: Database Schema (SQL)">
+    <nav class="md-nav" aria-label="Part 1: The PostgreSQL Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#creating-the-postgresql-database" class="md-nav__link">
+  <a href="#step-11-create-the-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating the PostgreSQL Database
+        Step 1.1: Create the Database
       
     </span>
   </a>
@@ -3681,10 +3683,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#creating-sql-views-for-queries" class="md-nav__link">
+  <a href="#step-12-write-tables-the-source-of-truth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating SQL Views for Queries
+        Step 1.2: Write Tables (the source of truth)
       
     </span>
   </a>
@@ -3692,10 +3694,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#creating-sql-functions-for-mutations" class="md-nav__link">
+  <a href="#step-13-read-views-the-query-side" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating SQL Functions for Mutations
+        Step 1.3: Read Views (the query side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-14-write-functions-the-command-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1.4: Write Functions (the command side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-15-apply-the-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1.5: Apply the Schema
       
     </span>
   </a>
@@ -3708,22 +3732,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-2-fraiseql-schema-definition-python" class="md-nav__link">
+  <a href="#part-2-the-python-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 2: FraiseQL Schema Definition (Python)
+        Part 2: The Python Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 2: FraiseQL Schema Definition (Python)">
+    <nav class="md-nav" aria-label="Part 2: The Python Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#project-setup" class="md-nav__link">
+  <a href="#step-21-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Project Setup
+        Step 2.1: Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-22-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.2: Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-23-inputs-and-result-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.3: Inputs and Result Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-24-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.4: Mutations
       
     </span>
   </a>
@@ -3732,6 +3789,172 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-3-assemble-and-run-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 3: Assemble and Run the App
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-4-test-in-the-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 4: Test in the Playground
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 4: Test in the Playground">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-41-seed-an-author-and-a-post" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.1: Seed an Author and a Post
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-42-read-data-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.2: Read Data Back
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-43-add-and-list-comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.3: Add and List Comments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-5-how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 5: How It Fits Together
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-6-common-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 6: Common Pitfalls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 6: Common Pitfalls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-modern-type-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use modern type hints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#always-set-sql_source-on-a-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always set sql_source on a type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb-keys-must-match-graphql-field-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSONB keys must match GraphQL field names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#never-expose-pk_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Never expose pk_*
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pass-uuid-arguments-to-functions-as-strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass UUID arguments to functions as strings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5055,22 +5278,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-1-database-schema-sql" class="md-nav__link">
+  <a href="#part-1-the-postgresql-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 1: Database Schema (SQL)
+        Part 1: The PostgreSQL Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 1: Database Schema (SQL)">
+    <nav class="md-nav" aria-label="Part 1: The PostgreSQL Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#creating-the-postgresql-database" class="md-nav__link">
+  <a href="#step-11-create-the-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating the PostgreSQL Database
+        Step 1.1: Create the Database
       
     </span>
   </a>
@@ -5078,10 +5301,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#creating-sql-views-for-queries" class="md-nav__link">
+  <a href="#step-12-write-tables-the-source-of-truth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating SQL Views for Queries
+        Step 1.2: Write Tables (the source of truth)
       
     </span>
   </a>
@@ -5089,10 +5312,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#creating-sql-functions-for-mutations" class="md-nav__link">
+  <a href="#step-13-read-views-the-query-side" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating SQL Functions for Mutations
+        Step 1.3: Read Views (the query side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-14-write-functions-the-command-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1.4: Write Functions (the command side)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-15-apply-the-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1.5: Apply the Schema
       
     </span>
   </a>
@@ -5105,22 +5350,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-2-fraiseql-schema-definition-python" class="md-nav__link">
+  <a href="#part-2-the-python-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 2: FraiseQL Schema Definition (Python)
+        Part 2: The Python Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 2: FraiseQL Schema Definition (Python)">
+    <nav class="md-nav" aria-label="Part 2: The Python Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#project-setup" class="md-nav__link">
+  <a href="#step-21-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Project Setup
+        Step 2.1: Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-22-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.2: Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-23-inputs-and-result-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.3: Inputs and Result Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-24-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.4: Mutations
       
     </span>
   </a>
@@ -5129,6 +5407,172 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-3-assemble-and-run-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 3: Assemble and Run the App
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-4-test-in-the-playground" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 4: Test in the Playground
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 4: Test in the Playground">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-41-seed-an-author-and-a-post" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.1: Seed an Author and a Post
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-42-read-data-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.2: Read Data Back
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-43-add-and-list-comments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.3: Add and List Comments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-5-how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 5: How It Fits Together
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-6-common-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 6: Common Pitfalls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 6: Common Pitfalls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-modern-type-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use modern type hints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#always-set-sql_source-on-a-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Always set sql_source on a type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jsonb-keys-must-match-graphql-field-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSONB keys must match GraphQL field names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#never-expose-pk_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Never expose pk_*
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pass-uuid-arguments-to-functions-as-strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pass UUID arguments to functions as strings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5152,1806 +5596,680 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Building a Blog API with FraiseQL: Schema Authoring in Python
-description: In this tutorial, you'll build a complete Blog API by:
-keywords: ["project", "hands-on", "schema", "learning", "example", "step-by-step"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="building-a-blog-api-with-fraiseql-schema-authoring-in-python">Building a Blog API with FraiseQL: Schema Authoring in Python<a class="headerlink" href="#building-a-blog-api-with-fraiseql-schema-authoring-in-python" title="Permanent link">&para;</a></h1>
-<p><strong>Duration</strong>: 30 minutes
-<strong>Outcome</strong>: Complete GraphQL Blog API with schema authoring, compilation, and testing
-<strong>Prerequisites</strong>: Python 3.10+, PostgreSQL (or SQLite for local testing), FraiseQL CLI
-<strong>Focus</strong>: Schema definition in Python, NOT client implementation</p>
+<p><strong>Duration</strong>: ~30 minutes
+<strong>Outcome</strong>: A working GraphQL Blog API (authors, posts, comments) served over FastAPI
+<strong>Prerequisites</strong>: Python 3.13+, PostgreSQL 13+
+<strong>Focus</strong>: Authoring the schema in Python and running it against PostgreSQL</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>In this tutorial, you'll build a complete Blog API by:</p>
+<p>FraiseQL is a <strong>Python runtime GraphQL framework for PostgreSQL</strong>. You describe
+your API with Python decorators; at app startup FraiseQL builds the GraphQL
+schema <strong>in memory</strong> and serves it over FastAPI. There is <strong>no compile step</strong>,
+no generated artifact files, and no separate server binary — you just run a
+FastAPI app with <code>uvicorn</code>.</p>
+<p>In this tutorial you'll build a Blog API by:</p>
 <ol>
-<li><strong>Defining the database schema</strong> with SQL DDL (PostgreSQL)</li>
-<li><strong>Creating Python type definitions</strong> with FraiseQL decorators</li>
-<li><strong>Authoring GraphQL queries and mutations</strong> as Python functions</li>
-<li><strong>Exporting</strong> the schema to JSON</li>
-<li><strong>Compiling</strong> with the FraiseQL CLI</li>
-<li><strong>Testing</strong> your GraphQL API</li>
+<li><strong>Designing the PostgreSQL schema</strong> — write tables, read views, and write functions</li>
+<li><strong>Defining GraphQL types</strong> with <code>@fraiseql.type</code></li>
+<li><strong>Writing query resolvers</strong> with <code>@fraiseql.query</code></li>
+<li><strong>Writing mutation resolvers</strong> with <code>@fraiseql.mutation</code></li>
+<li><strong>Assembling and running the app</strong> with <code>create_fraiseql_app</code> + <code>uvicorn</code></li>
+<li><strong>Testing</strong> in the GraphQL playground</li>
 </ol>
 <h3 id="what-youll-build">What You'll Build<a class="headerlink" href="#what-youll-build" title="Permanent link">&para;</a></h3>
 <p>A <strong>Blog API</strong> supporting:</p>
 <ul>
-<li><strong>Users</strong>: Create and manage blog authors</li>
-<li><strong>Posts</strong>: Create, update, delete blog posts with author relationships</li>
-<li><strong>Comments</strong>: Add comments to posts with user relationships</li>
+<li><strong>Authors</strong> — people who write posts and comments</li>
+<li><strong>Posts</strong> — blog posts with an embedded author</li>
+<li><strong>Comments</strong> — comments on posts, each with an embedded author</li>
 </ul>
 <h3 id="key-concepts-youll-learn">Key Concepts You'll Learn<a class="headerlink" href="#key-concepts-youll-learn" title="Permanent link">&para;</a></h3>
 <ul>
-<li>FraiseQL's Python decorators (<code>@FraiseQL.type</code>, <code>@FraiseQL.query</code>, <code>@FraiseQL.mutation</code>)</li>
-<li>Python modern type hints (PEP 604: <code>X | None</code> instead of <code>Optional[X]</code>)</li>
-<li>Mapping Python types to SQL sources (views and functions)</li>
-<li>Query parameters and filtering</li>
-<li>Mutations for CREATE, UPDATE, DELETE operations</li>
-<li>Schema export and validation</li>
+<li>FraiseQL's decorators: <code>@fraiseql.type</code>, <code>@fraiseql.query</code>, <code>@fraiseql.mutation</code>,
+  <code>@fraiseql.input</code>, <code>@fraiseql.success</code>, <code>@fraiseql.error</code></li>
+<li>The <strong>CQRS</strong> split: read from <code>v_*</code> views, write through <code>fn_*</code> functions</li>
+<li>The <strong>Trinity</strong> identifier pattern: <code>pk_*</code> (internal <code>BIGINT</code>), <code>id</code> (public <code>UUID</code>),
+  <code>identifier</code> (optional human-readable slug)</li>
+<li>JSONB composition in views to fetch nested data in a single query</li>
+<li>Modern Python type hints (<code>X | None</code>, <code>list[X]</code>) and the <code>ID</code> scalar</li>
 </ul>
 <hr />
-<h2 id="part-1-database-schema-sql">Part 1: Database Schema (SQL)<a class="headerlink" href="#part-1-database-schema-sql" title="Permanent link">&para;</a></h2>
-<p>FraiseQL compiles GraphQL to SQL at build time. First, create the underlying database schema.</p>
-<h3 id="creating-the-postgresql-database">Creating the PostgreSQL Database<a class="headerlink" href="#creating-the-postgresql-database" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create users table
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    bio TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>-- Create posts table
-CREATE TABLE posts (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(500) NOT NULL,
-    content TEXT NOT NULL,
-    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    published BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>-- Create comments table
-CREATE TABLE comments (
-    id SERIAL PRIMARY KEY,
-    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>-- Create indexes for common queries
-CREATE INDEX idx_posts_author_id ON posts(author_id);
-CREATE INDEX idx_posts_published ON posts(published);
-CREATE INDEX idx_comments_post_id ON comments(post_id);
-CREATE INDEX idx_comments_user_id ON comments(user_id);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="creating-sql-views-for-queries">Creating SQL Views for Queries<a class="headerlink" href="#creating-sql-views-for-queries" title="Permanent link">&para;</a></h3>
-<p>FraiseQL queries often read from <strong>views</strong> rather than raw tables. This provides a clean separation between your schema and implementation details.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- View: All posts with author information
-CREATE VIEW v_posts AS
-SELECT
-    p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    p.published,
-    p.created_at,
-    p.updated_at,
-    u.name AS author_name,
-    u.email AS author_email
-FROM posts p
-JOIN users u ON p.author_id = u.id
-ORDER BY p.created_at DESC;</p>
-<p>-- View: Single post by ID with author
-CREATE VIEW v_post_by_id AS
-SELECT
-    p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    p.published,
-    p.created_at,
-    p.updated_at,
-    u.name AS author_name,
-    u.email AS author_email
-FROM posts p
-JOIN users u ON p.author_id = u.id;</p>
-<p>-- View: Posts by a specific user
-CREATE VIEW v_user_posts AS
-SELECT
-    p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    p.published,
-    p.created_at,
-    p.updated_at,
-    u.name AS author_name
-FROM posts p
-JOIN users u ON p.author_id = u.id;</p>
-<p>-- View: Comments with author and post info
-CREATE VIEW v_comments AS
-SELECT
-    c.id,
-    c.post_id,
-    c.user_id,
-    c.content,
-    c.created_at,
-    c.updated_at,
-    u.name AS author_name,
-    p.title AS post_title
-FROM comments c
-JOIN users u ON c.user_id = u.id
-JOIN posts p ON c.post_id = p.id;</p>
-<p>-- View: All users
-CREATE VIEW v_users AS
-SELECT
-    id,
-    name,
-    email,
-    bio,
-    created_at,
-    updated_at
-FROM users;
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="creating-sql-functions-for-mutations">Creating SQL Functions for Mutations<a class="headerlink" href="#creating-sql-functions-for-mutations" title="Permanent link">&para;</a></h3>
-<p>Mutations (CREATE, UPDATE, DELETE) are typically implemented as PostgreSQL <strong>functions</strong>. This keeps business logic in the database.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Function: Create a new user
-CREATE FUNCTION fn_create_user(
-    p_name VARCHAR,
-    p_email VARCHAR,
-    p_bio TEXT DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    name VARCHAR,
-    email VARCHAR,
-    bio TEXT,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    RETURN QUERY
-    INSERT INTO users (name, email, bio)
-    VALUES (p_name, p_email, p_bio)
-    RETURNING users.id, users.name, users.email, users.bio, users.created_at, users.updated_at;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Function: Update a user
-CREATE FUNCTION fn_update_user(
-    p_id INTEGER,
-    p_name VARCHAR DEFAULT NULL,
-    p_email VARCHAR DEFAULT NULL,
-    p_bio TEXT DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    name VARCHAR,
-    email VARCHAR,
-    bio TEXT,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    UPDATE users
-    SET
-        name = COALESCE(p_name, name),
-        email = COALESCE(p_email, email),
-        bio = COALESCE(p_bio, bio),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_id;</p>
-<div class="highlight"><pre><span></span><code>RETURN QUERY
-SELECT users.id, users.name, users.email, users.bio, users.created_at, users.updated_at
-FROM users
-WHERE users.id = p_id;
-</code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Function: Create a new post
-CREATE FUNCTION fn_create_post(
-    p_title VARCHAR,
-    p_content TEXT,
-    p_author_id INTEGER,
-    p_published BOOLEAN DEFAULT FALSE
-)
-RETURNS TABLE (
-    id INTEGER,
-    title VARCHAR,
-    content TEXT,
-    author_id INTEGER,
-    published BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    RETURN QUERY
-    INSERT INTO posts (title, content, author_id, published)
-    VALUES (p_title, p_content, p_author_id, p_published)
-    RETURNING posts.id, posts.title, posts.content, posts.author_id, posts.published, posts.created_at, posts.updated_at;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Function: Update a post
-CREATE FUNCTION fn_update_post(
-    p_id INTEGER,
-    p_title VARCHAR DEFAULT NULL,
-    p_content TEXT DEFAULT NULL,
-    p_published BOOLEAN DEFAULT NULL
-)
-RETURNS TABLE (
-    id INTEGER,
-    title VARCHAR,
-    content TEXT,
-    author_id INTEGER,
-    published BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    UPDATE posts
-    SET
-        title = COALESCE(p_title, title),
-        content = COALESCE(p_content, content),
-        published = COALESCE(p_published, published),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_id;</p>
-<div class="highlight"><pre><span></span><code>RETURN QUERY
-SELECT posts.id, posts.title, posts.content, posts.author_id, posts.published, posts.created_at, posts.updated_at
-FROM posts
-WHERE posts.id = p_id;
-</code></pre></div>
-<p>END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Function: Delete a post (soft delete via flag)
-CREATE FUNCTION fn_delete_post(p_id INTEGER)
-RETURNS BOOLEAN AS $$
-BEGIN
-    DELETE FROM posts WHERE id = p_id;
-    RETURN FOUND;
-END;
-$$ LANGUAGE plpgsql;</p>
-<p>-- Function: Create a comment
-CREATE FUNCTION fn_create_comment(
-    p_post_id INTEGER,
-    p_user_id INTEGER,
-    p_content TEXT
-)
-RETURNS TABLE (
-    id INTEGER,
-    post_id INTEGER,
-    user_id INTEGER,
-    content TEXT,
-    created_at TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    RETURN QUERY
-    INSERT INTO comments (post_id, user_id, content)
-    VALUES (p_post_id, p_user_id, p_content)
-    RETURNING comments.id, comments.post_id, comments.user_id, comments.content, comments.created_at, comments.updated_at;
-END;
-$$ LANGUAGE plpgsql;
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-2-fraiseql-schema-definition-python">Part 2: FraiseQL Schema Definition (Python)<a class="headerlink" href="#part-2-fraiseql-schema-definition-python" title="Permanent link">&para;</a></h2>
-<p>Now you'll translate the database schema into FraiseQL type definitions and operations using Python decorators.</p>
-<h3 id="project-setup">Project Setup<a class="headerlink" href="#project-setup" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="create-a-new-directory-for-your-project">Create a new directory for your project<a class="headerlink" href="#create-a-new-directory-for-your-project" title="Permanent link">&para;</a></h1>
-<p>mkdir blog-api
-cd blog-api</p>
-<h1 id="create-a-python-virtual-environment">Create a Python virtual environment<a class="headerlink" href="#create-a-python-virtual-environment" title="Permanent link">&para;</a></h1>
-<p>python3.10 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate</p>
-<h1 id="install-fraiseql-python-sdk">Install FraiseQL Python SDK<a class="headerlink" href="#install-fraiseql-python-sdk" title="Permanent link">&para;</a></h1>
-<p>pip install FraiseQL</p>
-<h1 id="verify-installation">Verify installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h1>
-<p>python -c "import FraiseQL; print(FraiseQL.<strong>version</strong>)"
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-1-create-schemapy">Step 1: Create <code>schema.py</code><a class="headerlink" href="#step-1-create-schemapy" title="Permanent link">&para;</a></h3>
-<p>Create a file named <code>schema.py</code> in your project root:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>"""FraiseQL Blog API Schema Definition.</p>
-<p>This module defines the GraphQL schema for a blog API using FraiseQL decorators.
-It demonstrates:
-- Type definitions with @FraiseQL.type
-- Query definitions with @FraiseQL.query
-- Mutation definitions with @FraiseQL.mutation
-- Relationship mapping between types</p>
-<p>The schema is compiled to JSON for deployment.
-"""</p>
-<p>import FraiseQL</p>
-<h1 id="_1">============================================================================<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<h1 id="type-definitions">TYPE DEFINITIONS<a class="headerlink" href="#type-definitions" title="Permanent link">&para;</a></h1>
-<h1 id="_2">============================================================================<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class User:
-    """A blog author or commenter.</p>
-<div class="highlight"><pre><span></span><code>Fields:
-    id: Unique identifier
-    name: User&#39;s full name
-    email: User&#39;s email address
-    bio: Optional biography
-    created_at: Account creation timestamp
-    updated_at: Last account update timestamp
-&quot;&quot;&quot;
-
-id: UUID  # UUID v4 for GraphQL ID
-name: str
-email: str
-bio: str | None
-created_at: str
-updated_at: str
-</code></pre></div>
-<p>@FraiseQL.type
-class Post:
-    """A blog post written by a user.</p>
-<div class="highlight"><pre><span></span><code>Fields:
-    id: Unique identifier
-    title: Post title
-    content: Post body content
-    author_id: ID of the user who wrote this post
-    published: Whether the post is published
-    created_at: Post creation timestamp
-    updated_at: Last post update timestamp
-
-The `author_id` field enables queries to fetch the author relationship
-when needed.
-&quot;&quot;&quot;
-
-id: UUID  # UUID v4 for GraphQL ID
-title: str
-content: str
-author_id: UUID  # UUID v4 for GraphQL ID
-published: bool
-created_at: str
-updated_at: str
-</code></pre></div>
-<p>@FraiseQL.type
-class Comment:
-    """A comment on a blog post.</p>
-<div class="highlight"><pre><span></span><code>Fields:
-    id: Unique identifier
-    post_id: ID of the post this comment is on
-    user_id: ID of the user who wrote this comment
-    content: Comment text
-    created_at: Comment creation timestamp
-    updated_at: Last comment update timestamp
-&quot;&quot;&quot;
-
-id: UUID  # UUID v4 for GraphQL ID
-post_id: UUID  # UUID v4 for GraphQL ID
-user_id: UUID  # UUID v4 for GraphQL ID
-content: str
-created_at: str
-updated_at: str
-</code></pre></div>
-<h1 id="_3">============================================================================<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h1>
-<h1 id="queries-read-operations">QUERIES (Read Operations)<a class="headerlink" href="#queries-read-operations" title="Permanent link">&para;</a></h1>
-<h1 id="_4">============================================================================<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query(
-    sql_source="v_users",
-    auto_params={
-        "limit": True,        # Auto-generate limit parameter
-        "offset": True,       # Auto-generate offset parameter
-        "where": True,        # Auto-generate WHERE clause support
-        "order_by": True,     # Auto-generate ORDER BY support
-    }
-)
-def users(
-    limit: int = 10,
-    offset: int = 0,
-) -&gt; list[User]:
-    """Get a list of all users with pagination.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    limit: Maximum number of users to return (default: 10)
-    offset: Number of users to skip for pagination (default: 0)
-
-Returns:
-    List of User objects
-
-GraphQL Example:
-    query {
-        users(limit: 20, offset: 0) {
-            id
-            name
-            email
-            bio
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.query(sql_source="v_users")
-def user(id: int) -&gt; User | None:
-    """Get a single user by ID.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    id: The user ID to fetch
-
-Returns:
-    User object if found, None otherwise
-
-GraphQL Example:
-    query {
-        user(id: 1) {
-            id
-            name
-            email
-            bio
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.query(
-    sql_source="v_posts",
-    auto_params={
-        "limit": True,
-        "offset": True,
-        "where": True,
-        "order_by": True,
-    }
-)
-def posts(
-    limit: int = 10,
-    offset: int = 0,
-    published: bool = True,
-    author_id: int | None = None,
-) -&gt; list[Post]:
-    """Get a list of blog posts with optional filtering.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    limit: Maximum number of posts to return (default: 10)
-    offset: Pagination offset (default: 0)
-    published: Filter by published status (default: True)
-    author_id: Filter by author ID (optional)
-
-Returns:
-    List of Post objects matching the filter criteria
-
-GraphQL Example:
-    query {
-        posts(limit: 20, published: true, author_id: 1) {
-            id
-            title
-            content
-            author_id
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.query(sql_source="v_post_by_id")
-def post(id: int) -&gt; Post | None:
-    """Get a single post by ID.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    id: The post ID to fetch
-
-Returns:
-    Post object if found, None otherwise
-
-GraphQL Example:
-    query {
-        post(id: 42) {
-            id
-            title
-            content
-            author_id
-            published
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.query(
-    sql_source="v_user_posts",
-    auto_params={
-        "limit": True,
-        "offset": True,
-        "where": True,
-        "order_by": True,
-    }
-)
-def user_posts(
-    user_id: int,
-    limit: int = 10,
-    offset: int = 0,
-) -&gt; list[Post]:
-    """Get all posts written by a specific user.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    user_id: The author&#39;s user ID
-    limit: Maximum number of posts to return (default: 10)
-    offset: Pagination offset (default: 0)
-
-Returns:
-    List of Post objects written by the user
-
-GraphQL Example:
-    query {
-        user_posts(user_id: 1, limit: 50) {
-            id
-            title
-            content
-            published
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.query(
-    sql_source="v_comments",
-    auto_params={
-        "limit": True,
-        "offset": True,
-        "where": True,
-        "order_by": True,
-    }
-)
-def post_comments(
-    post_id: int,
-    limit: int = 20,
-    offset: int = 0,
-) -&gt; list[Comment]:
-    """Get all comments on a specific post.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    post_id: The post ID to fetch comments for
-    limit: Maximum number of comments to return (default: 20)
-    offset: Pagination offset (default: 0)
-
-Returns:
-    List of Comment objects on the post
-
-GraphQL Example:
-    query {
-        post_comments(post_id: 42, limit: 100) {
-            id
-            user_id
-            content
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<h1 id="_5">============================================================================<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h1>
-<h1 id="mutations-write-operations">MUTATIONS (Write Operations)<a class="headerlink" href="#mutations-write-operations" title="Permanent link">&para;</a></h1>
-<h1 id="_6">============================================================================<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.mutation(sql_source="fn_create_user", operation="CREATE")
-def create_user(
-    name: str,
-    email: str,
-    bio: str | None = None,
-) -&gt; User:
-    """Create a new user.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    name: User&#39;s full name
-    email: User&#39;s email address (must be unique)
-    bio: Optional user biography
-
-Returns:
-    The newly created User object
-
-GraphQL Example:
-    mutation {
-        create_user(name: &quot;Alice Smith&quot;, email: &quot;alice@example.com&quot;) {
-            id
-            name
-            email
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.mutation(sql_source="fn_update_user", operation="UPDATE")
-def update_user(
-    id: int,
-    name: str | None = None,
-    email: str | None = None,
-    bio: str | None = None,
-) -&gt; User:
-    """Update an existing user's information.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    id: User ID to update
-    name: New name (optional, only updated if provided)
-    email: New email (optional, only updated if provided)
-    bio: New bio (optional, only updated if provided)
-
-Returns:
-    The updated User object
-
-GraphQL Example:
-    mutation {
-        update_user(id: 1, bio: &quot;Software engineer and blogger&quot;) {
-            id
-            name
-            bio
-            updated_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.mutation(sql_source="fn_create_post", operation="CREATE")
-def create_post(
-    title: str,
-    content: str,
-    author_id: int,
-    published: bool = False,
-) -&gt; Post:
-    """Create a new blog post.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    title: Post title
-    content: Post content
-    author_id: ID of the user authoring the post
-    published: Whether to publish immediately (default: False for drafts)
-
-Returns:
-    The newly created Post object
-
-GraphQL Example:
-    mutation {
-        create_post(
-            title: &quot;Getting Started with GraphQL&quot;
-            content: &quot;GraphQL is a query language...&quot;
-            author_id: 1
-            published: true
-        ) {
-            id
-            title
-            author_id
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.mutation(sql_source="fn_update_post", operation="UPDATE")
-def update_post(
-    id: int,
-    title: str | None = None,
-    content: str | None = None,
-    published: bool | None = None,
-) -&gt; Post:
-    """Update an existing blog post.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    id: Post ID to update
-    title: New title (optional)
-    content: New content (optional)
-    published: New publish status (optional)
-
-Returns:
-    The updated Post object
-
-GraphQL Example:
-    mutation {
-        update_post(
-            id: 42
-            published: true
-        ) {
-            id
-            title
-            published
-            updated_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.mutation(sql_source="fn_delete_post", operation="DELETE")
-def delete_post(id: int) -&gt; bool:
-    """Delete a blog post.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    id: Post ID to delete
-
-Returns:
-    True if the post was deleted, False if not found
-
-GraphQL Example:
-    mutation {
-        delete_post(id: 42)
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<p>@FraiseQL.mutation(sql_source="fn_create_comment", operation="CREATE")
-def create_comment(
-    post_id: int,
-    user_id: int,
-    content: str,
-) -&gt; Comment:
-    """Create a new comment on a post.</p>
-<div class="highlight"><pre><span></span><code>Args:
-    post_id: ID of the post to comment on
-    user_id: ID of the user writing the comment
-    content: Comment text
-
-Returns:
-    The newly created Comment object
-
-GraphQL Example:
-    mutation {
-        create_comment(
-            post_id: 42
-            user_id: 5
-            content: &quot;Great article! Very helpful.&quot;
-        ) {
-            id
-            post_id
-            user_id
-            content
-            created_at
-        }
-    }
-&quot;&quot;&quot;
-pass
-</code></pre></div>
-<h1 id="_7">============================================================================<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h1>
-<h1 id="schema-export">SCHEMA EXPORT<a class="headerlink" href="#schema-export" title="Permanent link">&para;</a></h1>
-<h1 id="_8">============================================================================<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h1>
-<p>if <strong>name</strong> == "<strong>main</strong>":
-    # Export the schema to JSON
-    # This generates schema.json which will be compiled with FraiseQL-cli
-    FraiseQL.export_schema("schema.json")</p>
-<div class="highlight"><pre><span></span><code>print(&quot;\n✅ Schema exported successfully!&quot;)
-print(&quot;   Generated: schema.json&quot;)
-print(&quot;\n   Next steps:&quot;)
-print(&quot;   1. Review schema.json for correctness&quot;)
-print(&quot;   2. Compile: FraiseQL-cli compile schema.json FraiseQL.toml&quot;)
-print(&quot;   3. Start server: FraiseQL-server --schema schema.compiled.json&quot;)
-</code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="understanding-the-decorators">Understanding the Decorators<a class="headerlink" href="#understanding-the-decorators" title="Permanent link">&para;</a></h3>
-<h4 id="fraiseqltype"><code>@FraiseQL.type</code><a class="headerlink" href="#fraiseqltype" title="Permanent link">&para;</a></h4>
-<p>Defines a GraphQL type that maps to your database schema:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    id: int              # GraphQL ID field (non-null by default)
-    name: str            # GraphQL String field
-    email: str | None    # GraphQL String field that can be null
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Key points:</strong></p>
+<h2 id="part-1-the-postgresql-schema">Part 1: The PostgreSQL Schema<a class="headerlink" href="#part-1-the-postgresql-schema" title="Permanent link">&para;</a></h2>
+<p>FraiseQL follows <strong>CQRS</strong> (Command Query Responsibility Segregation):</p>
 <ul>
-<li>Use Python 3.10+ type hints (<code>str | None</code> instead of <code>Optional[str]</code>)</li>
-<li>All fields must be typed</li>
-<li>Field names match your database columns</li>
-<li><code>None</code> union means the field is nullable</li>
+<li><strong>Reads</strong> come from <code>v_*</code> views, each of which exposes an <code>id</code> column plus a
+  <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>.</li>
+<li><strong>Writes</strong> go through <code>fn_*</code> PostgreSQL functions, which hold the validation
+  and write logic and return a JSONB result.</li>
 </ul>
-<h4 id="fraiseqlquery"><code>@FraiseQL.query</code><a class="headerlink" href="#fraiseqlquery" title="Permanent link">&para;</a></h4>
-<p>Defines a GraphQL query (read-only operation):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(
-    sql_source="v_posts",           # SQL view or table to query
-    auto_params={
-        "limit": True,              # Auto-generate limit/offset
-        "offset": True,
-        "where": True,              # Auto-generate WHERE filters
-        "order_by": True,           # Auto-generate ORDER BY
-    }
-)
-def posts(limit: int = 10) -&gt; list[Post]:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Parameters:</strong></p>
+<p>This keeps your write tables normalized while letting reads return ready-to-serve
+nested JSON.</p>
+<h3 id="step-11-create-the-database">Step 1.1: Create the Database<a class="headerlink" href="#step-11-create-the-database" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>createdb<span class="w"> </span>blog
+</code></pre></div>
+<h3 id="step-12-write-tables-the-source-of-truth">Step 1.2: Write Tables (the source of truth)<a class="headerlink" href="#step-12-write-tables-the-source-of-truth" title="Permanent link">&para;</a></h3>
+<p>Each table uses the <strong>Trinity</strong> pattern:</p>
 <ul>
-<li><code>sql_source</code>: The database view or table name (required)</li>
-<li><code>auto_params</code>: Dictionary of auto-generated parameters</li>
-<li><code>"limit": True</code> - Automatically add <code>limit</code> parameter</li>
-<li><code>"offset": True</code> - Automatically add <code>offset</code> parameter</li>
-<li><code>"where": True</code> - Enable WHERE clause filtering</li>
-<li><code>"order_by": True</code> - Enable ORDER BY sorting</li>
+<li><code>pk_*</code> — internal <code>BIGINT</code> primary key for fast joins (<strong>never</strong> exposed)</li>
+<li><code>id</code> — public <code>UUID</code> (the GraphQL <code>id</code>)</li>
+<li><code>identifier</code> — optional human-readable <code>TEXT</code> slug</li>
 </ul>
-<h4 id="fraiseqlmutation"><code>@FraiseQL.mutation</code><a class="headerlink" href="#fraiseqlmutation" title="Permanent link">&para;</a></h4>
-<p>Defines a GraphQL mutation (write operation):</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.mutation(
-    sql_source="fn_create_user",    # SQL function to call
-    operation="CREATE"              # Operation type (CREATE, UPDATE, DELETE)
-)
-def create_user(name: str, email: str) -&gt; User:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Authors</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_author</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">  </span><span class="c1">-- internal, fast joins</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w">        </span><span class="c1">-- public GraphQL id</span>
+<span class="w">    </span><span class="n">identifier</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">                                           </span><span class="c1">-- optional handle/slug</span>
+<span class="w">    </span><span class="n">name</span><span class="w">        </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w">       </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">bio</span><span class="w">         </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
 
-<p><strong>Operation types:</strong></p>
+<span class="c1">-- Posts</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_post</span><span class="w">     </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">identifier</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">                                           </span><span class="c1">-- slug</span>
+<span class="w">    </span><span class="n">fk_author</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_author</span><span class="p">(</span><span class="n">pk_author</span><span class="p">),</span><span class="w">       </span><span class="c1">-- fast INT FK</span>
+<span class="w">    </span><span class="n">title</span><span class="w">       </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">published</span><span class="w">   </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+
+<span class="c1">-- Comments</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_comment</span><span class="w">  </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">fk_post</span><span class="w">     </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">pk_post</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_author</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_author</span><span class="p">(</span><span class="n">pk_author</span><span class="p">),</span>
+<span class="w">    </span><span class="n">content</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
+
+<span class="c1">-- Indexes on the internal INT keys (fast joins) and public UUIDs (lookups)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_author</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_author</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_published</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">published</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_comment_post</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span><span class="p">(</span><span class="n">fk_post</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_comment_author</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_comment</span><span class="p">(</span><span class="n">fk_author</span><span class="p">);</span>
+</code></pre></div>
+<blockquote>
+<p><strong>Why <code>pk_</code> and <code>fk_</code>?</strong> Internal <code>BIGINT</code> keys make joins fast and keep the
+public <code>UUID</code> stable and non-enumerable. The <code>pk_*</code>/<code>fk_*</code> columns are never
+exposed in GraphQL — only <code>id</code> (and optionally <code>identifier</code>) are.</p>
+</blockquote>
+<h3 id="step-13-read-views-the-query-side">Step 1.3: Read Views (the query side)<a class="headerlink" href="#step-13-read-views-the-query-side" title="Permanent link">&para;</a></h3>
+<p>A read view always exposes an <code>id</code> column (so resolvers can do <code>WHERE id = $1</code>)
+plus a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>. Compose related
+data <strong>inside the view</strong> so a single query returns the full nested shape — this
+is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>data</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Author view</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_author</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w">      </span><span class="n">a</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;bio&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="n">bio</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+
+<span class="c1">-- Post view with the author embedded</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;published&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">email</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">pk_author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="p">;</span><span class="w">   </span><span class="c1">-- fast INT join</span>
+
+<span class="c1">-- Comment view with author and post embedded</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_comment</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">post_id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w">   </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">pk_author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_author</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w">   </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="p">;</span>
+</code></pre></div>
+<blockquote>
+<p><strong>JSON keys are camelCase.</strong> FraiseQL maps GraphQL's <code>createdAt</code> to your
+Python field <code>created_at</code> automatically, so build the JSONB with camelCase keys
+(<code>createdAt</code>, etc.) to match the GraphQL field names clients will request.</p>
+</blockquote>
+<h3 id="step-14-write-functions-the-command-side">Step 1.4: Write Functions (the command side)<a class="headerlink" href="#step-14-write-functions-the-command-side" title="Permanent link">&para;</a></h3>
+<p>Mutations call <code>fn_*</code> PostgreSQL functions. Each function takes a single <code>jsonb</code>
+input, performs validation and the write, and returns a JSONB result indicating
+<code>success</code> (and typically the new row's <code>id</code>). All write business logic lives in
+PostgreSQL.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Create an author</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_author</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email is required&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;bio&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="c1">-- Create a post (looks up the author by public UUID)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_fk_author</span><span class="w"> </span><span class="nb">bigint</span><span class="p">;</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w">      </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_author</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_author</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;authorId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;author not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_author</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">published</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">v_fk_author</span><span class="p">,</span>
+<span class="w">        </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="k">COALESCE</span><span class="p">((</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;published&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="c1">-- Add a comment to a post</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_add_comment</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_fk_post</span><span class="w">   </span><span class="nb">bigint</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_fk_author</span><span class="w"> </span><span class="nb">bigint</span><span class="p">;</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w">      </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_post</span><span class="w">   </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;postId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_author</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;authorId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;post not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;author not found&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">fk_author</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">v_fk_author</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="step-15-apply-the-schema">Step 1.5: Apply the Schema<a class="headerlink" href="#step-15-apply-the-schema" title="Permanent link">&para;</a></h3>
+<p>Save the SQL from Steps 1.2–1.4 into a single file <code>schema.sql</code> and run:</p>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>blog<span class="w"> </span>&lt;<span class="w"> </span>schema.sql
+</code></pre></div>
+<hr />
+<h2 id="part-2-the-python-schema">Part 2: The Python Schema<a class="headerlink" href="#part-2-the-python-schema" title="Permanent link">&para;</a></h2>
+<p>Now translate the database schema into FraiseQL decorators. Create <code>app.py</code>.</p>
+<blockquote>
+<p><strong>Import style.</strong> Use the namespaced form (<code>import fraiseql</code>, then
+<code>@fraiseql.type</code>). The direct names <code>type</code> and <code>input</code> would shadow Python
+builtins, so the namespaced form is recommended.</p>
+</blockquote>
+<h3 id="step-21-types">Step 2.1: Types<a class="headerlink" href="#step-21-types" title="Permanent link">&para;</a></h3>
+<p>Each <code>@fraiseql.type</code> maps to a read view via <code>sql_source</code>, and its fields are
+read from the view's <code>data</code> JSONB column (the default <code>jsonb_column</code> is <code>"data"</code>).
+Use <code>ID</code> for entity identifiers and modern union syntax (<code>X | None</code>) for nullable
+fields.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_author&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Author</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A blog author.&quot;&quot;&quot;</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">bio</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A blog post with its author embedded.&quot;&quot;&quot;</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">published</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">author</span><span class="p">:</span> <span class="n">Author</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Comment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A comment on a post.&quot;&quot;&quot;</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">author</span><span class="p">:</span> <span class="n">Author</span>
+    <span class="n">post</span><span class="p">:</span> <span class="n">Post</span>
+</code></pre></div>
+<p>The nested <code>author</code> and <code>post</code> fields are populated directly from the JSONB the
+views already compose — no extra resolvers or N+1 queries.</p>
+<h3 id="step-22-queries">Step 2.2: Queries<a class="headerlink" href="#step-22-queries" title="Permanent link">&para;</a></h3>
+<p>A <code>@fraiseql.query</code> resolver is an <code>async</code> function whose first parameter is
+<code>info</code>. Get the repository from <code>info.context["db"]</code> and call <code>db.find(...)</code> for
+lists or <code>db.find_one(...)</code> for a single record. The GraphQL field name is
+inferred from the function name.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authors</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Author</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List all authors.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_author&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;-createdAt&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Author</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single author by id.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_author&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">published</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List posts, optionally filtered by published status.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">published</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;published&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">published</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;-createdAt&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single post by id.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_comments</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List comments for a post.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="o">=</span><span class="n">post_id</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;createdAt&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>The repository (<code>db</code>) is FraiseQL's CQRS repository. Its main query methods are:</p>
 <ul>
-<li><code>"CREATE"</code> - Insert new record</li>
-<li><code>"UPDATE"</code> - Modify existing record</li>
-<li><code>"DELETE"</code> - Remove record</li>
+<li><code>await db.find("v_x", **filters)</code> — list rows from a view</li>
+<li><code>await db.find_one("v_x", id=...)</code> — a single row (or <code>None</code>)</li>
+<li><code>await db.count("v_x", **filters)</code> — a count</li>
 </ul>
+<p>Filters become <code>WHERE</code> conditions; <code>order_by</code> accepts a column name, with a <code>-</code>
+prefix for descending (e.g. <code>"-createdAt"</code>).</p>
+<h3 id="step-23-inputs-and-result-types">Step 2.3: Inputs and Result Types<a class="headerlink" href="#step-23-inputs-and-result-types" title="Permanent link">&para;</a></h3>
+<p>Mutations take an <code>@fraiseql.input</code> and return a union of an <code>@fraiseql.success</code>
+and an <code>@fraiseql.error</code>. The <code>@fraiseql.success</code> decorator auto-injects
+<code>status</code>, <code>message</code>, <code>updated_fields</code>, and <code>id</code> fields.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateAuthorInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">bio</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">:</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">published</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AddCommentInput</span><span class="p">:</span>
+    <span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateAuthorSuccess</span><span class="p">:</span>
+    <span class="n">author</span><span class="p">:</span> <span class="n">Author</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="p">:</span>
+    <span class="n">post</span><span class="p">:</span> <span class="n">Post</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AddCommentSuccess</span><span class="p">:</span>
+    <span class="n">comment</span><span class="p">:</span> <span class="n">Comment</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MutationError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+</code></pre></div>
+<h3 id="step-24-mutations">Step 2.4: Mutations<a class="headerlink" href="#step-24-mutations" title="Permanent link">&para;</a></h3>
+<p>A <code>@fraiseql.mutation</code> resolver calls a <code>fn_*</code> function via
+<code>db.execute_function(name, params)</code>. It receives the function's JSONB result as a
+dict; on success it reads the freshly written row back through a view and wraps it
+in the success type.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_author</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateAuthorInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateAuthorSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new author.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_author&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">&quot;bio&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">bio</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to create author&quot;</span><span class="p">))</span>
+
+    <span class="n">author</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_author&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">CreateAuthorSuccess</span><span class="p">(</span><span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreatePostSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new post.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+            <span class="s2">&quot;authorId&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">),</span>
+            <span class="s2">&quot;published&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">published</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to create post&quot;</span><span class="p">))</span>
+
+    <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">CreatePostSuccess</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_comment</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">AddCommentInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AddCommentSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a comment to a post.&quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_add_comment&quot;</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;postId&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">post_id</span><span class="p">),</span>
+            <span class="s2">&quot;authorId&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">),</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to add comment&quot;</span><span class="p">))</span>
+
+    <span class="n">comment</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">AddCommentSuccess</span><span class="p">(</span><span class="n">comment</span><span class="o">=</span><span class="n">comment</span><span class="p">)</span>
+</code></pre></div>
 <hr />
-<h2 id="part-3-exporting-the-schema">Part 3: Exporting the Schema<a class="headerlink" href="#part-3-exporting-the-schema" title="Permanent link">&para;</a></h2>
-<p>The Python schema is a blueprint. FraiseQL converts it to JSON for compilation.</p>
-<h3 id="export-the-schema">Export the Schema<a class="headerlink" href="#export-the-schema" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>python schema.py
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="part-3-assemble-and-run-the-app">Part 3: Assemble and Run the App<a class="headerlink" href="#part-3-assemble-and-run-the-app" title="Permanent link">&para;</a></h2>
+<p><code>create_fraiseql_app</code> builds the GraphQL schema in memory from your types,
+queries, and mutations, and returns a ready-to-serve FastAPI app. There is <strong>no
+export, no compile, and no schema file</strong> — the schema is constructed at startup.</p>
+<p>Add this to the bottom of <code>app.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<p><strong>Output:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ Schema exported successfully!
-   Generated: schema.json</p>
-<p>Next steps:
-   1. Review schema.json for correctness
-   2. Compile: FraiseQL-cli compile schema.json FraiseQL.toml
-   3. Start server: FraiseQL-server --schema schema.compiled.json
-```text</p>
-<!-- Code example in TEXT -->
+<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="examine-schemajson">Examine <code>schema.json</code><a class="headerlink" href="#examine-schemajson" title="Permanent link">&para;</a></h3>
-<p>The exported file should look like:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "types": [
-    {
-      "name": "User",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "name",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "email",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "bio",
-          "type": "String",
-          "nonNull": false
-        },
-        {
-          "name": "created_at",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "updated_at",
-          "type": "String",
-          "nonNull": true
-        }
-      ],
-      "description": "A blog author or commenter."
-    },
-    {
-      "name": "Post",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "title",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "content",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "author_id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "published",
-          "type": "Boolean",
-          "nonNull": true
-        },
-        {
-          "name": "created_at",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "updated_at",
-          "type": "String",
-          "nonNull": true
-        }
-      ],
-      "description": "A blog post written by a user."
-    },
-    {
-      "name": "Comment",
-      "fields": [
-        {
-          "name": "id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "post_id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "user_id",
-          "type": "Int",
-          "nonNull": true
-        },
-        {
-          "name": "content",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "created_at",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "updated_at",
-          "type": "String",
-          "nonNull": true
-        }
-      ],
-      "description": "A comment on a blog post."
-    }
-  ],
-  "queries": [
-    {
-      "name": "users",
-      "returnType": "User",
-      "isList": true,
-      "description": "Get a list of all users with pagination.",
-      "args": [
-        {
-          "name": "limit",
-          "type": "Int",
-          "nonNull": false,
-          "defaultValue": 10
-        },
-        {
-          "name": "offset",
-          "type": "Int",
-          "nonNull": false,
-          "defaultValue": 0
-        }
-      ],
-      "sqlSource": "v_users",
-      "autoParams": {
-        "limit": true,
-        "offset": true,
-        "where": true,
-        "order_by": true
-      }
-    }
-  ],
-  "mutations": [
-    {
-      "name": "create_user",
-      "returnType": "User",
-      "description": "Create a new user.",
-      "args": [
-        {
-          "name": "name",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "email",
-          "type": "String",
-          "nonNull": true
-        },
-        {
-          "name": "bio",
-          "type": "String",
-          "nonNull": false
-        }
-      ],
-      "sqlSource": "fn_create_user",
-      "operation": "CREATE"
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">,</span> <span class="s2">&quot;postgresql://localhost/blog&quot;</span><span class="p">),</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Author</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">authors</span><span class="p">,</span> <span class="n">author</span><span class="p">,</span> <span class="n">posts</span><span class="p">,</span> <span class="n">post</span><span class="p">,</span> <span class="n">post_comments</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_author</span><span class="p">,</span> <span class="n">create_post</span><span class="p">,</span> <span class="n">add_comment</span><span class="p">],</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Blog API&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple blog API built with FraiseQL&quot;</span><span class="p">,</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
+<span class="p">)</span>
 
-<h3 id="validate-the-schema">Validate the Schema<a class="headerlink" href="#validate-the-schema" title="Permanent link">&para;</a></h3>
-<p>Check for common issues:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="verify-json-is-valid">Verify JSON is valid<a class="headerlink" href="#verify-json-is-valid" title="Permanent link">&para;</a></h1>
-<p>python -m json.tool schema.json &gt; /dev/null &amp;&amp; echo "✅ schema.json is valid JSON"</p>
-<h1 id="count-definitions">Count definitions<a class="headerlink" href="#count-definitions" title="Permanent link">&para;</a></h1>
-<p>python -c "import json; s = json.load(open('schema.json')); print(f'Types: {len(s.get(\"types\", []))}, Queries: {len(s.get(\"queries\", []))}, Mutations: {len(s.get(\"mutations\", []))}')"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Expected output:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ schema.json is valid JSON
-Types: 3, Queries: 6, Mutations: 5
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+</code></pre></div>
+<p>Run it:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;fraiseql[all]&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span>postgresql://localhost/blog
+uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload
+</code></pre></div>
+<p>Open the GraphQL playground at <a href="http://localhost:8000/graphql">http://localhost:8000/graphql</a>.</p>
+<blockquote>
+<p><strong><code>production=False</code></strong> enables the interactive playground and introspection,
+which is what you want while developing. Set it to <code>True</code> for production.</p>
+</blockquote>
 <hr />
-<h2 id="part-4-compiling-the-schema">Part 4: Compiling the Schema<a class="headerlink" href="#part-4-compiling-the-schema" title="Permanent link">&para;</a></h2>
-<p>The FraiseQL CLI compiles your schema to an optimized binary format with embedded SQL.</p>
-<h3 id="create-fraiseqltoml">Create <code>FraiseQL.toml</code><a class="headerlink" href="#create-fraiseqltoml" title="Permanent link">&para;</a></h3>
-<p>Create a configuration file for compilation:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="fraiseql-configuration-for-blog-api">FraiseQL Configuration for Blog API<a class="headerlink" href="#fraiseql-configuration-for-blog-api" title="Permanent link">&para;</a></h1>
-<p>[FraiseQL]
-name = "blog-api"
-version = "1.0.0"
-description = "GraphQL Blog API built with FraiseQL"</p>
-<h1 id="database-configuration">Database configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h1>
-<p>[FraiseQL.database]
-adapter = "postgres"  # postgresql, mysql, sqlite, sqlserver
-pool_size = 10
-timeout_secs = 30
-max_retries = 3</p>
-<h1 id="security-configuration">Security configuration<a class="headerlink" href="#security-configuration" title="Permanent link">&para;</a></h1>
-<p>[FraiseQL.security]</p>
-<h1 id="rate-limiting-on-mutations">Rate limiting on mutations<a class="headerlink" href="#rate-limiting-on-mutations" title="Permanent link">&para;</a></h1>
-<p>rate_limit_mutations = 100
-rate_limit_window_secs = 60</p>
-<h1 id="query-depth-to-prevent-deeply-nested-queries">Query depth to prevent deeply nested queries<a class="headerlink" href="#query-depth-to-prevent-deeply-nested-queries" title="Permanent link">&para;</a></h1>
-<p>max_query_depth = 5</p>
-<h1 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h1>
-<p>sanitize_errors = true  # Hide implementation details in errors
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="compile-the-schema">Compile the Schema<a class="headerlink" href="#compile-the-schema" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL-cli compile schema.json FraiseQL.toml
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Output:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ Compilation successful!
-   Generated: schema.compiled.json</p>
-<p>Statistics:
-   - Types: 3
-   - Queries: 6
-   - Mutations: 5
-   - SQL functions: 7
-   - Database views: 5</p>
-<p>File size: 45 KB
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="examine-the-compiled-schema">Examine the Compiled Schema<a class="headerlink" href="#examine-the-compiled-schema" title="Permanent link">&para;</a></h3>
-<p>The compiled schema includes optimized SQL templates:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="view-a-snippet-of-the-compiled-schema">View a snippet of the compiled schema<a class="headerlink" href="#view-a-snippet-of-the-compiled-schema" title="Permanent link">&para;</a></h1>
-<p>python -c "
-import json
-with open('schema.compiled.json') as f:
-    schema = json.load(f)
-    query = next((q for q in schema.get('queries', []) if q['name'] == 'posts'), None)
-    if query:
-        print(json.dumps(query, indent=2))
-"
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="part-4-test-in-the-playground">Part 4: Test in the Playground<a class="headerlink" href="#part-4-test-in-the-playground" title="Permanent link">&para;</a></h2>
+<h3 id="step-41-seed-an-author-and-a-post">Step 4.1: Seed an Author and a Post<a class="headerlink" href="#step-41-seed-an-author-and-a-post" title="Permanent link">&para;</a></h3>
+<p>Run these mutations in the playground. Mutations return a union, so select the
+fields with inline fragments (<code>... on TypeName</code>).</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createAuthor</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice Smith&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice@example.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Full-stack developer&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateAuthorSuccess</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">message</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">MutationError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">message</span>
+<span class="w">      </span><span class="n">code</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Copy the returned author <code>id</code>, then create a post:</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createPost</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Getting Started with GraphQL&quot;</span>
+<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GraphQL is a query language for your API...&quot;</span>
+<span class="w">    </span><span class="n">authorId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PASTE-AUTHOR-ID-HERE&quot;</span>
+<span class="w">    </span><span class="n">published</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
+<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">post</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="n">title</span>
+<span class="w">        </span><span class="n">published</span>
+<span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">MutationError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">message</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="step-42-read-data-back">Step 4.2: Read Data Back<a class="headerlink" href="#step-42-read-data-back" title="Permanent link">&para;</a></h3>
+<p>List published posts with their authors embedded — all in a single SQL query
+thanks to the JSONB composition in <code>v_post</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">published</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">title</span>
+<span class="w">    </span><span class="n">content</span>
+<span class="w">    </span><span class="n">createdAt</span>
+<span class="w">    </span><span class="n">author</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">name</span>
+<span class="w">      </span><span class="n">email</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Fetch a single post by <code>id</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PASTE-POST-ID-HERE&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">title</span>
+<span class="w">    </span><span class="n">published</span>
+<span class="w">    </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="step-43-add-and-list-comments">Step 4.3: Add and List Comments<a class="headerlink" href="#step-43-add-and-list-comments" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">addComment</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">postId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PASTE-POST-ID-HERE&quot;</span>
+<span class="w">    </span><span class="n">authorId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PASTE-AUTHOR-ID-HERE&quot;</span>
+<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Great article!&quot;</span>
+<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">AddCommentSuccess</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">comment</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="n">content</span>
+<span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">MutationError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">message</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">postComments</span><span class="p">(</span><span class="n">postId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PASTE-POST-ID-HERE&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">content</span>
+<span class="w">    </span><span class="n">createdAt</span>
+<span class="w">    </span><span class="n">author</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
-<h2 id="part-5-testing-your-schema">Part 5: Testing Your Schema<a class="headerlink" href="#part-5-testing-your-schema" title="Permanent link">&para;</a></h2>
-<h3 id="preparing-test-data">Preparing Test Data<a class="headerlink" href="#preparing-test-data" title="Permanent link">&para;</a></h3>
-<p>First, populate your database with test data:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Insert test users
-INSERT INTO users (name, email, bio) VALUES
-('Alice Smith', 'alice@example.com', 'Full-stack developer'),
-('Bob Johnson', 'bob@example.com', 'DevOps engineer'),
-('Carol White', 'carol@example.com', 'Data scientist');</p>
-<p>-- Insert test posts
-INSERT INTO posts (title, content, author_id, published) VALUES
-('Getting Started with GraphQL', 'GraphQL is a query language...', 1, true),
-('PostgreSQL Performance Tips', 'Indexing is crucial for performance...', 1, true),
-('Python Best Practices', 'Use type hints and modern syntax...', 2, true),
-('Machine Learning Fundamentals', 'ML is transforming industries...', 3, false);</p>
-<p>-- Insert test comments
-INSERT INTO comments (post_id, user_id, content) VALUES
-(1, 2, 'Great introduction to GraphQL!'),
-(1, 3, 'This helped me understand the basics.'),
-(2, 3, 'Performance tips are really useful.'),
-(3, 1, 'Thanks for the Python advice.');
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="part-5-how-it-fits-together">Part 5: How It Fits Together<a class="headerlink" href="#part-5-how-it-fits-together" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>GraphQL request                FraiseQL (Python + FastAPI)            PostgreSQL
+─────────────────────────────────────────────────────────────────────────────
+query  { posts { ... } }   →   @fraiseql.query resolver           →   SELECT data FROM v_post
+                               db.find(&quot;v_post&quot;)                       (JSONB, author embedded)
 
-<h3 id="testing-queries">Testing Queries<a class="headerlink" href="#testing-queries" title="Permanent link">&para;</a></h3>
-<p>Use GraphQL clients like <code>graphql-cli</code> or write test scripts. Here are common GraphQL queries:</p>
-<h4 id="query-get-all-users">Query: Get All Users<a class="headerlink" href="#query-get-all-users" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    users(limit: 10) {
-        id
-        name
-        email
-        bio
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Expected response:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-    "data": {
-        "users": [
-            {
-                "id": 1,
-                "name": "Alice Smith",
-                "email": "alice@example.com",
-                "bio": "Full-stack developer",
-                "created_at": "2025-02-05T10:00:00Z"
-            },
-            {
-                "id": 2,
-                "name": "Bob Johnson",
-                "email": "bob@example.com",
-                "bio": "DevOps engineer",
-                "created_at": "2025-02-05T10:05:00Z"
-            }
-        ]
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="query-get-a-single-post-by-id">Query: Get a Single Post by ID<a class="headerlink" href="#query-get-a-single-post-by-id" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    post(id: 1) {
-        id
-        title
-        content
-        author_id
-        published
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Expected response:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-    "data": {
-        "post": {
-            "id": 1,
-            "title": "Getting Started with GraphQL",
-            "content": "GraphQL is a query language...",
-            "author_id": 1,
-            "published": true,
-            "created_at": "2025-02-05T10:10:00Z"
-        }
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="query-get-users-posts-with-filtering">Query: Get User's Posts with Filtering<a class="headerlink" href="#query-get-users-posts-with-filtering" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    user_posts(user_id: 1, limit: 20, offset: 0) {
-        id
-        title
-        published
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="query-get-comments-on-a-post">Query: Get Comments on a Post<a class="headerlink" href="#query-get-comments-on-a-post" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    post_comments(post_id: 1, limit: 50) {
-        id
-        user_id
-        content
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="testing-mutations">Testing Mutations<a class="headerlink" href="#testing-mutations" title="Permanent link">&para;</a></h3>
-<h4 id="mutation-create-a-new-user">Mutation: Create a New User<a class="headerlink" href="#mutation-create-a-new-user" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    create_user(
-        name: "David Lee"
-        email: "david@example.com"
-        bio: "Cloud architect"
-    ) {
-        id
-        name
-        email
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Expected response:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-    "data": {
-        "create_user": {
-            "id": 4,
-            "name": "David Lee",
-            "email": "david@example.com",
-            "created_at": "2025-02-05T11:00:00Z"
-        }
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="mutation-create-a-new-post">Mutation: Create a New Post<a class="headerlink" href="#mutation-create-a-new-post" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    create_post(
-        title: "Advanced GraphQL Patterns"
-        content: "Building scalable GraphQL APIs..."
-        author_id: 1
-        published: true
-    ) {
-        id
-        title
-        author_id
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="mutation-update-a-post">Mutation: Update a Post<a class="headerlink" href="#mutation-update-a-post" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    update_post(
-        id: 4
-        published: true
-    ) {
-        id
-        title
-        published
-        updated_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="mutation-delete-a-post">Mutation: Delete a Post<a class="headerlink" href="#mutation-delete-a-post" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    delete_post(id: 4)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="mutation-create-a-comment">Mutation: Create a Comment<a class="headerlink" href="#mutation-create-a-comment" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    create_comment(
-        post_id: 1
-        user_id: 2
-        content: "Excellent tutorial!"
-    ) {
-        id
-        post_id
-        user_id
-        content
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="testing-error-cases">Testing Error Cases<a class="headerlink" href="#testing-error-cases" title="Permanent link">&para;</a></h3>
-<h4 id="missing-required-field">Missing Required Field<a class="headerlink" href="#missing-required-field" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-    create_user(name: "Eve", email: "eve@example.com") {
-        id
-        name
-    }
-}</p>
-<h1 id="this-will-fail-bio-is-optional-but-field-may-not-exist">This will fail: bio is optional but field may not exist<a class="headerlink" href="#this-will-fail-bio-is-optional-but-field-may-not-exist" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="invalid-type">Invalid Type<a class="headerlink" href="#invalid-type" title="Permanent link">&para;</a></h4>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    post(id: "not-a-number") {
-        id
-        title
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Expected error:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-    "errors": [
-        {
-            "message": "Invalid argument: id must be an integer"
-        }
-    ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-6-deployment-overview">Part 6: Deployment Overview<a class="headerlink" href="#part-6-deployment-overview" title="Permanent link">&para;</a></h2>
-<p>Once your schema is tested, you're ready to deploy.</p>
-<h3 id="starting-the-server">Starting the Server<a class="headerlink" href="#starting-the-server" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="start-fraiseql-server-with-compiled-schema">Start FraiseQL server with compiled schema<a class="headerlink" href="#start-fraiseql-server-with-compiled-schema" title="Permanent link">&para;</a></h1>
-<p>FraiseQL-server \
-    --schema schema.compiled.json \
-    --database-url postgresql://user:password@localhost/blog_db \
-    --port 8000</p>
-<h1 id="server-starts-on-httplocalhost8000">Server starts on http://localhost:8000<a class="headerlink" href="#server-starts-on-httplocalhost8000" title="Permanent link">&para;</a></h1>
-<h1 id="graphql-endpoint-httplocalhost8000graphql">GraphQL endpoint: http://localhost:8000/graphql<a class="headerlink" href="#graphql-endpoint-httplocalhost8000graphql" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="health-check">Health Check<a class="headerlink" href="#health-check" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl http://localhost:8000/health
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Response:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-    "status": "ok",
-    "version": "2.0.0",
-    "uptime_secs": 42
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="graphql-introspection">GraphQL Introspection<a class="headerlink" href="#graphql-introspection" title="Permanent link">&para;</a></h3>
-<p>The server exposes GraphQL introspection by default:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST http://localhost:8000/graphql \
-    -H "Content-Type: application/json" \
-    -d '{"query": "{__schema { types { name } }}"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>This returns all available types in your schema.</p>
-<hr />
-<h2 id="part-7-common-patterns">Part 7: Common Patterns<a class="headerlink" href="#part-7-common-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="pattern-1-adding-pagination-to-queries">Pattern 1: Adding Pagination to Queries<a class="headerlink" href="#pattern-1-adding-pagination-to-queries" title="Permanent link">&para;</a></h3>
-<p>The <code>auto_params</code> feature makes pagination automatic:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(
-    sql_source="v_posts",
-    auto_params={"limit": True, "offset": True}
-)
-def posts(limit: int = 10, offset: int = 0) -&gt; list[Post]:
-    """Paginated posts query."""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>GraphQL usage:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    posts(limit: 20, offset: 40) {  # Fetch 20 posts, skip first 40
-        id
-        title
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="pattern-2-adding-filtering">Pattern 2: Adding Filtering<a class="headerlink" href="#pattern-2-adding-filtering" title="Permanent link">&para;</a></h3>
-<p>Use <code>auto_params={"where": True}</code> to enable filters:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(
-    sql_source="v_posts",
-    auto_params={"where": True}
-)
-def posts(published: bool | None = None) -&gt; list[Post]:
-    """Filtered posts query."""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>GraphQL usage:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    posts(where: {published: {_eq: true}, author_id: {_eq: 1}}) {
-        id
-        title
-        published
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="pattern-3-adding-sorting">Pattern 3: Adding Sorting<a class="headerlink" href="#pattern-3-adding-sorting" title="Permanent link">&para;</a></h3>
-<p>Use <code>auto_params={"order_by": True}</code>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(
-    sql_source="v_posts",
-    auto_params={"order_by": True}
-)
-def posts() -&gt; list[Post]:
-    """Sortable posts query."""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>GraphQL usage:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    posts(order_by: {field: "created_at", direction: DESC}) {
-        id
-        title
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="pattern-4-author-relationships">Pattern 4: Author Relationships<a class="headerlink" href="#pattern-4-author-relationships" title="Permanent link">&para;</a></h3>
-<p>Include related data by joining in your SQL view:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- View includes author info
-CREATE VIEW v_posts_with_author AS
-SELECT
-    p.id,
-    p.title,
-    p.content,
-    p.author_id,
-    u.name AS author_name,
-    u.email AS author_email
-FROM posts p
-JOIN users u ON p.author_id = u.id;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Python schema:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class PostWithAuthor:
-    id: UUID  # UUID v4 for GraphQL ID
-    title: str
-    content: str
-    author_id: UUID  # UUID v4 for GraphQL ID
-    author_name: str
-    author_email: str</p>
-<p>@FraiseQL.query(sql_source="v_posts_with_author")
-def posts() -&gt; list[PostWithAuthor]:
-    """Posts with inline author info."""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="pattern-5-filtering-comments-by-post">Pattern 5: Filtering Comments by Post<a class="headerlink" href="#pattern-5-filtering-comments-by-post" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(
-    sql_source="v_comments",
-    auto_params={"where": True, "limit": True}
-)
-def post_comments(
-    post_id: int,
-    limit: int = 20,
-) -&gt; list[Comment]:
-    """Get comments filtered by post."""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>GraphQL usage:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-    post_comments(
-        post_id: 1
-        limit: 50
-        where: {user_id: {_eq: 2}}
-    ) {
-        id
-        content
-        user_id
-        created_at
-    }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-8-common-mistakes-to-avoid">Part 8: Common Mistakes to Avoid<a class="headerlink" href="#part-8-common-mistakes-to-avoid" title="Permanent link">&para;</a></h2>
-<h3 id="mistake-1-using-old-python-type-hints">Mistake 1: Using Old Python Type Hints<a class="headerlink" href="#mistake-1-using-old-python-type-hints" title="Permanent link">&para;</a></h3>
-<p>❌ <strong>Wrong:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from typing import Optional
-def user(id: int) -&gt; Optional[User]:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>✅ <strong>Correct:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>def user(id: int) -&gt; User | None:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mistake-2-forgetting-sql_source">Mistake 2: Forgetting <code>sql_source</code><a class="headerlink" href="#mistake-2-forgetting-sql_source" title="Permanent link">&para;</a></h3>
-<p>❌ <strong>Wrong:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query()
-def users() -&gt; list[User]:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>✅ <strong>Correct:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.query(sql_source="v_users")
-def users() -&gt; list[User]:
-    pass
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mistake-3-inconsistent-field-names">Mistake 3: Inconsistent Field Names<a class="headerlink" href="#mistake-3-inconsistent-field-names" title="Permanent link">&para;</a></h3>
-<p>If your database column is <code>created_at</code>, your Python field must also be <code>created_at</code>:</p>
-<p>❌ <strong>Wrong:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Post:
-    createdAt: str  # Doesn't match database
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>✅ <strong>Correct:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Post:
-    created_at: str  # Matches database
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mistake-4-missing-null-annotations">Mistake 4: Missing Null Annotations<a class="headerlink" href="#mistake-4-missing-null-annotations" title="Permanent link">&para;</a></h3>
-<p>If a database field can be NULL, mark it as nullable:</p>
-<p>❌ <strong>Wrong:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    bio: str  # But bio can be NULL in database
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>✅ <strong>Correct:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    bio: str | None  # Nullable
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="mistake-5-using-non-existent-sql-functions">Mistake 5: Using Non-Existent SQL Functions<a class="headerlink" href="#mistake-5-using-non-existent-sql-functions" title="Permanent link">&para;</a></h3>
-<p>Ensure all <code>sql_source</code> values exist in your database:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-if-function-exists">Check if function exists<a class="headerlink" href="#check-if-function-exists" title="Permanent link">&para;</a></h1>
-<p>psql -c "SELECT proname FROM pg_proc WHERE proname = 'fn_create_post';"
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-9-next-steps">Part 9: Next Steps<a class="headerlink" href="#part-9-next-steps" title="Permanent link">&para;</a></h2>
-<h3 id="learning-path">Learning Path<a class="headerlink" href="#learning-path" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Now</strong>: You've built a complete schema with types, queries, and mutations</li>
-<li><strong>Next</strong>: Add authentication and authorization (<a href="../../guides/authorization-quick-start/">see authorization guide</a>)</li>
-<li><strong>Then</strong>: Add real-time subscriptions (<a href="../../guides/observability/">see subscriptions guide</a>)</li>
-<li><strong>Finally</strong>: Deploy to production (<a href="../deployment/guide.md">see deployment guide</a>)</li>
-</ol>
-<h3 id="advanced-topics">Advanced Topics<a class="headerlink" href="#advanced-topics" title="Permanent link">&para;</a></h3>
+mutation { createPost }    →   @fraiseql.mutation resolver        →   SELECT fn_create_post(jsonb)
+                               db.execute_function(&quot;fn_create_post&quot;)   (validate + INSERT)
+</code></pre></div>
 <ul>
-<li><strong>Aggregation Queries</strong>: Use <code>@FraiseQL.fact_table</code> for analytics workloads</li>
-<li><strong>Federation</strong>: Split schema across multiple services</li>
-<li><strong>Observers</strong>: Add audit logging and monitoring</li>
-<li><strong>Custom Resolvers</strong>: Implement complex business logic</li>
+<li><strong>Reads</strong> flow through <code>@fraiseql.query</code> → <code>db.find</code> / <code>db.find_one</code> → a <code>v_*</code>
+  view's <code>data</code> JSONB. FraiseQL trims the JSONB to exactly the fields the client
+  requested.</li>
+<li><strong>Writes</strong> flow through <code>@fraiseql.mutation</code> → <code>db.execute_function</code> → an
+  <code>fn_*</code> function that validates and writes, then the resolver reads the result
+  back through a view.</li>
+<li><strong>The schema is built in memory at startup</strong> from your decorated Python
+  objects. Restart the app to pick up Python changes; run new SQL with <code>psql</code> to
+  pick up schema changes.</li>
 </ul>
 <hr />
-<h2 id="part-10-troubleshooting">Part 10: Troubleshooting<a class="headerlink" href="#part-10-troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="schema-export-errors">Schema Export Errors<a class="headerlink" href="#schema-export-errors" title="Permanent link">&para;</a></h3>
-<h4 id="error-importerror-no-module-named-fraiseql">Error: <code>ImportError: No module named 'FraiseQL'</code><a class="headerlink" href="#error-importerror-no-module-named-fraiseql" title="Permanent link">&para;</a></h4>
-<p><strong>Solution:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>pip install FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="error-module-has-no-attribute-type">Error: <code>Module has no attribute 'type'</code><a class="headerlink" href="#error-module-has-no-attribute-type" title="Permanent link">&para;</a></h4>
-<p><strong>Solution:</strong> Check that you're using the correct import:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>import FraiseQL</p>
-<h1 id="then-use-fraiseqltype-not-fraiseql_type">Then use @FraiseQL.type, not @fraiseql_type<a class="headerlink" href="#then-use-fraiseqltype-not-fraiseql_type" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="compilation-errors">Compilation Errors<a class="headerlink" href="#compilation-errors" title="Permanent link">&para;</a></h3>
-<h4 id="error-view-v_posts-not-found">Error: <code>View 'v_posts' not found</code><a class="headerlink" href="#error-view-v_posts-not-found" title="Permanent link">&para;</a></h4>
-<p><strong>Solution:</strong> Verify the view exists in your database:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT * FROM information_schema.views WHERE table_name = 'v_posts';
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="error-type-mismatch-expected-string-got-integer">Error: <code>Type mismatch: expected String, got Integer</code><a class="headerlink" href="#error-type-mismatch-expected-string-got-integer" title="Permanent link">&para;</a></h4>
-<p><strong>Solution:</strong> Check field types match between Python and database:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="if-database-column-is-varchar-use-str-in-python">If database column is VARCHAR, use str in Python<a class="headerlink" href="#if-database-column-is-varchar-use-str-in-python" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class Post:
-    title: str  # Correct
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="deployment-errors">Deployment Errors<a class="headerlink" href="#deployment-errors" title="Permanent link">&para;</a></h3>
-<h4 id="error-connection-refused">Error: <code>Connection refused</code><a class="headerlink" href="#error-connection-refused" title="Permanent link">&para;</a></h4>
-<p><strong>Solution:</strong> Verify database is running:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql postgresql://user:password@localhost/blog_db -c "SELECT 1"
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="part-6-common-pitfalls">Part 6: Common Pitfalls<a class="headerlink" href="#part-6-common-pitfalls" title="Permanent link">&para;</a></h2>
+<h3 id="use-modern-type-hints">Use modern type hints<a class="headerlink" href="#use-modern-type-hints" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Correct: modern union syntax</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Author</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Avoid the old <code>typing.Optional</code> / <code>typing.List</code> forms — use <code>X | None</code> and
+<code>list[X]</code> instead.</p>
+<h3 id="always-set-sql_source-on-a-type">Always set <code>sql_source</code> on a type<a class="headerlink" href="#always-set-sql_source-on-a-type" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_author&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Author</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p>Without <code>sql_source</code>, FraiseQL can't map the type to a read view.</p>
+<h3 id="jsonb-keys-must-match-graphql-field-names">JSONB keys must match GraphQL field names<a class="headerlink" href="#jsonb-keys-must-match-graphql-field-names" title="Permanent link">&para;</a></h3>
+<p>GraphQL field <code>createdAt</code> maps to your Python field <code>created_at</code>. Build the view's
+JSONB with the <strong>camelCase</strong> key (<code>'createdAt', a.created_at</code>) so the data lines
+up with what clients request.</p>
+<h3 id="never-expose-pk_">Never expose <code>pk_*</code><a class="headerlink" href="#never-expose-pk_" title="Permanent link">&para;</a></h3>
+<p>Keep <code>pk_*</code>/<code>fk_*</code> out of the <code>data</code> JSONB. Expose only <code>id</code> (a <code>UUID</code>) and,
+optionally, <code>identifier</code>.</p>
+<h3 id="pass-uuid-arguments-to-functions-as-strings">Pass <code>UUID</code> arguments to functions as strings<a class="headerlink" href="#pass-uuid-arguments-to-functions-as-strings" title="Permanent link">&para;</a></h3>
+<p><code>db.execute_function</code> serializes its params dict to JSONB. Cast <code>ID</code>/<code>UUID</code>
+arguments with <code>str(...)</code>, and cast them back inside the function (e.g.
+<code>(input-&gt;&gt;'authorId')::uuid</code>).</p>
 <hr />
-<h2 id="part-11-complete-copy-paste-ready-code">Part 11: Complete Copy-Paste Ready Code<a class="headerlink" href="#part-11-complete-copy-paste-ready-code" title="Permanent link">&para;</a></h2>
-<h3 id="complete-schemapy">Complete <code>schema.py</code><a class="headerlink" href="#complete-schemapy" title="Permanent link">&para;</a></h3>
-<p>See Part 2 above for the full schema file.</p>
-<h3 id="complete-sql-schema">Complete SQL Schema<a class="headerlink" href="#complete-sql-schema" title="Permanent link">&para;</a></h3>
-<p>See Part 1 above for the complete database setup.</p>
-<h3 id="complete-fraiseqltoml">Complete <code>FraiseQL.toml</code><a class="headerlink" href="#complete-fraiseqltoml" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL]
-name = "blog-api"
-version = "1.0.0"
-description = "GraphQL Blog API"</p>
-<p>[FraiseQL.database]
-adapter = "postgres"
-pool_size = 10
-timeout_secs = 30</p>
-<p>[FraiseQL.security]
-rate_limit_mutations = 100
-rate_limit_window_secs = 60
-max_query_depth = 5
-sanitize_errors = true
-```text</p>
-<!-- Code example in TEXT -->
-
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>You've built a complete, runtime-served Blog API: PostgreSQL write tables, JSONB
+read views, write functions, and Python decorators tying them to GraphQL.</p>
+<ul>
+<li><strong><a href="../blog-api/">Blog API Tutorial</a></strong> — a deeper blog example with threaded
+  comments and production patterns</li>
+<li><strong><a href="../../getting-started/quickstart/">Quick Start</a></strong> — the 5-minute version</li>
+<li><strong><a href="../../getting-started/first-hour/">First Hour Guide</a></strong> — a progressive,
+  hands-on walkthrough</li>
+<li><strong><a href="../production-deployment/">Production Deployment</a></strong> — ship it to production</li>
+</ul>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>You've learned how to:</p>
-<p>✅ Design a relational database schema with SQL
-✅ Create Python type definitions with <code>@FraiseQL.type</code>
-✅ Author GraphQL queries with <code>@FraiseQL.query</code>
-✅ Author GraphQL mutations with <code>@FraiseQL.mutation</code>
-✅ Export schemas to JSON
-✅ Compile with the FraiseQL CLI
-✅ Test with GraphQL queries
-✅ Deploy the API</p>
-<p>This workflow puts <strong>schema authoring</strong> front and center—defining your data model in Python decorators, exporting to JSON, and compiling to optimized SQL execution.</p>
-<hr />
-<h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../integrations/sdk/python-reference/">Python SDK Reference</a></li>
-<li><a href="../toml-reference.md">TOML Configuration Reference</a></li>
-<li><a href="../../guides/schema-design-best-practices/">GraphQL Schema Design Best Practices</a></li>
-<li><a href="../../guides/patterns/">Common Patterns</a></li>
-<li><a href="../troubleshooting.md">Troubleshooting</a></li>
+<li>Design a CQRS PostgreSQL schema: <code>tb_*</code> write tables (Trinity pattern), <code>v_*</code>
+  read views building a <code>data</code> JSONB, and <code>fn_*</code> write functions</li>
+<li>Define GraphQL types with <code>@fraiseql.type(sql_source=..., jsonb_column="data")</code></li>
+<li>Write query resolvers with <code>@fraiseql.query</code> using <code>db.find</code> / <code>db.find_one</code></li>
+<li>Write mutation resolvers with <code>@fraiseql.mutation</code> using <code>db.execute_function</code>,
+  returning <code>@fraiseql.success | @fraiseql.error</code> unions</li>
+<li>Assemble and serve the API with <code>create_fraiseql_app</code> and <code>uvicorn</code> — schema
+  built in memory at startup, no compile step</li>
 </ul>
-<hr />
-<p><strong>Questions?</strong> See <a href="../faq.md">FAQ</a> or open an issue on <a href="https://github.com/FraiseQL/FraiseQL-v2">GitHub</a>.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
