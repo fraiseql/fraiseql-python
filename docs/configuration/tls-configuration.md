@@ -1,4 +1,3 @@
-<!-- Skip to main content -->
 ---
 
 title: TLS/SSL Configuration Guide
@@ -8,6 +7,25 @@ tags: ["documentation", "reference"]
 ---
 
 # TLS/SSL Configuration Guide
+
+FraiseQL v1 is a Python runtime GraphQL framework that runs as a **FastAPI/ASGI
+application** in front of **PostgreSQL**. It does not ship its own HTTPS server,
+and there is no `[tls]` configuration block to set. Instead, TLS is handled at
+two distinct, independent surfaces:
+
+1. **App ↔ client TLS (inbound HTTPS).** Your FraiseQL app is served by an ASGI
+   server such as `uvicorn` or `gunicorn`. In production, inbound TLS is normally
+   terminated by a **reverse proxy** (nginx, Caddy, Traefik, or a cloud load
+   balancer) in front of the app. For local/simple deployments, `uvicorn` can
+   terminate TLS directly via `--ssl-certfile` / `--ssl-keyfile`.
+
+2. **App ↔ PostgreSQL TLS.** The application's connection to PostgreSQL is
+   encrypted through the `database_url` connection string (or
+   `FRAISEQL_DATABASE_URL`) using libpq/psycopg `sslmode` parameters such as
+   `?sslmode=verify-full&sslrootcert=...`. No FraiseQL code is involved — the
+   PostgreSQL driver negotiates TLS.
+
+This guide covers both surfaces, plus certificate management that applies to either.
 
 ## Prerequisites
 
@@ -22,7 +40,9 @@ tags: ["documentation", "reference"]
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
+- A FraiseQL v1 application (FastAPI app built with `create_fraiseql_app`)
+- An ASGI server: `uvicorn` (or `gunicorn` with `uvicorn` workers)
+- A reverse proxy for production TLS termination (nginx, Caddy, Traefik) — optional for local
 - OpenSSL 1.1.1+ (for certificate generation and verification)
 - curl or OpenSSL CLI (for testing HTTPS endpoints)
 - A code editor for configuration files
@@ -30,223 +50,281 @@ tags: ["documentation", "reference"]
 
 **Required Infrastructure:**
 
-- FraiseQL server instance (local or deployed)
-- TLS certificate and private key (self-signed or from CA)
-- Ports 8443 (HTTPS) and optionally 8444 (mTLS client cert)
-- Database with TLS support (PostgreSQL 10+, MySQL 5.7+, etc.)
+- A running FraiseQL app instance (local or deployed)
+- TLS certificate and private key (self-signed or from a CA) for inbound HTTPS
+- PostgreSQL 12+ with TLS (SSL) enabled, for encrypted database connections
 
 **Optional but Recommended:**
 
-- Certificate Authority (CA) certificate for client validation
+- Certificate Authority (CA) certificate for client validation (mTLS)
 - Let's Encrypt or other automated certificate provisioning
 - HSM (Hardware Security Module) for key storage
 - Certificate management tools (cert-manager for Kubernetes)
-- Nginx or Envoy reverse proxy with SSL termination
+- nginx, Caddy, or Traefik reverse proxy with SSL termination
 
 **Time Estimate:** 30-60 minutes for basic setup, 2-3 hours for mTLS in production
 
 ## Overview
 
-FraiseQL v2 Phase 10.10 implements comprehensive TLS encryption for:
+There are two TLS surfaces to secure, and FraiseQL configures neither with a
+custom config block:
 
-1. **HTTP/gRPC Endpoints** - HTTPS and encrypted gRPC (Arrow Flight)
-2. **Mutual TLS (mTLS)** - Optional client certificate requirements
-3. **Database Connections** - TLS for PostgreSQL, Redis, ClickHouse, Elasticsearch
-4. **At-Rest Encryption** - Configuration hooks for database-native encryption
+1. **Inbound HTTPS (app ↔ client)** — terminated by a reverse proxy or by
+   `uvicorn`'s built-in SSL flags. Optionally enforce **mutual TLS (mTLS)** at the
+   proxy by requiring client certificates.
+2. **PostgreSQL connection TLS (app ↔ database)** — driven entirely by the
+   `sslmode` / `sslrootcert` parameters in your `database_url`.
+
+The sections below show real options for each.
 
 ## Quick Start: Production Setup
 
-### 1. Generate TLS Certificate and Key
+### 1. Generate a TLS Certificate and Key (inbound HTTPS)
 
-Using OpenSSL:
+For production, prefer a certificate from a trusted CA (e.g. Let's Encrypt). For
+local testing, you can self-sign with OpenSSL:
 
 ```bash
-<!-- Code example in BASH -->
 # Generate private key
-openssl genrsa -out /etc/FraiseQL/key.pem 2048
+openssl genrsa -out /etc/fraiseql/key.pem 2048
 
 # Generate self-signed certificate (or use your CA)
-openssl req -new -x509 -key /etc/FraiseQL/key.pem -out /etc/FraiseQL/cert.pem \
-  -subj "/CN=FraiseQL.example.com/O=YourOrg/C=US"
+openssl req -new -x509 -key /etc/fraiseql/key.pem -out /etc/fraiseql/cert.pem \
+  -subj "/CN=api.example.com/O=YourOrg/C=US"
 
 # Set proper permissions
-chmod 600 /etc/FraiseQL/key.pem
-chmod 644 /etc/FraiseQL/cert.pem
-```text
-<!-- Code example in TEXT -->
+chmod 600 /etc/fraiseql/key.pem
+chmod 644 /etc/fraiseql/cert.pem
+```
 
-### 2. Configure FraiseQL.toml
+### 2. Terminate TLS in front of the FraiseQL app
 
-```toml
-<!-- Code example in TOML -->
-[server]
-bind_address = "0.0.0.0:8443"  # HTTPS port
-database_url = "postgresql://user:pass@db.example.com/FraiseQL"
+You have two common choices. Pick one.
 
-# TLS for HTTP/gRPC endpoints
-[tls]
-enabled = true
-cert_path = "/etc/FraiseQL/cert.pem"
-key_path = "/etc/FraiseQL/key.pem"
-require_client_cert = false           # Set to true for mTLS
-min_version = "1.2"                   # "1.2" or "1.3" (recommend 1.3)
-
-# TLS for database connections
-[database_tls]
-postgres_ssl_mode = "require"         # disable, allow, prefer, require, verify-ca, verify-full
-redis_ssl = true                      # Use rediss:// protocol
-clickhouse_https = true               # Use HTTPS
-elasticsearch_https = true            # Use HTTPS
-verify_certificates = true            # Verify server certificates
-ca_bundle_path = "/etc/ssl/certs/ca-bundle.crt"  # Optional: CA bundle for verification
-```text
-<!-- Code example in TEXT -->
-
-### 3. Start Server with TLS
+**Option A — Reverse proxy terminates TLS (recommended for production).** Run the
+FraiseQL app on plain HTTP behind nginx/Caddy/Traefik or a cloud load balancer,
+which holds the certificate and terminates TLS:
 
 ```bash
-<!-- Code example in BASH -->
-FRAISEQL_TLS_ENABLED=true \
-  FRAISEQL_TLS_CERT_PATH=/etc/FraiseQL/cert.pem \
-  FRAISEQL_TLS_KEY_PATH=/etc/FraiseQL/key.pem \
-  FraiseQL-server --config FraiseQL.toml
+# Run the FraiseQL FastAPI app on localhost (HTTP); the proxy faces the internet
+uvicorn app:app --host 127.0.0.1 --port 8000
+```
+
+Example nginx server block doing TLS termination and proxying to the app:
+
 ```text
-<!-- Code example in TEXT -->
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name api.example.com;
+
+    ssl_certificate     /etc/fraiseql/cert.pem;
+    ssl_certificate_key /etc/fraiseql/key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    location / {
+        proxy_pass         http://127.0.0.1:8000;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Option B — uvicorn terminates TLS directly (simple deployments).** Pass the
+certificate and key to `uvicorn`; no proxy required:
+
+```bash
+uvicorn app:app \
+  --host 0.0.0.0 --port 8443 \
+  --ssl-certfile /etc/fraiseql/cert.pem \
+  --ssl-keyfile /etc/fraiseql/key.pem
+```
+
+`gunicorn` with `uvicorn` workers accepts the equivalent `--certfile` /
+`--keyfile` options if you run that stack.
+
+### 3. Encrypt the PostgreSQL connection (app ↔ database)
+
+Add the `sslmode` parameter to the `database_url` you pass to
+`create_fraiseql_app(...)` (or set `FRAISEQL_DATABASE_URL`). libpq/psycopg
+negotiates TLS — there is nothing to configure inside FraiseQL:
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url=(
+        "postgresql://user:pass@db.example.com/mydb"
+        "?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem"
+    ),
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,
+)
+```
+
+Or via environment variable (read by `FraiseQLConfig`):
+
+```bash
+export FRAISEQL_DATABASE_URL="postgresql://user:pass@db.example.com/mydb?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem"
+uvicorn app:app --host 127.0.0.1 --port 8000
+```
 
 ## Configuration Options
 
-### Server TLS Configuration (`[tls]`)
+### Inbound HTTPS (app ↔ client)
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | bool | `false` | Enable TLS for HTTP/gRPC endpoints |
-| `cert_path` | path | Required if enabled | Path to PEM certificate file |
-| `key_path` | path | Required if enabled | Path to PEM private key file |
-| `require_client_cert` | bool | `false` | Require client certificates (mTLS) |
-| `client_ca_path` | path | Optional | CA certificate for validating client certs (required if `require_client_cert = true`) |
-| `min_version` | string | `"1.2"` | Minimum TLS version: `"1.2"` or `"1.3"` |
+FraiseQL has **no built-in HTTPS server config** — these options belong to your
+ASGI server or reverse proxy, not to FraiseQL.
 
-### Database TLS Configuration (`[database_tls]`)
+| Where | Option | Description |
+|-------|--------|-------------|
+| uvicorn | `--ssl-certfile` | Path to the PEM certificate file |
+| uvicorn | `--ssl-keyfile` | Path to the PEM private key file |
+| uvicorn | `--ssl-keyfile-password` | Password for an encrypted key file (if any) |
+| gunicorn | `--certfile` / `--keyfile` | Equivalent options for the gunicorn server |
+| nginx | `ssl_certificate` / `ssl_certificate_key` | Certificate and key at the proxy |
+| nginx | `ssl_protocols` | Minimum/allowed TLS versions, e.g. `TLSv1.2 TLSv1.3` |
+| nginx | `ssl_client_certificate` + `ssl_verify_client on` | Require client certs (mTLS) |
+| Caddy | automatic HTTPS | Caddy provisions and renews certs automatically |
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `postgres_ssl_mode` | string | `"prefer"` | PostgreSQL SSL mode: `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full` |
-| `redis_ssl` | bool | `false` | Enable TLS for Redis (uses `rediss://` protocol) |
-| `clickhouse_https` | bool | `false` | Enable HTTPS for ClickHouse |
-| `elasticsearch_https` | bool | `false` | Enable HTTPS for Elasticsearch |
-| `verify_certificates` | bool | `true` | Verify server certificates |
-| `ca_bundle_path` | path | Optional | Path to CA certificate bundle for verification |
+When TLS is terminated by a proxy, run the app with `--proxy-headers` (and an
+appropriate `--forwarded-allow-ips`) so it trusts `X-Forwarded-Proto` and serves
+correct absolute URLs.
+
+### PostgreSQL connection TLS (app ↔ database)
+
+Set these in the `database_url` query string; libpq/psycopg consumes them.
+
+| Parameter | Description |
+|-----------|-------------|
+| `sslmode` | `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full` |
+| `sslrootcert` | Path to the CA certificate used to verify the server (for `verify-ca`/`verify-full`) |
+| `sslcert` | Client certificate path (for PostgreSQL client-certificate auth) |
+| `sslkey` | Client private key path (for PostgreSQL client-certificate auth) |
 
 ## Configuration Examples
 
 ### Example 1: Development (Permissive)
 
-```toml
-<!-- Code example in TOML -->
-# Development: TLS optional, minimal validation
-[tls]
-enabled = false
+Plain HTTP locally, TLS preferred but not required for the database:
 
-[database_tls]
-postgres_ssl_mode = "prefer"
-redis_ssl = false
-clickhouse_https = false
-elasticsearch_https = false
-verify_certificates = false
-```text
-<!-- Code example in TEXT -->
+```bash
+# No inbound TLS; uvicorn serves HTTP for local development
+uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost:5432/mydb?sslmode=prefer",
+    types=[User],
+    queries=[users],
+    production=False,  # enables the GraphQL playground
+)
+```
 
 ### Example 2: Staging (Standard)
 
-```toml
-<!-- Code example in TOML -->
-# Staging: TLS required, standard validation
-[tls]
-enabled = true
-cert_path = "/etc/FraiseQL/cert.pem"
-key_path = "/etc/FraiseQL/key.pem"
-require_client_cert = false
-min_version = "1.2"
+Reverse proxy terminates HTTPS; database connection requires TLS:
 
-[database_tls]
-postgres_ssl_mode = "require"
-redis_ssl = true
-clickhouse_https = true
-elasticsearch_https = true
-verify_certificates = true
-ca_bundle_path = "/etc/ssl/certs/ca-bundle.crt"
 ```text
-<!-- Code example in TEXT -->
+# nginx (staging) — TLS termination, proxy to the FraiseQL app
+server {
+    listen 443 ssl;
+    server_name staging.example.com;
+    ssl_certificate     /etc/fraiseql/cert.pem;
+    ssl_certificate_key /etc/fraiseql/key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    location / { proxy_pass http://127.0.0.1:8000; }
+}
+```
 
-### Example 3: Production (Strict mTLS)
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@db.internal:5432/mydb?sslmode=require",
+    types=[User],
+    queries=[users],
+    production=True,
+)
+```
 
-```toml
-<!-- Code example in TOML -->
-# Production: TLS required with mTLS, strict validation
-[tls]
-enabled = true
-cert_path = "/etc/FraiseQL/cert.pem"
-key_path = "/etc/FraiseQL/key.pem"
-require_client_cert = true
-client_ca_path = "/etc/FraiseQL/client-ca.pem"
-min_version = "1.3"  # TLS 1.3 only
+### Example 3: Production (Strict, with mTLS at the proxy)
 
-[database_tls]
-postgres_ssl_mode = "verify-full"
-redis_ssl = true
-clickhouse_https = true
-elasticsearch_https = true
-verify_certificates = true
-ca_bundle_path = "/etc/ssl/certs/ca-bundle.crt"
+TLS 1.3 only at the proxy, client certificates required (mTLS enforced by nginx),
+and `verify-full` for the database:
+
 ```text
-<!-- Code example in TEXT -->
+# nginx (production) — TLS 1.3 + mutual TLS (client certificates required)
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name api.example.com;
+
+    ssl_certificate     /etc/fraiseql/server-cert.pem;
+    ssl_certificate_key /etc/fraiseql/server-key.pem;
+    ssl_protocols       TLSv1.3;
+
+    # Mutual TLS: require and verify client certificates
+    ssl_client_certificate /etc/fraiseql/client-ca.pem;
+    ssl_verify_client      on;
+
+    location / {
+        proxy_pass        http://127.0.0.1:8000;
+        proxy_set_header  X-Forwarded-Proto $scheme;
+        proxy_set_header  X-SSL-Client-Verify $ssl_client_verify;
+    }
+}
+```
+
+```python
+app = create_fraiseql_app(
+    database_url=(
+        "postgresql://user:pass@db.internal:5432/mydb"
+        "?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca-bundle.crt"
+    ),
+    types=[User],
+    queries=[users],
+    mutations=[create_user],
+    production=True,
+)
+```
 
 ## TLS Enforcement Levels
 
-FraiseQL uses three TLS enforcement profiles:
+There is no FraiseQL enforcement API — you choose a posture at the proxy/ASGI
+server and the database connection string. Three common profiles:
 
 ### 1. Permissive (Development)
 
-```rust
-<!-- Code example in RUST -->
-TlsEnforcer::permissive()
-// - TLS optional for HTTP connections
-// - Client certificates optional
-// - TLS 1.2 minimum (if used)
-```text
-<!-- Code example in TEXT -->
+- Inbound TLS optional (plain HTTP via `uvicorn` locally)
+- Client certificates not required
+- Database `sslmode=prefer`
 
-**Usage**: Local development, testing
+**Usage**: Local development, testing.
 
 ### 2. Standard (Production)
 
-```rust
-<!-- Code example in RUST -->
-TlsEnforcer::standard()
-// - TLS required (HTTPS only)
-// - Client certificates optional
-// - TLS 1.2 minimum
-```text
-<!-- Code example in TEXT -->
+- Inbound TLS required (HTTPS only), terminated by the reverse proxy with
+  `ssl_protocols TLSv1.2 TLSv1.3`
+- Client certificates optional
+- Database `sslmode=require`
 
-**Usage**: Default production setup
+**Usage**: Default production setup.
 
 ### 3. Strict (Regulated Environments)
 
-```rust
-<!-- Code example in RUST -->
-TlsEnforcer::strict()
-// - TLS required (HTTPS only)
-// - Client certificates required (mTLS)
-// - TLS 1.3 minimum
-```text
-<!-- Code example in TEXT -->
+- Inbound TLS required, TLS 1.3 only (`ssl_protocols TLSv1.3`)
+- Mutual TLS required (`ssl_verify_client on` at the proxy)
+- Database `sslmode=verify-full`
 
-**Usage**: PCI-DSS, HIPAA, SOC 2 compliance
+**Usage**: PCI-DSS, HIPAA, SOC 2 compliance.
 
 ## PostgreSQL SSL Modes
 
-FraiseQL supports all PostgreSQL SSL modes:
+PostgreSQL connections (via libpq/psycopg) support all standard SSL modes:
 
 | Mode | Security | Behavior |
 |------|----------|----------|
@@ -257,144 +335,47 @@ FraiseQL supports all PostgreSQL SSL modes:
 | `verify-ca` | ✅ Better | SSL + verify CA certificate |
 | `verify-full` | ✅ Best | SSL + verify CA and hostname |
 
-**Recommendation for production**: Use `require` or `verify-full`
+**Recommendation for production**: Use `require`, or `verify-full` when you can
+provide a CA certificate.
 
 ## Database URLs with TLS
 
-### PostgreSQL
+The `database_url` (passed to `create_fraiseql_app` or set as
+`FRAISEQL_DATABASE_URL`) carries all PostgreSQL TLS settings:
 
 ```text
-<!-- Code example in TEXT -->
 # Without TLS
-postgresql://user:pass@localhost:5432/FraiseQL
+postgresql://user:pass@localhost:5432/mydb
 
 # With TLS (require mode)
-postgresql://user:pass@localhost:5432/FraiseQL?sslmode=require
+postgresql://user:pass@localhost:5432/mydb?sslmode=require
 
-# With TLS (verify-full mode)
-postgresql://user:pass@localhost:5432/FraiseQL?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem
-```text
-<!-- Code example in TEXT -->
+# With TLS (verify-full mode, verifying the server certificate against a CA)
+postgresql://user:pass@localhost:5432/mydb?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem
 
-### Redis
-
-```text
-<!-- Code example in TEXT -->
-# Without TLS
-redis://localhost:6379
-
-# With TLS (automatic with rediss:// protocol)
-rediss://localhost:6379
-rediss://:password@localhost:6379
-```text
-<!-- Code example in TEXT -->
-
-### ClickHouse
-
-```text
-<!-- Code example in TEXT -->
-# Without TLS
-http://localhost:8123
-
-# With TLS (HTTPS)
-https://localhost:8123
-```text
-<!-- Code example in TEXT -->
-
-### Elasticsearch
-
-```text
-<!-- Code example in TEXT -->
-# Without TLS
-http://localhost:9200
-
-# With TLS (HTTPS)
-https://localhost:9200
-```text
-<!-- Code example in TEXT -->
-
-## At-Rest Encryption Configuration
-
-### ClickHouse
-
-To enable encryption at rest in ClickHouse:
-
-```sql
-<!-- Code example in SQL -->
-CREATE TABLE fraiseql_events (
-    event_id UUID,
-    org_id UUID,
-    timestamp DateTime,
-    data String,
-    ...
-) ENGINE = MergeTree()
-PARTITION BY org_id
-ORDER BY (org_id, timestamp)
-WITH SETTINGS
-    storage_disk_name = 'encrypted';
-```text
-<!-- Code example in TEXT -->
-
-**Note**: Requires ClickHouse 21.10+ and disk encryption configured
-
-### Elasticsearch
-
-To enable encryption at rest with ILM policy:
-
-```json
-<!-- Code example in JSON -->
-{
-  "policy": "FraiseQL-policy",
-  "phases": {
-    "hot": {
-      "min_age": "0d",
-      "actions": {
-        "rollover": { "max_size": "50gb" },
-        "set_priority": { "priority": 100 }
-      }
-    },
-    "warm": {
-      "min_age": "7d",
-      "actions": {
-        "set_priority": { "priority": 50 },
-        "forcemerge": { "max_num_segments": 1 }
-      }
-    },
-    "cold": {
-      "min_age": "30d",
-      "actions": {
-        "set_priority": { "priority": 0 },
-        "searchable_snapshot": { "snapshot_repository": "found-snapshots" }
-      }
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Note**: Requires Elasticsearch 7.9+ and subscription-level features
+# With PostgreSQL client-certificate authentication
+postgresql://user@localhost:5432/mydb?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem&sslcert=/etc/ssl/certs/client.pem&sslkey=/etc/ssl/private/client.key
+```
 
 ## Client Certificate Generation (mTLS)
 
-If you're using mTLS (`require_client_cert = true`):
+If you require client certificates for inbound HTTPS (enforced at the reverse
+proxy with `ssl_verify_client on`), generate a CA and per-client certificates:
 
 ### 1. Generate CA Key and Certificate
 
 ```bash
-<!-- Code example in BASH -->
 # CA private key
 openssl genrsa -out ca-key.pem 4096
 
 # CA certificate
 openssl req -new -x509 -days 3650 -key ca-key.pem -out ca-cert.pem \
-  -subj "/CN=FraiseQL-ca/O=YourOrg/C=US"
-```text
-<!-- Code example in TEXT -->
+  -subj "/CN=fraiseql-ca/O=YourOrg/C=US"
+```
 
 ### 2. Generate Client Certificate
 
 ```bash
-<!-- Code example in BASH -->
 # Client key
 openssl genrsa -out client-key.pem 2048
 
@@ -406,48 +387,62 @@ openssl req -new -key client-key.pem -out client.csr \
 openssl x509 -req -days 365 -in client.csr \
   -CA ca-cert.pem -CAkey ca-key.pem -CAcreateserial \
   -out client-cert.pem
-```text
-<!-- Code example in TEXT -->
+```
 
-### 3. Configure in FraiseQL.toml
+### 3. Point the proxy at the client CA
 
-```toml
-<!-- Code example in TOML -->
-[tls]
-enabled = true
-cert_path = "/etc/FraiseQL/server-cert.pem"
-key_path = "/etc/FraiseQL/server-key.pem"
-require_client_cert = true
-client_ca_path = "/etc/FraiseQL/ca-cert.pem"
-min_version = "1.3"
+Configure the reverse proxy to require and verify client certificates against the
+CA you created. For nginx:
+
 ```text
-<!-- Code example in TEXT -->
+server {
+    listen 443 ssl;
+    server_name api.example.com;
+
+    ssl_certificate        /etc/fraiseql/server-cert.pem;
+    ssl_certificate_key    /etc/fraiseql/server-key.pem;
+    ssl_protocols          TLSv1.3;
+
+    ssl_client_certificate /etc/fraiseql/ca-cert.pem;
+    ssl_verify_client      on;
+
+    location / { proxy_pass http://127.0.0.1:8000; }
+}
+```
 
 ## Docker Compose Example
 
-```yaml
-<!-- Code example in YAML -->
-version: '3.8'
+The app container runs the FraiseQL FastAPI app under `uvicorn`; an nginx
+container in front of it terminates inbound TLS, and PostgreSQL is configured for
+SSL so the app's `database_url` can use `sslmode=verify-full`:
 
+```yaml
 services:
-  FraiseQL:
-    build: .
+  proxy:
+    image: nginx:1.27
     ports:
-      - "8443:8443"  # HTTPS
-    environment:
-      DATABASE_URL: postgresql://user:pass@postgres:5432/FraiseQL
-      FRAISEQL_TLS_ENABLED: "true"
-      FRAISEQL_TLS_CERT_PATH: /etc/FraiseQL/cert.pem
-      FRAISEQL_TLS_KEY_PATH: /etc/FraiseQL/key.pem
+      - "443:443"
     volumes:
-      - ./certs:/etc/FraiseQL:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/fraiseql:ro
+    depends_on:
+      - app
+
+  app:
+    build: .
+    # Run the FraiseQL FastAPI app on plain HTTP behind the proxy
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --proxy-headers
+    environment:
+      FRAISEQL_DATABASE_URL: postgresql://user:pass@postgres:5432/mydb?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem
+    volumes:
+      - ./certs/ca.pem:/etc/ssl/certs/ca.pem:ro
     depends_on:
       - postgres
 
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: FraiseQL
+      POSTGRES_DB: mydb
       POSTGRES_PASSWORD: password
     command: >
       -c ssl=on
@@ -456,182 +451,189 @@ services:
     volumes:
       - ./certs/postgres-cert.pem:/var/lib/postgresql/server.crt:ro
       - ./certs/postgres-key.pem:/var/lib/postgresql/server.key:ro
-
-  redis:
-    image: redis:7
-    command: redis-server --tls-port 6379 --port 0 --tls-cert-file /etc/redis/cert.pem --tls-key-file /etc/redis/key.pem
-    volumes:
-      - ./certs/redis-cert.pem:/etc/redis/cert.pem:ro
-      - ./certs/redis-key.pem:/etc/redis/key.pem:ro
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Kubernetes TLS Configuration
 
-### Secret Setup
+In Kubernetes, inbound TLS is typically handled by an Ingress (with
+`cert-manager` provisioning certificates) rather than by the app pod. The app
+pod just runs `uvicorn` on plain HTTP and connects to PostgreSQL with
+`sslmode=verify-full`.
+
+### Secret Setup (certificate used by the Ingress)
 
 ```bash
-<!-- Code example in BASH -->
-# Create TLS secret
-kubectl create secret tls FraiseQL-tls \
+# Create TLS secret for the Ingress
+kubectl create secret tls fraiseql-tls \
   --cert=./certs/cert.pem \
   --key=./certs/key.pem
-```text
-<!-- Code example in TEXT -->
+```
 
-### Deployment Configuration
+### Ingress (inbound HTTPS termination)
 
 ```yaml
-<!-- Code example in YAML -->
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fraiseql
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - api.example.com
+      secretName: fraiseql-tls
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fraiseql
+                port:
+                  number: 8000
+```
+
+### Deployment (app on plain HTTP; DB TLS via the connection string)
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: FraiseQL-server
+  name: fraiseql
 spec:
   template:
     spec:
       containers:
-      - name: FraiseQL
-        image: FraiseQL:latest
-        env:
-        - name: FRAISEQL_TLS_ENABLED
-          value: "true"
-        - name: FRAISEQL_TLS_CERT_PATH
-          value: /etc/FraiseQL/tls/cert.pem
-        - name: FRAISEQL_TLS_KEY_PATH
-          value: /etc/FraiseQL/tls/key.pem
-        volumeMounts:
-        - name: tls-certs
-          mountPath: /etc/FraiseQL/tls
-          readOnly: true
-      volumes:
-      - name: tls-certs
-        secret:
-          secretName: FraiseQL-tls
-```text
-<!-- Code example in TEXT -->
+        - name: fraiseql
+          image: fraiseql-app:latest
+          command:
+            - uvicorn
+            - app:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+            - --proxy-headers
+          env:
+            - name: FRAISEQL_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fraiseql-db
+                  key: database_url   # includes ?sslmode=verify-full&sslrootcert=...
+```
 
 ## Verification and Testing
 
-### 1. Test HTTPS Connection
+### 1. Test the HTTPS Connection (inbound)
 
 ```bash
-<!-- Code example in BASH -->
 # With curl (ignore self-signed cert warnings)
-curl -k https://localhost:8443/health
+curl -k https://api.example.com/graphql
 
 # With proper CA cert
-curl --cacert /etc/ssl/certs/ca-cert.pem https://localhost:8443/health
+curl --cacert /etc/ssl/certs/ca-cert.pem https://api.example.com/graphql
 
-# With client certificate (mTLS)
+# With a client certificate (mTLS enforced at the proxy)
 curl \
   --cacert /etc/ssl/certs/ca-cert.pem \
-  --cert /etc/FraiseQL/client-cert.pem \
-  --key /etc/FraiseQL/client-key.pem \
-  https://localhost:8443/health
-```text
-<!-- Code example in TEXT -->
+  --cert /etc/fraiseql/client-cert.pem \
+  --key /etc/fraiseql/client-key.pem \
+  https://api.example.com/graphql
+```
 
-### 2. Test TLS Version
-
-```bash
-<!-- Code example in BASH -->
-# Check TLS version
-openssl s_client -connect localhost:8443 -tls1_2 < /dev/null
-
-# Verify minimum version enforcement
-openssl s_client -connect localhost:8443 -tls1_1 < /dev/null  # Should fail
-```text
-<!-- Code example in TEXT -->
-
-### 3. Test Database Connections
+### 2. Test the TLS Version
 
 ```bash
-<!-- Code example in BASH -->
-# PostgreSQL
-psql "postgresql://user@localhost/FraiseQL?sslmode=require"
+# Check that TLS 1.2 is accepted
+openssl s_client -connect api.example.com:443 -tls1_2 < /dev/null
 
-# Redis
-redis-cli --tls --cacert /etc/ssl/certs/ca-cert.pem ping
+# Verify older versions are rejected (should fail when ssl_protocols excludes them)
+openssl s_client -connect api.example.com:443 -tls1_1 < /dev/null  # Should fail
+```
 
-# ClickHouse
-curl --cacert /etc/ssl/certs/ca-cert.pem https://localhost:8123/ping
+### 3. Test the PostgreSQL Connection (app ↔ database)
 
-# Elasticsearch
-curl --cacert /etc/ssl/certs/ca-cert.pem https://localhost:9200/_cluster/health
-```text
-<!-- Code example in TEXT -->
+```bash
+# Verify the encrypted PostgreSQL connection independently of the app
+psql "postgresql://user@db.example.com/mydb?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca.pem"
+```
+
+Inside `psql`, confirm the session is encrypted:
+
+```sql
+SELECT ssl, version, cipher FROM pg_stat_ssl WHERE pid = pg_backend_pid();
+```
 
 ## Security Best Practices
 
-1. **Use TLS 1.3** when possible (`min_version = "1.3"`)
-2. **Verify certificates** for all database connections
-3. **Rotate certificates** before expiration (set calendar reminders)
-4. **Use strong private keys** (2048-bit RSA minimum, 4096-bit preferred)
-5. **Protect certificate files** with proper permissions (`chmod 600 key.pem`)
+1. **Use TLS 1.3** when possible (set `ssl_protocols TLSv1.3` at the proxy).
+2. **Verify the database certificate** with `sslmode=verify-full` and a pinned `sslrootcert`.
+3. **Rotate certificates** before expiration (set calendar reminders or automate renewal).
+4. **Use strong private keys** (2048-bit RSA minimum, 4096-bit preferred).
+5. **Protect certificate files** with proper permissions (`chmod 600 key.pem`).
 6. **Use certificate management tools**:
    - Let's Encrypt with Certbot (free automated renewal)
-   - HashiCorp Consul for certificate management
+   - Caddy (automatic HTTPS) or Traefik (built-in ACME)
    - Kubernetes cert-manager (if using K8s)
 7. **Monitor certificate expiration**:
 
    ```bash
-<!-- Code example in BASH -->
-   openssl x509 -enddate -noout -in /etc/FraiseQL/cert.pem
-   ```text
-<!-- Code example in TEXT -->
+   openssl x509 -enddate -noout -in /etc/fraiseql/cert.pem
+   ```
 
-8. **Use different keys per environment** (dev, staging, production)
-9. **Store private keys in secrets management** (HashiCorp Vault, AWS Secrets Manager)
-10. **Enable certificate pinning** for critical database connections
+8. **Use different keys per environment** (dev, staging, production).
+9. **Store private keys in secrets management** (HashiCorp Vault, AWS Secrets Manager, Kubernetes Secrets).
+10. **Keep the app on a private network** and let the proxy/load balancer be the only TLS-terminating, internet-facing component.
 
 ## Troubleshooting
 
-### TLS Certificate Not Found
+### TLS Certificate Not Found (inbound)
 
 ```text
-<!-- Code example in TEXT -->
-error: TLS enabled but certificate file not found: /etc/FraiseQL/cert.pem
-```text
-<!-- Code example in TEXT -->
+error: [Errno 2] No such file or directory: '/etc/fraiseql/cert.pem'
+```
 
-**Solution**: Verify certificate path exists and is readable by the FraiseQL process
+**Solution**: Verify the certificate/key paths passed to `uvicorn`
+(`--ssl-certfile` / `--ssl-keyfile`) or referenced in the proxy config exist and
+are readable by the serving process.
 
-### TLS Version Too Old
-
-```text
-<!-- Code example in TEXT -->
-error: Connection TLS version (1.2) is less than minimum required (1.3)
-```text
-<!-- Code example in TEXT -->
-
-**Solution**: Update client TLS version or lower `min_version` in config
-
-### Client Certificate Required
+### TLS Version Too Old (inbound)
 
 ```text
-<!-- Code example in TEXT -->
-error: Client certificate required, but none provided
+error: no protocols available  (client offered only TLS 1.1)
+```
+
+**Solution**: Update the client's TLS version, or relax `ssl_protocols` at the
+proxy (not recommended for production).
+
+### Client Certificate Required (mTLS)
+
 ```text
-<!-- Code example in TEXT -->
+400 Bad Request — No required SSL certificate was sent
+```
 
-**Solution**: Provide client certificate if using mTLS, or disable with `require_client_cert = false`
+**Solution**: Provide a client certificate when the proxy has
+`ssl_verify_client on`, or set `ssl_verify_client off` to disable mTLS.
 
-### Database Connection SSL Error
+### Database Connection SSL Error (app ↔ database)
 
 ```text
-<!-- Code example in TEXT -->
-error: FATAL: no pg_hba.conf entry for replication connection
-```text
-<!-- Code example in TEXT -->
+error: connection requires a valid client certificate
+error: server does not support SSL, but SSL was required
+```
 
-**Solution**: Ensure database SSL is properly configured and using correct `sslmode`
+**Solution**: Ensure PostgreSQL has SSL enabled and `pg_hba.conf` permits the
+connection, and that your `database_url` uses the correct `sslmode` (and
+`sslrootcert`/`sslcert`/`sslkey` where required).
 
 ## References
 
 - [TLS 1.3 RFC 8446](https://tools.ietf.org/html/rfc8446)
 - [OWASP Transport Layer Protection](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html)
 - [PostgreSQL SSL Support](https://www.postgresql.org/docs/current/ssl-tcp.html)
-- [Redis TLS Support](https://redis.io/topics/encryption)
-- [ClickHouse HTTPS](https://clickhouse.com/docs/en/interfaces/http/)
-- [Elasticsearch TLS Configuration](https://www.elastic.co/guide/en/elasticsearch/reference/current/configuring-tls.html)
+- [Uvicorn deployment & HTTPS](https://www.uvicorn.org/deployment/)
+- [nginx ngx_http_ssl_module](https://nginx.org/en/docs/http/ngx_http_ssl_module.html)
+- [Let's Encrypt / Certbot](https://certbot.eff.org/)
