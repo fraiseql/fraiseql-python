@@ -246,5 +246,4 @@ query {
 
 **GraphQL returns null**
 
-- Solution: Check your resolver functions and database queries</content>
-<parameter name="filePath">docs/journeys/junior-developer.md
+- Solution: Check your resolver functions and database queries

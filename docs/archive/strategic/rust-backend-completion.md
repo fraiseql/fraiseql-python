@@ -371,5 +371,4 @@ A: File issues on GitHub or contact enterprise support for assistance.
 
 **FraiseQL v1.9: The Future of High-Performance GraphQL**
 
-This release marks FraiseQL's transition to a new era of performance and reliability, powered by Rust's systems programming capabilities. The exclusive Rust backend delivers unprecedented speed while maintaining the developer experience that makes GraphQL powerful and accessible.</content>
-<parameter name="filePath">docs/strategic/rust-backend-completion.md
+This release marks FraiseQL's transition to a new era of performance and reliability, powered by Rust's systems programming capabilities. The exclusive Rust backend delivers unprecedented speed while maintaining the developer experience that makes GraphQL powerful and accessible.
