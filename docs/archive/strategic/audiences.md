@@ -312,6 +312,4 @@ open CONTRIBUTING.md
 
 ---
 
-*Audience definitions help users find relevant content quickly and set appropriate expectations for their skill level.*</content>
-</xai:function_call name="read">
-<parameter name="filePath">README.md
+*Audience definitions help users find relevant content quickly and set appropriate expectations for their skill level.*
