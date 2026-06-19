@@ -265,5 +265,4 @@ PostgreSQL Views → Schema Generation → Type-Safe Resolvers → Client
 
 ---
 
-*This evaluation provides the business context needed to make an informed technology decision. The technical team should validate performance claims and migration effort estimates before final commitment.*</content>
-<parameter name="filePath">docs/journeys/architect-cto.md
+*This evaluation provides the business context needed to make an informed technology decision. The technical team should validate performance claims and migration effort estimates before final commitment.*

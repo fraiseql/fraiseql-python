@@ -326,7 +326,4 @@ FraiseQL optimizes LTREE queries automatically:
 6. **Monitor for bloat** and reindex as needed
 7. **Test query performance** before and after index changes
 
-Following these practices ensures optimal performance for hierarchical data operations with PostgreSQL LTREE.</content>
-</xai:function_call:
-<xai:function_call name="todowrite">
-<parameter name="todos">[{"content":"Add GiST indexes for production LTREE performance optimization","status":"completed","priority":"low","id":"index_optimization"}]
+Following these practices ensures optimal performance for hierarchical data operations with PostgreSQL LTREE.
