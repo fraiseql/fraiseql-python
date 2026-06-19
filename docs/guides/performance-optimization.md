@@ -1,6 +1,4 @@
-<!-- Skip to main content -->
 ---
-
 title: Performance & Optimization Guide
 description: Comprehensive guide to optimizing FraiseQL performance for production systems.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "performance", "tutorial"]
@@ -12,9 +10,12 @@ tags: ["documentation", "reference"]
 **Status:** ✅ Production Ready
 **Audience:** Backend engineers, DevOps, database administrators
 **Reading Time:** 40-50 minutes
-**Last Updated:** 2026-02-05
 
-Comprehensive guide to optimizing FraiseQL performance for production systems.
+Comprehensive guide to optimizing FraiseQL performance for production systems. FraiseQL is a
+Python runtime GraphQL framework for PostgreSQL served over FastAPI: queries read from `v_`/`tv_`
+views, mutations call `fn_` PostgreSQL functions, and an optional Rust extension (`fraiseql_rs`)
+accelerates JSON transformation on the hot path. Tuning is therefore mostly PostgreSQL tuning
+plus a few framework knobs.
 
 ---
 
@@ -34,51 +35,54 @@ Comprehensive guide to optimizing FraiseQL performance for production systems.
 
 ### 1. Avoid N+1 Query Problem
 
-❌ **Bad: N+1 queries**
+❌ **Bad: per-field resolver fan-out**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetUsers {
   users {
     id
     name
-    # This causes 1 query for users + N queries for posts (one per user)
+    # If posts are resolved with a separate per-user query, this becomes
+    # 1 query for users + N queries for posts (one per user)
     posts {
       id
       title
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 Result: 101 queries (1 for users + 100 for individual user's posts)
 
-✅ **Good: Single nested query**
+✅ **Good: posts already nested in the view's JSONB**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetUsers {
   users {
     id
     name
-    posts {  # Joined in single query
+    posts {  # Composed in the v_user view's data JSONB — single read
       id
       title
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 Result: 1-2 queries total
+
+The two main ways to avoid N+1 in FraiseQL:
+
+- **Compose nested data in the view.** Build child objects directly into the parent view's
+  `data` JSONB with `jsonb_build_object` / `jsonb_agg`, so a single read returns the full tree.
+- **Use `@fraiseql.dataloader_field`** for computed/cross-aggregate fields that cannot be
+  pre-composed — it batches the field across all parents in one round trip.
 
 ### 2. Pagination for Large Result Sets
 
 ❌ **Bad: Fetch all records**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query AllPosts {
   posts {  # Returns 1,000,000 records!
     id
@@ -86,13 +90,11 @@ query AllPosts {
     content
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ✅ **Good: Paginate with limit/offset or cursor**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query PostsPaginated($first: Int!, $after: String) {
   posts(first: $first, after: $after) {
     edges {
@@ -105,15 +107,13 @@ query PostsPaginated($first: Int!, $after: String) {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3. Request Only Needed Fields
 
 ❌ **Bad: Over-fetching**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetUser {
   user(id: "123") {
     id
@@ -126,13 +126,11 @@ query GetUser {
     all_reviews { id rating text }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ✅ **Good: Specific fields**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetUser {
   user(id: "123") {
     id
@@ -144,25 +142,28 @@ query GetUser {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+FraiseQL's `fraiseql_rs` extension performs field selection on the view's `data` JSONB at
+runtime, so requesting fewer fields means less JSON is transformed and serialized.
 
 ### 4. Use Database Indexes
 
 ```sql
-<!-- Code example in SQL -->
 -- ✅ Good: Indexes on common filters
-CREATE INDEX idx_user_email ON users(email);
-CREATE INDEX idx_order_date ON orders(created_at);
-CREATE INDEX idx_user_status ON users(status);
+CREATE INDEX idx_user_email ON tb_user(email);
+CREATE INDEX idx_order_date ON tb_order(created_at);
+CREATE INDEX idx_user_status ON tb_user(status);
 
 -- For complex queries:
-CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
+CREATE INDEX idx_orders_user_date ON tb_order(fk_user, created_at);
 
 -- For full-text search:
-CREATE INDEX idx_content_search ON documents USING GIN(to_tsvector('english', content));
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_content_search ON tb_document USING GIN(to_tsvector('english', content));
+
+-- For filtering inside a view's data JSONB:
+CREATE INDEX idx_user_data ON tb_user USING GIN(data jsonb_path_ops);
+```
 
 **Index Selection:**
 
@@ -174,11 +175,10 @@ CREATE INDEX idx_content_search ON documents USING GIN(to_tsvector('english', co
 ### 5. Explain Query Plans
 
 ```sql
-<!-- Code example in SQL -->
 EXPLAIN ANALYZE
 SELECT u.id, u.email, COUNT(o.id)
-FROM users u
-LEFT JOIN orders o ON u.id = o.user_id
+FROM tb_user u
+LEFT JOIN tb_order o ON u.pk_user = o.fk_user
 WHERE u.status = 'active'
 GROUP BY u.id, u.email
 ORDER BY u.email;
@@ -188,8 +188,7 @@ ORDER BY u.email;
 -- - Rows filtered
 -- - Actual runtime
 -- - Inefficiencies (full table scans, etc.)
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -197,99 +196,109 @@ ORDER BY u.email;
 
 ### 1. Connection Pooling
 
-```rust
-<!-- Code example in RUST -->
-// FraiseQL configuration
-const POOL_SIZE: u32 = 10;  // Connections per server instance
-const QUEUE_TIMEOUT: Duration = Duration::from_secs(5);
-const IDLE_TIMEOUT: Duration = Duration::from_secs(900);
+FraiseQL uses a psycopg async connection pool. Size it through `create_fraiseql_app` kwargs
+(or the equivalent `FraiseQLConfig` fields / `FRAISEQL_*` env vars):
 
-// For 100 concurrent users:
-// Pool size = 10-20 (not 100!)
-// Each connection can handle multiple queries sequentially
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    connection_pool_size=10,          # connections per app instance
+    connection_pool_max_overflow=10,  # burst capacity above the base size
+    connection_pool_timeout=5.0,      # seconds to wait for a free connection
+    connection_pool_recycle=1800,     # recycle a connection after 30 min
+)
+
+# For 100 concurrent users:
+# Pool size = 10-20 (not 100!)
+# Each connection can handle multiple queries sequentially
+```
 
 ### 2. Query Result Caching
 
-```python
-<!-- Code example in Python -->
-# Cache SELECT query results
-@types.query
-def get_users(self, limit: int = 50) -> list[User]:
-    """
-    @cache(ttl=300)  # Cache for 5 minutes
-    """
-    pass
+FraiseQL ships a PostgreSQL-backed result cache in `fraiseql.caching`. Wrap the repository with
+`CachedRepository`; query results are cached and invalidated via cascade rules derived from your
+schema. See the [Caching Strategies](#caching-strategies) section below for the full setup.
 
-# Invalidate cache on mutations
-@types.mutation
-def create_user(self, email: str) -> User:
-    """
-    @invalidate_cache(paths=['getUsers'])  # Clear users list
-    """
-    pass
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.caching import (
+    PostgresCache,
+    ResultCache,
+    CacheConfig,
+    CachedRepository,
+)
+
+# Build a result cache over the PostgreSQL UNLOGGED cache table
+backend = PostgresCache(connection_pool=pool)
+await backend.initialize()
+cache = ResultCache(backend, CacheConfig(default_ttl=300))  # 5 minutes
+
+# Wrap the repository — find()/find_one() now read through the cache
+cached_repo = CachedRepository(base_repository=repo, cache=cache)
+
+# Per-query control is available on the call itself
+await cached_repo.find("v_user", skip_cache=False, cache_ttl=600)
+```
 
 ### 3. Materialized Views for Aggregations
 
 ```sql
-<!-- Code example in SQL -->
 -- Pre-compute expensive aggregations
 CREATE MATERIALIZED VIEW user_stats AS
 SELECT
-  user_id,
+  fk_user,
   COUNT(*) as total_orders,
   SUM(amount) as total_spent,
   AVG(amount) as avg_order_value,
   MAX(created_at) as last_order_date
-FROM orders
-GROUP BY user_id;
+FROM tb_order
+GROUP BY fk_user;
 
 -- Refresh hourly
 SELECT cron.schedule('refresh_user_stats', '0 * * * *',
   'REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats');
 
 -- Query materialized view (fast)
-SELECT * FROM user_stats WHERE user_id = $1;
-```text
-<!-- Code example in TEXT -->
+SELECT * FROM user_stats WHERE fk_user = $1;
+```
+
+For nested reads, the same idea applies to `tv_` projection views — real tables holding
+pre-composed `data` JSONB, refreshed by `fn_` functions or triggers.
 
 ### 4. Partitioning Large Tables
 
 ```sql
-<!-- Code example in SQL -->
 -- Time-based partitioning for time-series data
-CREATE TABLE events (
+CREATE TABLE tb_event (
   event_date DATE NOT NULL,
-  event_id BIGSERIAL,
-  user_id UUID,
+  pk_event BIGSERIAL,
+  fk_user BIGINT,
   event_type VARCHAR(50),
-  PRIMARY KEY (event_date, event_id)
+  PRIMARY KEY (event_date, pk_event)
 ) PARTITION BY RANGE (event_date);
 
 -- Create partitions
-CREATE TABLE events_2024_01 PARTITION OF events
+CREATE TABLE tb_event_2024_01 PARTITION OF tb_event
   FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
 
-CREATE TABLE events_2024_02 PARTITION OF events
+CREATE TABLE tb_event_2024_02 PARTITION OF tb_event
   FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
 
 -- Queries automatically scan only relevant partitions
-SELECT * FROM events
+SELECT * FROM tb_event
 WHERE event_date BETWEEN '2024-01-15' AND '2024-01-20';
--- Only queries events_2024_01 partition
-```text
-<!-- Code example in TEXT -->
+-- Only queries tb_event_2024_01 partition
+```
 
 ### 5. Denormalization When Needed
 
 ```sql
-<!-- Code example in SQL -->
 -- Denormalized user_stats table avoids expensive joins
-CREATE TABLE user_stats (
-  user_id UUID PRIMARY KEY,
+CREATE TABLE tb_user_stats (
+  fk_user BIGINT PRIMARY KEY,
   email VARCHAR(255),
   full_name VARCHAR(255),
   total_orders INT,
@@ -300,95 +309,90 @@ CREATE TABLE user_stats (
 
 -- Update on order changes
 CREATE TRIGGER order_update_stats
-AFTER INSERT OR UPDATE ON orders
+AFTER INSERT OR UPDATE ON tb_order
 FOR EACH ROW
-EXECUTE FUNCTION update_user_stats(NEW.user_id);
-```text
-<!-- Code example in TEXT -->
+EXECUTE FUNCTION fn_update_user_stats(NEW.fk_user);
+```
 
 ---
 
 ## Caching Strategies
 
+FraiseQL's result cache lives in `fraiseql.caching`. It is **PostgreSQL-backed** — results are
+stored in an UNLOGGED cache table (no extra infrastructure) and invalidated automatically through
+cascade rules derived from your GraphQL schema relationships.
+
 ### 1. Cache Layers
 
 ```text
-<!-- Code example in TEXT -->
 ┌─────────────────┐
-│   Client Cache  │  (Browser local storage, Redux)
+│   Client Cache  │  (your GraphQL client / browser)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│ Apollo Cache    │  (InMemoryCache)
+│ ResultCache     │  (CachedRepository wrapping the CQRS repo)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│ Redis Cache     │  (Server-side, shared)
+│ PostgresCache   │  (UNLOGGED fraiseql_cache table, shared across instances)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│   Database      │  (Slowest)
+│   Database      │  (v_/tv_ views — slowest path)
 └─────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
-### 2. Cache-First vs Cache-And-Network
-
-```typescript
-<!-- Code example in TypeScript -->
-// Cache-first: Good for static data
-const { data } = useQuery(GET_CATEGORIES, {
-  fetchPolicy: 'cache-first'  // 200ms response
-});
-
-// Cache-and-network: Good for mostly-static data
-const { data } = useQuery(GET_POSTS, {
-  fetchPolicy: 'cache-and-network'  // Returns cached data, then updates
-});
-
-// Network-only: Good for real-time data
-const { data } = useQuery(GET_STOCK_PRICE, {
-  fetchPolicy: 'network-only'  // Always fresh
-});
-```text
-<!-- Code example in TEXT -->
-
-### 3. Redis for Shared Cache
+### 2. Setting Up the Result Cache
 
 ```python
-<!-- Code example in Python -->
-# Cache expensive query in Redis
-import redis
+from fraiseql.caching import PostgresCache, ResultCache, CacheConfig, CachedRepository
 
-cache = redis.Redis(host='localhost', port=6379)
+# 1. PostgreSQL-backed backend (shared by all app instances)
+backend = PostgresCache(connection_pool=pool, table_name="fraiseql_cache")
+await backend.initialize()  # creates the UNLOGGED table + expiry index
 
-async def get_user_stats(user_id: str):
-    # Try cache first
-    cached = cache.get(f'user_stats:{user_id}')
-    if cached:
-        return json.loads(cached)
+# 2. Result cache with TTL policy
+cache = ResultCache(
+    backend,
+    CacheConfig(
+        enabled=True,
+        default_ttl=300,   # 5 minutes
+        max_ttl=3600,      # 1 hour ceiling
+        key_prefix="fraiseql",
+    ),
+)
 
-    # Cache miss - query database
-    stats = await db.fetch("""
-        SELECT COUNT(*) as orders, SUM(amount) as total
-        FROM orders WHERE user_id = $1
-    """, user_id)
+# 3. Wrap the repository — reads now go through the cache
+cached_repo = CachedRepository(base_repository=repo, cache=cache)
+```
 
-    # Store in cache (5 minute TTL)
-    cache.setex(
-        f'user_stats:{user_id}',
-        300,
-        json.dumps(stats)
-    )
+### 3. Automatic Cascade Invalidation
 
-    return stats
+Instead of hand-written invalidation, let FraiseQL derive invalidation rules from your schema:
 
-# Invalidate cache on changes
-async def create_order(user_id: str, ...):
-    await db.execute('INSERT INTO orders ...')
-    cache.delete(f'user_stats:{user_id}')  # Invalidate
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.caching import setup_auto_cascade_rules
+
+# During app startup, analyze the schema and register CASCADE rules
+# so writes to a parent automatically invalidate dependent cached reads.
+n_rules = await setup_auto_cascade_rules(backend, app.schema, verbose=True)
+```
+
+You can also declare rules explicitly with `CascadeRule`, or bypass/override the cache per call
+via `find(..., skip_cache=True)` / `find(..., cache_ttl=600)`.
+
+### 4. Caching a Single Resolver
+
+For a one-off expensive resolver, `cached_query` memoizes the result on a cache instance:
+
+```python
+from fraiseql.caching import cached_query
+
+@cached_query(cache, ttl=300)
+async def expensive_user_stats(info, user_id: ID) -> UserStats:
+    db = info.context["db"]
+    return await db.find_one("v_user_stats", id=user_id)
+```
 
 ---
 
@@ -396,35 +400,46 @@ async def create_order(user_id: str, ...):
 
 ### Configuration
 
-```toml
-<!-- Code example in TOML -->
-# FraiseQL.toml
-[FraiseQL.database]
-pool_size = 20              # Connections
-connection_timeout = 10000  # ms
-idle_timeout = 900000       # ms (15 min)
-max_lifetime = 1800000      # ms (30 min)
-test_on_checkout = true     # Verify connection health
-```text
-<!-- Code example in TEXT -->
+Configure the pool in code via `create_fraiseql_app` kwargs, or with `FRAISEQL_*` environment
+variables / a `FraiseQLConfig` instance:
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    connection_pool_size=20,          # base connections
+    connection_pool_max_overflow=10,  # burst above the base size
+    connection_pool_timeout=10.0,     # seconds to wait for a connection
+    connection_pool_recycle=1800,     # recycle connections after 30 min
+)
+```
+
+Equivalent environment variables (consumed by `FraiseQLConfig`):
+
+```bash
+FRAISEQL_DATABASE_URL=postgresql://localhost/mydb
+FRAISEQL_DATABASE_POOL_SIZE=20
+FRAISEQL_DATABASE_POOL_TIMEOUT=10
+FRAISEQL_DATABASE_POOL_RECYCLE=1800
+```
 
 ### Tuning
 
 ```text
-<!-- Code example in TEXT -->
 Pool Size Formula:
   = ((core_count × 2) + effective_spindle_count)
   = ((8 cores × 2) + 1) = 17 connections
 
 Concurrency = Pool Size × Average Query Time
   = 20 connections × 50ms = 1000 concurrent requests
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Monitoring
 
 ```sql
-<!-- Code example in SQL -->
 -- Check pool usage
 SELECT count(*) FROM pg_stat_activity;
 -- Should be <= pool_size (20)
@@ -434,8 +449,7 @@ SELECT pid, usename, state, query, query_start
 FROM pg_stat_activity
 WHERE state = 'idle'
   AND query_start < NOW() - INTERVAL '15 minutes';
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -444,26 +458,27 @@ WHERE state = 'idle'
 ### Query Performance Metrics
 
 ```python
-<!-- Code example in Python -->
-# Instrument queries with timing
-@types.query
-def get_posts(self, limit: int = 50) -> list[Post]:
+import time
+
+import fraiseql
+
+# Instrument a resolver with timing
+@fraiseql.query
+async def posts(info, limit: int = 50) -> list[Post]:
     start = time.time()
 
-    # Query execution
-    results = ...
+    db = info.context["db"]
+    results = await db.find("v_post", limit=limit)
 
     duration = time.time() - start
-    log_metric('query.duration', duration, tags={'query': 'getPosts'})
+    log_metric("query.duration", duration, tags={"query": "posts"})
 
     return results
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Slow Query Log
 
 ```sql
-<!-- Code example in SQL -->
 -- Enable slow query logging
 ALTER SYSTEM SET log_min_duration_statement = 100;  -- Log queries > 100ms
 SELECT pg_reload_conf();
@@ -472,30 +487,28 @@ SELECT pg_reload_conf();
 SELECT * FROM pg_stat_statements
 ORDER BY mean_exec_time DESC
 LIMIT 20;
-```text
-<!-- Code example in TEXT -->
+```
 
 ### APM Integration (DataDog/New Relic)
 
 ```python
-<!-- Code example in Python -->
-from datadog import api
 from datadog_api_client.v1.api.metrics_api import MetricsApi
+from datadog_api_client.v1.model.metrics_payload import MetricsPayload
+from datadog_api_client.v1.model.series import Series
 
 # Report query metrics
 metrics_api.submit_metrics(
     body=MetricsPayload(
         series=[
             Series(
-                metric="FraiseQL.query.duration",
+                metric="fraiseql.query.duration",
                 points=[[int(time.time()), query_duration_ms]],
-                tags=["query:getPosts", "endpoint:graphql"]
+                tags=["query:posts", "endpoint:graphql"],
             )
         ]
     )
 )
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -511,8 +524,10 @@ metrics_api.submit_metrics(
 
 ### Horizontal Scaling (Multiple Servers)
 
+Run several copies of the FastAPI app (for example `uvicorn app:app` behind a process manager
+or in multiple containers) behind a load balancer, all sharing one PostgreSQL database:
+
 ```text
-<!-- Code example in TEXT -->
 ┌──────────────────────────────────────┐
 │        Load Balancer (nginx)         │
 └──────────────┬───────────────────────┘
@@ -520,8 +535,8 @@ metrics_api.submit_metrics(
     ┌──────────┼──────────┐
     ↓          ↓          ↓
 ┌─────────┐┌─────────┐┌─────────┐
-│FraiseQL │FraiseQL │FraiseQL │
-│ Instance│ Instance│ Instance│
+│ FastAPI ││ FastAPI ││ FastAPI │
+│ (uvicorn)│(uvicorn)│(uvicorn)│
 └────┬────┘└────┬────┘└────┬────┘
      │          │          │
      └──────────┼──────────┘
@@ -530,47 +545,52 @@ metrics_api.submit_metrics(
         │ PostgreSQL   │
         │ (Shared DB)  │
         └──────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Read Replicas
 
-```sql
-<!-- Code example in SQL -->
+```text
 -- Primary for writes
 PRIMARY (writes)
   ↓ (replication)
 REPLICA 1 (reads)
 REPLICA 2 (reads)
 REPLICA 3 (reads)
-```text
-<!-- Code example in TEXT -->
+```
+
+FraiseQL's CQRS split maps naturally onto read replicas: mutations call `fn_` functions and must
+hit the primary, while `@query` reads of `v_`/`tv_` views can target a replica. A common pattern
+is to run a read-only app instance whose `database_url` points at a replica (queries only), and a
+write instance pointed at the primary, fronted by your load balancer or router:
 
 ```python
-<!-- Code example in Python -->
-# Route queries to replica
-@database(
-    write='postgres_primary',
-    read='postgres_replica'
+from fraiseql.fastapi import create_fraiseql_app
+
+# Read-only instance — queries served from a replica
+read_app = create_fraiseql_app(
+    database_url="postgresql://postgres_replica/mydb",
+    types=[User],
+    queries=[users, user],
 )
-def get_users(self) -> list[User]:
-    """Queries use replica, mutations use primary"""
-    pass
-```text
-<!-- Code example in TEXT -->
+
+# Write instance — mutations served from the primary
+write_app = create_fraiseql_app(
+    database_url="postgresql://postgres_primary/mydb",
+    types=[User],
+    mutations=[create_user],
+)
+```
 
 ### Citus for Sharding
 
 ```sql
-<!-- Code example in SQL -->
 -- Distribute table across nodes
-SELECT create_distributed_table('orders', 'user_id');
+SELECT create_distributed_table('tb_order', 'fk_user');
 
 -- Queries automatically sharded
-SELECT * FROM orders WHERE user_id = $1;  -- Single shard
-SELECT * FROM orders;  -- All shards (parallel)
-```text
-<!-- Code example in TEXT -->
+SELECT * FROM tb_order WHERE fk_user = $1;  -- Single shard
+SELECT * FROM tb_order;  -- All shards (parallel)
+```
 
 ---
 
@@ -593,7 +613,6 @@ SELECT * FROM orders;  -- All shards (parallel)
 ### Benchmark Suite
 
 ```typescript
-<!-- Code example in TypeScript -->
 import Benchmark from 'benchmark';
 
 const suite = new Benchmark.Suite;
@@ -612,22 +631,19 @@ suite
     console.log('Fastest is ' + this.filter('fastest').map('name'));
   })
   .run({ async: true });
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Load Testing
 
 ```bash
-<!-- Code example in BASH -->
-# Using Apache Bench
-ab -n 10000 -c 100 http://localhost:5000/graphql
+# Using Apache Bench against the running FastAPI app
+ab -n 10000 -c 100 http://localhost:8000/graphql
 
 # Results:
 # Requests per second: 500
 # 95th percentile latency: 200ms
 # Max latency: 1000ms
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -658,8 +674,3 @@ ab -n 10000 -c 100 http://localhost:5000/graphql
 
 - [Analytics Platform](../patterns/analytics-olap-platform.md) - Optimize for aggregations
 - [SaaS Multi-Tenant](../patterns/saas-multi-tenant.md) - Row-level security performance
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

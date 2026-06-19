@@ -73,14 +73,6 @@ FraiseQL is a GraphQL backend, so any GraphQL-compatible client library can quer
 - Error handling and retries
 - Performance tuning
 
-**[CLI Query Tool](./cli-query-guide.md)** — Command-line querying
-
-- Using `FraiseQL-query` CLI tool
-- Query files and variables
-- Scripting FraiseQL queries
-- Integration with automation tools
-- Output formatting (JSON, CSV, table)
-
 ---
 
 ## Common Patterns
@@ -170,25 +162,12 @@ Each guide includes testing patterns for:
 
 ## See Also
 
-### SDK References
-
-- **[All 16 Language SDKs](../../integrations/sdk/)** — How to author schemas in your language
-- **[SDK Best Practices](../language-sdk-best-practices.md)** — Server-side SDK usage patterns
-
-#### Full-Stack Examples
+### Full-Stack Example
 
 - **[Python + React Example](../../tutorials/fullstack-python-react.md)**
-- **[TypeScript + Vue Example](../../examples/fullstack-typescript-vue.md)**
-- **[Go + Flutter Example](../../examples/fullstack-go-flutter.md)**
-- **[Java + Next.js Example](../../examples/fullstack-java-nextjs.md)**
 
 ### Related Guides
 
 - **[Real-Time Patterns](../patterns.md)** — Subscription patterns
 - **[Authentication & Authorization](../authorization-quick-start.md)** — Securing client access
 - **[Production Deployment](../production-deployment.md)** — Hosting considerations
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

@@ -12,45 +12,39 @@ tags: ["documentation", "reference"]
 **Status:** ✅ Production Ready
 **Audience:** Developers, Architects
 **Reading Time:** 20-30 minutes
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-06-19
 
 ## Prerequisites
 
 **Required Knowledge:**
 
 - GraphQL fundamentals (types, fields, queries, mutations)
-- FraiseQL schema definition and configuration (see [getting-started.md](../getting-started.md))
+- FraiseQL schema definition and configuration (see [getting-started](../getting-started/quickstart.md))
 - Authentication and authorization concepts
-- Multi-tenancy and data isolation patterns
+- Multi-tenancy and data isolation patterns (PostgreSQL Row-Level Security)
 - Caching strategies and trade-offs
 - Pagination and filtering techniques
 - Error handling best practices
-- Database relationships and foreign keys
+- PostgreSQL views, functions, and the `tb_`/`v_`/`fn_` conventions
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- Your chosen SDK language:
-  - Python 3.10+
-  - TypeScript/Node.js 18+
-  - Go 1.21+
-  - Java 11+
-  - Or any of the other 16 supported languages
-- A code editor or IDE
+- FraiseQL v1 (latest)
+- Python 3.13+
+- PostgreSQL 14+
 - curl or Postman (for API testing)
 - Git (optional, for version control)
 
 **Required Infrastructure:**
 
-- FraiseQL server running with your schema
-- PostgreSQL, MySQL, SQLite, or SQL Server database
-- Network connectivity to FraiseQL server
+- A FastAPI app built with `create_fraiseql_app(...)` and served by `uvicorn`
+- PostgreSQL database
 - Example data loaded in database (for testing patterns)
 
 **Optional but Recommended:**
 
 - Test database with sample data
-- GraphQL IDE (GraphQL Playground, Apollo Sandbox, Postman)
+- GraphQL IDE (the built-in playground when `production=False`, Apollo Sandbox, Postman)
 - API monitoring tools
 - Logging and debugging tools
 
@@ -66,249 +60,175 @@ How do I add user authentication to my GraphQL API?
 
 ### Solution
 
-Implement a complete authentication flow: register → login → validate token → query protected data.
+Model the write side as a PostgreSQL function (`fn_register_user`) called from a
+mutation, the read side as a `v_user` view, and verify the request's JWT in the
+FastAPI context getter. Reads stay in views; writes (and password hashing) live in
+PostgreSQL functions.
 
-### Schema Definition
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "types": [
-    {
-      "name": "User",
-      "fields": [
-        { "name": "id", "type": "ID", "nonNull": true },
-        { "name": "email", "type": "String", "nonNull": true },
-        { "name": "name", "type": "String", "nonNull": true },
-        { "name": "createdAt", "type": "DateTime", "nonNull": true }
-      ]
-    },
-    {
-      "name": "AuthPayload",
-      "fields": [
-        { "name": "token", "type": "String", "nonNull": true },
-        { "name": "user", "type": "User", "nonNull": true }
-      ]
-    }
-  ],
-  "queries": [
-    {
-      "name": "me",
-      "returnType": "User",
-      "isList": false,
-      "args": []
-    }
-  ],
-  "mutations": [
-    {
-      "name": "register",
-      "args": [
-        { "name": "email", "type": "String", "nonNull": true },
-        { "name": "password", "type": "String", "nonNull": true },
-        { "name": "name", "type": "String", "nonNull": true }
-      ],
-      "returnType": "AuthPayload",
-      "isList": false
-    },
-    {
-      "name": "login",
-      "args": [
-        { "name": "email", "type": "String", "nonNull": true },
-        { "name": "password", "type": "String", "nonNull": true }
-      ],
-      "returnType": "AuthPayload",
-      "isList": false
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID, EmailAddress, DateTime
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    email: EmailAddress
+    name: str
+    created_at: DateTime
+
+
+@fraiseql.success
+class AuthSuccess:
+    token: str
+    user: User
+
+
+@fraiseql.error
+class AuthError:
+    message: str
+    code: str = "AUTH_ERROR"
+
+
+@fraiseql.input
+class RegisterInput:
+    email: EmailAddress
+    password: str
+    name: str
+
+
+@fraiseql.input
+class LoginInput:
+    email: EmailAddress
+    password: str
+```
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
-use serde::{Serialize, Deserialize};
-use bcrypt::{hash, verify};
+The write logic — email validation, uniqueness, password hashing — belongs in the
+PostgreSQL function `fn_register_user`. The mutation resolver simply calls it and maps
+the JSONB result to the success or error union member.
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    user_id: String,
-    exp: usize,
-}
+```python
+@fraiseql.query
+async def me(info) -> User | None:
+    """Return the authenticated user from the request context."""
+    user_id = info.context.get("user_id")
+    if user_id is None:
+        return None
+    db = info.context["db"]
+    return await db.find_one("v_user", id=user_id)
 
-pub async fn register(
-    email: String,
-    password: String,
-    name: String,
-    db: &Database,
-) -> Result<AuthPayload> {
-    // Validate email format
-    if !email.contains('@') {
-        return Err(FraiseQLError::Validation {
-            message: "Invalid email format".to_string(),
-            path: Some("email".to_string()),
-        });
-    }
 
-    // Check if user exists
-    let existing = db.query_user_by_email(&email).await?;
-    if existing.is_some() {
-        return Err(FraiseQLError::Validation {
-            message: "Email already registered".to_string(),
-            path: Some("email".to_string()),
-        });
-    }
-
-    // Hash password with bcrypt
-    let hashed_password = hash(&password, 12)
-        .map_err(|e| FraiseQLError::Validation {
-            message: format!("Password hashing failed: {}", e),
-            path: None,
-        })?;
-
-    // Create user in database
-    let user = db.create_user(
-        &email,
-        &hashed_password,
-        &name,
-    ).await?;
-
-    // Generate JWT token
-    let token = generate_token(&user.id)?;
-
-    Ok(AuthPayload {
-        token,
-        user,
-    })
-}
-
-pub async fn login(
-    email: String,
-    password: String,
-    db: &Database,
-) -> Result<AuthPayload> {
-    // Find user by email
-    let user = db.query_user_by_email(&email).await?
-        .ok_or_else(|| FraiseQLError::Validation {
-            message: "Invalid credentials".to_string(),
-            path: None,
-        })?;
-
-    // Verify password
-    let password_valid = verify(&password, &user.password_hash)
-        .map_err(|_| FraiseQLError::Validation {
-            message: "Invalid credentials".to_string(),
-            path: None,
-        })?;
-
-    if !password_valid {
-        return Err(FraiseQLError::Validation {
-            message: "Invalid credentials".to_string(),
-            path: None,
-        });
-    }
-
-    // Generate JWT token
-    let token = generate_token(&user.id)?;
-
-    Ok(AuthPayload {
-        token,
-        user,
-    })
-}
-
-pub async fn me(token: &str, db: &Database) -> Result<User> {
-    let user_id = validate_token(token)?;
-    db.query_user_by_id(&user_id).await?
-        .ok_or_else(|| FraiseQLError::Database {
-            message: "User not found".to_string(),
-            code: None,
-        })
-}
-
-fn generate_token(user_id: &str) -> Result<String> {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    let claims = Claims {
-        user_id: user_id.to_string(),
-        exp: (now + 86400) as usize, // 24 hours
-    };
-
-    encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret("your-secret-key".as_ref()),
-    ).map_err(|e| FraiseQLError::Validation {
-        message: format!("Token generation failed: {}", e),
-        path: None,
-    })
-}
-
-fn validate_token(token: &str) -> Result<String> {
-    decode::<Claims>(
-        token,
-        &DecodingKey::from_secret("your-secret-key".as_ref()),
-        &Validation::default(),
+@fraiseql.mutation
+async def register(info, input: RegisterInput) -> AuthSuccess | AuthError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_register_user",
+        {"email": input.email, "password": input.password, "name": input.name},
     )
-    .map(|data| data.claims.user_id)
-    .map_err(|e| FraiseQLError::Validation {
-        message: format!("Invalid token: {}", e),
-        path: None,
-    })
-}
-```text
-<!-- Code example in TEXT -->
+    if not result.get("success"):
+        return AuthError(message=result.get("message", "Registration failed"))
+    return AuthSuccess(token=result["token"], user=User(**result["user"]))
+
+
+@fraiseql.mutation
+async def login(info, input: LoginInput) -> AuthSuccess | AuthError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_login", {"email": input.email, "password": input.password}
+    )
+    if not result.get("success"):
+        return AuthError(message="Invalid credentials", code="INVALID_CREDENTIALS")
+    return AuthSuccess(token=result["token"], user=User(**result["user"]))
+```
+
+The PostgreSQL function hashes the password with `pgcrypto` and returns a JSONB
+envelope:
+
+```sql
+CREATE OR REPLACE FUNCTION fn_register_user(payload jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id uuid;
+BEGIN
+    IF EXISTS (SELECT 1 FROM tb_user WHERE email = payload->>'email') THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Email already registered');
+    END IF;
+
+    INSERT INTO tb_user (id, email, password_hash, name)
+    VALUES (
+        gen_random_uuid(),
+        payload->>'email',
+        crypt(payload->>'password', gen_salt('bf', 12)),  -- bcrypt, cost 12
+        payload->>'name'
+    )
+    RETURNING id INTO v_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'token', '<issued by your auth layer>',
+        'user', (SELECT data FROM v_user WHERE id = v_id)
+    );
+END;
+$$;
+```
+
+JWT verification happens once, in the FastAPI context getter, and the decoded
+`user_id` is placed on `info.context`:
+
+```python
+from fastapi import Request
+from fraiseql.fastapi import create_fraiseql_app
+
+
+async def get_context(request: Request) -> dict:
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    user_id = verify_jwt(token) if token else None   # your JWT validation
+    return {"user_id": user_id}
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[me],
+    mutations=[register, login],
+    context_getter=get_context,
+    production=False,
+)
+```
 
 ### Usage
 
 ```graphql
-<!-- Code example in GraphQL -->
 # Register
 mutation {
-  register(
-    email: "alice@example.com"
-    password: "secure-password"
-    name: "Alice"
-  ) {
-    token
-    user {
-      id
-      name
-      email
+  register(input: { email: "alice@example.com", password: "secure-password", name: "Alice" }) {
+    ... on AuthSuccess {
+      token
+      user { id name email }
     }
+    ... on AuthError { message code }
   }
 }
 
 # Login
 mutation {
-  login(
-    email: "alice@example.com"
-    password: "secure-password"
-  ) {
-    token
-    user {
-      id
-      name
-      email
-    }
+  login(input: { email: "alice@example.com", password: "secure-password" }) {
+    ... on AuthSuccess { token user { id name email } }
+    ... on AuthError { message }
   }
 }
 
 # Get current user (with Authorization header)
 query {
-  me {
-    id
-    name
-    email
-  }
+  me { id name email }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Trade-offs & Security
 
@@ -321,12 +241,12 @@ query {
 
 **Security Considerations**:
 
-- ✅ Hash passwords with bcrypt (cost 12+)
+- ✅ Hash passwords with `pgcrypto`'s bcrypt (cost 12+) inside the `fn_` function
 - ✅ Use HTTPS only (TLS 1.3+)
 - ✅ Store secret key in environment (not git)
 - ✅ Set token expiration (24 hours recommended)
 - ✅ Refresh tokens for long sessions
-- ✅ Validate email format before storing
+- ✅ Validate email format before storing (the `EmailAddress` scalar helps)
 
 ---
 
@@ -338,178 +258,81 @@ How do I handle large result sets without overwhelming the client or server?
 
 ### Solution
 
-Implement cursor-based pagination for efficient data retrieval.
+FraiseQL ships a Relay-style `Connection`/`Edge`/`PageInfo` generic, and the CQRS
+repository's `find(...)` already accepts `limit`, `offset`, `order_by`, and `where`.
+Build cursor-based pagination on top of a `v_user` view.
 
-### Schema Definition
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "types": [
-    {
-      "name": "UserConnection",
-      "fields": [
-        { "name": "edges", "type": "UserEdge", "nonNull": false },
-        { "name": "pageInfo", "type": "PageInfo", "nonNull": true }
-      ]
-    },
-    {
-      "name": "UserEdge",
-      "fields": [
-        { "name": "node", "type": "User", "nonNull": true },
-        { "name": "cursor", "type": "String", "nonNull": true }
-      ]
-    },
-    {
-      "name": "PageInfo",
-      "fields": [
-        { "name": "hasNextPage", "type": "Boolean", "nonNull": true },
-        { "name": "hasPreviousPage", "type": "Boolean", "nonNull": true },
-        { "name": "startCursor", "type": "String", "nonNull": false },
-        { "name": "endCursor", "type": "String", "nonNull": false }
-      ]
-    }
-  ],
-  "queries": [
-    {
-      "name": "users",
-      "returnType": "UserConnection",
-      "isList": false,
-      "args": [
-        { "name": "first", "type": "Int", "nonNull": false },
-        { "name": "after", "type": "String", "nonNull": false },
-        { "name": "last", "type": "Int", "nonNull": false },
-        { "name": "before", "type": "String", "nonNull": false }
-      ]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID
+
+# Connection, Edge, and PageInfo are provided by FraiseQL.
+from fraiseql import Connection
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+```
+
+`Connection[User]` resolves to a connection type with `edges { node cursor }` and
+`page_info { has_next_page has_previous_page start_cursor end_cursor }` — the standard
+Relay shape, generated by FraiseQL's `Connection`, `Edge`, and `PageInfo` types.
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-use base64::{Engine, engine::general_purpose};
+The resolver decodes the incoming cursor to an offset, fetches one extra row to detect
+a next page, and builds the connection. All data comes from the `v_user` view through
+`db.find`.
 
-pub struct PaginationArgs {
-    pub first: Option<i32>,
-    pub after: Option<String>,
-    pub last: Option<i32>,
-    pub before: Option<String>,
-}
+```python
+import base64
 
-pub struct UserConnection {
-    pub edges: Vec<UserEdge>,
-    pub page_info: PageInfo,
-}
 
-pub struct UserEdge {
-    pub node: User,
-    pub cursor: String,
-}
+def _encode_cursor(offset: int) -> str:
+    return base64.b64encode(str(offset).encode()).decode()
 
-pub struct PageInfo {
-    pub has_next_page: bool,
-    pub has_previous_page: bool,
-    pub start_cursor: Option<String>,
-    pub end_cursor: Option<String>,
-}
 
-pub async fn get_users(
-    args: PaginationArgs,
-    db: &Database,
-) -> Result<UserConnection> {
-    // Validate arguments
-    let first = args.first.unwrap_or(10).min(100); // Default 10, max 100
-    if first < 0 {
-        return Err(FraiseQLError::Validation {
-            message: "first must be positive".to_string(),
-            path: Some("first".to_string()),
-        });
-    }
+def _decode_cursor(cursor: str) -> int:
+    return int(base64.b64decode(cursor.encode()).decode())
 
-    // Decode cursor if provided
-    let after_offset = if let Some(cursor) = args.after {
-        decode_cursor(&cursor)?
-    } else {
-        0
-    };
 
-    // Fetch one extra to determine if there are more results
-    let total_fetch = (first + 1) as usize;
-    let mut users = db.query_users(after_offset, total_fetch).await?;
+@fraiseql.query
+async def users(info, first: int = 10, after: str | None = None) -> Connection[User]:
+    db = info.context["db"]
+    first = min(first, 100)            # cap page size
+    offset = _decode_cursor(after) + 1 if after else 0
 
-    // Determine if there are more pages
-    let has_next_page = users.len() > first as usize;
-    if has_next_page {
-        users.pop(); // Remove the extra item we fetched
-    }
+    rows = await db.find("v_user", order_by="created_at_desc", limit=first + 1, offset=offset)
+    has_next_page = len(rows) > first
+    rows = rows[:first]
 
-    // Create edges with cursors
-    let edges: Vec<UserEdge> = users.iter()
-        .enumerate()
-        .map(|(idx, user)| {
-            let cursor_offset = after_offset + idx as i32 + 1;
-            UserEdge {
-                node: user.clone(),
-                cursor: encode_cursor(cursor_offset),
-            }
-        })
-        .collect();
-
-    let start_cursor = edges.first().map(|e| e.cursor.clone());
-    let end_cursor = edges.last().map(|e| e.cursor.clone());
-
-    Ok(UserConnection {
-        edges,
-        page_info: PageInfo {
-            has_next_page,
-            has_previous_page: after_offset > 0,
-            start_cursor,
-            end_cursor,
+    edges = [
+        {"node": User(**row), "cursor": _encode_cursor(offset + idx)}
+        for idx, row in enumerate(rows)
+    ]
+    return Connection.from_dict({
+        "edges": edges,
+        "page_info": {
+            "has_next_page": has_next_page,
+            "has_previous_page": offset > 0,
+            "start_cursor": edges[0]["cursor"] if edges else None,
+            "end_cursor": edges[-1]["cursor"] if edges else None,
         },
     })
-}
-
-fn encode_cursor(offset: i32) -> String {
-    general_purpose::STANDARD.encode(offset.to_string())
-}
-
-fn decode_cursor(cursor: &str) -> Result<i32> {
-    let decoded = general_purpose::STANDARD.decode(cursor)
-        .map_err(|_| FraiseQLError::Validation {
-            message: "Invalid cursor format".to_string(),
-            path: Some("after".to_string()),
-        })?;
-
-    let offset_str = String::from_utf8(decoded)
-        .map_err(|_| FraiseQLError::Validation {
-            message: "Invalid cursor encoding".to_string(),
-            path: Some("after".to_string()),
-        })?;
-
-    offset_str.parse()
-        .map_err(|_| FraiseQLError::Validation {
-            message: "Invalid cursor value".to_string(),
-            path: Some("after".to_string()),
-        })
-}
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Usage
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetFirstPage {
   users(first: 10) {
     edges {
-      node {
-        id
-        name
-      }
+      node { id name }
       cursor
     }
     pageInfo {
@@ -522,10 +345,7 @@ query GetFirstPage {
 query GetNextPage {
   users(first: 10, after: "MTA=") {
     edges {
-      node {
-        id
-        name
-      }
+      node { id name }
       cursor
     }
     pageInfo {
@@ -534,22 +354,21 @@ query GetNextPage {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Performance Characteristics
 
 | Scenario | Performance | Notes |
 |----------|-------------|-------|
-| First page (10 items) | ~5ms | Single database query |
+| First page (10 items) | ~5ms | Single database query against the view |
 | Mid-range (offset 10k) | ~50ms | Index scan, not full table |
 | Last page (offset 1M) | ~500ms | Index scan from end |
 
 **Optimization**:
 
-- ✅ Add database index on creation date
-- ✅ Use offset-based cursor for small pages
-- ✅ Consider keyset pagination for very large datasets
+- ✅ Add a database index on the ordering column (e.g. `created_at`)
+- ✅ Use offset-based cursors for small pages
+- ✅ Consider keyset pagination (a `WHERE created_at < :cursor` in the view) for very large datasets
 
 ---
 
@@ -561,102 +380,66 @@ How do I add search and filtering to my GraphQL API?
 
 ### Solution
 
-Implement multiple filter types and combine them efficiently.
+Pass a `where` dictionary to `db.find`. FraiseQL's WHERE generator translates it into
+parameterized SQL against the view's JSONB `data` column, supporting operators like
+`eq`, `gte`, `lte`, `contains`, and `icontains`. For full-text search, query a `tsvector`
+column built inside the view.
 
-### Schema Definition
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "types": [
-    {
-      "name": "UserFilter",
-      "fields": [
-        { "name": "name", "type": "String", "nonNull": false },
-        { "name": "email", "type": "String", "nonNull": false },
-        { "name": "createdAfter", "type": "DateTime", "nonNull": false },
-        { "name": "createdBefore", "type": "DateTime", "nonNull": false }
-      ]
-    }
-  ],
-  "queries": [
-    {
-      "name": "users",
-      "returnType": "User",
-      "isList": true,
-      "args": [
-        { "name": "filter", "type": "UserFilter", "nonNull": false },
-        { "name": "search", "type": "String", "nonNull": false }
-      ]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID, DateTime
+
+
+@fraiseql.input
+class UserFilter:
+    name: str | None = None
+    email: str | None = None
+    created_after: DateTime | None = None
+    created_before: DateTime | None = None
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+    created_at: DateTime
+```
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-pub struct UserFilter {
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub created_after: Option<DateTime>,
-    pub created_before: Option<DateTime>,
-}
+The resolver builds the `where` mapping from the filter input and delegates the SQL
+generation to `db.find`. Parameters are always bound, never interpolated.
 
-pub async fn get_users(
-    filter: Option<UserFilter>,
-    search: Option<String>,
-    db: &Database,
-) -> Result<Vec<User>> {
-    let mut query = "SELECT * FROM users WHERE 1=1".to_string();
-    let mut params: Vec<String> = Vec::new();
+```python
+@fraiseql.query
+async def users(info, filter: UserFilter | None = None, search: str | None = None) -> list[User]:
+    db = info.context["db"]
+    where: dict = {}
 
-    // Apply filter
-    if let Some(f) = filter {
-        if let Some(name) = f.name {
-            query.push_str(" AND name ILIKE ${}");
-            params.push(format!("%{}%", name));
-        }
+    if filter is not None:
+        if filter.name is not None:
+            where["name"] = {"icontains": filter.name}
+        if filter.email is not None:
+            where["email"] = {"eq": filter.email}
+        if filter.created_after is not None:
+            where["created_at"] = {"gte": filter.created_after}
+        if filter.created_before is not None:
+            where.setdefault("created_at", {})["lte"] = filter.created_before
 
-        if let Some(email) = f.email {
-            query.push_str(" AND email = ${}");
-            params.push(email);
-        }
+    if search is not None:
+        # `search_text` is a tsvector exposed by the view; see the SQL below.
+        where["search_text"] = {"matches": search}
 
-        if let Some(after) = f.created_after {
-            query.push_str(" AND created_at >= ${}");
-            params.push(after.to_rfc3339());
-        }
-
-        if let Some(before) = f.created_before {
-            query.push_str(" AND created_at <= ${}");
-            params.push(before.to_rfc3339());
-        }
-    }
-
-    // Apply full-text search
-    if let Some(q) = search {
-        query.push_str(
-            " AND (name ILIKE ${} OR email ILIKE ${})"
-        );
-        let search_term = format!("%{}%", q);
-        params.push(search_term.clone());
-        params.push(search_term);
-    }
-
-    query.push_str(" ORDER BY created_at DESC LIMIT 100");
-
-    db.query_raw(&query, &params).await
-}
-```text
-<!-- Code example in TEXT -->
+    rows = await db.find("v_user", where=where, order_by="created_at_desc", limit=100)
+    return [User(**row) for row in rows]
+```
 
 ### Usage
 
 ```graphql
-<!-- Code example in GraphQL -->
 # Search by name
 query {
   users(filter: { name: "alice" }) {
@@ -682,26 +465,29 @@ query {
 query {
   users(
     filter: { createdAfter: "2026-01-01T00:00:00Z" }
-    search: "alice@example.com"
+    search: "alice"
   ) {
     id
     name
     email
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Full-Text Search Performance
 
+Expose a `tsvector` inside the view and back it with a GIN index on the underlying table:
+
 ```sql
-<!-- Code example in SQL -->
--- Create index for fast searches
-CREATE INDEX idx_user_name_search ON users USING GIN (
-  to_tsvector('english', name || ' ' || email)
-);
-```text
-<!-- Code example in TEXT -->
+-- On the write table: precompute and index the search vector.
+ALTER TABLE tb_user
+    ADD COLUMN search_text tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', name || ' ' || email)) STORED;
+
+CREATE INDEX idx_user_search ON tb_user USING GIN (search_text);
+
+-- In v_user, surface it in the data JSONB so the WHERE generator can target it.
+```
 
 With index:
 
@@ -719,112 +505,73 @@ How do I add WebSocket subscriptions for real-time updates?
 
 ### Solution
 
-Implement subscriptions using WebSocket protocol.
+Decorate an **async generator** with `@fraiseql.subscription`. FraiseQL serves the
+GraphQL-over-WebSocket transport and streams every value you `yield`. The event source
+is yours — most commonly PostgreSQL `LISTEN/NOTIFY`, but it can be polling or any other
+async stream.
 
-### Schema Definition
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "subscriptions": [
-    {
-      "name": "userCreated",
-      "returnType": "User",
-      "isList": false,
-      "args": []
-    },
-    {
-      "name": "userUpdated",
-      "returnType": "User",
-      "isList": false,
-      "args": [
-        { "name": "userId", "type": "ID", "nonNull": true }
-      ]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID
+from collections.abc import AsyncGenerator
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+```
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-use tokio::sync::mpsc;
-use futures_util::{Stream, StreamExt};
+The subscription resolver is an `async def` generator. Here it bridges PostgreSQL
+`LISTEN/NOTIFY` to GraphQL: a `fn_`/trigger publishes on a channel, and the generator
+yields each fresh `User`.
 
-pub struct Subscription;
+```python
+@fraiseql.subscription
+async def user_created(info) -> AsyncGenerator[User, None]:
+    db = info.context["db"]
+    async for payload in db.listen("user_created"):   # LISTEN on a NOTIFY channel
+        user_id = payload["id"]
+        user = await db.find_one("v_user", id=user_id)
+        if user is not None:
+            yield User(**user)
 
-pub async fn user_created(
-    publisher: &EventPublisher,
-) -> Result<impl Stream<Item = Result<User>>> {
-    let (tx, rx) = mpsc::channel(100);
 
-    // Subscribe to user creation events
-    publisher.subscribe("user:created", move |user: User| {
-        let tx = tx.clone();
-        async move {
-            let _ = tx.send(Ok(user)).await;
-        }
-    }).await?;
+@fraiseql.subscription
+async def user_updated(info, user_id: ID) -> AsyncGenerator[User, None]:
+    db = info.context["db"]
+    async for payload in db.listen(f"user_updated:{user_id}"):
+        user = await db.find_one("v_user", id=user_id)
+        if user is not None:
+            yield User(**user)
+```
 
-    Ok(rx.into_stream())
-}
+On the PostgreSQL side, a trigger on `tb_user` issues the `NOTIFY`:
 
-pub async fn user_updated(
-    user_id: String,
-    publisher: &EventPublisher,
-) -> Result<impl Stream<Item = Result<User>>> {
-    let (tx, rx) = mpsc::channel(100);
-    let topic = format!("user:{}:updated", user_id);
+```sql
+CREATE OR REPLACE FUNCTION fn_notify_user_created()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM pg_notify('user_created', jsonb_build_object('id', NEW.id)::text);
+    RETURN NEW;
+END;
+$$;
 
-    // Subscribe to specific user updates
-    publisher.subscribe(&topic, move |user: User| {
-        let tx = tx.clone();
-        async move {
-            let _ = tx.send(Ok(user)).await;
-        }
-    }).await?;
-
-    Ok(rx.into_stream())
-}
-
-// Publish events
-pub async fn create_user_and_notify(
-    name: String,
-    email: String,
-    db: &Database,
-    publisher: &EventPublisher,
-) -> Result<User> {
-    let user = db.create_user(&name, &email).await?;
-
-    // Notify all subscribers
-    publisher.publish("user:created", user.clone()).await?;
-
-    Ok(user)
-}
-
-pub async fn update_user_and_notify(
-    user_id: String,
-    name: Option<String>,
-    db: &Database,
-    publisher: &EventPublisher,
-) -> Result<User> {
-    let user = db.update_user(&user_id, name).await?;
-
-    // Notify subscribers for this user
-    let topic = format!("user:{}:updated", user_id);
-    publisher.publish(&topic, user.clone()).await?;
-
-    Ok(user)
-}
-```text
-<!-- Code example in TEXT -->
+CREATE TRIGGER trg_user_created
+    AFTER INSERT ON tb_user
+    FOR EACH ROW EXECUTE FUNCTION fn_notify_user_created();
+```
 
 ### Usage
 
 ```graphql
-<!-- Code example in GraphQL -->
 # Subscribe to new users
 subscription {
   userCreated {
@@ -834,30 +581,23 @@ subscription {
   }
 }
 
-# Subscribe to updates for specific user
+# Subscribe to updates for a specific user
 subscription {
   userUpdated(userId: "123") {
     id
     name
     email
-    updatedAt
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Scaling Subscriptions
 
-For multi-server deployments, use Redis Pub/Sub:
-
-```rust
-<!-- Code example in RUST -->
-let publisher = RedisPublisher::new(
-    redis_client,
-    "FraiseQL:events"
-).await?;
-```text
-<!-- Code example in TEXT -->
+PostgreSQL `LISTEN/NOTIFY` fans out to every connected backend that issues `LISTEN`, so
+running several FastAPI workers against the same database already distributes
+subscription delivery — no separate message broker is required. For very high fan-out,
+keep per-connection work light (a single `find_one` per event) and cap the number of
+concurrent subscriptions per connection.
 
 ---
 
@@ -869,117 +609,88 @@ How do I handle file uploads in a GraphQL API?
 
 ### Solution
 
-Implement file upload handling with S3 storage.
+FraiseQL exposes a `File` scalar. Accept the upload in a mutation, validate size and
+MIME type in Python, push the bytes to object storage (e.g. S3), and persist the
+resulting URL via a `fn_` function.
 
-### Schema Definition
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "types": [
-    {
-      "name": "Upload",
-      "fields": [
-        { "name": "filename", "type": "String", "nonNull": true },
-        { "name": "mimetype", "type": "String", "nonNull": true },
-        { "name": "size", "type": "Int", "nonNull": true }
-      ]
-    }
-  ],
-  "mutations": [
-    {
-      "name": "uploadUserAvatar",
-      "args": [
-        { "name": "userId", "type": "ID", "nonNull": true },
-        { "name": "file", "type": "Upload", "nonNull": true }
-      ],
-      "returnType": "User",
-      "isList": false
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID, File
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    avatar_url: str | None
+
+
+@fraiseql.success
+class UploadSuccess:
+    user: User
+
+
+@fraiseql.error
+class UploadError:
+    message: str
+    code: str = "UPLOAD_ERROR"
+```
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-pub struct FileUpload {
-    pub filename: String,
-    pub mimetype: String,
-    pub content: Vec<u8>,
-}
+```python
+MAX_AVATAR_BYTES = 5_000_000
+ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 
-pub async fn upload_user_avatar(
-    user_id: String,
-    file: FileUpload,
-    s3: &S3Client,
-    db: &Database,
-) -> Result<User> {
-    // Validate file
-    if file.content.len() > 5_000_000 {
-        return Err(FraiseQLError::Validation {
-            message: "File size exceeds 5MB limit".to_string(),
-            path: Some("file".to_string()),
-        });
-    }
 
-    if !["image/jpeg", "image/png", "image/webp"]
-        .contains(&file.mimetype.as_str())
-    {
-        return Err(FraiseQLError::Validation {
-            message: "Only JPEG, PNG, or WebP allowed".to_string(),
-            path: Some("file".to_string()),
-        });
-    }
+@fraiseql.mutation
+async def upload_user_avatar(info, user_id: ID, file: File) -> UploadSuccess | UploadError:
+    if len(file.content) > MAX_AVATAR_BYTES:
+        return UploadError(message="File size exceeds 5MB limit")
+    if file.mimetype not in ALLOWED_MIME:
+        return UploadError(message="Only JPEG, PNG, or WebP allowed")
 
-    // Generate unique filename
-    let filename = format!(
-        "avatars/{}/{}-{}",
-        user_id,
-        chrono::Utc::now().timestamp(),
-        uuid::Uuid::new_v4()
-    );
+    s3 = info.context["s3"]
+    url = await s3.put_object(
+        key=f"avatars/{user_id}/{file.filename}",
+        body=file.content,
+        content_type=file.mimetype,
+    )
 
-    // Upload to S3
-    let url = s3.put_object(
-        &filename,
-        &file.content,
-        &file.mimetype,
-    ).await?;
-
-    // Update user avatar URL in database
-    let user = db.update_user_avatar(&user_id, &url).await?;
-
-    Ok(user)
-}
-```text
-<!-- Code example in TEXT -->
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_set_user_avatar", {"user_id": str(user_id), "avatar_url": url}
+    )
+    if not result.get("success"):
+        return UploadError(message=result.get("message", "Failed to update avatar"))
+    return UploadSuccess(user=User(**result["user"]))
+```
 
 ### Client Usage
 
 ```graphql
-<!-- Code example in GraphQL -->
-mutation UploadAvatar($userId: ID!, $file: Upload!) {
+mutation UploadAvatar($userId: ID!, $file: File!) {
   uploadUserAvatar(userId: $userId, file: $file) {
-    id
-    name
-    avatarUrl
+    ... on UploadSuccess {
+      user { id name avatarUrl }
+    }
+    ... on UploadError { message }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-JavaScript client:
+JavaScript client (GraphQL multipart request spec):
 
 ```javascript
-<!-- Code example in JAVASCRIPT -->
 const input = document.querySelector('input[type="file"]');
 const formData = new FormData();
 
 formData.append('operations', JSON.stringify({
-  query: `mutation UploadAvatar($file: Upload!) { ... }`,
+  query: `mutation UploadAvatar($userId: ID!, $file: File!) {
+    uploadUserAvatar(userId: $userId, file: $file) { ... }
+  }`,
   variables: { userId: '123', file: null }
 }));
 
@@ -993,8 +704,7 @@ fetch('/graphql', {
   method: 'POST',
   body: formData
 });
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1006,197 +716,96 @@ How do I cache query results to reduce database load?
 
 ### Solution
 
-Implement multi-layer caching strategy.
+Use FraiseQL's PostgreSQL-backed result cache. Wrap the repository in a
+`CachedRepository`, configure TTLs with `CacheConfig`, and let cascade rules invalidate
+cached results when the underlying tables change.
 
-### Schema Definition (with cache directives)
+### Schema Definition (Python)
 
-```json
-<!-- Code example in JSON -->
-{
-  "queries": [
-    {
-      "name": "user",
-      "returnType": "User",
-      "isList": false,
-      "args": [
-        { "name": "id", "type": "ID", "nonNull": true }
-      ],
-      "cache": {
-        "ttl": 300,
-        "tags": ["user"]
-      }
-    },
-    {
-      "name": "users",
-      "returnType": "User",
-      "isList": true,
-      "args": [],
-      "cache": {
-        "ttl": 60,
-        "tags": ["users"]
-      }
-    }
-  ],
-  "mutations": [
-    {
-      "name": "updateUser",
-      "returnType": "User",
-      "invalidateTags": ["user", "users"]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+```
 
 ### Implementation
 
-```rust
-<!-- Code example in RUST -->
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use std::time::{Duration, SystemTime};
+`CachedRepository` sits in front of the CQRS repository. Cache keys are derived from the
+view and arguments; `setup_auto_cascade_rules` registers invalidation so that writes to
+`tb_user` evict the relevant cached entries automatically.
 
-pub struct CacheEntry<T> {
-    value: T,
-    expires_at: SystemTime,
-    tags: Vec<String>,
-}
+```python
+from fraiseql.caching import (
+    PostgresCache,
+    ResultCache,
+    CachedRepository,
+    CacheConfig,
+    setup_auto_cascade_rules,
+)
 
-pub struct QueryCache<T> {
-    data: Arc<RwLock<HashMap<String, CacheEntry<T>>>>,
-}
 
-impl<T: Clone> QueryCache<T> {
-    pub fn new() -> Self {
-        Self {
-            data: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
+def build_cached_repo(repo, pool):
+    backend = PostgresCache(pool)
+    result_cache = ResultCache(
+        backend,
+        CacheConfig(default_ttl=300),   # 5 minutes
+    )
+    cached = CachedRepository(repo, result_cache)
+    setup_auto_cascade_rules(result_cache)  # invalidate on writes to tracked tables
+    return cached
 
-    pub async fn get(&self, key: &str) -> Option<T> {
-        let cache = self.data.read().await;
 
-        if let Some(entry) = cache.get(key) {
-            if entry.expires_at > SystemTime::now() {
-                return Some(entry.value.clone());
-            }
-        }
-
-        None
-    }
-
-    pub async fn set(
-        &self,
-        key: String,
-        value: T,
-        ttl: Duration,
-        tags: Vec<String>,
-    ) {
-        let mut cache = self.data.write().await;
-
-        cache.insert(key, CacheEntry {
-            value,
-            expires_at: SystemTime::now() + ttl,
-            tags,
-        });
-    }
-
-    pub async fn invalidate_by_tag(&self, tag: &str) {
-        let mut cache = self.data.write().await;
-
-        cache.retain(|_, entry| {
-            !entry.tags.contains(&tag.to_string())
-        });
-    }
-}
-
-pub async fn get_user(
-    id: String,
-    cache: &QueryCache<User>,
-    db: &Database,
-) -> Result<User> {
-    let cache_key = format!("user:{}", id);
-
-    // Check cache
-    if let Some(user) = cache.get(&cache_key).await {
-        return Ok(user);
-    }
-
-    // Query database
-    let user = db.query_user(&id).await?;
-
-    // Store in cache (5 minutes)
-    cache.set(
-        cache_key,
-        user.clone(),
-        Duration::from_secs(300),
-        vec!["user".to_string(), format!("user:{}", id)],
-    ).await;
-
-    Ok(user)
-}
-
-pub async fn update_user(
-    id: String,
-    name: Option<String>,
-    cache: &QueryCache<User>,
-    db: &Database,
-) -> Result<User> {
-    // Update in database
-    let user = db.update_user(&id, name).await?;
-
-    // Invalidate related caches
-    cache.invalidate_by_tag("user").await;
-    cache.invalidate_by_tag("users").await;
-
-    Ok(user)
-}
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    # info.context["db"] is the CachedRepository; cache lookup is transparent.
+    db = info.context["db"]
+    row = await db.find_one("v_user", id=id)
+    return User(**row) if row else None
+```
 
 ### Caching Strategy
 
-**Layer 1: In-Memory Cache**
+**Layer 1: PostgreSQL result cache (`PostgresCache`)**
 
-- Speed: <1ms
-- Cost: Memory usage
-- Best for: Static queries, user profiles
+- Speed: a single indexed lookup
+- Cost: a cache table in your database
+- Best for: hot read queries shared across all app workers
 
-**Layer 2: Redis Cache**
+**Layer 2: HTTP cache headers**
 
-- Speed: ~5-10ms
-- Cost: Redis infrastructure
-- Best for: Cross-server consistency
+- Speed: browser/CDN cache
+- Cost: cache-control discipline on responses
+- Best for: public, slowly-changing data
 
-**Layer 3: HTTP Cache Headers**
-
-- Speed: Browser cache
-- Cost: Network requests
-- Best for: Public data
+Because the cache lives in PostgreSQL, every FastAPI worker sees the same cache and the
+same cascade invalidation — no separate cache cluster to operate.
 
 ### Performance Impact
 
 ```text
-<!-- Code example in TEXT -->
 Without cache:
 
 - Query time: 50ms
 - Database load: 100 queries/sec
 
-With L1 cache (50% hit rate):
+With result cache (50% hit rate):
 
 - Query time: 25ms (average)
 - Database load: 50 queries/sec
 - Reduction: 50%
 
-With L1+L2 cache (80% hit rate):
+With result cache (80% hit rate):
 
 - Query time: 10ms (average)
 - Database load: 20 queries/sec
 - Reduction: 80%
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1214,7 +823,7 @@ With L1+L2 cache (80% hit rate):
 
 **Solutions:**
 
-- Verify JWT_ISSUER environment variable matches provider
+- Verify `JWT_ISSUER` environment variable matches provider
 - Ensure public key is current (providers rotate keys)
 - Check token expiration: `jq '.exp' token.json`
 - Regenerate token if expired
@@ -1226,14 +835,14 @@ With L1+L2 cache (80% hit rate):
 **Diagnosis:**
 
 1. Decode cursor: `base64 -d cursor`
-2. Verify sort order matches: `SELECT * FROM users ORDER BY created_at, id LIMIT 10;`
+2. Verify sort order matches: `SELECT id FROM v_user ORDER BY created_at, id LIMIT 10;`
 3. Check if records were deleted/reordered
 
 **Solutions:**
 
 - Ensure consistent sort order: `ORDER BY created_at DESC, id DESC`
 - Don't change sort order mid-pagination
-- Use stable cursor (record ID + timestamp)
+- Use a stable cursor (record ID + timestamp)
 - Handle deleted records gracefully (skip and get next)
 
 ### "Full-text search not finding results"
@@ -1242,16 +851,16 @@ With L1+L2 cache (80% hit rate):
 
 **Diagnosis:**
 
-1. Check if index exists: `SELECT * FROM pg_indexes WHERE tablename = 'users';`
-2. Test search manually: `SELECT * FROM users WHERE to_tsvector(name) @@ to_tsquery('john');`
-3. Verify column contains data: `SELECT COUNT(*) FROM users WHERE name IS NOT NULL;`
+1. Check if index exists: `SELECT * FROM pg_indexes WHERE tablename = 'tb_user';`
+2. Test search manually: `SELECT id FROM tb_user WHERE search_text @@ to_tsquery('john');`
+3. Verify column contains data: `SELECT COUNT(*) FROM tb_user WHERE name IS NOT NULL;`
 
 **Solutions:**
 
-- Create full-text search index: `CREATE INDEX idx_user_search ON users USING GIN(to_tsvector('english', name || ' ' || email));`
+- Create the GIN index: `CREATE INDEX idx_user_search ON tb_user USING GIN (search_text);`
 - Use query syntax: `&` (AND), `|` (OR), `!` (NOT)
 - Index must be functional for performance
-- For stemming: Use language-specific dictionary
+- For stemming: Use a language-specific dictionary
 
 ### "Subscription WebSocket connection drops unexpectedly"
 
@@ -1265,11 +874,11 @@ With L1+L2 cache (80% hit rate):
 
 **Solutions:**
 
-- Implement reconnection logic in client
+- Implement reconnection logic in the client
 - Increase connection timeout if needed
 - Use persistent connections (TCP keepalive)
-- For server restarts: Graceful shutdown closes connections cleanly
-- Monitor connection health: Send heartbeats every 30 seconds
+- For server restarts: graceful shutdown closes connections cleanly
+- Monitor connection health: send heartbeats every 30 seconds
 
 ### "File upload fails: 'Multipart form data parsing error'"
 
@@ -1277,52 +886,50 @@ With L1+L2 cache (80% hit rate):
 
 **Diagnosis:**
 
-1. Check Content-Type header: Should be `multipart/form-data`
-2. Check file size: Compare to server limits
-3. Verify field name matches schema
+1. Check Content-Type header: should be `multipart/form-data`
+2. Check file size: compare to your validation limit
+3. Verify field name matches the schema
 
 **Solutions:**
 
-- Use correct Content-Type: `multipart/form-data`
-- Check max file size setting in FraiseQL.toml
-- Ensure file field name matches GraphQL input type
-- For large files: Implement chunked upload
+- Use the correct Content-Type: `multipart/form-data`
+- Enforce a max file size in the mutation resolver (see Pattern 5)
+- Ensure the file field name matches the GraphQL input
+- For large files: implement chunked upload
 
 ### "Cache hit rate is low (<30%)"
 
-**Cause:** Cache key too specific or cache size too small.
+**Cause:** Cache key too specific or cache table too small.
 
 **Diagnosis:**
 
-1. Monitor cache metrics: `SELECT hit_rate FROM cache_stats;`
-2. Check cache size: `SELECT pg_size_pretty(pg_total_relation_size('cache_table'));`
-3. Analyze popular queries: Which queries run most frequently?
+1. Inspect cache stats via `CacheStats`
+2. Check cache table size: `SELECT pg_size_pretty(pg_total_relation_size('fraiseql_cache'));`
+3. Analyze popular queries: which queries run most frequently?
 
 **Solutions:**
 
-- Increase cache size: More memory for L1 cache
-- Simplify cache key: Make key less dependent on exact values
-- Increase TTL for L2 cache: Let results stay cached longer
-- Pre-warm cache: Load frequently-accessed data at startup
-- For L2 (Redis): Monitor memory usage and eviction policy
+- Raise the TTL in `CacheConfig` so results stay cached longer
+- Simplify the cache key (avoid embedding volatile arguments)
+- Pre-warm the cache: load frequently-accessed data at startup
+- Confirm cascade rules aren't over-invalidating (check `setup_auto_cascade_rules` scope)
 
 ### "Real-time subscription updates have latency >2 seconds"
 
-**Cause:** Database polling interval too large or WebSocket overhead.
+**Cause:** Slow `LISTEN/NOTIFY` round-trip or heavy per-event work.
 
 **Diagnosis:**
 
-1. Check polling interval setting: `[subscriptions] poll_interval_ms = ?`
+1. Confirm the trigger fires: `SELECT pg_notify('user_created', '{}');` and watch the subscriber
 2. Monitor network latency: `ping subscription_server`
-3. Check database query performance: `EXPLAIN ANALYZE SELECT ...;`
+3. Check the per-event query performance: `EXPLAIN ANALYZE SELECT data FROM v_user WHERE id = ...;`
 
 **Solutions:**
 
-- Reduce polling interval: 100-500ms is typical
-- Use CDC (Change Data Capture) instead of polling for better latency
-- Optimize database query (add indexes)
-- Ensure WebSocket is directly to server (not through heavy proxy)
-- Use batching: Combine multiple changes into single update
+- Keep the per-event resolver light (a single `find_one`)
+- Index the view's `id` lookup
+- Ensure the WebSocket connects directly to the server (not through a heavy proxy)
+- Use batching: combine multiple changes into a single notification payload
 
 ### "Pattern implementation doesn't match example - authentication failing"
 
@@ -1332,15 +939,15 @@ With L1+L2 cache (80% hit rate):
 
 1. Follow setup guide: [Authentication Setup](../integrations/authentication/README.md)
 2. Check environment variables: `env | grep OAUTH`
-3. Verify credentials in OAuth provider console
+3. Verify credentials in the OAuth provider console
 
 **Solutions:**
 
-- Ensure all prerequisites from guide are met
-- Check example matches your language SDK
+- Ensure all prerequisites from the guide are met
+- Confirm the context getter places `user_id` on `info.context`
 - Test with curl first before implementation
-- Enable debug logging: `RUST_LOG=debug`
-- Review Security Checklist for common mistakes
+- Enable debug logging via `FRAISEQL_LOG_LEVEL=DEBUG`
+- Review the Security Checklist for common mistakes
 
 ---
 
@@ -1348,17 +955,17 @@ With L1+L2 cache (80% hit rate):
 
 You now know how to implement:
 
-✅ User authentication with JWT tokens
-✅ Cursor-based pagination for large datasets
-✅ Filtering and full-text search
-✅ Real-time updates with subscriptions
+✅ User authentication with JWT tokens and `fn_` functions
+✅ Cursor-based pagination with FraiseQL's `Connection`
+✅ Filtering and full-text search via `db.find(where=...)`
+✅ Real-time updates with async-generator subscriptions over WebSocket
 ✅ File uploads to cloud storage
-✅ Multi-layer caching strategies
+✅ PostgreSQL-backed result caching with cascade invalidation
 
 ## Next Steps
 
-- **Ready to deploy?** → [Deployment Guide](../deployment/guide.md)
-- **Need help?** → [Troubleshooting Guide](../troubleshooting.md)
+- **Ready to deploy?** → [Deployment Guide](./production-deployment.md)
+- **Need help?** → [Troubleshooting Guide](./troubleshooting.md)
 - **Want more patterns?** → Explore more guides in the [guides](../guides/) directory
 
 ---
@@ -1368,16 +975,14 @@ You now know how to implement:
 **Related Guides:**
 
 - **[Authorization Quick Start](./authorization-quick-start.md)** — Field-level RBAC and role-based access control
-- **[Testing Strategy](./testing-strategy.md)** — Unit, integration, and end-to-end testing for patterns
-- **[Consistency Model](./consistency-model.md)** — Understanding data consistency in federation
+- **[Testing Checklist](../reference/testing-checklist.md)** — Unit, integration, and end-to-end testing for patterns
+- **[Consistency Model](./consistency-model.md)** — Understanding data consistency in FraiseQL
 - **[Performance Tuning](../operations/performance-tuning-runbook.md)** — Optimizing pattern implementations
 - **[Schema Design Best Practices](./schema-design-best-practices.md)** — Designing schemas for common patterns
 
 **Integration Guides:**
 
 - **[Authentication Providers](../integrations/authentication/provider-selection-guide.md)** — Choosing OAuth2/OIDC providers
-- **[Federation Guide](../integrations/federation/guide.md)** — Implementing federation patterns
-- **[Arrow Flight Quick Start](./arrow-flight-quick-start.md)** — Exporting pattern results as columnar data
 
 **Deployment & Operations:**
 
@@ -1387,9 +992,9 @@ You now know how to implement:
 
 **Troubleshooting:**
 
-- **[Troubleshooting Decision Tree](../guides/troubleshooting-decision-tree.md)** — Route to correct guide for your problem
-- **[Troubleshooting Guide](../troubleshooting.md)** — FAQ and common solutions
+- **[Troubleshooting Decision Tree](../guides/troubleshooting-decision-tree.md)** — Route to the correct guide for your problem
+- **[Troubleshooting Guide](./troubleshooting.md)** — FAQ and common solutions
 
 ---
 
-**Questions?** See [troubleshooting.md](../troubleshooting.md) for FAQ and solutions, or open an issue on [GitHub](https://github.com/FraiseQL/FraiseQL-v2).
+**Questions?** See [troubleshooting.md](./troubleshooting.md) for FAQ and solutions, or open an issue on [GitHub](https://github.com/fraiseql/fraiseql).
