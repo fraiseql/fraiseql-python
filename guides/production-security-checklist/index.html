@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fraiseql-v200-alpha1-production-security-checklist" class="md-skip">
+        <a href="#fraiseql-production-security-checklist" class="md-skip">
           Skip to content
         </a>
       
@@ -3701,34 +3701,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -6268,12 +6240,12 @@
 
 <!-- Skip to main content -->
 <hr />
-<p>title: FraiseQL v2.0.0-alpha.1 Production Security Checklist
+<p>title: FraiseQL Production Security Checklist
 description: Complete pre-production security checklist for deploying FraiseQL to production.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial", "security"]
 tags: ["documentation", "reference"]</p>
 <hr />
-<h1 id="fraiseql-v200-alpha1-production-security-checklist">FraiseQL v2.0.0-alpha.1 Production Security Checklist<a class="headerlink" href="#fraiseql-v200-alpha1-production-security-checklist" title="Permanent link">&para;</a></h1>
+<h1 id="fraiseql-production-security-checklist">FraiseQL Production Security Checklist<a class="headerlink" href="#fraiseql-production-security-checklist" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
 <strong>Audience:</strong> DevOps, Security Engineers, Architects
 <strong>Reading Time:</strong> 15-20 minutes
@@ -6322,7 +6294,7 @@ tags: ["documentation", "reference"]</p>
 <h2 id="1-network-security">1. Network Security<a class="headerlink" href="#1-network-security" title="Permanent link">&para;</a></h2>
 <h3 id="firewall-network-isolation">Firewall &amp; Network Isolation<a class="headerlink" href="#firewall-network-isolation" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> FraiseQL server accessible only via load balancer (not directly)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> FraiseQL FastAPI app (behind Uvicorn/Gunicorn) accessible only via load balancer (not directly)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Firewall allows only necessary inbound ports (443 for HTTPS, 5432 for DB if on network)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Firewall denies all inbound by default</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database server not accessible from internet (private network only)</li>
@@ -6397,20 +6369,22 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h3 id="field-level-authorization">Field-Level Authorization<a class="headerlink" href="#field-level-authorization" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization decorators used on sensitive fields</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> @authorize directives compiled into schema</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization decorators (<code>requires_auth</code>, <code>requires_role</code>, <code>requires_permission</code>) used on sensitive resolvers</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Field-level authorization (<code>authorize_field</code>) applied to sensitive fields</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Operation-level <code>Authorizer</code> wired via <code>@fraiseql.query(authorizer=...)</code> / <code>@fraiseql.subscription(authorizer=...)</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Role-based access control (RBAC) configured</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Row-level security (RLS) enforced at database</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization checks cannot be bypassed</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Permission changes take effect immediately</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Row-level security (RLS) enforced at database (session GUC <code>app.tenant_id</code> set per request)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization checks cannot be bypassed (resolver-bypass routes, e.g. <code>enable_rust_endpoint</code>, remain authorization-gated)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Permission changes take effect immediately (decision cache TTL accounted for)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization audit logging enabled</li>
 </ul>
 <h3 id="introspection-control">Introspection Control<a class="headerlink" href="#introspection-control" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schema introspection disabled for unauthenticated clients</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Schema introspection disabled for unauthenticated clients (<code>introspection_policy=AUTHENTICATED</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Introspection requires authentication for internal tools</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Introspection completely disabled in production (if not needed)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Only allowlisted queries accepted (if using APQ)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Introspection completely disabled in production if not needed (<code>introspection_policy=DISABLED</code>; auto-disabled when <code>environment="production"</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> GraphQL playground disabled in production (<code>enable_playground=False</code>; auto-disabled in production)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Only allowlisted queries accepted (<code>apq_mode="required"</code> with <code>apq_queries_dir</code> populated)</li>
 </ul>
 <hr />
 <h2 id="3-data-security">3. Data Security<a class="headerlink" href="#3-data-security" title="Permanent link">&para;</a></h2>
@@ -6426,11 +6400,10 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h3 id="encryption-in-transit">Encryption in Transit<a class="headerlink" href="#encryption-in-transit" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All database connections use TLS</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All database connections use TLS (<code>sslmode=require</code> or stricter in <code>database_url</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database connection strings encrypted (not in plaintext config)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Inter-service communication encrypted</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Webhook delivery over HTTPS only</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Event streaming over encrypted channels (Kafka with TLS, NATS with TLS)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Any outbound integrations (called from <code>fn_</code> functions or FastAPI middleware) over HTTPS only</li>
 </ul>
 <h3 id="sensitive-data-handling">Sensitive Data Handling<a class="headerlink" href="#sensitive-data-handling" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -6449,7 +6422,7 @@ tags: ["documentation", "reference"]</p>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database user cannot create tables or databases</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database connection requires strong authentication (not empty password)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database user password &gt; 32 characters (random, no patterns)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database connection limited to FraiseQL server IPs</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database connection limited to the FraiseQL application server IPs</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database public access disabled</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Unnecessary extensions disabled</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> SQL injection prevention verified (use prepared statements)</li>
@@ -6459,21 +6432,22 @@ tags: ["documentation", "reference"]</p>
 <h2 id="4-rate-limiting-ddos-protection">4. Rate Limiting &amp; DDoS Protection<a class="headerlink" href="#4-rate-limiting-ddos-protection" title="Permanent link">&para;</a></h2>
 <h3 id="rate-limiting-configuration">Rate Limiting Configuration<a class="headerlink" href="#rate-limiting-configuration" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting enabled on authentication endpoints (login, token refresh)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting: 10 requests/minute per IP for auth endpoints</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting: 100 requests/minute per authenticated user for GraphQL</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Application rate limiting enabled (<code>rate_limit_enabled=True</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Per-minute / per-hour limits configured (<code>rate_limit_requests_per_minute</code>, <code>rate_limit_requests_per_hour</code>, <code>rate_limit_burst_size</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Stricter limits applied to authentication endpoints (login, token refresh)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limits enforced at multiple layers (WAF, proxy, application)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limit headers returned to clients</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limit bypass mechanism for privileged clients documented</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limit allow/deny lists reviewed (<code>rate_limit_whitelist</code>, <code>rate_limit_blacklist</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Distributed rate limiting backed by Redis if running multiple instances (<code>RedisRateLimitStore</code>)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rate limiting verified under load testing</li>
 </ul>
 <h3 id="query-complexity-limits">Query Complexity Limits<a class="headerlink" href="#query-complexity-limits" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query depth limit enforced (max 15 levels)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query complexity scoring enabled</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Complexity limit set (max 5000 or per policy)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query depth limit enforced (<code>complexity_max_depth</code>, or <code>max_query_depth</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query complexity scoring enabled (<code>complexity_enabled=True</code>)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Complexity limit set (<code>complexity_max_score</code>, default 1000 — tune per policy)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mutation complexity calculated and limited</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Timeout on slow queries (configurable, default 30 seconds)</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Timeout on slow queries (<code>execution_timeout_ms</code>, default 30000 ms)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query complexity monitoring in place</li>
 </ul>
 <h3 id="ddos-protection">DDoS Protection<a class="headerlink" href="#ddos-protection" title="Permanent link">&para;</a></h3>
@@ -6733,11 +6707,9 @@ tags: ["documentation", "reference"]</p>
 <p><strong>Compliance:</strong></p>
 <ul>
 <li><strong><a href="../../specs/security-compliance/">Specs: Security &amp; Compliance</a></strong> — Security feature specifications</li>
-<li><strong><a href="../alpha-limitations.md">alpha-limitations.md</a></strong> — Known limitations affecting security</li>
 </ul>
 <hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
+<p><strong>Last Updated:</strong> 2026-02-05</p>
 
 
 

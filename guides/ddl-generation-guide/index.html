@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="How to hand-write the PostgreSQL DDL for FraiseQL's table-backed read views (tv_*).">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/ddl-generation-guide/">
@@ -21,7 +23,7 @@
     
     
       
-        <title>Ddl generation guide - FraiseQL Documentation</title>
+        <title>Writing DDL for Table-Backed Views - FraiseQL Documentation</title>
       
     
     
@@ -72,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ddl-generation-guide-creating-table-backed-views" class="md-skip">
+        <a href="#writing-ddl-for-table-backed-views" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ddl generation guide
+              Writing DDL for Table-Backed Views
             
           </span>
         </div>
@@ -2971,34 +2973,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -4885,10 +4859,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-this-guide-does" class="md-nav__link">
+  <a href="#what-this-guide-covers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What This Guide Does
+        What This Guide Covers
       
     </span>
   </a>
@@ -4896,10 +4870,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-this-guide-does-not-do" class="md-nav__link">
+  <a href="#what-this-guide-does-not-cover" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What This Guide Does NOT Do
+        What This Guide Does NOT Cover
       
     </span>
   </a>
@@ -4920,14 +4894,69 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Quick Start">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-a-table-backed-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use a Table-Backed View
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Parameters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Parameters">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#im-using-python" class="md-nav__link">
+  <a href="#entity-and-view-naming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        I'm using Python
+        Entity and View Naming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refresh-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#composition-helper-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition Helper Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Helpers
       
     </span>
   </a>
@@ -4936,6 +4965,261 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-ddl-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full DDL Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applying-the-ddl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Applying the DDL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-write-the-ddl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Write the DDL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-review-the-sql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Review the SQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-test-in-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test in Staging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-point-your-type-at-the-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Point Your Type at the View
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-deploy-to-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Deploy to Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-profile-with-nested-posts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Profile with Nested Posts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order-summary-with-line-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order Summary with Line Items
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-graphql-type-returns-null-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: GraphQL type returns null fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-stale-data-after-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Stale data after writes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-generated-sql-has-syntax-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Generated SQL has syntax errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trigger-based-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trigger-Based Refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduled-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduled Refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Questions?
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4959,229 +5243,161 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: DDL Generation Guide: Creating Table-Backed Views
-description: - SQL fundamentals (SELECT, JOIN, WHERE clauses)
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="ddl-generation-guide-creating-table-backed-views">DDL Generation Guide: Creating Table-Backed Views<a class="headerlink" href="#ddl-generation-guide-creating-table-backed-views" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
+<h1 id="writing-ddl-for-table-backed-views">Writing DDL for Table-Backed Views<a class="headerlink" href="#writing-ddl-for-table-backed-views" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Production Ready
 <strong>Audience:</strong> DBAs, Developers, Architects
-<strong>Reading Time:</strong> 12-15 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
+<strong>Reading Time:</strong> 12-15 minutes</p>
 <hr />
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
 <li>SQL fundamentals (SELECT, JOIN, WHERE clauses)</li>
-<li>View concepts (database views, materialized views)</li>
+<li>View concepts (logical views, materialized data, triggers)</li>
 <li>FraiseQL schema definition and view selection</li>
-<li>Performance implications of different view strategies</li>
+<li>Performance implications of different read strategies</li>
 <li>Index design and query optimization basics</li>
-<li>Database schema design patterns</li>
+<li>PostgreSQL schema design patterns</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
-<li>FraiseQL CLI (for DDL generation commands)</li>
-<li>PostgreSQL 14+, MySQL 8.0+, SQLite 3.x, or SQL Server 2019+</li>
-<li>SQL client tool (psql, mysql, sqlite3, sqlcmd)</li>
-<li>Python 3.10+ or TypeScript 4.5+ (optional, for SDK-based generation)</li>
+<li>PostgreSQL 14+</li>
+<li><code>psql</code> (or another PostgreSQL client)</li>
+<li>Python 3.13+ (for the FraiseQL application itself)</li>
 <li>A text editor for SQL scripts</li>
 </ul>
 <p><strong>Required Infrastructure:</strong></p>
 <ul>
-<li>Access to your target database (PostgreSQL, MySQL, SQLite, SQL Server)</li>
-<li>Database user with DDL creation permissions (CREATE TABLE, CREATE VIEW)</li>
-<li>Schema already deployed or accessible</li>
-<li>FraiseQL schema.json file for your application</li>
-<li>Sufficient disk space for materialized views (if applicable)</li>
+<li>Access to your PostgreSQL database</li>
+<li>A database user with DDL permissions (<code>CREATE TABLE</code>, <code>CREATE VIEW</code>, <code>CREATE FUNCTION</code>)</li>
+<li>Your normalized write tables (<code>tb_*</code>) already deployed</li>
+<li>Your own migration tooling for applying DDL (plain <code>.sql</code> files, or a tool such as
+  Flyway / Liquibase / Alembic — whatever your team already uses)</li>
 </ul>
 <p><strong>Optional but Recommended:</strong></p>
 <ul>
-<li>View Selection Guide documentation for decision making</li>
+<li>The <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a> for decision making</li>
 <li>Database performance monitoring tools</li>
 <li>Version control for tracking DDL changes</li>
-<li>Migration tools (Flyway, Liquibase)</li>
 <li>Schema visualization tools</li>
-<li>Query performance analysis tools (EXPLAIN ANALYZE)</li>
+<li>Query performance analysis (<code>EXPLAIN ANALYZE</code>)</li>
 </ul>
-<p><strong>Time Estimate:</strong> 15-30 minutes for DDL generation, 30-60 minutes for view validation and testing</p>
+<p><strong>Time Estimate:</strong> 15-30 minutes to write the DDL, 30-60 minutes for validation and testing.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This guide explains how to use FraiseQL's DDL generation tools to create SQL for table-backed views (<code>tv_*</code> and <code>ta_*</code>).</p>
-<h3 id="what-this-guide-does">What This Guide Does<a class="headerlink" href="#what-this-guide-does" title="Permanent link">&para;</a></h3>
+<p>In FraiseQL v1 <strong>you write your own PostgreSQL DDL by hand</strong> (or with your own migration
+tooling). FraiseQL does <strong>not</strong> generate tables, views, or functions for you — there is no
+CLI and no code generator. At application startup FraiseQL reads the read views and functions
+you have defined and serves them over GraphQL.</p>
+<p>This guide shows the DDL you write for a <strong>table-backed read view</strong> (<code>tv_*</code>): a real table that
+holds pre-composed JSONB, kept up to date by a refresh function and trigger. Use this pattern when
+a logical <code>v_*</code> view is too slow because it composes deeply nested relationships on every read.</p>
+<h3 id="what-this-guide-covers">What This Guide Covers<a class="headerlink" href="#what-this-guide-covers" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Shows how to generate ready-to-run SQL for table-backed views</li>
-<li>Explains when to use each generation tool (Python, TypeScript, CLI)</li>
-<li>Provides working examples for all platforms</li>
-<li>Links to decision-making guides</li>
+<li>The full DDL you write for a <code>tv_*</code> table-backed view</li>
+<li>The supporting composition helper views, indexes, refresh function, trigger, and monitoring helpers</li>
+<li>When to use a table-backed view versus a plain logical view</li>
+<li>Links to the decision-making and schema-design guides</li>
 </ul>
-<h3 id="what-this-guide-does-not-do">What This Guide Does NOT Do<a class="headerlink" href="#what-this-guide-does-not-do" title="Permanent link">&para;</a></h3>
+<h3 id="what-this-guide-does-not-cover">What This Guide Does NOT Cover<a class="headerlink" href="#what-this-guide-does-not-cover" title="Permanent link">&para;</a></h3>
 <ul>
-<li>❌ Make optimization decisions for you</li>
-<li>❌ Automatically create views without your approval</li>
-<li>❌ Modify your existing schema</li>
-<li>❌ Deploy anything to your database</li>
+<li>It does <strong>not</strong> describe an automatic generator — there isn't one in v1; you write the SQL.</li>
+<li>It does <strong>not</strong> make optimization decisions for you.</li>
+<li>It does <strong>not</strong> deploy anything; apply the DDL with your own migration process.</li>
 </ul>
-<p><strong>Philosophy:</strong> This is an <strong>implementation tool</strong>, not a decision-making tool. Use <a href="../../architecture/database/view-selection-guide/">Phase 9.4 View Selection Guide</a> to decide whether you need table-backed views. Once you've decided, use these tools to generate the SQL.</p>
+<p><strong>Philosophy:</strong> Decide <em>whether</em> you need a table-backed view using the
+<a href="../../architecture/database/view-selection-guide/">View Selection Guide</a>. Once you've decided,
+use the patterns here to write the SQL.</p>
 <hr />
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<h3 id="im-using-python">I'm using Python<a class="headerlink" href="#im-using-python" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from fraiseql_tools.views import generate_tv_ddl, load_schema</p>
-<h1 id="load-your-schema">Load your schema<a class="headerlink" href="#load-your-schema" title="Permanent link">&para;</a></h1>
-<p>schema = load_schema("schema.json")</p>
-<h1 id="generate-ddl-for-user-tv_user_profile">Generate DDL for User → tv_user_profile<a class="headerlink" href="#generate-ddl-for-user-tv_user_profile" title="Permanent link">&para;</a></h1>
-<p>ddl = generate_tv_ddl(
-    schema=schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)</p>
-<h1 id="save-to-file">Save to file<a class="headerlink" href="#save-to-file" title="Permanent link">&para;</a></h1>
-<p>with open("tv_user_profile.sql", "w") as f:
-    f.write(ddl)</p>
-<p>print("Generated tv_user_profile.sql")
-```text</p>
-<!-- Code example in TEXT -->
+<p>A minimal table-backed view for a <code>User</code> entity looks like this. You write it once, apply it with
+your migration tooling, and point your <code>@fraiseql.type</code> at the resulting view.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Physical table holding pre-composed JSONB for each user</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">        </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
 
-<h3 id="im-using-typescript">I'm using TypeScript<a class="headerlink" href="#im-using-typescript" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { generateTvDdl, loadSchema } from "@FraiseQL/tools/views";
-import { writeFileSync } from "fs";</p>
-<p>// Load your schema
-const schema = loadSchema("schema.json");</p>
-<p>// Generate DDL for User → tv_user_profile
-const ddl = generateTvDdl({
-    schema,
-    entity: "User",
-    view: "tv_user_profile",
-    refreshStrategy: "trigger-based"
-});</p>
-<p>// Save to file
-writeFileSync("tv_user_profile.sql", ddl);</p>
-<p>console.log("Generated tv_user_profile.sql");
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Refresh one user&#39;s row from the normalized write tables</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">(</span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">void</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">           </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">),</span>
+<span class="w">           </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span>
+<span class="w">        </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<p>Then expose it in Python:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<h3 id="im-using-the-cli">I'm using the CLI<a class="headerlink" href="#im-using-the-cli" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL generate-views \
-  --schema schema.json \
-  --entity User \
-  --view tv_user_profile \
-  --output tv_user_profile.sql
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_profile&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
 <hr />
-<h2 id="when-to-use-this-guide">When to Use This Guide<a class="headerlink" href="#when-to-use-this-guide" title="Permanent link">&para;</a></h2>
-<p><strong>Use this guide when:</strong></p>
+<h2 id="when-to-use-a-table-backed-view">When to Use a Table-Backed View<a class="headerlink" href="#when-to-use-a-table-backed-view" title="Permanent link">&para;</a></h2>
+<p><strong>Use a <code>tv_*</code> table-backed view when:</strong></p>
 <ul>
-<li>✅ You've read Phase 9.4 View Selection Guide</li>
-<li>✅ You've decided to use a table-backed view (tv_<em>or ta_</em>)</li>
-<li>✅ You want to generate the DDL automatically</li>
-<li>✅ You want to review the SQL before deploying</li>
+<li>You've read the <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a></li>
+<li>A logical <code>v_*</code> view composes deeply nested relationships and is too slow on the read path</li>
+<li>You can tolerate a small, controlled refresh delay (trigger-based is near real-time)</li>
+<li>You want to review and own the SQL before deploying</li>
 </ul>
-<p><strong>Skip this guide if:</strong></p>
+<p><strong>Stick with a plain logical <code>v_*</code> view when:</strong></p>
 <ul>
-<li>❌ You haven't decided whether to use table-backed views yet (read Phase 9.4 first)</li>
-<li>❌ You want to write the SQL manually</li>
-<li>❌ You're still evaluating performance</li>
+<li>The composition is cheap enough to run on every read</li>
+<li>You want zero refresh machinery to maintain</li>
+<li>You're still evaluating performance</li>
 </ul>
 <hr />
-<h2 id="parameters-explained">Parameters Explained<a class="headerlink" href="#parameters-explained" title="Permanent link">&para;</a></h2>
-<p>All generation functions take similar parameters:</p>
+<h2 id="design-parameters">Design Parameters<a class="headerlink" href="#design-parameters" title="Permanent link">&para;</a></h2>
+<p>When you write a table-backed view by hand, these are the decisions you make. They are not
+function arguments — they are choices reflected directly in the DDL you write.</p>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Purpose</th>
+<th>Decision</th>
+<th>Options</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>schema</code></td>
-<td>dict/object</td>
-<td>Yes</td>
-<td>-</td>
-<td>Loaded <code>schema.json</code></td>
+<td>Refresh strategy</td>
+<td>trigger-based or scheduled</td>
+<td>See below</td>
 </tr>
 <tr>
-<td><code>entity</code></td>
-<td>str</td>
-<td>Yes</td>
-<td>-</td>
-<td>Entity name (e.g., "User", "Order")</td>
+<td>Composition helper views</td>
+<td>include or inline</td>
+<td>Helper views keep the refresh function readable</td>
 </tr>
 <tr>
-<td><code>view</code></td>
-<td>str</td>
-<td>Yes</td>
-<td>-</td>
-<td>View name (e.g., "tv_user_profile", "ta_orders")</td>
-</tr>
-<tr>
-<td><code>refresh_strategy</code></td>
-<td>str</td>
-<td>No</td>
-<td>"trigger-based"</td>
-<td>"trigger-based" or "scheduled"</td>
-</tr>
-<tr>
-<td><code>include_composition_views</code></td>
-<td>bool</td>
-<td>No</td>
-<td>true</td>
-<td>Include helper views for nested relationships</td>
-</tr>
-<tr>
-<td><code>include_monitoring_functions</code></td>
-<td>bool</td>
-<td>No</td>
-<td>true</td>
-<td>Include staleness tracking functions</td>
+<td>Monitoring helpers</td>
+<td>include or skip</td>
+<td>Staleness / row-count functions for production observability</td>
 </tr>
 </tbody>
 </table>
-<h3 id="entity">Entity<a class="headerlink" href="#entity" title="Permanent link">&para;</a></h3>
-<p>The entity name must match a type in your <code>schema.json</code>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="your-schemajson-has">Your schema.json has:<a class="headerlink" href="#your-schemajson-has" title="Permanent link">&para;</a></h1>
-<p>{
-  "types": [
-    {"name": "User", ...},
-    {"name": "Post", ...}
-  ]
-}</p>
-<h1 id="generate-for-user">Generate for User<a class="headerlink" href="#generate-for-user" title="Permanent link">&para;</a></h1>
-<p>ddl = generate_tv_ddl(schema, entity="User", view="tv_user_profile")
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="view-name">View Name<a class="headerlink" href="#view-name" title="Permanent link">&para;</a></h3>
-<p>The view name must start with the appropriate prefix:</p>
+<h3 id="entity-and-view-naming">Entity and View Naming<a class="headerlink" href="#entity-and-view-naming" title="Permanent link">&para;</a></h3>
+<p>Follow the FraiseQL PostgreSQL naming conventions:</p>
 <ul>
-<li><strong><code>tv_*</code></strong> - Table-backed JSON view (for GraphQL)</li>
-<li>Example: <code>tv_user_profile</code>, <code>tv_order_summary</code></li>
-<li>
-<p>Used with JSON plane queries</p>
-</li>
-<li>
-<p><strong><code>ta_*</code></strong> - Table-backed Arrow view (for analytics)</p>
-</li>
-<li>Example: <code>ta_orders</code>, <code>ta_user_events</code></li>
-<li>Used with Arrow Flight queries</li>
+<li><code>tb_*</code> — normalized <strong>write tables</strong> (the source of truth; never exposed in GraphQL)</li>
+<li><code>v_*</code> — logical <strong>read views</strong> (a <code>SELECT</code> that builds a <code>data</code> JSONB column)</li>
+<li><code>tv_*</code> — <strong>table-backed read views</strong>: a real table holding pre-composed JSONB, refreshed by
+  functions/triggers; used for heavy nested reads</li>
+<li><code>fn_*</code> — PostgreSQL <strong>functions</strong> implementing mutation write logic</li>
 </ul>
+<p>Every read view (logical or table-backed) carries an <code>id</code> UUID column (for <code>WHERE id = $1</code>) <strong>plus</strong>
+a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>. Never put internal <code>pk_*</code> BIGINT keys
+inside <code>data</code> or expose them in GraphQL.</p>
 <h3 id="refresh-strategy">Refresh Strategy<a class="headerlink" href="#refresh-strategy" title="Permanent link">&para;</a></h3>
 <p>Choose based on your workload:</p>
 <table>
@@ -5208,520 +5424,311 @@ writeFileSync("tv_user_profile.sql", ddl);</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Examples:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="real-time-user-profile-updates">Real-time user profile updates<a class="headerlink" href="#real-time-user-profile-updates" title="Permanent link">&para;</a></h1>
-<p>ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"  # Updates immediately
-)</p>
-<h1 id="nightly-order-analytics">Nightly order analytics<a class="headerlink" href="#nightly-order-analytics" title="Permanent link">&para;</a></h1>
-<p>ddl = generate_ta_ddl(
-    schema,
-    entity="Order",
-    view="ta_orders",
-    refresh_strategy="scheduled"  # Updates once per night
-)
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Trigger-based</strong> — a trigger on the source <code>tb_*</code> table calls the refresh function on every
+insert/update, so the table-backed view stays fresh within milliseconds.</p>
+<p><strong>Scheduled</strong> — a cron job, <code>pg_cron</code> task, or external scheduler calls a "refresh all" function
+on an interval. Lower overhead, but the data is as stale as your interval allows.</p>
+<h3 id="composition-helper-views">Composition Helper Views<a class="headerlink" href="#composition-helper-views" title="Permanent link">&para;</a></h3>
+<p>For deeply nested relationships, write small helper <code>v_*</code> views that pre-compose each level into
+JSONB. The refresh function then joins those helpers instead of building the whole tree inline:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Helper views: pre-compose each nested level into JSONB</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="k">AS</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">           </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">posts</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
 
-<p>See <a href="./view-selection-performance-testing.md">Performance Testing Guide</a> for help choosing.</p>
-<h3 id="include-composition-views">Include Composition Views<a class="headerlink" href="#include-composition-views" title="Permanent link">&para;</a></h3>
-<p>When <code>include_composition_views=True</code> (default), the generator creates helper views for nested relationships:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Helper views (automatically created)
-CREATE VIEW v_user_posts_composed AS ...
-CREATE VIEW v_posts_comments_composed AS ...</p>
-<p>-- Main table-backed view
-CREATE TABLE tv_user_profile (
-    id TEXT PRIMARY KEY,
-    data JSONB,  -- Contains nested posts + comments
-    ...
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Set to <code>False</code> if you're managing composition views manually:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    include_composition_views=False  # You'll create these manually
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="include-monitoring-functions">Include Monitoring Functions<a class="headerlink" href="#include-monitoring-functions" title="Permanent link">&para;</a></h3>
-<p>When <code>include_monitoring_functions=True</code> (default), the generator adds functions to track staleness:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Monitoring functions (automatically created)
-CREATE FUNCTION tv_user_profile_staleness() AS ...
-CREATE FUNCTION tv_user_profile_row_count() AS ...
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>These are useful for production monitoring. Set to <code>False</code> if you're managing monitoring separately:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    include_monitoring_functions=False
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="output-structure">Output Structure<a class="headerlink" href="#output-structure" title="Permanent link">&para;</a></h2>
-<p>Generated DDL contains 6 sections:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- 1. Composition Helper Views (if include_composition_views=True)
--- These pre-compose nested relationships into JSONB format
-CREATE VIEW v_user_posts_composed AS
-  SELECT user_id, jsonb_agg(...) as posts FROM posts GROUP BY user_id;</p>
-<p>-- 2. Physical Table
--- The actual table that stores materialized data
-CREATE TABLE tv_user_profile (
-    id TEXT NOT NULL PRIMARY KEY,
-    data JSONB NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    FOREIGN KEY (id) REFERENCES tb_user(id) ON DELETE CASCADE
-);</p>
-<p>-- 3. Indexes
--- Optimizes common queries
-CREATE INDEX idx_tv_user_profile_data_gin ON tv_user_profile USING GIN(data);
-CREATE INDEX idx_tv_user_profile_updated ON tv_user_profile(updated_at);</p>
-<p>-- 4. Refresh Function
--- Maintains the table based on source data
-CREATE FUNCTION refresh_tv_user_profile() AS $$
-  INSERT INTO tv_user_profile (id, data, updated_at)
-  SELECT u.id, jsonb_build_object(...), NOW()
-  FROM tb_user u
-  ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
-$$ LANGUAGE SQL;</p>
-<p>-- 5. Refresh Trigger (if trigger-based strategy)
--- Automatically calls refresh function on source changes
-CREATE TRIGGER trg_tv_user_profile_refresh
-  AFTER INSERT OR UPDATE ON tb_user
-  FOR EACH ROW
-  EXECUTE FUNCTION refresh_tv_user_profile();</p>
-<p>-- 6. Monitoring Functions (if include_monitoring_functions=True)
--- Track view health and staleness
-CREATE FUNCTION tv_user_profile_staleness() AS ...
-CREATE FUNCTION tv_user_profile_row_count() AS ...
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="detailed-usage-by-language">Detailed Usage by Language<a class="headerlink" href="#detailed-usage-by-language" title="Permanent link">&para;</a></h2>
-<h3 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h3>
-<p><strong>Installation:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>pip install FraiseQL-tools
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Basic Usage:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from fraiseql_tools.views import (
-    generate_tv_ddl,
-    generate_ta_ddl,
-    load_schema,
-    validate_generated_ddl
-)</p>
-<h1 id="load-schema">Load schema<a class="headerlink" href="#load-schema" title="Permanent link">&para;</a></h1>
-<p>schema = load_schema("schema.json")</p>
-<h1 id="generate-tv_-ddl">Generate tv_* DDL<a class="headerlink" href="#generate-tv_-ddl" title="Permanent link">&para;</a></h1>
-<p>tv_ddl = generate_tv_ddl(
-    schema=schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)</p>
-<h1 id="generate-ta_-ddl">Generate ta_* DDL<a class="headerlink" href="#generate-ta_-ddl" title="Permanent link">&para;</a></h1>
-<p>ta_ddl = generate_ta_ddl(
-    schema=schema,
-    entity="Order",
-    view="ta_orders",
-    refresh_strategy="scheduled"
-)</p>
-<h1 id="validate-before-deploying">Validate before deploying<a class="headerlink" href="#validate-before-deploying" title="Permanent link">&para;</a></h1>
-<p>errors = validate_generated_ddl(tv_ddl)
-if errors:
-    print(f"Validation errors: {errors}")
-else:
-    print("Valid DDL - ready to deploy")</p>
-<h1 id="save-to-file_1">Save to file<a class="headerlink" href="#save-to-file_1" title="Permanent link">&para;</a></h1>
-<p>with open("views.sql", "w") as f:
-    f.write(tv_ddl)
-    f.write("\n\n")
-    f.write(ta_ddl)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Full Example:</strong></p>
-<p>See <a href="../../examples/ddl-generation/python-example.py"><code>examples/ddl-generation/python-example.py</code></a></p>
-<h3 id="typescript">TypeScript<a class="headerlink" href="#typescript" title="Permanent link">&para;</a></h3>
-<p><strong>Installation:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>npm install @FraiseQL/tools
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Basic Usage:</strong></p>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import {
-    generateTvDdl,
-    generateTaDdl,
-    loadSchema,
-    validateGeneratedDdl
-} from "@FraiseQL/tools/views";
-import { writeFileSync } from "fs";</p>
-<p>// Load schema
-const schema = loadSchema("schema.json");</p>
-<p>// Generate tv_* DDL
-const tvDdl = generateTvDdl({
-    schema,
-    entity: "User",
-    view: "tv_user_profile",
-    refreshStrategy: "trigger-based"
-});</p>
-<p>// Generate ta_* DDL
-const taDdl = generateTaDdl({
-    schema,
-    entity: "Order",
-    view: "ta_orders",
-    refreshStrategy: "scheduled"
-});</p>
-<p>// Validate before deploying
-const errors = validateGeneratedDdl(tvDdl);
-if (errors.length &gt; 0) {
-    console.error("Validation errors:", errors);
-} else {
-    console.log("Valid DDL - ready to deploy");
-}</p>
-<p>// Save to file
-writeFileSync("views.sql", tvDdl + "\n\n" + taDdl);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Full Examples:</strong></p>
-<p>See the <a href="../../examples/ddl-generation/">DDL Generation Examples</a> directory for detailed code examples in Python</p>
-<h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
-<p><strong>Installation:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="already-included-with-fraiseql-cli">Already included with FraiseQL-cli<a class="headerlink" href="#already-included-with-fraiseql-cli" title="Permanent link">&para;</a></h1>
-<p>cargo install FraiseQL-cli
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Basic Usage:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="generate-trigger-based-tv_">Generate trigger-based tv_*<a class="headerlink" href="#generate-trigger-based-tv_" title="Permanent link">&para;</a></h1>
-<p>FraiseQL generate-views \
-  --schema schema.json \
-  --entity User \
-  --view tv_user_profile \
-  --output tv_user_profile.sql</p>
-<h1 id="generate-scheduled-ta_">Generate scheduled ta_*<a class="headerlink" href="#generate-scheduled-ta_" title="Permanent link">&para;</a></h1>
-<p>FraiseQL generate-views \
-  --schema schema.json \
-  --entity Order \
-  --view ta_orders \
-  --refresh-strategy scheduled \
-  --output ta_orders.sql</p>
-<h1 id="combine-multiple-views">Combine multiple views<a class="headerlink" href="#combine-multiple-views" title="Permanent link">&para;</a></h1>
-<p>cat tv_user_profile.sql ta_orders.sql &gt; all_views.sql
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>All Options:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>FraiseQL generate-views --help
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>USAGE:
-    FraiseQL generate-views [OPTIONS] --schema <SCHEMA> --entity <ENTITY> --view <VIEW></p>
-<p>OPTIONS:
-    --schema <PATH>
-        Path to schema.json (required)</p>
-<div class="highlight"><pre><span></span><code>--entity &lt;NAME&gt;
-    Entity name (required)
-
---view &lt;NAME&gt;
-    View name (required)
-
---refresh-strategy &lt;STRATEGY&gt;
-    &quot;trigger-based&quot; or &quot;scheduled&quot; [default: trigger-based]
-
---output &lt;PATH&gt;
-    Output file [default: {view}.sql]
-
---include-composition-views
-    Include helper views [default: true]
-
---include-monitoring
-    Include monitoring functions [default: true]
-
---validate
-    Only validate, don&#39;t write file
-
---verbose
-    Show generation steps
+<span class="c1">-- Main table-backed view, fed by the helper above</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">        </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">   </span><span class="c1">-- contains nested posts + comments</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>If you prefer to inline the composition directly in the refresh function, skip the helper views.</p>
+<h3 id="monitoring-helpers">Monitoring Helpers<a class="headerlink" href="#monitoring-helpers" title="Permanent link">&para;</a></h3>
+<p>Optionally add functions to track staleness and row counts. These are useful for production
+monitoring:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Monitoring helpers</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">tv_user_profile_staleness</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="nb">interval</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">MIN</span><span class="p">(</span><span class="n">updated_at</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
 
-<p><strong>Full Example:</strong></p>
-<p>See <a href="../../examples/ddl-generation/cli-example.sh"><code>examples/ddl-generation/cli-example.sh</code></a></p>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">tv_user_profile_row_count</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="nb">bigint</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<p>Skip them if you monitor staleness separately.</p>
+<hr />
+<h2 id="full-ddl-structure">Full DDL Structure<a class="headerlink" href="#full-ddl-structure" title="Permanent link">&para;</a></h2>
+<p>A complete table-backed view typically contains six sections. Here is the full set written out
+for <code>tv_user_profile</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 1. Composition Helper Views</span>
+<span class="c1">-- Pre-compose nested relationships into JSONB.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="k">AS</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">           </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">posts</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
+
+<span class="c1">-- 2. Physical Table</span>
+<span class="c1">-- The actual table that stores pre-composed JSONB.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">          </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">        </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span>
+<span class="p">);</span>
+
+<span class="c1">-- 3. Indexes</span>
+<span class="c1">-- Optimize common queries.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tv_user_profile_data_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tv_user_profile_updated</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">(</span><span class="n">updated_at</span><span class="p">);</span>
+
+<span class="c1">-- 4. Refresh Function</span>
+<span class="c1">-- Maintains a row based on source data.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">(</span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">void</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">           </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">               </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">               </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">               </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">               </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">pc</span><span class="p">.</span><span class="n">posts</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">           </span><span class="p">),</span>
+<span class="w">           </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="w">    </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">pc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">pc</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span>
+<span class="w">        </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
+<span class="err">$$</span><span class="p">;</span>
+
+<span class="c1">-- 5. Refresh Trigger (trigger-based strategy)</span>
+<span class="c1">-- Automatically calls the refresh function on source changes.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">refresh_tv_user_profile</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_tv_user_profile_refresh</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">trg_refresh_tv_user_profile</span><span class="p">();</span>
+
+<span class="c1">-- 6. Monitoring Helpers</span>
+<span class="c1">-- Track view health and staleness.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">tv_user_profile_staleness</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="nb">interval</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">MIN</span><span class="p">(</span><span class="n">updated_at</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">tv_user_profile_row_count</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="nb">bigint</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="applying-the-ddl">Applying the DDL<a class="headerlink" href="#applying-the-ddl" title="Permanent link">&para;</a></h2>
+<p>Save the SQL in a migration file and apply it with <code>psql</code> (or your migration tool):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Apply to staging first</span>
+psql<span class="w"> </span>-h<span class="w"> </span>staging-db<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>mydb<span class="w"> </span>&lt;<span class="w"> </span>tv_user_profile.sql
+</code></pre></div>
+<p>Combine multiple views into one migration by concatenating the files:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>tv_user_profile.sql<span class="w"> </span>tv_order_summary.sql<span class="w"> </span>&gt;<span class="w"> </span>0007_table_backed_views.sql
+</code></pre></div>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<h3 id="1-generate-the-ddl">1. Generate the DDL<a class="headerlink" href="#1-generate-the-ddl" title="Permanent link">&para;</a></h3>
-<p>Choose your preferred method (Python, TypeScript, or CLI) and generate the DDL.</p>
+<h3 id="1-write-the-ddl">1. Write the DDL<a class="headerlink" href="#1-write-the-ddl" title="Permanent link">&para;</a></h3>
+<p>Write the table, indexes, refresh function, trigger, and (optionally) monitoring helpers using the
+patterns above.</p>
 <h3 id="2-review-the-sql">2. Review the SQL<a class="headerlink" href="#2-review-the-sql" title="Permanent link">&para;</a></h3>
-<p>Read through the generated SQL carefully:</p>
+<p>Read through your DDL carefully:</p>
 <ul>
-<li>✅ Does the composition match your expectations?</li>
-<li>✅ Are all relationships included?</li>
-<li>✅ Is the refresh strategy appropriate?</li>
-<li>✅ Are indexes reasonable?</li>
+<li>Does the composition match what your GraphQL type expects?</li>
+<li>Are all relationships included in the JSONB?</li>
+<li>Is the refresh strategy appropriate for the data's change rate?</li>
+<li>Are the indexes reasonable for your query patterns?</li>
 </ul>
 <h3 id="3-test-in-staging">3. Test in Staging<a class="headerlink" href="#3-test-in-staging" title="Permanent link">&para;</a></h3>
-<p>Run the DDL in your staging database:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>psql -h staging-db -U postgres mydb &lt; tv_user_profile.sql
-```text</p>
-<!-- Code example in TEXT -->
+<p>Apply the DDL to a staging database, then back-fill and verify it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Back-fill all rows once (or call refresh per id)</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">),</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
 
-<p>Monitor the initial population:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check row count
-SELECT COUNT(*) FROM tv_user_profile;</p>
-<p>-- Check staleness
-SELECT tv_user_profile_staleness();</p>
-<p>-- Spot-check a few rows
-SELECT * FROM tv_user_profile LIMIT 5;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">-- Check row count</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="p">;</span>
 
-<h3 id="4-follow-migration-checklist">4. Follow Migration Checklist<a class="headerlink" href="#4-follow-migration-checklist" title="Permanent link">&para;</a></h3>
-<p>Complete the full migration process in <a href="./view-selection-migration-checklist.md">View Selection Migration Checklist</a>.</p>
+<span class="c1">-- Check staleness</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">tv_user_profile_staleness</span><span class="p">();</span>
+
+<span class="c1">-- Spot-check a few rows</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="4-point-your-type-at-the-view">4. Point Your Type at the View<a class="headerlink" href="#4-point-your-type-at-the-view" title="Permanent link">&para;</a></h3>
+<p>Set <code>sql_source="tv_user_profile"</code> on the <code>@fraiseql.type</code> and let FraiseQL serve it.</p>
 <h3 id="5-deploy-to-production">5. Deploy to Production<a class="headerlink" href="#5-deploy-to-production" title="Permanent link">&para;</a></h3>
-<p>Once staging verification passes, deploy to production.</p>
+<p>Once staging verification passes, apply the same migration to production.</p>
 <hr />
 <h2 id="common-patterns">Common Patterns<a class="headerlink" href="#common-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="user-profile-with-nested-posts">User Profile with Nested Posts<a class="headerlink" href="#user-profile-with-nested-posts" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from fraiseql_tools.views import generate_tv_ddl, load_schema</p>
-<p>schema = load_schema("schema.json")</p>
-<h1 id="user-profile-with-all-posts-and-comments">User profile with all posts and comments<a class="headerlink" href="#user-profile-with-all-posts-and-comments" title="Permanent link">&para;</a></h1>
-<p>ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Generated Structure:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "id": "user-123",
-  "name": "Alice",
-  "email": "alice@example.com",
-  "posts": [
-    {
-      "id": "post-1",
-      "title": "Hello",
-      "comments": [...]
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Build the user's posts (and their comments) into the <code>data</code> JSONB so the read path is a single
+indexed lookup:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">       </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">           </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">pc</span><span class="p">.</span><span class="n">posts</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">       </span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_posts_composed</span><span class="w"> </span><span class="n">pc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">pc</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Resulting <code>data</code> shape:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;posts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;post-1&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hello&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;comments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="order-summary-with-line-items">Order Summary with Line Items<a class="headerlink" href="#order-summary-with-line-items" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>ddl = generate_tv_ddl(
-    schema,
-    entity="Order",
-    view="tv_order_summary",
-    refresh_strategy="scheduled"
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Generated Structure:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "id": "order-123",
-  "customer_id": "cust-456",
-  "total": 99.99,
-  "status": "shipped",
-  "line_items": [
-    {
-      "product_id": "prod-789",
-      "quantity": 2,
-      "price": 49.99
-    }
-  ]
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="analytics-table-with-denormalized-columns">Analytics Table with Denormalized Columns<a class="headerlink" href="#analytics-table-with-denormalized-columns" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>ddl = generate_ta_ddl(
-    schema,
-    entity="Event",
-    view="ta_events",
-    refresh_strategy="scheduled"
-)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Generated Columns:</strong></p>
-<ul>
-<li>Denormalized user info (user_name, user_email)</li>
-<li>Pre-aggregated metrics (event_count, total_duration)</li>
-<li>Time-series indexes (BRIN on timestamp)</li>
-</ul>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">       </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">           </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;customer_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_customer</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">&#39;line_items&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">li</span><span class="p">.</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">       </span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_order_line_items_composed</span><span class="w"> </span><span class="n">li</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">li</span><span class="p">.</span><span class="n">order_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Resulting <code>data</code> shape:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;order-123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;customer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cust-456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">99.99</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;shipped&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;line_items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;product_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;prod-789&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;quantity&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">49.99</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="issue-schema-not-found">Issue: "Schema not found"<a class="headerlink" href="#issue-schema-not-found" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> <code>Error: Could not load schema.json</code></p>
+<h3 id="issue-graphql-type-returns-null-fields">Issue: GraphQL type returns null fields<a class="headerlink" href="#issue-graphql-type-returns-null-fields" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> A queried field is always <code>null</code> even though the source data exists.</p>
 <p><strong>Solution:</strong></p>
 <ul>
-<li>Verify path: <code>ls -la schema.json</code></li>
-<li>Use absolute path: <code>generate_tv_ddl(schema, ..., schema="/full/path/to/schema.json")</code></li>
+<li>Confirm the field name in <code>jsonb_build_object(...)</code> matches the GraphQL field (FraiseQL maps
+  <code>data</code> JSONB keys to type fields).</li>
+<li>Re-run the refresh function for that row and re-check <code>SELECT data FROM tv_user_profile WHERE id = ...</code>.</li>
 </ul>
-<h3 id="issue-entity-not-found-in-schema">Issue: "Entity not found in schema"<a class="headerlink" href="#issue-entity-not-found-in-schema" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> <code>Error: Entity "UserProfile" not found in schema</code></p>
+<h3 id="issue-stale-data-after-writes">Issue: Stale data after writes<a class="headerlink" href="#issue-stale-data-after-writes" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Writes to <code>tb_*</code> aren't reflected in the table-backed view.</p>
 <p><strong>Solution:</strong></p>
 <ul>
-<li>Check entity names in schema: <code>grep '"name"' schema.json | grep -i user</code></li>
-<li>Match exact name (case-sensitive): <code>entity="User"</code> not <code>entity="user"</code></li>
-</ul>
-<h3 id="issue-invalid-refresh-strategy">Issue: "Invalid refresh strategy"<a class="headerlink" href="#issue-invalid-refresh-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> <code>Error: Invalid refresh_strategy "real-time"</code></p>
-<p><strong>Solution:</strong></p>
-<ul>
-<li>Use only: <code>"trigger-based"</code> or <code>"scheduled"</code></li>
-<li>See <a href="#refresh-strategy">Refresh Strategy</a> section for details</li>
+<li>For trigger-based refresh, verify the trigger exists on the source table:
+  <code>\d tb_user</code> in <code>psql</code>.</li>
+<li>For scheduled refresh, verify your scheduler is actually calling the refresh function.</li>
 </ul>
 <h3 id="issue-generated-sql-has-syntax-errors">Issue: Generated SQL has syntax errors<a class="headerlink" href="#issue-generated-sql-has-syntax-errors" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> <code>SYNTAX ERROR: unexpected token</code></p>
+<p><strong>Symptom:</strong> <code>psql</code> reports a syntax error when applying the migration.</p>
 <p><strong>Solution:</strong></p>
 <ul>
-<li>Validate before deploying: <code>validate_generated_ddl(ddl)</code></li>
-<li>Check schema.json for invalid characters</li>
-<li>Report issue: <a href="https://github.com/anthropics/FraiseQL/issues">GitHub Issues</a></li>
+<li>Apply the file incrementally and read the line reported in the error.</li>
+<li>Check for unbalanced <code>$$ ... $$</code> function bodies.</li>
+<li>Report a framework issue: <a href="https://github.com/fraiseql/fraiseql/issues">GitHub Issues</a></li>
 </ul>
 <hr />
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
-<p>All generated DDL is automatically validated for:</p>
+<p>Before deploying, sanity-check the DDL yourself:</p>
 <ul>
-<li>✅ Valid PostgreSQL syntax</li>
-<li>✅ Proper table/view definitions</li>
-<li>✅ Valid column types</li>
-<li>✅ Correct index usage</li>
-<li>✅ Proper refresh function structure</li>
+<li>Valid PostgreSQL syntax (apply it to a throwaway database first)</li>
+<li>Table and view definitions match the GraphQL types they back</li>
+<li>Column types are correct (<code>id</code> UUID, <code>data</code> JSONB)</li>
+<li>Indexes match your query patterns (GIN on <code>data</code>, btree on <code>updated_at</code>)</li>
+<li>The refresh function and trigger fire as expected</li>
 </ul>
-<p>To validate manually:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from fraiseql_tools.views import validate_generated_ddl</p>
-<p>errors = validate_generated_ddl(ddl)
-if errors:
-    for error in errors:
-        print(f"❌ {error}")
-else:
-    print("✅ Valid DDL")
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>A quick smoke test in staging:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Apply, back-fill, then verify a representative row</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user_profile</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;user-123&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
 <h3 id="trigger-based-refresh">Trigger-Based Refresh<a class="headerlink" href="#trigger-based-refresh" title="Permanent link">&para;</a></h3>
 <p><strong>Best for:</strong></p>
 <ul>
-<li>Small tables (&lt; 100K rows)</li>
+<li>Small to medium tables (&lt; 100K rows)</li>
 <li>High query volume (&gt; 1000 req/sec)</li>
-<li>Must have &lt;1 second data freshness</li>
+<li>Sub-second data freshness requirements</li>
 </ul>
 <p><strong>Cost:</strong></p>
 <ul>
-<li>~10-50ms per source row change</li>
-<li>Scales linearly with update rate</li>
+<li>A small per-row refresh cost on every source write</li>
+<li>Scales linearly with the update rate</li>
 </ul>
 <h3 id="scheduled-refresh">Scheduled Refresh<a class="headerlink" href="#scheduled-refresh" title="Permanent link">&para;</a></h3>
 <p><strong>Best for:</strong></p>
 <ul>
 <li>Large tables (&gt; 1M rows)</li>
 <li>Batch processes</li>
-<li>Can tolerate 1-60 minute staleness</li>
+<li>Tolerance for 1-60 minute staleness</li>
 </ul>
 <p><strong>Cost:</strong></p>
 <ul>
-<li>~100-500ms total (regardless of table size)</li>
-<li>Fixed schedule (daily, hourly, etc.)</li>
+<li>A fixed batch cost per run, largely independent of read volume</li>
+<li>Freshness bounded by the schedule (hourly, nightly, etc.)</li>
 </ul>
-<p>See <a href="./view-selection-performance-testing.md">Performance Testing Guide</a> for benchmarking.</p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../../architecture/database/view-selection-guide/">Phase 9.4: View Selection Guide</a></strong> - Decide whether to use table-backed views</li>
-<li><strong><a href="../../architecture/database/tv-table-pattern/">TV Table Pattern</a></strong> - Deep dive into JSON plane table-backed views</li>
-<li><strong><a href="../architecture/database/ta-table-pattern.md">TA Table Pattern</a></strong> - Deep dive into Arrow plane table-backed views</li>
-<li><strong><a href="./view-selection-migration-checklist.md">Migration Checklist</a></strong> - Step-by-step deployment workflow</li>
-<li><strong><a href="./view-selection-performance-testing.md">Performance Testing Guide</a></strong> - Benchmark your views</li>
-<li><strong><a href="./view-selection-quick-reference.md">Quick Reference</a></strong> - Quick lookup tables</li>
+<li><strong><a href="../../architecture/database/view-selection-guide/">View Selection Guide</a></strong> — decide whether to use table-backed views</li>
+<li><strong><a href="../../architecture/database/tv-table-pattern/">TV Table Pattern</a></strong> — deep dive into table-backed read views</li>
+<li><strong><a href="../schema-design-best-practices/">Schema Design Best Practices</a></strong> — naming conventions and DDL design</li>
 </ul>
 <hr />
 <h2 id="questions">Questions?<a class="headerlink" href="#questions" title="Permanent link">&para;</a></h2>
 <p>For issues or questions:</p>
 <ol>
-<li>Check <a href="#troubleshooting">troubleshooting section</a></li>
-<li>Review <a href="../../architecture/database/view-selection-guide/">Phase 9.4 View Selection Guide</a></li>
-<li>Open an issue: <a href="https://github.com/anthropics/FraiseQL/issues">GitHub Issues</a></li>
+<li>Check the <a href="#troubleshooting">troubleshooting section</a></li>
+<li>Review the <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a></li>
+<li>Open an issue: <a href="https://github.com/fraiseql/fraiseql/issues">GitHub Issues</a></li>
 </ol>
-<hr />
-<p><strong>Last Updated:</strong> January 24, 2026
-<strong>Phase:</strong> 9.5
-<strong>Status:</strong> Ready for Implementation</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

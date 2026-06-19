@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Step-by-step guide for evolving a FraiseQL PostgreSQL schema with versioned DDL migrations.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/database-migration-guide/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Database Migration Guide - FraiseQL Documentation</title>
+        <title>Database Schema Migration Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Database Migration Guide
+              Database Schema Migration Guide
             
           </span>
         </div>
@@ -2999,34 +3001,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -3151,6 +3125,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-fraiseql-object-trinity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The FraiseQL object trinity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3166,10 +3157,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-assess-current-architecture" class="md-nav__link">
+  <a href="#1-assess-the-current-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Assess Current Architecture
+        1. Assess the current schema
       
     </span>
   </a>
@@ -3177,10 +3168,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-create-migration-plan" class="md-nav__link">
+  <a href="#2-create-a-migration-plan" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Create Migration Plan
+        2. Create a migration plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-the-current-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit the current schema
       
     </span>
   </a>
@@ -3193,22 +3195,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#migration-plan-project-name" class="md-nav__link">
+  <a href="#phase-1-analyze-the-existing-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Plan: [Project Name]
+        Phase 1: Analyze the Existing Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Migration Plan: [Project Name]">
+    <nav class="md-nav" aria-label="Phase 1: Analyze the Existing Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#timeline" class="md-nav__link">
+  <a href="#step-11-document-tables-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Timeline
+        Step 1.1: Document tables &amp; views
       
     </span>
   </a>
@@ -3216,10 +3218,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rollback-plan" class="md-nav__link">
+  <a href="#step-12-identify-access-patterns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rollback Plan
+        Step 1.2: Identify access patterns
       
     </span>
   </a>
@@ -3227,21 +3229,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#team" class="md-nav__link">
+  <a href="#step-13-map-relationships" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Team
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-audit-current-schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Audit Current Schema
+        Step 1.3: Map relationships
       
     </span>
   </a>
@@ -3250,6 +3241,455 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-build-the-postgresql-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Build the PostgreSQL Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Build the PostgreSQL Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-21-write-tables-tb_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.1: Write tables (tb_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-22-read-views-v_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.2: Read views (v_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-23-multi-tenancy-with-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.3: Multi-tenancy with Row-Level Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-24-field-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.4: Field authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-25-mutations-via-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.5: Mutations via fn_ functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-26-projection-views-tv_-for-hot-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.6: Projection views (tv_) for hot reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Integration Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: Integration Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-31-set-up-a-staging-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.1: Set up a staging environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-32-apply-the-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.2: Apply the migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-33-start-the-fraiseql-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.3: Start the FraiseQL app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-34-query-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.4: Query verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-35-performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.5: Performance baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-production-rollout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Production Rollout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Production Rollout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-41-apply-migrations-to-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.1: Apply migrations to production
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-42-deploy-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.2: Deploy the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-43-decommission-old-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.3: Decommission old objects
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-5-production-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Production Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 5: Production Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-51-health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.1: Health checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-52-monitoring-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.2: Monitoring setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-53-rollback-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.3: Rollback plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation Checklist
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Validation Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cutover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cutover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues &amp; Solutions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues &amp; Solutions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-data-type-mismatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Data Type Mismatches
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-relationship-not-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Relationship Not Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-authorization-denying-all-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Authorization Denying All Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tuning-post-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tuning Post-Migration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tuning Post-Migration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-identify-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Identify slow queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-add-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Add indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-materialize-expensive-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Materialize expensive views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-enable-query-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Enable query caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5056,6 +5496,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-fraiseql-object-trinity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The FraiseQL object trinity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5071,10 +5528,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-assess-current-architecture" class="md-nav__link">
+  <a href="#1-assess-the-current-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Assess Current Architecture
+        1. Assess the current schema
       
     </span>
   </a>
@@ -5082,10 +5539,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-create-migration-plan" class="md-nav__link">
+  <a href="#2-create-a-migration-plan" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Create Migration Plan
+        2. Create a migration plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-audit-the-current-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Audit the current schema
       
     </span>
   </a>
@@ -5098,22 +5566,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#migration-plan-project-name" class="md-nav__link">
+  <a href="#phase-1-analyze-the-existing-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Plan: [Project Name]
+        Phase 1: Analyze the Existing Schema
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Migration Plan: [Project Name]">
+    <nav class="md-nav" aria-label="Phase 1: Analyze the Existing Schema">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#timeline" class="md-nav__link">
+  <a href="#step-11-document-tables-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Timeline
+        Step 1.1: Document tables &amp; views
       
     </span>
   </a>
@@ -5121,10 +5589,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rollback-plan" class="md-nav__link">
+  <a href="#step-12-identify-access-patterns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rollback Plan
+        Step 1.2: Identify access patterns
       
     </span>
   </a>
@@ -5132,21 +5600,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#team" class="md-nav__link">
+  <a href="#step-13-map-relationships" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Team
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-audit-current-schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Audit Current Schema
+        Step 1.3: Map relationships
       
     </span>
   </a>
@@ -5155,6 +5612,455 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-build-the-postgresql-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Build the PostgreSQL Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Build the PostgreSQL Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-21-write-tables-tb_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.1: Write tables (tb_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-22-read-views-v_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.2: Read views (v_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-23-multi-tenancy-with-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.3: Multi-tenancy with Row-Level Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-24-field-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.4: Field authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-25-mutations-via-fn_-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.5: Mutations via fn_ functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-26-projection-views-tv_-for-hot-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2.6: Projection views (tv_) for hot reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Integration Testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: Integration Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-31-set-up-a-staging-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.1: Set up a staging environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-32-apply-the-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.2: Apply the migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-33-start-the-fraiseql-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.3: Start the FraiseQL app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-34-query-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.4: Query verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-35-performance-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3.5: Performance baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-production-rollout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Production Rollout
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Production Rollout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-41-apply-migrations-to-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.1: Apply migrations to production
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-42-deploy-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.2: Deploy the app
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-43-decommission-old-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4.3: Decommission old objects
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-5-production-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Production Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 5: Production Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-51-health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.1: Health checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-52-monitoring-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.2: Monitoring setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-53-rollback-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5.3: Rollback plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation Checklist
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Validation Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cutover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cutover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Migration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues &amp; Solutions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues &amp; Solutions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-data-type-mismatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Data Type Mismatches
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-relationship-not-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Relationship Not Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-authorization-denying-all-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue: Authorization Denying All Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tuning-post-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tuning Post-Migration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tuning Post-Migration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-identify-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Identify slow queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-add-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Add indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-materialize-expensive-views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Materialize expensive views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-enable-query-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Enable query caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5178,456 +6084,471 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Database Schema Migration Guide
-description: Step-by-step guide for migrating existing database schemas to FraiseQL v2.0.0-alpha.1.
-keywords: ["debugging", "implementation", "best-practices", "deployment", "schema", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="database-schema-migration-guide">Database Schema Migration Guide<a class="headerlink" href="#database-schema-migration-guide" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
-<strong>Audience:</strong> DevOps, Database Administrators, Architects
-<strong>Reading Time:</strong> 25-30 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>Step-by-step guide for migrating existing database schemas to FraiseQL v2.0.0-alpha.1.</p>
+<strong>Audience:</strong> Developers, Database Administrators
+<strong>Reading Time:</strong> 25-30 minutes</p>
+<p>Step-by-step guide for evolving a FraiseQL PostgreSQL schema with versioned DDL migrations — adding and changing the <code>tb_</code> write tables, <code>v_</code>/<code>tv_</code> read views, and <code>fn_</code> functions that back your GraphQL API.</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This guide covers migrating from:</p>
+<p>FraiseQL builds its GraphQL schema <strong>at application startup</strong> from your Python decorators, and serves it against PostgreSQL. There is no compile step and no schema artifact: when you change your PostgreSQL objects and your decorators, you simply restart the app.</p>
+<p>A "database migration" in FraiseQL therefore means <strong>evolving your PostgreSQL schema</strong> — DDL changes to your tables, views, and functions — applied with ordinary migration tooling such as <a href="https://alembic.sqlalchemy.org/">Alembic</a> or plain numbered <code>.sql</code> files run by <code>psql</code>.</p>
+<p>This guide covers two common situations:</p>
 <ul>
-<li><strong>Legacy GraphQL servers</strong> (Apollo Server, Hasura, PostGraphile, etc.)</li>
-<li><strong>Existing SQL databases</strong> (PostgreSQL, MySQL, SQLite, SQL Server)</li>
-<li><strong>Monolithic schemas</strong> to <strong>federated architectures</strong></li>
+<li><strong>Evolving an existing FraiseQL schema</strong> — adding columns, new entities, or new views as the application grows.</li>
+<li><strong>Adopting FraiseQL on an existing PostgreSQL database</strong> — wrapping pre-existing tables in the <code>v_</code>/<code>tv_</code> read-view layer that FraiseQL queries.</li>
 </ul>
-<p><strong>Key principle:</strong> Schema migration is a <strong>data structure change</strong>, not a data migration. Your existing data stays in place; you're restructuring how FraiseQL accesses it.</p>
+<p><strong>Key principle:</strong> A schema migration is a <strong>data structure change</strong>, not a bulk data migration. Your existing rows stay in place; you restructure how FraiseQL reads and writes them through views and functions.</p>
+<blockquote>
+<p>FraiseQL v1 is <strong>PostgreSQL only</strong>. All examples use standard PostgreSQL DDL.</p>
+</blockquote>
+<h3 id="the-fraiseql-object-trinity">The FraiseQL object trinity<a class="headerlink" href="#the-fraiseql-object-trinity" title="Permanent link">&para;</a></h3>
+<p>Every entity is represented by three kinds of PostgreSQL object. Migrations almost always touch one or more of them:</p>
+<table>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>What it is</th>
+<th>Exposed in GraphQL?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tb_</code></td>
+<td>normalized <strong>write table</strong> (source of truth)</td>
+<td>no (write side)</td>
+</tr>
+<tr>
+<td><code>v_</code></td>
+<td>logical <strong>read view</strong> building a <code>data</code> JSONB column</td>
+<td>yes (query source)</td>
+</tr>
+<tr>
+<td><code>tv_</code></td>
+<td><strong>table-backed projection view</strong> holding pre-composed JSONB, refreshed by functions/triggers</td>
+<td>yes (query source)</td>
+</tr>
+<tr>
+<td><code>fn_</code></td>
+<td>PostgreSQL <strong>function</strong> implementing a mutation's write logic</td>
+<td>called by mutations</td>
+</tr>
+</tbody>
+</table>
+<p>Identifier columns follow the trinity pattern: <code>pk_&lt;entity&gt;</code> (internal <code>BIGINT</code>, hidden), <code>id</code> (public <code>UUID</code>, stable), and an optional <code>identifier</code> (<code>TEXT UNIQUE</code> slug). GraphQL exposes <code>id</code> (and optionally <code>identifier</code>) but <strong>never</strong> <code>pk_</code>/<code>fk_</code>.</p>
 <hr />
 <h2 id="pre-migration-planning">Pre-Migration Planning<a class="headerlink" href="#pre-migration-planning" title="Permanent link">&para;</a></h2>
-<h3 id="1-assess-current-architecture">1. Assess Current Architecture<a class="headerlink" href="#1-assess-current-architecture" title="Permanent link">&para;</a></h3>
+<h3 id="1-assess-the-current-schema">1. Assess the current schema<a class="headerlink" href="#1-assess-the-current-schema" title="Permanent link">&para;</a></h3>
 <p><strong>Answer these questions:</strong></p>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Current database: PostgreSQL / MySQL / SQLite / SQL Server?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Total tables: &lt; 50 / 50-200 / 200-1000 / &gt; 1000?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Database size: &lt; 1GB / 1-10GB / 10-100GB / &gt; 100GB?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Peak QPS (queries per second): &lt; 100 / 100-1000 / &gt; 1000?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Uptime requirement: Best-effort / 99% / 99.9% / 99.99%?</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Multi-region deployment: Yes / No?</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Federation needed: Yes / No?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Are there existing tables to wrap in <code>v_</code>/<code>tv_</code> views, or is this a greenfield schema?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Which read paths are hot enough to need <code>tv_</code> projection views?</li>
 </ul>
-<h3 id="2-create-migration-plan">2. Create Migration Plan<a class="headerlink" href="#2-create-migration-plan" title="Permanent link">&para;</a></h3>
+<h3 id="2-create-a-migration-plan">2. Create a migration plan<a class="headerlink" href="#2-create-a-migration-plan" title="Permanent link">&para;</a></h3>
 <p><strong>Template:</strong></p>
-<p>```markdown</p>
-<!-- Code example in MARKDOWN -->
-<h2 id="migration-plan-project-name">Migration Plan: [Project Name]<a class="headerlink" href="#migration-plan-project-name" title="Permanent link">&para;</a></h2>
-<h3 id="timeline">Timeline<a class="headerlink" href="#timeline" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Phase 1 (Week 1): Preparation and schema analysis</li>
-<li>Phase 2 (Week 2): FraiseQL schema development</li>
-<li>Phase 3 (Week 3): Integration testing</li>
-<li>Phase 4 (Week 4): Staging deployment</li>
-<li>Phase 5 (Week 5): Production cutover</li>
-</ul>
-<h3 id="rollback-plan">Rollback Plan<a class="headerlink" href="#rollback-plan" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Keep old GraphQL server running during testing</li>
-<li>Traffic: 10% to FraiseQL, 90% to old server (Week 1)</li>
-<li>Then 50/50 (Week 2)</li>
-<li>Then 100% FraiseQL (Week 3)</li>
-</ul>
-<h3 id="team">Team<a class="headerlink" href="#team" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Schema Designer: [Name]</li>
-<li>DevOps Lead: [Name]</li>
-<li>QA Lead: [Name]</li>
-<li>Database Admin: [Name]
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="gu">## Migration Plan: [Project Name]</span>
 
-<h3 id="3-audit-current-schema">3. Audit Current Schema<a class="headerlink" href="#3-audit-current-schema" title="Permanent link">&para;</a></h3>
-<p><strong>Generate schema export:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permanent link">&para;</a></h1>
-<p>pg_dump --schema-only $DATABASE_URL &gt; schema.sql</p>
-<h1 id="mysql">MySQL<a class="headerlink" href="#mysql" title="Permanent link">&para;</a></h1>
-<p>mysqldump --no-data $DATABASE &gt; schema.sql</p>
-<h1 id="sqlite">SQLite<a class="headerlink" href="#sqlite" title="Permanent link">&para;</a></h1>
-<p>sqlite3 $DATABASE ".schema" &gt; schema.sql</p>
-<h1 id="sql-server">SQL Server<a class="headerlink" href="#sql-server" title="Permanent link">&para;</a></h1>
-<p>sqlcmd -S $SERVER -d $DATABASE -i "schema.sql" -x
-```text</p>
-<!-- Code example in TEXT -->
+<span class="gu">### Timeline</span>
+<span class="k">-</span><span class="w"> </span>Phase 1 (Week 1): Schema analysis and naming-convention mapping
+<span class="k">-</span><span class="w"> </span>Phase 2 (Week 2): Write tables, views, and functions (DDL migrations)
+<span class="k">-</span><span class="w"> </span>Phase 3 (Week 3): Wire up FraiseQL types/queries/mutations and test
+<span class="k">-</span><span class="w"> </span>Phase 4 (Week 4): Staging deployment and verification
+<span class="k">-</span><span class="w"> </span>Phase 5 (Week 5): Production rollout
 
+<span class="gu">### Rollback Plan</span>
+<span class="k">-</span><span class="w"> </span>Every DDL migration ships with a matching down-migration
+<span class="k">-</span><span class="w"> </span>Take a backup before applying migrations in production
+<span class="k">-</span><span class="w"> </span>Keep new views additive where possible (drop old objects only after cutover)
+
+<span class="gu">### Team</span>
+<span class="k">-</span><span class="w"> </span>Schema Designer: [Name]
+<span class="k">-</span><span class="w"> </span>DevOps Lead: [Name]
+<span class="k">-</span><span class="w"> </span>QA Lead: [Name]
+<span class="k">-</span><span class="w"> </span>Database Admin: [Name]
+</code></pre></div>
+<h3 id="3-audit-the-current-schema">3. Audit the current schema<a class="headerlink" href="#3-audit-the-current-schema" title="Permanent link">&para;</a></h3>
+<p><strong>Generate a schema export so you can diff before and after:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Dump the schema only (no data) for review and version control</span>
+pg_dump<span class="w"> </span>--schema-only<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>schema.sql
+</code></pre></div>
 <hr />
-<h2 id="phase-1-analyze-existing-schema">Phase 1: Analyze Existing Schema<a class="headerlink" href="#phase-1-analyze-existing-schema" title="Permanent link">&para;</a></h2>
-<h3 id="step-11-document-tables-views">Step 1.1: Document Tables &amp; Views<a class="headerlink" href="#step-11-document-tables-views" title="Permanent link">&para;</a></h3>
-<p><strong>Create inventory:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="postgresql-list-all-tables">PostgreSQL: List all tables<a class="headerlink" href="#postgresql-list-all-tables" title="Permanent link">&para;</a></h1>
-<p>SELECT tablename FROM pg_tables WHERE schemaname='public';</p>
-<h1 id="mysql-list-all-tables">MySQL: List all tables<a class="headerlink" href="#mysql-list-all-tables" title="Permanent link">&para;</a></h1>
-<p>SHOW TABLES;</p>
-<h1 id="sqlite-list-all-tables">SQLite: List all tables<a class="headerlink" href="#sqlite-list-all-tables" title="Permanent link">&para;</a></h1>
-<p>.tables</p>
-<h1 id="sql-server-list-all-tables">SQL Server: List all tables<a class="headerlink" href="#sql-server-list-all-tables" title="Permanent link">&para;</a></h1>
-<p>SELECT name FROM sys.tables;
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="phase-1-analyze-the-existing-schema">Phase 1: Analyze the Existing Schema<a class="headerlink" href="#phase-1-analyze-the-existing-schema" title="Permanent link">&para;</a></h2>
+<h3 id="step-11-document-tables-views">Step 1.1: Document tables &amp; views<a class="headerlink" href="#step-11-document-tables-views" title="Permanent link">&para;</a></h3>
+<p><strong>Create an inventory:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- List all base tables</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">tablename</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_tables</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">;</span>
 
+<span class="c1">-- List all views</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">viewname</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_views</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Output format:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>TABLE_NAME | COLUMNS | ROWS | SIZE | INDEXES | PK | NOTES
-users      | 12      | 2M   | 500MB | 3      | id | Active users table
-posts      | 8       | 10M  | 2GB   | 4      | id | Need tv_* materialization
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>TABLE_NAME | COLUMNS | ROWS | SIZE  | INDEXES | PK | NOTES
+tb_user    | 12      | 2M   | 500MB | 3       | id | Active users
+tb_post    | 8       | 10M  | 2GB   | 4       | id | Needs tv_* projection
+</code></pre></div>
+<h3 id="step-12-identify-access-patterns">Step 1.2: Identify access patterns<a class="headerlink" href="#step-12-identify-access-patterns" title="Permanent link">&para;</a></h3>
+<p><strong>Analyze queries with <code>pg_stat_statements</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Find most frequent queries</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">calls</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">calls</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
 
-<h3 id="step-12-identify-access-patterns">Step 1.2: Identify Access Patterns<a class="headerlink" href="#step-12-identify-access-patterns" title="Permanent link">&para;</a></h3>
-<p><strong>Analyze queries:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Find most frequent queries
-SELECT query, calls FROM pg_stat_statements
-ORDER BY calls DESC LIMIT 20;</p>
-<p>-- Find slow queries
-SELECT query, mean_time FROM pg_stat_statements
-WHERE mean_time &gt; 100
-ORDER BY mean_time DESC LIMIT 20;
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Find slow queries</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Use this to decide:</strong></p>
 <ul>
-<li>Which fields should have indexes</li>
-<li>Which views need materialization (tv_*)</li>
-<li>Which queries need optimization</li>
+<li>Which columns inside your views need indexes (often on the underlying <code>tb_</code> tables).</li>
+<li>Which read views need a <code>tv_</code> projection (pre-composed JSONB).</li>
+<li>Which queries need restructuring in the view SQL.</li>
 </ul>
-<h3 id="step-13-map-relationships">Step 1.3: Map Relationships<a class="headerlink" href="#step-13-map-relationships" title="Permanent link">&para;</a></h3>
-<p><strong>Create relationship diagram:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Users (id, name, email)
-  ├─ 1:M → Posts (id, user_id, content)
-  │          ├─ 1:M → Comments (id, post_id, text)
-  │          └─ M:M → Tags (join: post_tags)
-  ├─ M:M → Groups (join: user_groups)
-  └─ M:1 ← Organizations (org_id)</p>
-<p>Organizations (id, name)
-  ├─ 1:M → Users
-  └─ 1:M → Teams
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-13-map-relationships">Step 1.3: Map relationships<a class="headerlink" href="#step-13-map-relationships" title="Permanent link">&para;</a></h3>
+<p><strong>Sketch the relationships so your <code>data</code> JSONB views embed the right nested objects:</strong></p>
+<div class="highlight"><pre><span></span><code>tb_user (pk_user, id, name, email)
+  ├─ 1:M → tb_post (pk_post, id, fk_user, content)
+  │          ├─ 1:M → tb_comment (pk_comment, id, fk_post, text)
+  │          └─ M:M → tb_tag (join: tb_post_tag)
+  ├─ M:M → tb_group (join: tb_user_group)
+  └─ M:1 ← tb_organization (fk_organization)
 
+tb_organization (pk_organization, id, name)
+  ├─ 1:M → tb_user
+  └─ 1:M → tb_team
+</code></pre></div>
 <hr />
-<h2 id="phase-2-create-fraiseql-schema">Phase 2: Create FraiseQL Schema<a class="headerlink" href="#phase-2-create-fraiseql-schema" title="Permanent link">&para;</a></h2>
-<h3 id="step-21-skeleton-schema">Step 2.1: Skeleton Schema<a class="headerlink" href="#step-21-skeleton-schema" title="Permanent link">&para;</a></h3>
-<p><strong>Create minimal schema for all tables:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="schemapy">schema.py<a class="headerlink" href="#schemapy" title="Permanent link">&para;</a></h1>
-<p>from FraiseQL import type, key, field, where, context
-from typing import Optional, List
-from datetime import datetime
-from decimal import Decimal</p>
-<p>@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    email: str
-    created_at: datetime
-    updated_at: datetime
-    is_active: bool</p>
-<p>@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    created_at: datetime</p>
-<p>@type
-class Organization:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    created_at: datetime
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="phase-2-build-the-postgresql-schema">Phase 2: Build the PostgreSQL Schema<a class="headerlink" href="#phase-2-build-the-postgresql-schema" title="Permanent link">&para;</a></h2>
+<p>This phase is a sequence of DDL migrations. Keep each step in its own numbered migration file (e.g. <code>0001_create_user.sql</code>) or Alembic revision so it is reviewable and reversible.</p>
+<h3 id="step-21-write-tables-tb_">Step 2.1: Write tables (<code>tb_</code>)<a class="headerlink" href="#step-21-write-tables-tb_" title="Permanent link">&para;</a></h3>
+<p>The write tables are the source of truth. They use the identifier trinity: a hidden <code>pk_</code> BIGINT, a public <code>id</code> UUID, and <code>fk_</code> foreign keys (never exposed).</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_organization</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_organization</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">              </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 
-<h3 id="step-22-add-relationships">Step 2.2: Add Relationships<a class="headerlink" href="#step-22-add-relationships" title="Permanent link">&para;</a></h3>
-<p><strong>Add 1:M and M:M relationships:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    email: str
-    created_at: datetime
-    # NEW: Relationships
-    posts: List[Post]  # 1:M relationship
-    organization: Organization  # M:1 relationship
-    groups: List[Group]  # M:M relationship</p>
-<p>@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    created_at: datetime
-    # NEW: Relationships
-    user: User  # M:1 back-reference
-    comments: List[Comment]  # 1:M relationship</p>
-<p>@type
-class Organization:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    created_at: datetime
-    # NEW: Relationships
-    users: List[User]  # 1:M reverse
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w">         </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">              </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_organization</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_organization</span><span class="w"> </span><span class="p">(</span><span class="n">pk_organization</span><span class="p">),</span>
+<span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w">           </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_active</span><span class="w">       </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">TRUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 
-<h3 id="step-23-add-row-level-security">Step 2.3: Add Row-Level Security<a class="headerlink" href="#step-23-add-row-level-security" title="Permanent link">&para;</a></h3>
-<p><strong>Add multi-tenancy filtering:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class Post:
-    where: Where = FraiseQL.where(
-        fk_organization=FraiseQL.context.org_id,  # Only user's org
-    )</p>
-<div class="highlight"><pre><span></span><code>id: UUID  # UUID v4 for GraphQL ID
-user_id: UUID  # UUID v4 for GraphQL ID
-content: str
-user: User
-comments: List[Comment]
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_post</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">()</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">    </span><span class="n">content</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 </code></pre></div>
-<p>@type
-class Comment:
-    where: Where = FraiseQL.where(
-        # Nested RLS: posts -&gt; comments
-        post_id__in=FraiseQL.subquery(
-            "SELECT id FROM posts WHERE fk_organization = ?",
-            [FraiseQL.context.org_id]
-        )
-    )</p>
-<div class="highlight"><pre><span></span><code>id: UUID  # UUID v4 for GraphQL ID
-post_id: UUID  # UUID v4 for GraphQL ID
-content: str
+<h3 id="step-22-read-views-v_">Step 2.2: Read views (<code>v_</code>)<a class="headerlink" href="#step-22-read-views-v_" title="Permanent link">&para;</a></h3>
+<p>A read view always exposes the public <code>id</code> column <strong>plus</strong> a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>. Embed relationships directly in the JSONB so a single read returns the nested shape your GraphQL type needs. Never put <code>pk_</code>/<code>fk_</code> inside <code>data</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                          </span><span class="c1">-- WHERE id = $1 lookups</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;organization&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">name</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">            </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">))</span>
+<span class="w">             </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">             </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_organization</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_organization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">fk_organization</span><span class="p">;</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>The matching FraiseQL types and queries point at the view via <code>sql_source</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="step-24-add-authorization">Step 2.4: Add Authorization<a class="headerlink" href="#step-24-add-authorization" title="Permanent link">&para;</a></h3>
-<p><strong>Add field-level access control:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    email: str = field(
-        authorize={Roles.SELF, Roles.ADMIN, Roles.HR}
-    )
-    salary: Decimal = field(
-        authorize={Roles.HR}
-    )
-    password_hash: str = field(
-        authorize=set()  # Never readable
-    )
-```text</p>
-<!-- Code example in TEXT -->
 
-<h3 id="step-25-optimize-with-views">Step 2.5: Optimize with Views<a class="headerlink" href="#step-25-optimize-with-views" title="Permanent link">&para;</a></h3>
-<p><strong>Add materialized views (tv_*) for performance:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class UserStats:
-    """Materialized daily - fast lookups for aggregations."""
-    id: UUID  # UUID v4 for GraphQL ID
-    post_count: int
-    comment_count: int
-    avg_likes_per_post: Decimal
-    updated_at: datetime</p>
-<h1 id="materialization-sql">Materialization SQL<a class="headerlink" href="#materialization-sql" title="Permanent link">&para;</a></h1>
-<p>CREATE TABLE tv_user_stats AS
-SELECT
-    u.id,
-    COUNT(DISTINCT p.id) as post_count,
-    COUNT(DISTINCT c.id) as comment_count,
-    AVG(l.like_count) as avg_likes_per_post,
-    NOW() as updated_at
-FROM users u
-LEFT JOIN posts p ON u.id = p.user_id
-LEFT JOIN comments c ON p.id = c.post_id
-LEFT JOIN (
-    SELECT post_id, COUNT(*) as like_count
-    FROM likes
-    GROUP BY post_id
-) l ON p.id = l.post_id
-GROUP BY u.id;
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_organization&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Organization</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+    <span class="n">organization</span><span class="p">:</span> <span class="n">Organization</span>      <span class="c1"># embedded by the view&#39;s JSONB</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span>               <span class="c1"># embedded by the view&#39;s JSONB</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-23-multi-tenancy-with-row-level-security">Step 2.3: Multi-tenancy with Row-Level Security<a class="headerlink" href="#step-23-multi-tenancy-with-row-level-security" title="Permanent link">&para;</a></h3>
+<p>For tenant isolation, add a tenant column to your write tables and enforce it with PostgreSQL <strong>Row-Level Security (RLS)</strong>. FraiseQL's CQRS repository sets the session GUCs from the request context — when <code>info.context</code> carries <code>tenant_id</code>, it issues <code>SET LOCAL app.tenant_id = …</code> per transaction, so your RLS policies see the current tenant.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Add the tenant key to write tables</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">fk_organization</span><span class="w"> </span><span class="nb">BIGINT</span>
+<span class="w">    </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_organization</span><span class="w"> </span><span class="p">(</span><span class="n">pk_organization</span><span class="p">);</span>
+
+<span class="c1">-- Enable RLS and a policy that reads the session GUC FraiseQL sets</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">fk_organization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_organization</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organization</span>
+<span class="w">        </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="w">    </span><span class="p">));</span>
+</code></pre></div>
+<p>You can additionally pin a filter on the read side:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="c1"># Belt-and-braces: enforce the tenant on the query as well as via RLS</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;organization_id&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]})</span>
+</code></pre></div>
+<h3 id="step-24-field-authorization">Step 2.4: Field authorization<a class="headerlink" href="#step-24-field-authorization" title="Permanent link">&para;</a></h3>
+<p>FraiseQL enforces operation authorization through an <code>Authorizer</code>, wired either globally on the app or per query/subscription:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">Authorizer</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OrgAuthorizer</span><span class="p">(</span><span class="n">Authorizer</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">operation</span><span class="p">):</span>
+        <span class="c1"># Reject anonymous access, check roles from info.context, etc.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;authentication required&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">OrgAuthorizer</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>For row- and field-level access control, rely on PostgreSQL RLS policies (Step 2.3) and on what the view exposes: simply omit sensitive columns (for example, never select <code>password_hash</code> into <code>data</code>).</p>
+<h3 id="step-25-mutations-via-fn_-functions">Step 2.5: Mutations via <code>fn_</code> functions<a class="headerlink" href="#step-25-mutations-via-fn_-functions" title="Permanent link">&para;</a></h3>
+<p>All write business logic lives in PostgreSQL functions. The function validates, writes, and returns JSONB indicating success or failure.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="n">input_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w"> </span><span class="n">input_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w"> </span><span class="n">input_org</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_user</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">fk_organization</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_organization</span><span class="p">,</span><span class="w"> </span><span class="n">input_name</span><span class="p">,</span><span class="w"> </span><span class="n">input_email</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organization</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_org</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_user</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_user</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_user</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_user</span><span class="p">.</span><span class="n">email</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">EXCEPTION</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">unique_violation</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email already exists&#39;</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">organization_id</span><span class="p">:</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">&quot;org&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">organization_id</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<h3 id="step-26-projection-views-tv_-for-hot-reads">Step 2.6: Projection views (<code>tv_</code>) for hot reads<a class="headerlink" href="#step-26-projection-views-tv_-for-hot-reads" title="Permanent link">&para;</a></h3>
+<p>When a logical <code>v_</code> view is too expensive for a hot read path, replace it with a <code>tv_</code> projection: a real table holding the pre-composed JSONB, refreshed by functions or triggers.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- A table-backed projection: refreshed, not recomputed on every read</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user_stats</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">              </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">            </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+
+<span class="c1">-- (Re)build the projection from the base tables</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user_stats</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;postCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;commentCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">&#39;avgLikesPerPost&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">l</span><span class="p">.</span><span class="n">like_count</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">fk_post</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">like_count</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_like</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_post</span>
+<span class="p">)</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">();</span>
+</code></pre></div>
+<p>FraiseQL queries a <code>tv_</code> view exactly like a <code>v_</code> view — only the <code>sql_source</code> name differs:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">comment_count</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
 <hr />
 <h2 id="phase-3-integration-testing">Phase 3: Integration Testing<a class="headerlink" href="#phase-3-integration-testing" title="Permanent link">&para;</a></h2>
-<h3 id="step-31-set-up-staging-environment">Step 3.1: Set Up Staging Environment<a class="headerlink" href="#step-31-set-up-staging-environment" title="Permanent link">&para;</a></h3>
-<p><strong>Clone production database:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="postgresql_1">PostgreSQL<a class="headerlink" href="#postgresql_1" title="Permanent link">&para;</a></h1>
-<p>pg_dump $PROD_DATABASE | psql $STAGING_DATABASE</p>
-<h1 id="mysql_1">MySQL<a class="headerlink" href="#mysql_1" title="Permanent link">&para;</a></h1>
-<p>mysqldump $PROD_DATABASE | mysql $STAGING_DATABASE</p>
-<h1 id="sqlite_1">SQLite<a class="headerlink" href="#sqlite_1" title="Permanent link">&para;</a></h1>
-<p>cp $PROD_DATABASE $STAGING_DATABASE
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-31-set-up-a-staging-environment">Step 3.1: Set up a staging environment<a class="headerlink" href="#step-31-set-up-a-staging-environment" title="Permanent link">&para;</a></h3>
+<p><strong>Clone the production database:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Dump production and restore into staging</span>
+pg_dump<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PROD_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$STAGING_DATABASE_URL</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h3 id="step-32-apply-the-migrations">Step 3.2: Apply the migrations<a class="headerlink" href="#step-32-apply-the-migrations" title="Permanent link">&para;</a></h3>
+<p>Run your migration tool against staging. With Alembic:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$STAGING_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</code></pre></div>
+<p>Or with plain numbered SQL files:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>migrations/*.sql<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$STAGING_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-v<span class="w"> </span><span class="nv">ON_ERROR_STOP</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+</code></pre></div>
+<h3 id="step-33-start-the-fraiseql-app">Step 3.3: Start the FraiseQL app<a class="headerlink" href="#step-33-start-the-fraiseql-app" title="Permanent link">&para;</a></h3>
+<p>The schema is assembled in memory at startup — just point the FastAPI app at the staging database and run it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/staging_db&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Organization</span><span class="p">,</span> <span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">UserStats</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">posts</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>   <span class="c1"># enables the GraphQL playground</span>
+<span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run the FastAPI app</span>
+uvicorn<span class="w"> </span>app:app<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 
-<h3 id="step-32-compile-fraiseql-schema">Step 3.2: Compile FraiseQL Schema<a class="headerlink" href="#step-32-compile-fraiseql-schema" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="install-fraiseql-cli">Install FraiseQL CLI<a class="headerlink" href="#install-fraiseql-cli" title="Permanent link">&para;</a></h1>
-<p>cargo install FraiseQL-cli</p>
-<h1 id="compile-schema">Compile schema<a class="headerlink" href="#compile-schema" title="Permanent link">&para;</a></h1>
-<p>FraiseQL compile schema.py --config FraiseQL.toml</p>
-<h1 id="verify-compilation">Verify compilation<a class="headerlink" href="#verify-compilation" title="Permanent link">&para;</a></h1>
-<p>ls -la schema.compiled.json
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-33-start-fraiseql-server">Step 3.3: Start FraiseQL Server<a class="headerlink" href="#step-33-start-fraiseql-server" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="start-with-staging-database">Start with staging database<a class="headerlink" href="#start-with-staging-database" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_DATABASE_URL=postgresql://staging_db FraiseQL serve</p>
-<h1 id="test-graphql-endpoint">Test GraphQL endpoint<a class="headerlink" href="#test-graphql-endpoint" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:5000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ users { id name } }"}'
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-34-query-compatibility-testing">Step 3.4: Query Compatibility Testing<a class="headerlink" href="#step-34-query-compatibility-testing" title="Permanent link">&para;</a></h3>
-<p><strong>Validate old queries work in FraiseQL:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="old-query-from-current-server">Old query (from current server)<a class="headerlink" href="#old-query-from-current-server" title="Permanent link">&para;</a></h1>
-<p>query {
-  users {
-    id
-    name
-    email
-    posts {
-      id
-      title
-      created_at
-    }
-  }
-}</p>
-<h1 id="should-return-same-data-in-fraiseql">Should return same data in FraiseQL<a class="headerlink" href="#should-return-same-data-in-fraiseql" title="Permanent link">&para;</a></h1>
-<h1 id="verify-response-structure-field-names-values-types">Verify: Response structure, field names, values, types<a class="headerlink" href="#verify-response-structure-field-names-values-types" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Smoke-test the GraphQL endpoint</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ users { id name } }&quot;}&#39;</span>
+</code></pre></div>
+<h3 id="step-34-query-verification">Step 3.4: Query verification<a class="headerlink" href="#step-34-query-verification" title="Permanent link">&para;</a></h3>
+<p><strong>Confirm the migrated views return the shape you expect:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">content</span>
+<span class="w">      </span><span class="n">createdAt</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Test harness:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="test_migrationpy">test_migration.py<a class="headerlink" href="#test_migrationpy" title="Permanent link">&para;</a></h1>
-<p>import requests
-import json</p>
-<p>OLD_SERVER = "http://old-server:3000/graphql"
-NEW_SERVER = "http://localhost:5000/graphql"</p>
-<p>queries = [
-    '{ users { id name } }',
-    '{ posts(first: 100) { id title user { name } } }',
-    '{ organizations { id users { id posts { id } } } }',
-]</p>
-<p>for query in queries:
-    old_result = requests.post(OLD_SERVER, json={"query": query}).json()
-    new_result = requests.post(NEW_SERVER, json={"query": query}).json()</p>
-<div class="highlight"><pre><span></span><code>assert old_result[&quot;data&quot;] == new_result[&quot;data&quot;], f&quot;Query mismatch: {query}&quot;
+<div class="highlight"><pre><span></span><code><span class="c1"># test_migration.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+
+<span class="n">NEW_SERVER</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:8000/graphql&quot;</span>
+
+<span class="n">queries</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;{ users { id name } }&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;{ posts(first: 100) { id content user { name } } }&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;{ organizations { id users { id posts { id } } } }&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">queries</span><span class="p">:</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">NEW_SERVER</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">q</span><span class="p">})</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="s2">&quot;errors&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">body</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Query failed: </span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">body</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ All queries returned data&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>print("✅ All queries compatible!")
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-35-performance-baseline">Step 3.5: Performance baseline<a class="headerlink" href="#step-35-performance-baseline" title="Permanent link">&para;</a></h3>
+<p><strong>Measure query performance against staging before cutover:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run a load test against the staging app</span>
+wrk<span class="w"> </span>-t4<span class="w"> </span>-c100<span class="w"> </span>-d60s<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-s<span class="w"> </span>load_test.lua<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>http://localhost:8000/graphql
 
-<h3 id="step-35-performance-baseline">Step 3.5: Performance Baseline<a class="headerlink" href="#step-35-performance-baseline" title="Permanent link">&para;</a></h3>
-<p><strong>Measure query performance before cutover:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="run-load-test-on-old-server">Run load test on old server<a class="headerlink" href="#run-load-test-on-old-server" title="Permanent link">&para;</a></h1>
-<p>wrk -t4 -c100 -d60s \
-  -s load_test.lua \
-  http://old-server:3000/graphql</p>
-<h1 id="record-latency-p50-p95-p99-throughput-errors">Record: latency (P50, P95, P99), throughput, errors<a class="headerlink" href="#record-latency-p50-p95-p99-throughput-errors" title="Permanent link">&para;</a></h1>
-<h1 id="run-same-load-test-on-fraiseql">Run same load test on FraiseQL<a class="headerlink" href="#run-same-load-test-on-fraiseql" title="Permanent link">&para;</a></h1>
-<p>wrk -t4 -c100 -d60s \
-  -s load_test.lua \
-  http://localhost:5000/graphql</p>
-<h1 id="compare-should-be-similar-or-faster">Compare: Should be similar or faster<a class="headerlink" href="#compare-should-be-similar-or-faster" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1"># Record: latency (P50, P95, P99), throughput, errors</span>
+</code></pre></div>
+<p>If P95 latency is too high on a hot path, convert the relevant <code>v_</code> view to a <code>tv_</code> projection (Step 2.6) and re-measure.</p>
 <hr />
-<h2 id="phase-4-staged-cutover">Phase 4: Staged Cutover<a class="headerlink" href="#phase-4-staged-cutover" title="Permanent link">&para;</a></h2>
-<h3 id="step-41-traffic-splitting-week-1">Step 4.1: Traffic Splitting (Week 1)<a class="headerlink" href="#step-41-traffic-splitting-week-1" title="Permanent link">&para;</a></h3>
-<p><strong>Route 10% of traffic to FraiseQL:</strong></p>
-<p>```nginx</p>
-<!-- Code example in NGINX -->
-<h1 id="nginx-configuration">nginx configuration<a class="headerlink" href="#nginx-configuration" title="Permanent link">&para;</a></h1>
-<p>upstream old_server {
-    server old-server:3000;
-}</p>
-<p>upstream new_server {
-    server localhost:5000;
-}</p>
-<p>server {
-    listen 443 ssl;</p>
-<div class="highlight"><pre><span></span><code>location /graphql {
-    # 90% to old server, 10% to new
-    if ($random &lt; 0.1) {
-        proxy_pass http://new_server;
-    }
-    proxy_pass http://old_server;
-}
-</code></pre></div>
-<p>}
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="phase-4-production-rollout">Phase 4: Production Rollout<a class="headerlink" href="#phase-4-production-rollout" title="Permanent link">&para;</a></h2>
+<h3 id="step-41-apply-migrations-to-production">Step 4.1: Apply migrations to production<a class="headerlink" href="#step-41-apply-migrations-to-production" title="Permanent link">&para;</a></h3>
+<p>DDL migrations are the cutover. Back up first, then apply the same reviewed migrations you ran on staging:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Back up before applying</span>
+pg_dump<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PROD_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>backup_pre_migration.dump
 
-<p><strong>Monitor:</strong></p>
+<span class="c1"># Apply migrations (Alembic)</span>
+<span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PROD_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</code></pre></div>
+<p>Keep migrations <strong>additive</strong> where possible: create the new <code>tb_</code>/<code>v_</code>/<code>tv_</code>/<code>fn_</code> objects alongside the old ones, deploy the app, verify, and only drop the old objects in a later migration once you are confident.</p>
+<h3 id="step-42-deploy-the-app">Step 4.2: Deploy the app<a class="headerlink" href="#step-42-deploy-the-app" title="Permanent link">&para;</a></h3>
+<p>Roll out the FraiseQL FastAPI app (which now references the new objects). Because the schema is built at startup, a rolling restart picks up the new schema with no compile step.</p>
+<p><strong>Monitor after deploy:</strong></p>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> FraiseQL error rate &lt; 0.1%</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Error rate &lt; 0.1%</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Response latency acceptable</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No data inconsistencies</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No unauthorized access</li>
 </ul>
-<h3 id="step-42-increase-traffic-week-2">Step 4.2: Increase Traffic (Week 2)<a class="headerlink" href="#step-42-increase-traffic-week-2" title="Permanent link">&para;</a></h3>
-<p>```nginx</p>
-<!-- Code example in NGINX -->
-<h1 id="50-to-each-server">50% to each server<a class="headerlink" href="#50-to-each-server" title="Permanent link">&para;</a></h1>
-<p>if ($random &lt; 0.5) {
-    proxy_pass http://new_server;
-}
-proxy_pass http://old_server;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Monitor:</strong></p>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Error rate &lt; 0.5%</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Performance stable</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No customer complaints</li>
-</ul>
-<h3 id="step-43-full-cutover-week-3">Step 4.3: Full Cutover (Week 3)<a class="headerlink" href="#step-43-full-cutover-week-3" title="Permanent link">&para;</a></h3>
-<p>```nginx</p>
-<!-- Code example in NGINX -->
-<h1 id="100-to-fraiseql">100% to FraiseQL<a class="headerlink" href="#100-to-fraiseql" title="Permanent link">&para;</a></h1>
-<p>proxy_pass http://new_server;
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="step-43-decommission-old-objects">Step 4.3: Decommission old objects<a class="headerlink" href="#step-43-decommission-old-objects" title="Permanent link">&para;</a></h3>
+<p>Once the new schema is stable, ship a follow-up migration that drops the now-unused views/columns/functions.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Example follow-up migration once cutover is confirmed</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">v_user_legacy</span><span class="p">;</span>
+</code></pre></div>
 <p><strong>Post-cutover monitoring:</strong></p>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Error rate &lt; 0.1%</li>
@@ -5637,55 +6558,40 @@ proxy_pass http://old_server;
 </ul>
 <hr />
 <h2 id="phase-5-production-validation">Phase 5: Production Validation<a class="headerlink" href="#phase-5-production-validation" title="Permanent link">&para;</a></h2>
-<h3 id="step-51-health-checks">Step 5.1: Health Checks<a class="headerlink" href="#step-51-health-checks" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-server-health">Check server health<a class="headerlink" href="#check-server-health" title="Permanent link">&para;</a></h1>
-<p>curl http://localhost:5000/health</p>
-<h1 id="check-database-connectivity">Check database connectivity<a class="headerlink" href="#check-database-connectivity" title="Permanent link">&para;</a></h1>
-<p>curl -X POST http://localhost:5000/graphql \
-  -d '{"query": "{ users { id } }"}'</p>
-<h1 id="check-rate-limiting">Check rate limiting<a class="headerlink" href="#check-rate-limiting" title="Permanent link">&para;</a></h1>
-<p>for i in {1..1000}; do
-  curl http://localhost:5000/graphql &amp;
-done
-wait
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-51-health-checks">Step 5.1: Health checks<a class="headerlink" href="#step-51-health-checks" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check app health</span>
+curl<span class="w"> </span>http://localhost:8000/health
 
-<h3 id="step-52-monitoring-setup">Step 5.2: Monitoring Setup<a class="headerlink" href="#step-52-monitoring-setup" title="Permanent link">&para;</a></h3>
-<p><strong>Set up observability:</strong></p>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<h1 id="prometheus-metrics">Prometheus metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h1>
-<p>fraiseql_queries_total{method="query", status="success"}
-fraiseql_query_duration_seconds{method="query", quantile="0.95"}
-fraiseql_errors_total{error_code="E_*"}
-fraiseql_db_connections{state="active"}</p>
-<h1 id="alert-thresholds">Alert thresholds<a class="headerlink" href="#alert-thresholds" title="Permanent link">&para;</a></h1>
-<p>error_rate &gt; 1%
-response_latency_p95 &gt; 500ms
-db_connection_exhaustion &gt; 80%
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Check database connectivity through GraphQL</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ users { id } }&quot;}&#39;</span>
+</code></pre></div>
+<h3 id="step-52-monitoring-setup">Step 5.2: Monitoring setup<a class="headerlink" href="#step-52-monitoring-setup" title="Permanent link">&para;</a></h3>
+<p><strong>Set up observability around the FastAPI app and PostgreSQL:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Prometheus metrics</span>
+<span class="l l-Scalar l-Scalar-Plain">fraiseql_queries_total{method=&quot;query&quot;, status=&quot;success&quot;}</span>
+<span class="l l-Scalar l-Scalar-Plain">fraiseql_query_duration_seconds{method=&quot;query&quot;, quantile=&quot;0.95&quot;}</span>
+<span class="l l-Scalar l-Scalar-Plain">fraiseql_errors_total{error_code=&quot;E_*&quot;}</span>
+<span class="l l-Scalar l-Scalar-Plain">fraiseql_db_connections{state=&quot;active&quot;}</span>
 
-<h3 id="step-53-rollback-plan">Step 5.3: Rollback Plan<a class="headerlink" href="#step-53-rollback-plan" title="Permanent link">&para;</a></h3>
-<p><strong>If issues arise:</strong></p>
+<span class="l l-Scalar l-Scalar-Plain"># Alert thresholds</span>
+<span class="l l-Scalar l-Scalar-Plain">error_rate &gt; 1%</span>
+<span class="l l-Scalar l-Scalar-Plain">response_latency_p95 &gt; 500ms</span>
+<span class="l l-Scalar l-Scalar-Plain">db_connection_exhaustion &gt; 80%</span>
+</code></pre></div>
+<h3 id="step-53-rollback-plan">Step 5.3: Rollback plan<a class="headerlink" href="#step-53-rollback-plan" title="Permanent link">&para;</a></h3>
+<p><strong>If issues arise after a migration:</strong></p>
 <ol>
-<li><strong>Immediate:</strong> Redirect 100% traffic back to old server</li>
-<li><strong>Investigate:</strong> Debug issue in staging</li>
-<li><strong>Fix:</strong> Update schema, redeploy to staging</li>
-<li><strong>Re-test:</strong> Validate fix</li>
-<li><strong>Retry:</strong> Staged cutover again</li>
+<li><strong>Immediate:</strong> Roll the app back to the previous deploy.</li>
+<li><strong>Down-migration:</strong> Apply the matching down-migration (or restore from <code>backup_pre_migration.dump</code> if the change was destructive).</li>
+<li><strong>Investigate:</strong> Reproduce and fix the issue in staging.</li>
+<li><strong>Re-test:</strong> Validate the corrected migration on staging.</li>
+<li><strong>Retry:</strong> Re-run the rollout.</li>
 </ol>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="emergency-rollback-1-minute-rto">Emergency rollback (1 minute RTO)<a class="headerlink" href="#emergency-rollback-1-minute-rto" title="Permanent link">&para;</a></h1>
-<p>nginx -s reload  # Change configuration</p>
-<h1 id="verify-traffic-going-to-old-server">Verify: Traffic going to old server<a class="headerlink" href="#verify-traffic-going-to-old-server" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Revert the last Alembic migration</span>
+<span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PROD_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>alembic<span class="w"> </span>downgrade<span class="w"> </span>-1
+</code></pre></div>
 <hr />
 <h2 id="validation-checklist">Validation Checklist<a class="headerlink" href="#validation-checklist" title="Permanent link">&para;</a></h2>
 <h3 id="pre-migration">Pre-Migration<a class="headerlink" href="#pre-migration" title="Permanent link">&para;</a></h3>
@@ -5694,34 +6600,34 @@ db_connection_exhaustion &gt; 80%
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Relationship diagram documented</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Access patterns identified</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Migration plan approved by team</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rollback plan documented</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rollback (down-migration) plan documented</li>
 </ul>
 <h3 id="schema-development">Schema Development<a class="headerlink" href="#schema-development" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All tables mapped to FraiseQL types</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All relationships defined</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization policies configured</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Row-level security implemented</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Views optimized (v_<em>, tv_</em>)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Indexes identified and created</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All entities have <code>tb_</code> write tables with the <code>pk_</code>/<code>id</code>/<code>identifier</code> trinity</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All read views (<code>v_</code>/<code>tv_</code>) expose an <code>id</code> column and a <code>data</code> JSONB</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Relationships embedded in the view JSONB</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mutations implemented as <code>fn_</code> functions</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Row-Level Security policies configured for multi-tenant tables</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization wired via <code>Authorizer</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Indexes identified and created on the underlying tables</li>
 </ul>
 <h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Staging database cloned from production</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> FraiseQL schema compiles successfully</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query compatibility tests pass</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Migrations apply cleanly on staging</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Query verification passes</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Performance baseline established</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load testing passed (10x peak load)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Error handling tested</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Load testing passed</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Authorization tested</li>
 </ul>
 <h3 id="cutover">Cutover<a class="headerlink" href="#cutover" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Traffic splitting configured</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Backup taken before applying production migrations</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Migrations kept additive where possible</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Monitoring alerts set up</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> On-call team briefed</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Rollback tested</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Communication plan ready</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Down-migrations tested</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Stakeholders notified</li>
 </ul>
 <h3 id="post-migration">Post-Migration<a class="headerlink" href="#post-migration" title="Permanent link">&para;</a></h3>
@@ -5730,113 +6636,86 @@ db_connection_exhaustion &gt; 80%
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Latency within acceptable range</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> All health checks passing</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No customer-facing issues reported</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Old server decommissioned</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Old objects decommissioned in a follow-up migration</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Documentation updated</li>
 </ul>
 <hr />
 <h2 id="common-issues-solutions">Common Issues &amp; Solutions<a class="headerlink" href="#common-issues-solutions" title="Permanent link">&para;</a></h2>
 <h3 id="issue-data-type-mismatches">Issue: Data Type Mismatches<a class="headerlink" href="#issue-data-type-mismatches" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query returns error or unexpected values.</p>
-<p><strong>Cause:</strong> GraphQL type doesn't match database column type.</p>
-<p><strong>Solution:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="wrong">Wrong<a class="headerlink" href="#wrong" title="Permanent link">&para;</a></h1>
-<p>@type
-class Product:
-    price: float  # ❌ Float loses precision!</p>
-<h1 id="correct">Correct<a class="headerlink" href="#correct" title="Permanent link">&para;</a></h1>
-<p>@type
-class Product:
-    price: Decimal  # ✅ Always use Decimal for money
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Symptom:</strong> Query returns an error or unexpected values.</p>
+<p><strong>Cause:</strong> The GraphQL type doesn't match the value built in the view's JSONB.</p>
+<p><strong>Solution:</strong> Use precise types — for money, build a string/Decimal-friendly value in the view and map it to a precise Python type, never a float.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
 
+<span class="c1"># Wrong</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
+    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>    <span class="c1"># ❌ float loses precision</span>
+
+<span class="c1"># Correct</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
+    <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span>  <span class="c1"># ✅ use Decimal for money</span>
+</code></pre></div>
 <h3 id="issue-relationship-not-loading">Issue: Relationship Not Loading<a class="headerlink" href="#issue-relationship-not-loading" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query returns null for relationship field.</p>
-<p><strong>Cause:</strong> Foreign key mismatch or missing relationship definition.</p>
-<p><strong>Solution:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="make-sure-foreign-key-exists">Make sure foreign key exists<a class="headerlink" href="#make-sure-foreign-key-exists" title="Permanent link">&para;</a></h1>
-<p>@type
-class Post:
-    user_id: str  # Must exist
-    user: User    # Relationship must be defined</p>
-<h1 id="verify-in-database">Verify in database<a class="headerlink" href="#verify-in-database" title="Permanent link">&para;</a></h1>
-<p>SELECT COUNT(*) FROM posts WHERE user_id IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Symptom:</strong> A nested relationship field returns null.</p>
+<p><strong>Cause:</strong> The view's JSONB never built that key, or the foreign key join is wrong.</p>
+<p><strong>Solution:</strong> Make sure the join and the <code>jsonb_build_object</code> key both exist, and check for orphaned foreign keys.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The view must embed the nested object under the field name the type expects</span>
+<span class="c1">-- e.g. jsonb_build_object(&#39;user&#39;, jsonb_build_object(&#39;id&#39;, ...))</span>
 
+<span class="c1">-- Look for broken foreign keys</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="issue-authorization-denying-all-queries">Issue: Authorization Denying All Queries<a class="headerlink" href="#issue-authorization-denying-all-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> All queries return "Unauthorized" even for public data.</p>
-<p><strong>Cause:</strong> Row-level security WHERE clause too restrictive.</p>
-<p><strong>Solution:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class Post:
-    where: Where = FraiseQL.where(
-        # This might be too restrictive!
-        is_public=True
-    )
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Fix:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class Post:
-    where: Where = FraiseQL.where(
-        # OR condition: public OR owned by user
-        is_public=True or fk_user=FraiseQL.context.user_id
-    )
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Symptom:</strong> Every query returns "Unauthorized" even for public data.</p>
+<p><strong>Cause:</strong> An RLS policy on the underlying table is too restrictive, or the session GUC isn't set.</p>
+<p><strong>Solution:</strong> Verify the request context carries <code>tenant_id</code>/<code>user_id</code> so FraiseQL issues <code>SET LOCAL app.tenant_id</code>, and loosen the policy to allow public rows:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Allow public rows OR rows owned by the current tenant</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">post_visibility</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">is_public</span>
+<span class="w">        </span><span class="k">OR</span><span class="w"> </span><span class="n">fk_organization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_organization</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organization</span>
+<span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-tuning-post-migration">Performance Tuning Post-Migration<a class="headerlink" href="#performance-tuning-post-migration" title="Permanent link">&para;</a></h2>
-<h3 id="step-1-identify-slow-queries">Step 1: Identify Slow Queries<a class="headerlink" href="#step-1-identify-slow-queries" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL
-SELECT query, calls, mean_time FROM pg_stat_statements
-WHERE mean_time &gt; 100
-ORDER BY mean_time DESC LIMIT 20;
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="step-1-identify-slow-queries">Step 1: Identify slow queries<a class="headerlink" href="#step-1-identify-slow-queries" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">calls</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="step-2-add-indexes">Step 2: Add indexes<a class="headerlink" href="#step-2-add-indexes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1">-- From slow queries, index the foreign keys and filter columns on the base tables</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_fk_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+</code></pre></div>
+<p>For JSONB filtering, a GIN index on the <code>data</code> column of a view-backing table helps:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tv_user_stats_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user_stats</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="step-3-materialize-expensive-views">Step 3: Materialize expensive views<a class="headerlink" href="#step-3-materialize-expensive-views" title="Permanent link">&para;</a></h3>
+<p>Convert a hot logical <code>v_</code> view into a <code>tv_</code> projection (see Step 2.6) and point the type's <code>sql_source</code> at it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Changed from v_user_stats (logical) to tv_user_stats (projection)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">total_engagement</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<h3 id="step-4-enable-query-caching">Step 4: Enable query caching<a class="headerlink" href="#step-4-enable-query-caching" title="Permanent link">&para;</a></h3>
+<p>FraiseQL ships PostgreSQL-backed result caching with cascade invalidation, exposed through the
+<code>fraiseql.caching</code> module (<code>PostgresCache</code>, <code>ResultCache</code>, <code>CachedRepository</code>, <code>CacheConfig</code>,
+and <code>setup_auto_cascade_rules</code>). Wrap the repository with a <code>CacheConfig</code> to cache hot read
+paths and invalidate them when the underlying tables change:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">CachedRepository</span><span class="p">,</span> <span class="n">PostgresCache</span>
 
-<h3 id="step-2-add-indexes">Step 2: Add Indexes<a class="headerlink" href="#step-2-add-indexes" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- From slow queries, identify columns in WHERE clauses
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at);
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-3-materialize-expensive-views">Step 3: Materialize Expensive Views<a class="headerlink" href="#step-3-materialize-expensive-views" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@type
-class UserStats:
-    """Changed from v_user_stats (logical) to tv_user_stats (materialized)."""
-    id: UUID  # UUID v4 for GraphQL ID
-    post_count: int
-    total_engagement: int
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="step-4-enable-query-caching">Step 4: Enable Query Caching<a class="headerlink" href="#step-4-enable-query-caching" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.caching]
-enabled = true
-default_ttl_seconds = 300
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>                      <span class="c1"># PostgreSQL-backed cache backend</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>           <span class="c1"># cache reads for 5 minutes</span>
+<span class="n">cached_db</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Guides:</strong></p>
@@ -5845,23 +6724,21 @@ default_ttl_seconds = 300
 <li><strong><a href="../common-gotchas/">Common Gotchas</a></strong> — Pitfalls to avoid during migration</li>
 <li><strong><a href="../../operations/performance-tuning-runbook/">Performance Tuning Runbook</a></strong> — Optimizing post-migration</li>
 <li><strong><a href="../production-deployment/">Production Deployment</a></strong> — Deployment procedures</li>
-<li><strong><a href="./view-selection-performance-testing.md">View Selection Guide</a></strong> — Optimizing view types</li>
+<li><strong><a href="../performance-optimization/">Performance Optimization</a></strong> — Optimizing view types and reads</li>
 </ul>
 <p><strong>Architecture &amp; Reference:</strong></p>
 <ul>
-<li><strong><a href="../authorization-quick-start/">Authorization &amp; RBAC</a></strong> — Row-level security setup</li>
-<li><strong><a href="../integrations/federation/guide.md">Federation Guide</a></strong> — Multi-database migration</li>
-<li><strong><a href="../architecture/core/compilation-phases.md">Schema Compilation</a></strong> — How schemas compile</li>
+<li><strong><a href="../authorization-quick-start/">Authorization Quick Start</a></strong> — Row-level security setup</li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

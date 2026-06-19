@@ -3452,34 +3452,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../analytics-patterns/" class="md-nav__link">
         
   
@@ -5790,805 +5762,734 @@ tags: ["documentation", "reference"]</p>
 <li>FraiseQL server running</li>
 </ul>
 <h3 id="install-dependencies">Install Dependencies<a class="headerlink" href="#install-dependencies" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>npm install @vue/apollo-composable @apollo/client graphql subscriptions-transport-ws
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>@vue/apollo-composable<span class="w"> </span>@apollo/client<span class="w"> </span>graphql<span class="w"> </span>subscriptions-transport-ws
+</code></pre></div>
 <h3 id="create-apollo-client">Create Apollo Client<a class="headerlink" href="#create-apollo-client" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// apollo.config.ts
-import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
-import { onError } from '@apollo/client/link/error';
-import { WebSocketLink } from '@apollo/client/link/ws';
-import { getMainDefinition } from '@apollo/client/utilities';</p>
-<p>const errorLink = onError(({ graphQLErrors, networkError }) =&gt; {
-  if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, locations, path }) =&gt; {
-      console.error(<code>[GraphQL error]: ${message}</code>, { locations, path });
-    });
-  }
-  if (networkError) console.error(<code>[Network error]: ${networkError}</code>);
-});</p>
-<p>const httpLink = new HttpLink({
-  uri: 'http://localhost:5000/graphql',
-  credentials: 'include',
-});</p>
-<p>const wsLink = new WebSocketLink({
-  uri: 'ws://localhost:5000/graphql',
-  options: {
-    reconnect: true,
-    connectionParams: () =&gt; ({
-      authorization: localStorage.getItem('token') || '',
-    }),
-  },
-});</p>
-<p>const splitLink = from([
-  errorLink,
-  new (typeof window !== 'undefined' ? require('@apollo/client').split : null)?.(
-    ({ query }) =&gt; {
-      const definition = getMainDefinition(query);
-      return (
-        definition.kind === 'OperationDefinition' &amp;&amp;
-        definition.operation === 'subscription'
-      );
-    },
-    wsLink,
-    httpLink
-  ) || httpLink,
-]);</p>
-<p>export const apolloClient = new ApolloClient({
-  link: splitLink,
-  cache: new InMemoryCache(),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: 'cache-and-network',
-    },
-  },
-});
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">// apollo.config.ts</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">,</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">,</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">onError</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/error&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">WebSocketLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/ws&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">getMainDefinition</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/utilities&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">errorLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">onError</span><span class="p">(({</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">,</span><span class="w"> </span><span class="nx">networkError</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">graphQLErrors</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(({</span><span class="w"> </span><span class="nx">message</span><span class="p">,</span><span class="w"> </span><span class="nx">locations</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="sb">`[GraphQL error]: </span><span class="si">${</span><span class="nx">message</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">locations</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">networkError</span><span class="p">)</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="sb">`[Network error]: </span><span class="si">${</span><span class="nx">networkError</span><span class="si">}</span><span class="sb">`</span><span class="p">);</span>
+<span class="p">});</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">httpLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">credentials</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;include&#39;</span><span class="p">,</span>
+<span class="p">});</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">wsLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">WebSocketLink</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">reconnect</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">connectionParams</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">      </span><span class="nx">authorization</span><span class="o">:</span><span class="w"> </span><span class="kt">localStorage.getItem</span><span class="p">(</span><span class="s1">&#39;token&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}),</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">splitLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">from</span><span class="p">([</span>
+<span class="w">  </span><span class="nx">errorLink</span><span class="p">,</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="p">(</span><span class="ow">typeof</span><span class="w"> </span><span class="nb">window</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="s1">&#39;undefined&#39;</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">)</span><span class="nx">.split</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">null</span><span class="p">)</span><span class="o">?</span><span class="p">.(</span>
+<span class="w">    </span><span class="p">({</span><span class="w"> </span><span class="nx">query</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">getMainDefinition</span><span class="p">(</span><span class="nx">query</span><span class="p">);</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="nx">definition</span><span class="p">.</span><span class="nx">kind</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;OperationDefinition&#39;</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">        </span><span class="nx">definition</span><span class="p">.</span><span class="nx">operation</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;subscription&#39;</span>
+<span class="w">      </span><span class="p">);</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">wsLink</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">httpLink</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">httpLink</span><span class="p">,</span>
+<span class="p">]);</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">apolloClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">link</span><span class="o">:</span><span class="w"> </span><span class="kt">splitLink</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">cache</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">(),</span>
+<span class="w">  </span><span class="nx">defaultOptions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">watchQuery</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-and-network&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="register-with-vue-app">Register with Vue App<a class="headerlink" href="#register-with-vue-app" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// main.ts
-import { createApp } from 'vue';
-import { DefaultApolloClient } from '@vue/apollo-composable';
-import { apolloClient } from './apollo.config';
-import App from './App.vue';</p>
-<p>const app = createApp(App);
-app.provide(DefaultApolloClient, apolloClient);
-app.mount('#app');
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">// main.ts</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createApp</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">DefaultApolloClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">apolloClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./apollo.config&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">App</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./App.vue&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createApp</span><span class="p">(</span><span class="nx">App</span><span class="p">);</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">provide</span><span class="p">(</span><span class="nx">DefaultApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">apolloClient</span><span class="p">);</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">mount</span><span class="p">(</span><span class="s1">&#39;#app&#39;</span><span class="p">);</span>
+</code></pre></div>
 <hr />
 <h2 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">&para;</a></h2>
 <h3 id="basic-query-with-usequery">Basic Query with useQuery<a class="headerlink" href="#basic-query-with-usequery" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div v-if="loading" class="loading">Loading users...</div></p>
-<div v-else-if="error" class="error">{{ error.message }}</div>
-<ul v-else>
-    <li v-for="user in result?.users" :key="user.id">
-      {{ user.name }} ({{ user.email }})
-    </li>
-  </ul>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;loading&quot;</span><span class="p">&gt;</span>Loading users...<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">error</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;error&quot;</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">ul</span> <span class="na">v-else</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">li</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">result</span><span class="o">?</span><span class="p">.</span><span class="nx">users</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span><span class="p">&gt;</span>
+      <span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span> (<span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">email</span><span class="w"> </span><span class="cp">}}</span>)
+    <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const GET_USERS = gql`
-  query GetUsers {
-    users {
-      id
-      name
-      email
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const { result, loading, error } = useQuery(GET_USERS);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUsers {</span>
+<span class="sb">    users {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="query-with-variables">Query with Variables<a class="headerlink" href="#query-with-variables" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <div v-if="loading">Loading user...</div>
-    <div v-else-if="error">{{ error.message }}</div>
-    <div v-else>
-      <h1>{{ user?.name }}</h1>
-      <p>Email: {{ user?.email }}</p>
-      <h2>Posts:</h2>
-      <ul>
-        <li v-for="post in user?.posts" :key="post.id">
-          {{ post.title }}
-        </li>
-      </ul>
-    </div>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="s">&quot;</span><span class="p">&gt;</span>Loading user...<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">error</span><span class="s">&quot;</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>Email: <span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">email</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Posts:<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">ul</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">li</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">post</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">post</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span><span class="p">&gt;</span>
+          <span class="cp">{{</span><span class="w"> </span><span class="nx">post</span><span class="p">.</span><span class="nx">title</span><span class="w"> </span><span class="cp">}}</span>
+        <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-interface Props {
-  userId: string;
-}
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const props = defineProps<Props>();
+<span class="kr">interface</span><span class="w"> </span><span class="nx">Props</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">;</span>
+<span class="p">}</span>
 
-const GET_USER = gql`
-  query GetUserById($id: ID!) {
-    user(id: $id) {
-      id
-      name
-      email
-      posts {
-        id
-        title
-      }
-    }
-  }
-`;
+<span class="kd">const</span><span class="w"> </span><span class="nx">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">defineProps</span><span class="o">&lt;</span><span class="nx">Props</span><span class="o">&gt;</span><span class="p">();</span>
 
-const { result, loading, error } = useQuery(
-  GET_USER,
-  () => ({
-    id: props.userId,
-  }),
-  () => ({
-    enabled: !!props.userId,
-  })
-);
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUserById($id: ID!) {</span>
+<span class="sb">    user(id: $id) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">      posts {</span>
+<span class="sb">        id</span>
+<span class="sb">        title</span>
+<span class="sb">      }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const user = computed(() => result.value?.user);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">GET_USER</span><span class="p">,</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">props</span><span class="p">.</span><span class="nx">userId</span><span class="p">,</span>
+<span class="w">  </span><span class="p">}),</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">enabled</span><span class="o">:</span><span class="w"> </span><span class="o">!!</span><span class="nx">props</span><span class="p">.</span><span class="nx">userId</span><span class="p">,</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">user</span><span class="p">);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="reactive-query-variables">Reactive Query Variables<a class="headerlink" href="#reactive-query-variables" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <input v-model="searchTerm" placeholder="Search users..." />
-    <ul>
-      <li v-for="user in users" :key="user.id">
-        {{ user.name }}
-      </li>
-    </ul>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">input</span> <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">searchTerm</span><span class="s">&quot;</span> <span class="na">placeholder</span><span class="o">=</span><span class="s">&quot;Search users...&quot;</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;</span><span class="nt">ul</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">li</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">users</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span><span class="p">&gt;</span>
+        <span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span>
+      <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const SEARCH_USERS = gql`
-  query SearchUsers($term: String!) {
-    searchUsers(term: $term) {
-      id
-      name
-      email
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const searchTerm = ref('');
+<span class="kd">const</span><span class="w"> </span><span class="nx">SEARCH_USERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query SearchUsers($term: String!) {</span>
+<span class="sb">    searchUsers(term: $term) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const { result, loading } = useQuery(
-  SEARCH_USERS,
-  () => ({ term: searchTerm.value }),
-  () => ({
-    skip: searchTerm.value.length < 2,
-  })
-);
+<span class="kd">const</span><span class="w"> </span><span class="nx">searchTerm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
 
-const users = computed(() => result.value?.searchUsers || []);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">SEARCH_USERS</span><span class="p">,</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">term</span><span class="o">:</span><span class="w"> </span><span class="nx">searchTerm</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">skip</span><span class="o">:</span><span class="w"> </span><span class="nx">searchTerm</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">users</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">searchUsers</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[]);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="pagination-with-fetchmore">Pagination with fetchMore<a class="headerlink" href="#pagination-with-fetchmore" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <div class="posts">
-      <div v-for="post in posts" :key="post.id" class="post">
-        <h3>{{ post.title }}</h3>
-        <p>{{ post.content }}</p>
-      </div>
-    </div>
-    <button @click="loadMore" :disabled="loading || !hasMore">
-      {{ loading ? 'Loading...' : 'Load More' }}
-    </button>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;posts&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">post</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">posts</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">post</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;post&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h3</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">post</span><span class="p">.</span><span class="nx">title</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">h3</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">post</span><span class="p">.</span><span class="nx">content</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loadMore</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">disabled</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="nx">hasMore</span><span class="s">&quot;</span><span class="p">&gt;</span>
+      <span class="cp">{{</span><span class="w"> </span><span class="nx">loading</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;Loading...&#39;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Load More&#39;</span><span class="w"> </span><span class="cp">}}</span>
+    <span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const GET_POSTS = gql`
-  query GetPosts($limit: Int!, $offset: Int!) {
-    posts(limit: $limit, offset: $offset) {
-      id
-      title
-      content
-    }
-    postsCount
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const pageSize = 10;
-const currentPage = ref(0);
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_POSTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetPosts($limit: Int!, $offset: Int!) {</span>
+<span class="sb">    posts(limit: $limit, offset: $offset) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      content</span>
+<span class="sb">    }</span>
+<span class="sb">    postsCount</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const { result, loading, fetchMore } = useQuery(
-  GET_POSTS,
-  () => ({
-    limit: pageSize,
-    offset: 0,
-  })
-);
+<span class="kd">const</span><span class="w"> </span><span class="nx">pageSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">currentPage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="mf">0</span><span class="p">);</span>
 
-const posts = computed(() => result.value?.posts || []);
-const totalCount = computed(() => result.value?.postsCount || 0);
-const hasMore = computed(() => posts.value.length < totalCount.value);
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">fetchMore</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">GET_POSTS</span><span class="p">,</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">    </span><span class="nx">limit</span><span class="o">:</span><span class="w"> </span><span class="nx">pageSize</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">offset</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="p">);</span>
 
-const loadMore = async () => {
-  currentPage.value++;
-  await fetchMore({
-    variables: {
-      offset: currentPage.value * pageSize,
-    },
-    updateQuery: (prev, { fetchMoreResult }) => {
-      if (!fetchMoreResult) return prev;
-      return {
-        posts: [...(prev?.posts || []), ...(fetchMoreResult.posts || [])],
-        postsCount: fetchMoreResult.postsCount,
-      };
-    },
-  });
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">posts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[]);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">totalCount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">postsCount</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="mf">0</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">hasMore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">posts</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">totalCount</span><span class="p">.</span><span class="nx">value</span><span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">loadMore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">currentPage</span><span class="p">.</span><span class="nx">value</span><span class="o">++</span><span class="p">;</span>
+<span class="w">  </span><span class="k">await</span><span class="w"> </span><span class="nx">fetchMore</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">offset</span><span class="o">:</span><span class="w"> </span><span class="nx">currentPage</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">pageSize</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">updateQuery</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">prev</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchMoreResult</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">fetchMoreResult</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">prev</span><span class="p">;</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">posts</span><span class="o">:</span><span class="w"> </span><span class="p">[...(</span><span class="nx">prev</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[]),</span><span class="w"> </span><span class="p">...(</span><span class="nx">fetchMoreResult</span><span class="p">.</span><span class="nx">posts</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[])],</span>
+<span class="w">        </span><span class="nx">postsCount</span><span class="o">:</span><span class="w"> </span><span class="nx">fetchMoreResult</span><span class="p">.</span><span class="nx">postsCount</span><span class="p">,</span>
+<span class="w">      </span><span class="p">};</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h2>
 <h3 id="basic-mutation-with-usemutation">Basic Mutation with useMutation<a class="headerlink" href="#basic-mutation-with-usemutation" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<form @submit.prevent="createPost">
-    <input
-      v-model="title"
-      type="text"
-      placeholder="Post title"
-      required
-    />
-    <textarea
-      v-model="content"
-      placeholder="Post content"
-      required
-    />
-    <button type="submit" :disabled="loading">
-      {{ loading ? 'Creating...' : 'Create Post' }}
-    </button>
-    <div v-if="error" class="error">{{ error.message }}</div>
-  </form></p>
-<p></template></p>
-<script setup lang="ts">
-import { useMutation, gql } from '@vue/apollo-composable';
-import { ref } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">form</span> <span class="p">@</span><span class="na">submit</span><span class="p">.</span><span class="na">prevent</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">createPost</span><span class="s">&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">input</span>
+      <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">title</span><span class="s">&quot;</span>
+      <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span>
+      <span class="na">placeholder</span><span class="o">=</span><span class="s">&quot;Post title&quot;</span>
+      <span class="na">required</span>
+    <span class="p">/&gt;</span>
+    <span class="p">&lt;</span><span class="nt">textarea</span>
+      <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">content</span><span class="s">&quot;</span>
+      <span class="na">placeholder</span><span class="o">=</span><span class="s">&quot;Post content&quot;</span>
+      <span class="na">required</span>
+    <span class="p">/&gt;</span>
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;submit&quot;</span> <span class="p">:</span><span class="na">disabled</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="s">&quot;</span><span class="p">&gt;</span>
+      <span class="cp">{{</span><span class="w"> </span><span class="nx">loading</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;Creating...&#39;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Create Post&#39;</span><span class="w"> </span><span class="cp">}}</span>
+    <span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">error</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;error&quot;</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const CREATE_POST = gql`
-  mutation CreatePost($title: String!, $content: String!) {
-    createPost(title: $title, content: $content) {
-      id
-      title
-      content
-      createdAt
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const title = ref('');
-const content = ref('');
+<span class="kd">const</span><span class="w"> </span><span class="nx">CREATE_POST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation CreatePost($title: String!, $content: String!) {</span>
+<span class="sb">    createPost(title: $title, content: $content) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      content</span>
+<span class="sb">      createdAt</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const { mutate: createPostMutation, loading, error } = useMutation(CREATE_POST);
+<span class="kd">const</span><span class="w"> </span><span class="nx">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
 
-const createPost = async () => {
-  try {
-    const result = await createPostMutation({
-      title: title.value,
-      content: content.value,
-    });
-    console.log('Post created:', result?.data?.createPost);
-    title.value = '';
-    content.value = '';
-  } catch (err) {
-    console.error('Error:', err);
-  }
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">mutate</span><span class="o">:</span><span class="w"> </span><span class="nx">createPostMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">CREATE_POST</span><span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">createPost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">createPostMutation</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="nx">title</span><span class="p">.</span><span class="nx">value</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">content</span><span class="o">:</span><span class="w"> </span><span class="nx">content</span><span class="p">.</span><span class="nx">value</span><span class="p">,</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Post created:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="o">?</span><span class="p">.</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">createPost</span><span class="p">);</span>
+<span class="w">    </span><span class="nx">title</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">content</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Error:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="update-cache-after-mutation">Update Cache After Mutation<a class="headerlink" href="#update-cache-after-mutation" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-  <button @click="updateName" :disabled="loading">
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">button</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">updateName</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">disabled</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="s">&quot;</span><span class="p">&gt;</span>
     Update Name
-  </button>
-</template></p>
-<script setup lang="ts">
-import { useMutation, useQuery, gql } from '@vue/apollo-composable';
-import { ref } from 'vue';
+  <span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const UPDATE_USER = gql`
-  mutation UpdateUser($id: ID!, $name: String!) {
-    updateUser(id: $id, name: $name) {
-      id
-      name
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const GET_USER = gql`
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      name
-    }
-  }
-`;
+<span class="kd">const</span><span class="w"> </span><span class="nx">UPDATE_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation UpdateUser($id: ID!, $name: String!) {</span>
+<span class="sb">    updateUser(id: $id, name: $name) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-interface Props {
-  userId: string;
-}
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUser($id: ID!) {</span>
+<span class="sb">    user(id: $id) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const props = defineProps<Props>();
-const newName = ref('');
+<span class="kr">interface</span><span class="w"> </span><span class="nx">Props</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="nx">string</span><span class="p">;</span>
+<span class="p">}</span>
 
-const { mutate: updateUserMutation, loading } = useMutation(UPDATE_USER, () => ({
-  update: (cache, { data }) => {
-    cache.writeQuery({
-      query: GET_USER,
-      variables: { id: props.userId },
-      data: {
-        user: data?.updateUser,
-      },
-    });
-  },
-}));
+<span class="kd">const</span><span class="w"> </span><span class="nx">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">defineProps</span><span class="o">&lt;</span><span class="nx">Props</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">newName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
 
-const updateName = async () => {
-  await updateUserMutation({
-    id: props.userId,
-    name: newName.value,
-  });
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">mutate</span><span class="o">:</span><span class="w"> </span><span class="nx">updateUserMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">UPDATE_USER</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">  </span><span class="nx">update</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">cache</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">cache</span><span class="p">.</span><span class="nx">writeQuery</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="nx">GET_USER</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">props</span><span class="p">.</span><span class="nx">userId</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">updateUser</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">}));</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">updateName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">await</span><span class="w"> </span><span class="nx">updateUserMutation</span><span class="p">({</span>
+<span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">props</span><span class="p">.</span><span class="nx">userId</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="nx">newName</span><span class="p">.</span><span class="nx">value</span><span class="p">,</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
 <h3 id="subscribe-to-real-time-events">Subscribe to Real-Time Events<a class="headerlink" href="#subscribe-to-real-time-events" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div class="feed">
-    <div v-if="connecting" class="status">Connecting...</div>
-    <div v-else-if="error" class="error">{{ error.message }}</div>
-    <div v-else>
-      <h2>New Posts</h2>
-      <div v-if="latestPost" class="post">
-        <h3>{{ latestPost.title }}</h3>
-        <p>by {{ latestPost.author.name }}</p>
-      </div>
-    </div>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useSubscription, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;feed&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">connecting</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;status&quot;</span><span class="p">&gt;</span>Connecting...<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">error</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;error&quot;</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>New Posts<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">latestPost</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;post&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h3</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">latestPost</span><span class="p">.</span><span class="nx">title</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">h3</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>by <span class="cp">{{</span><span class="w"> </span><span class="nx">latestPost</span><span class="p">.</span><span class="nx">author</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const ON_POST_CREATED = gql`
-  subscription OnPostCreated {
-    postCreated {
-      id
-      title
-      author {
-        name
-      }
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const { result, loading: connecting, error } = useSubscription(ON_POST_CREATED);
+<span class="kd">const</span><span class="w"> </span><span class="nx">ON_POST_CREATED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription OnPostCreated {</span>
+<span class="sb">    postCreated {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      author {</span>
+<span class="sb">        name</span>
+<span class="sb">      }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const latestPost = computed(() => result.value?.postCreated);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="o">:</span><span class="w"> </span><span class="nx">connecting</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">ON_POST_CREATED</span><span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">latestPost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">postCreated</span><span class="p">);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="manage-multiple-subscriptions">Manage Multiple Subscriptions<a class="headerlink" href="#manage-multiple-subscriptions" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <h2>Messages ({{ messages.length }})</h2>
-    <div class="messages">
-      <div v-for="msg in messages" :key="msg.id" class="message">
-        <strong>{{ msg.user.name }}:</strong> {{ msg.text }}
-      </div>
-    </div>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Messages (<span class="cp">{{</span><span class="w"> </span><span class="nx">messages</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="cp">}}</span>)<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;messages&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">msg</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">messages</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">msg</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;message&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">msg</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span>:<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span> <span class="cp">{{</span><span class="w"> </span><span class="nx">msg</span><span class="p">.</span><span class="nx">text</span><span class="w"> </span><span class="cp">}}</span>
+      <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
 
-    <h2>Users Online ({{ onlineUsers.length }})</h2>
-    <ul>
-      <li v-for="user in onlineUsers" :key="user.id">
-        {{ user.name }}
-      </li>
-    </ul>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useSubscription, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+    <span class="p">&lt;</span><span class="nt">h2</span><span class="p">&gt;</span>Users Online (<span class="cp">{{</span><span class="w"> </span><span class="nx">onlineUsers</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="cp">}}</span>)<span class="p">&lt;/</span><span class="nt">h2</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">ul</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">li</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">onlineUsers</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span><span class="p">&gt;</span>
+        <span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span>
+      <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const ON_MESSAGE = gql`
-  subscription OnMessage {
-    messageReceived {
-      id
-      text
-      user { name }
-    }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const ON_USER_ONLINE = gql`
-  subscription OnUserOnline {
-    userOnline { id name }
-  }
-`;
+<span class="kd">const</span><span class="w"> </span><span class="nx">ON_MESSAGE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription OnMessage {</span>
+<span class="sb">    messageReceived {</span>
+<span class="sb">      id</span>
+<span class="sb">      text</span>
+<span class="sb">      user { name }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const messages = ref<any[]>([]);
-const onlineUsers = ref<any[]>([]);
+<span class="kd">const</span><span class="w"> </span><span class="nx">ON_USER_ONLINE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription OnUserOnline {</span>
+<span class="sb">    userOnline { id name }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const { result: msgResult } = useSubscription(ON_MESSAGE);
-const { result: userResult } = useSubscription(ON_USER_ONLINE);
+<span class="kd">const</span><span class="w"> </span><span class="nx">messages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="o">&lt;</span><span class="nx">any</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">([]);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">onlineUsers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="o">&lt;</span><span class="nx">any</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">([]);</span>
 
-// Watch for new messages
-const watchMessages = () => {
-  if (msgResult.value?.messageReceived) {
-    messages.value.push(msgResult.value.messageReceived);
-  }
-};
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="nx">msgResult</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">ON_MESSAGE</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="nx">userResult</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">ON_USER_ONLINE</span><span class="p">);</span>
 
-// Watch for user status
-const watchUsers = () => {
-  if (userResult.value?.userOnline) {
-    onlineUsers.value = [userResult.value.userOnline];
-  }
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="c1">// Watch for new messages</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">watchMessages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">msgResult</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">messageReceived</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">messages</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">msgResult</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">messageReceived</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
 
+<span class="c1">// Watch for user status</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">watchUsers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">userResult</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">userOnline</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">onlineUsers</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nx">userResult</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">userOnline</span><span class="p">];</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <h3 id="global-error-handling">Global Error Handling<a class="headerlink" href="#global-error-handling" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// apollo.config.ts
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) =&gt; {
-  if (graphQLErrors) {
-    for (const err of graphQLErrors) {
-      if (err.extensions?.code === 'UNAUTHENTICATED') {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }</p>
-<div class="highlight"><pre><span></span><code>  if (err.extensions?.code === &#39;FORBIDDEN&#39;) {
-    console.error(&#39;Access denied&#39;);
-  }
+<div class="highlight"><pre><span></span><code><span class="c1">// apollo.config.ts</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">errorLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">onError</span><span class="p">(({</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">,</span><span class="w"> </span><span class="nx">networkError</span><span class="p">,</span><span class="w"> </span><span class="nx">operation</span><span class="p">,</span><span class="w"> </span><span class="nx">forward</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">const</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;UNAUTHENTICATED&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">localStorage</span><span class="p">.</span><span class="nx">removeItem</span><span class="p">(</span><span class="s1">&#39;token&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/login&#39;</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
 
-  if (err.extensions?.code === &#39;VALIDATION_ERROR&#39;) {
-    console.error(&#39;Validation failed:&#39;, err.message);
-  }
-}
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;FORBIDDEN&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Access denied&#39;</span><span class="p">);</span>
+<span class="w">      </span><span class="p">}</span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;VALIDATION_ERROR&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Validation failed:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">networkError</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;statusCode&#39;</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">networkError</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">networkError</span><span class="p">.</span><span class="nx">statusCode</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">401</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/login&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
 </code></pre></div>
-<p>}</p>
-<p>if (networkError) {
-    if ('statusCode' in networkError &amp;&amp; networkError.statusCode === 401) {
-      window.location.href = '/login';
-    }
-  }
-});
-```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="component-level-error-handling">Component-Level Error Handling<a class="headerlink" href="#component-level-error-handling" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <div v-if="error" class="error-container">
-      <p>{{ errorMessage }}</p>
-      <button @click="retry">Try Again</button>
-    </div>
-    <div v-else-if="loading">Loading...</div>
-    <UserList v-else :users="users" />
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">error</span><span class="s">&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;error-container&quot;</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">errorMessage</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">button</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">retry</span><span class="s">&quot;</span><span class="p">&gt;</span>Try Again<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">v-else-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">loading</span><span class="s">&quot;</span><span class="p">&gt;</span>Loading...<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">UserList</span> <span class="na">v-else</span> <span class="p">:</span><span class="na">users</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">users</span><span class="s">&quot;</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const GET_USERS = gql`query GetUsers { users { id name } }`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const { result, loading, error, refetch } = useQuery(GET_USERS);
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetUsers { users { id name } }`</span><span class="p">;</span>
 
-const users = computed(() => result.value?.users || []);
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="p">,</span><span class="w"> </span><span class="nx">refetch</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">);</span>
 
-const errorMessage = computed(() => {
-  if (!error.value) return '';
-  if (error.value.message.includes('network')) {
-    return 'Network error. Check your connection.';
-  }
-  return error.value.message;
-});
+<span class="kd">const</span><span class="w"> </span><span class="nx">users</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">users</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[]);</span>
 
-const retry = () => refetch();
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">errorMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">error</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">message</span><span class="p">.</span><span class="nx">includes</span><span class="p">(</span><span class="s1">&#39;network&#39;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s1">&#39;Network error. Check your connection.&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">error</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">message</span><span class="p">;</span>
+<span class="p">});</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">retry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">refetch</span><span class="p">();</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="caching-strategies">Caching Strategies<a class="headerlink" href="#caching-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="cache-management">Cache Management<a class="headerlink" href="#cache-management" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <button @click="clearCache">Clear Cache</button>
-    <button @click="refetchQuery">Refetch Data</button>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, useApolloClient, gql } from '@vue/apollo-composable';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">clearCache</span><span class="s">&quot;</span><span class="p">&gt;</span>Clear Cache<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">button</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">refetchQuery</span><span class="s">&quot;</span><span class="p">&gt;</span>Refetch Data<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const GET_USERS = gql`query GetUsers { users { id name } }`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">useApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
 
-const { refetch } = useQuery(GET_USERS);
-const { client } = useApolloClient();
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetUsers { users { id name } }`</span><span class="p">;</span>
 
-const clearCache = () => {
-  client.cache.reset();
-};
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">refetch</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useApolloClient</span><span class="p">();</span>
 
-const refetchQuery = () => {
-  refetch();
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">clearCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">client</span><span class="p">.</span><span class="nx">cache</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+<span class="p">};</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">refetchQuery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">refetch</span><span class="p">();</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="fetch-policies">Fetch Policies<a class="headerlink" href="#fetch-policies" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
 
-const GET_DATA = gql`query GetData { data { id } }`;
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_DATA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetData { data { id } }`</span><span class="p">;</span>
 
-// Different fetch policies for different data types
+<span class="c1">// Different fetch policies for different data types</span>
 
-// Static user profile - use cache
-useQuery(GET_DATA, null, { fetchPolicy: 'cache-first' });
+<span class="c1">// Static user profile - use cache</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_DATA</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-first&#39;</span><span class="w"> </span><span class="p">});</span>
 
-// Real-time notifications - always fetch
-useQuery(GET_DATA, null, {
-  fetchPolicy: 'network-only',
-  pollInterval: 5000, // Refetch every 5 seconds
-});
+<span class="c1">// Real-time notifications - always fetch</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_DATA</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;network-only&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">pollInterval</span><span class="o">:</span><span class="w"> </span><span class="mf">5000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Refetch every 5 seconds</span>
+<span class="p">});</span>
 
-// Activity feed - cache + refresh
-useQuery(GET_DATA, null, { fetchPolicy: 'cache-and-network' });
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">// Activity feed - cache + refresh</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_DATA</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-and-network&#39;</span><span class="w"> </span><span class="p">});</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
 <h3 id="lazy-query-loading">Lazy Query Loading<a class="headerlink" href="#lazy-query-loading" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-  <input
-    v-model="searchTerm"
-    @change="performSearch"
-    placeholder="Search..."
-  />
-<br />
-<ul v-if="results">
-    <li v-for="result in results" :key="result.id">
-      {{ result.name }}
-    </li>
-  </ul></p>
-<p></template></p>
-<script setup lang="ts">
-import { useLazyQuery, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">input</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">searchTerm</span><span class="s">&quot;</span>
+    <span class="p">@</span><span class="na">change</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">performSearch</span><span class="s">&quot;</span>
+    <span class="na">placeholder</span><span class="o">=</span><span class="s">&quot;Search...&quot;</span>
+  <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nt">ul</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">results</span><span class="s">&quot;</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">li</span> <span class="na">v-for</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">result</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">results</span><span class="s">&quot;</span> <span class="p">:</span><span class="na">key</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">result</span><span class="p">.</span><span class="nx">id</span><span class="s">&quot;</span><span class="p">&gt;</span>
+      <span class="cp">{{</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span>
+    <span class="p">&lt;/</span><span class="nt">li</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">ul</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const SEARCH = gql`
-  query Search($term: String!) {
-    search(term: $term) { id name }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useLazyQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const searchTerm = ref('');
-const { result, load } = useLazyQuery(SEARCH);
-const results = computed(() => result.value?.search);
+<span class="kd">const</span><span class="w"> </span><span class="nx">SEARCH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query Search($term: String!) {</span>
+<span class="sb">    search(term: $term) { id name }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const performSearch = async () => {
-  if (searchTerm.value.length > 2) {
-    await load(null, { term: searchTerm.value });
-  }
-};
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="nx">searchTerm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">load</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useLazyQuery</span><span class="p">(</span><span class="nx">SEARCH</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">search</span><span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">performSearch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">searchTerm</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">load</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">term</span><span class="o">:</span><span class="w"> </span><span class="nx">searchTerm</span><span class="p">.</span><span class="nx">value</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <h3 id="conditional-query-loading">Conditional Query Loading<a class="headerlink" href="#conditional-query-loading" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
-import { ref, computed } from 'vue';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ref</span><span class="p">,</span><span class="w"> </span><span class="nx">computed</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vue&#39;</span><span class="p">;</span>
 
-const GET_PROFILE = gql`query GetProfile { profile { id name } }`;
-const GET_SETTINGS = gql`query GetSettings { settings { theme } }`;
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_PROFILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetProfile { profile { id name } }`</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_SETTINGS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetSettings { settings { theme } }`</span><span class="p">;</span>
 
-const showSettings = ref(false);
+<span class="kd">const</span><span class="w"> </span><span class="nx">showSettings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ref</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
 
-// Profile loads immediately
-const { result: profileResult } = useQuery(GET_PROFILE);
+<span class="c1">// Profile loads immediately</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="nx">profileResult</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_PROFILE</span><span class="p">);</span>
 
-// Settings only load when needed
-const { result: settingsResult } = useQuery(
-  GET_SETTINGS,
-  null,
-  { skip: computed(() => !showSettings.value) }
-);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">// Settings only load when needed</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="nx">settingsResult</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">GET_SETTINGS</span><span class="p">,</span>
+<span class="w">  </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">skip</span><span class="o">:</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="o">!</span><span class="nx">showSettings</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<span class="p">);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <h3 id="test-query-component">Test Query Component<a class="headerlink" href="#test-query-component" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// UserList.spec.ts
-import { describe, it, expect } from 'vitest';
-import { mount } from '@vue/test-utils';
-import { createMockClient } from '@vue/apollo-composable/testing';
-import { gql } from '@apollo/client';
-import UserList from './UserList.vue';</p>
-<p>const mockClient = createMockClient();</p>
-<p>describe('UserList', () =&gt; {
-  it('renders user list', async () =&gt; {
-    const wrapper = mount(UserList, {
-      global: {
-        plugins: [mockClient],
-      },
-    });</p>
-<div class="highlight"><pre><span></span><code>await wrapper.vm.$nextTick();
-expect(wrapper.find(&#39;.users&#39;).exists()).toBe(true);
-</code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">// UserList.spec.ts</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">describe</span><span class="p">,</span><span class="w"> </span><span class="nx">it</span><span class="p">,</span><span class="w"> </span><span class="nx">expect</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vitest&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">mount</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/test-utils&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createMockClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable/testing&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">UserList</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./UserList.vue&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">mockClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createMockClient</span><span class="p">();</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="s1">&#39;UserList&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s1">&#39;renders user list&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">wrapper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">mount</span><span class="p">(</span><span class="nx">UserList</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nb">global</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">plugins</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">mockClient</span><span class="p">],</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">});</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">vm</span><span class="p">.</span><span class="nx">$nextTick</span><span class="p">();</span>
+<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">wrapper</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="s1">&#39;.users&#39;</span><span class="p">).</span><span class="nx">exists</span><span class="p">()).</span><span class="nx">toBe</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="test-mutation">Test Mutation<a class="headerlink" href="#test-mutation" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { describe, it, expect, vi } from 'vitest';
-import { useMutation, gql } from '@vue/apollo-composable';</p>
-<p>const UPDATE_USER = gql<code>mutation UpdateUser($id: ID!, $name: String!) {
-    updateUser(id: $id, name: $name) { id name }
-  }</code>;</p>
-<p>describe('Mutation', () =&gt; {
-  it('updates user', async () =&gt; {
-    const { mutate } = useMutation(UPDATE_USER);</p>
-<div class="highlight"><pre><span></span><code>const result = await mutate({
-  id: &#39;1&#39;,
-  name: &#39;Updated Name&#39;,
-});
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">describe</span><span class="p">,</span><span class="w"> </span><span class="nx">it</span><span class="p">,</span><span class="w"> </span><span class="nx">expect</span><span class="p">,</span><span class="w"> </span><span class="nx">vi</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;vitest&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
 
-expect(result?.data?.updateUser?.name).toBe(&#39;Updated Name&#39;);
+<span class="kd">const</span><span class="w"> </span><span class="nx">UPDATE_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation UpdateUser($id: ID!, $name: String!) {</span>
+<span class="sb">    updateUser(id: $id, name: $name) { id name }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="s1">&#39;Mutation&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s1">&#39;updates user&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">mutate</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">UPDATE_USER</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">mutate</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Updated Name&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">});</span>
+
+<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="o">?</span><span class="p">.</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">updateUser</span><span class="o">?</span><span class="p">.</span><span class="nx">name</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="s1">&#39;Updated Name&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">});</span>
 </code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
-
 <hr />
 <h2 id="server-side-rendering-nuxt">Server-Side Rendering (Nuxt)<a class="headerlink" href="#server-side-rendering-nuxt" title="Permanent link">&para;</a></h2>
 <h3 id="setup-with-nuxt-3">Setup with Nuxt 3<a class="headerlink" href="#setup-with-nuxt-3" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['@nuxtjs/apollo'],
-  apollo: {
-    clients: {
-      default: {
-        httpEndpoint: 'http://localhost:5000/graphql',
-        wsEndpoint: 'ws://localhost:5000/graphql',
-      },
-    },
-  },
-});
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1">// nuxt.config.ts</span>
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="nx">defineNuxtConfig</span><span class="p">({</span>
+<span class="w">  </span><span class="kr">module</span><span class="nx">s</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;@nuxtjs/apollo&#39;</span><span class="p">],</span>
+<span class="w">  </span><span class="nx">apollo</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">clients</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">httpEndpoint</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">wsEndpoint</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="use-queries-in-nuxt">Use Queries in Nuxt<a class="headerlink" href="#use-queries-in-nuxt" title="Permanent link">&para;</a></h3>
-<p>```vue</p>
-<!-- Code example in VUE -->
-<p><template>
-<br />
-<div>
-    <h1>{{ user?.name }}</h1>
-  </div></p>
-<p></template></p>
-<script setup lang="ts">
-import { useQuery, gql } from '@vue/apollo-composable';
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
-const GET_USER = gql`
-  query GetUser($id: ID!) {
-    user(id: $id) { id name }
-  }
-`;
+<span class="p">&lt;</span><span class="nt">script</span> <span class="na">setup</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="p">&gt;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@vue/apollo-composable&#39;</span><span class="p">;</span>
 
-const { result } = useQuery(
-  GET_USER,
-  () => ({ id: useRoute().params.id }),
-  { prefetch: true } // Prefetch on server
-);
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUser($id: ID!) {</span>
+<span class="sb">    user(id: $id) { id name }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
-const user = computed(() => result.value?.user);
-</script>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">  </span><span class="nx">GET_USER</span><span class="p">,</span>
+<span class="w">  </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">useRoute</span><span class="p">().</span><span class="nx">params</span><span class="p">.</span><span class="nx">id</span><span class="w"> </span><span class="p">}),</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">prefetch</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// Prefetch on server</span>
+<span class="p">);</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">computed</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="o">?</span><span class="p">.</span><span class="nx">user</span><span class="p">);</span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Guides:</strong></p>
 <ul>
-<li><strong><a href="../../examples/fullstack-typescript-vue.md">Full-Stack TypeScript + Vue Example</a></strong></li>
 <li><strong><a href="../react-apollo-guide/">React + Apollo Guide</a></strong> - For comparison</li>
 <li><strong><a href="../../patterns/">Real-Time Patterns</a></strong> - Subscription architecture</li>
 <li><strong><a href="../../authorization-quick-start/">Authentication &amp; Authorization</a></strong> - Securing queries</li>
@@ -6598,9 +6499,6 @@ const user = computed(() => result.value?.user);
 <li><a href="https://vue-apollo.netlify.app/">Vue Apollo Docs</a></li>
 <li><a href="https://github.com/vuejs/apollo">Apollo Client for Vue GitHub</a></li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 

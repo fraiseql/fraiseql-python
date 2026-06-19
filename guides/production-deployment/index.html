@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Deploying the FraiseQL FastAPI application to production with Docker, Kubernetes, and PostgreSQL">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/production-deployment/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Production Deployment - FraiseQL Documentation</title>
+        <title>Production Deployment Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Production Deployment
+              Production Deployment Guide
             
           </span>
         </div>
@@ -3006,8 +3008,624 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#kubernetes-configmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes ConfigMap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Secret
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#container-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Container Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-the-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building &amp; Pushing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardened-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardened Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standard Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-pod-autoscaler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Pod Autoscaler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pod-disruption-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pod Disruption Budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-policies-zero-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Policies (Zero Trust)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ingress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingress
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgresql-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-pool-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pool Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-hardening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Hardening
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Hardening">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introspection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection Control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-complexity-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Complexity Limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tlsmtls-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS/mTLS Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cors-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORS Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apq-automatic-persisted-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APQ (Automatic Persisted Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring &amp; Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring &amp; Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opentelemetry-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Automation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Automation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gitops-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitOps Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm-chart-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm Chart Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disaster-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disaster Recovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Disaster Recovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backup-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restore-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restore Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-replication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Replication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Recommendations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-region-recommended-starting-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single-Region (Recommended Starting Point)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Region
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-cpu-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High CPU Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Leaks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-pool-exhaustion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Connection Pool Exhaustion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -3138,34 +3756,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5131,8 +5721,624 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#kubernetes-configmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes ConfigMap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Secret
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#container-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Container Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-the-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-pushing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building &amp; Pushing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardened-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardened Image
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standard Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-pod-autoscaler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Pod Autoscaler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pod-disruption-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pod Disruption Budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-policies-zero-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Policies (Zero Trust)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ingress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingress
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#postgresql-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-pool-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pool Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-hardening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Hardening
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Hardening">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introspection-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introspection Control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-complexity-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Complexity Limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tlsmtls-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS/mTLS Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Headers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cors-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORS Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Optimization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apq-automatic-persisted-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APQ (Automatic Persisted Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#caching-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring &amp; Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring &amp; Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prometheus Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opentelemetry-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenTelemetry Tracing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Automation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Automation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gitops-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitOps Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm-chart-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm Chart Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#disaster-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disaster Recovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Disaster Recovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backup-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restore-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restore Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-replication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Replication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Recommendations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-region-recommended-starting-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single-Region (Recommended Starting Point)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Region
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-cpu-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High CPU Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-leaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Leaks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-connection-pool-exhaustion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Connection Pool Exhaustion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Latency
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5156,19 +6362,16 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Production Deployment Guide
-description: - Docker containerization and image management
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="production-deployment-guide">Production Deployment Guide<a class="headerlink" href="#production-deployment-guide" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
 <strong>Audience:</strong> DevOps, SREs, Infrastructure Engineers
 <strong>Reading Time:</strong> 20-30 minutes
-<strong>Last Updated:</strong> 2026-02-05
 <strong>Platforms</strong>: Kubernetes, Docker Compose, bare metal</p>
+<p>FraiseQL is a Python (FastAPI) application. You deploy it the same way you deploy
+any ASGI app: install the package with <code>pip</code>/<code>uv</code>, then run it under an ASGI server
+such as <code>uvicorn</code> or <code>gunicorn</code> with the uvicorn worker. The GraphQL schema is built
+in memory at application startup from your Python decorators — there is no separate
+build step and no generated artifact to ship.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
@@ -5181,7 +6384,7 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later</li>
+<li>Python 3.13+ and the <code>fraiseql</code> package (install via <code>pip</code> or <code>uv</code>)</li>
 <li>Docker 20.10+ (if using containers)</li>
 <li>kubectl 1.24+ (if using Kubernetes)</li>
 <li>PostgreSQL 14+ client tools</li>
@@ -5245,115 +6448,107 @@ tags: ["documentation", "reference"]</p>
 <hr />
 <h2 id="configuration-management">Configuration Management<a class="headerlink" href="#configuration-management" title="Permanent link">&para;</a></h2>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses Pydantic BaseSettings with <code>FRAISEQL_</code> prefix:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="application">Application<a class="headerlink" href="#application" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_ENVIRONMENT=production
-FRAISEQL_DEBUG=false</p>
-<h1 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_DATABASE_URL=postgresql://user:pass@db.example.com:5432/FraiseQL
-FRAISEQL_DATABASE_POOL_SIZE=20
-FRAISEQL_DATABASE_POOL_TIMEOUT=30
-FRAISEQL_DATABASE_POOL_RECYCLE=3600</p>
-<h1 id="graphql">GraphQL<a class="headerlink" href="#graphql" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_INTROSPECTION_POLICY=disabled
-FRAISEQL_MAX_QUERY_DEPTH=10
-FRAISEQL_AUTO_CAMEL_CASE=true
-FRAISEQL_ENABLE_PLAYGROUND=false</p>
-<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_AUTH_ENABLED=true
-FRAISEQL_AUTH_PROVIDER=auth0
-FRAISEQL_RATE_LIMIT_ENABLED=true
-FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=100
-FRAISEQL_COMPLEXITY_MAX_SCORE=1000</p>
-<h1 id="apq">APQ<a class="headerlink" href="#apq" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_APQ_MODE=required
-FRAISEQL_APQ_STORAGE_BACKEND=postgresql
-FRAISEQL_APQ_RESPONSE_CACHE_TTL=600</p>
-<h1 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_METRICS_ENABLED=true
-FRAISEQL_TRACING_ENABLED=true
-FRAISEQL_TRACING_SAMPLE_RATE=0.1
-FRAISEQL_SLOW_QUERY_THRESHOLD_MS=100
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>FraiseQLConfig</code> is a Pydantic settings object: every field can be set with a
+matching <code>FRAISEQL_</code>-prefixed environment variable, or passed directly as a keyword
+argument to <code>create_fraiseql_app(...)</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Application</span>
+<span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
 
+<span class="c1"># Database</span>
+<span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://user:pass@db.example.com:5432/fraiseql
+
+<span class="c1"># GraphQL</span>
+<span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
+<span class="nv">FRAISEQL_ENABLE_PLAYGROUND</span><span class="o">=</span><span class="nb">false</span>
+
+<span class="c1"># Security</span>
+<span class="nv">FRAISEQL_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
+<span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="o">=</span><span class="m">100</span>
+<span class="nv">FRAISEQL_COMPLEXITY_MAX_SCORE</span><span class="o">=</span><span class="m">1000</span>
+
+<span class="c1"># APQ</span>
+<span class="nv">FRAISEQL_APQ_MODE</span><span class="o">=</span>required
+<span class="nv">FRAISEQL_APQ_STORAGE_BACKEND</span><span class="o">=</span>postgresql
+<span class="nv">FRAISEQL_APQ_RESPONSE_CACHE_TTL</span><span class="o">=</span><span class="m">600</span>
+
+<span class="c1"># Caching</span>
+<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">300</span>
+<span class="nv">FRAISEQL_TURBO_ROUTER_CACHE_SIZE</span><span class="o">=</span><span class="m">1000</span>
+</code></pre></div>
 <h3 id="kubernetes-configmap">Kubernetes ConfigMap<a class="headerlink" href="#kubernetes-configmap" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: FraiseQL-config
-  namespace: default
-data:
-  FRAISEQL_ENVIRONMENT: "production"
-  FRAISEQL_INTROSPECTION_POLICY: "disabled"
-  FRAISEQL_MAX_QUERY_DEPTH: "10"
-  FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
-  FRAISEQL_APQ_MODE: "required"
-  FRAISEQL_APQ_STORAGE_BACKEND: "postgresql"
-  FRAISEQL_METRICS_ENABLED: "true"
-  FRAISEQL_TRACING_SAMPLE_RATE: "0.1"
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-config</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">FRAISEQL_ENVIRONMENT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production&quot;</span>
+<span class="w">  </span><span class="nt">FRAISEQL_INTROSPECTION_POLICY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;disabled&quot;</span>
+<span class="w">  </span><span class="nt">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100&quot;</span>
+<span class="w">  </span><span class="nt">FRAISEQL_APQ_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;required&quot;</span>
+<span class="w">  </span><span class="nt">FRAISEQL_APQ_STORAGE_BACKEND</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql&quot;</span>
+</code></pre></div>
 <h3 id="kubernetes-secret">Kubernetes Secret<a class="headerlink" href="#kubernetes-secret" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: v1
-kind: Secret
-metadata:
-  name: FraiseQL-secrets
-  namespace: default
-type: Opaque
-stringData:
-  DATABASE_URL: "postgresql://user:pass@db:5432/FraiseQL"
-  AUTH0_DOMAIN: "your-tenant.auth0.com"
-  AUTH0_API_IDENTIFIER: "https://api.example.com"
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-secrets</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
+<span class="nt">stringData</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">FRAISEQL_DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql://user:pass@db:5432/fraiseql&quot;</span>
+<span class="w">  </span><span class="nt">AUTH0_DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-tenant.auth0.com&quot;</span>
+<span class="w">  </span><span class="nt">AUTH0_API_IDENTIFIER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://api.example.com&quot;</span>
+</code></pre></div>
 <hr />
 <h2 id="container-deployment">Container Deployment<a class="headerlink" href="#container-deployment" title="Permanent link">&para;</a></h2>
 <h3 id="docker-image">Docker Image<a class="headerlink" href="#docker-image" title="Permanent link">&para;</a></h3>
+<p>FraiseQL ships as a normal Python wheel. The optional <code>fraiseql_rs</code> acceleration
+extension is published as a prebuilt wheel, so installing <code>fraiseql</code> does <strong>not</strong>
+require a Rust toolchain in your image.</p>
 <h4 id="building-the-image">Building the Image<a class="headerlink" href="#building-the-image" title="Permanent link">&para;</a></h4>
-<p>```dockerfile</p>
-<!-- Code example in DOCKERFILE -->
-<h1 id="multi-stage-build">Multi-stage build<a class="headerlink" href="#multi-stage-build" title="Permanent link">&para;</a></h1>
-<p>FROM python:3.13-slim as builder</p>
-<p>WORKDIR /app
-RUN apt-get update &amp;&amp; apt-get install -y \
-    build-essential libpq-dev cargo rustc</p>
-<p>COPY pyproject.toml poetry.lock ./
-RUN pip install poetry &amp;&amp; poetry install --no-dev</p>
-<p>FROM python:3.13-slim</p>
-<p>WORKDIR /app
-COPY --from=builder /app /app</p>
-<p>EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1</p>
-<p>CMD ["gunicorn", "app:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c"># Multi-stage build</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="s">builder</span>
 
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>build-essential<span class="w"> </span>libpq-dev<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="c"># Install dependencies (fraiseql and your application requirements)</span>
+<span class="k">COPY</span><span class="w"> </span>pyproject.toml<span class="w"> </span>requirements.txt<span class="w"> </span>./
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>--prefix<span class="o">=</span>/install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+
+<span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libpq5<span class="w"> </span>curl<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>builder<span class="w"> </span>/install<span class="w"> </span>/usr/local
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>/app
+
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">8000</span>
+<span class="k">HEALTHCHECK</span><span class="w"> </span>--interval<span class="o">=</span>30s<span class="w"> </span>--timeout<span class="o">=</span>10s<span class="w"> </span>--start-period<span class="o">=</span>40s<span class="w"> </span>--retries<span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>CMD<span class="w"> </span>curl<span class="w"> </span>-f<span class="w"> </span>http://localhost:8000/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+
+<span class="c"># app:app is your module exposing the FraiseQL FastAPI app from create_fraiseql_app(...)</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;gunicorn&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;app:app&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-w&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;4&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-k&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;uvicorn.workers.UvicornWorker&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--bind&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;0.0.0.0:8000&quot;</span><span class="p">]</span>
+</code></pre></div>
 <h4 id="building-pushing">Building &amp; Pushing<a class="headerlink" href="#building-pushing" title="Permanent link">&para;</a></h4>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h1>
-<p>docker build -t myregistry/FraiseQL:1.0.0 .
-docker build -t myregistry/FraiseQL:latest .</p>
-<h1 id="push">Push<a class="headerlink" href="#push" title="Permanent link">&para;</a></h1>
-<p>docker push myregistry/FraiseQL:1.0.0
-docker push myregistry/FraiseQL:latest</p>
-<h1 id="scan-for-vulnerabilities">Scan for vulnerabilities<a class="headerlink" href="#scan-for-vulnerabilities" title="Permanent link">&para;</a></h1>
-<p>trivy image myregistry/FraiseQL:1.0.0
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Build</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myregistry/fraiseql-app:1.0.0<span class="w"> </span>.
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>myregistry/fraiseql-app:latest<span class="w"> </span>.
 
-<h4 id="hardened-image-government-grade">Hardened Image (Government-Grade)<a class="headerlink" href="#hardened-image-government-grade" title="Permanent link">&para;</a></h4>
-<p>FraiseQL provides a hardened Dockerfile with:</p>
+<span class="c1"># Push</span>
+docker<span class="w"> </span>push<span class="w"> </span>myregistry/fraiseql-app:1.0.0
+docker<span class="w"> </span>push<span class="w"> </span>myregistry/fraiseql-app:latest
+
+<span class="c1"># Scan for vulnerabilities</span>
+trivy<span class="w"> </span>image<span class="w"> </span>myregistry/fraiseql-app:1.0.0
+</code></pre></div>
+<h4 id="hardened-image">Hardened Image<a class="headerlink" href="#hardened-image" title="Permanent link">&para;</a></h4>
+<p>For high-security environments, build on a distroless or hardened base image with:</p>
 <ul>
 <li>Non-root user (UID: 65532)</li>
 <li>Reduced attack surface</li>
@@ -5361,412 +6556,375 @@ docker push myregistry/FraiseQL:latest</p>
 <li>Read-only root filesystem compatible</li>
 <li>No shell access</li>
 </ul>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>docker build -f Dockerfile.hardened -t myregistry/FraiseQL:hardened .
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>Dockerfile.hardened<span class="w"> </span>-t<span class="w"> </span>myregistry/fraiseql-app:hardened<span class="w"> </span>.
+</code></pre></div>
 <hr />
 <h2 id="kubernetes-deployment">Kubernetes Deployment<a class="headerlink" href="#kubernetes-deployment" title="Permanent link">&para;</a></h2>
 <h3 id="standard-deployment">Standard Deployment<a class="headerlink" href="#standard-deployment" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: FraiseQL
-  namespace: default
-  labels:
-    app: FraiseQL
-    version: "1.0"
-spec:
-  replicas: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: FraiseQL
-  template:
-    metadata:
-      labels:
-        app: FraiseQL
-        version: "1.0"
-    spec:
-      serviceAccountName: FraiseQL
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65532
-        fsGroup: 65532
-        seccompProfile:
-          type: RuntimeDefault</p>
-<div class="highlight"><pre><span></span><code>  containers:
-  - name: FraiseQL
-    image: myregistry/FraiseQL:1.0.0
-    imagePullPolicy: IfNotPresent
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0&quot;</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RollingUpdate</span>
+<span class="w">    </span><span class="nt">rollingUpdate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">maxSurge</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0&quot;</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65532</span>
+<span class="w">        </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65532</span>
+<span class="w">        </span><span class="nt">seccompProfile</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RuntimeDefault</span>
 
-    ports:
-    - name: http
-      containerPort: 8000
-      protocol: TCP
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myregistry/fraiseql-app:1.0.0</span>
+<span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
 
-    # Environment from ConfigMap and Secret
-    envFrom:
-    - configMapRef:
-        name: FraiseQL-config
-    - secretRef:
-        name: FraiseQL-secrets
+<span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
 
-    # Resource constraints
-    resources:
-      requests:
-        memory: &quot;256Mi&quot;
-        cpu: &quot;250m&quot;
-      limits:
-        memory: &quot;512Mi&quot;
-        cpu: &quot;1000m&quot;
+<span class="w">        </span><span class="c1"># Environment from ConfigMap and Secret</span>
+<span class="w">        </span><span class="nt">envFrom</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">configMapRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-config</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">secretRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-secrets</span>
 
-    # Health checks
-    livenessProbe:
-      httpGet:
-        path: /health/live
-        port: http
-      initialDelaySeconds: 30
-      periodSeconds: 30
-      timeoutSeconds: 5
-      failureThreshold: 3
+<span class="w">        </span><span class="c1"># Resource constraints</span>
+<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;256Mi&quot;</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;250m&quot;</span>
+<span class="w">          </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000m&quot;</span>
 
-    readinessProbe:
-      httpGet:
-        path: /health/ready
-        port: http
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 2
+<span class="w">        </span><span class="c1"># Health checks (/health is built in; /health/ready is your custom check)</span>
+<span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">          </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
 
-    startupProbe:
-      httpGet:
-        path: /health
-        port: http
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 30  # 150 seconds total
+<span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/ready</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">          </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 
-    # Security
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 65532
-      capabilities:
-        drop: [ALL]
+<span class="w">        </span><span class="nt">startupProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">timeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">  </span><span class="c1"># 150 seconds total</span>
 
-    # Volume mounts for temp files
-    volumeMounts:
-    - name: tmp
-      mountPath: /tmp
-    - name: var-run
-      mountPath: /var/run
+<span class="w">        </span><span class="c1"># Security</span>
+<span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">readOnlyRootFilesystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">          </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">          </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65532</span>
+<span class="w">          </span><span class="nt">capabilities</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">drop</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ALL</span><span class="p p-Indicator">]</span>
 
-  volumes:
-  - name: tmp
-    emptyDir: {}
-  - name: var-run
-    emptyDir: {}
+<span class="w">        </span><span class="c1"># Volume mounts for temp files</span>
+<span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tmp</span>
+<span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">var-run</span>
+<span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/run</span>
 
-  # Pod disruption budget
-  affinity:
-    podAntiAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values: [FraiseQL]
-          topologyKey: kubernetes.io/hostname
+<span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tmp</span>
+<span class="w">        </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">var-run</span>
+<span class="w">        </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 
-  terminationGracePeriodSeconds: 30
+<span class="w">      </span><span class="c1"># Pod disruption budget</span>
+<span class="w">      </span><span class="nt">affinity</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">podAntiAffinity</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">preferredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">            </span><span class="nt">podAffinityTerm</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">labelSelector</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">matchExpressions</span><span class="p">:</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
+<span class="w">                  </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">In</span>
+<span class="w">                  </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fraiseql</span><span class="p p-Indicator">]</span>
+<span class="w">              </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/hostname</span>
+
+<span class="w">      </span><span class="nt">terminationGracePeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="service">Service<a class="headerlink" href="#service" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: v1
-kind: Service
-metadata:
-  name: FraiseQL
-  namespace: default
-  labels:
-    app: FraiseQL
-spec:
-  type: ClusterIP
-  selector:
-    app: FraiseQL
-  ports:
-  - name: http
-    port: 8000
-    targetPort: http
-    protocol: TCP
-  sessionAffinity: None  # Round-robin, no sticky sessions
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">  </span><span class="nt">sessionAffinity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span><span class="w">  </span><span class="c1"># Round-robin, no sticky sessions</span>
+</code></pre></div>
 <h3 id="horizontal-pod-autoscaler">Horizontal Pod Autoscaler<a class="headerlink" href="#horizontal-pod-autoscaler" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: FraiseQL
-  namespace: default
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: FraiseQL
-  minReplicas: 3
-  maxReplicas: 20
-  metrics:
-  # CPU-based scaling
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  # Memory-based scaling
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  # Custom GraphQL metrics (if metrics exposed)
-  - type: Pods
-    pods:
-      metric:
-        name: graphql_requests_per_second
-      target:
-        type: AverageValue
-        averageValue: "100"  # Scale at 100 req/s per pod
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 0
-      policies:
-      - type: Percent
-        value: 100
-        periodSeconds: 15
-      - type: Pods
-        value: 4
-        periodSeconds: 15
-      selectPolicy: Max
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autoscaling/v2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HorizontalPodAutoscaler</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scaleTargetRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">minReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">maxReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># CPU-based scaling</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
+<span class="w">  </span><span class="c1"># Memory-based scaling</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">  </span><span class="c1"># Custom GraphQL metrics (if metrics exposed)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pods</span>
+<span class="w">    </span><span class="nt">pods</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">metric</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graphql_requests_per_second</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AverageValue</span>
+<span class="w">        </span><span class="nt">averageValue</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100&quot;</span><span class="w">  </span><span class="c1"># Scale at 100 req/s per pod</span>
+<span class="w">  </span><span class="nt">behavior</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">scaleDown</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">      </span><span class="nt">policies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Percent</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">        </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="w">    </span><span class="nt">scaleUp</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">      </span><span class="nt">policies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Percent</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">        </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pods</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">      </span><span class="nt">selectPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Max</span>
+</code></pre></div>
 <h3 id="pod-disruption-budget">Pod Disruption Budget<a class="headerlink" href="#pod-disruption-budget" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: FraiseQL
-  namespace: default
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app: FraiseQL
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodDisruptionBudget</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">minAvailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+</code></pre></div>
 <h3 id="network-policies-zero-trust">Network Policies (Zero Trust)<a class="headerlink" href="#network-policies-zero-trust" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: FraiseQL
-  namespace: default
-spec:
-  podSelector:
-    matchLabels:
-      app: FraiseQL
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  # Allow from ingress controller
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 8000
-  # Allow from Prometheus scraper
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
-    ports:
-    - protocol: TCP
-      port: 8000
-  egress:
-  # Allow to PostgreSQL
-  - to:
-    - podSelector: {}
-    ports:
-    - protocol: TCP
-      port: 5432
-  # Allow DNS
-  - to:
-    - namespaceSelector: {}
-    ports:
-    - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
-  # Allow to external APIs (if needed)
-  - to:
-    - namespaceSelector: {}
-    ports:
-    - protocol: TCP
-      port: 443
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Egress</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Allow from ingress controller</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespaceSelector</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ingress-nginx</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">  </span><span class="c1"># Allow from Prometheus scraper</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespaceSelector</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class="w">  </span><span class="nt">egress</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Allow to PostgreSQL</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">podSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">  </span><span class="c1"># Allow DNS</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UDP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">53</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">53</span>
+<span class="w">  </span><span class="c1"># Allow to external APIs (if needed)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespaceSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">443</span>
+</code></pre></div>
 <h3 id="ingress">Ingress<a class="headerlink" href="#ingress" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<p>apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: FraiseQL
-  namespace: default
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/rate-limit: "100"
-    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
-    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
-    nginx.ingress.kubernetes.io/add-headers: "true"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      more_set_headers "X-Frame-Options: DENY";
-      more_set_headers "X-Content-Type-Options: nosniff";
-      more_set_headers "X-XSS-Protection: 1; mode=block";
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - api.example.com
-    secretName: FraiseQL-tls
-  rules:
-  - host: api.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: FraiseQL
-            port:
-              number: 8000
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">cert-manager.io/cluster-issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">letsencrypt-prod</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/rate-limit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100&quot;</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/rate-limit-window</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1m&quot;</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/ssl-protocols</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TLSv1.2</span><span class="nv"> </span><span class="s">TLSv1.3&quot;</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/add-headers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/configuration-snippet</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">more_set_headers &quot;X-Frame-Options: DENY&quot;;</span>
+<span class="w">      </span><span class="no">more_set_headers &quot;X-Content-Type-Options: nosniff&quot;;</span>
+<span class="w">      </span><span class="no">more_set_headers &quot;X-XSS-Protection: 1; mode=block&quot;;</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">  </span><span class="nt">tls</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">hosts</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api.example.com</span>
+<span class="w">    </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-tls</span>
+<span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api.example.com</span>
+<span class="w">    </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">paths</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="w">        </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix</span>
+<span class="w">        </span><span class="nt">backend</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">service</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+</code></pre></div>
 <hr />
 <h2 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="postgresql-setup">PostgreSQL Setup<a class="headerlink" href="#postgresql-setup" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create database
-CREATE DATABASE FraiseQL
-  WITH ENCODING 'UTF8'
-       LC_COLLATE 'en_US.UTF-8'
-       LC_CTYPE 'en_US.UTF-8'
-       TEMPLATE template0;</p>
-<p>-- Create application user
-CREATE USER fraiseql_app WITH PASSWORD 'secure_password';</p>
-<p>-- Grant permissions
-GRANT CONNECT ON DATABASE FraiseQL TO fraiseql_app;
-GRANT USAGE ON SCHEMA public TO fraiseql_app;
-GRANT CREATE ON SCHEMA public TO fraiseql_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO fraiseql_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO fraiseql_app;</p>
-<p>-- Set default privileges for future objects
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO fraiseql_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO fraiseql_app;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Create database</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">fraiseql</span>
+<span class="w">  </span><span class="k">WITH</span><span class="w"> </span><span class="k">ENCODING</span><span class="w"> </span><span class="s1">&#39;UTF8&#39;</span>
+<span class="w">       </span><span class="n">LC_COLLATE</span><span class="w"> </span><span class="s1">&#39;en_US.UTF-8&#39;</span>
+<span class="w">       </span><span class="n">LC_CTYPE</span><span class="w"> </span><span class="s1">&#39;en_US.UTF-8&#39;</span>
+<span class="w">       </span><span class="k">TEMPLATE</span><span class="w"> </span><span class="n">template0</span><span class="p">;</span>
 
+<span class="c1">-- Create application user</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;secure_password&#39;</span><span class="p">;</span>
+
+<span class="c1">-- Grant permissions</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">CONNECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">USAGE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">CREATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="n">SEQUENCES</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+
+<span class="c1">-- Set default privileges for future objects</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">SEQUENCES</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fraiseql_app</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="connection-pool-configuration">Connection Pool Configuration<a class="headerlink" href="#connection-pool-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="optimal-pool-settings-for-production">Optimal pool settings for production<a class="headerlink" href="#optimal-pool-settings-for-production" title="Permanent link">&para;</a></h1>
-<p>pool_config = {
-    "host": "db.example.com",
-    "port": 5432,
-    "database": "FraiseQL",
-    "user": "fraiseql_app",
-    "password": os.getenv("DB_PASSWORD"),
-    "min_size": 20,          # Maintain minimum connections
-    "max_size": 100,         # Scale up to 100
-    "max_idle_time": 60,     # Recycle idle connections
-    "max_lifetime": 1800,    # Renew connections every 30 min
-    "command_timeout": 30,   # 30 second query timeout
-    "timeout": 30,           # 30 second connection timeout
-    "ssl": "require",        # Require SSL/TLS
-    "ssl_certificate": "/etc/ssl/certs/ca-bundle.crt"
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Optimal pool settings for production</span>
+<span class="n">pool_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;db.example.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="mi">5432</span><span class="p">,</span>
+    <span class="s2">&quot;database&quot;</span><span class="p">:</span> <span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;fraiseql_app&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_PASSWORD&quot;</span><span class="p">),</span>
+    <span class="s2">&quot;min_size&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>          <span class="c1"># Maintain minimum connections</span>
+    <span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>         <span class="c1"># Scale up to 100</span>
+    <span class="s2">&quot;max_idle_time&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>     <span class="c1"># Recycle idle connections</span>
+    <span class="s2">&quot;max_lifetime&quot;</span><span class="p">:</span> <span class="mi">1800</span><span class="p">,</span>    <span class="c1"># Renew connections every 30 min</span>
+    <span class="s2">&quot;command_timeout&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>   <span class="c1"># 30 second query timeout</span>
+    <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>           <span class="c1"># 30 second connection timeout</span>
+    <span class="s2">&quot;ssl&quot;</span><span class="p">:</span> <span class="s2">&quot;require&quot;</span><span class="p">,</span>        <span class="c1"># Require SSL/TLS</span>
+    <span class="s2">&quot;ssl_certificate&quot;</span><span class="p">:</span> <span class="s2">&quot;/etc/ssl/certs/ca-bundle.crt&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="indexing-strategy">Indexing Strategy<a class="headerlink" href="#indexing-strategy" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- User-related indexes
-CREATE INDEX idx_user_id ON users(id);
-CREATE INDEX idx_user_email ON users(email) WHERE deleted_at IS NULL;
-CREATE INDEX idx_user_created_at ON users(created_at DESC);</p>
-<p>-- Order-related indexes (composite)
-CREATE INDEX idx_orders_user_date ON orders(user_id, created_at DESC) WHERE status != 'deleted';
-CREATE INDEX idx_orders_status ON orders(status) WHERE created_at &gt; now() - interval '90 days';</p>
-<p>-- JSONB indexes
-CREATE INDEX idx_user_metadata ON users USING gin(metadata);
-CREATE INDEX idx_user_metadata_tags ON users USING gin(metadata-&gt;'tags');</p>
-<p>-- Full-text search
-CREATE INDEX idx_products_content ON products USING gin(to_tsvector('english', name || ' ' || description));</p>
-<p>-- Soft delete queries
-CREATE INDEX idx_active_records ON (table_name) WHERE deleted_at IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- User-related indexes</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
 
+<span class="c1">-- Order-related indexes (composite)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;deleted&#39;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="s1">&#39;90 days&#39;</span><span class="p">;</span>
+
+<span class="c1">-- JSONB indexes</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_metadata</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">metadata</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_metadata_tags</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">&#39;tags&#39;</span><span class="p">);</span>
+
+<span class="c1">-- Full-text search</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_products_content</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">description</span><span class="p">));</span>
+
+<span class="c1">-- Soft delete queries</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_active_records</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="k">table_name</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="security-hardening">Security Hardening<a class="headerlink" href="#security-hardening" title="Permanent link">&para;</a></h2>
 <h3 id="introspection-control">Introspection Control<a class="headerlink" href="#introspection-control" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="disable-introspection-in-production">Disable introspection in production<a class="headerlink" href="#disable-introspection-in-production" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    introspection_policy=IntrospectionPolicy.DISABLED
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Disable introspection in production</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">DISABLED</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Introspection Policies</strong>:</p>
 <ul>
 <li><code>DISABLED</code> - No introspection (recommended for production)</li>
@@ -5774,131 +6932,102 @@ CREATE INDEX idx_active_records ON (table_name) WHERE deleted_at IS NULL;
 <li><code>PUBLIC</code> - Anyone can introspect (development only)</li>
 </ul>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    rate_limit_enabled=True,
-    rate_limit_requests_per_minute=100,      # 100 req/min = ~1.67 req/sec
-    rate_limit_requests_per_hour=5000,       # 5000 req/hour
-    rate_limit_burst_size=10,                # Allow 10 concurrent
-    rate_limit_window_type="sliding",        # More accurate
-    rate_limit_whitelist=["internal.ips"],
-    rate_limit_blacklist=["malicious.ips"]
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>      <span class="c1"># 100 req/min = ~1.67 req/sec</span>
+    <span class="n">rate_limit_requests_per_hour</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>       <span class="c1"># 5000 req/hour</span>
+    <span class="n">rate_limit_burst_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                <span class="c1"># Allow 10 concurrent</span>
+    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">&quot;sliding&quot;</span><span class="p">,</span>        <span class="c1"># More accurate</span>
+    <span class="n">rate_limit_whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;internal.ips&quot;</span><span class="p">],</span>
+    <span class="n">rate_limit_blacklist</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;malicious.ips&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
 <h3 id="query-complexity-limits">Query Complexity Limits<a class="headerlink" href="#query-complexity-limits" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    complexity_enabled=True,
-    complexity_max_score=1000,     # Reject complex queries
-    complexity_max_depth=10,       # Prevent deep nesting
-    complexity_default_list_size=10,
-    complexity_field_multipliers={
-        "users": 2,                # More expensive
-        "orders": 3,
-        "analytics": 10,           # Very expensive
-        "reports": 15
-    }
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>     <span class="c1"># Reject complex queries</span>
+    <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>       <span class="c1"># Prevent deep nesting</span>
+    <span class="n">complexity_default_list_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">complexity_field_multipliers</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;users&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>                <span class="c1"># More expensive</span>
+        <span class="s2">&quot;orders&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">&quot;analytics&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>           <span class="c1"># Very expensive</span>
+        <span class="s2">&quot;reports&quot;</span><span class="p">:</span> <span class="mi">15</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre></div>
 <h3 id="tlsmtls-configuration">TLS/mTLS Configuration<a class="headerlink" href="#tlsmtls-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="connection-string-with-tls">Connection string with TLS<a class="headerlink" href="#connection-string-with-tls" title="Permanent link">&para;</a></h1>
-<p>DATABASE_URL = "postgresql://user:pass@db.example.com:5432/FraiseQL?sslmode=require"</p>
-<h1 id="kubernetes-pod-with-client-certificates">Kubernetes pod with client certificates<a class="headerlink" href="#kubernetes-pod-with-client-certificates" title="Permanent link">&para;</a></h1>
-<p>containers:</p>
-<ul>
-<li>name: FraiseQL
-  env:</li>
-<li>name: SSL_CERT_FILE
-    value: /etc/ssl/certs/ca-bundle.crt</li>
-<li>name: SSL_CLIENT_CERT_FILE
-    value: /etc/ssl/certs/client-cert.pem</li>
-<li>name: SSL_CLIENT_KEY_FILE
-    value: /etc/ssl/private/client-key.pem
-  volumeMounts:</li>
-<li>name: tls-certs
-    mountPath: /etc/ssl/certs
-    readOnly: true</li>
-<li>
-<p>name: tls-keys
-    mountPath: /etc/ssl/private
-    readOnly: true
-volumes:</p>
-</li>
-<li>
-<p>name: tls-certs
-  secret:
-    secretName: FraiseQL-tls-certs</p>
-</li>
-<li>name: tls-keys
-  secret:
-    secretName: FraiseQL-tls-keys
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Connection string with TLS</span>
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">&quot;postgresql://user:pass@db.example.com:5432/fraiseql?sslmode=require&quot;</span>
 
+<span class="c1"># Kubernetes pod with client certificates</span>
+<span class="n">containers</span><span class="p">:</span>
+
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">fraiseql</span>
+  <span class="n">env</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">SSL_CERT_FILE</span>
+    <span class="n">value</span><span class="p">:</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ssl</span><span class="o">/</span><span class="n">certs</span><span class="o">/</span><span class="n">ca</span><span class="o">-</span><span class="n">bundle</span><span class="o">.</span><span class="n">crt</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">SSL_CLIENT_CERT_FILE</span>
+    <span class="n">value</span><span class="p">:</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ssl</span><span class="o">/</span><span class="n">certs</span><span class="o">/</span><span class="n">client</span><span class="o">-</span><span class="n">cert</span><span class="o">.</span><span class="n">pem</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">SSL_CLIENT_KEY_FILE</span>
+    <span class="n">value</span><span class="p">:</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ssl</span><span class="o">/</span><span class="n">private</span><span class="o">/</span><span class="n">client</span><span class="o">-</span><span class="n">key</span><span class="o">.</span><span class="n">pem</span>
+  <span class="n">volumeMounts</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">tls</span><span class="o">-</span><span class="n">certs</span>
+    <span class="n">mountPath</span><span class="p">:</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ssl</span><span class="o">/</span><span class="n">certs</span>
+    <span class="n">readOnly</span><span class="p">:</span> <span class="n">true</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">tls</span><span class="o">-</span><span class="n">keys</span>
+    <span class="n">mountPath</span><span class="p">:</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ssl</span><span class="o">/</span><span class="n">private</span>
+    <span class="n">readOnly</span><span class="p">:</span> <span class="n">true</span>
+<span class="n">volumes</span><span class="p">:</span>
+
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">tls</span><span class="o">-</span><span class="n">certs</span>
+  <span class="n">secret</span><span class="p">:</span>
+    <span class="n">secretName</span><span class="p">:</span> <span class="n">fraiseql</span><span class="o">-</span><span class="n">tls</span><span class="o">-</span><span class="n">certs</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">tls</span><span class="o">-</span><span class="n">keys</span>
+  <span class="n">secret</span><span class="p">:</span>
+    <span class="n">secretName</span><span class="p">:</span> <span class="n">fraiseql</span><span class="o">-</span><span class="n">tls</span><span class="o">-</span><span class="n">keys</span>
+</code></pre></div>
 <h3 id="security-headers">Security Headers<a class="headerlink" href="#security-headers" title="Permanent link">&para;</a></h3>
-<p>```yaml</p>
-<!-- Code example in YAML -->
-<h1 id="nginx-ingress-annotations">Nginx Ingress annotations<a class="headerlink" href="#nginx-ingress-annotations" title="Permanent link">&para;</a></h1>
-<p>annotations:
-  nginx.ingress.kubernetes.io/configuration-snippet: |
-    more_set_headers "X-Frame-Options: DENY";
-    more_set_headers "X-Content-Type-Options: nosniff";
-    more_set_headers "X-XSS-Protection: 1; mode=block";
-    more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
-    more_set_headers "Permissions-Policy: geolocation=(), microphone=(), camera=()";
-    more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Nginx Ingress annotations</span>
+<span class="nt">annotations</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/configuration-snippet</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;X-Frame-Options: DENY&quot;;</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;X-Content-Type-Options: nosniff&quot;;</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;X-XSS-Protection: 1; mode=block&quot;;</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;Referrer-Policy: strict-origin-when-cross-origin&quot;;</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;Permissions-Policy: geolocation=(), microphone=(), camera=()&quot;;</span>
+<span class="w">    </span><span class="no">more_set_headers &quot;Strict-Transport-Security: max-age=31536000; includeSubDomains&quot;;</span>
+</code></pre></div>
 <h3 id="cors-configuration">CORS Configuration<a class="headerlink" href="#cors-configuration" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    cors_enabled=False  # Disable by default, handle at Ingress
-)</p>
-<h1 id="or-if-enabling-at-application-level">Or if enabling at application level:<a class="headerlink" href="#or-if-enabling-at-application-level" title="Permanent link">&para;</a></h1>
-<p>cors_enabled=True
-cors_origins=["https://app.example.com", "https://admin.example.com"]
-cors_methods=["GET", "POST"]
-cors_headers=["Content-Type", "Authorization"]
-cors_allow_credentials=True
-cors_max_age=3600
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">cors_enabled</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Disable by default, handle at Ingress</span>
+<span class="p">)</span>
 
+<span class="c1"># Or if enabling at application level:</span>
+<span class="n">cors_enabled</span><span class="o">=</span><span class="kc">True</span>
+<span class="n">cors_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://app.example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;https://admin.example.com&quot;</span><span class="p">]</span>
+<span class="n">cors_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">]</span>
+<span class="n">cors_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">,</span> <span class="s2">&quot;Authorization&quot;</span><span class="p">]</span>
+<span class="n">cors_allow_credentials</span><span class="o">=</span><span class="kc">True</span>
+<span class="n">cors_max_age</span><span class="o">=</span><span class="mi">3600</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
 <h3 id="apq-automatic-persisted-queries">APQ (Automatic Persisted Queries)<a class="headerlink" href="#apq-automatic-persisted-queries" title="Permanent link">&para;</a></h3>
 <p><strong>For bandwidth optimization</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>config = FraiseQLConfig(
-    apq_mode=APQMode.REQUIRED,           # Only persisted queries
-    apq_storage_backend="postgresql",     # Persistent storage
-    apq_cache_responses=True,             # Cache responses
-    apq_response_cache_ttl=600            # 10 minutes
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">apq_mode</span><span class="o">=</span><span class="n">APQMode</span><span class="o">.</span><span class="n">REQUIRED</span><span class="p">,</span>           <span class="c1"># Only persisted queries</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>     <span class="c1"># Persistent storage</span>
+    <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>             <span class="c1"># Cache responses</span>
+    <span class="n">apq_response_cache_ttl</span><span class="o">=</span><span class="mi">600</span>            <span class="c1"># 10 minutes</span>
+<span class="p">)</span>
+</code></pre></div>
 <p><strong>Register queries at deploy time</strong>:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="move-graphql-files-to-directory">Move GraphQL files to directory<a class="headerlink" href="#move-graphql-files-to-directory" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_APQ_QUERIES_DIR=/app/graphql/queries</p>
-<h1 id="queries-in-appgraphqlqueriesgraphql-are-auto-registered">Queries in /app/graphql/queries/*.graphql are auto-registered<a class="headerlink" href="#queries-in-appgraphqlqueriesgraphql-are-auto-registered" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Move GraphQL files to directory</span>
+<span class="nv">FRAISEQL_APQ_QUERIES_DIR</span><span class="o">=</span>/app/graphql/queries
 
+<span class="c1"># Queries in /app/graphql/queries/*.graphql are auto-registered</span>
+</code></pre></div>
 <p><strong>Expected performance</strong>:</p>
 <ul>
 <li>Payload reduction: 95%+</li>
@@ -5906,18 +7035,16 @@ cors_max_age=3600
 <li>Bandwidth savings: 10-50x</li>
 </ul>
 <h3 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="multi-level-caching">Multi-level caching<a class="headerlink" href="#multi-level-caching" title="Permanent link">&para;</a></h1>
-<p>config = FraiseQLConfig(
-    cache_ttl=300,                           # 5 minutes
-    cache_backend="postgresql",              # Persistent
-    apq_response_cache_ttl=600,              # 10 minutes
-    turbo_router_cache_size=1000             # Route caching
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c1"># Multi-level caching</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>                           <span class="c1"># Query cache TTL: 5 minutes</span>
+    <span class="n">apq_response_cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>              <span class="c1"># APQ response cache: 10 minutes</span>
+    <span class="n">turbo_router_cache_size</span><span class="o">=</span><span class="mi">1000</span>             <span class="c1"># TurboRouter cache size</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>FraiseQL also ships a PostgreSQL-backed result cache with cascade invalidation
+(<code>PostgresCache</code>, <code>ResultCache</code>, <code>CachedRepository</code>) for caching query results
+directly in your database — see the caching reference for details.</p>
 <p><strong>Expected hit rates</strong>:</p>
 <ul>
 <li>Stable APIs: 95%+</li>
@@ -5925,152 +7052,138 @@ cors_max_age=3600
 <li>Admin interfaces: 70-85%</li>
 </ul>
 <h3 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="optimal-pool-settings">Optimal pool settings<a class="headerlink" href="#optimal-pool-settings" title="Permanent link">&para;</a></h1>
-<p>pool = DatabasePool(
-    dsn=database_url,
-    min_size=20,           # Maintain 20 connections
-    max_size=100,          # Scale to 100
-    max_idle_time=60,      # Recycle idle connections
-    max_lifetime=1800      # Renew connections every 30 min
-)
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>FraiseQL manages an async PostgreSQL connection pool (psycopg) internally. Tune it
+through <code>FraiseQLConfig</code> (or the matching <code>FRAISEQL_</code> environment variables):</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">database_url</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>        <span class="c1"># Connections to maintain</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>     <span class="c1"># Seconds to wait for a free connection</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>   <span class="c1"># Recycle connections after 30 min</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="monitoring-observability">Monitoring &amp; Observability<a class="headerlink" href="#monitoring-observability" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-metrics">Prometheus Metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.monitoring import setup_metrics, MetricsConfig</p>
-<p>setup_metrics(app, MetricsConfig(
-    enabled=True,
-    namespace="myapp",
-    metrics_path="/metrics"
-))
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span><span class="p">,</span> <span class="n">MetricsConfig</span>
 
+<span class="c1"># app is the FastAPI app returned by create_fraiseql_app(...)</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;myapp&quot;</span><span class="p">,</span>
+    <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span>
+<span class="p">))</span>
+</code></pre></div>
 <h3 id="opentelemetry-tracing">OpenTelemetry Tracing<a class="headerlink" href="#opentelemetry-tracing" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.tracing import setup_tracing, TracingConfig</p>
-<p>setup_tracing(app, TracingConfig(
-    enabled=True,
-    service_name="FraiseQL-api",
-    export_format="otlp",
-    export_endpoint="jaeger:4317",
-    sample_rate=0.1  # 10% sampling in production
-))
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_tracing</span><span class="p">,</span> <span class="n">TracingConfig</span>
 
+<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span>
+    <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql-api&quot;</span><span class="p">,</span>
+    <span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span><span class="p">,</span>
+    <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;jaeger:4317&quot;</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="o">=</span><span class="mf">0.1</span>  <span class="c1"># 10% sampling in production</span>
+<span class="p">))</span>
+</code></pre></div>
 <h3 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL.health import setup_health_endpoints</p>
-<p>setup_health_endpoints(app)
-```text</p>
-<!-- Code example in TEXT -->
+<p><code>create_fraiseql_app(...)</code> automatically registers a built-in <code>GET /health</code>
+endpoint that returns a process-level liveness status — point your Kubernetes
+liveness, readiness, and startup probes at it.</p>
+<p>For deeper checks (database connectivity, pool stats), build a composable
+<code>HealthCheck</code> and expose it on your own route:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">check_database</span><span class="p">,</span> <span class="n">check_pool_stats</span>
 
+<span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health/ready&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">readiness</span><span class="p">():</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
+</code></pre></div>
 <p><strong>Available endpoints</strong>:</p>
 <ul>
-<li><code>GET /health</code> - Full health status</li>
-<li><code>GET /health/live</code> - Liveness (Kubernetes)</li>
-<li><code>GET /health/ready</code> - Readiness (Kubernetes)</li>
+<li><code>GET /health</code> - Built-in process liveness check</li>
+<li><code>GET /health/ready</code> - Readiness with custom <code>HealthCheck</code> (example above)</li>
 </ul>
 <hr />
 <h2 id="deployment-automation">Deployment Automation<a class="headerlink" href="#deployment-automation" title="Permanent link">&para;</a></h2>
 <h3 id="gitops-workflow">GitOps Workflow<a class="headerlink" href="#gitops-workflow" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="1-create-feature-branch">1. Create feature branch<a class="headerlink" href="#1-create-feature-branch" title="Permanent link">&para;</a></h1>
-<p>git checkout -b feature/new-feature</p>
-<h1 id="2-make-changes-and-commit">2. Make changes and commit<a class="headerlink" href="#2-make-changes-and-commit" title="Permanent link">&para;</a></h1>
-<p>git add .
-git commit -m "feat: new feature"</p>
-<h1 id="3-push-and-create-pr">3. Push and create PR<a class="headerlink" href="#3-push-and-create-pr" title="Permanent link">&para;</a></h1>
-<p>git push -u origin feature/new-feature
-gh pr create</p>
-<h1 id="4-cicd-pipeline-runs">4. CI/CD pipeline runs:<a class="headerlink" href="#4-cicd-pipeline-runs" title="Permanent link">&para;</a></h1>
-<h1 id="-build-docker-image">- Build Docker image<a class="headerlink" href="#-build-docker-image" title="Permanent link">&para;</a></h1>
-<h1 id="-scan-for-vulnerabilities">- Scan for vulnerabilities<a class="headerlink" href="#-scan-for-vulnerabilities" title="Permanent link">&para;</a></h1>
-<h1 id="-run-tests">- Run tests<a class="headerlink" href="#-run-tests" title="Permanent link">&para;</a></h1>
-<h1 id="-push-to-registry">- Push to registry<a class="headerlink" href="#-push-to-registry" title="Permanent link">&para;</a></h1>
-<h1 id="-update-kubernetes-manifests-argocd">- Update Kubernetes manifests (ArgoCD)<a class="headerlink" href="#-update-kubernetes-manifests-argocd" title="Permanent link">&para;</a></h1>
-<h1 id="5-pr-merged-to-main">5. PR merged to main<a class="headerlink" href="#5-pr-merged-to-main" title="Permanent link">&para;</a></h1>
-<h1 id="6-argocd-syncs-changes-to-production">6. ArgoCD syncs changes to production<a class="headerlink" href="#6-argocd-syncs-changes-to-production" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Create feature branch</span>
+git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feature/new-feature
 
+<span class="c1"># 2. Make changes and commit</span>
+git<span class="w"> </span>add<span class="w"> </span>.
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: new feature&quot;</span>
+
+<span class="c1"># 3. Push and create PR</span>
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feature/new-feature
+gh<span class="w"> </span>pr<span class="w"> </span>create
+
+<span class="c1"># 4. CI/CD pipeline runs:</span>
+<span class="c1">#    - Build Docker image</span>
+<span class="c1">#    - Scan for vulnerabilities</span>
+<span class="c1">#    - Run tests</span>
+<span class="c1">#    - Push to registry</span>
+<span class="c1">#    - Update Kubernetes manifests (ArgoCD)</span>
+
+<span class="c1"># 5. PR merged to main</span>
+<span class="c1"># 6. ArgoCD syncs changes to production</span>
+</code></pre></div>
 <h3 id="helm-chart-deployment">Helm Chart Deployment<a class="headerlink" href="#helm-chart-deployment" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h1>
-<p>helm install FraiseQL ./helm-chart \
-  --namespace default \
-  --values values-prod.yaml</p>
-<h1 id="upgrade">Upgrade<a class="headerlink" href="#upgrade" title="Permanent link">&para;</a></h1>
-<p>helm upgrade FraiseQL ./helm-chart \
-  --namespace default \
-  --values values-prod.yaml</p>
-<h1 id="rollback">Rollback<a class="headerlink" href="#rollback" title="Permanent link">&para;</a></h1>
-<p>helm rollback FraiseQL 1
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Install</span>
+helm<span class="w"> </span>install<span class="w"> </span>fraiseql<span class="w"> </span>./helm-chart<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>default<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--values<span class="w"> </span>values-prod.yaml
 
+<span class="c1"># Upgrade</span>
+helm<span class="w"> </span>upgrade<span class="w"> </span>fraiseql<span class="w"> </span>./helm-chart<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>default<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--values<span class="w"> </span>values-prod.yaml
+
+<span class="c1"># Rollback</span>
+helm<span class="w"> </span>rollback<span class="w"> </span>fraiseql<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
 <hr />
 <h2 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">&para;</a></h2>
 <h3 id="backup-strategy">Backup Strategy<a class="headerlink" href="#backup-strategy" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Daily backup
-pg_dump FraiseQL &gt; /backups/fraiseql_$(date +%Y%m%d).sql</p>
-<p>-- With compression
-pg_dump -Fc FraiseQL &gt; /backups/fraiseql_$(date +%Y%m%d).dump</p>
-<p>-- With parallel jobs
-pg_dump -Fd -j 4 FraiseQL &gt; /backups/fraiseql_$(date +%Y%m%d)_parallel/
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Daily backup</span>
+<span class="n">pg_dump</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="o">/</span><span class="n">backups</span><span class="o">/</span><span class="n">fraiseql_$</span><span class="p">(</span><span class="nb">date</span><span class="w"> </span><span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="p">).</span><span class="k">sql</span>
 
+<span class="c1">-- With compression</span>
+<span class="n">pg_dump</span><span class="w"> </span><span class="o">-</span><span class="n">Fc</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="o">/</span><span class="n">backups</span><span class="o">/</span><span class="n">fraiseql_$</span><span class="p">(</span><span class="nb">date</span><span class="w"> </span><span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="p">).</span><span class="n">dump</span>
+
+<span class="c1">-- With parallel jobs</span>
+<span class="n">pg_dump</span><span class="w"> </span><span class="o">-</span><span class="n">Fd</span><span class="w"> </span><span class="o">-</span><span class="n">j</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="o">/</span><span class="n">backups</span><span class="o">/</span><span class="n">fraiseql_$</span><span class="p">(</span><span class="nb">date</span><span class="w"> </span><span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="p">)</span><span class="n">_parallel</span><span class="o">/</span>
+</code></pre></div>
 <h3 id="restore-procedure">Restore Procedure<a class="headerlink" href="#restore-procedure" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- From SQL dump
-psql FraiseQL &lt; /backups/fraiseql_20250111.sql</p>
-<p>-- From custom format dump
-pg_restore -d FraiseQL /backups/fraiseql_20250111.dump</p>
-<p>-- Verify
-SELECT COUNT(*) FROM users;
-SELECT MAX(created_at) FROM audit_events;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- From SQL dump</span>
+<span class="n">psql</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">/</span><span class="n">backups</span><span class="o">/</span><span class="n">fraiseql_20250111</span><span class="p">.</span><span class="k">sql</span>
 
+<span class="c1">-- From custom format dump</span>
+<span class="n">pg_restore</span><span class="w"> </span><span class="o">-</span><span class="n">d</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="o">/</span><span class="n">backups</span><span class="o">/</span><span class="n">fraiseql_20250111</span><span class="p">.</span><span class="n">dump</span>
+
+<span class="c1">-- Verify</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">audit_events</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="database-replication">Database Replication<a class="headerlink" href="#database-replication" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Primary-Replica setup
--- On primary:
-CREATE PUBLICATION FraiseQL FOR ALL TABLES;</p>
-<p>-- On replica:
-CREATE SUBSCRIPTION FraiseQL CONNECTION 'postgresql://primary:5432/FraiseQL' PUBLICATION FraiseQL;</p>
-<p>-- Monitor replication lag
-SELECT now() - pg_last_wal_receive_lsn()::text::pg_lsn / 1000000 AS replication_lag_seconds;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Primary-Replica setup</span>
+<span class="c1">-- On primary:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">PUBLICATION</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="n">TABLES</span><span class="p">;</span>
 
+<span class="c1">-- On replica:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">SUBSCRIPTION</span><span class="w"> </span><span class="n">fraiseql</span><span class="w"> </span><span class="k">CONNECTION</span><span class="w"> </span><span class="s1">&#39;postgresql://primary:5432/fraiseql&#39;</span><span class="w"> </span><span class="n">PUBLICATION</span><span class="w"> </span><span class="n">fraiseql</span><span class="p">;</span>
+
+<span class="c1">-- Monitor replication lag</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">pg_last_wal_receive_lsn</span><span class="p">()::</span><span class="nb">text</span><span class="p">::</span><span class="n">pg_lsn</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000000</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">replication_lag_seconds</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="scaling-recommendations">Scaling Recommendations<a class="headerlink" href="#scaling-recommendations" title="Permanent link">&para;</a></h2>
 <h3 id="single-region-recommended-starting-point">Single-Region (Recommended Starting Point)<a class="headerlink" href="#single-region-recommended-starting-point" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>3 FraiseQL pods (minimum)
+<div class="highlight"><pre><span></span><code>3 fraiseql pods (minimum)
 1 PostgreSQL instance (managed)
 Prometheus (1 instance)
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Capacity</strong>:</p>
 <ul>
 <li>Up to 1,000 requests/second</li>
@@ -6078,14 +7191,10 @@ Prometheus (1 instance)
 <li>Database: 100-500GB</li>
 </ul>
 <h3 id="multi-region">Multi-Region<a class="headerlink" href="#multi-region" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>3 FraiseQL pods per region (3+ regions)
+<div class="highlight"><pre><span></span><code>3 fraiseql pods per region (3+ regions)
 PostgreSQL primary + replicas
 Cross-region failover
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Capacity</strong>:</p>
 <ul>
 <li>Up to 10,000+ requests/second</li>
@@ -6127,7 +7236,7 @@ Cross-region failover
 <p>FraiseQL production deployments include:</p>
 <p>✅ <strong>Zero-trust security</strong> - View-based access, rate limiting, introspection control
 ✅ <strong>High availability</strong> - Multi-replica Kubernetes, health checks, graceful shutdown
-✅ <strong>Performance</strong> - APQ, caching, connection pooling, Rust pipeline
+✅ <strong>Performance</strong> - APQ, caching, connection pooling, optional <code>fraiseql_rs</code> acceleration
 ✅ <strong>Observability</strong> - Prometheus, OpenTelemetry, structured logging
 ✅ <strong>Scalability</strong> - HPA, load balancing, multi-region ready
 ✅ <strong>Compliance</strong> - Audit logging, security headers, standards-compliant
@@ -6136,13 +7245,11 @@ Cross-region failover
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../operations/guide.md">Deployment Runbooks</a></strong> - Day-2 operations and common runbooks</li>
+<li><strong><a href="../../operations/performance-tuning-runbook/">Performance Tuning Runbook</a></strong> - Day-2 operations and tuning</li>
 <li><strong><a href="../monitoring/">Monitoring &amp; Observability Guide</a></strong> - Setting up Prometheus, Grafana, and OpenTelemetry</li>
 <li><strong><a href="../../integrations/authentication/security-checklist/">Security Checklist</a></strong> - Pre-production security verification</li>
-<li><strong><a href="../observability/troubleshooting.md">Troubleshooting Guide</a></strong> - Common production issues and solutions</li>
-<li><strong><a href="../#horizontal-scaling">Scaling Guide</a></strong> - Horizontal and vertical scaling strategies</li>
-<li><strong><a href="../#multi-region">Multi-Region Deployment</a></strong> - Geographic distribution and failover</li>
-<li><strong><a href="../integrations/federation/deployment.md">Federation Deployment</a></strong> - Multi-subgraph federation setup</li>
+<li><strong><a href="../troubleshooting/">Troubleshooting Guide</a></strong> - Common production issues and solutions</li>
+<li><strong><a href="../">Scaling Guide</a></strong> - Horizontal and vertical scaling strategies</li>
 </ul>
 
 
@@ -6150,6 +7257,9 @@ Cross-region failover
 
 
 
+
+  
+  
 
 
 

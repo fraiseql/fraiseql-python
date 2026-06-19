@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Comprehensive guide to optimizing FraiseQL performance for production systems.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/performance-optimization/">
@@ -14,7 +16,7 @@
         <link rel="prev" href="../production-security-checklist/">
       
       
-        <link rel="next" href="../federation-quick-start/">
+        <link rel="next" href="../analytics-patterns/">
       
       
         
@@ -25,7 +27,7 @@
     
     
       
-        <title>Performance Optimization - FraiseQL Documentation</title>
+        <title>Performance & Optimization Guide - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Performance Optimization
+              Performance & Optimization Guide
             
           </span>
         </div>
@@ -3084,8 +3086,335 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#3-materialized-views-for-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Materialized Views for Aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-partitioning-large-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Partitioning Large Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-denormalization-when-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Denormalization When Needed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Caching Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cache-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Cache Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-setting-up-the-result-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Setting Up the Result Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-automatic-cascade-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Automatic Cascade Invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-caching-a-single-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Caching a Single Resolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pooling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connection Pooling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring &amp; Profiling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring &amp; Profiling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Performance Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slow-query-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slow Query Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apm-integration-datadognew-relic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APM Integration (DataDog/New Relic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling-more-powerful-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vertical Scaling (More Powerful Hardware)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling-multiple-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Scaling (Multiple Servers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#citus-for-sharding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citus for Sharding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-bottlenecks-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Bottlenecks &amp; Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-benchmarking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Benchmarking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Benchmarking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark Suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -3160,34 +3489,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5175,8 +5476,335 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#3-materialized-views-for-aggregations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Materialized Views for Aggregations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-partitioning-large-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Partitioning Large Tables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-denormalization-when-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Denormalization When Needed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Caching Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cache-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Cache Layers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-setting-up-the-result-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Setting Up the Result Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-automatic-cascade-invalidation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Automatic Cascade Invalidation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-caching-a-single-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Caching a Single Resolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connection Pooling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connection Pooling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring &amp; Profiling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring &amp; Profiling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Performance Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slow-query-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slow Query Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apm-integration-datadognew-relic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        APM Integration (DataDog/New Relic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling-more-powerful-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vertical Scaling (More Powerful Hardware)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling-multiple-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizontal Scaling (Multiple Servers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#citus-for-sharding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citus for Sharding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-bottlenecks-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Bottlenecks &amp; Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-benchmarking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Benchmarking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Benchmarking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#benchmark-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark Suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5200,19 +5828,15 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Performance &amp; Optimization Guide
-description: Comprehensive guide to optimizing FraiseQL performance for production systems.
-keywords: ["debugging", "implementation", "best-practices", "deployment", "performance", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="performance-optimization-guide">Performance &amp; Optimization Guide<a class="headerlink" href="#performance-optimization-guide" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
 <strong>Audience:</strong> Backend engineers, DevOps, database administrators
-<strong>Reading Time:</strong> 40-50 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>Comprehensive guide to optimizing FraiseQL performance for production systems.</p>
+<strong>Reading Time:</strong> 40-50 minutes</p>
+<p>Comprehensive guide to optimizing FraiseQL performance for production systems. FraiseQL is a
+Python runtime GraphQL framework for PostgreSQL served over FastAPI: queries read from <code>v_</code>/<code>tv_</code>
+views, mutations call <code>fn_</code> PostgreSQL functions, and an optional Rust extension (<code>fraiseql_rs</code>)
+accelerates JSON transformation on the hot path. Tuning is therefore mostly PostgreSQL tuning
+plus a few framework knobs.</p>
 <hr />
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ol>
@@ -5227,123 +5851,110 @@ tags: ["documentation", "reference"]</p>
 <hr />
 <h2 id="query-optimization">Query Optimization<a class="headerlink" href="#query-optimization" title="Permanent link">&para;</a></h2>
 <h3 id="1-avoid-n1-query-problem">1. Avoid N+1 Query Problem<a class="headerlink" href="#1-avoid-n1-query-problem" title="Permanent link">&para;</a></h3>
-<p>❌ <strong>Bad: N+1 queries</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUsers {
-  users {
-    id
-    name
-    # This causes 1 query for users + N queries for posts (one per user)
-    posts {
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>❌ <strong>Bad: per-field resolver fan-out</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUsers</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="c"># If posts are resolved with a separate per-user query, this becomes</span>
+<span class="w">    </span><span class="c"># 1 query for users + N queries for posts (one per user)</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>Result: 101 queries (1 for users + 100 for individual user's posts)</p>
-<p>✅ <strong>Good: Single nested query</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUsers {
-  users {
-    id
-    name
-    posts {  # Joined in single query
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>✅ <strong>Good: posts already nested in the view's JSONB</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUsers</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Composed in the v_user view&#39;s data JSONB — single read</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>Result: 1-2 queries total</p>
+<p>The two main ways to avoid N+1 in FraiseQL:</p>
+<ul>
+<li><strong>Compose nested data in the view.</strong> Build child objects directly into the parent view's
+  <code>data</code> JSONB with <code>jsonb_build_object</code> / <code>jsonb_agg</code>, so a single read returns the full tree.</li>
+<li><strong>Use <code>@fraiseql.dataloader_field</code></strong> for computed/cross-aggregate fields that cannot be
+  pre-composed — it batches the field across all parents in one round trip.</li>
+</ul>
 <h3 id="2-pagination-for-large-result-sets">2. Pagination for Large Result Sets<a class="headerlink" href="#2-pagination-for-large-result-sets" title="Permanent link">&para;</a></h3>
 <p>❌ <strong>Bad: Fetch all records</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query AllPosts {
-  posts {  # Returns 1,000,000 records!
-    id
-    title
-    content
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">AllPosts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Returns 1,000,000 records!</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">title</span>
+<span class="w">    </span><span class="n">content</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>✅ <strong>Good: Paginate with limit/offset or cursor</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query PostsPaginated($first: Int!, $after: String) {
-  posts(first: $first, after: $after) {
-    edges {
-      cursor
-      node { id title }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">PostsPaginated</span><span class="p">(</span><span class="nv">$first</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">!,</span><span class="w"> </span><span class="nv">$after</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="nv">$first</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="nv">$after</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">edges</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">cursor</span>
+<span class="w">      </span><span class="n">node</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">pageInfo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">hasNextPage</span>
+<span class="w">      </span><span class="n">endCursor</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="3-request-only-needed-fields">3. Request Only Needed Fields<a class="headerlink" href="#3-request-only-needed-fields" title="Permanent link">&para;</a></h3>
 <p>❌ <strong>Bad: Over-fetching</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUser {
-  user(id: "123") {
-    id
-    email
-    full_name
-    phone
-    address
-    payment_methods
-    all_orders { id amount date }  # Fetch everything
-    all_reviews { id rating text }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">    </span><span class="n">full_name</span>
+<span class="w">    </span><span class="n">phone</span>
+<span class="w">    </span><span class="n">address</span>
+<span class="w">    </span><span class="n">payment_methods</span>
+<span class="w">    </span><span class="n">all_orders</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="n">date</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Fetch everything</span>
+<span class="w">    </span><span class="n">all_reviews</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">rating</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>✅ <strong>Good: Specific fields</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUser {
-  user(id: "123") {
-    id
-    email
-    full_name
-    recent_orders(limit: 5) {
-      id
-      amount
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">    </span><span class="n">full_name</span>
+<span class="w">    </span><span class="n">recent_orders</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">amount</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>FraiseQL's <code>fraiseql_rs</code> extension performs field selection on the view's <code>data</code> JSONB at
+runtime, so requesting fewer fields means less JSON is transformed and serialized.</p>
 <h3 id="4-use-database-indexes">4. Use Database Indexes<a class="headerlink" href="#4-use-database-indexes" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- ✅ Good: Indexes on common filters
-CREATE INDEX idx_user_email ON users(email);
-CREATE INDEX idx_order_date ON orders(created_at);
-CREATE INDEX idx_user_status ON users(status);</p>
-<p>-- For complex queries:
-CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);</p>
-<p>-- For full-text search:
-CREATE INDEX idx_content_search ON documents USING GIN(to_tsvector('english', content));
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- ✅ Good: Indexes on common filters</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">email</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
 
+<span class="c1">-- For complex queries:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
+
+<span class="c1">-- For full-text search:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_content_search</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">));</span>
+
+<span class="c1">-- For filtering inside a view&#39;s data JSONB:</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="n">jsonb_path_ops</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Index Selection:</strong></p>
 <ul>
 <li>Filter columns: Yes (WHERE clause)</li>
@@ -5352,290 +5963,276 @@ CREATE INDEX idx_content_search ON documents USING GIN(to_tsvector('english', co
 <li>Covering index: Include other columns for "index-only" scans</li>
 </ul>
 <h3 id="5-explain-query-plans">5. Explain Query Plans<a class="headerlink" href="#5-explain-query-plans" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>EXPLAIN ANALYZE
-SELECT u.id, u.email, COUNT(o.id)
-FROM users u
-LEFT JOIN orders o ON u.id = o.user_id
-WHERE u.status = 'active'
-GROUP BY u.id, u.email
-ORDER BY u.email;</p>
-<p>-- Output shows:
--- - Sequential Scan vs Index Scan
--- - Rows filtered
--- - Actual runtime
--- - Inefficiencies (full table scans, etc.)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">;</span>
 
+<span class="c1">-- Output shows:</span>
+<span class="c1">-- - Sequential Scan vs Index Scan</span>
+<span class="c1">-- - Rows filtered</span>
+<span class="c1">-- - Actual runtime</span>
+<span class="c1">-- - Inefficiencies (full table scans, etc.)</span>
+</code></pre></div>
 <hr />
 <h2 id="database-optimization">Database Optimization<a class="headerlink" href="#database-optimization" title="Permanent link">&para;</a></h2>
 <h3 id="1-connection-pooling">1. Connection Pooling<a class="headerlink" href="#1-connection-pooling" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// FraiseQL configuration
-const POOL_SIZE: u32 = 10;  // Connections per server instance
-const QUEUE_TIMEOUT: Duration = Duration::from_secs(5);
-const IDLE_TIMEOUT: Duration = Duration::from_secs(900);</p>
-<p>// For 100 concurrent users:
-// Pool size = 10-20 (not 100!)
-// Each connection can handle multiple queries sequentially
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL uses a psycopg async connection pool. Size it through <code>create_fraiseql_app</code> kwargs
+(or the equivalent <code>FraiseQLConfig</code> fields / <code>FRAISEQL_*</code> env vars):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>          <span class="c1"># connections per app instance</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># burst capacity above the base size</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>      <span class="c1"># seconds to wait for a free connection</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>     <span class="c1"># recycle a connection after 30 min</span>
+<span class="p">)</span>
+
+<span class="c1"># For 100 concurrent users:</span>
+<span class="c1"># Pool size = 10-20 (not 100!)</span>
+<span class="c1"># Each connection can handle multiple queries sequentially</span>
+</code></pre></div>
 <h3 id="2-query-result-caching">2. Query Result Caching<a class="headerlink" href="#2-query-result-caching" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="cache-select-query-results">Cache SELECT query results<a class="headerlink" href="#cache-select-query-results" title="Permanent link">&para;</a></h1>
-<p>@types.query
-def get_users(self, limit: int = 50) -&gt; list[User]:
-    """
-    @cache(ttl=300)  # Cache for 5 minutes
-    """
-    pass</p>
-<h1 id="invalidate-cache-on-mutations">Invalidate cache on mutations<a class="headerlink" href="#invalidate-cache-on-mutations" title="Permanent link">&para;</a></h1>
-<p>@types.mutation
-def create_user(self, email: str) -&gt; User:
-    """
-    @invalidate_cache(paths=['getUsers'])  # Clear users list
-    """
-    pass
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL ships a PostgreSQL-backed result cache in <code>fraiseql.caching</code>. Wrap the repository with
+<code>CachedRepository</code>; query results are cached and invalidated via cascade rules derived from your
+schema. See the <a href="#caching-strategies">Caching Strategies</a> section below for the full setup.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PostgresCache</span><span class="p">,</span>
+    <span class="n">ResultCache</span><span class="p">,</span>
+    <span class="n">CacheConfig</span><span class="p">,</span>
+    <span class="n">CachedRepository</span><span class="p">,</span>
+<span class="p">)</span>
 
+<span class="c1"># Build a result cache over the PostgreSQL UNLOGGED cache table</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">))</span>  <span class="c1"># 5 minutes</span>
+
+<span class="c1"># Wrap the repository — find()/find_one() now read through the cache</span>
+<span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+
+<span class="c1"># Per-query control is available on the call itself</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+</code></pre></div>
 <h3 id="3-materialized-views-for-aggregations">3. Materialized Views for Aggregations<a class="headerlink" href="#3-materialized-views-for-aggregations" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Pre-compute expensive aggregations
-CREATE MATERIALIZED VIEW user_stats AS
-SELECT
-  user_id,
-  COUNT(*) as total_orders,
-  SUM(amount) as total_spent,
-  AVG(amount) as avg_order_value,
-  MAX(created_at) as last_order_date
-FROM orders
-GROUP BY user_id;</p>
-<p>-- Refresh hourly
-SELECT cron.schedule('refresh_user_stats', '0 * * * *',
-  'REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats');</p>
-<p>-- Query materialized view (fast)
-SELECT * FROM user_stats WHERE user_id = $1;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Pre-compute expensive aggregations</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">user_stats</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="n">fk_user</span><span class="p">,</span>
+<span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_orders</span><span class="p">,</span>
+<span class="w">  </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_spent</span><span class="p">,</span>
+<span class="w">  </span><span class="k">AVG</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">avg_order_value</span><span class="p">,</span>
+<span class="w">  </span><span class="k">MAX</span><span class="p">(</span><span class="n">created_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_order_date</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_user</span><span class="p">;</span>
 
+<span class="c1">-- Refresh hourly</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">&#39;refresh_user_stats&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">&#39;REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats&#39;</span><span class="p">);</span>
+
+<span class="c1">-- Query materialized view (fast)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">user_stats</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+</code></pre></div>
+<p>For nested reads, the same idea applies to <code>tv_</code> projection views — real tables holding
+pre-composed <code>data</code> JSONB, refreshed by <code>fn_</code> functions or triggers.</p>
 <h3 id="4-partitioning-large-tables">4. Partitioning Large Tables<a class="headerlink" href="#4-partitioning-large-tables" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Time-based partitioning for time-series data
-CREATE TABLE events (
-  event_date DATE NOT NULL,
-  event_id BIGSERIAL,
-  user_id UUID,
-  event_type VARCHAR(50),
-  PRIMARY KEY (event_date, event_id)
-) PARTITION BY RANGE (event_date);</p>
-<p>-- Create partitions
-CREATE TABLE events_2024_01 PARTITION OF events
-  FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');</p>
-<p>CREATE TABLE events_2024_02 PARTITION OF events
-  FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');</p>
-<p>-- Queries automatically scan only relevant partitions
-SELECT * FROM events
-WHERE event_date BETWEEN '2024-01-15' AND '2024-01-20';
--- Only queries events_2024_01 partition
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Time-based partitioning for time-series data</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">event_date</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">pk_event</span><span class="w"> </span><span class="n">BIGSERIAL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">fk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">event_type</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span>
+<span class="w">  </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">event_date</span><span class="p">,</span><span class="w"> </span><span class="n">pk_event</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">RANGE</span><span class="w"> </span><span class="p">(</span><span class="n">event_date</span><span class="p">);</span>
 
+<span class="c1">-- Create partitions</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2024_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-01-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-02-01&#39;</span><span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2024_02</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-02-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-03-01&#39;</span><span class="p">);</span>
+
+<span class="c1">-- Queries automatically scan only relevant partitions</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="s1">&#39;2024-01-15&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="s1">&#39;2024-01-20&#39;</span><span class="p">;</span>
+<span class="c1">-- Only queries tb_event_2024_01 partition</span>
+</code></pre></div>
 <h3 id="5-denormalization-when-needed">5. Denormalization When Needed<a class="headerlink" href="#5-denormalization-when-needed" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Denormalized user_stats table avoids expensive joins
-CREATE TABLE user_stats (
-  user_id UUID PRIMARY KEY,
-  email VARCHAR(255),
-  full_name VARCHAR(255),
-  total_orders INT,
-  total_spent DECIMAL(12, 2),
-  last_order_date DATE,
-  updated_at TIMESTAMP
-);</p>
-<p>-- Update on order changes
-CREATE TRIGGER order_update_stats
-AFTER INSERT OR UPDATE ON orders
-FOR EACH ROW
-EXECUTE FUNCTION update_user_stats(NEW.user_id);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Denormalized user_stats table avoids expensive joins</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_stats</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">fk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">email</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+<span class="w">  </span><span class="n">full_name</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+<span class="w">  </span><span class="n">total_orders</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">total_spent</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w">  </span><span class="n">last_order_date</span><span class="w"> </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">  </span><span class="n">updated_at</span><span class="w"> </span><span class="k">TIMESTAMP</span>
+<span class="p">);</span>
 
+<span class="c1">-- Update on order changes</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">order_update_stats</span>
+<span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user_stats</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_user</span><span class="p">);</span>
+</code></pre></div>
 <hr />
 <h2 id="caching-strategies">Caching Strategies<a class="headerlink" href="#caching-strategies" title="Permanent link">&para;</a></h2>
+<p>FraiseQL's result cache lives in <code>fraiseql.caching</code>. It is <strong>PostgreSQL-backed</strong> — results are
+stored in an UNLOGGED cache table (no extra infrastructure) and invalidated automatically through
+cascade rules derived from your GraphQL schema relationships.</p>
 <h3 id="1-cache-layers">1. Cache Layers<a class="headerlink" href="#1-cache-layers" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─────────────────┐
-│   Client Cache  │  (Browser local storage, Redux)
+<div class="highlight"><pre><span></span><code>┌─────────────────┐
+│   Client Cache  │  (your GraphQL client / browser)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│ Apollo Cache    │  (InMemoryCache)
+│ ResultCache     │  (CachedRepository wrapping the CQRS repo)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│ Redis Cache     │  (Server-side, shared)
+│ PostgresCache   │  (UNLOGGED fraiseql_cache table, shared across instances)
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│   Database      │  (Slowest)
+│   Database      │  (v_/tv_ views — slowest path)
 └─────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-cache-first-vs-cache-and-network">2. Cache-First vs Cache-And-Network<a class="headerlink" href="#2-cache-first-vs-cache-and-network" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// Cache-first: Good for static data
-const { data } = useQuery(GET_CATEGORIES, {
-  fetchPolicy: 'cache-first'  // 200ms response
-});</p>
-<p>// Cache-and-network: Good for mostly-static data
-const { data } = useQuery(GET_POSTS, {
-  fetchPolicy: 'cache-and-network'  // Returns cached data, then updates
-});</p>
-<p>// Network-only: Good for real-time data
-const { data } = useQuery(GET_STOCK_PRICE, {
-  fetchPolicy: 'network-only'  // Always fresh
-});
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="3-redis-for-shared-cache">3. Redis for Shared Cache<a class="headerlink" href="#3-redis-for-shared-cache" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="cache-expensive-query-in-redis">Cache expensive query in Redis<a class="headerlink" href="#cache-expensive-query-in-redis" title="Permanent link">&para;</a></h1>
-<p>import redis</p>
-<p>cache = redis.Redis(host='localhost', port=6379)</p>
-<p>async def get_user_stats(user_id: str):
-    # Try cache first
-    cached = cache.get(f'user_stats:{user_id}')
-    if cached:
-        return json.loads(cached)</p>
-<div class="highlight"><pre><span></span><code># Cache miss - query database
-stats = await db.fetch(&quot;&quot;&quot;
-    SELECT COUNT(*) as orders, SUM(amount) as total
-    FROM orders WHERE user_id = $1
-&quot;&quot;&quot;, user_id)
-
-# Store in cache (5 minute TTL)
-cache.setex(
-    f&#39;user_stats:{user_id}&#39;,
-    300,
-    json.dumps(stats)
-)
-
-return stats
 </code></pre></div>
-<h1 id="invalidate-cache-on-changes">Invalidate cache on changes<a class="headerlink" href="#invalidate-cache-on-changes" title="Permanent link">&para;</a></h1>
-<p>async def create_order(user_id: str, ...):
-    await db.execute('INSERT INTO orders ...')
-    cache.delete(f'user_stats:{user_id}')  # Invalidate
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="2-setting-up-the-result-cache">2. Setting Up the Result Cache<a class="headerlink" href="#2-setting-up-the-result-cache" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">CachedRepository</span>
 
+<span class="c1"># 1. PostgreSQL-backed backend (shared by all app instances)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>  <span class="c1"># creates the UNLOGGED table + expiry index</span>
+
+<span class="c1"># 2. Result cache with TTL policy</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span>
+    <span class="n">backend</span><span class="p">,</span>
+    <span class="n">CacheConfig</span><span class="p">(</span>
+        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>   <span class="c1"># 5 minutes</span>
+        <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>      <span class="c1"># 1 hour ceiling</span>
+        <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># 3. Wrap the repository — reads now go through the cache</span>
+<span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="3-automatic-cascade-invalidation">3. Automatic Cascade Invalidation<a class="headerlink" href="#3-automatic-cascade-invalidation" title="Permanent link">&para;</a></h3>
+<p>Instead of hand-written invalidation, let FraiseQL derive invalidation rules from your schema:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
+
+<span class="c1"># During app startup, analyze the schema and register CASCADE rules</span>
+<span class="c1"># so writes to a parent automatically invalidate dependent cached reads.</span>
+<span class="n">n_rules</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p>You can also declare rules explicitly with <code>CascadeRule</code>, or bypass/override the cache per call
+via <code>find(..., skip_cache=True)</code> / <code>find(..., cache_ttl=600)</code>.</p>
+<h3 id="4-caching-a-single-resolver">4. Caching a Single Resolver<a class="headerlink" href="#4-caching-a-single-resolver" title="Permanent link">&para;</a></h3>
+<p>For a one-off expensive resolver, <code>cached_query</code> memoizes the result on a cache instance:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_query</span>
+
+<span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">expensive_user_stats</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserStats</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user_stats&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h2>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<h1 id="fraiseqltoml">FraiseQL.toml<a class="headerlink" href="#fraiseqltoml" title="Permanent link">&para;</a></h1>
-<p>[FraiseQL.database]
-pool_size = 20              # Connections
-connection_timeout = 10000  # ms
-idle_timeout = 900000       # ms (15 min)
-max_lifetime = 1800000      # ms (30 min)
-test_on_checkout = true     # Verify connection health
-```text</p>
-<!-- Code example in TEXT -->
+<p>Configure the pool in code via <code>create_fraiseql_app</code> kwargs, or with <code>FRAISEQL_*</code> environment
+variables / a <code>FraiseQLConfig</code> instance:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>          <span class="c1"># base connections</span>
+    <span class="n">connection_pool_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># burst above the base size</span>
+    <span class="n">connection_pool_timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>     <span class="c1"># seconds to wait for a connection</span>
+    <span class="n">connection_pool_recycle</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>     <span class="c1"># recycle connections after 30 min</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Equivalent environment variables (consumed by <code>FraiseQLConfig</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://localhost/mydb
+<span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_TIMEOUT</span><span class="o">=</span><span class="m">10</span>
+<span class="nv">FRAISEQL_DATABASE_POOL_RECYCLE</span><span class="o">=</span><span class="m">1800</span>
+</code></pre></div>
 <h3 id="tuning">Tuning<a class="headerlink" href="#tuning" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Pool Size Formula:
+<div class="highlight"><pre><span></span><code>Pool Size Formula:
   = ((core_count × 2) + effective_spindle_count)
-  = ((8 cores × 2) + 1) = 17 connections</p>
-<p>Concurrency = Pool Size × Average Query Time
+  = ((8 cores × 2) + 1) = 17 connections
+
+Concurrency = Pool Size × Average Query Time
   = 20 connections × 50ms = 1000 concurrent requests
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Check pool usage
-SELECT count(*) FROM pg_stat_activity;
--- Should be &lt;= pool_size (20)</p>
-<p>-- Identify slow/idle connections
-SELECT pid, usename, state, query, query_start
-FROM pg_stat_activity
-WHERE state = 'idle'
-  AND query_start &lt; NOW() - INTERVAL '15 minutes';
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check pool usage</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="p">;</span>
+<span class="c1">-- Should be &lt;= pool_size (20)</span>
 
+<span class="c1">-- Identify slow/idle connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">query_start</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;15 minutes&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="monitoring-profiling">Monitoring &amp; Profiling<a class="headerlink" href="#monitoring-profiling" title="Permanent link">&para;</a></h2>
 <h3 id="query-performance-metrics">Query Performance Metrics<a class="headerlink" href="#query-performance-metrics" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="instrument-queries-with-timing">Instrument queries with timing<a class="headerlink" href="#instrument-queries-with-timing" title="Permanent link">&para;</a></h1>
-<p>@types.query
-def get_posts(self, limit: int = 50) -&gt; list[Post]:
-    start = time.time()</p>
-<div class="highlight"><pre><span></span><code># Query execution
-results = ...
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-duration = time.time() - start
-log_metric(&#39;query.duration&#39;, duration, tags={&#39;query&#39;: &#39;getPosts&#39;})
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-return results
+<span class="c1"># Instrument a resolver with timing</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;query.duration&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span><span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">results</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="slow-query-log">Slow Query Log<a class="headerlink" href="#slow-query-log" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Enable slow query logging
-ALTER SYSTEM SET log_min_duration_statement = 100;  -- Log queries &gt; 100ms
-SELECT pg_reload_conf();</p>
-<p>-- View slow queries
-SELECT * FROM pg_stat_statements
-ORDER BY mean_exec_time DESC
-LIMIT 20;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Enable slow query logging</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">log_min_duration_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Log queries &gt; 100ms</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 
+<span class="c1">-- View slow queries</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="apm-integration-datadognew-relic">APM Integration (DataDog/New Relic)<a class="headerlink" href="#apm-integration-datadognew-relic" title="Permanent link">&para;</a></h3>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from datadog import api
-from datadog_api_client.v1.api.metrics_api import MetricsApi</p>
-<h1 id="report-query-metrics">Report query metrics<a class="headerlink" href="#report-query-metrics" title="Permanent link">&para;</a></h1>
-<p>metrics_api.submit_metrics(
-    body=MetricsPayload(
-        series=[
-            Series(
-                metric="FraiseQL.query.duration",
-                points=[[int(time.time()), query_duration_ms]],
-                tags=["query:getPosts", "endpoint:graphql"]
-            )
-        ]
-    )
-)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datadog_api_client.v1.api.metrics_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datadog_api_client.v1.model.metrics_payload</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsPayload</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datadog_api_client.v1.model.series</span><span class="w"> </span><span class="kn">import</span> <span class="n">Series</span>
 
+<span class="c1"># Report query metrics</span>
+<span class="n">metrics_api</span><span class="o">.</span><span class="n">submit_metrics</span><span class="p">(</span>
+    <span class="n">body</span><span class="o">=</span><span class="n">MetricsPayload</span><span class="p">(</span>
+        <span class="n">series</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">Series</span><span class="p">(</span>
+                <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;fraiseql.query.duration&quot;</span><span class="p">,</span>
+                <span class="n">points</span><span class="o">=</span><span class="p">[[</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()),</span> <span class="n">query_duration_ms</span><span class="p">]],</span>
+                <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;query:posts&quot;</span><span class="p">,</span> <span class="s2">&quot;endpoint:graphql&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
 <hr />
 <h2 id="scaling-strategies">Scaling Strategies<a class="headerlink" href="#scaling-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="vertical-scaling-more-powerful-hardware">Vertical Scaling (More Powerful Hardware)<a class="headerlink" href="#vertical-scaling-more-powerful-hardware" title="Permanent link">&para;</a></h3>
@@ -5646,17 +6243,17 @@ from datadog_api_client.v1.api.metrics_api import MetricsApi</p>
 <li>Complex queries needing more CPU/RAM</li>
 </ul>
 <h3 id="horizontal-scaling-multiple-servers">Horizontal Scaling (Multiple Servers)<a class="headerlink" href="#horizontal-scaling-multiple-servers" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌──────────────────────────────────────┐
+<p>Run several copies of the FastAPI app (for example <code>uvicorn app:app</code> behind a process manager
+or in multiple containers) behind a load balancer, all sharing one PostgreSQL database:</p>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────┐
 │        Load Balancer (nginx)         │
 └──────────────┬───────────────────────┘
                │
     ┌──────────┼──────────┐
     ↓          ↓          ↓
 ┌─────────┐┌─────────┐┌─────────┐
-│FraiseQL │FraiseQL │FraiseQL │
-│ Instance│ Instance│ Instance│
+│ FastAPI ││ FastAPI ││ FastAPI │
+│ (uvicorn)│(uvicorn)│(uvicorn)│
 └────┬────┘└────┬────┘└────┬────┘
      │          │          │
      └──────────┼──────────┘
@@ -5665,45 +6262,43 @@ from datadog_api_client.v1.api.metrics_api import MetricsApi</p>
         │ PostgreSQL   │
         │ (Shared DB)  │
         └──────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="read-replicas">Read Replicas<a class="headerlink" href="#read-replicas" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Primary for writes
+<div class="highlight"><pre><span></span><code>-- Primary for writes
 PRIMARY (writes)
   ↓ (replication)
 REPLICA 1 (reads)
 REPLICA 2 (reads)
 REPLICA 3 (reads)
-```text</p>
-<!-- Code example in TEXT -->
+</code></pre></div>
+<p>FraiseQL's CQRS split maps naturally onto read replicas: mutations call <code>fn_</code> functions and must
+hit the primary, while <code>@query</code> reads of <code>v_</code>/<code>tv_</code> views can target a replica. A common pattern
+is to run a read-only app instance whose <code>database_url</code> points at a replica (queries only), and a
+write instance pointed at the primary, fronted by your load balancer or router:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="route-queries-to-replica">Route queries to replica<a class="headerlink" href="#route-queries-to-replica" title="Permanent link">&para;</a></h1>
-<p>@database(
-    write='postgres_primary',
-    read='postgres_replica'
-)
-def get_users(self) -&gt; list[User]:
-    """Queries use replica, mutations use primary"""
-    pass
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c1"># Read-only instance — queries served from a replica</span>
+<span class="n">read_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://postgres_replica/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+<span class="p">)</span>
 
+<span class="c1"># Write instance — mutations served from the primary</span>
+<span class="n">write_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://postgres_primary/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
 <h3 id="citus-for-sharding">Citus for Sharding<a class="headerlink" href="#citus-for-sharding" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Distribute table across nodes
-SELECT create_distributed_table('orders', 'user_id');</p>
-<p>-- Queries automatically sharded
-SELECT * FROM orders WHERE user_id = $1;  -- Single shard
-SELECT * FROM orders;  -- All shards (parallel)
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Distribute table across nodes</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">create_distributed_table</span><span class="p">(</span><span class="s1">&#39;tb_order&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;fk_user&#39;</span><span class="p">);</span>
 
+<span class="c1">-- Queries automatically sharded</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Single shard</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="p">;</span><span class="w">  </span><span class="c1">-- All shards (parallel)</span>
+</code></pre></div>
 <hr />
 <h2 id="common-bottlenecks-solutions">Common Bottlenecks &amp; Solutions<a class="headerlink" href="#common-bottlenecks-solutions" title="Permanent link">&para;</a></h2>
 <table>
@@ -5755,39 +6350,34 @@ SELECT * FROM orders;  -- All shards (parallel)
 <hr />
 <h2 id="performance-benchmarking">Performance Benchmarking<a class="headerlink" href="#performance-benchmarking" title="Permanent link">&para;</a></h2>
 <h3 id="benchmark-suite">Benchmark Suite<a class="headerlink" href="#benchmark-suite" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import Benchmark from 'benchmark';</p>
-<p>const suite = new Benchmark.Suite;</p>
-<p>suite
-  .add('Simple query (1KB result)', () =&gt; {
-    return client.query(GET_USER);
-  })
-  .add('Complex query (100KB result)', () =&gt; {
-    return client.query(GET_POSTS_WITH_COMMENTS);
-  })
-  .add('Aggregation query', () =&gt; {
-    return client.query(GET_STATS);
-  })
-  .on('complete', function() {
-    console.log('Fastest is ' + this.filter('fastest').map('name'));
-  })
-  .run({ async: true });
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nx">Benchmark</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;benchmark&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">suite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Benchmark</span><span class="p">.</span><span class="nx">Suite</span><span class="p">;</span>
+
+<span class="nx">suite</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Simple query (1KB result)&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_USER</span><span class="p">);</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Complex query (100KB result)&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_POSTS_WITH_COMMENTS</span><span class="p">);</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Aggregation query&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_STATS</span><span class="p">);</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Fastest is &#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="s1">&#39;fastest&#39;</span><span class="p">).</span><span class="nx">map</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">));</span>
+<span class="w">  </span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">run</span><span class="p">({</span><span class="w"> </span><span class="nx">async</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="w"> </span><span class="p">});</span>
+</code></pre></div>
 <h3 id="load-testing">Load Testing<a class="headerlink" href="#load-testing" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="using-apache-bench">Using Apache Bench<a class="headerlink" href="#using-apache-bench" title="Permanent link">&para;</a></h1>
-<p>ab -n 10000 -c 100 http://localhost:5000/graphql</p>
-<h1 id="results">Results:<a class="headerlink" href="#results" title="Permanent link">&para;</a></h1>
-<h1 id="requests-per-second-500">Requests per second: 500<a class="headerlink" href="#requests-per-second-500" title="Permanent link">&para;</a></h1>
-<h1 id="95th-percentile-latency-200ms">95th percentile latency: 200ms<a class="headerlink" href="#95th-percentile-latency-200ms" title="Permanent link">&para;</a></h1>
-<h1 id="max-latency-1000ms">Max latency: 1000ms<a class="headerlink" href="#max-latency-1000ms" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1"># Using Apache Bench against the running FastAPI app</span>
+ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span><span class="w"> </span>-c<span class="w"> </span><span class="m">100</span><span class="w"> </span>http://localhost:8000/graphql
 
+<span class="c1"># Results:</span>
+<span class="c1"># Requests per second: 500</span>
+<span class="c1"># 95th percentile latency: 200ms</span>
+<span class="c1"># Max latency: 1000ms</span>
+</code></pre></div>
 <hr />
 <h2 id="best-practices-checklist">Best Practices Checklist<a class="headerlink" href="#best-practices-checklist" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
@@ -5815,15 +6405,15 @@ SELECT * FROM orders;  -- All shards (parallel)
 <li><a href="../../patterns/analytics-olap-platform/">Analytics Platform</a> - Optimize for aggregations</li>
 <li><a href="../../patterns/saas-multi-tenant/">SaaS Multi-Tenant</a> - Row-level security performance</li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

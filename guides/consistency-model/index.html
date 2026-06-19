@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="How FraiseQL gives you strong consistency on a single PostgreSQL database — MVCC, transactions, read-your-writes, RLS, and the CQRS read/write split.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/consistency-model/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Consistency Model - FraiseQL Documentation</title>
+        <title>Consistency Model in FraiseQL - FraiseQL Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#consistency-model-cap-theorem-in-fraiseql" class="md-skip">
+        <a href="#consistency-model-in-fraiseql" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Consistency Model
+              Consistency Model in FraiseQL
             
           </span>
         </div>
@@ -2999,34 +3001,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -3182,10 +3156,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-choice-cp-consistency-partition-tolerance" class="md-nav__link">
+  <a href="#where-consistency-comes-from" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Choice: CP (Consistency + Partition Tolerance)
+        Where Consistency Comes From
       
     </span>
   </a>
@@ -3193,22 +3167,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-this-choice" class="md-nav__link">
+  <a href="#the-cqrs-split-and-what-it-means-for-consistency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why This Choice?
+        The CQRS Split and What It Means for Consistency
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Why This Choice?">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations-are-synchronous-and-transactional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations Are Synchronous and Transactional
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isolation-what-you-see-inside-a-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isolation: What You See Inside a Transaction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-tenant-isolation-via-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Tenant Isolation via Row-Level Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-and-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching and Consistency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-fraiseqls-consistency-model-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When FraiseQL's Consistency Model Fits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-cap-theorem-reality" class="md-nav__link">
+  <a href="#a-read-right-after-a-mutation-shows-old-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The CAP Theorem Reality
+        "A read right after a mutation shows old data"
       
     </span>
   </a>
@@ -3216,10 +3256,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fraiseqls-answer-cp" class="md-nav__link">
+  <a href="#lost-update-two-mutations-overwrite-each-other" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL's Answer: CP
+        "Lost update / two mutations overwrite each other"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tenant-data-leaked-across-tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Tenant data leaked across tenants"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-lock-contention-on-hot-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "High lock contention on hot rows"
       
     </span>
   </a>
@@ -3232,242 +3294,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutations-synchronous-execution" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mutations: Synchronous Execution
+        See Also
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Mutations: Synchronous Execution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-mutations-work" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How Mutations Work
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#observations-asynchronous-side-effects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Observations: Asynchronous Side Effects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Observations: Asynchronous Side Effects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#nats-jetstream-eventual-consistency-mutations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        NATS JetStream ≠ Eventual Consistency Mutations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#guarantees-for-observations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Guarantees for Observations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#federation-distributed-transactions-via-saga" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Federation: Distributed Transactions via SAGA
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Federation: Distributed Transactions via SAGA">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#saga-pattern-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SAGA Pattern Implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-multi-service-mutation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Multi-Service Mutation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-cp-is-right" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When CP is Right ✅
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When CP is Right ✅">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-fraiseql-if" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use FraiseQL if
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-cp-is-wrong" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When CP is Wrong ❌
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When CP is Wrong ❌">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dont-use-fraiseql-if" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Don't use FraiseQL if
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consistency-guarantees-explained" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consistency Guarantees Explained
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Consistency Guarantees Explained">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#within-a-single-database" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Within a Single Database
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#across-federated-services" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Across Federated Services
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-tenant-isolation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Tenant Isolation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Multi-Tenant Isolation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tenant-data-must-not-cross" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tenant Data Must Not Cross
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5249,10 +5082,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-choice-cp-consistency-partition-tolerance" class="md-nav__link">
+  <a href="#where-consistency-comes-from" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Choice: CP (Consistency + Partition Tolerance)
+        Where Consistency Comes From
       
     </span>
   </a>
@@ -5260,22 +5093,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-this-choice" class="md-nav__link">
+  <a href="#the-cqrs-split-and-what-it-means-for-consistency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why This Choice?
+        The CQRS Split and What It Means for Consistency
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Why This Choice?">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutations-are-synchronous-and-transactional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutations Are Synchronous and Transactional
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isolation-what-you-see-inside-a-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isolation: What You See Inside a Transaction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-tenant-isolation-via-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Tenant Isolation via Row-Level Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching-and-consistency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching and Consistency
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-fraiseqls-consistency-model-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When FraiseQL's Consistency Model Fits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-cap-theorem-reality" class="md-nav__link">
+  <a href="#a-read-right-after-a-mutation-shows-old-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The CAP Theorem Reality
+        "A read right after a mutation shows old data"
       
     </span>
   </a>
@@ -5283,10 +5182,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fraiseqls-answer-cp" class="md-nav__link">
+  <a href="#lost-update-two-mutations-overwrite-each-other" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FraiseQL's Answer: CP
+        "Lost update / two mutations overwrite each other"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tenant-data-leaked-across-tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Tenant data leaked across tenants"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-lock-contention-on-hot-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "High lock contention on hot rows"
       
     </span>
   </a>
@@ -5299,242 +5220,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mutations-synchronous-execution" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mutations: Synchronous Execution
+        See Also
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Mutations: Synchronous Execution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-mutations-work" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How Mutations Work
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#observations-asynchronous-side-effects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Observations: Asynchronous Side Effects
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Observations: Asynchronous Side Effects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#nats-jetstream-eventual-consistency-mutations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        NATS JetStream ≠ Eventual Consistency Mutations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#guarantees-for-observations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Guarantees for Observations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#federation-distributed-transactions-via-saga" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Federation: Distributed Transactions via SAGA
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Federation: Distributed Transactions via SAGA">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#saga-pattern-implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SAGA Pattern Implementation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-multi-service-mutation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Multi-Service Mutation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-cp-is-right" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When CP is Right ✅
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When CP is Right ✅">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-fraiseql-if" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use FraiseQL if
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-cp-is-wrong" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When CP is Wrong ❌
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When CP is Wrong ❌">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dont-use-fraiseql-if" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Don't use FraiseQL if
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consistency-guarantees-explained" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consistency Guarantees Explained
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Consistency Guarantees Explained">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#within-a-single-database" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Within a Single Database
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#across-federated-services" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Across Federated Services
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-tenant-isolation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Tenant Isolation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Multi-Tenant Isolation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tenant-data-must-not-cross" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tenant Data Must Not Cross
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5558,56 +5250,26 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Consistency Model: CAP Theorem in FraiseQL
-description: - CAP theorem fundamentals (Consistency, Availability, Partition Tolerance)
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="consistency-model-cap-theorem-in-fraiseql">Consistency Model: CAP Theorem in FraiseQL<a class="headerlink" href="#consistency-model-cap-theorem-in-fraiseql" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
+<h1 id="consistency-model-in-fraiseql">Consistency Model in FraiseQL<a class="headerlink" href="#consistency-model-in-fraiseql" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Production Ready
 <strong>Audience:</strong> Architects, Developers
-<strong>Reading Time:</strong> 12-15 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
+<strong>Reading Time:</strong> 10-12 minutes</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <p><strong>Required Knowledge:</strong></p>
 <ul>
-<li>CAP theorem fundamentals (Consistency, Availability, Partition Tolerance)</li>
-<li>Distributed systems concepts</li>
-<li>ACID properties and transactions</li>
-<li>Eventual vs strong consistency</li>
-<li>Network partition failure modes</li>
-<li>Database replication and synchronization</li>
-<li>Multi-region deployment patterns</li>
-<li>FraiseQL federation architecture</li>
+<li>ACID properties and database transactions</li>
+<li>PostgreSQL MVCC (Multi-Version Concurrency Control) basics</li>
+<li>Transaction isolation levels (Read Committed, Repeatable Read, Serializable)</li>
+<li>The FraiseQL CQRS split: read views (<code>v_</code>/<code>tv_</code>) and write functions (<code>fn_</code>)</li>
+<li>Row-Level Security (RLS) for multi-tenancy</li>
 </ul>
 <p><strong>Required Software:</strong></p>
 <ul>
-<li>FraiseQL v2.0.0-alpha.1 or later (for federation scenarios)</li>
-<li>Your chosen SDK language</li>
-<li>PostgreSQL, MySQL, SQLite, or SQL Server (with appropriate replication tools)</li>
-<li>Monitoring tools to detect network partitions</li>
-<li>Logging infrastructure for debugging consistency issues</li>
+<li>FraiseQL v1</li>
+<li>PostgreSQL 14+</li>
 </ul>
-<p><strong>Required Infrastructure:</strong></p>
-<ul>
-<li>Multiple FraiseQL instances (for federation scenario discussion)</li>
-<li>Primary database + replica/standby setup</li>
-<li>Network monitoring tools</li>
-<li>Load balancer or DNS for failover</li>
-<li>Optional: multi-region deployment infrastructure</li>
-</ul>
-<p><strong>Optional but Recommended:</strong></p>
-<ul>
-<li>Database replication tools (PostgreSQL replication, MySQL binlog)</li>
-<li>Network failure simulation tools (chaos engineering)</li>
-<li>Distributed transaction coordinator (if needed)</li>
-<li>Consistency verification tools</li>
-</ul>
-<p><strong>Time Estimate:</strong> 30-45 minutes to understand model, 1-2 hours for production implementation planning</p>
-<h2 id="the-choice-cp-consistency-partition-tolerance">The Choice: CP (Consistency + Partition Tolerance)<a class="headerlink" href="#the-choice-cp-consistency-partition-tolerance" title="Permanent link">&para;</a></h2>
-<p>FraiseQL makes a deliberate architectural choice based on the CAP theorem:</p>
+<h2 id="where-consistency-comes-from">Where Consistency Comes From<a class="headerlink" href="#where-consistency-comes-from" title="Permanent link">&para;</a></h2>
+<p>FraiseQL is a <strong>single-database</strong> framework: every query and mutation runs against <strong>one PostgreSQL database</strong>. There is no cross-database replication, no federation, and no distributed transaction coordinator to reason about. As a result, FraiseQL's consistency guarantees are exactly <strong>PostgreSQL's guarantees</strong> — strong, ACID, MVCC-based — with no extra machinery to weaken them.</p>
 <table>
 <thead>
 <tr>
@@ -5618,745 +5280,233 @@ tags: ["documentation", "reference"]</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Strong Consistency</strong></td>
-<td>✅ Yes</td>
-<td>ACID within database, causal across federation</td>
+<td><strong>ACID transactions</strong></td>
+<td>Yes</td>
+<td>Each mutation runs inside a single PostgreSQL transaction</td>
 </tr>
 <tr>
-<td><strong>Partition Tolerance</strong></td>
-<td>✅ Yes</td>
-<td>Handles network splits between subgraphs</td>
+<td><strong>Strong read consistency</strong></td>
+<td>Yes</td>
+<td>MVCC snapshots; no dirty or non-repeatable reads inside a transaction</td>
 </tr>
 <tr>
-<td><strong>High Availability</strong></td>
-<td>❌ No</td>
-<td>Fails gracefully instead of serving stale data</td>
+<td><strong>Read-your-writes</strong></td>
+<td>Yes (within a transaction)</td>
+<td>A write and a subsequent read in the same transaction see the same snapshot</td>
+</tr>
+<tr>
+<td><strong>Tenant isolation</strong></td>
+<td>Yes</td>
+<td>Row-Level Security policies driven by session GUCs</td>
 </tr>
 </tbody>
 </table>
-<p><strong>You can't have all three.</strong> FraiseQL chooses Consistency and Partition Tolerance, sacrificing Availability.</p>
+<p>Because there is exactly one source of truth, you never have to ask "which replica did I read from?" or "have my writes propagated yet?" — those questions belong to multi-database systems, not to FraiseQL v1.</p>
 <hr />
-<h2 id="why-this-choice">Why This Choice?<a class="headerlink" href="#why-this-choice" title="Permanent link">&para;</a></h2>
-<h3 id="the-cap-theorem-reality">The CAP Theorem Reality<a class="headerlink" href="#the-cap-theorem-reality" title="Permanent link">&para;</a></h3>
-<p>When a network partition occurs between services, you must choose:</p>
-<p><strong>Diagram:</strong> System architecture visualization</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>ServiceA: "Service A\n(DB primary)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}</p>
-<p>NetworkDown: "🔴 Network Partition" {
-  shape: box
-  style.fill: "#ffccbc"
-  style.border: "3px solid #d32f2f"
-}</p>
-<p>ServiceB: "Service B\n(DB replica)" {
-  shape: box
-  style.fill: "#ffebee"
-}</p>
-<p>CPChoice: "CP Mode:\nRefuse Service" {
-  shape: box
-  style.fill: "#bbdefb"
-}</p>
-<p>APChoice: "AP Mode:\nServe Stale Data" {
-  shape: box
-  style.fill: "#fff9c4"
-}</p>
-<p>CPBenefit: "✅ Correct data\n❌ No availability" {
-  shape: box
-  style.fill: "#e1f5fe"
-}</p>
-<p>APBenefit: "✅ Available\n❌ Possibly wrong" {
-  shape: box
-  style.fill: "#fffde7"
-}</p>
-<p>ServiceA -&gt; NetworkDown
-NetworkDown -&gt; ServiceB
-ServiceB -&gt; CPChoice
-ServiceB -&gt; APChoice
-CPChoice -&gt; CPBenefit
-APChoice -&gt; APBenefit
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Your choice:</strong></p>
-<ol>
-<li><strong>CP Mode</strong> (FraiseQL): Refuse to serve Service B until network recovers → Consistency guaranteed</li>
-<li><strong>AP Mode</strong>: Service B serves best-guess data → Available but risky</li>
-</ol>
-<h3 id="fraiseqls-answer-cp">FraiseQL's Answer: CP<a class="headerlink" href="#fraiseqls-answer-cp" title="Permanent link">&para;</a></h3>
-<p><strong>Refuse to serve wrong data.</strong></p>
-<p>If Service B's database can't confirm consistency with Service A, FraiseQL returns an error instead of a guess. This costs <strong>availability</strong> but guarantees <strong>correctness</strong>.</p>
-<p><strong>Why?</strong> Because the cost of wrong data is catastrophic in enterprise systems:</p>
+<h2 id="the-cqrs-split-and-what-it-means-for-consistency">The CQRS Split and What It Means for Consistency<a class="headerlink" href="#the-cqrs-split-and-what-it-means-for-consistency" title="Permanent link">&para;</a></h2>
+<p>FraiseQL separates <strong>reads</strong> from <strong>writes</strong>, but both sides hit the same PostgreSQL database, so they stay consistent:</p>
 <ul>
-<li>Banking: Double-charging or money loss</li>
-<li>Healthcare: Incorrect medication dosing</li>
-<li>Inventory: Overselling products you don't have</li>
-<li>Financial reporting: Regulatory violations</li>
+<li><strong>Reads (<code>@fraiseql.query</code>)</strong> call <code>db.find</code> / <code>db.find_one</code> against <code>v_</code>/<code>tv_</code> views. A <code>v_</code> view is a plain <code>SELECT</code> that builds a <code>data</code> JSONB column — it always reflects the latest committed state of the underlying <code>tb_</code> tables. A <code>tv_</code> view is a table-backed projection refreshed by functions/triggers in the same database.</li>
+<li><strong>Writes (<code>@fraiseql.mutation</code>)</strong> call <code>fn_</code> PostgreSQL functions via <code>db.execute_function</code>. The function performs validation plus the write inside a transaction and returns a JSONB success/failure payload.</li>
 </ul>
-<p><strong>The philosophy</strong>: Better to fail loudly than to silently corrupt data.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;User | None&quot;</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>   <span class="c1"># reads latest committed state</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="s2">&quot;UpdateUserInput&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;UpdateUserSuccess | UpdateUserError&quot;</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">UpdateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">UpdateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<p><strong>Key point:</strong> Because a <code>v_</code> view reads directly from the same tables the <code>fn_</code> function wrote to, a query issued <em>after</em> a mutation commits observes that mutation's effects. There is no replication lag to wait out.</p>
 <hr />
-<h2 id="mutations-synchronous-execution">Mutations: Synchronous Execution<a class="headerlink" href="#mutations-synchronous-execution" title="Permanent link">&para;</a></h2>
-<h3 id="how-mutations-work">How Mutations Work<a class="headerlink" href="#how-mutations-work" title="Permanent link">&para;</a></h3>
-<p><strong>Diagram: Query Execution</strong> - 8-stage runtime model with authorization and field masking</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>Client: "Client sends mutation\n(blocking)" {
-  shape: box
-  style.fill: "#e3f2fd"
-}</p>
-<p>Receive: "FraiseQL Server\nreceives request" {
-  shape: box
-  style.fill: "#f3e5f5"
-}</p>
-<p>Validate: "Validation\n(schema, auth)" {
-  shape: box
-  style.fill: "#f1f8e9"
-}</p>
-<p>Lock: "Acquire distributed\nlocks (if federation)" {
-  shape: box
-  style.fill: "#fff3e0"
-}</p>
-<p>SAGA: "Execute SAGA" {
-  shape: box
-  style.fill: "#ffe0b2"
-}</p>
-<p>Step1: "Step 1: Local DB\nmutation" {
-  shape: box
-  style.fill: "#ffccbc"
-}</p>
-<p>Step2: "Step 2: Remote\nservice mutation" {
-  shape: box
-  style.fill: "#ffccbc"
-}</p>
-<p>Compensation: "Compensation logic\non failure" {
-  shape: box
-  style.fill: "#ffccbc"
-}</p>
-<p>Success: "✅ Success\n(commit)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}</p>
-<p>Failure: "❌ Error\n(rollback)" {
-  shape: box
-  style.fill: "#ffebee"
-}</p>
-<p>Return: "Return result\nto client" {
-  shape: box
-  style.fill: "#e1f5fe"
-}</p>
-<p>Client -&gt; Receive
-Receive -&gt; Validate
-Validate -&gt; Lock
-Lock -&gt; SAGA
-SAGA -&gt; Step1
-SAGA -&gt; Step2
-SAGA -&gt; Compensation: "If failure"
-Step1 -&gt; Success
-Step2 -&gt; Success
-Compensation -&gt; Failure
-Success -&gt; Return
-Failure -&gt; Return</p>
-<p>note: "⏱️ Client waits 100-500ms\n(blocking until complete,\nnever queued/maybe)"
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Key point</strong>: The client blocks until the mutation completes. There's no "queued, we'll process later" response.</p>
-<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation CreateOrder($input: CreateOrderInput!) {
-  createOrder(input: $input) {
-    id
-    status
-    items { id, quantity }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>What happens</strong>:</p>
+<h2 id="mutations-are-synchronous-and-transactional">Mutations Are Synchronous and Transactional<a class="headerlink" href="#mutations-are-synchronous-and-transactional" title="Permanent link">&para;</a></h2>
+<p>When a client sends a mutation, FraiseQL executes the <code>fn_</code> function inside a PostgreSQL transaction and <strong>blocks until it commits or rolls back</strong>. The client receives the final result — never a "queued, check back later" acknowledgement.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">CreateOrder</span><span class="p">(</span><span class="nv">$input</span><span class="p">:</span><span class="w"> </span><span class="nc">CreateOrderInput</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createOrder</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="nv">$input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">status</span>
+<span class="w">    </span><span class="n">items</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">quantity</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>What happens inside PostgreSQL:</p>
 <ol>
-<li>FraiseQL validates order</li>
-<li>Reserves inventory in one database</li>
-<li>Calls payment service via federation</li>
-<li>If payment fails: rolls back inventory (SAGA compensation)</li>
-<li>Returns complete result or error to client</li>
+<li>FraiseQL opens a transaction and sets session GUCs (tenant, user) with <code>SET LOCAL</code>.</li>
+<li>The <code>fn_create_order</code> function validates input, reserves inventory, and writes the order — all in the same transaction.</li>
+<li>On success, the transaction commits atomically and the result is returned.</li>
+<li>On any error, the transaction rolls back; no partial state is left behind.</li>
 </ol>
-<p><strong>Never</strong>: "Order created, payment processing in background, check back later"</p>
+<p>This is the classic ACID guarantee: <strong>all-or-nothing</strong>. The atomicity that older versions of this page attributed to a distributed "SAGA" is, in v1, simply the atomicity of a single PostgreSQL transaction — write your multi-step logic inside one <code>fn_</code> function and it either fully applies or fully rolls back.</p>
 <hr />
-<h2 id="observations-asynchronous-side-effects">Observations: Asynchronous Side Effects<a class="headerlink" href="#observations-asynchronous-side-effects" title="Permanent link">&para;</a></h2>
-<h3 id="nats-jetstream-eventual-consistency-mutations">NATS JetStream ≠ Eventual Consistency Mutations<a class="headerlink" href="#nats-jetstream-eventual-consistency-mutations" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses NATS JetStream for <strong>side effects</strong>, not <strong>core mutations</strong>:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Mutation (synchronous, blocking)
-    ├─ Database: updateUser(...) ✅ completes
-    └─ Returns to client immediately</p>
-<p>Side Effects (asynchronous, via NATS)
-    ├─ Webhook: Discord notification → queued
-    ├─ Cache: Invalidate user cache → queued
-    ├─ Events: Publish user.updated → published
-    └─ Background jobs: process in Redis queue
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="isolation-what-you-see-inside-a-transaction">Isolation: What You See Inside a Transaction<a class="headerlink" href="#isolation-what-you-see-inside-a-transaction" title="Permanent link">&para;</a></h2>
+<p>PostgreSQL's default isolation level is <strong>Read Committed</strong>: each statement sees a fresh snapshot of committed data. For stronger guarantees you can run your <code>fn_</code> function under a stricter level:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Inside fn_transfer_inventory, enforce repeatable reads for the duration:</span>
+<span class="k">SET</span><span class="w"> </span><span class="k">TRANSACTION</span><span class="w"> </span><span class="k">ISOLATION</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">REPEATABLE</span><span class="w"> </span><span class="k">READ</span><span class="p">;</span>
 
-<p><strong>The mutation completes synchronously.</strong></p>
-<p><strong>The side effects happen asynchronously.</strong></p>
-<h3 id="guarantees-for-observations">Guarantees for Observations<a class="headerlink" href="#guarantees-for-observations" title="Permanent link">&para;</a></h3>
+<span class="c1">-- Or, for full serializability when correctness is critical:</span>
+<span class="k">SET</span><span class="w"> </span><span class="k">TRANSACTION</span><span class="w"> </span><span class="k">ISOLATION</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SERIALIZABLE</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_warehouse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">qty</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_inventory</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_warehouse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span><span class="p">;</span><span class="w">  </span><span class="c1">-- sees the decremented value</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Feature</th>
-<th>Guarantee</th>
+<th>Isolation level</th>
+<th>Prevents</th>
+<th>Use when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Webhook delivery</strong></td>
-<td>At-least-once (may retry)</td>
+<td><strong>Read Committed</strong> (default)</td>
+<td>Dirty reads</td>
+<td>General CRUD, the common case</td>
 </tr>
 <tr>
-<td><strong>Event publishing</strong></td>
-<td>Durable (persisted in JetStream)</td>
+<td><strong>Repeatable Read</strong></td>
+<td>Dirty + non-repeatable reads</td>
+<td>Multi-statement reads that must agree</td>
 </tr>
 <tr>
-<td><strong>Cache invalidation</strong></td>
-<td>Best-effort (failures go to DLQ)</td>
-</tr>
-<tr>
-<td><strong>Event ordering</strong></td>
-<td>Per-entity ordered, not globally</td>
+<td><strong>Serializable</strong></td>
+<td>All anomalies, incl. write skew</td>
+<td>Financial/inventory invariants</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation DeleteUser($id: ID!) {
-  deleteUser(id: $id) {
-    id
-    deletedAt
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Timeline</strong>:</p>
-<ul>
-<li><code>T+0ms</code>: Mutation executes (synchronous)</li>
-<li><code>T+10ms</code>: Client receives response (user deleted)</li>
-<li><code>T+50ms</code>: Webhook queued to NATS</li>
-<li><code>T+200ms</code>: Discord webhook dispatched</li>
-<li><code>T+500ms</code>: Cache invalidation completes</li>
-</ul>
-<p>If the webhook fails, it retries. If it permanently fails, it goes to Dead Letter Queue. <strong>But the mutation already succeeded.</strong></p>
+<p><strong>Read-your-writes:</strong> Within a single transaction, a read after a write always sees that write — that is MVCC working on one snapshot. Across separate requests, a query sees every mutation that has already <strong>committed</strong>.</p>
 <hr />
-<h2 id="federation-distributed-transactions-via-saga">Federation: Distributed Transactions via SAGA<a class="headerlink" href="#federation-distributed-transactions-via-saga" title="Permanent link">&para;</a></h2>
-<h3 id="saga-pattern-implementation">SAGA Pattern Implementation<a class="headerlink" href="#saga-pattern-implementation" title="Permanent link">&para;</a></h3>
-<p>When mutations span multiple services:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Mutation on Service A and Service B
-         │
-         ├─ Acquire locks on both databases
-         │
-         ├─ Execute mutation on Service A
-         │  └─ Store result in SAGA store
-         │
-         ├─ Execute mutation on Service B
-         │  └─ If fails: COMPENSATION phase
-         │
-         └─ Compensation (if needed)
-            ├─ Undo Service B change (if it succeeded)
-            ├─ Undo Service A change
-            └─ Return error to client
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="example-multi-service-mutation">Example: Multi-Service Mutation<a class="headerlink" href="#example-multi-service-mutation" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation TransferInventory(
-  $productId: ID!
-  $fromWarehouse: ID!
-  $toWarehouse: ID!
-  $quantity: Int!
-) {
-  moveInventory(
-    productId: $productId
-    from: $fromWarehouse
-    to: $toWarehouse
-    quantity: $quantity
-  ) {
-    success
-    fromBalance
-    toBalance
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Step-by-step execution</strong>:</p>
+<h2 id="multi-tenant-isolation-via-row-level-security">Multi-Tenant Isolation via Row-Level Security<a class="headerlink" href="#multi-tenant-isolation-via-row-level-security" title="Permanent link">&para;</a></h2>
+<p>Tenant isolation in FraiseQL v1 is enforced by <strong>PostgreSQL Row-Level Security</strong>, not by application-level filtering you have to remember to apply. The flow is:</p>
 <ol>
-<li>Acquire locks on both warehouse databases</li>
-<li>Decrement inventory at <code>fromWarehouse</code></li>
-<li>Call <code>toWarehouse</code> service to increment</li>
-<li>If step 3 fails:</li>
-<li><strong>Compensation</strong>: Re-increment <code>fromWarehouse</code> (undo step 2)</li>
-<li>Return error to client</li>
-<li>If both succeed: commit, return success to client</li>
+<li>The request carries <code>tenant_id</code> in <code>info.context</code>.</li>
+<li>FraiseQL's CQRS repository issues <code>SET LOCAL app.tenant_id = …</code> per transaction.</li>
+<li>Your RLS policies read <code>current_setting('app.tenant_id')</code> and scope every row automatically.</li>
 </ol>
-<p><strong>Result</strong>: Either both services updated, or neither. No partial states.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Enable RLS on the write table</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
+
+<span class="c1">-- Every read/write is automatically scoped to the current tenant</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="w">  </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">fk_tenant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+</code></pre></div>
+<p>Reads can additionally pass <code>mandatory_filters</code> to belt-and-braces the scope:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Order&quot;</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]})</span>
+</code></pre></div>
+<p><strong>Guarantee:</strong> No query can leak Tenant A's rows to Tenant B — the database enforces it, and the GUC is reset per transaction so it cannot bleed across requests.</p>
 <hr />
-<h2 id="when-cp-is-right">When CP is Right ✅<a class="headerlink" href="#when-cp-is-right" title="Permanent link">&para;</a></h2>
-<h3 id="use-fraiseql-if">Use FraiseQL if<a class="headerlink" href="#use-fraiseql-if" title="Permanent link">&para;</a></h3>
+<h2 id="caching-and-consistency">Caching and Consistency<a class="headerlink" href="#caching-and-consistency" title="Permanent link">&para;</a></h2>
+<p>FraiseQL's optional caching layer (<code>src/fraiseql/caching/</code>) keeps cached results consistent with the database through <strong>cascade invalidation</strong>, not a separate event bus.</p>
+<ul>
+<li><code>ResultCache</code> / <code>CachedRepository</code> store query results keyed by their SQL and arguments.</li>
+<li><code>CascadeRule</code> (and <code>setup_auto_cascade_rules</code> / <code>SchemaAnalyzer</code>) describe which cache entries a given write invalidates, so a mutation drops the now-stale entries.</li>
+<li>The cache is PostgreSQL-backed (<code>PostgresCache</code>), so it lives in the same database as your data.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CachedRepository</span><span class="p">,</span> <span class="n">CascadeRule</span><span class="p">,</span> <span class="n">cached_query</span>
+</code></pre></div>
+<p>When a <code>fn_</code> mutation changes a table, the configured cascade rules invalidate the dependent cached queries, so the next read re-fetches fresh data. There is no CDC stream, no message broker, and no eventual-consistency window introduced by the cache — invalidation happens as part of serving the write. See <a href="../cascade-best-practices/">Cascade Best Practices</a> for how to define rules.</p>
+<hr />
+<h2 id="when-fraiseqls-consistency-model-fits">When FraiseQL's Consistency Model Fits<a class="headerlink" href="#when-fraiseqls-consistency-model-fits" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Domain</th>
-<th>Why</th>
+<th>Why it fits</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Banking/Payments</strong></td>
-<td>Double-charging or lost transactions are unacceptable</td>
+<td><strong>Banking / Payments</strong></td>
+<td>Atomic transactions prevent double-charges and lost writes</td>
 </tr>
 <tr>
 <td><strong>Inventory Management</strong></td>
-<td>Overselling lost inventory costs money</td>
+<td>Serializable transactions prevent overselling</td>
 </tr>
 <tr>
 <td><strong>Healthcare</strong></td>
-<td>Incorrect patient data causes harm</td>
+<td>ACID guarantees keep patient records correct</td>
 </tr>
 <tr>
 <td><strong>Financial Reporting</strong></td>
-<td>Stale data violates regulations (SOX, GDPR)</td>
+<td>Strong consistency satisfies audit requirements</td>
 </tr>
 <tr>
-<td><strong>Enterprise SaaS</strong></td>
-<td>Customers expect data consistency guarantees</td>
-</tr>
-<tr>
-<td><strong>Regulated Industries</strong></td>
-<td>Audit trails require certainty</td>
-</tr>
-<tr>
-<td><strong>Multi-tenant Systems</strong></td>
-<td>One tenant's data can't bleed into another's</td>
+<td><strong>Multi-tenant SaaS</strong></td>
+<td>RLS guarantees one tenant's data never bleeds into another's</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="when-cp-is-wrong">When CP is Wrong ❌<a class="headerlink" href="#when-cp-is-wrong" title="Permanent link">&para;</a></h2>
-<h3 id="dont-use-fraiseql-if">Don't use FraiseQL if<a class="headerlink" href="#dont-use-fraiseql-if" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Domain</th>
-<th>Why</th>
-<th>Better Choice</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Real-time Analytics</strong></td>
-<td>5-10s lag acceptable</td>
-<td>DynamoDB, Cassandra</td>
-</tr>
-<tr>
-<td><strong>Social Media</strong></td>
-<td>Like counts approximated</td>
-<td>DynamoDB, Cassandra</td>
-</tr>
-<tr>
-<td><strong>IoT / Time Series</strong></td>
-<td>Some data points acceptable</td>
-<td>InfluxDB, TimescaleDB</td>
-</tr>
-<tr>
-<td><strong>User Presence</strong></td>
-<td>Eventual sync (30s) ok</td>
-<td>Redis, Firebase</td>
-</tr>
-<tr>
-<td><strong>Chat / Messaging</strong></td>
-<td>Message reordering acceptable</td>
-<td>Message broker (Kafka)</td>
-</tr>
-<tr>
-<td><strong>Trending Topics</strong></td>
-<td>Slightly stale data ok</td>
-<td>Elasticsearch</td>
-</tr>
-<tr>
-<td><strong>Session Storage</strong></td>
-<td>Temporary data, relaxed consistency</td>
-<td>Redis</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="consistency-guarantees-explained">Consistency Guarantees Explained<a class="headerlink" href="#consistency-guarantees-explained" title="Permanent link">&para;</a></h2>
-<h3 id="within-a-single-database">Within a Single Database<a class="headerlink" href="#within-a-single-database" title="Permanent link">&para;</a></h3>
-<p><strong>Isolation Level</strong>: Serializable (ACID guarantees)</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- FraiseQL uses serializable transactions
--- Equivalent to:
-BEGIN ISOLATION LEVEL SERIALIZABLE;
-UPDATE users SET name = 'Alice' WHERE id = 1;
-SELECT * FROM users WHERE id = 1;  -- Sees 'Alice'
-COMMIT;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guarantee</strong>: No dirty reads, no phantom reads, no lost updates.</p>
-<h3 id="across-federated-services">Across Federated Services<a class="headerlink" href="#across-federated-services" title="Permanent link">&para;</a></h3>
-<p><strong>Isolation Level</strong>: Causal consistency (not strict serializability)</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Service A executes mutation
-    ↓
-Service B waits for result
-    ↓
-Service B can see the effects of Service A's mutation
-    ↓
-But Service A can't retroactively see what Service B did
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guarantee</strong>: Ordered causality, not global ordering.</p>
-<p><strong>Example</strong>: You can't have this scenario:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Time T1: Service A changes User.name → "Alice"
-Time T2: Service B reads User.name → gets "Bob" (stale)
-Time T3: Service B returns response to client
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Because SAGA ensures T1's effects are visible in T2.</p>
-<hr />
-<h2 id="multi-tenant-isolation">Multi-Tenant Isolation<a class="headerlink" href="#multi-tenant-isolation" title="Permanent link">&para;</a></h2>
-<h3 id="tenant-data-must-not-cross">Tenant Data Must Not Cross<a class="headerlink" href="#tenant-data-must-not-cross" title="Permanent link">&para;</a></h3>
-<p>FraiseQL enforces strict per-tenant data scoping:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="configured-at-schema-compile-time">Configured at schema compile time<a class="headerlink" href="#configured-at-schema-compile-time" title="Permanent link">&para;</a></h1>
-<p>query users(tenantId: ID!) {
-  users(where: { tenantId: { _eq: $tenantId } }) {
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Guarantee</strong>: No query can accidentally leak Tenant A's data to Tenant B.</p>
-<p><strong>How</strong>: Field-level authorization + WHERE filter compilation.</p>
-<hr />
-<h2 id="what-about-eventual-consistency">What About Eventual Consistency?<a class="headerlink" href="#what-about-eventual-consistency" title="Permanent link">&para;</a></h2>
-<h3 id="fraiseql-does-not-provide-it">FraiseQL Does NOT Provide It<a class="headerlink" href="#fraiseql-does-not-provide-it" title="Permanent link">&para;</a></h3>
-<p>You cannot do:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation UpdateUser($id: ID!, $name: String!) {
-  updateUser(id: $id, name: $name) {
-    id
-    status  # "accepted" or "queued"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>And then:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>subscription onUserUpdate($id: ID!) {
-  userUpdated(id: $id) {
-    id
-    name
-    status  # "completed"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Why not?</strong> Because:</p>
-<ol>
-<li>It's complex to implement correctly</li>
-<li>Enterprise users don't want it</li>
-<li>We prioritize certainty over speed</li>
-</ol>
-<h3 id="if-you-need-eventual-consistency">If You Need Eventual Consistency<a class="headerlink" href="#if-you-need-eventual-consistency" title="Permanent link">&para;</a></h3>
-<p>Use a system designed for it:</p>
-<ul>
-<li><strong>DynamoDB</strong> (AWS) → eventually consistent reads</li>
-<li><strong>Cassandra</strong> → eventual consistency by design</li>
-<li><strong>Event sourcing</strong> → with CQRS pattern</li>
-</ul>
-<p>Or implement it yourself:</p>
-<ul>
-<li>Queue mutations to async processor</li>
-<li>Return job ID immediately</li>
-<li>Client polls status endpoint</li>
-</ul>
-<hr />
-<h2 id="performance-implications">Performance Implications<a class="headerlink" href="#performance-implications" title="Permanent link">&para;</a></h2>
-<h3 id="latency-tradeoff">Latency Tradeoff<a class="headerlink" href="#latency-tradeoff" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>FraiseQL (CP)         100-500ms per mutation
-  ├─ Validation: 5ms
-  ├─ SAGA execution: 50-400ms (database dependent)
-  └─ Network: 10-50ms</p>
-<p>Eventual Consistency  &lt;10ms mutation response
-  ├─ ACK: 1-2ms
-  ├─ Actual processing: later
-  └─ Client waits for subscription
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>FraiseQL is slower for individual mutations.</strong></p>
-<p><strong>But you get certainty.</strong></p>
-<h3 id="throughput">Throughput<a class="headerlink" href="#throughput" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Scenario</th>
-<th>FraiseQL</th>
-<th>DynamoDB</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Simple query</td>
-<td>1,000 req/s</td>
-<td>10,000+ req/s</td>
-</tr>
-<tr>
-<td>Complex federation mutation</td>
-<td>100 concurrent transactions</td>
-<td>N/A (not designed for this)</td>
-</tr>
-<tr>
-<td>Highly read-heavy</td>
-<td>5,000 req/s</td>
-<td>50,000 req/s</td>
-</tr>
-<tr>
-<td>Write-heavy with consistency</td>
-<td>1,000 writes/s</td>
-<td>Can't guarantee consistency</td>
-</tr>
-</tbody>
-</table>
-<p><strong>FraiseQL prioritizes correctness over raw throughput.</strong></p>
-<hr />
-<h2 id="decision-tree-is-fraiseql-right-for-me">Decision Tree: Is FraiseQL Right for Me?<a class="headerlink" href="#decision-tree-is-fraiseql-right-for-me" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<ol>
-<li>
-<p>Do mutations need to complete before returning to client?
-   YES → Continue
-   NO → Use eventual consistency system</p>
-</li>
-<li>
-<p>Can stale data cause problems?
-   YES → Continue
-   NO → Use AP system (DynamoDB, Cassandra)</p>
-</li>
-<li>
-<p>Do you need strong ACID compliance?
-   YES → Continue
-   NO → Simpler systems work</p>
-</li>
-<li>
-<p>Do you need to distribute transactions across services?
-   YES → FraiseQL is ideal (SAGA + federation)
-   NO → Any GraphQL engine works</p>
-</li>
-<li>
-<p>Can you tolerate 100-500ms mutation latency?
-   YES → FraiseQL is perfect
-   NO → Use eventual consistency system
-```text</p>
-</li>
-</ol>
-<!-- Code example in TEXT -->
-
-<p><strong>If you answer YES to questions 1-5, use FraiseQL.</strong></p>
-<hr />
-<h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h2>
-<h3 id="q-why-doesnt-fraiseql-queue-mutations-and-return-immediately">Q: Why doesn't FraiseQL queue mutations and return immediately?<a class="headerlink" href="#q-why-doesnt-fraiseql-queue-mutations-and-return-immediately" title="Permanent link">&para;</a></h3>
-<p><strong>A</strong>: Because that would require:</p>
-<ol>
-<li>Subscriptions (WebSocket) for client status polling</li>
-<li>Event sourcing for tracking mutation progress</li>
-<li>Eventual consistency guarantees (we don't provide this)</li>
-</ol>
-<p>It's simpler and more reliable to execute synchronously.</p>
-<h3 id="q-can-i-use-fraiseql-with-async-mutations">Q: Can I use FraiseQL with async mutations?<a class="headerlink" href="#q-can-i-use-fraiseql-with-async-mutations" title="Permanent link">&para;</a></h3>
-<p><strong>A</strong>: Not natively. But you can:</p>
-<ul>
-<li>Return immediately with a job ID</li>
-<li>Implement a separate job status endpoint</li>
-<li>Use webhooks for notifications</li>
-</ul>
-<p>See <a href="../integrations/federation/guide.md">Federation Guide</a> and <a href="../integrations/federation/sagas.md">SAGA Transactions</a> for implementation patterns.</p>
-<h3 id="q-what-happens-if-a-saga-step-fails">Q: What happens if a SAGA step fails?<a class="headerlink" href="#q-what-happens-if-a-saga-step-fails" title="Permanent link">&para;</a></h3>
-<p><strong>A</strong>: Automatic compensation:</p>
-<ol>
-<li>FraiseQL rolls back all previous steps in reverse order</li>
-<li>Releases locks</li>
-<li>Returns error to client</li>
-</ol>
-<p>The mutation either succeeds completely or fails cleanly. No partial states.</p>
-<h3 id="q-is-fraiseql-slower-than-other-graphql-engines">Q: Is FraiseQL slower than other GraphQL engines?<a class="headerlink" href="#q-is-fraiseql-slower-than-other-graphql-engines" title="Permanent link">&para;</a></h3>
-<p><strong>A</strong>: Depends what you measure:</p>
-<ul>
-<li><strong>Individual mutation latency</strong>: Yes, slightly slower (blocking for consistency)</li>
-<li><strong>Complex join queries</strong>: No, faster (compile-time optimization)</li>
-<li><strong>Federation queries</strong>: Yes, slower (SAGA coordination overhead)</li>
-<li><strong>Data accuracy</strong>: Much faster (no stale data surprises)</li>
-</ul>
-<h3 id="q-can-i-use-fraiseql-for-real-time-features">Q: Can I use FraiseQL for real-time features?<a class="headerlink" href="#q-can-i-use-fraiseql-for-real-time-features" title="Permanent link">&para;</a></h3>
-<p><strong>A</strong>: Depends:</p>
-<ul>
-<li><strong>Real-time presence</strong>: No (eventual consistency is fine)</li>
-<li><strong>Real-time data updates</strong>: Yes (WebSocket subscriptions work)</li>
-<li><strong>Real-time notifications</strong>: Yes (webhooks + CDC)</li>
-<li><strong>Real-time analytics</strong>: No (strong consistency unnecessary)</li>
-</ul>
+<p>If your workload genuinely tolerates stale reads at massive scale (approximate like-counts, presence indicators, high-volume time-series), a purpose-built eventually-consistent store may suit those <em>specific</em> features better — but for the transactional core of an application, single-database PostgreSQL consistency is exactly what you want, and what FraiseQL gives you.</p>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="mutation-taking-too-long-1-second">"Mutation taking too long (&gt;1 second)"<a class="headerlink" href="#mutation-taking-too-long-1-second" title="Permanent link">&para;</a></h3>
-<p><strong>Cause:</strong> Synchronous consistency requirement means mutations wait for database locks and replication.</p>
-<p><strong>Diagnosis:</strong></p>
+<h3 id="a-read-right-after-a-mutation-shows-old-data">"A read right after a mutation shows old data"<a class="headerlink" href="#a-read-right-after-a-mutation-shows-old-data" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> The reading query ran in a <em>different</em> transaction that started before the mutation committed, or it hit a cached entry that was not invalidated.</p>
+<p><strong>Fix:</strong></p>
 <ol>
-<li>Check database performance: <code>EXPLAIN ANALYZE</code> on mutation query</li>
-<li>Check network latency between services: <code>ping federation-subgraph</code></li>
-<li>Monitor database locks: <code>SELECT * FROM pg_locks;</code></li>
+<li>Confirm the mutation actually committed (check the <code>fn_</code> function's returned <code>success</code> payload).</li>
+<li>If using the cache, verify a <code>CascadeRule</code> covers the mutated table — see <a href="../cascade-best-practices/">Cascade Best Practices</a>.</li>
+<li>Run reads after the mutation response is received, not concurrently.</li>
 </ol>
-<p><strong>Solutions:</strong></p>
+<h3 id="lost-update-two-mutations-overwrite-each-other">"Lost update / two mutations overwrite each other"<a class="headerlink" href="#lost-update-two-mutations-overwrite-each-other" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> Concurrent transactions under Read Committed both read the old value before writing.</p>
+<p><strong>Fix:</strong></p>
 <ul>
-<li>Add database indexes on frequently mutated columns</li>
-<li>Scale database horizontally (more replicas for read distribution)</li>
-<li>For federation, consider async job pattern (see pattern guide)</li>
-<li>Verify network is low-latency between datacenters</li>
+<li>Raise the <code>fn_</code> function to <code>SERIALIZABLE</code> (or <code>REPEATABLE READ</code>) and retry on serialization failures.</li>
+<li>Use <code>SELECT … FOR UPDATE</code> inside the function to lock the rows you intend to modify.</li>
+<li>Add a version column and check it in the <code>UPDATE … WHERE version = $expected</code> clause (optimistic locking).</li>
 </ul>
-<h3 id="stale-data-in-replicas-during-failover">"Stale data in replicas during failover"<a class="headerlink" href="#stale-data-in-replicas-during-failover" title="Permanent link">&para;</a></h3>
-<p><strong>Cause:</strong> Strong consistency only within single primary. Replicas lag during network partitions.</p>
-<p><strong>Diagnosis:</strong></p>
+<h3 id="tenant-data-leaked-across-tenants">"Tenant data leaked across tenants"<a class="headerlink" href="#tenant-data-leaked-across-tenants" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> RLS is not enabled on the table, or the policy does not read <code>current_setting('app.tenant_id')</code>.</p>
+<p><strong>Fix:</strong></p>
 <ol>
-<li>Check replication lag: PostgreSQL <code>SELECT now() - pg_last_xact_replay_timestamp();</code></li>
-<li>Monitor partition detection: Check FraiseQL logs for "partition detected"</li>
-<li>Verify replica freshness before routing queries</li>
+<li>Confirm <code>ALTER TABLE … ENABLE ROW LEVEL SECURITY</code> and a policy exist on every tenant-scoped table.</li>
+<li>Verify <code>info.context</code> carries <code>tenant_id</code> so FraiseQL emits <code>SET LOCAL app.tenant_id</code>.</li>
+<li>Add <code>mandatory_filters={"tenant_id": …}</code> on sensitive reads as defense-in-depth.</li>
 </ol>
-<p><strong>Solutions:</strong></p>
-<ul>
-<li>Route all writes to primary, reads can use replicas with acceptable lag</li>
-<li>Set up automatic replica promotion (e.g., Patroni, Pg-failover)</li>
-<li>Monitor replication lag continuously (set alerts at &gt;5s lag)</li>
-<li>Document acceptable stale-data window for your use case</li>
-</ul>
-<h3 id="federation-query-returns-partial-data">"Federation query returns partial data"<a class="headerlink" href="#federation-query-returns-partial-data" title="Permanent link">&para;</a></h3>
-<p><strong>Cause:</strong> SAGA coordination timeout or subgraph unavailability.</p>
+<h3 id="high-lock-contention-on-hot-rows">"High lock contention on hot rows"<a class="headerlink" href="#high-lock-contention-on-hot-rows" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> Many simultaneous mutations target the same row.</p>
 <p><strong>Diagnosis:</strong></p>
-<ol>
-<li>Check SAGA logs for "compensation triggered"</li>
-<li>Verify all subgraphs are responding: <code>curl http://subgraph:8000/health</code></li>
-<li>Check network connectivity: <code>ping subgraph-service</code></li>
-<li>Review query timeout settings in FraiseQL.toml</li>
-</ol>
-<p><strong>Solutions:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_locks</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">granted</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Fix:</strong></p>
 <ul>
-<li>Increase SAGA timeout (default 30s may be too aggressive): <code>saga_timeout_secs = 60</code></li>
-<li>Verify all subgraphs are reachable and responsive</li>
-<li>Check if subgraph database is slow (may need optimization)</li>
-<li>Consider splitting complex federation queries into separate requests</li>
-</ul>
-<h3 id="different-data-visible-in-federation-subgraphs">"Different data visible in federation subgraphs"<a class="headerlink" href="#different-data-visible-in-federation-subgraphs" title="Permanent link">&para;</a></h3>
-<p><strong>Cause:</strong> Each subgraph uses its own database. Mutations haven't fully replicated yet.</p>
-<p><strong>Diagnosis:</strong></p>
-<ol>
-<li>Query same entity from multiple subgraphs: <code>{ user(id: "X") { id } }</code></li>
-<li>Check replication lag between databases</li>
-<li>Verify transaction order in audit logs</li>
-</ol>
-<p><strong>Solutions:</strong></p>
-<ul>
-<li>This is expected during normal operation (strong consistency within each subgraph)</li>
-<li>For critical consistency, ensure application waits for replication</li>
-<li>Use federation readiness checks to detect lag</li>
-<li>Consider using <code>@requires</code> directive to create implicit ordering dependencies</li>
-</ul>
-<h3 id="high-lock-contention-on-frequently-updated-records">"High lock contention on frequently updated records"<a class="headerlink" href="#high-lock-contention-on-frequently-updated-records" title="Permanent link">&para;</a></h3>
-<p><strong>Cause:</strong> Multiple simultaneous mutations on same entity cause database locks.</p>
-<p><strong>Diagnosis:</strong></p>
-<ol>
-<li>Find locked rows: <code>SELECT * FROM pg_locks WHERE NOT granted;</code></li>
-<li>Identify blocking queries: <code>SELECT * FROM pg_stat_statements WHERE calls &gt; 1000;</code></li>
-<li>Monitor lock wait times in application logs</li>
-</ol>
-<p><strong>Solutions:</strong></p>
-<ul>
-<li>Add database indexes on WHERE clauses in mutations</li>
-<li>Reduce mutation frequency if possible (batch updates)</li>
-<li>Consider partitioning frequently updated tables</li>
-<li>Implement optimistic locking if conflict is acceptable</li>
-</ul>
-<h3 id="partition-tolerance-system-becomes-unavailable-instead-of-serving-stale-data">"Partition tolerance: system becomes unavailable instead of serving stale data"<a class="headerlink" href="#partition-tolerance-system-becomes-unavailable-instead-of-serving-stale-data" title="Permanent link">&para;</a></h3>
-<p><strong>This is expected behavior.</strong> FraiseQL chooses consistency over availability.</p>
-<p><strong>Diagnosis:</strong></p>
-<ol>
-<li>Confirm this is intentional choice for your use case</li>
-<li>If not acceptable, you need different architecture</li>
-</ol>
-<p><strong>Solutions:</strong></p>
-<ul>
-<li>If high availability is critical, implement caching layer (Redis) for reads during partition</li>
-<li>Use circuit breakers to detect partitions early</li>
-<li>Implement graceful degradation (serve cached data with disclaimer)</li>
-<li>Document expected outage windows for users</li>
+<li>Add indexes on the columns your <code>fn_</code> functions filter on.</li>
+<li>Batch updates where possible to reduce transaction count.</li>
+<li>Consider partitioning frequently updated tables.</li>
 </ul>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<p><strong>Related Architecture Guides:</strong></p>
+<p><strong>Architecture:</strong></p>
 <ul>
-<li><strong><a href="../integrations/federation/guide.md">Federation Guide</a></strong> — Multi-database federation with consistency guarantees</li>
-<li><strong><a href="../integrations/federation/sagas.md">SAGA Pattern Details</a></strong> — Distributed transaction coordination and compensation</li>
-<li><strong><a href="../architecture/core/execution-semantics.md">Execution Semantics</a></strong> — Query, mutation, and subscription execution guarantees</li>
+<li><a href="../../architecture/cqrs-design/">CQRS Design</a> — the read-view / write-function split this model builds on</li>
 </ul>
-<p><strong>Operational Guides:</strong></p>
+<p><strong>Operational:</strong></p>
 <ul>
-<li><strong><a href="../production-deployment/">Production Deployment</a></strong> — Scaling FraiseQL for consistency requirements</li>
-<li><strong><a href="../monitoring/">Monitoring &amp; Observability</a></strong> — Detecting consistency violations in production</li>
-<li><strong><a href="../../operations/performance-tuning-runbook/">Performance Tuning</a></strong> — Optimizing for consistency targets</li>
-<li><strong><a href="../../operations/distributed-tracing/">Distributed Tracing</a></strong> — Tracking transaction causality</li>
+<li><a href="../production-deployment/">Production Deployment</a> — running the FastAPI app in production</li>
+<li><a href="../monitoring/">Monitoring &amp; Observability</a> — detecting lock contention and slow transactions</li>
+<li><a href="../../operations/performance-tuning-runbook/">Performance Tuning</a> — optimizing transactions and views</li>
 </ul>
-<p><strong>Testing &amp; Validation:</strong></p>
+<p><strong>Related Guides:</strong></p>
 <ul>
-<li><strong><a href="./testing-strategy.md">Testing Strategy</a></strong> — Testing consistency guarantees</li>
-</ul>
-<p><strong>Related Concepts:</strong></p>
-<ul>
-<li><strong><a href="../patterns/">Common Patterns</a></strong> — Real-world patterns built on consistency model</li>
-<li><strong><a href="../authorization-quick-start/">Authorization &amp; RBAC</a></strong> — Row-level consistency with permissions</li>
-<li><strong><a href="../common-gotchas/">Common Gotchas</a></strong> — Consistency pitfalls and solutions</li>
+<li><a href="../cascade-best-practices/">Cascade Best Practices</a> — keeping cached results consistent</li>
+<li><a href="../authorization-quick-start/">Authorization Quick Start</a> — RLS and field-level authorization</li>
+<li><a href="../common-gotchas/">Common Gotchas</a> — consistency pitfalls and solutions</li>
 </ul>
 <p><strong>Troubleshooting:</strong></p>
 <ul>
-<li><strong><a href="../troubleshooting-decision-tree/">Troubleshooting Decision Tree</a></strong> — Route to correct guide for consistency issues</li>
-<li><strong><a href="../troubleshooting.md">Troubleshooting Guide</a></strong> — FAQ and solutions</li>
+<li><a href="../troubleshooting/">Troubleshooting Guide</a> — FAQ and solutions</li>
 </ul>
 
 
@@ -6364,6 +5514,9 @@ Time T3: Service B returns response to client
 
 
 
+
+  
+  
 
 
 

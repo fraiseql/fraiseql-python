@@ -2999,34 +2999,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -3403,17 +3375,6 @@
     <span class="md-ellipsis">
       
         🔢 ERROR CODE LOOKUP
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#federation-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔗 FEDERATION ISSUES
       
     </span>
   </a>
@@ -5224,17 +5185,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#federation-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔗 FEDERATION ISSUES
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#still-having-issues" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5286,83 +5236,65 @@ tags: ["documentation", "reference"]</p>
 <h1 id="troubleshooting-decision-tree">Troubleshooting Decision Tree<a class="headerlink" href="#troubleshooting-decision-tree" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
 <strong>Audience:</strong> Developers, DevOps, Support Engineers
-<strong>Reading Time:</strong> 5 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
+<strong>Reading Time:</strong> 5 minutes</p>
 <p>Use this decision tree to quickly identify which troubleshooting guide applies to your problem.</p>
 <hr />
 <h2 id="start-here-whats-your-problem">🎯 Start Here: What's Your Problem?<a class="headerlink" href="#start-here-whats-your-problem" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-identify-the-symptom-category">Step 1: Identify the Symptom Category<a class="headerlink" href="#step-1-identify-the-symptom-category" title="Permanent link">&para;</a></h3>
 <p><strong>Select the one that best describes your situation:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Does your problem involve...</p>
-<ol>
-<li>
-<p>Starting the server or deployment?
-   → Go to: DEPLOYMENT ISSUES</p>
-</li>
-<li>
-<p>GraphQL queries returning errors?
-   → Go to: QUERY EXECUTION ISSUES</p>
-</li>
-<li>
-<p>Mutations not working or failing?
-   → Go to: MUTATION ISSUES</p>
-</li>
-<li>
-<p>Real-time updates or subscriptions?
-   → Go to: SUBSCRIPTION ISSUES</p>
-</li>
-<li>
-<p>Authentication or authorization problems?
-   → Go to: AUTHENTICATION &amp; AUTHORIZATION</p>
-</li>
-<li>
-<p>Slow queries or performance issues?
-   → Go to: PERFORMANCE ISSUES</p>
-</li>
-<li>
-<p>Database connection problems?
-   → Go to: DATABASE CONNECTIVITY</p>
-</li>
-<li>
-<p>Configuration issues?
-   → Go to: CONFIGURATION ISSUES</p>
-</li>
-<li>
-<p>Specific error codes?
-   → Go to: ERROR CODE LOOKUP</p>
-</li>
-<li>
-<p>Multi-service or federation problems?
-    → Go to: FEDERATION ISSUES
-```text</p>
-</li>
-</ol>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Does your problem involve...
 
+1. Starting the app or deployment?
+   → Go to: DEPLOYMENT ISSUES
+
+2. GraphQL queries returning errors?
+   → Go to: QUERY EXECUTION ISSUES
+
+3. Mutations not working or failing?
+   → Go to: MUTATION ISSUES
+
+4. Real-time updates or subscriptions?
+   → Go to: SUBSCRIPTION ISSUES
+
+5. Authentication or authorization problems?
+   → Go to: AUTHENTICATION &amp; AUTHORIZATION
+
+6. Slow queries or performance issues?
+   → Go to: PERFORMANCE ISSUES
+
+7. Database connection problems?
+   → Go to: DATABASE CONNECTIVITY
+
+8. Configuration issues?
+   → Go to: CONFIGURATION ISSUES
+
+9. Specific error codes?
+   → Go to: ERROR CODE LOOKUP
+</code></pre></div>
 <hr />
 <h2 id="deployment-issues">🚀 DEPLOYMENT ISSUES<a class="headerlink" href="#deployment-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Container fails to start:</strong></p>
 <ul>
 <li>Check Docker image build: <code>docker build . --no-cache</code></li>
-<li>Verify Rust compilation: <code>cargo build --release</code></li>
+<li>Verify dependencies are installed: <code>uv sync</code></li>
 <li>Review startup logs: <code>docker logs &lt;container_id&gt;</code></li>
-<li>→ <strong>Full guide:</strong> <a href="../deployment/guide.md">Deployment Guide</a></li>
+<li>→ <strong>Full guide:</strong> <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
-<p><strong>Application crashes during startup:</strong></p>
+<p><strong>App fails to start:</strong></p>
 <ul>
-<li>Check schema compilation: <code>FraiseQL compile schema.json</code></li>
-<li>Verify TOML syntax: <code>FraiseQL validate config.toml</code></li>
+<li>Read the startup traceback — the schema is built in memory at startup, so a bad
+  type/query/mutation definition raises here, not at request time</li>
+<li>Verify <code>create_fraiseql_app(...)</code> arguments (<code>database_url</code>, <code>types</code>, <code>queries</code>, <code>mutations</code>)</li>
 <li>Check environment variables: <code>env | grep FRAISEQL</code></li>
 <li>→ <strong>Full guide:</strong> <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
-<p><strong>Server starts but no requests work:</strong></p>
+<p><strong>App starts but no requests work:</strong></p>
 <ul>
-<li>Verify port is listening: <code>netstat -an | grep 5000</code></li>
+<li>Verify the ASGI server is bound to the expected port: <code>uvicorn app:app --host 0.0.0.0 --port 8000</code></li>
+<li>Check that the port is listening: <code>netstat -an | grep 8000</code></li>
 <li>Check firewall rules: <code>sudo iptables -L</code></li>
-<li>Test with curl: <code>curl -i http://localhost:5000/health</code></li>
-<li>→ <strong>Full guide:</strong> <a href="../deployment/guide.md">Deployment Guide</a></li>
+<li>Test with curl: <code>curl -i http://localhost:8000/health</code></li>
+<li>→ <strong>Full guide:</strong> <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>Service won't connect to database:</strong></p>
 <ul>
@@ -5372,39 +5304,40 @@ tags: ["documentation", "reference"]</p>
 <h2 id="query-execution-issues">🔍 QUERY EXECUTION ISSUES<a class="headerlink" href="#query-execution-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Query returns GraphQL error:</strong></p>
 <p><strong>Error type:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Is the error about...</p>
-<p>a) "Field X doesn't exist"?
-   - Check schema is compiled: <code>schema.compiled.json</code> exists
-   - Verify field name in schema definition
-   - Regenerate schema: <code>FraiseQL compile</code>
-   → <a href="../troubleshooting.md#schema-errors">Troubleshooting Guide: Schema Errors</a></p>
-<p>b) "Unauthorized" or "Permission denied"?
-   → Go to: AUTHENTICATION &amp; AUTHORIZATION</p>
-<p>c) Database error (SQL error in message)?
-   → Go to: DATABASE CONNECTIVITY</p>
-<p>d) "Query timeout"?
-   → Go to: PERFORMANCE ISSUES</p>
-<p>e) Something else?
-   → Go to: ERROR CODE LOOKUP
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Is the error about...
 
+a) &quot;Field X doesn&#39;t exist&quot;?
+   - Verify the field name in the @fraiseql.type definition
+   - Confirm the field is selected in the view&#39;s data JSONB (jsonb_build_object)
+   - Restart the app so the schema is rebuilt from the updated definitions
+   → [Troubleshooting Guide: Schema Errors](./troubleshooting.md#schema-errors)
+
+b) &quot;Unauthorized&quot; or &quot;Permission denied&quot;?
+   → Go to: AUTHENTICATION &amp; AUTHORIZATION
+
+c) Database error (SQL error in message)?
+   → Go to: DATABASE CONNECTIVITY
+
+d) &quot;Query timeout&quot;?
+   → Go to: PERFORMANCE ISSUES
+
+e) Something else?
+   → Go to: ERROR CODE LOOKUP
+</code></pre></div>
 <p><strong>Query returns null when expecting data:</strong></p>
 <ul>
 <li>Verify data exists in database: <code>SELECT * FROM table_name LIMIT 1;</code></li>
 <li>Check WHERE clause filters: <code>SELECT * FROM table_name WHERE ... LIMIT 1;</code></li>
 <li>Verify authorization isn't hiding data (row-level filters)</li>
 <li>Check pagination offset: Is <code>skip</code> too high?</li>
-<li>→ <a href="../troubleshooting.md#no-results">Troubleshooting Guide: No Results</a></li>
+<li>→ <a href="../troubleshooting/#no-results">Troubleshooting Guide: No Results</a></li>
 </ul>
 <p><strong>Query response is incomplete or truncated:</strong></p>
 <ul>
 <li>Check pagination limit: Default is 100, max is 1000</li>
 <li>Increase limit in query: <code>users(first: 500) { ... }</code></li>
 <li>Check response size: Very large responses may be truncated</li>
-<li>→ <a href="../troubleshooting.md#incomplete-results">Troubleshooting Guide: Incomplete Results</a></li>
+<li>→ <a href="../troubleshooting/#incomplete-results">Troubleshooting Guide: Incomplete Results</a></li>
 </ul>
 <p><strong>Query takes too long:</strong></p>
 <ul>
@@ -5414,32 +5347,33 @@ tags: ["documentation", "reference"]</p>
 <h2 id="mutation-issues">✏️ MUTATION ISSUES<a class="headerlink" href="#mutation-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Mutation fails or returns error:</strong></p>
 <p><strong>Error type:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Is the error about...</p>
-<p>a) "Constraint violation" (duplicate key, foreign key)?
-   - Check unique constraints: SHOW UNIQUE CONSTRAINTS
-   - Verify foreign key exists: SELECT * FROM referenced_table WHERE id = ...
-   → <a href="../troubleshooting.md#constraint-violations">Troubleshooting Guide: Constraint Violations</a></p>
-<p>b) "Invalid input" or "Validation error"?
-   - Review input validation error message
-   - Check field types match schema
-   → <a href="../troubleshooting.md#input-validation">Troubleshooting Guide: Input Validation</a></p>
-<p>c) "Permission denied"?
-   → Go to: AUTHENTICATION &amp; AUTHORIZATION</p>
-<p>d) Database error?
-   → Go to: DATABASE CONNECTIVITY</p>
-<p>e) Something else?
-   → Go to: ERROR CODE LOOKUP
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Is the error about...
 
+a) &quot;Constraint violation&quot; (duplicate key, foreign key)?
+   - Check unique constraints in the underlying tb_ table
+   - Verify foreign key exists: SELECT * FROM referenced_table WHERE id = ...
+   → [Troubleshooting Guide: Constraint Violations](./troubleshooting.md#constraint-violations)
+
+b) &quot;Invalid input&quot; or &quot;Validation error&quot;?
+   - Review the input validation error message returned by the fn_ function
+   - Check input field types match the @fraiseql.input definition
+   → [Troubleshooting Guide: Input Validation](./troubleshooting.md#input-validation)
+
+c) &quot;Permission denied&quot;?
+   → Go to: AUTHENTICATION &amp; AUTHORIZATION
+
+d) Database error?
+   → Go to: DATABASE CONNECTIVITY
+
+e) Something else?
+   → Go to: ERROR CODE LOOKUP
+</code></pre></div>
 <p><strong>Mutation succeeds but data looks wrong:</strong></p>
 <ul>
 <li>Verify mutation result in GraphQL response</li>
 <li>Query database directly: <code>SELECT * FROM table_name WHERE id = ...</code></li>
 <li>Check for triggers or stored procedures modifying data</li>
-<li>→ <a href="../troubleshooting.md#data-integrity">Troubleshooting Guide: Data Integrity</a></li>
+<li>→ <a href="../troubleshooting/#data-integrity">Troubleshooting Guide: Data Integrity</a></li>
 </ul>
 <p><strong>Mutation is very slow:</strong></p>
 <ul>
@@ -5449,24 +5383,25 @@ tags: ["documentation", "reference"]</p>
 <h2 id="subscription-issues">🔄 SUBSCRIPTION ISSUES<a class="headerlink" href="#subscription-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Subscription not connecting:</strong></p>
 <ul>
-<li>Verify WebSocket endpoint: <code>wss://server:5000/graphql</code></li>
-<li>Check WebSocket proxy configuration</li>
-<li>Verify authentication token in subscription</li>
-<li>→ <a href="../troubleshooting.md#websocket">Troubleshooting Guide: WebSocket Connection</a></li>
+<li>Verify the WebSocket endpoint: <code>ws://localhost:8000/graphql</code></li>
+<li>Check WebSocket proxy configuration (the proxy must forward the <code>Upgrade</code> header)</li>
+<li>Verify the authentication token in the subscription connection params</li>
+<li>→ <a href="../troubleshooting/#websocket">Troubleshooting Guide: WebSocket Connection</a></li>
 </ul>
 <p><strong>Subscription connects but no events:</strong></p>
 <ul>
-<li>Verify CDC enabled: Check <code>tb_entity_change_log</code> has data</li>
-<li>Check event filtering: <code>where</code> clause might hide events</li>
-<li>Verify polling interval: Default 100ms, configurable</li>
+<li>Confirm your <code>@fraiseql.subscription</code> async generator actually yields values</li>
+<li>Check the event source backing the generator (PostgreSQL <code>LISTEN/NOTIFY</code>, polling, or
+  an external stream) is producing updates</li>
+<li>Check event filtering: a <code>subscription_filter</code> may be hiding events</li>
 <li>→ <a href="../../architecture/realtime/subscriptions/#debugging">Subscriptions Architecture</a></li>
 </ul>
 <p><strong>Subscription receives stale data:</strong></p>
 <ul>
-<li>Check event timestamp vs current time</li>
-<li>Verify database replication lag (if multi-database)</li>
-<li>Check CDC polling interval: Increase if too low</li>
-<li>→ <a href="../troubleshooting.md#event-delivery">Troubleshooting Guide: Event Delivery</a></li>
+<li>Check the event timestamp vs current time</li>
+<li>Confirm the generator re-reads fresh data (e.g. re-<code>db.find</code> on each tick) rather than
+  yielding a cached value</li>
+<li>→ <a href="../troubleshooting/#event-delivery">Troubleshooting Guide: Event Delivery</a></li>
 </ul>
 <hr />
 <h2 id="authentication-authorization">🔐 AUTHENTICATION &amp; AUTHORIZATION<a class="headerlink" href="#authentication-authorization" title="Permanent link">&para;</a></h2>
@@ -5488,22 +5423,23 @@ tags: ["documentation", "reference"]</p>
 <p><strong>Query or mutation denied with "Unauthorized":</strong></p>
 <ul>
 <li>Verify user is authenticated: Check Authorization header</li>
-<li>Check user has required role: Verify in RBAC configuration</li>
-<li>Check field-level permissions: Some fields might be restricted</li>
+<li>Check user has the required role in your <code>Authorizer</code> / RBAC configuration</li>
+<li>Check field-level permissions: Some fields might be restricted via <code>authorize_fields</code></li>
 <li>→ <a href="../authorization-quick-start/">RBAC &amp; Field Authorization</a></li>
 </ul>
 <p><strong>Row-level data hidden or unauthorized:</strong></p>
 <ul>
-<li>Verify row-level security filter in schema: <code>where: Where... = FraiseQL.where(...)</code></li>
-<li>Check tenant/org filtering is working</li>
-<li>Verify context values passed: <code>x-tenant-id</code> header set?</li>
+<li>Verify your PostgreSQL Row-Level Security (RLS) policies on the underlying tables</li>
+<li>Check tenant/org filtering: the request context must carry <code>tenant_id</code> so the repository
+  issues <code>SET LOCAL app.tenant_id = …</code> for RLS</li>
+<li>Verify context values are passed: is the <code>x-tenant-id</code> header set?</li>
 <li>→ <a href="../authorization-quick-start/">RBAC Guide</a></li>
 </ul>
 <hr />
 <h2 id="performance-issues">⚡ PERFORMANCE ISSUES<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Single query is slow (&gt;1 second):</strong></p>
 <ol>
-<li>Is it the first query? (Cold start, schema compilation)</li>
+<li>Is it the first query? (Cold start, connection pool warm-up)</li>
 <li>Is database responding slowly? Test database directly: <code>time psql -c "SELECT COUNT(*) FROM table"</code></li>
 <li>Is query complex (many nested fields)?</li>
 <li>Simplify query, remove nested selections</li>
@@ -5516,7 +5452,7 @@ tags: ["documentation", "reference"]</p>
 <li>Check indexes exist on filtered columns</li>
 <li>Check database statistics: <code>ANALYZE table_name;</code></li>
 <li>Consider table-backed views (tv_*) for frequently accessed data</li>
-<li>→ <a href="./view-selection-performance-testing.md">View Selection Guide</a></li>
+<li>→ <a href="../../architecture/database/view-selection-guide/">View Selection Guide</a></li>
 </ul>
 <p><strong>All queries getting slower over time:</strong></p>
 <ul>
@@ -5525,13 +5461,6 @@ tags: ["documentation", "reference"]</p>
 <li>Verify indexes haven't fragmented: <code>REINDEX;</code></li>
 <li>Check disk space: <code>df -h</code></li>
 <li>→ <a href="#database-connectivity">Database Connectivity</a></li>
-</ul>
-<p><strong>High latency for federation queries:</strong></p>
-<ul>
-<li>Check inter-service latency: <code>ping service-name</code></li>
-<li>Verify database indexes on @key fields</li>
-<li>Check federation strategy: HTTP vs DirectDB vs Local</li>
-<li>→ <a href="../integrations/federation/guide.md#troubleshooting">Federation Troubleshooting</a></li>
 </ul>
 <p><strong>Memory usage increasing:</strong></p>
 <ul>
@@ -5548,7 +5477,7 @@ tags: ["documentation", "reference"]</p>
 <li>Check database port: <code>telnet db-host 5432</code></li>
 <li>Verify credentials: Username, password, database name</li>
 <li>Check connection string: <code>postgresql://user:pass@host:5432/db</code></li>
-<li>→ <a href="../deployment/guide.md#database">Database Connection Guide</a></li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>Connection times out:</strong></p>
 <ul>
@@ -5556,22 +5485,22 @@ tags: ["documentation", "reference"]</p>
 <li>Check firewall rules: <code>telnet db-host 5432</code></li>
 <li>Check network latency: <code>ping db-host</code></li>
 <li>Verify database isn't overloaded</li>
-<li>→ <a href="../deployment/guide.md#pooling">Connection Pooling Guide</a></li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>"Too many connections" error:</strong></p>
 <ul>
 <li>Check connection pool size: Default 10, max 100</li>
 <li>Check for connection leaks: <code>SELECT COUNT(*) FROM pg_stat_activity;</code></li>
 <li>Increase database <code>max_connections</code> if needed</li>
-<li>Enable connection pooling: PgBouncer or built-in pool</li>
-<li>→ <a href="../deployment/guide.md#pooling">Connection Pooling Guide</a></li>
+<li>Enable connection pooling: PgBouncer or the built-in pool</li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>SSL/TLS connection errors:</strong></p>
 <ul>
 <li>Verify SSL mode: <code>sslmode=require</code> in connection string</li>
 <li>Check certificate chain: <code>openssl s_client -connect db-host:5432</code></li>
 <li>Verify certificate not expired: <code>openssl x509 -enddate</code></li>
-<li>→ <a href="../deployment/guide.md#tls">TLS Configuration</a></li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>Authentication errors:</strong></p>
 <ul>
@@ -5584,72 +5513,44 @@ tags: ["documentation", "reference"]</p>
 <h2 id="configuration-issues">⚙️ CONFIGURATION ISSUES<a class="headerlink" href="#configuration-issues" title="Permanent link">&para;</a></h2>
 <p><strong>Configuration not taking effect:</strong></p>
 <ul>
-<li>Check TOML syntax: <code>FraiseQL validate config.toml</code></li>
-<li>Verify environment variables override: Variables take precedence</li>
-<li>Check file permissions: Can FraiseQL read config file?</li>
-<li>Restart server after config change</li>
-<li>→ <a href="../troubleshooting.md">Troubleshooting Guide</a></li>
+<li>Confirm where the setting lives: a <code>create_fraiseql_app(...)</code> keyword argument, a
+  <code>FraiseQLConfig</code> field, or a <code>FRAISEQL_*</code> environment variable</li>
+<li>Verify precedence: explicit <code>create_fraiseql_app</code> / <code>FraiseQLConfig</code> values override env vars</li>
+<li>Restart the app after a config change — config is read at startup</li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <p><strong>Environment variables not recognized:</strong></p>
 <ul>
-<li>Check variable name: <code>FRAISEQL_*</code> prefix required</li>
+<li>Check variable name: <code>FRAISEQL_*</code> prefix required (e.g. <code>FRAISEQL_DATABASE_URL</code>)</li>
 <li>Verify case sensitivity: <code>FRAISEQL_RATE_LIMIT_ENABLED</code> (not camelCase)</li>
 <li>Check for typos: List all set variables: <code>env | grep FRAISEQL</code></li>
-<li>→ <a href="../troubleshooting.md">Troubleshooting Guide</a></li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
-<p><strong>TOML parsing error:</strong></p>
+<p><strong>Config value has the wrong type:</strong></p>
 <ul>
-<li>Use TOML validator: <a href="https://www.toml-lint.com/">https://www.toml-lint.com/</a></li>
-<li>Check for invalid characters or quotes</li>
-<li>Verify array syntax: <code>[[section]]</code> vs <code>[section]</code></li>
-<li>→ <a href="../deployment/guide.md#configuration">Configuration Examples</a></li>
+<li><code>FraiseQLConfig</code> validates types at startup — read the validation error in the traceback</li>
+<li>Booleans must be <code>true</code>/<code>false</code>, ports/limits must be integers</li>
+<li>→ <a href="../production-deployment/">Production Deployment</a></li>
 </ul>
 <hr />
 <h2 id="error-code-lookup">🔢 ERROR CODE LOOKUP<a class="headerlink" href="#error-code-lookup" title="Permanent link">&para;</a></h2>
 <p><strong>Have an error code?</strong> (Format: E_XXXXX_NNN)</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Error Category:
+<div class="highlight"><pre><span></span><code>Error Category:
 - E_PARSE_* → GraphQL parsing errors
 - E_BINDING_* → Schema binding/type errors
 - E_VALIDATION_* → Request validation errors
 - E_AUTH_* → Authentication/authorization errors
 - E_DB_* → Database errors
-- E_FEDERATION_* → Federation-specific errors
-- E_INTERNAL_* → Internal server errors</p>
-<p>To find your error:
-1. Copy error code: "E_BINDING_UNKNOWN_FIELD_202"
-2. Search GitHub issues: "E_BINDING_UNKNOWN_FIELD_202"
-3. Refer to <a href="../troubleshooting.md">Main Troubleshooting Guide</a>
-```text</p>
-<!-- Code example in TEXT -->
+- E_INTERNAL_* → Internal server errors
 
+To find your error:
+1. Copy error code: &quot;E_BINDING_UNKNOWN_FIELD_202&quot;
+2. Search GitHub issues: &quot;E_BINDING_UNKNOWN_FIELD_202&quot;
+3. Refer to [Main Troubleshooting Guide](./troubleshooting.md)
+</code></pre></div>
 <p><strong>Don't see your error?</strong></p>
 <ul>
-<li>→ Go to: <strong><a href="../troubleshooting.md">Main Troubleshooting Guide</a></strong></li>
-</ul>
-<hr />
-<h2 id="federation-issues">🔗 FEDERATION ISSUES<a class="headerlink" href="#federation-issues" title="Permanent link">&para;</a></h2>
-<p><strong>Entity not found in federation:</strong></p>
-<ul>
-<li>Verify @key directive matches across subgraphs</li>
-<li>Check entity exists in database: <code>SELECT * FROM table WHERE id = ...</code></li>
-<li>Verify federation strategy: HTTP vs DirectDB vs Local</li>
-<li>→ <a href="../integrations/federation/guide.md#troubleshooting">Federation Troubleshooting</a></li>
-</ul>
-<p><strong>Federation query very slow:</strong></p>
-<ul>
-<li>Check inter-service latency: <code>ping other-service</code></li>
-<li>Verify database indexes on @key fields</li>
-<li>Consider switching to DirectDB strategy</li>
-<li>→ <a href="../integrations/federation/guide.md#performance-optimization">Federation Performance</a></li>
-</ul>
-<p><strong>SAGA transaction failed:</strong></p>
-<ul>
-<li>Check SAGA logs: Look for compensation steps</li>
-<li>Verify all services are running</li>
-<li>Check inter-service network connectivity</li>
-<li>→ <a href="../integrations/federation/sagas.md">SAGA Pattern</a></li>
+<li>→ Go to: <strong><a href="../troubleshooting/">Main Troubleshooting Guide</a></strong></li>
 </ul>
 <hr />
 <h2 id="still-having-issues">📞 Still Having Issues?<a class="headerlink" href="#still-having-issues" title="Permanent link">&para;</a></h2>
@@ -5658,12 +5559,12 @@ tags: ["documentation", "reference"]</p>
 <li><strong>Check if you have an error code:</strong></li>
 <li>Search: <a href="https://github.com/FraiseQL/FraiseQL/issues">GitHub Issues</a></li>
 <li>
-<p>Refer to: <a href="../troubleshooting.md">Troubleshooting Guide</a></p>
+<p>Refer to: <a href="../troubleshooting/">Troubleshooting Guide</a></p>
 </li>
 <li>
 <p><strong>Review comprehensive guides:</strong></p>
 </li>
-<li><strong><a href="../troubleshooting.md">Main Troubleshooting Guide</a></strong> — All FAQs and common issues</li>
+<li><strong><a href="../troubleshooting/">Main Troubleshooting Guide</a></strong> — All FAQs and common issues</li>
 <li><strong><a href="../production-deployment/">Production Deployment</a></strong> — Deployment procedures</li>
 <li>
 <p><strong><a href="../../operations/performance-tuning-runbook/">Performance Tuning</a></strong> — Performance optimization</p>
@@ -5672,17 +5573,16 @@ tags: ["documentation", "reference"]</p>
 <p><strong>Get help:</strong></p>
 </li>
 <li><strong>Open a GitHub Issue:</strong> <a href="https://github.com/FraiseQL/FraiseQL/issues">GitHub Issues</a></li>
-<li><strong>Include:</strong> Error code, steps to reproduce, environment details (database, language, OS)</li>
+<li><strong>Include:</strong> Error code, steps to reproduce, environment details (PostgreSQL version, Python version, OS)</li>
 <li><strong>Tag:</strong> <code>troubleshooting</code> label for visibility</li>
 </ol>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Complete Troubleshooting Guides:</strong></p>
 <ul>
-<li><strong><a href="../troubleshooting.md">Main Troubleshooting Guide</a></strong> — Comprehensive FAQ</li>
+<li><strong><a href="../troubleshooting/">Main Troubleshooting Guide</a></strong> — Comprehensive FAQ</li>
+<li><strong><a href="../troubleshooting-mutations/">Mutation Troubleshooting</a></strong> — Mutation-specific issues</li>
 <li><strong><a href="../../integrations/authentication/troubleshooting/">Authentication Troubleshooting</a></strong> — Auth-specific issues</li>
-<li><strong><a href="../integrations/federation/guide.md#troubleshooting">Federation Troubleshooting</a></strong> — Multi-service issues</li>
-<li><strong><a href="../guides/observers.md#troubleshooting">Observer Troubleshooting</a></strong> — Event system issues</li>
 </ul>
 <p><strong>Related Guides:</strong></p>
 <ul>
@@ -5691,9 +5591,6 @@ tags: ["documentation", "reference"]</p>
 <li><strong><a href="../monitoring/">Monitoring &amp; Observability</a></strong> — Observability setup</li>
 <li><strong><a href="../common-gotchas/">Common Gotchas</a></strong> — Pitfalls and solutions</li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 

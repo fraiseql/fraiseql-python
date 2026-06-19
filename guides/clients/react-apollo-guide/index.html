@@ -3446,34 +3446,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../analytics-patterns/" class="md-nav__link">
         
   
@@ -5778,680 +5750,676 @@ tags: ["documentation", "reference"]</p>
 <li>FraiseQL server running (see <a href="../../examples/">Full-Stack Examples</a>)</li>
 </ul>
 <h3 id="install-dependencies">Install Dependencies<a class="headerlink" href="#install-dependencies" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>npm install @apollo/client graphql subscriptions-transport-ws
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>install<span class="w"> </span>@apollo/client<span class="w"> </span>graphql<span class="w"> </span>subscriptions-transport-ws
+</code></pre></div>
 <p>Or with Yarn:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>yarn add @apollo/client graphql subscriptions-transport-ws
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code>yarn<span class="w"> </span>add<span class="w"> </span>@apollo/client<span class="w"> </span>graphql<span class="w"> </span>subscriptions-transport-ws
+</code></pre></div>
 <h3 id="initialize-apollo-client">Initialize Apollo Client<a class="headerlink" href="#initialize-apollo-client" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
-import { onError } from '@apollo/client/link/error';
-import { WebSocketLink } from '@apollo/client/link/ws';
-import { getMainDefinition } from '@apollo/client/utilities';</p>
-<p>// Error handling link
-const errorLink = onError(({ graphQLErrors, networkError }) =&gt; {
-  if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, locations, path }) =&gt;
-      console.error(<code>[GraphQL error]: Message: ${message}, Path: ${path}</code>, locations)
-    );
-  }
-  if (networkError) console.error(<code>[Network error]: ${networkError}</code>);
-});</p>
-<p>// HTTP link for queries/mutations
-const httpLink = new HttpLink({
-  uri: 'http://localhost:5000/graphql',
-  credentials: 'include', // Send cookies for authentication
-});</p>
-<p>// WebSocket link for subscriptions
-const wsLink = new WebSocketLink({
-  uri: 'ws://localhost:5000/graphql',
-  options: {
-    reconnect: true,
-    connectionParams: () =&gt; ({
-      authorization: localStorage.getItem('token') || '',
-    }),
-  },
-});</p>
-<p>// Choose link based on operation type
-const splitLink = from([
-  errorLink,
-  new (typeof window !== 'undefined' ? require('@apollo/client').split : null)?.(
-    ({ query }) =&gt; {
-      const definition = getMainDefinition(query);
-      return (
-        definition.kind === 'OperationDefinition' &amp;&amp;
-        definition.operation === 'subscription'
-      );
-    },
-    wsLink,
-    httpLink
-  ) || httpLink,
-]);</p>
-<p>// Create Apollo Client
-const client = new ApolloClient({
-  link: splitLink,
-  cache: new InMemoryCache(),
-  defaultOptions: {
-    watchQuery: {
-      fetchPolicy: 'cache-and-network',
-    },
-  },
-});</p>
-<p>export default client;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">,</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">,</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">onError</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/error&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">WebSocketLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/ws&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">getMainDefinition</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/utilities&#39;</span><span class="p">;</span>
 
+<span class="c1">// Error handling link</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">errorLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">onError</span><span class="p">(({</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">,</span><span class="w"> </span><span class="nx">networkError</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">graphQLErrors</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(({</span><span class="w"> </span><span class="nx">message</span><span class="p">,</span><span class="w"> </span><span class="nx">locations</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">      </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="sb">`[GraphQL error]: Message: </span><span class="si">${</span><span class="nx">message</span><span class="si">}</span><span class="sb">, Path: </span><span class="si">${</span><span class="nx">path</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span><span class="w"> </span><span class="nx">locations</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">networkError</span><span class="p">)</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="sb">`[Network error]: </span><span class="si">${</span><span class="nx">networkError</span><span class="si">}</span><span class="sb">`</span><span class="p">);</span>
+<span class="p">});</span>
+
+<span class="c1">// HTTP link for queries/mutations</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">httpLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">credentials</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;include&#39;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Send cookies for authentication</span>
+<span class="p">});</span>
+
+<span class="c1">// WebSocket link for subscriptions</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">wsLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">WebSocketLink</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">reconnect</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">connectionParams</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
+<span class="w">      </span><span class="nx">authorization</span><span class="o">:</span><span class="w"> </span><span class="kt">localStorage.getItem</span><span class="p">(</span><span class="s1">&#39;token&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}),</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+
+<span class="c1">// Choose link based on operation type</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">splitLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">from</span><span class="p">([</span>
+<span class="w">  </span><span class="nx">errorLink</span><span class="p">,</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="p">(</span><span class="ow">typeof</span><span class="w"> </span><span class="nb">window</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="s1">&#39;undefined&#39;</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">)</span><span class="nx">.split</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">null</span><span class="p">)</span><span class="o">?</span><span class="p">.(</span>
+<span class="w">    </span><span class="p">({</span><span class="w"> </span><span class="nx">query</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">getMainDefinition</span><span class="p">(</span><span class="nx">query</span><span class="p">);</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="nx">definition</span><span class="p">.</span><span class="nx">kind</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;OperationDefinition&#39;</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">        </span><span class="nx">definition</span><span class="p">.</span><span class="nx">operation</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;subscription&#39;</span>
+<span class="w">      </span><span class="p">);</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">wsLink</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">httpLink</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">httpLink</span><span class="p">,</span>
+<span class="p">]);</span>
+
+<span class="c1">// Create Apollo Client</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">link</span><span class="o">:</span><span class="w"> </span><span class="kt">splitLink</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">cache</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">(),</span>
+<span class="w">  </span><span class="nx">defaultOptions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">watchQuery</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-and-network&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="nx">client</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="wrap-app-with-apolloprovider">Wrap App with ApolloProvider<a class="headerlink" href="#wrap-app-with-apolloprovider" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { ApolloProvider } from '@apollo/client';
-import client from './apolloClient';
-import App from './App';</p>
-<p>function Root() {
-  return (
-    <ApolloProvider client={client}>
-      <App />
-    </ApolloProvider>
-  );
-}</p>
-<p>export default Root;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloProvider</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./apolloClient&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">App</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./App&#39;</span><span class="p">;</span>
 
+<span class="kd">function</span><span class="w"> </span><span class="nx">Root</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">ApolloProvider</span><span class="w"> </span><span class="nx">client</span><span class="o">=</span><span class="p">{</span><span class="nx">client</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">App</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/ApolloProvider&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="nx">Root</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h2 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">&para;</a></h2>
 <h3 id="basic-query-hook">Basic Query Hook<a class="headerlink" href="#basic-query-hook" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useQuery, gql } from '@apollo/client';</p>
-<p>const GET_USERS = gql<code>query GetUsers {
-    users {
-      id
-      name
-      email
-    }
-  }</code>;</p>
-<p>export function UserList() {
-  const { data, loading, error } = useQuery(GET_USERS);</p>
-<p>if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;</p>
-<p>return (
-    <ul>
-      {data?.users?.map((user) =&gt; (
-        <li key={user.id}>{user.name} ({user.email})</li>
-      ))}
-    </ul>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUsers {</span>
+<span class="sb">    users {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">UserList</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">loading</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Loading</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="ne">Error</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">users</span><span class="o">?</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">li</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="w"> </span><span class="p">({</span><span class="nx">user</span><span class="p">.</span><span class="nx">email</span><span class="p">})</span><span class="o">&lt;</span><span class="err">/li&gt;</span>
+<span class="w">      </span><span class="p">))}</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/ul&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="query-with-variables">Query with Variables<a class="headerlink" href="#query-with-variables" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useQuery, gql } from '@apollo/client';</p>
-<p>const GET_USER_BY_ID = gql<code>query GetUserById($id: ID!) {
-    user(id: $id) {
-      id
-      name
-      email
-      posts {
-        id
-        title
-      }
-    }
-  }</code>;</p>
-<p>interface UserDetailProps {
-  userId: string;
-}</p>
-<p>export function UserDetail({ userId }: UserDetailProps) {
-  const { data, loading, error } = useQuery(GET_USER_BY_ID, {
-    variables: { id: userId },
-  });</p>
-<p>if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;</p>
-<p>return (
-    <div>
-      <h1>{data?.user?.name}</h1>
-      <p>Email: {data?.user?.email}</p>
-      <h2>Posts:</h2>
-      <ul>
-        {data?.user?.posts?.map((post) =&gt; (
-          <li key={post.id}>{post.title}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USER_BY_ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetUserById($id: ID!) {</span>
+<span class="sb">    user(id: $id) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">      posts {</span>
+<span class="sb">        id</span>
+<span class="sb">        title</span>
+<span class="sb">      }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="kd">interface</span><span class="w"> </span><span class="nx">UserDetailProps</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">UserDetail</span><span class="p">({</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">}</span><span class="o">:</span><span class="w"> </span><span class="nx">UserDetailProps</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USER_BY_ID</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">userId</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">loading</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Loading</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="ne">Error</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">h1</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/h1&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">Email</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">email</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">h2</span><span class="o">&gt;</span><span class="nx">Posts</span><span class="o">:&lt;</span><span class="err">/h2&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">user</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="o">?</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">post</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">li</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">post</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">post</span><span class="p">.</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/li&gt;</span>
+<span class="w">        </span><span class="p">))}</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/ul&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="pagination-pattern">Pagination Pattern<a class="headerlink" href="#pagination-pattern" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const GET_POSTS_PAGINATED = gql<code>query GetPostsPaginated($limit: Int!, $offset: Int!) {
-    posts(limit: $limit, offset: $offset) {
-      id
-      title
-      createdAt
-    }
-    postsCount
-  }</code>;</p>
-<p>export function PostList() {
-  const [page, setPage] = useState(1);
-  const pageSize = 10;</p>
-<p>const { data, loading, error, fetchMore } = useQuery(
-    GET_POSTS_PAGINATED,
-    {
-      variables: { limit: pageSize, offset: 0 },
-    }
-  );</p>
-<p>const handleLoadMore = () =&gt; {
-    fetchMore({
-      variables: {
-        offset: page * pageSize,
-      },
-      updateQuery: (prev, { fetchMoreResult }) =&gt; {
-        if (!fetchMoreResult) return prev;
-        return {
-          posts: [...(prev.posts || []), ...(fetchMoreResult.posts || [])],
-          postsCount: fetchMoreResult.postsCount,
-        };
-      },
-    });
-    setPage(page + 1);
-  };</p>
-<p>if (loading) return <div>Loading...</div>;</p>
-<p>return (
-    <div>
-      <ul>
-        {data?.posts?.map((post) =&gt; (
-          <li key={post.id}>{post.title}</li>
-        ))}
-      </ul>
-      <button onClick={handleLoadMore}>Load More</button>
-      <p>Loaded {data?.posts?.length} of {data?.postsCount}</p>
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">GET_POSTS_PAGINATED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query GetPostsPaginated($limit: Int!, $offset: Int!) {</span>
+<span class="sb">    posts(limit: $limit, offset: $offset) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      createdAt</span>
+<span class="sb">    }</span>
+<span class="sb">    postsCount</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">PostList</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">page</span><span class="p">,</span><span class="w"> </span><span class="nx">setPage</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="mf">1</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">pageSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="p">,</span><span class="w"> </span><span class="nx">fetchMore</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span>
+<span class="w">    </span><span class="nx">GET_POSTS_PAGINATED</span><span class="p">,</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">limit</span><span class="o">:</span><span class="w"> </span><span class="kt">pageSize</span><span class="p">,</span><span class="w"> </span><span class="nx">offset</span><span class="o">:</span><span class="w"> </span><span class="kt">0</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">handleLoadMore</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fetchMore</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">offset</span><span class="o">:</span><span class="w"> </span><span class="kt">page</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">pageSize</span><span class="p">,</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nx">updateQuery</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">prev</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchMoreResult</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">fetchMoreResult</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">prev</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nx">posts</span><span class="o">:</span><span class="w"> </span><span class="p">[...(</span><span class="nx">prev</span><span class="p">.</span><span class="nx">posts</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[]),</span><span class="w"> </span><span class="p">...(</span><span class="nx">fetchMoreResult</span><span class="p">.</span><span class="nx">posts</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">[])],</span>
+<span class="w">          </span><span class="nx">postsCount</span><span class="o">:</span><span class="w"> </span><span class="kt">fetchMoreResult.postsCount</span><span class="p">,</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="nx">setPage</span><span class="p">(</span><span class="nx">page</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="p">);</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">loading</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Loading</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="o">?</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">post</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">li</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">post</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">post</span><span class="p">.</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/li&gt;</span>
+<span class="w">        </span><span class="p">))}</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/ul&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">button</span><span class="w"> </span><span class="nx">onClick</span><span class="o">=</span><span class="p">{</span><span class="nx">handleLoadMore</span><span class="p">}</span><span class="o">&gt;</span><span class="nx">Load</span><span class="w"> </span><span class="nx">More</span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">Loaded</span><span class="w"> </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">posts</span><span class="o">?</span><span class="p">.</span><span class="nx">length</span><span class="p">}</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">postsCount</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="fetch-policies">Fetch Policies<a class="headerlink" href="#fetch-policies" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// cache-first: Return from cache if available (default for most queries)
-useQuery(GET_USERS, { fetchPolicy: 'cache-first' });</p>
-<p>// cache-and-network: Return from cache, then refetch in background
-useQuery(GET_USERS, { fetchPolicy: 'cache-and-network' });</p>
-<p>// cache-only: Only use cache, never fetch
-useQuery(GET_USERS, { fetchPolicy: 'cache-only' });</p>
-<p>// network-only: Always fetch from server
-useQuery(GET_USERS, { fetchPolicy: 'network-only' });</p>
-<p>// no-cache: Don't use cache at all
-useQuery(GET_USERS, { fetchPolicy: 'no-cache' });
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">// cache-first: Return from cache if available (default for most queries)</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-first&#39;</span><span class="w"> </span><span class="p">});</span>
 
+<span class="c1">// cache-and-network: Return from cache, then refetch in background</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-and-network&#39;</span><span class="w"> </span><span class="p">});</span>
+
+<span class="c1">// cache-only: Only use cache, never fetch</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-only&#39;</span><span class="w"> </span><span class="p">});</span>
+
+<span class="c1">// network-only: Always fetch from server</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;network-only&#39;</span><span class="w"> </span><span class="p">});</span>
+
+<span class="c1">// no-cache: Don&#39;t use cache at all</span>
+<span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;no-cache&#39;</span><span class="w"> </span><span class="p">});</span>
+</code></pre></div>
 <hr />
 <h2 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h2>
 <h3 id="basic-mutation-hook">Basic Mutation Hook<a class="headerlink" href="#basic-mutation-hook" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useMutation, gql } from '@apollo/client';</p>
-<p>const CREATE_POST = gql<code>mutation CreatePost($title: String!, $content: String!) {
-    createPost(title: $title, content: $content) {
-      id
-      title
-      content
-      createdAt
-    }
-  }</code>;</p>
-<p>export function CreatePostForm() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');</p>
-<p>const [createPost, { loading, error }] = useMutation(CREATE_POST);</p>
-<p>const handleSubmit = async (e: React.FormEvent) =&gt; {
-    e.preventDefault();
-    try {
-      const result = await createPost({
-        variables: { title, content },
-      });
-      console.log('Post created:', result.data?.createPost);
-      setTitle('');
-      setContent('');
-    } catch (err) {
-      console.error('Error creating post:', err);
-    }
-  };</p>
-<p>return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Post title"
-      /&gt;
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Post content"
-      /&gt;
-      <button type="submit" disabled={loading}>
-        {loading ? 'Creating...' : 'Create Post'}
-      </button>
-      {error &amp;&amp; <div className="error">{error.message}</div>}
-    </form>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">CREATE_POST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation CreatePost($title: String!, $content: String!) {</span>
+<span class="sb">    createPost(title: $title, content: $content) {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      content</span>
+<span class="sb">      createdAt</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">CreatePostForm</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">setTitle</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">setContent</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">createPost</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">CREATE_POST</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">handleSubmit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="o">:</span><span class="w"> </span><span class="kt">React.FormEvent</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">createPost</span><span class="p">({</span>
+<span class="w">        </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">});</span>
+<span class="w">      </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Post created:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">createPost</span><span class="p">);</span>
+<span class="w">      </span><span class="nx">setTitle</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="w">      </span><span class="nx">setContent</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Error creating post:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">form</span><span class="w"> </span><span class="nx">onSubmit</span><span class="o">=</span><span class="p">{</span><span class="nx">handleSubmit</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">input</span>
+<span class="w">        </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">title</span><span class="p">}</span>
+<span class="w">        </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setTitle</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span>
+<span class="w">        </span><span class="nx">placeholder</span><span class="o">=</span><span class="s2">&quot;Post title&quot;</span>
+<span class="w">      </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">textarea</span>
+<span class="w">        </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">content</span><span class="p">}</span>
+<span class="w">        </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setContent</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span>
+<span class="w">        </span><span class="nx">placeholder</span><span class="o">=</span><span class="s2">&quot;Post content&quot;</span>
+<span class="w">      </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">button</span><span class="w"> </span><span class="kr">type</span><span class="o">=</span><span class="s2">&quot;submit&quot;</span><span class="w"> </span><span class="nx">disabled</span><span class="o">=</span><span class="p">{</span><span class="nx">loading</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">loading</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;Creating...&#39;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Create Post&#39;</span><span class="p">}</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">error</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/div&gt;}</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/form&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="update-cache-after-mutation">Update Cache After Mutation<a class="headerlink" href="#update-cache-after-mutation" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const UPDATE_USER = gql<code>mutation UpdateUser($id: ID!, $name: String!) {
-    updateUser(id: $id, name: $name) {
-      id
-      name
-      email
-    }
-  }</code>;</p>
-<p>export function EditUserName({ userId, currentName }: any) {
-  const [newName, setNewName] = useState(currentName);</p>
-<p>const [updateUser] = useMutation(UPDATE_USER, {
-    update(cache, { data: { updateUser } }) {
-      // Update cache directly
-      cache.modify({
-        fields: {
-          users(existingUsers = []) {
-            return existingUsers.map((user: any) =&gt;
-              user.id === updateUser.id ? updateUser : user
-            );
-          },
-        },
-      });
-    },
-  });</p>
-<p>const handleSave = async () =&gt; {
-    await updateUser({
-      variables: { id: userId, name: newName },
-    });
-  };</p>
-<p>return (
-    <div>
-      <input
-        value={newName}
-        onChange={(e) => setNewName(e.target.value)}
-      /&gt;
-      <button onClick={handleSave}>Save</button>
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">UPDATE_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation UpdateUser($id: ID!, $name: String!) {</span>
+<span class="sb">    updateUser(id: $id, name: $name) {</span>
+<span class="sb">      id</span>
+<span class="sb">      name</span>
+<span class="sb">      email</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">EditUserName</span><span class="p">({</span><span class="w"> </span><span class="nx">userId</span><span class="p">,</span><span class="w"> </span><span class="nx">currentName</span><span class="w"> </span><span class="p">}</span><span class="o">:</span><span class="w"> </span><span class="nx">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">newName</span><span class="p">,</span><span class="w"> </span><span class="nx">setNewName</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="nx">currentName</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">updateUser</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">UPDATE_USER</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">update</span><span class="p">(</span><span class="nx">cache</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">updateUser</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// Update cache directly</span>
+<span class="w">      </span><span class="nx">cache</span><span class="p">.</span><span class="nx">modify</span><span class="p">({</span>
+<span class="w">        </span><span class="nx">fields</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nx">users</span><span class="p">(</span><span class="nx">existingUsers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">existingUsers</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">              </span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="nx">updateUser</span><span class="p">.</span><span class="nx">id</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">updateUser</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">user</span>
+<span class="w">            </span><span class="p">);</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">      </span><span class="p">});</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">handleSave</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">updateUser</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">userId</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">newName</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">input</span>
+<span class="w">        </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">newName</span><span class="p">}</span>
+<span class="w">        </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">setNewName</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span>
+<span class="w">      </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">button</span><span class="w"> </span><span class="nx">onClick</span><span class="o">=</span><span class="p">{</span><span class="nx">handleSave</span><span class="p">}</span><span class="o">&gt;</span><span class="nx">Save</span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="optimistic-response">Optimistic Response<a class="headerlink" href="#optimistic-response" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const DELETE_POST = gql<code>mutation DeletePost($id: ID!) {
-    deletePost(id: $id) {
-      id
-    }
-  }</code>;</p>
-<p>export function PostActions({ post }: any) {
-  const [deletePost] = useMutation(DELETE_POST, {
-    optimisticResponse: {
-      deletePost: { id: post.id, __typename: 'Post' },
-    },
-    update(cache, { data }) {
-      cache.evict({ id: cache.identify(post) });
-    },
-  });</p>
-<p>return (
-    <button
-      onClick={() =>
-        deletePost({ variables: { id: post.id } })
-      }
-    &gt;
-      Delete
-    </button>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">DELETE_POST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  mutation DeletePost($id: ID!) {</span>
+<span class="sb">    deletePost(id: $id) {</span>
+<span class="sb">      id</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">PostActions</span><span class="p">({</span><span class="w"> </span><span class="nx">post</span><span class="w"> </span><span class="p">}</span><span class="o">:</span><span class="w"> </span><span class="nx">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">deletePost</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">DELETE_POST</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">optimisticResponse</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">deletePost</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">post.id</span><span class="p">,</span><span class="w"> </span><span class="nx">__typename</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Post&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">update</span><span class="p">(</span><span class="nx">cache</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">cache</span><span class="p">.</span><span class="nx">evict</span><span class="p">({</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">cache.identify</span><span class="p">(</span><span class="nx">post</span><span class="p">)</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">});</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">button</span>
+<span class="w">      </span><span class="nx">onClick</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">        </span><span class="nx">deletePost</span><span class="p">({</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">post.id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="o">&gt;</span>
+<span class="w">      </span><span class="nx">Delete</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
 <h3 id="websocket-setup-already-done-in-apollo-client-initialization">WebSocket Setup (Already done in Apollo Client initialization)<a class="headerlink" href="#websocket-setup-already-done-in-apollo-client-initialization" title="Permanent link">&para;</a></h3>
 <h3 id="subscribe-to-events">Subscribe to Events<a class="headerlink" href="#subscribe-to-events" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useSubscription, gql } from '@apollo/client';</p>
-<p>const ON_POST_CREATED = gql<code>subscription OnPostCreated {
-    postCreated {
-      id
-      title
-      author {
-        name
-      }
-    }
-  }</code>;</p>
-<p>export function PostFeed() {
-  const { data, loading, error } = useSubscription(ON_POST_CREATED);</p>
-<p>if (loading) return <div>Connecting...</div>;
-  if (error) return <div>Error: {error.message}</div>;</p>
-<p>return (
-    <div>
-      <h2>New post created:</h2>
-      {data?.postCreated &amp;&amp; (
-        <div>
-          <h3>{data.postCreated.title}</h3>
-          <p>by {data.postCreated.author.name}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">ON_POST_CREATED</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription OnPostCreated {</span>
+<span class="sb">    postCreated {</span>
+<span class="sb">      id</span>
+<span class="sb">      title</span>
+<span class="sb">      author {</span>
+<span class="sb">        name</span>
+<span class="sb">      }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">PostFeed</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">ON_POST_CREATED</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">loading</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Connecting</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="ne">Error</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">h2</span><span class="o">&gt;</span><span class="nx">New</span><span class="w"> </span><span class="nx">post</span><span class="w"> </span><span class="nx">created</span><span class="o">:&lt;</span><span class="err">/h2&gt;</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">postCreated</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">h3</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">data</span><span class="p">.</span><span class="nx">postCreated</span><span class="p">.</span><span class="nx">title</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/h3&gt;</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">by</span><span class="w"> </span><span class="p">{</span><span class="nx">data</span><span class="p">.</span><span class="nx">postCreated</span><span class="p">.</span><span class="nx">author</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">      </span><span class="p">)}</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="handle-subscription-lifecycle">Handle Subscription Lifecycle<a class="headerlink" href="#handle-subscription-lifecycle" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const ON_MESSAGE = gql<code>subscription OnMessage {
-    messageReceived {
-      id
-      text
-      user { name }
-    }
-  }</code>;</p>
-<p>export function ChatRoom() {
-  const [messages, setMessages] = useState<any[]>([]);
-  const { data, loading, error } = useSubscription(ON_MESSAGE);</p>
-<p>useEffect(() =&gt; {
-    if (data?.messageReceived) {
-      setMessages((prev) =&gt; [...prev, data.messageReceived]);
-    }
-  }, [data?.messageReceived]);</p>
-<p>return (
-    <div>
-      <div className="messages">
-        {messages.map((msg) =&gt; (
-          <div key={msg.id}>
-            <strong>{msg.user.name}:</strong> {msg.text}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">ON_MESSAGE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  subscription OnMessage {</span>
+<span class="sb">    messageReceived {</span>
+<span class="sb">      id</span>
+<span class="sb">      text</span>
+<span class="sb">      user { name }</span>
+<span class="sb">    }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">ChatRoom</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">messages</span><span class="p">,</span><span class="w"> </span><span class="nx">setMessages</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="o">&lt;</span><span class="nx">any</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">([]);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useSubscription</span><span class="p">(</span><span class="nx">ON_MESSAGE</span><span class="p">);</span>
+
+<span class="w">  </span><span class="nx">useEffect</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">messageReceived</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">setMessages</span><span class="p">((</span><span class="nx">prev</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">[...</span><span class="nx">prev</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">.</span><span class="nx">messageReceived</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">messageReceived</span><span class="p">]);</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;messages&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">messages</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">msg</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">msg</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">            </span><span class="o">&lt;</span><span class="nx">strong</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">msg</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">:&lt;</span><span class="err">/strong&gt; {msg.text}</span>
+<span class="w">          </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">        </span><span class="p">))}</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <h3 id="global-error-handler">Global Error Handler<a class="headerlink" href="#global-error-handler" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) =&gt; {
-  if (graphQLErrors) {
-    for (const err of graphQLErrors) {
-      if (err.extensions?.code === 'UNAUTHENTICATED') {
-        // Handle auth error - redirect to login
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      }</p>
-<div class="highlight"><pre><span></span><code>  if (err.extensions?.code === &#39;FORBIDDEN&#39;) {
-    console.error(&#39;Access denied:&#39;, err.message);
-  }
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">errorLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">onError</span><span class="p">(({</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">,</span><span class="w"> </span><span class="nx">networkError</span><span class="p">,</span><span class="w"> </span><span class="nx">operation</span><span class="p">,</span><span class="w"> </span><span class="nx">forward</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">const</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nx">graphQLErrors</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;UNAUTHENTICATED&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Handle auth error - redirect to login</span>
+<span class="w">        </span><span class="nx">localStorage</span><span class="p">.</span><span class="nx">removeItem</span><span class="p">(</span><span class="s1">&#39;token&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/login&#39;</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
 
-  if (err.extensions?.code === &#39;VALIDATION_ERROR&#39;) {
-    console.error(&#39;Validation failed:&#39;, err.message);
-  }
-}
-</code></pre></div>
-<p>}</p>
-<p>if (networkError) {
-    if ('statusCode' in networkError &amp;&amp; networkError.statusCode === 401) {
-      // Redirect to login
-      window.location.href = '/login';
-    }</p>
-<div class="highlight"><pre><span></span><code>if (&#39;statusCode&#39; in networkError &amp;&amp; networkError.statusCode === 500) {
-  console.error(&#39;Server error. Please try again later.&#39;);
-}
-</code></pre></div>
-<p>}
-});
-```text</p>
-<!-- Code example in TEXT -->
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;FORBIDDEN&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Access denied:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+<span class="w">      </span><span class="p">}</span>
 
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">extensions</span><span class="o">?</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;VALIDATION_ERROR&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Validation failed:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">networkError</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;statusCode&#39;</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">networkError</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">networkError</span><span class="p">.</span><span class="nx">statusCode</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">401</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// Redirect to login</span>
+<span class="w">      </span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/login&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;statusCode&#39;</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="nx">networkError</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">networkError</span><span class="p">.</span><span class="nx">statusCode</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">500</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Server error. Please try again later.&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="component-level-error-handling">Component-Level Error Handling<a class="headerlink" href="#component-level-error-handling" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>export function SafeUserList() {
-  const { data, loading, error, refetch } = useQuery(GET_USERS);</p>
-<p>if (error) {
-    return (
-      <div className="error-container">
-        <p>Failed to load users: {error.message}</p>
-        <button onClick={() => refetch()}&gt;Try Again</button>
-      </div>
-    );
-  }</p>
-<p>if (loading) return <div>Loading...</div>;</p>
-<p>return (
-    <ul>
-      {data?.users?.map((user) =&gt; (
-        <li key={user.id}>{user.name}</li>
-      ))}
-    </ul>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">SafeUserList</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="p">,</span><span class="w"> </span><span class="nx">refetch</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USERS</span><span class="p">);</span>
 
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">className</span><span class="o">=</span><span class="s2">&quot;error-container&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">Failed</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">load</span><span class="w"> </span><span class="nx">users</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">button</span><span class="w"> </span><span class="nx">onClick</span><span class="o">=</span><span class="p">{()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">refetch</span><span class="p">()}</span><span class="o">&gt;</span><span class="nx">Try</span><span class="w"> </span><span class="nx">Again</span><span class="o">&lt;</span><span class="err">/button&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">loading</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Loading</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;;</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">ul</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">users</span><span class="o">?</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">li</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/li&gt;</span>
+<span class="w">      </span><span class="p">))}</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/ul&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="caching-strategies">Caching Strategies<a class="headerlink" href="#caching-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="cache-management">Cache Management<a class="headerlink" href="#cache-management" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useApolloClient } from '@apollo/client';</p>
-<p>export function CacheManager() {
-  const client = useApolloClient();</p>
-<p>const clearCache = () =&gt; {
-    client.cache.reset();
-  };</p>
-<p>const getCache = (query: any, variables?: any) =&gt; {
-    return client.cache.readQuery({
-      query,
-      variables,
-    });
-  };</p>
-<p>const updateCache = (query: any, variables: any, data: any) =&gt; {
-    client.cache.writeQuery({
-      query,
-      variables,
-      data,
-    });
-  };</p>
-<p>return { clearCache, getCache, updateCache };
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useApolloClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">CacheManager</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useApolloClient</span><span class="p">();</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">clearCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">client</span><span class="p">.</span><span class="nx">cache</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">getCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="nx">variables?</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">cache</span><span class="p">.</span><span class="nx">readQuery</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">query</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variables</span><span class="p">,</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">updateCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">client</span><span class="p">.</span><span class="nx">cache</span><span class="p">.</span><span class="nx">writeQuery</span><span class="p">({</span>
+<span class="w">      </span><span class="nx">query</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variables</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">data</span><span class="p">,</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">clearCache</span><span class="p">,</span><span class="w"> </span><span class="nx">getCache</span><span class="p">,</span><span class="w"> </span><span class="nx">updateCache</span><span class="w"> </span><span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="custom-cache-policy-per-component">Custom Cache Policy per Component<a class="headerlink" href="#custom-cache-policy-per-component" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>export function UserDashboard() {
-  // Static user profile - use cache
-  const { data: profile } = useQuery(GET_PROFILE, {
-    fetchPolicy: 'cache-first',
-  });</p>
-<p>// Real-time notifications - always fetch
-  const { data: notifications } = useQuery(GET_NOTIFICATIONS, {
-    fetchPolicy: 'network-only',
-    pollInterval: 5000, // Refetch every 5 seconds
-  });</p>
-<p>// Activity feed - cache + refresh
-  const { data: activity } = useQuery(GET_ACTIVITY, {
-    fetchPolicy: 'cache-and-network',
-  });</p>
-<p>return (
-    <div>
-      <Profile data={profile} />
-      <Notifications data={notifications} />
-      <Activity data={activity} />
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">UserDashboard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Static user profile - use cache</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">profile</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_PROFILE</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-first&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">});</span>
 
+<span class="w">  </span><span class="c1">// Real-time notifications - always fetch</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">notifications</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_NOTIFICATIONS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;network-only&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">pollInterval</span><span class="o">:</span><span class="w"> </span><span class="kt">5000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Refetch every 5 seconds</span>
+<span class="w">  </span><span class="p">});</span>
+
+<span class="w">  </span><span class="c1">// Activity feed - cache + refresh</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">activity</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_ACTIVITY</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-and-network&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">});</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">Profile</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">profile</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">Notifications</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">notifications</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">Activity</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">activity</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
 <h3 id="query-splitting">Query Splitting<a class="headerlink" href="#query-splitting" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>// ❌ Bad: Fetch everything at once
-const DASHBOARD = gql<code>query Dashboard {
-    currentUser { id name profile { bio } }
-    notifications { id message }
-    recentPosts { id title }
-  }</code>;</p>
-<p>// ✅ Good: Split based on render priority
-const GET_USER = gql<code>query GetUser { currentUser { id name } }</code>;
-const GET_NOTIFICATIONS = gql<code>query GetNotifications { notifications { id message } }</code>;
-const GET_POSTS = gql<code>query GetPosts { recentPosts { id title } }</code>;</p>
-<p>// Load user immediately, notifications and posts in background
-export function Dashboard() {
-  const { data: user } = useQuery(GET_USER, { fetchPolicy: 'cache-first' });
-  const { data: notifications } = useQuery(GET_NOTIFICATIONS, { skip: !user });
-  const { data: posts } = useQuery(GET_POSTS, { skip: !user });</p>
-<p>return (
-    <div>
-      <UserInfo data={user} />
-      <Suspense fallback="Loading...">
-        <Notifications data={notifications} />
-        <RecentPosts data={posts} />
-      </Suspense>
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">// ❌ Bad: Fetch everything at once</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">DASHBOARD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`</span>
+<span class="sb">  query Dashboard {</span>
+<span class="sb">    currentUser { id name profile { bio } }</span>
+<span class="sb">    notifications { id message }</span>
+<span class="sb">    recentPosts { id title }</span>
+<span class="sb">  }</span>
+<span class="sb">`</span><span class="p">;</span>
 
+<span class="c1">// ✅ Good: Split based on render priority</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_USER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetUser { currentUser { id name } }`</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_NOTIFICATIONS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetNotifications { notifications { id message } }`</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">GET_POSTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">gql</span><span class="sb">`query GetPosts { recentPosts { id title } }`</span><span class="p">;</span>
+
+<span class="c1">// Load user immediately, notifications and posts in background</span>
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">Dashboard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">user</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_USER</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">fetchPolicy</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;cache-first&#39;</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">notifications</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_NOTIFICATIONS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">skip</span><span class="o">:</span><span class="w"> </span><span class="o">!</span><span class="nx">user</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="kt">posts</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useQuery</span><span class="p">(</span><span class="nx">GET_POSTS</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">skip</span><span class="o">:</span><span class="w"> </span><span class="o">!</span><span class="nx">user</span><span class="w"> </span><span class="p">});</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">UserInfo</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">user</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">Suspense</span><span class="w"> </span><span class="nx">fallback</span><span class="o">=</span><span class="s2">&quot;Loading...&quot;</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">Notifications</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">notifications</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">RecentPosts</span><span class="w"> </span><span class="nx">data</span><span class="o">=</span><span class="p">{</span><span class="nx">posts</span><span class="p">}</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/Suspense&gt;</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="request-batching">Request Batching<a class="headerlink" href="#request-batching" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { BatchHttpLink } from '@apollo/client/link/batch-http';</p>
-<p>const batchLink = new BatchHttpLink({
-  uri: 'http://localhost:5000/graphql',
-  batchInterval: 10, // Batch queries sent within 10ms
-  batchMax: 5, // Maximum 5 queries per batch
-});
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">BatchHttpLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/batch-http&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">batchLink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">BatchHttpLink</span><span class="p">({</span>
+<span class="w">  </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">batchInterval</span><span class="o">:</span><span class="w"> </span><span class="kt">10</span><span class="p">,</span><span class="w"> </span><span class="c1">// Batch queries sent within 10ms</span>
+<span class="w">  </span><span class="nx">batchMax</span><span class="o">:</span><span class="w"> </span><span class="kt">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// Maximum 5 queries per batch</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="lazy-queries">Lazy Queries<a class="headerlink" href="#lazy-queries" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { useLazyQuery } from '@apollo/client';</p>
-<p>export function SearchUsers() {
-  const [search, setSearch] = useState('');
-  const [executeSearch, { data, loading }] = useLazyQuery(SEARCH_USERS);</p>
-<p>const handleSearch = (term: string) =&gt; {
-    setSearch(term);
-    if (term.length &gt; 2) {
-      executeSearch({ variables: { term } });
-    }
-  };</p>
-<p>return (
-    <div>
-      <input
-        value={search}
-        onChange={(e) => handleSearch(e.target.value)}
-        placeholder="Search users..."
-      /&gt;
-      {loading &amp;&amp; <div>Searching...</div>}
-      {data?.users?.map((user) =&gt; (
-        <div key={user.id}>{user.name}</div>
-      ))}
-    </div>
-  );
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">useLazyQuery</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
 
+<span class="k">export</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">SearchUsers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">search</span><span class="p">,</span><span class="w"> </span><span class="nx">setSearch</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useState</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">executeSearch</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">data</span><span class="p">,</span><span class="w"> </span><span class="nx">loading</span><span class="w"> </span><span class="p">}]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useLazyQuery</span><span class="p">(</span><span class="nx">SEARCH_USERS</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">handleSearch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">term</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">setSearch</span><span class="p">(</span><span class="nx">term</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">term</span><span class="p">.</span><span class="nx">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">executeSearch</span><span class="p">({</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">term</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">input</span>
+<span class="w">        </span><span class="nx">value</span><span class="o">=</span><span class="p">{</span><span class="nx">search</span><span class="p">}</span>
+<span class="w">        </span><span class="nx">onChange</span><span class="o">=</span><span class="p">{(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">handleSearch</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">)}</span>
+<span class="w">        </span><span class="nx">placeholder</span><span class="o">=</span><span class="s2">&quot;Search users...&quot;</span>
+<span class="w">      </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">loading</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span><span class="nx">Searching</span><span class="p">...</span><span class="o">&lt;</span><span class="err">/div&gt;}</span>
+<span class="w">      </span><span class="p">{</span><span class="nx">data</span><span class="o">?</span><span class="p">.</span><span class="nx">users</span><span class="o">?</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">div</span><span class="w"> </span><span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span><span class="p">}</span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">      </span><span class="p">))}</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="err">/div&gt;</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <h3 id="mock-fraiseql-responses">Mock FraiseQL Responses<a class="headerlink" href="#mock-fraiseql-responses" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>import { MockedProvider } from '@apollo/client/testing';
-import { render, screen } from '@testing-library/react';</p>
-<p>const mocks = [
-  {
-    request: {
-      query: GET_USERS,
-    },
-    result: {
-      data: {
-        users: [
-          { id: '1', name: 'Alice', email: 'alice@example.com' },
-          { id: '2', name: 'Bob', email: 'bob@example.com' },
-        ],
-      },
-    },
-  },
-];</p>
-<p>describe('UserList', () =&gt; {
-  it('renders user list', async () =&gt; {
-    render(
-      <MockedProvider mocks={mocks}>
-        <UserList />
-      </MockedProvider>
-    );</p>
-<div class="highlight"><pre><span></span><code>await screen.findByText(&#39;Alice (alice@example.com)&#39;);
-expect(screen.getByText(&#39;Bob (bob@example.com)&#39;)).toBeInTheDocument();
-</code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">MockedProvider</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/testing&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">render</span><span class="p">,</span><span class="w"> </span><span class="nx">screen</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@testing-library/react&#39;</span><span class="p">;</span>
 
+<span class="kd">const</span><span class="w"> </span><span class="nx">mocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">request</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="kt">GET_USERS</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">result</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">users</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Alice&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">email</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;alice@example.com&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Bob&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">email</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;bob@example.com&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">];</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="s1">&#39;UserList&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s1">&#39;renders user list&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">render</span><span class="p">(</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">MockedProvider</span><span class="w"> </span><span class="nx">mocks</span><span class="o">=</span><span class="p">{</span><span class="nx">mocks</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">UserList</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/MockedProvider&gt;</span>
+<span class="w">    </span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">screen</span><span class="p">.</span><span class="nx">findByText</span><span class="p">(</span><span class="s1">&#39;Alice (alice@example.com)&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">screen</span><span class="p">.</span><span class="nx">getByText</span><span class="p">(</span><span class="s1">&#39;Bob (bob@example.com)&#39;</span><span class="p">)).</span><span class="nx">toBeInTheDocument</span><span class="p">();</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
 <h3 id="test-error-handling">Test Error Handling<a class="headerlink" href="#test-error-handling" title="Permanent link">&para;</a></h3>
-<p>```typescript</p>
-<!-- Code example in TypeScript -->
-<p>const errorMocks = [
-  {
-    request: { query: GET_USERS },
-    error: new Error('Failed to fetch users'),
-  },
-];</p>
-<p>describe('UserList Error Handling', () =&gt; {
-  it('displays error message', async () =&gt; {
-    render(
-      <MockedProvider mocks={errorMocks}>
-        <UserList />
-      </MockedProvider>
-    );</p>
-<div class="highlight"><pre><span></span><code>await screen.findByText(/Error: Failed to fetch users/);
-</code></pre></div>
-<p>});
-});
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">errorMocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">request</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="kt">GET_USERS</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">error</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s1">&#39;Failed to fetch users&#39;</span><span class="p">),</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">];</span>
 
+<span class="nx">describe</span><span class="p">(</span><span class="s1">&#39;UserList Error Handling&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s1">&#39;displays error message&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">render</span><span class="p">(</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="nx">MockedProvider</span><span class="w"> </span><span class="nx">mocks</span><span class="o">=</span><span class="p">{</span><span class="nx">errorMocks</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="o">&lt;</span><span class="nx">UserList</span><span class="w"> </span><span class="o">/&gt;</span>
+<span class="w">      </span><span class="o">&lt;</span><span class="err">/MockedProvider&gt;</span>
+<span class="w">    </span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">screen</span><span class="p">.</span><span class="nx">findByText</span><span class="p">(</span><span class="sr">/Error: Failed to fetch users/</span><span class="p">);</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Guides:</strong></p>
@@ -6466,9 +6434,6 @@ expect(screen.getByText(&#39;Bob (bob@example.com)&#39;)).toBeInTheDocument();
 <li><a href="https://www.apollographql.com/docs/react/">Official Apollo Client Docs</a></li>
 <li><a href="https://github.com/apollographql/apollo-client">Apollo Client GitHub</a></li>
 </ul>
-<hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
 
 
 

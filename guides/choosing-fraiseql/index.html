@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/choosing-fraiseql/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Choosing FraiseQL - FraiseQL Documentation</title>
+        <title>Choosing FraiseQL: Is It Right for Your Project? - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Choosing FraiseQL
+              Choosing FraiseQL: Is It Right for Your Project?
             
           </span>
         </div>
@@ -3674,34 +3676,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -6212,19 +6186,8 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Choosing FraiseQL: Is It Right for Your Project?
-description: FraiseQL is <strong>not a general-purpose GraphQL engine</strong>. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="choosing-fraiseql-is-it-right-for-your-project">Choosing FraiseQL: Is It Right for Your Project?<a class="headerlink" href="#choosing-fraiseql-is-it-right-for-your-project" title="Permanent link">&para;</a></h1>
-<p><strong>Status:</strong> ✅ Production Ready
-<strong>Audience:</strong> Architects, Technical Leads
-<strong>Reading Time:</strong> 10-15 minutes
-<strong>Last Updated:</strong> 2026-02-05</p>
-<p>FraiseQL is <strong>not a general-purpose GraphQL engine</strong>. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.</p>
+<p>FraiseQL is a <strong>Python runtime GraphQL framework for PostgreSQL</strong>. It builds your GraphQL schema in memory at app startup and serves it over FastAPI, reading from PostgreSQL views and writing through PostgreSQL functions (CQRS). It is <strong>not a general-purpose, any-database GraphQL engine</strong> — it's optimized for a specific set of problems. This guide helps you decide if it's a good fit.</p>
 <hr />
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <h3 id="required-knowledge">Required Knowledge<a class="headerlink" href="#required-knowledge" title="Permanent link">&para;</a></h3>
@@ -6257,53 +6220,53 @@ tags: ["documentation", "reference"]</p>
 <h2 id="quick-checklist">Quick Checklist<a class="headerlink" href="#quick-checklist" title="Permanent link">&para;</a></h2>
 <p>Answer these questions honestly:</p>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need <strong>guaranteed consistency</strong> (no stale data)?</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Can mutations wait <strong>100-500ms</strong> to complete?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is <strong>PostgreSQL</strong> your database (or can it be)?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need <strong>strong consistency</strong> (no stale data)?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Is your database the <strong>source of truth</strong> (not external APIs)?</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you have <strong>relational data</strong> (not primarily document-oriented)?</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need <strong>ACID compliance</strong> or regulated industry support?</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Do you need <strong>ACID compliance</strong> or regulated-industry support?</li>
 </ul>
 <p><strong>Diagram:</strong> System architecture visualization</p>
-<p>```d2</p>
-<!-- Code example in D2 Diagram -->
-<p>direction: down</p>
-<p>Count: "Count your YES answers" {
+<pre class="d2"><code>direction: down
+
+Count: "Count your YES answers" {
   shape: box
   style.fill: "#fff9c4"
-}</p>
-<p>Four: "✅ 4-5 YES" {
+}
+
+Four: "✅ 4-5 YES" {
   shape: box
   style.fill: "#c8e6c9"
 }
 FourResult: "FraiseQL is likely\na good fit!" {
   shape: box
   style.fill: "#a5d6a7"
-}</p>
-<p>Two: "⚠️ 2-3 YES" {
+}
+
+Two: "⚠️ 2-3 YES" {
   shape: box
   style.fill: "#ffe0b2"
 }
 TwoResult: "Evaluate carefully\nwith alternatives" {
   shape: box
   style.fill: "#ffcc80"
-}</p>
-<p>Zero: "❌ 0-1 YES" {
+}
+
+Zero: "❌ 0-1 YES" {
   shape: box
   style.fill: "#ffccbc"
 }
 ZeroResult: "Probably choose\nsomething else" {
   shape: box
   style.fill: "#ff8a65"
-}</p>
-<p>Count -&gt; Four
+}
+
+Count -&gt; Four
 Count -&gt; Two
 Count -&gt; Zero
 Four -&gt; FourResult
 Two -&gt; TwoResult
-Zero -&gt; ZeroResult
-```text</p>
-<!-- Code example in TEXT -->
-
+Zero -&gt; ZeroResult</code></pre>
 <hr />
 <h2 id="feature-comparison-matrix">Feature Comparison Matrix<a class="headerlink" href="#feature-comparison-matrix" title="Permanent link">&para;</a></h2>
 <h3 id="consistency-reliability">Consistency &amp; Reliability<a class="headerlink" href="#consistency-reliability" title="Permanent link">&para;</a></h3>
@@ -6329,31 +6292,23 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>ACID transactions</td>
-<td>✅</td>
+<td>✅ (PostgreSQL)</td>
 <td>⚠️ limited</td>
 <td>❌</td>
 <td>❌</td>
 <td>✅</td>
 </tr>
 <tr>
-<td>Distributed transactions</td>
-<td>✅ (SAGA)</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-<td>❌</td>
-</tr>
-<tr>
 <td>Multi-tenant isolation</td>
-<td>✅</td>
+<td>✅ (PostgreSQL RLS)</td>
 <td>✅</td>
 <td>✅</td>
 <td>✅</td>
 <td>⚠️</td>
 </tr>
 <tr>
-<td>100% audit trail</td>
-<td>✅</td>
+<td>Audit trail</td>
+<td>✅ (in PostgreSQL)</td>
 <td>⚠️</td>
 <td>⚠️</td>
 <td>✅</td>
@@ -6392,15 +6347,15 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>N+1 prevention</td>
-<td>✅</td>
+<td>✅ (dataloaders)</td>
 <td>✅</td>
 <td>✅</td>
 <td>✅</td>
 <td>❌</td>
 </tr>
 <tr>
-<td>Automatic caching</td>
-<td>✅</td>
+<td>Result caching</td>
+<td>✅ (PostgreSQL-backed)</td>
 <td>❌</td>
 <td>❌</td>
 <td>✅</td>
@@ -6431,7 +6386,7 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>Infrastructure needed</td>
-<td>PostgreSQL+</td>
+<td>PostgreSQL</td>
 <td>AWS</td>
 <td>Cassandra</td>
 <td>Google Cloud</td>
@@ -6469,16 +6424,16 @@ Zero -&gt; ZeroResult
 </thead>
 <tbody>
 <tr>
-<td>Language support</td>
-<td>16 languages</td>
+<td>Schema authoring</td>
+<td>Python decorators</td>
 <td>AWS SDKs</td>
 <td>CQL</td>
 <td>Firebase SDKs</td>
-<td>Any</td>
+<td>Python</td>
 </tr>
 <tr>
-<td>Schema validation</td>
-<td>✅ Compile-time</td>
+<td>Schema build</td>
+<td>✅ At app startup (in memory)</td>
 <td>⚠️ Runtime</td>
 <td>⚠️ Runtime</td>
 <td>⚠️ Runtime</td>
@@ -6486,7 +6441,7 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>Authorization rules</td>
-<td>✅ Compiled</td>
+<td>✅ Built-in (authorizers/RBAC)</td>
 <td>⚠️ Custom</td>
 <td>⚠️ Custom</td>
 <td>⚠️ Custom</td>
@@ -6502,7 +6457,7 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>Query optimization</td>
-<td>✅ Compile-time</td>
+<td>✅ At runtime (field selection)</td>
 <td>⚠️ At query</td>
 <td>⚠️ At query</td>
 <td>⚠️ At query</td>
@@ -6517,24 +6472,21 @@ Zero -&gt; ZeroResult
 <p><strong>Why FraiseQL</strong>:</p>
 <ul>
 <li>Requires absolute consistency (no double-charging)</li>
-<li>Needs audit trail (regulatory compliance)</li>
+<li>Needs an audit trail (regulatory compliance)</li>
 <li>Mutations are infrequent, must be correct</li>
-<li>Multi-step transactions are common</li>
+<li>Multi-step writes happen inside a single PostgreSQL function</li>
 </ul>
-<p><strong>Example</strong>: "Transfer $1000 from account A to account B across services"</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation Transfer($fromId: ID!, $toId: ID!, $amount: Money!) {
-  transferMoney(fromId: $fromId, toId: $toId, amount: $amount) {
-    fromBalance
-    toBalance
-    transactionId
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>FraiseQL guarantees: Either both accounts updated, or neither. No partial transfers.</p>
+<p><strong>Example</strong>: "Transfer $1000 from account A to account B"</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">Transfer</span><span class="p">(</span><span class="nv">$fromId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$toId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$amount</span><span class="p">:</span><span class="w"> </span><span class="nc">Money</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">transferMoney</span><span class="p">(</span><span class="n">fromId</span><span class="p">:</span><span class="w"> </span><span class="nv">$fromId</span><span class="p">,</span><span class="w"> </span><span class="n">toId</span><span class="p">:</span><span class="w"> </span><span class="nv">$toId</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">:</span><span class="w"> </span><span class="nv">$amount</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">fromBalance</span>
+<span class="w">    </span><span class="n">toBalance</span>
+<span class="w">    </span><span class="n">transactionId</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>transferMoney</code> mutation calls a PostgreSQL <code>fn_transfer_money</code> function: either both
+accounts are updated within one transaction, or neither is. No partial transfers.</p>
 <hr />
 <h4 id="2-healthcare-medical-records">2. Healthcare &amp; Medical Records<a class="headerlink" href="#2-healthcare-medical-records" title="Permanent link">&para;</a></h4>
 <p><strong>Why FraiseQL</strong>:</p>
@@ -6544,19 +6496,16 @@ Zero -&gt; ZeroResult
 <li>Audit trail required</li>
 <li>Data corruption is unacceptable</li>
 </ul>
-<p><strong>Example</strong>: "Update patient medication with cross-service lab result verification"</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation PrescribeMedication($patientId: ID!, $medication: String!) {
-  prescribeMedication(patientId: $patientId, medication: $medication) {
-    patient { id, allergies }
-    prescription { id, medication }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>FraiseQL guarantees: Prescription never issued if allergy check fails.</p>
+<p><strong>Example</strong>: "Update patient medication with lab-result verification"</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">PrescribeMedication</span><span class="p">(</span><span class="nv">$patientId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$medication</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">prescribeMedication</span><span class="p">(</span><span class="n">patientId</span><span class="p">:</span><span class="w"> </span><span class="nv">$patientId</span><span class="p">,</span><span class="w"> </span><span class="n">medication</span><span class="p">:</span><span class="w"> </span><span class="nv">$medication</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">patient</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">allergies</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">prescription</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">medication</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The mutation's PostgreSQL function runs the allergy check and the write in one transaction:
+a prescription is never issued if the allergy check fails.</p>
 <hr />
 <h4 id="3-inventory-management">3. Inventory Management<a class="headerlink" href="#3-inventory-management" title="Permanent link">&para;</a></h4>
 <p><strong>Why FraiseQL</strong>:</p>
@@ -6567,23 +6516,20 @@ Zero -&gt; ZeroResult
 <li>Consistency prevents double-booking</li>
 </ul>
 <p><strong>Example</strong>: "Move inventory between warehouses"</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation MoveInventory(
-  $sku: String!
-  $from: ID!
-  $to: ID!
-  $quantity: Int!
-) {
-  moveInventory(sku: $sku, from: $from, to: $to, quantity: $quantity) {
-    fromWarehouse { available }
-    toWarehouse { available }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>FraiseQL guarantees: Inventory either moves completely or not at all.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">MoveInventory</span><span class="p">(</span>
+<span class="w">  </span><span class="nv">$sku</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!</span>
+<span class="w">  </span><span class="nv">$from</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!</span>
+<span class="w">  </span><span class="nv">$to</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!</span>
+<span class="w">  </span><span class="nv">$quantity</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">!</span>
+<span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">moveInventory</span><span class="p">(</span><span class="n">sku</span><span class="p">:</span><span class="w"> </span><span class="nv">$sku</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="p">:</span><span class="w"> </span><span class="nv">$from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="nv">$to</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="nv">$quantity</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">fromWarehouse</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">available</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">toWarehouse</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">available</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The PostgreSQL function backing <code>moveInventory</code> runs both updates in one transaction:
+inventory either moves completely or not at all.</p>
 <hr />
 <h4 id="4-enterprise-saas-multi-tenant">4. Enterprise SaaS (Multi-tenant)<a class="headerlink" href="#4-enterprise-saas-multi-tenant" title="Permanent link">&para;</a></h4>
 <p><strong>Why FraiseQL</strong>:</p>
@@ -6594,22 +6540,21 @@ Zero -&gt; ZeroResult
 <li>Audit logging required</li>
 </ul>
 <p><strong>Example</strong>: "Multi-tenant user management with role hierarchy"</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetTenantUsers($tenantId: ID!) {
-  users(tenantId: $tenantId) {
-    id, email, role
-  }
-}</p>
-<p>mutation AddUser($tenantId: ID!, $email: String!, $role: String!) {
-  addUserToTenant(tenantId: $tenantId, email: $email, role: $role) {
-    id, email, role
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetTenantUsers</span><span class="p">(</span><span class="nv">$tenantId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="nv">$tenantId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">role</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
-<p>FraiseQL guarantees: No cross-tenant data leaks, mutations atomic per tenant.</p>
+<span class="k">mutation</span><span class="w"> </span><span class="nf">AddUser</span><span class="p">(</span><span class="nv">$tenantId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$email</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!,</span><span class="w"> </span><span class="nv">$role</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">addUserToTenant</span><span class="p">(</span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="nv">$tenantId</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="nv">$email</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="nv">$role</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">role</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Isolation is enforced with PostgreSQL Row-Level Security: FraiseQL sets the tenant context
+as a session GUC per request, so RLS policies prevent cross-tenant data leaks and mutations
+stay atomic per tenant.</p>
 <hr />
 <h3 id="possible-fit-with-caveats">⚠️ Possible Fit (With Caveats)<a class="headerlink" href="#possible-fit-with-caveats" title="Permanent link">&para;</a></h3>
 <h4 id="1-e-commerce-without-real-time-features">1. E-commerce (Without Real-time Features)<a class="headerlink" href="#1-e-commerce-without-real-time-features" title="Permanent link">&para;</a></h4>
@@ -6637,7 +6582,7 @@ Zero -&gt; ZeroResult
 <p><strong>Pros</strong>:</p>
 <ul>
 <li>Data consistency important</li>
-<li>Publishing workflows benefit from SAGA</li>
+<li>Publishing workflows fit transactional mutations</li>
 <li>Audit trail required</li>
 </ul>
 <p><strong>Cons</strong>:</p>
@@ -6662,17 +6607,13 @@ Zero -&gt; ZeroResult
 </ul>
 <p><strong>Better choice</strong>: DynamoDB, Cassandra, ClickHouse</p>
 <p><strong>Example anti-pattern</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query RealTimeMetrics {
-  metrics(last: 10000) {
-    timestamp, value
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>FraiseQL would be slow. Use Cassandra instead.</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">RealTimeMetrics</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">metrics</span><span class="p">(</span><span class="n">last</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">value</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>FraiseQL would be slow. Use a columnar/analytics store instead.</p>
 <hr />
 <h4 id="2-social-media">2. Social Media<a class="headerlink" href="#2-social-media" title="Permanent link">&para;</a></h4>
 <p><strong>Why NOT FraiseQL</strong>:</p>
@@ -6684,16 +6625,12 @@ Zero -&gt; ZeroResult
 </ul>
 <p><strong>Better choice</strong>: DynamoDB, Cassandra, Firebase</p>
 <p><strong>Example anti-pattern</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation LikePost($postId: ID!) {
-  likePost(postId: $postId) {
-    likes  # Doesn't need exact count
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">LikePost</span><span class="p">(</span><span class="nv">$postId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">likePost</span><span class="p">(</span><span class="n">postId</span><span class="p">:</span><span class="w"> </span><span class="nv">$postId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">likes</span><span class="w">  </span><span class="c"># Doesn&#39;t need exact count</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>DynamoDB's eventual consistency is perfect here.</p>
 <hr />
 <h4 id="3-iot-time-series">3. IoT &amp; Time Series<a class="headerlink" href="#3-iot-time-series" title="Permanent link">&para;</a></h4>
@@ -6706,17 +6643,13 @@ Zero -&gt; ZeroResult
 </ul>
 <p><strong>Better choice</strong>: InfluxDB, TimescaleDB, Prometheus</p>
 <p><strong>Example anti-pattern</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation LogSensorReading($sensorId: ID!, $value: Float!) {
-  logReading(sensorId: $sensorId, value: $value) {
-    sensorId, value, timestamp
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Use time-series DB directly.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">LogSensorReading</span><span class="p">(</span><span class="nv">$sensorId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$value</span><span class="p">:</span><span class="w"> </span><span class="nb">Float</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">logReading</span><span class="p">(</span><span class="n">sensorId</span><span class="p">:</span><span class="w"> </span><span class="nv">$sensorId</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="nv">$value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">sensorId</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">timestamp</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Use a time-series DB directly.</p>
 <hr />
 <h4 id="4-real-time-chat-presence">4. Real-time Chat / Presence<a class="headerlink" href="#4-real-time-chat-presence" title="Permanent link">&para;</a></h4>
 <p><strong>Why NOT FraiseQL</strong>:</p>
@@ -6728,38 +6661,32 @@ Zero -&gt; ZeroResult
 </ul>
 <p><strong>Better choice</strong>: Firebase, Socket.io + Redis, Websockets</p>
 <p><strong>Example anti-pattern</strong>:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation SendMessage($chatId: ID!, $text: String!) {
-  sendMessage(chatId: $chatId, text: $text) {
-    id, text, createdAt
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Use message broker + cache instead.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">SendMessage</span><span class="p">(</span><span class="nv">$chatId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$text</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">sendMessage</span><span class="p">(</span><span class="n">chatId</span><span class="p">:</span><span class="w"> </span><span class="nv">$chatId</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">:</span><span class="w"> </span><span class="nv">$text</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">createdAt</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Use a message broker + cache instead.</p>
 <hr />
 <h2 id="decision-flowchart">Decision Flowchart<a class="headerlink" href="#decision-flowchart" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>START
+<div class="highlight"><pre><span></span><code>START
   │
-  ├─ Do you need STRONG CONSISTENCY?
-  │  ├─ NO → Don't use FraiseQL, use DynamoDB/Cassandra
+  ├─ Is PostgreSQL your database (or can it be)?
+  │  ├─ NO → Don&#39;t use FraiseQL (PostgreSQL only)
   │  └─ YES
   │     │
-  │     ├─ Can mutations wait 100-500ms?
-  │     │  ├─ NO → Don't use FraiseQL, use eventual consistency system
+  │     ├─ Do you need STRONG CONSISTENCY?
+  │     │  ├─ NO → Consider DynamoDB/Cassandra for AP workloads
   │     │  └─ YES
   │     │     │
-  │     │     ├─ Is your data RELATIONAL (tables, joins)?
-  │     │     │  ├─ NO → Don't use FraiseQL, use document DB
+  │     │     ├─ Can mutations wait 100-500ms?
+  │     │     │  ├─ NO → Use a low-latency eventual-consistency system
   │     │     │  └─ YES
   │     │     │     │
-  │     │     │     ├─ Do you need distributed transactions?
-  │     │     │     │  ├─ YES → FraiseQL SAGA is perfect
-  │     │     │     │  └─ NO
+  │     │     │     ├─ Is your data RELATIONAL (tables, joins)?
+  │     │     │     │  ├─ NO → Use a document DB
+  │     │     │     │  └─ YES
   │     │     │     │     │
   │     │     │     │     ├─ Do you need enterprise features?
   │     │     │     │     │  ├─ YES (audit, RBAC, multi-tenant)
@@ -6768,31 +6695,29 @@ Zero -&gt; ZeroResult
   │     │     │     │     │     └─ FraiseQL works, but simpler systems might too
   │
   └─ END
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <hr />
 <h2 id="migration-paths">Migration Paths<a class="headerlink" href="#migration-paths" title="Permanent link">&para;</a></h2>
 <h3 id="from-other-graphql-engines">From Other GraphQL Engines<a class="headerlink" href="#from-other-graphql-engines" title="Permanent link">&para;</a></h3>
 <p><strong>From Apollo Server</strong>:</p>
 <ul>
-<li>Apollo is interpretation-based, FraiseQL is compiled</li>
-<li>No direct migration, but patterns similar</li>
-<li>FraiseQL eliminates resolvers entirely</li>
-<li>Time: 2-4 weeks for small API</li>
+<li>Apollo wires up hand-written resolvers; FraiseQL generates resolvers from your PostgreSQL views</li>
+<li>No direct migration, but the schema-first patterns are similar</li>
+<li>Most boilerplate resolvers disappear (reads come from <code>v_</code>/<code>tv_</code> views)</li>
+<li>Time: 2-4 weeks for a small API</li>
 </ul>
 <p><strong>From Hasura</strong>:</p>
 <ul>
-<li>Hasura auto-generates API from schema, FraiseQL compiles schema</li>
-<li>Hasura supports more databases (Oracle, etc.)</li>
-<li>FraiseQL has better transaction support</li>
+<li>Hasura auto-generates an API from your schema; FraiseQL maps a Python-decorated schema to PostgreSQL views and functions at startup</li>
+<li>Hasura supports more databases; FraiseQL is PostgreSQL only</li>
+<li>FraiseQL puts write logic in PostgreSQL functions, giving you full transactional control</li>
 <li>Time: 2-3 weeks for migration</li>
 </ul>
 <p><strong>From Prisma</strong>:</p>
 <ul>
-<li>Prisma is ORM-based, FraiseQL is query-generation-based</li>
-<li>Both eliminate N+1 problems</li>
-<li>FraiseQL has federation support, Prisma doesn't</li>
+<li>Prisma is ORM-based; FraiseQL is SQL/view-based (CQRS)</li>
+<li>Both eliminate N+1 problems (FraiseQL via dataloaders)</li>
+<li>FraiseQL leans on PostgreSQL features (JSONB, RLS, functions) rather than an ORM layer</li>
 <li>Time: 1-2 weeks (small API)</li>
 </ul>
 <h3 id="to-other-systems">To Other Systems<a class="headerlink" href="#to-other-systems" title="Permanent link">&para;</a></h3>
@@ -6819,7 +6744,7 @@ Zero -&gt; ZeroResult
 <h2 id="red-flags-dont-use-fraiseql-if">Red Flags: Don't Use FraiseQL If<a class="headerlink" href="#red-flags-dont-use-fraiseql-if" title="Permanent link">&para;</a></h2>
 <p>🚫 <strong>You need mutation latency &lt; 50ms</strong></p>
 <ul>
-<li>FraiseQL's synchronous SAGA adds 100-500ms overhead</li>
+<li>FraiseQL's mutations run through PostgreSQL functions and typically take 100-500ms</li>
 </ul>
 <p>🚫 <strong>You need Availability in distributed scenarios</strong></p>
 <ul>
@@ -6835,7 +6760,11 @@ Zero -&gt; ZeroResult
 </ul>
 <p>🚫 <strong>You want a managed service (hands-off)</strong></p>
 <ul>
-<li>FraiseQL requires managing PostgreSQL/MySQL</li>
+<li>FraiseQL requires you to run PostgreSQL and the FastAPI app</li>
+</ul>
+<p>🚫 <strong>Your database isn't (and can't be) PostgreSQL</strong></p>
+<ul>
+<li>FraiseQL targets PostgreSQL only — its CQRS model relies on PostgreSQL views, functions, JSONB, and RLS</li>
 </ul>
 <p>🚫 <strong>You're building real-time analytics</strong></p>
 <ul>
@@ -6847,43 +6776,43 @@ Zero -&gt; ZeroResult
 </ul>
 <hr />
 <h2 id="green-flags-do-use-fraiseql-if">Green Flags: Do Use FraiseQL If<a class="headerlink" href="#green-flags-do-use-fraiseql-if" title="Permanent link">&para;</a></h2>
-<p>✅ <strong>You need guaranteed consistency</strong></p>
+<p>✅ <strong>You need strong consistency</strong></p>
 <ul>
-<li>FraiseQL makes it a first-class guarantee</li>
+<li>Backed by PostgreSQL ACID transactions</li>
 </ul>
-<p>✅ <strong>You have complex multi-service transactions</strong></p>
+<p>✅ <strong>You have complex multi-step writes</strong></p>
 <ul>
-<li>SAGA pattern with automatic compensation</li>
+<li>Encapsulate them in a single PostgreSQL function (<code>fn_</code>), called atomically by a mutation</li>
 </ul>
-<p>✅ <strong>You're in regulated industry</strong> (finance, healthcare)</p>
+<p>✅ <strong>You're in a regulated industry</strong> (finance, healthcare)</p>
 <ul>
-<li>Audit logging and compliance built-in</li>
+<li>Audit logging and compliance enforced in PostgreSQL</li>
 </ul>
 <p>✅ <strong>You need multi-tenant data isolation</strong></p>
 <ul>
-<li>Field-level RBAC compiled into schema</li>
+<li>Field-level authorization plus PostgreSQL Row-Level Security</li>
 </ul>
-<p>✅ <strong>You want compile-time schema validation</strong></p>
+<p>✅ <strong>You want PostgreSQL as the single source of truth</strong></p>
 <ul>
-<li>Errors caught at build time, never runtime</li>
+<li>Reads from views, writes through functions — one well-understood database</li>
 </ul>
 <p>✅ <strong>You're tired of N+1 query problems</strong></p>
 <ul>
-<li>Joins determined at compile time</li>
+<li>Dataloaders and view-based reads keep queries flat</li>
 </ul>
 <p>✅ <strong>You want schema as code</strong> (not API comments)</p>
 <ul>
-<li>16 languages supported for schema authoring</li>
+<li>Define types, queries, and mutations with Python decorators</li>
 </ul>
 <hr />
 <h2 id="recommendation-talk-to-the-team">Recommendation: Talk to the Team<a class="headerlink" href="#recommendation-talk-to-the-team" title="Permanent link">&para;</a></h2>
 <p>Before choosing FraiseQL, answer these questions:</p>
 <ol>
-<li><strong>Consistency</strong>: Is "guaranteed consistency" worth 100-500ms latency?</li>
-<li><strong>Availability</strong>: Can your system tolerate failures instead of approximate responses?</li>
-<li><strong>Scope</strong>: Do you have relational data and multi-service coordination?</li>
-<li><strong>Compliance</strong>: Do you need regulated industry features (audit, RBAC)?</li>
-<li><strong>Scale</strong>: Does your database scale to your throughput needs?</li>
+<li><strong>Database</strong>: Is PostgreSQL your database, or can it be?</li>
+<li><strong>Consistency</strong>: Is strong consistency worth 100-500ms mutation latency?</li>
+<li><strong>Scope</strong>: Do you have relational data and transactional writes?</li>
+<li><strong>Compliance</strong>: Do you need regulated-industry features (audit, RBAC)?</li>
+<li><strong>Scale</strong>: Does PostgreSQL scale to your throughput needs?</li>
 </ol>
 <p>If the answers are yes, FraiseQL is the right choice.</p>
 <p>If the answers are mixed, discuss trade-offs with your team. Every architecture choice involves trade-offs.</p>
@@ -6952,8 +6881,8 @@ Zero -&gt; ZeroResult
 </tr>
 <tr>
 <td>"We'll need eventual consistency anyway"</td>
-<td>Implement at application layer if truly needed</td>
-<td>See <a href="../integrations/federation/guide.md">Federation Guide</a> for patterns</td>
+<td>Implement it at the application layer if truly needed</td>
+<td>Add caching/queues outside FraiseQL where appropriate</td>
 </tr>
 <tr>
 <td>"Consistency not important for us"</td>
@@ -6983,11 +6912,11 @@ Zero -&gt; ZeroResult
 <td>✅</td>
 </tr>
 <tr>
-<td>Multi-database</td>
+<td>PostgreSQL-native (views, functions, JSONB, RLS)</td>
 <td>✅</td>
 <td>❌</td>
 <td>❌</td>
-<td>✅</td>
+<td>⚠️</td>
 </tr>
 <tr>
 <td>Schema as code</td>
@@ -7036,9 +6965,9 @@ Zero -&gt; ZeroResult
 <h4 id="phased-approach">Phased Approach<a class="headerlink" href="#phased-approach" title="Permanent link">&para;</a></h4>
 <h4 id="phase-1-week-1-poc-on-single-feature">Phase 1 (Week 1): POC on single feature<a class="headerlink" href="#phase-1-week-1-poc-on-single-feature" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Pick one GraphQL query with 2-3 tables</li>
-<li>Define schema in Python/TypeScript</li>
-<li>Compile and run local test</li>
+<li>Pick one GraphQL query reading from a view over 2-3 tables</li>
+<li>Define the type and query with Python decorators</li>
+<li>Run the FastAPI app locally and hit the playground</li>
 <li>Time: 2-4 hours</li>
 <li>Success metric: Query executes and returns data</li>
 </ul>
@@ -7070,8 +6999,8 @@ Zero -&gt; ZeroResult
 <ul>
 <li><a href="../consistency-model/">Consistency Model Deep Dive</a></li>
 <li><a href="../production-deployment/">Production Deployment</a></li>
-<li><a href="../foundation/01-what-is-fraiseql.md">Foundation Concepts</a></li>
-<li><a href="../../foundation/02-core-concepts/">Core Architecture</a></li>
+<li><a href="../../foundation/05-comparisons/">Comparisons with Other Engines</a></li>
+<li><a href="../../foundation/02-core-concepts/">Core Concepts</a></li>
 </ul>
 
 
@@ -7079,6 +7008,9 @@ Zero -&gt; ZeroResult
 
 
 
+
+  
+  
 
 
 

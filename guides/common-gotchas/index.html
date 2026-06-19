@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Learn from common mistakes and pitfalls when using FraiseQL. Each gotcha includes diagnosis steps and solutions.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/guides/common-gotchas/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Common Gotchas - FraiseQL Documentation</title>
+        <title>Common Gotchas & Pitfalls - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Common Gotchas
+              Common Gotchas & Pitfalls
             
           </span>
         </div>
@@ -2999,34 +3001,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../federation-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Federation Quick Start
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../analytics-patterns/" class="md-nav__link">
         
   
@@ -3310,8 +3284,486 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-pagination-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Pagination Edge Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Pagination Edge Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-offset-pagination-past-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Offset Pagination Past End
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-results-changing-during-pagination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Results Changing During Pagination
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-cursor-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Cursor Expiry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-cache-invalidation-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cache Invalidation Timing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cache Invalidation Timing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-stale-cache-after-mutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Stale Cache After Mutation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-cache-hit-when-you-need-fresh-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Cache Hit When You Need Fresh Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-authorization-bypass-via-field-omission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Authorization Bypass via Field Omission
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Authorization Bypass via Field Omission">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-forgetting-field-level-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Forgetting Field-Level Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-type-mismatches-in-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Type Mismatches in Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Type Mismatches in Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-string-vs-number-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: String vs Number Comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-null-handling-in-where-clauses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: NULL Handling in WHERE Clauses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-view-performance-degradation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. View Performance Degradation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. View Performance Degradation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-logical-view-gets-slower-over-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Logical View Gets Slower Over Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-datetime-timezone-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Date/Time Timezone Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Date/Time Timezone Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-datetime-vs-date-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: DateTime vs Date Comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-leaks-from-unclosed-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Leaks from Unclosed Subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Leaks from Unclosed Subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-subscription-connections-not-closed-properly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Subscription Connections Not Closed Properly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-query-alias-shadowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Query Alias Shadowing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Query Alias Shadowing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-query-aliases-hiding-field-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Query Aliases Hiding Field Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-connection-pool-exhaustion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Connection Pool Exhaustion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Connection Pool Exhaustion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-all-connections-held-by-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: All Connections Held by Slow Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-recursive-queries-without-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Recursive Queries Without Limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Recursive Queries Without Limits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-unbounded-self-referential-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Unbounded Self-Referential Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5053,8 +5505,486 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prevention
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-pagination-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Pagination Edge Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Pagination Edge Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-offset-pagination-past-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Offset Pagination Past End
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-results-changing-during-pagination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Results Changing During Pagination
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-case-cursor-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Case: Cursor Expiry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-cache-invalidation-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cache Invalidation Timing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Cache Invalidation Timing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-stale-cache-after-mutation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Stale Cache After Mutation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-cache-hit-when-you-need-fresh-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Cache Hit When You Need Fresh Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-authorization-bypass-via-field-omission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Authorization Bypass via Field Omission
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Authorization Bypass via Field Omission">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-forgetting-field-level-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Forgetting Field-Level Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-type-mismatches-in-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Type Mismatches in Filters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Type Mismatches in Filters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-string-vs-number-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: String vs Number Comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-null-handling-in-where-clauses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: NULL Handling in WHERE Clauses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-view-performance-degradation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. View Performance Degradation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. View Performance Degradation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-logical-view-gets-slower-over-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Logical View Gets Slower Over Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-datetime-timezone-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Date/Time Timezone Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Date/Time Timezone Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-datetime-vs-date-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: DateTime vs Date Comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-memory-leaks-from-unclosed-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Memory Leaks from Unclosed Subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Memory Leaks from Unclosed Subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-subscription-connections-not-closed-properly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Subscription Connections Not Closed Properly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-query-alias-shadowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Query Alias Shadowing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Query Alias Shadowing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-query-aliases-hiding-field-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Query Aliases Hiding Field Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-connection-pool-exhaustion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Connection Pool Exhaustion
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Connection Pool Exhaustion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-all-connections-held-by-slow-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: All Connections Held by Slow Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solutions_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-recursive-queries-without-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Recursive Queries Without Limits
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Recursive Queries Without Limits">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gotcha-unbounded-self-referential-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gotcha: Unbounded Self-Referential Queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solution_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5078,13 +6008,6 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: Common Gotchas &amp; Pitfalls
-description: Learn from common mistakes and pitfalls when using FraiseQL. Each gotcha includes diagnosis steps and solutions.
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="common-gotchas-pitfalls">Common Gotchas &amp; Pitfalls<a class="headerlink" href="#common-gotchas-pitfalls" title="Permanent link">&para;</a></h1>
 <p><strong>Status:</strong> ✅ Production Ready
 <strong>Audience:</strong> Developers, Architects
@@ -5099,21 +6022,17 @@ tags: ["documentation", "reference"]</p>
 <h3 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Application is slow despite queries looking simple. Database receives many small queries instead of one large query.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users {
-    id
-    name
-    posts {      # ← This causes N+1!
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">      </span><span class="c"># ← This causes N+1!</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>What happens:</strong></p>
 <ol>
 <li>Query fetches 100 users → 1 database query</li>
@@ -5121,105 +6040,67 @@ tags: ["documentation", "reference"]</p>
 <li>Total: 101 queries instead of 1</li>
 </ol>
 <h3 id="why-this-happens">Why This Happens<a class="headerlink" href="#why-this-happens" title="Permanent link">&para;</a></h3>
-<p>FraiseQL executes nested fields one level at a time. Without optimization, it fetches parent entities first, then child entities separately.</p>
+<p>FraiseQL resolves nested fields one level at a time. Without optimization, it fetches parent entities first, then child entities separately.</p>
 <h3 id="how-to-diagnose">How to Diagnose<a class="headerlink" href="#how-to-diagnose" title="Permanent link">&para;</a></h3>
-<p><strong>Check database query count:</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="enable-query-logging">Enable query logging<a class="headerlink" href="#enable-query-logging" title="Permanent link">&para;</a></h1>
-<p>FRAISEQL_LOG_LEVEL=debug cargo run</p>
-<h1 id="count-queries-in-logs">Count queries in logs<a class="headerlink" href="#count-queries-in-logs" title="Permanent link">&para;</a></h1>
-<p>grep "SELECT" logs.txt | wc -l
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Enable query logging:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
-<p><strong>Check profiling output:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users {
-    id
-    __fraiseql_timing {
-      executionTimeMs
-      queryCount
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<p>Then run the FastAPI app (for example <code>uvicorn app:app</code>) and count the <code>SELECT</code> statements emitted per request in the logs.</p>
 <h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Use batch fetching (RECOMMENDED)</strong></p>
-<p>FraiseQL automatically batches nested field queries:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(first: 100) {
-    id
-    name
-    posts(first: 50) {   # Batched! All users' posts in ~1 query
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Use a DataLoader field (RECOMMENDED)</strong></p>
+<p>Batch a relationship with <code>@fraiseql.dataloader_field</code> so all children load in a single query:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">fk_user</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
 <p><strong>Result:</strong> ~2 queries total (users + batched posts)</p>
 <p><strong>Solution 2: Use table-backed views (tv_*)</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class UserWithPosts:
-    """Denormalized view with posts included."""
-    id: ID
-    name: str
-    posts_json: List[PostSummary]  # Pre-fetched via view
-```text</p>
-<!-- Code example in TEXT -->
+<p>Pre-compose the nested data in a projection view so the child list ships inside the parent's <code>data</code> JSONB:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_with_posts&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserWithPosts</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Projection view with posts already composed in the data JSONB.&quot;&quot;&quot;</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PostSummary</span><span class="p">]</span>  <span class="c1"># Pre-composed in tv_user_with_posts</span>
+</code></pre></div>
 <p><strong>Solution 3: Flatten queries temporarily</strong></p>
 <p>Instead of:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users { posts { comments { likes } } }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">likes</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>Do:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users { id posts { id } }
-}</p>
-<p>query {
-  posts { id comments { id } }
-}</p>
-<p>query {
-  comments { id likes }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
 
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">likes</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Solution 4: Add pagination to nested fields</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(first: 50) {          # Smaller parent batch
-    id
-    name
-    posts(first: 10) {        # Smaller child batch
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">          </span><span class="c"># Smaller parent batch</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">        </span><span class="c"># Smaller child batch</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="prevention">Prevention<a class="headerlink" href="#prevention" title="Permanent link">&para;</a></h3>
 <ul>
 <li>✅ Monitor query count in production logs</li>
@@ -5235,750 +6116,453 @@ class UserWithPosts:
 <p><strong>Why:</strong> Offset pagination becomes inefficient with large offsets. After row 10,000, the database must skip 10,000 rows for every query.</p>
 <p><strong>Solutions:</strong></p>
 <p><strong>Use keyset pagination (RECOMMENDED):</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(after: "user123", first: 100) {
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user123&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Keyset advantages:</strong></p>
 <ul>
 <li>Constant performance regardless of offset</li>
 <li>Works with sorting</li>
 <li>Handles inserts/deletes during pagination</li>
 </ul>
-<p><strong>Or limit maximum offset:</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.pagination]
-max_offset = 5000  # Disallow offset &gt; 5000
-```text</p>
-<!-- Code example in TEXT -->
-
 <h3 id="edge-case-results-changing-during-pagination">Edge Case: Results Changing During Pagination<a class="headerlink" href="#edge-case-results-changing-during-pagination" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> When paginating through results, you get duplicate records or skip records.</p>
-<p><strong>Why:</strong> If data is inserted/deleted between pagination requests, result set changes.</p>
+<p><strong>Why:</strong> If data is inserted/deleted between pagination requests, the result set changes.</p>
 <p><strong>Example:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Request 1: skip 0, take 10   → gets records 1-10
+<div class="highlight"><pre><span></span><code>Request 1: skip 0, take 10   → gets records 1-10
 [New record inserted]
 Request 2: skip 10, take 10  → gets records 12-21 (record 11 is new)
 Result: Skipped record 11!
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <p><strong>Solutions:</strong></p>
 <p><strong>Use keyset pagination:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(after: "cursor_from_previous", first: 10) {
-    id
-    cursor
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Keyset pagination uses the last record's ID as cursor, immune to inserts.</p>
-<p><strong>Or use snapshot isolation:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(snapshotAt: "2026-02-05T10:00:00Z", skip: 10, take: 10) {
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cursor_from_previous&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">cursor</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Keyset pagination uses the last record's <code>id</code> as the cursor, which is immune to inserts.</p>
+<p><strong>Or use a stable snapshot:</strong></p>
+<p>Wrap a multi-page export in a single PostgreSQL transaction (<code>REPEATABLE READ</code>) so every page reads from the same snapshot.</p>
 <h3 id="edge-case-cursor-expiry">Edge Case: Cursor Expiry<a class="headerlink" href="#edge-case-cursor-expiry" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Pagination cursor becomes invalid after database changes.</p>
-<p><strong>Why:</strong> Cursor points to a record that was deleted or modified.</p>
+<p><strong>Why:</strong> The cursor points to a record that was deleted or modified.</p>
 <p><strong>Solution:</strong></p>
-<p><strong>Handle expired cursor gracefully:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>try:
-    result = await client.query(query, variables={"after": cursor})
-except FraiseQLError as e:
-    if e.code == "E_PAGINATION_CURSOR_EXPIRED":
-        # Restart from beginning or last valid position
-        cursor = None
-        result = await client.query(query, variables={"after": cursor})
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Handle an expired cursor gracefully on the client:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="n">cursor</span><span class="p">})</span>
+<span class="k">except</span> <span class="n">FraiseQLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="s2">&quot;E_PAGINATION_CURSOR_EXPIRED&quot;</span><span class="p">:</span>
+        <span class="c1"># Restart from beginning or last valid position</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="n">cursor</span><span class="p">})</span>
+</code></pre></div>
 <hr />
 <h2 id="3-cache-invalidation-timing">3. Cache Invalidation Timing<a class="headerlink" href="#3-cache-invalidation-timing" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-stale-cache-after-mutation">Gotcha: Stale Cache After Mutation<a class="headerlink" href="#gotcha-stale-cache-after-mutation" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Mutation succeeds, but query still returns old cached value.</p>
+<p><strong>Symptom:</strong> Mutation succeeds, but a subsequent query still returns the old cached value.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-  updateUser(id: "123", name: "Alice") {
-    id
-    name
-  }
-}</p>
-<p>query {
-  user(id: "123") {
-    name  # Still returns old name!
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
-<p><strong>Why:</strong> Cache key doesn't match. Query uses <code>{id: "123"}</code>, but mutation might cache invalidate <code>{id: "123", name: "Alice"}</code>.</p>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">name</span><span class="w">  </span><span class="c"># Still returns old name!</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Why:</strong> The cached query result was not invalidated by the write. FraiseQL's PostgreSQL-backed cache (<code>ResultCache</code>/<code>CachedRepository</code>) needs a cascade rule that links the mutation's table to the cached query.</p>
 <h3 id="solutions_1">Solutions<a class="headerlink" href="#solutions_1" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Explicit cache invalidation</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>mutation {
-  updateUser(id: "123", name: "Alice") @cache(invalidate: true) {
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Solution 1: Configure cascade invalidation rules</strong></p>
+<p>Use <code>setup_auto_cascade_rules</code> (with the <code>SchemaAnalyzer</code>) so writes to a table automatically invalidate the query results that depend on it:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
 
+<span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema_analyzer</span><span class="p">)</span>
+</code></pre></div>
 <p><strong>Solution 2: TTL-based invalidation</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.caching]
-ttl_seconds = 60  # All caches expire after 60 seconds
-```text</p>
-<!-- Code example in TEXT -->
+<p>Set a short cache TTL so stale entries expire on their own:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<p><strong>Solution 3: Dependency-based invalidation</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.mutation
-def update_user(id: str, name: str):
-    # Mark all queries involving this user as invalid
-    cache.invalidate(User, id=id)
-    return update_user_in_db(id, name)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>  <span class="c1"># All cached query results expire after 60 seconds</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>cache_ttl</code> is also settable via the <code>FRAISEQL_CACHE_TTL</code> environment variable.</p>
+<p><strong>Solution 3: Manual invalidation in the mutation</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UpdateUserSuccess</span> <span class="o">|</span> <span class="n">UpdateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;cache&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># Drop stale query results for this user</span>
+    <span class="k">return</span> <span class="n">UpdateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+</code></pre></div>
 <h3 id="gotcha-cache-hit-when-you-need-fresh-data">Gotcha: Cache Hit When You Need Fresh Data<a class="headerlink" href="#gotcha-cache-hit-when-you-need-fresh-data" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Critical data is cached but needs to be fresh for real-time operations.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  inventory(productId: "123") {
-    quantity  # Cached for 5 minutes, but inventory changes every second!
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">inventory</span><span class="p">(</span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">quantity</span><span class="w">  </span><span class="c"># Cached, but inventory changes every second!</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="solutions_2">Solutions<a class="headerlink" href="#solutions_2" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Disable caching for critical fields</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Inventory:
-    id: ID
-    quantity: int = field(cache=False)  # Never cache inventory
-    updated_at: DateTime = field(cache=False)
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Solution 1: Skip caching for volatile reads</strong></p>
+<p>Don't wrap volatile queries in <code>CachedRepository</code>; read straight from the view via <code>db.find</code> so every request hits PostgreSQL.</p>
 <p><strong>Solution 2: Use subscriptions for real-time data</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>subscription {
-  inventoryChanged(productId: "123") {
-    quantity
-    updated_at
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 3: Add versioning to cache keys</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: "123", version: "current") {  # Always gets latest
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">subscription</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">inventoryChanged</span><span class="p">(</span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">quantity</span>
+<span class="w">    </span><span class="n">updatedAt</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="4-authorization-bypass-via-field-omission">4. Authorization Bypass via Field Omission<a class="headerlink" href="#4-authorization-bypass-via-field-omission" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-forgetting-field-level-authorization">Gotcha: Forgetting Field-Level Authorization<a class="headerlink" href="#gotcha-forgetting-field-level-authorization" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Sensitive field is readable by unauthorized users.</p>
+<p><strong>Symptom:</strong> A sensitive field is readable by unauthorized users.</p>
 <p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    id: ID
-    name: str
-    email: str
-    password_hash: str  # ← OOPS! No @authorize decorator
-    salary: Decimal    # ← OOPS! No @authorize decorator
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Why:</strong> Field-level authorization is opt-in. If you don't add <code>@authorize</code>, the field is readable by anyone.</p>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">password_hash</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ← OOPS! Exposed to everyone</span>
+    <span class="n">salary</span><span class="p">:</span> <span class="n">Decimal</span>     <span class="c1"># ← OOPS! Exposed to everyone</span>
+</code></pre></div>
+<p><strong>Why:</strong> Anything you put in the read view's <code>data</code> JSONB and expose as a field is readable by any caller unless you restrict it. The safest fix is to never project secrets into the view at all.</p>
 <h3 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">&para;</a></h3>
-<p><strong>Add authorization to every sensitive field:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    id: ID
-    name: str
-    email: str = field(authorize={Roles.ADMIN, Roles.SELF})
-    password_hash: str = field(authorize=set())  # Never readable
-    salary: Decimal = field(authorize={Roles.HR, Roles.SELF})
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Keep secrets out of the read view.</strong> <code>password_hash</code> and similar columns live only on the <code>tb_</code> write table and are never selected into the <code>v_user.data</code> JSONB, so they cannot be queried:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
+<span class="w">        </span><span class="c1">-- password_hash is intentionally NOT exposed</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Restrict whole-type or per-query access with an <code>Authorizer</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Or use row-level security:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    where: Where = FraiseQL.where(
-        fk_org=FraiseQL.context.org_id,  # Only users in same org
-        is_sensitive_visible=FraiseQL.context.role in [Roles.ADMIN, Roles.SELF]
-    )
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">salary_authorizer</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_compensation</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Compensation</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_compensation&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Or enforce row visibility with PostgreSQL Row-Level Security (RLS):</strong></p>
+<p>Define an RLS policy on the underlying table that reads request context set by FraiseQL (for example <code>current_setting('app.tenant_id')</code> and <code>current_setting('app.user_id')</code>), so callers only ever see rows they are allowed to read.</p>
 <hr />
 <h2 id="5-type-mismatches-in-filters">5. Type Mismatches in Filters<a class="headerlink" href="#5-type-mismatches-in-filters" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-string-vs-number-comparison">Gotcha: String vs Number Comparison<a class="headerlink" href="#gotcha-string-vs-number-comparison" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Filter doesn't match expected records, or returns error.</p>
+<p><strong>Symptom:</strong> A filter doesn't match the expected records, or returns an error.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  products(where: { id: { eq: "123" } }) {  # String
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">products</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># String</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p><strong>Database schema:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE products (
-  id INT PRIMARY KEY,  -- Number!
-  ...
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Why:</strong> Type mismatch. GraphQL string <code>"123"</code> doesn't match database INT.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">pk_product</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">  </span><span class="n">sku</span><span class="w"> </span><span class="nb">TEXT</span>
+<span class="p">);</span>
+</code></pre></div>
+<p><strong>Why:</strong> Type mismatch. The GraphQL field type must line up with what the view exposes. Comparing a string literal against a numeric or UUID column produces no matches (or a coercion error).</p>
 <h3 id="solution_1">Solution<a class="headerlink" href="#solution_1" title="Permanent link">&para;</a></h3>
-<p><strong>Ensure types match in schema:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Product:
-    id: int          # Use int, not str
-    sku: str         # Use str for text IDs
-    price: Decimal   # Use Decimal for money, not float
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Make Python field types match the columns the view projects:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>           <span class="c1"># public UUID column</span>
+    <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span>         <span class="c1"># text identifier</span>
+    <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span>   <span class="c1"># use Decimal for money, not float</span>
+</code></pre></div>
 <h3 id="gotcha-null-handling-in-where-clauses">Gotcha: NULL Handling in WHERE Clauses<a class="headerlink" href="#gotcha-null-handling-in-where-clauses" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Filter with NULL doesn't work as expected.</p>
+<p><strong>Symptom:</strong> A filter with NULL doesn't work as expected.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(where: { middleName: { eq: null } }) {  # Finds users WITH middle names!
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Why:</strong> In SQL, <code>column = NULL</code> returns false (use <code>IS NULL</code> instead).</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">middleName</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="nb">null</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Finds users WITH middle names!</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Why:</strong> In SQL, <code>column = NULL</code> is never true (use <code>IS NULL</code> instead).</p>
 <h3 id="solution_2">Solution<a class="headerlink" href="#solution_2" title="Permanent link">&para;</a></h3>
-<p><strong>Use is_null operator:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(where: { middleName: { is_null: true } }) {  # Correct!
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Use the <code>isnull</code> operator:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">middleName</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">isnull</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Correct!</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
-<h2 id="6-circular-dependencies-in-federation">6. Circular Dependencies in Federation<a class="headerlink" href="#6-circular-dependencies-in-federation" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-type-a-extends-type-b-type-b-extends-type-a">Gotcha: Type A extends Type B, Type B extends Type A<a class="headerlink" href="#gotcha-type-a-extends-type-b-type-b-extends-type-a" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Schema compilation fails with "circular dependency" error.</p>
-<p><strong>Example:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="users-service">users-service<a class="headerlink" href="#users-service" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@extends
-class Order:
-    id: str = external()
-    user: User  # Extends to User</p>
-<h1 id="orders-service">orders-service<a class="headerlink" href="#orders-service" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@extends
-class User:
-    id: str = external()
-    orders: List[Order]  # Extends back to Order
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="solution_3">Solution<a class="headerlink" href="#solution_3" title="Permanent link">&para;</a></h3>
-<p><strong>Flatten the hierarchy:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="solution-only-users-service-owns-user-only-orders-service-owns-order">Solution: Only users-service owns User, only orders-service owns Order<a class="headerlink" href="#solution-only-users-service-owns-user-only-orders-service-owns-order" title="Permanent link">&para;</a></h1>
-<h1 id="dont-create-bidirectional-extends">Don't create bidirectional extends<a class="headerlink" href="#dont-create-bidirectional-extends" title="Permanent link">&para;</a></h1>
-<h1 id="users-service_1">users-service<a class="headerlink" href="#users-service_1" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@key("id")
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str</p>
-<h1 id="orders-service_1">orders-service<a class="headerlink" href="#orders-service_1" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-@key("id")
-class Order:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: str  # Foreign key reference, not @extends
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="7-saga-timeout-during-long-operations">7. SAGA Timeout During Long Operations<a class="headerlink" href="#7-saga-timeout-during-long-operations" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-saga-times-out-before-compensation-can-complete">Gotcha: SAGA Times Out Before Compensation Can Complete<a class="headerlink" href="#gotcha-saga-times-out-before-compensation-can-complete" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> SAGA succeeds partially, then times out during compensation.</p>
-<p><strong>Why:</strong> Long-running database operations (data migration, bulk updates) take longer than SAGA timeout.</p>
-<h3 id="solutions_3">Solutions<a class="headerlink" href="#solutions_3" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Increase SAGA timeout</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.federation.sagas]
-timeout_seconds = 300  # 5 minutes instead of default 30 seconds
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 2: Break into smaller steps</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.saga
-async def bulk_update_users(user_ids: List[str]):
-    # Instead of updating 10,000 users in one step:
-    # Break into batches of 100
-    for batch in chunks(user_ids, 100):
-        step = await saga.add_step(
-            update_user_batch,
-            args=[batch],
-            undo=undo_user_batch
-        )
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 3: Use async tasks instead</strong>
-For very long operations, use background tasks instead of SAGA:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.mutation
-async def bulk_update_users(user_ids: List[str]):
-    # Queue background job
-    background_tasks.add_task(
-        bulk_update_in_background,
-        user_ids=user_ids
-    )
-    return { "status": "processing", "job_id": job_id }
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="8-view-performance-degradation">8. View Performance Degradation<a class="headerlink" href="#8-view-performance-degradation" title="Permanent link">&para;</a></h2>
+<h2 id="6-view-performance-degradation">6. View Performance Degradation<a class="headerlink" href="#6-view-performance-degradation" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-logical-view-gets-slower-over-time">Gotcha: Logical View Gets Slower Over Time<a class="headerlink" href="#gotcha-logical-view-gets-slower-over-time" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query that was fast at launch gets slower as table grows.</p>
-<p><strong>Why:</strong> Logical views (v_*) compute aggregations on-the-fly. With 1M rows, computing JSON aggregation is expensive.</p>
-<h3 id="solution_4">Solution<a class="headerlink" href="#solution_4" title="Permanent link">&para;</a></h3>
-<p><strong>Switch to table-backed views (tv_*):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="replace-v_user_summary-logical-view">Replace v_user_summary (logical view):<a class="headerlink" href="#replace-v_user_summary-logical-view" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class UserSummary:  # Was v_user_summary
-    id: ID
-    name: str
-    post_count: int</p>
-<h1 id="with-tv_user_summary_materialized-table-backed">With tv_user_summary_materialized (table-backed):<a class="headerlink" href="#with-tv_user_summary_materialized-table-backed" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class UserSummary:  # Now tv_user_summary_materialized
-    id: ID
-    name: str
-    post_count: int
-    updated_at: DateTime
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Symptom:</strong> A query that was fast at launch gets slower as the table grows.</p>
+<p><strong>Why:</strong> Logical views (<code>v_*</code>) compute their <code>data</code> JSONB on the fly. With millions of rows, building nested JSON aggregations per query becomes expensive.</p>
+<h3 id="solution_3">Solution<a class="headerlink" href="#solution_3" title="Permanent link">&para;</a></h3>
+<p><strong>Switch to a table-backed projection view (<code>tv_*</code>):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Table-backed views advantages:</strong></p>
+<span class="c1"># Replace v_user_summary (logical view computed per query):</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_summary&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserSummary</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="c1"># With tv_user_summary (a real table holding pre-composed JSONB,</span>
+<span class="c1"># refreshed by triggers/functions):</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_summary&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserSummary</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">updated_at</span><span class="p">:</span> <span class="n">DateTime</span>
+</code></pre></div>
+<p><strong>Table-backed view advantages:</strong></p>
 <ul>
-<li>Pre-computed and stored (fast reads)</li>
+<li>Pre-composed and stored (fast reads)</li>
 <li>No recalculation per query</li>
-<li>Trade-off: requires refresh strategy</li>
+<li>Trade-off: requires a refresh strategy (triggers or scheduled functions)</li>
 </ul>
 <hr />
-<h2 id="9-datetime-timezone-issues">9. Date/Time Timezone Issues<a class="headerlink" href="#9-datetime-timezone-issues" title="Permanent link">&para;</a></h2>
+<h2 id="7-datetime-timezone-issues">7. Date/Time Timezone Issues<a class="headerlink" href="#7-datetime-timezone-issues" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-datetime-vs-date-comparison">Gotcha: DateTime vs Date Comparison<a class="headerlink" href="#gotcha-datetime-vs-date-comparison" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Date filter includes wrong records or excludes correct ones.</p>
+<p><strong>Symptom:</strong> A date filter includes the wrong records or excludes correct ones.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  orders(where: { createdAt: { gte: "2026-02-05" } }) {
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">orders</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">createdAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-02-05&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Problem:</strong> <code>"2026-02-05"</code> is interpreted as <code>2026-02-05T00:00:00Z</code>. If a user created an order at <code>2026-02-04T23:00:00Z</code> (the previous day in their timezone), it won't match.</p>
+<h3 id="solutions_3">Solutions<a class="headerlink" href="#solutions_3" title="Permanent link">&para;</a></h3>
+<p><strong>Solution 1: Use DateTime with an explicit timezone</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">orders</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">createdAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-02-05T00:00:00-05:00&quot;</span><span class="w">  </span><span class="c"># Explicit timezone</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Solution 2: Use the Date type for date-only fields</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Date</span><span class="p">,</span> <span class="n">DateTime</span>
 
-<p><strong>Problem:</strong> <code>"2026-02-05"</code> is interpreted as <code>2026-02-05T00:00:00Z</code>. If user created order at <code>2026-02-04T23:00:00Z</code> (previous day in their timezone), it won't match.</p>
-<h3 id="solutions_4">Solutions<a class="headerlink" href="#solutions_4" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Use DateTime with timezone</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  orders(where: {
-    createdAt: {
-      gte: "2026-02-05T00:00:00-05:00"  # Explicit timezone
-    }
-  }) {
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 2: Use Date type for date-only fields</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Order:
-    id: ID
-    created_date: Date  # Use Date, not DateTime
-    created_at: DateTime  # Use DateTime for timestamps
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 3: Compare at database level</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>SELECT * FROM orders
-WHERE DATE(created_at AT TIME ZONE 'UTC') = '2026-02-05'
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">created_date</span><span class="p">:</span> <span class="n">Date</span>     <span class="c1"># Use Date for date-only values</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>   <span class="c1"># Use DateTime for timestamps</span>
+</code></pre></div>
+<p><strong>Solution 3: Compare at the database level inside the view</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="nb">DATE</span><span class="p">(</span><span class="n">created_at</span><span class="w"> </span><span class="k">AT</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="w"> </span><span class="s1">&#39;UTC&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;2026-02-05&#39;</span>
+</code></pre></div>
 <hr />
-<h2 id="10-memory-leaks-from-unclosed-subscriptions">10. Memory Leaks from Unclosed Subscriptions<a class="headerlink" href="#10-memory-leaks-from-unclosed-subscriptions" title="Permanent link">&para;</a></h2>
+<h2 id="8-memory-leaks-from-unclosed-subscriptions">8. Memory Leaks from Unclosed Subscriptions<a class="headerlink" href="#8-memory-leaks-from-unclosed-subscriptions" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-subscription-connections-not-closed-properly">Gotcha: Subscription Connections Not Closed Properly<a class="headerlink" href="#gotcha-subscription-connections-not-closed-properly" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Memory usage grows indefinitely in production.</p>
-<p><strong>Why:</strong> WebSocket connections held open but not properly closed on disconnect.</p>
-<h3 id="solutions_5">Solutions<a class="headerlink" href="#solutions_5" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Set subscription timeout</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.subscriptions]
-timeout_seconds = 3600  # Close connection after 1 hour
-idle_timeout_seconds = 300  # Close if idle for 5 minutes
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Why:</strong> WebSocket connections are held open but not properly closed on disconnect.</p>
+<h3 id="solutions_4">Solutions<a class="headerlink" href="#solutions_4" title="Permanent link">&para;</a></h3>
+<p><strong>Solution 1: Clean up the async generator</strong></p>
+<p>A <code>@fraiseql.subscription</code> resolver is an async generator. Use <code>try/finally</code> so resources are released when the client disconnects and the generator is closed:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>Solution 2: Explicit subscription cleanup</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>try:
-    async for event in subscription:
-        process_event(event)
-finally:
-    subscription.close()  # Always close
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Solution 3: Monitor active subscriptions</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-for-zombie-subscriptions">Check for zombie subscriptions<a class="headerlink" href="#check-for-zombie-subscriptions" title="Permanent link">&para;</a></h1>
-<p>SELECT COUNT(*) FROM pg_stat_activity
-WHERE state = 'active' AND query LIKE '%subscription%'
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="11-race-conditions-in-multi-region">11. Race Conditions in Multi-Region<a class="headerlink" href="#11-race-conditions-in-multi-region" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-data-inconsistency-across-regions">Gotcha: Data Inconsistency Across Regions<a class="headerlink" href="#gotcha-data-inconsistency-across-regions" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> User sees different data depending on which region they connect to.</p>
-<p><strong>Why:</strong> Replication lag between regions. Write completes in US, but Asia region hasn't replicated yet.</p>
-<h3 id="solution_5">Solution<a class="headerlink" href="#solution_5" title="Permanent link">&para;</a></h3>
-<p><strong>Use strong consistency guarantees:</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.federation]
-consistency_level = "strong"  # Wait for all replicas
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Or use regional routing:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="route-writes-to-primary-region">Route writes to primary region<a class="headerlink" href="#route-writes-to-primary-region" title="Permanent link">&para;</a></h1>
-<h1 id="route-reads-to-local-region-accept-eventual-consistency">Route reads to local region (accept eventual consistency)<a class="headerlink" href="#route-reads-to-local-region-accept-eventual-consistency" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-async def get_user(id: str, region: str = "primary"):
-    db = db_connection(region)
-    return await db.query("SELECT * FROM users WHERE id = ?", [id])
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="12-query-alias-shadowing">12. Query Alias Shadowing<a class="headerlink" href="#12-query-alias-shadowing" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-query-aliases-hiding-field-names">Gotcha: Query Aliases Hiding Field Names<a class="headerlink" href="#gotcha-query-aliases-hiding-field-names" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query returns unexpected fields or overwrites data.</p>
-<p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user: users(id: "123") {  # Alias "user" shadows field "users"
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Result:</strong></p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "user": {
-    "id": "123",
-    "name": "Alice"
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Later:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(id: "123") {  # Different field name
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Leads to confusion about response structure.</strong></p>
-<h3 id="solution_6">Solution<a class="headerlink" href="#solution_6" title="Permanent link">&para;</a></h3>
-<p><strong>Use aliases carefully and consistently:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  activeUsers: users(status: "active") {
-    id
-    name
-  }
-  inactiveUsers: users(status: "inactive") {  # Clear alias
-    id
-    name
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Document expected response structure:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="add-comment-to-schema">Add comment to schema<a class="headerlink" href="#add-comment-to-schema" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.query
-def users(status: str = None):
-    """
-    Returns list of users, optionally filtered by status.</p>
-<div class="highlight"><pre><span></span><code>Response structure:
-{
-  &quot;users&quot;: [
-    {&quot;id&quot;: &quot;...&quot;, &quot;name&quot;: &quot;...&quot;}
-  ]
-}
-&quot;&quot;&quot;
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">inventory_changed</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">product_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">):</span>
+    <span class="n">listener</span> <span class="o">=</span> <span class="k">await</span> <span class="n">open_listener</span><span class="p">(</span><span class="n">product_id</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">listener</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">event</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">listener</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># Always release on disconnect</span>
 </code></pre></div>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Solution 2: Monitor active subscriptions</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check for long-lived backend connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%LISTEN%&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
-<h2 id="13-array-type-confusion-postgresql-vs-others">13. Array Type Confusion (PostgreSQL vs Others)<a class="headerlink" href="#13-array-type-confusion-postgresql-vs-others" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-array-operators-dont-work-on-mysql">Gotcha: Array Operators Don't Work on MySQL<a class="headerlink" href="#gotcha-array-operators-dont-work-on-mysql" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query with array operators fails on MySQL/SQLite.</p>
+<h2 id="9-query-alias-shadowing">9. Query Alias Shadowing<a class="headerlink" href="#9-query-alias-shadowing" title="Permanent link">&para;</a></h2>
+<h3 id="gotcha-query-aliases-hiding-field-names">Gotcha: Query Aliases Hiding Field Names<a class="headerlink" href="#gotcha-query-aliases-hiding-field-names" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> A query returns unexpected keys, causing confusion about the response structure.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  products(where: { tags: { contains: ["sale", "new"] } }) {  # Works on PostgreSQL, fails on MySQL!
-    id
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">user</span><span class="p">:</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Alias &quot;user&quot; renames field &quot;users&quot;</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Result:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Later, a different query uses the real field name:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Now the key is &quot;users&quot;</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The two responses use different top-level keys for the same field, which leads to confusion.</p>
+<h3 id="solution_4">Solution<a class="headerlink" href="#solution_4" title="Permanent link">&para;</a></h3>
+<p><strong>Use aliases consistently and only when you need two of the same field:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">activeUsers</span><span class="p">:</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="nl">inactiveUsers</span><span class="p">:</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;inactive&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Document the expected response structure in the resolver:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<h3 id="solution_7">Solution<a class="headerlink" href="#solution_7" title="Permanent link">&para;</a></h3>
-<p><strong>Check database support:</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.validation]
-array_operators_postgresql_only = true  # Warn if using array operators
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of users, optionally filtered by status.</span>
 
-<p><strong>Or store arrays as JSON:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Product:
-    id: ID
-    tags: JSON  # Store as JSON, works everywhere
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="sd">    Response key: &quot;users&quot; (an array of User objects) unless aliased.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span>
+</code></pre></div>
 <hr />
-<h2 id="14-connection-pool-exhaustion">14. Connection Pool Exhaustion<a class="headerlink" href="#14-connection-pool-exhaustion" title="Permanent link">&para;</a></h2>
+<h2 id="10-connection-pool-exhaustion">10. Connection Pool Exhaustion<a class="headerlink" href="#10-connection-pool-exhaustion" title="Permanent link">&para;</a></h2>
 <h3 id="gotcha-all-connections-held-by-slow-queries">Gotcha: All Connections Held by Slow Queries<a class="headerlink" href="#gotcha-all-connections-held-by-slow-queries" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> New queries fail with "no connections available".</p>
-<p><strong>Why:</strong> Slow query holds connection, preventing other queries from running.</p>
-<h3 id="solutions_6">Solutions<a class="headerlink" href="#solutions_6" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Set connection timeout</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.database]
-connection_timeout_seconds = 10
-```text</p>
-<!-- Code example in TEXT -->
+<p><strong>Why:</strong> A slow query holds a connection, preventing other queries from running.</p>
+<h3 id="solutions_5">Solutions<a class="headerlink" href="#solutions_5" title="Permanent link">&para;</a></h3>
+<p><strong>Solution 1: Tune the pool and timeouts</strong></p>
+<p>Configure the pool through <code>create_fraiseql_app</code> kwargs (or <code>FRAISEQL_</code> environment variables):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<p><strong>Solution 2: Implement query timeout</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.database]
-query_timeout_seconds = 30
-```text</p>
-<!-- Code example in TEXT -->
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>       <span class="c1"># FRAISEQL_DATABASE_POOL_SIZE</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>    <span class="c1"># FRAISEQL_DATABASE_POOL_TIMEOUT (seconds)</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>            <span class="c1"># FRAISEQL_QUERY_TIMEOUT (seconds)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Solution 2: Monitor the pool from PostgreSQL</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Check active connections</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span><span class="p">;</span>
 
-<p><strong>Solution 3: Monitor connection pool</strong></p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-active-connections">Check active connections<a class="headerlink" href="#check-active-connections" title="Permanent link">&para;</a></h1>
-<p>SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'</p>
-<h1 id="kill-slow-queries">Kill slow queries<a class="headerlink" href="#kill-slow-queries" title="Permanent link">&para;</a></h1>
-<p>SELECT pg_terminate_backend(pid) FROM pg_stat_activity
-WHERE query_start &lt; now() - interval '5 minutes'
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Identify and cancel runaway queries</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_terminate_backend</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="s1">&#39;5 minutes&#39;</span><span class="p">;</span>
+</code></pre></div>
 <hr />
-<h2 id="15-recursive-queries-without-limits">15. Recursive Queries Without Limits<a class="headerlink" href="#15-recursive-queries-without-limits" title="Permanent link">&para;</a></h2>
-<h3 id="gotcha-infinite-recursion-in-self-referential-queries">Gotcha: Infinite Recursion in Self-Referential Queries<a class="headerlink" href="#gotcha-infinite-recursion-in-self-referential-queries" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> Query hangs or times out.</p>
+<h2 id="11-recursive-queries-without-limits">11. Recursive Queries Without Limits<a class="headerlink" href="#11-recursive-queries-without-limits" title="Permanent link">&para;</a></h2>
+<h3 id="gotcha-unbounded-self-referential-queries">Gotcha: Unbounded Self-Referential Queries<a class="headerlink" href="#gotcha-unbounded-self-referential-queries" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> A query hangs or times out.</p>
 <p><strong>Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: "1") {
-    id
-    manager {
-      id
-      manager {        # Recursion not bounded!
-        id
-        manager { ... }
-      }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span><span class="w">        </span><span class="c"># Recursion not bounded!</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">}</span>
+<span class="w">      </span><span class="err">}</span>
+<span class="w">    </span><span class="err">}</span>
+<span class="w">  </span><span class="err">}</span>
+<span class="err">}</span>
+</code></pre></div>
+<h3 id="solution_5">Solution<a class="headerlink" href="#solution_5" title="Permanent link">&para;</a></h3>
+<p><strong>Set a maximum query depth in the app config:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<h3 id="solution_8">Solution<a class="headerlink" href="#solution_8" title="Permanent link">&para;</a></h3>
-<p><strong>Implement depth limits:</strong></p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[FraiseQL.validation]
-max_query_depth = 15  # Prevent deep nesting
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Or use explicit iteration:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: "1") {
-    id
-    manager {
-      id
-      manager {
-        id
-        # Stop here (3 levels)
-      }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>  <span class="c1"># Reject queries nested deeper than 15 levels</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>max_query_depth</code> is also settable via <code>FRAISEQL_MAX_QUERY_DEPTH</code>. FraiseQL additionally runs query-complexity analysis (<code>complexity_max_depth</code>, <code>complexity_max_score</code>) that you can tune the same way.</p>
+<p><strong>Or bound the recursion explicitly in the query:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">manager</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">id</span>
+<span class="w">        </span><span class="c"># Stop here (3 levels)</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Related Guides:</strong></p>
 <ul>
 <li><strong><a href="../patterns/">Common Patterns</a></strong> — Real-world solutions avoiding gotchas</li>
 <li><strong><a href="../../operations/performance-tuning-runbook/">Performance Tuning Runbook</a></strong> — Optimizing query performance</li>
-<li><strong><a href="./testing-strategy.md">Testing Strategy</a></strong> — Testing to catch gotchas early</li>
+<li><strong><a href="../../reference/testing-checklist/">Testing Checklist</a></strong> — Testing to catch gotchas early</li>
 <li><strong><a href="../troubleshooting-decision-tree/">Troubleshooting Decision Tree</a></strong> — Route to correct guide</li>
 <li><strong><a href="../consistency-model/">Consistency Model</a></strong> — Understanding consistency guarantees</li>
+<li><strong><a href="../../reference/testing-checklist/">Testing Checklist</a></strong> — Testing to catch gotchas early</li>
 </ul>
 <p><strong>Architecture &amp; Design:</strong></p>
 <ul>
-<li><strong><a href="../architecture/core/execution-semantics.md">Execution Semantics</a></strong> — How queries execute</li>
+<li><strong><a href="../../architecture/cqrs-design/">CQRS Design</a></strong> — How reads and writes execute</li>
 <li><strong><a href="../schema-design-best-practices/">Schema Design Best Practices</a></strong> — Designing to avoid issues</li>
-<li><strong><a href="../integrations/federation/guide.md">Federation Guide</a></strong> — Federation pitfalls</li>
 </ul>
 <p><strong>Operations:</strong></p>
 <ul>
 <li><strong><a href="../monitoring/">Monitoring &amp; Observability</a></strong> — Catching issues in production</li>
-<li><strong><a href="../operations/observability-architecture.md">Observability Architecture</a></strong> — Observing patterns</li>
+<li><strong><a href="../../operations/observability/">Observability</a></strong> — Observing patterns</li>
 </ul>
 <hr />
-<p><strong>Last Updated:</strong> 2026-02-05
-<strong>Version:</strong> v2.0.0-alpha.1</p>
+<p><strong>Last Updated:</strong> 2026-02-05</p>
 
 
 
 
 
 
+
+  
+  
 
 
 
