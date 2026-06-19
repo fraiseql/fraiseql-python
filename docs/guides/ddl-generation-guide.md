@@ -1,18 +1,15 @@
-<!-- Skip to main content -->
+---
+title: "Writing DDL for Table-Backed Views"
+description: How to hand-write the PostgreSQL DDL for FraiseQL's table-backed read views (tv_*).
+keywords: ["ddl", "table-backed-views", "postgresql", "best-practices", "tutorial"]
+tags: ["documentation", "guide"]
 ---
 
-title: DDL Generation Guide: Creating Table-Backed Views
-description: - SQL fundamentals (SELECT, JOIN, WHERE clauses)
-keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
-tags: ["documentation", "reference"]
----
+# Writing DDL for Table-Backed Views
 
-# DDL Generation Guide: Creating Table-Backed Views
-
-**Status:** ✅ Production Ready
+**Status:** Production Ready
 **Audience:** DBAs, Developers, Architects
 **Reading Time:** 12-15 minutes
-**Last Updated:** 2026-02-05
 
 ---
 
@@ -21,188 +18,151 @@ tags: ["documentation", "reference"]
 **Required Knowledge:**
 
 - SQL fundamentals (SELECT, JOIN, WHERE clauses)
-- View concepts (database views, materialized views)
+- View concepts (logical views, materialized data, triggers)
 - FraiseQL schema definition and view selection
-- Performance implications of different view strategies
+- Performance implications of different read strategies
 - Index design and query optimization basics
-- Database schema design patterns
+- PostgreSQL schema design patterns
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- FraiseQL CLI (for DDL generation commands)
-- PostgreSQL 14+, MySQL 8.0+, SQLite 3.x, or SQL Server 2019+
-- SQL client tool (psql, mysql, sqlite3, sqlcmd)
-- Python 3.10+ or TypeScript 4.5+ (optional, for SDK-based generation)
+- PostgreSQL 14+
+- `psql` (or another PostgreSQL client)
+- Python 3.13+ (for the FraiseQL application itself)
 - A text editor for SQL scripts
 
 **Required Infrastructure:**
 
-- Access to your target database (PostgreSQL, MySQL, SQLite, SQL Server)
-- Database user with DDL creation permissions (CREATE TABLE, CREATE VIEW)
-- Schema already deployed or accessible
-- FraiseQL schema.json file for your application
-- Sufficient disk space for materialized views (if applicable)
+- Access to your PostgreSQL database
+- A database user with DDL permissions (`CREATE TABLE`, `CREATE VIEW`, `CREATE FUNCTION`)
+- Your normalized write tables (`tb_*`) already deployed
+- Your own migration tooling for applying DDL (plain `.sql` files, or a tool such as
+  Flyway / Liquibase / Alembic — whatever your team already uses)
 
 **Optional but Recommended:**
 
-- View Selection Guide documentation for decision making
+- The [View Selection Guide](../architecture/database/view-selection-guide.md) for decision making
 - Database performance monitoring tools
 - Version control for tracking DDL changes
-- Migration tools (Flyway, Liquibase)
 - Schema visualization tools
-- Query performance analysis tools (EXPLAIN ANALYZE)
+- Query performance analysis (`EXPLAIN ANALYZE`)
 
-**Time Estimate:** 15-30 minutes for DDL generation, 30-60 minutes for view validation and testing
+**Time Estimate:** 15-30 minutes to write the DDL, 30-60 minutes for validation and testing.
 
 ## Overview
 
-This guide explains how to use FraiseQL's DDL generation tools to create SQL for table-backed views (`tv_*` and `ta_*`).
+In FraiseQL v1 **you write your own PostgreSQL DDL by hand** (or with your own migration
+tooling). FraiseQL does **not** generate tables, views, or functions for you — there is no
+CLI and no code generator. At application startup FraiseQL reads the read views and functions
+you have defined and serves them over GraphQL.
 
-### What This Guide Does
+This guide shows the DDL you write for a **table-backed read view** (`tv_*`): a real table that
+holds pre-composed JSONB, kept up to date by a refresh function and trigger. Use this pattern when
+a logical `v_*` view is too slow because it composes deeply nested relationships on every read.
 
-- Shows how to generate ready-to-run SQL for table-backed views
-- Explains when to use each generation tool (Python, TypeScript, CLI)
-- Provides working examples for all platforms
-- Links to decision-making guides
+### What This Guide Covers
 
-### What This Guide Does NOT Do
+- The full DDL you write for a `tv_*` table-backed view
+- The supporting composition helper views, indexes, refresh function, trigger, and monitoring helpers
+- When to use a table-backed view versus a plain logical view
+- Links to the decision-making and schema-design guides
 
-- ❌ Make optimization decisions for you
-- ❌ Automatically create views without your approval
-- ❌ Modify your existing schema
-- ❌ Deploy anything to your database
+### What This Guide Does NOT Cover
 
-**Philosophy:** This is an **implementation tool**, not a decision-making tool. Use [Phase 9.4 View Selection Guide](../architecture/database/view-selection-guide.md) to decide whether you need table-backed views. Once you've decided, use these tools to generate the SQL.
+- It does **not** describe an automatic generator — there isn't one in v1; you write the SQL.
+- It does **not** make optimization decisions for you.
+- It does **not** deploy anything; apply the DDL with your own migration process.
+
+**Philosophy:** Decide *whether* you need a table-backed view using the
+[View Selection Guide](../architecture/database/view-selection-guide.md). Once you've decided,
+use the patterns here to write the SQL.
 
 ---
 
 ## Quick Start
 
-### I'm using Python
+A minimal table-backed view for a `User` entity looks like this. You write it once, apply it with
+your migration tooling, and point your `@fraiseql.type` at the resulting view.
+
+```sql
+-- Physical table holding pre-composed JSONB for each user
+CREATE TABLE tv_user_profile (
+    id          UUID NOT NULL PRIMARY KEY,
+    data        JSONB NOT NULL,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Refresh one user's row from the normalized write tables
+CREATE OR REPLACE FUNCTION refresh_tv_user_profile(p_id UUID)
+RETURNS void
+LANGUAGE sql AS $$
+    INSERT INTO tv_user_profile (id, data, updated_at)
+    SELECT u.id,
+           jsonb_build_object('id', u.id, 'name', u.name, 'email', u.email),
+           NOW()
+    FROM tb_user u
+    WHERE u.id = p_id
+    ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data, updated_at = NOW();
+$$;
+```
+
+Then expose it in Python:
 
 ```python
-<!-- Code example in Python -->
-from fraiseql_tools.views import generate_tv_ddl, load_schema
+import fraiseql
+from fraiseql.types import ID
 
-# Load your schema
-schema = load_schema("schema.json")
-
-# Generate DDL for User → tv_user_profile
-ddl = generate_tv_ddl(
-    schema=schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)
-
-# Save to file
-with open("tv_user_profile.sql", "w") as f:
-    f.write(ddl)
-
-print("Generated tv_user_profile.sql")
-```text
-<!-- Code example in TEXT -->
-
-### I'm using TypeScript
-
-```typescript
-<!-- Code example in TypeScript -->
-import { generateTvDdl, loadSchema } from "@FraiseQL/tools/views";
-import { writeFileSync } from "fs";
-
-// Load your schema
-const schema = loadSchema("schema.json");
-
-// Generate DDL for User → tv_user_profile
-const ddl = generateTvDdl({
-    schema,
-    entity: "User",
-    view: "tv_user_profile",
-    refreshStrategy: "trigger-based"
-});
-
-// Save to file
-writeFileSync("tv_user_profile.sql", ddl);
-
-console.log("Generated tv_user_profile.sql");
-```text
-<!-- Code example in TEXT -->
-
-### I'm using the CLI
-
-```bash
-<!-- Code example in BASH -->
-FraiseQL generate-views \
-  --schema schema.json \
-  --entity User \
-  --view tv_user_profile \
-  --output tv_user_profile.sql
-```text
-<!-- Code example in TEXT -->
+@fraiseql.type(sql_source="tv_user_profile", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+```
 
 ---
 
-## When to Use This Guide
+## When to Use a Table-Backed View
 
-**Use this guide when:**
+**Use a `tv_*` table-backed view when:**
 
-- ✅ You've read Phase 9.4 View Selection Guide
-- ✅ You've decided to use a table-backed view (tv_*or ta_*)
-- ✅ You want to generate the DDL automatically
-- ✅ You want to review the SQL before deploying
+- You've read the [View Selection Guide](../architecture/database/view-selection-guide.md)
+- A logical `v_*` view composes deeply nested relationships and is too slow on the read path
+- You can tolerate a small, controlled refresh delay (trigger-based is near real-time)
+- You want to review and own the SQL before deploying
 
-**Skip this guide if:**
+**Stick with a plain logical `v_*` view when:**
 
-- ❌ You haven't decided whether to use table-backed views yet (read Phase 9.4 first)
-- ❌ You want to write the SQL manually
-- ❌ You're still evaluating performance
+- The composition is cheap enough to run on every read
+- You want zero refresh machinery to maintain
+- You're still evaluating performance
 
 ---
 
-## Parameters Explained
+## Design Parameters
 
-All generation functions take similar parameters:
+When you write a table-backed view by hand, these are the decisions you make. They are not
+function arguments — they are choices reflected directly in the DDL you write.
 
-| Parameter | Type | Required | Default | Purpose |
-|-----------|------|----------|---------|---------|
-| `schema` | dict/object | Yes | - | Loaded `schema.json` |
-| `entity` | str | Yes | - | Entity name (e.g., "User", "Order") |
-| `view` | str | Yes | - | View name (e.g., "tv_user_profile", "ta_orders") |
-| `refresh_strategy` | str | No | "trigger-based" | "trigger-based" or "scheduled" |
-| `include_composition_views` | bool | No | true | Include helper views for nested relationships |
-| `include_monitoring_functions` | bool | No | true | Include staleness tracking functions |
+| Decision | Options | Notes |
+|----------|---------|-------|
+| Refresh strategy | trigger-based or scheduled | See below |
+| Composition helper views | include or inline | Helper views keep the refresh function readable |
+| Monitoring helpers | include or skip | Staleness / row-count functions for production observability |
 
-### Entity
+### Entity and View Naming
 
-The entity name must match a type in your `schema.json`:
+Follow the FraiseQL PostgreSQL naming conventions:
 
-```python
-<!-- Code example in Python -->
-# Your schema.json has:
-{
-  "types": [
-    {"name": "User", ...},
-    {"name": "Post", ...}
-  ]
-}
+- `tb_*` — normalized **write tables** (the source of truth; never exposed in GraphQL)
+- `v_*` — logical **read views** (a `SELECT` that builds a `data` JSONB column)
+- `tv_*` — **table-backed read views**: a real table holding pre-composed JSONB, refreshed by
+  functions/triggers; used for heavy nested reads
+- `fn_*` — PostgreSQL **functions** implementing mutation write logic
 
-# Generate for User
-ddl = generate_tv_ddl(schema, entity="User", view="tv_user_profile")
-```text
-<!-- Code example in TEXT -->
-
-### View Name
-
-The view name must start with the appropriate prefix:
-
-- **`tv_*`** - Table-backed JSON view (for GraphQL)
-  - Example: `tv_user_profile`, `tv_order_summary`
-  - Used with JSON plane queries
-
-- **`ta_*`** - Table-backed Arrow view (for analytics)
-  - Example: `ta_orders`, `ta_user_events`
-  - Used with Arrow Flight queries
+Every read view (logical or table-backed) carries an `id` UUID column (for `WHERE id = $1`) **plus**
+a `data` JSONB column built with `jsonb_build_object(...)`. Never put internal `pk_*` BIGINT keys
+inside `data` or expose them in GraphQL.
 
 ### Refresh Strategy
 
@@ -213,371 +173,185 @@ Choose based on your workload:
 | **trigger-based** | High-change data, low tolerance for stale data | Medium (per-row) | <100ms |
 | **scheduled** | Batch processes, can tolerate stale data | Low (batched) | 1-60 minutes |
 
-**Examples:**
+**Trigger-based** — a trigger on the source `tb_*` table calls the refresh function on every
+insert/update, so the table-backed view stays fresh within milliseconds.
 
-```python
-<!-- Code example in Python -->
-# Real-time user profile updates
-ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"  # Updates immediately
-)
+**Scheduled** — a cron job, `pg_cron` task, or external scheduler calls a "refresh all" function
+on an interval. Lower overhead, but the data is as stale as your interval allows.
 
-# Nightly order analytics
-ddl = generate_ta_ddl(
-    schema,
-    entity="Order",
-    view="ta_orders",
-    refresh_strategy="scheduled"  # Updates once per night
-)
-```text
-<!-- Code example in TEXT -->
+### Composition Helper Views
 
-See [Performance Testing Guide](./view-selection-performance-testing.md) for help choosing.
-
-### Include Composition Views
-
-When `include_composition_views=True` (default), the generator creates helper views for nested relationships:
+For deeply nested relationships, write small helper `v_*` views that pre-compose each level into
+JSONB. The refresh function then joins those helpers instead of building the whole tree inline:
 
 ```sql
-<!-- Code example in SQL -->
--- Helper views (automatically created)
-CREATE VIEW v_user_posts_composed AS ...
-CREATE VIEW v_posts_comments_composed AS ...
+-- Helper views: pre-compose each nested level into JSONB
+CREATE VIEW v_user_posts_composed AS
+    SELECT p.fk_user AS user_id,
+           jsonb_agg(jsonb_build_object('id', p.id, 'title', p.title)) AS posts
+    FROM tb_post p
+    GROUP BY p.fk_user;
 
--- Main table-backed view
+-- Main table-backed view, fed by the helper above
 CREATE TABLE tv_user_profile (
-    id TEXT PRIMARY KEY,
-    data JSONB,  -- Contains nested posts + comments
-    ...
+    id          UUID NOT NULL PRIMARY KEY,
+    data        JSONB NOT NULL,   -- contains nested posts + comments
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-Set to `False` if you're managing composition views manually:
+If you prefer to inline the composition directly in the refresh function, skip the helper views.
 
-```python
-<!-- Code example in Python -->
-ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    include_composition_views=False  # You'll create these manually
-)
-```text
-<!-- Code example in TEXT -->
+### Monitoring Helpers
 
-### Include Monitoring Functions
-
-When `include_monitoring_functions=True` (default), the generator adds functions to track staleness:
+Optionally add functions to track staleness and row counts. These are useful for production
+monitoring:
 
 ```sql
-<!-- Code example in SQL -->
--- Monitoring functions (automatically created)
-CREATE FUNCTION tv_user_profile_staleness() AS ...
-CREATE FUNCTION tv_user_profile_row_count() AS ...
-```text
-<!-- Code example in TEXT -->
+-- Monitoring helpers
+CREATE OR REPLACE FUNCTION tv_user_profile_staleness()
+RETURNS interval
+LANGUAGE sql AS $$
+    SELECT NOW() - MIN(updated_at) FROM tv_user_profile;
+$$;
 
-These are useful for production monitoring. Set to `False` if you're managing monitoring separately:
+CREATE OR REPLACE FUNCTION tv_user_profile_row_count()
+RETURNS bigint
+LANGUAGE sql AS $$
+    SELECT COUNT(*) FROM tv_user_profile;
+$$;
+```
 
-```python
-<!-- Code example in Python -->
-ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    include_monitoring_functions=False
-)
-```text
-<!-- Code example in TEXT -->
+Skip them if you monitor staleness separately.
 
 ---
 
-## Output Structure
+## Full DDL Structure
 
-Generated DDL contains 6 sections:
+A complete table-backed view typically contains six sections. Here is the full set written out
+for `tv_user_profile`:
 
 ```sql
-<!-- Code example in SQL -->
--- 1. Composition Helper Views (if include_composition_views=True)
--- These pre-compose nested relationships into JSONB format
+-- 1. Composition Helper Views
+-- Pre-compose nested relationships into JSONB.
 CREATE VIEW v_user_posts_composed AS
-  SELECT user_id, jsonb_agg(...) as posts FROM posts GROUP BY user_id;
+    SELECT p.fk_user AS user_id,
+           jsonb_agg(jsonb_build_object('id', p.id, 'title', p.title)) AS posts
+    FROM tb_post p
+    GROUP BY p.fk_user;
 
 -- 2. Physical Table
--- The actual table that stores materialized data
+-- The actual table that stores pre-composed JSONB.
 CREATE TABLE tv_user_profile (
-    id TEXT NOT NULL PRIMARY KEY,
-    data JSONB NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    id          UUID NOT NULL PRIMARY KEY,
+    data        JSONB NOT NULL,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     FOREIGN KEY (id) REFERENCES tb_user(id) ON DELETE CASCADE
 );
 
 -- 3. Indexes
--- Optimizes common queries
+-- Optimize common queries.
 CREATE INDEX idx_tv_user_profile_data_gin ON tv_user_profile USING GIN(data);
 CREATE INDEX idx_tv_user_profile_updated ON tv_user_profile(updated_at);
 
 -- 4. Refresh Function
--- Maintains the table based on source data
-CREATE FUNCTION refresh_tv_user_profile() AS $$
-  INSERT INTO tv_user_profile (id, data, updated_at)
-  SELECT u.id, jsonb_build_object(...), NOW()
-  FROM tb_user u
-  ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
-$$ LANGUAGE SQL;
+-- Maintains a row based on source data.
+CREATE OR REPLACE FUNCTION refresh_tv_user_profile(p_id UUID)
+RETURNS void
+LANGUAGE sql AS $$
+    INSERT INTO tv_user_profile (id, data, updated_at)
+    SELECT u.id,
+           jsonb_build_object(
+               'id', u.id,
+               'name', u.name,
+               'email', u.email,
+               'posts', COALESCE(pc.posts, '[]'::jsonb)
+           ),
+           NOW()
+    FROM tb_user u
+    LEFT JOIN v_user_posts_composed pc ON pc.user_id = u.id
+    WHERE u.id = p_id
+    ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data, updated_at = NOW();
+$$;
 
--- 5. Refresh Trigger (if trigger-based strategy)
--- Automatically calls refresh function on source changes
+-- 5. Refresh Trigger (trigger-based strategy)
+-- Automatically calls the refresh function on source changes.
+CREATE OR REPLACE FUNCTION trg_refresh_tv_user_profile()
+RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    PERFORM refresh_tv_user_profile(NEW.id);
+    RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER trg_tv_user_profile_refresh
-  AFTER INSERT OR UPDATE ON tb_user
-  FOR EACH ROW
-  EXECUTE FUNCTION refresh_tv_user_profile();
+    AFTER INSERT OR UPDATE ON tb_user
+    FOR EACH ROW
+    EXECUTE FUNCTION trg_refresh_tv_user_profile();
 
--- 6. Monitoring Functions (if include_monitoring_functions=True)
--- Track view health and staleness
-CREATE FUNCTION tv_user_profile_staleness() AS ...
-CREATE FUNCTION tv_user_profile_row_count() AS ...
-```text
-<!-- Code example in TEXT -->
+-- 6. Monitoring Helpers
+-- Track view health and staleness.
+CREATE OR REPLACE FUNCTION tv_user_profile_staleness()
+RETURNS interval
+LANGUAGE sql AS $$
+    SELECT NOW() - MIN(updated_at) FROM tv_user_profile;
+$$;
+
+CREATE OR REPLACE FUNCTION tv_user_profile_row_count()
+RETURNS bigint
+LANGUAGE sql AS $$
+    SELECT COUNT(*) FROM tv_user_profile;
+$$;
+```
 
 ---
 
-## Detailed Usage by Language
+## Applying the DDL
 
-### Python
-
-**Installation:**
+Save the SQL in a migration file and apply it with `psql` (or your migration tool):
 
 ```bash
-<!-- Code example in BASH -->
-pip install FraiseQL-tools
-```text
-<!-- Code example in TEXT -->
+# Apply to staging first
+psql -h staging-db -U postgres mydb < tv_user_profile.sql
+```
 
-**Basic Usage:**
-
-```python
-<!-- Code example in Python -->
-from fraiseql_tools.views import (
-    generate_tv_ddl,
-    generate_ta_ddl,
-    load_schema,
-    validate_generated_ddl
-)
-
-# Load schema
-schema = load_schema("schema.json")
-
-# Generate tv_* DDL
-tv_ddl = generate_tv_ddl(
-    schema=schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)
-
-# Generate ta_* DDL
-ta_ddl = generate_ta_ddl(
-    schema=schema,
-    entity="Order",
-    view="ta_orders",
-    refresh_strategy="scheduled"
-)
-
-# Validate before deploying
-errors = validate_generated_ddl(tv_ddl)
-if errors:
-    print(f"Validation errors: {errors}")
-else:
-    print("Valid DDL - ready to deploy")
-
-# Save to file
-with open("views.sql", "w") as f:
-    f.write(tv_ddl)
-    f.write("\n\n")
-    f.write(ta_ddl)
-```text
-<!-- Code example in TEXT -->
-
-**Full Example:**
-
-See [`examples/ddl-generation/python-example.py`](../../examples/ddl-generation/python-example.py)
-
-### TypeScript
-
-**Installation:**
+Combine multiple views into one migration by concatenating the files:
 
 ```bash
-<!-- Code example in BASH -->
-npm install @FraiseQL/tools
-```text
-<!-- Code example in TEXT -->
-
-**Basic Usage:**
-
-```typescript
-<!-- Code example in TypeScript -->
-import {
-    generateTvDdl,
-    generateTaDdl,
-    loadSchema,
-    validateGeneratedDdl
-} from "@FraiseQL/tools/views";
-import { writeFileSync } from "fs";
-
-// Load schema
-const schema = loadSchema("schema.json");
-
-// Generate tv_* DDL
-const tvDdl = generateTvDdl({
-    schema,
-    entity: "User",
-    view: "tv_user_profile",
-    refreshStrategy: "trigger-based"
-});
-
-// Generate ta_* DDL
-const taDdl = generateTaDdl({
-    schema,
-    entity: "Order",
-    view: "ta_orders",
-    refreshStrategy: "scheduled"
-});
-
-// Validate before deploying
-const errors = validateGeneratedDdl(tvDdl);
-if (errors.length > 0) {
-    console.error("Validation errors:", errors);
-} else {
-    console.log("Valid DDL - ready to deploy");
-}
-
-// Save to file
-writeFileSync("views.sql", tvDdl + "\n\n" + taDdl);
-```text
-<!-- Code example in TEXT -->
-
-**Full Examples:**
-
-See the [DDL Generation Examples](../../examples/ddl-generation/) directory for detailed code examples in Python
-
-### CLI
-
-**Installation:**
-
-```bash
-<!-- Code example in BASH -->
-# Already included with FraiseQL-cli
-cargo install FraiseQL-cli
-```text
-<!-- Code example in TEXT -->
-
-**Basic Usage:**
-
-```bash
-<!-- Code example in BASH -->
-# Generate trigger-based tv_*
-FraiseQL generate-views \
-  --schema schema.json \
-  --entity User \
-  --view tv_user_profile \
-  --output tv_user_profile.sql
-
-# Generate scheduled ta_*
-FraiseQL generate-views \
-  --schema schema.json \
-  --entity Order \
-  --view ta_orders \
-  --refresh-strategy scheduled \
-  --output ta_orders.sql
-
-# Combine multiple views
-cat tv_user_profile.sql ta_orders.sql > all_views.sql
-```text
-<!-- Code example in TEXT -->
-
-**All Options:**
-
-```bash
-<!-- Code example in BASH -->
-FraiseQL generate-views --help
-```text
-<!-- Code example in TEXT -->
-
-```text
-<!-- Code example in TEXT -->
-USAGE:
-    FraiseQL generate-views [OPTIONS] --schema <SCHEMA> --entity <ENTITY> --view <VIEW>
-
-OPTIONS:
-    --schema <PATH>
-        Path to schema.json (required)
-
-    --entity <NAME>
-        Entity name (required)
-
-    --view <NAME>
-        View name (required)
-
-    --refresh-strategy <STRATEGY>
-        "trigger-based" or "scheduled" [default: trigger-based]
-
-    --output <PATH>
-        Output file [default: {view}.sql]
-
-    --include-composition-views
-        Include helper views [default: true]
-
-    --include-monitoring
-        Include monitoring functions [default: true]
-
-    --validate
-        Only validate, don't write file
-
-    --verbose
-        Show generation steps
-```text
-<!-- Code example in TEXT -->
-
-**Full Example:**
-
-See [`examples/ddl-generation/cli-example.sh`](../../examples/ddl-generation/cli-example.sh)
+cat tv_user_profile.sql tv_order_summary.sql > 0007_table_backed_views.sql
+```
 
 ---
 
 ## Next Steps
 
-### 1. Generate the DDL
+### 1. Write the DDL
 
-Choose your preferred method (Python, TypeScript, or CLI) and generate the DDL.
+Write the table, indexes, refresh function, trigger, and (optionally) monitoring helpers using the
+patterns above.
 
 ### 2. Review the SQL
 
-Read through the generated SQL carefully:
+Read through your DDL carefully:
 
-- ✅ Does the composition match your expectations?
-- ✅ Are all relationships included?
-- ✅ Is the refresh strategy appropriate?
-- ✅ Are indexes reasonable?
+- Does the composition match what your GraphQL type expects?
+- Are all relationships included in the JSONB?
+- Is the refresh strategy appropriate for the data's change rate?
+- Are the indexes reasonable for your query patterns?
 
 ### 3. Test in Staging
 
-Run the DDL in your staging database:
-
-```bash
-<!-- Code example in BASH -->
-psql -h staging-db -U postgres mydb < tv_user_profile.sql
-```text
-<!-- Code example in TEXT -->
-
-Monitor the initial population:
+Apply the DDL to a staging database, then back-fill and verify it:
 
 ```sql
-<!-- Code example in SQL -->
+-- Back-fill all rows once (or call refresh per id)
+INSERT INTO tv_user_profile (id, data, updated_at)
+SELECT u.id, jsonb_build_object('id', u.id, 'name', u.name, 'email', u.email), NOW()
+FROM tb_user u
+ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
+
 -- Check row count
 SELECT COUNT(*) FROM tv_user_profile;
 
@@ -586,16 +360,15 @@ SELECT tv_user_profile_staleness();
 
 -- Spot-check a few rows
 SELECT * FROM tv_user_profile LIMIT 5;
-```text
-<!-- Code example in TEXT -->
+```
 
-### 4. Follow Migration Checklist
+### 4. Point Your Type at the View
 
-Complete the full migration process in [View Selection Migration Checklist](./view-selection-migration-checklist.md).
+Set `sql_source="tv_user_profile"` on the `@fraiseql.type` and let FraiseQL serve it.
 
 ### 5. Deploy to Production
 
-Once staging verification passes, deploy to production.
+Once staging verification passes, apply the same migration to production.
 
 ---
 
@@ -603,26 +376,24 @@ Once staging verification passes, deploy to production.
 
 ### User Profile with Nested Posts
 
-```python
-<!-- Code example in Python -->
-from fraiseql_tools.views import generate_tv_ddl, load_schema
+Build the user's posts (and their comments) into the `data` JSONB so the read path is a single
+indexed lookup:
 
-schema = load_schema("schema.json")
+```sql
+SELECT u.id,
+       jsonb_build_object(
+           'id', u.id,
+           'name', u.name,
+           'email', u.email,
+           'posts', COALESCE(pc.posts, '[]'::jsonb)
+       )
+FROM tb_user u
+LEFT JOIN v_user_posts_composed pc ON pc.user_id = u.id;
+```
 
-# User profile with all posts and comments
-ddl = generate_tv_ddl(
-    schema,
-    entity="User",
-    view="tv_user_profile",
-    refresh_strategy="trigger-based"
-)
-```text
-<!-- Code example in TEXT -->
-
-**Generated Structure:**
+**Resulting `data` shape:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "id": "user-123",
   "name": "Alice",
@@ -631,30 +402,30 @@ ddl = generate_tv_ddl(
     {
       "id": "post-1",
       "title": "Hello",
-      "comments": [...]
+      "comments": []
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Order Summary with Line Items
 
-```python
-<!-- Code example in Python -->
-ddl = generate_tv_ddl(
-    schema,
-    entity="Order",
-    view="tv_order_summary",
-    refresh_strategy="scheduled"
-)
-```text
-<!-- Code example in TEXT -->
+```sql
+SELECT o.id,
+       jsonb_build_object(
+           'id', o.id,
+           'customer_id', o.fk_customer,
+           'total', o.total,
+           'status', o.status,
+           'line_items', COALESCE(li.items, '[]'::jsonb)
+       )
+FROM tb_order o
+LEFT JOIN v_order_line_items_composed li ON li.order_id = o.id;
+```
 
-**Generated Structure:**
+**Resulting `data` shape:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "id": "order-123",
   "customer_id": "cust-456",
@@ -668,95 +439,60 @@ ddl = generate_tv_ddl(
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
-
-### Analytics Table with Denormalized Columns
-
-```python
-<!-- Code example in Python -->
-ddl = generate_ta_ddl(
-    schema,
-    entity="Event",
-    view="ta_events",
-    refresh_strategy="scheduled"
-)
-```text
-<!-- Code example in TEXT -->
-
-**Generated Columns:**
-
-- Denormalized user info (user_name, user_email)
-- Pre-aggregated metrics (event_count, total_duration)
-- Time-series indexes (BRIN on timestamp)
+```
 
 ---
 
 ## Troubleshooting
 
-### Issue: "Schema not found"
+### Issue: GraphQL type returns null fields
 
-**Symptom:** `Error: Could not load schema.json`
-
-**Solution:**
-
-- Verify path: `ls -la schema.json`
-- Use absolute path: `generate_tv_ddl(schema, ..., schema="/full/path/to/schema.json")`
-
-### Issue: "Entity not found in schema"
-
-**Symptom:** `Error: Entity "UserProfile" not found in schema`
+**Symptom:** A queried field is always `null` even though the source data exists.
 
 **Solution:**
 
-- Check entity names in schema: `grep '"name"' schema.json | grep -i user`
-- Match exact name (case-sensitive): `entity="User"` not `entity="user"`
+- Confirm the field name in `jsonb_build_object(...)` matches the GraphQL field (FraiseQL maps
+  `data` JSONB keys to type fields).
+- Re-run the refresh function for that row and re-check `SELECT data FROM tv_user_profile WHERE id = ...`.
 
-### Issue: "Invalid refresh strategy"
+### Issue: Stale data after writes
 
-**Symptom:** `Error: Invalid refresh_strategy "real-time"`
+**Symptom:** Writes to `tb_*` aren't reflected in the table-backed view.
 
 **Solution:**
 
-- Use only: `"trigger-based"` or `"scheduled"`
-- See [Refresh Strategy](#refresh-strategy) section for details
+- For trigger-based refresh, verify the trigger exists on the source table:
+  `\d tb_user` in `psql`.
+- For scheduled refresh, verify your scheduler is actually calling the refresh function.
 
 ### Issue: Generated SQL has syntax errors
 
-**Symptom:** `SYNTAX ERROR: unexpected token`
+**Symptom:** `psql` reports a syntax error when applying the migration.
 
 **Solution:**
 
-- Validate before deploying: `validate_generated_ddl(ddl)`
-- Check schema.json for invalid characters
-- Report issue: [GitHub Issues](https://github.com/anthropics/FraiseQL/issues)
+- Apply the file incrementally and read the line reported in the error.
+- Check for unbalanced `$$ ... $$` function bodies.
+- Report a framework issue: [GitHub Issues](https://github.com/fraiseql/fraiseql/issues)
 
 ---
 
 ## Validation
 
-All generated DDL is automatically validated for:
+Before deploying, sanity-check the DDL yourself:
 
-- ✅ Valid PostgreSQL syntax
-- ✅ Proper table/view definitions
-- ✅ Valid column types
-- ✅ Correct index usage
-- ✅ Proper refresh function structure
+- Valid PostgreSQL syntax (apply it to a throwaway database first)
+- Table and view definitions match the GraphQL types they back
+- Column types are correct (`id` UUID, `data` JSONB)
+- Indexes match your query patterns (GIN on `data`, btree on `updated_at`)
+- The refresh function and trigger fire as expected
 
-To validate manually:
+A quick smoke test in staging:
 
-```python
-<!-- Code example in Python -->
-from fraiseql_tools.views import validate_generated_ddl
-
-errors = validate_generated_ddl(ddl)
-if errors:
-    for error in errors:
-        print(f"❌ {error}")
-else:
-    print("✅ Valid DDL")
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Apply, back-fill, then verify a representative row
+SELECT data FROM tv_user_profile WHERE id = 'user-123';
+```
 
 ---
 
@@ -766,14 +502,14 @@ else:
 
 **Best for:**
 
-- Small tables (< 100K rows)
+- Small to medium tables (< 100K rows)
 - High query volume (> 1000 req/sec)
-- Must have <1 second data freshness
+- Sub-second data freshness requirements
 
 **Cost:**
 
-- ~10-50ms per source row change
-- Scales linearly with update rate
+- A small per-row refresh cost on every source write
+- Scales linearly with the update rate
 
 ### Scheduled Refresh
 
@@ -781,25 +517,20 @@ else:
 
 - Large tables (> 1M rows)
 - Batch processes
-- Can tolerate 1-60 minute staleness
+- Tolerance for 1-60 minute staleness
 
 **Cost:**
 
-- ~100-500ms total (regardless of table size)
-- Fixed schedule (daily, hourly, etc.)
-
-See [Performance Testing Guide](./view-selection-performance-testing.md) for benchmarking.
+- A fixed batch cost per run, largely independent of read volume
+- Freshness bounded by the schedule (hourly, nightly, etc.)
 
 ---
 
 ## See Also
 
-- **[Phase 9.4: View Selection Guide](../architecture/database/view-selection-guide.md)** - Decide whether to use table-backed views
-- **[TV Table Pattern](../architecture/database/tv-table-pattern.md)** - Deep dive into JSON plane table-backed views
-- **[TA Table Pattern](../architecture/database/ta-table-pattern.md)** - Deep dive into Arrow plane table-backed views
-- **[Migration Checklist](./view-selection-migration-checklist.md)** - Step-by-step deployment workflow
-- **[Performance Testing Guide](./view-selection-performance-testing.md)** - Benchmark your views
-- **[Quick Reference](./view-selection-quick-reference.md)** - Quick lookup tables
+- **[View Selection Guide](../architecture/database/view-selection-guide.md)** — decide whether to use table-backed views
+- **[TV Table Pattern](../architecture/database/tv-table-pattern.md)** — deep dive into table-backed read views
+- **[Schema Design Best Practices](./schema-design-best-practices.md)** — naming conventions and DDL design
 
 ---
 
@@ -807,12 +538,6 @@ See [Performance Testing Guide](./view-selection-performance-testing.md) for ben
 
 For issues or questions:
 
-1. Check [troubleshooting section](#troubleshooting)
-2. Review [Phase 9.4 View Selection Guide](../architecture/database/view-selection-guide.md)
-3. Open an issue: [GitHub Issues](https://github.com/anthropics/FraiseQL/issues)
-
----
-
-**Last Updated:** January 24, 2026
-**Phase:** 9.5
-**Status:** Ready for Implementation
+1. Check the [troubleshooting section](#troubleshooting)
+2. Review the [View Selection Guide](../architecture/database/view-selection-guide.md)
+3. Open an issue: [GitHub Issues](https://github.com/fraiseql/fraiseql/issues)

@@ -1,13 +1,13 @@
 <!-- Skip to main content -->
 ---
 
-title: FraiseQL v2.0.0-alpha.1 Production Security Checklist
+title: FraiseQL Production Security Checklist
 description: Complete pre-production security checklist for deploying FraiseQL to production.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial", "security"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL v2.0.0-alpha.1 Production Security Checklist
+# FraiseQL Production Security Checklist
 
 **Status:** ✅ Production Ready
 **Audience:** DevOps, Security Engineers, Architects
@@ -67,7 +67,7 @@ If you answered **no** to any of these, start with [Security Planning](#security
 
 ### Firewall & Network Isolation
 
-- [ ] FraiseQL server accessible only via load balancer (not directly)
+- [ ] FraiseQL FastAPI app (behind Uvicorn/Gunicorn) accessible only via load balancer (not directly)
 - [ ] Firewall allows only necessary inbound ports (443 for HTTPS, 5432 for DB if on network)
 - [ ] Firewall denies all inbound by default
 - [ ] Database server not accessible from internet (private network only)
@@ -144,20 +144,22 @@ If you answered **no** to any of these, start with [Security Planning](#security
 
 ### Field-Level Authorization
 
-- [ ] Authorization decorators used on sensitive fields
-- [ ] @authorize directives compiled into schema
+- [ ] Authorization decorators (`requires_auth`, `requires_role`, `requires_permission`) used on sensitive resolvers
+- [ ] Field-level authorization (`authorize_field`) applied to sensitive fields
+- [ ] Operation-level `Authorizer` wired via `@fraiseql.query(authorizer=...)` / `@fraiseql.subscription(authorizer=...)`
 - [ ] Role-based access control (RBAC) configured
-- [ ] Row-level security (RLS) enforced at database
-- [ ] Authorization checks cannot be bypassed
-- [ ] Permission changes take effect immediately
+- [ ] Row-level security (RLS) enforced at database (session GUC `app.tenant_id` set per request)
+- [ ] Authorization checks cannot be bypassed (resolver-bypass routes, e.g. `enable_rust_endpoint`, remain authorization-gated)
+- [ ] Permission changes take effect immediately (decision cache TTL accounted for)
 - [ ] Authorization audit logging enabled
 
 ### Introspection Control
 
-- [ ] Schema introspection disabled for unauthenticated clients
+- [ ] Schema introspection disabled for unauthenticated clients (`introspection_policy=AUTHENTICATED`)
 - [ ] Introspection requires authentication for internal tools
-- [ ] Introspection completely disabled in production (if not needed)
-- [ ] Only allowlisted queries accepted (if using APQ)
+- [ ] Introspection completely disabled in production if not needed (`introspection_policy=DISABLED`; auto-disabled when `environment="production"`)
+- [ ] GraphQL playground disabled in production (`enable_playground=False`; auto-disabled in production)
+- [ ] Only allowlisted queries accepted (`apq_mode="required"` with `apq_queries_dir` populated)
 
 ---
 
@@ -175,11 +177,10 @@ If you answered **no** to any of these, start with [Security Planning](#security
 
 ### Encryption in Transit
 
-- [ ] All database connections use TLS
+- [ ] All database connections use TLS (`sslmode=require` or stricter in `database_url`)
 - [ ] Database connection strings encrypted (not in plaintext config)
 - [ ] Inter-service communication encrypted
-- [ ] Webhook delivery over HTTPS only
-- [ ] Event streaming over encrypted channels (Kafka with TLS, NATS with TLS)
+- [ ] Any outbound integrations (called from `fn_` functions or FastAPI middleware) over HTTPS only
 
 ### Sensitive Data Handling
 
@@ -198,7 +199,7 @@ If you answered **no** to any of these, start with [Security Planning](#security
 - [ ] Database user cannot create tables or databases
 - [ ] Database connection requires strong authentication (not empty password)
 - [ ] Database user password > 32 characters (random, no patterns)
-- [ ] Database connection limited to FraiseQL server IPs
+- [ ] Database connection limited to the FraiseQL application server IPs
 - [ ] Database public access disabled
 - [ ] Unnecessary extensions disabled
 - [ ] SQL injection prevention verified (use prepared statements)
@@ -210,21 +211,22 @@ If you answered **no** to any of these, start with [Security Planning](#security
 
 ### Rate Limiting Configuration
 
-- [ ] Rate limiting enabled on authentication endpoints (login, token refresh)
-- [ ] Rate limiting: 10 requests/minute per IP for auth endpoints
-- [ ] Rate limiting: 100 requests/minute per authenticated user for GraphQL
+- [ ] Application rate limiting enabled (`rate_limit_enabled=True`)
+- [ ] Per-minute / per-hour limits configured (`rate_limit_requests_per_minute`, `rate_limit_requests_per_hour`, `rate_limit_burst_size`)
+- [ ] Stricter limits applied to authentication endpoints (login, token refresh)
 - [ ] Rate limits enforced at multiple layers (WAF, proxy, application)
 - [ ] Rate limit headers returned to clients
-- [ ] Rate limit bypass mechanism for privileged clients documented
+- [ ] Rate limit allow/deny lists reviewed (`rate_limit_whitelist`, `rate_limit_blacklist`)
+- [ ] Distributed rate limiting backed by Redis if running multiple instances (`RedisRateLimitStore`)
 - [ ] Rate limiting verified under load testing
 
 ### Query Complexity Limits
 
-- [ ] Query depth limit enforced (max 15 levels)
-- [ ] Query complexity scoring enabled
-- [ ] Complexity limit set (max 5000 or per policy)
+- [ ] Query depth limit enforced (`complexity_max_depth`, or `max_query_depth`)
+- [ ] Query complexity scoring enabled (`complexity_enabled=True`)
+- [ ] Complexity limit set (`complexity_max_score`, default 1000 — tune per policy)
 - [ ] Mutation complexity calculated and limited
-- [ ] Timeout on slow queries (configurable, default 30 seconds)
+- [ ] Timeout on slow queries (`execution_timeout_ms`, default 30000 ms)
 - [ ] Query complexity monitoring in place
 
 ### DDoS Protection
@@ -491,7 +493,7 @@ If you answered **no** to any of these, start with [Security Planning](#security
 
 - **[Authentication Provider Selection](../integrations/authentication/provider-selection-guide.md)** — Choosing OAuth providers securely
 - **[Authentication Security Checklist](../integrations/authentication/security-checklist.md)** — Auth-specific security checks
-- **[RBAC & Authorization](../enterpri../../guides/authorization-quick-start.md)** — Field-level access control configuration
+- **[RBAC & Authorization](./authorization-quick-start.md)** — Field-level access control configuration
 - **[Audit Logging](../enterprise/audit-logging.md)** — Compliance and audit trail setup
 - **[KMS Integration](../enterprise/kms.md)** — Key management service configuration
 
@@ -504,9 +506,7 @@ If you answered **no** to any of these, start with [Security Planning](#security
 **Compliance:**
 
 - **[Specs: Security & Compliance](../specs/security-compliance.md)** — Security feature specifications
-- **[alpha-limitations.md](../alpha-limitations.md)** — Known limitations affecting security
 
 ---
 
 **Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

@@ -1,6 +1,5 @@
 <!-- Skip to main content -->
 ---
-
 title: Authorization & RBAC Quick Start (5 Minutes)
 description: Get field-level and operation-level authorization working in 5 minutes.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
@@ -9,12 +8,7 @@ tags: ["documentation", "reference"]
 
 # Authorization & RBAC Quick Start (5 Minutes)
 
-**Status:** ✅ Production Ready
-**Audience:** Developers, DevOps, Architects
-**Reading Time:** 5-7 minutes
-**Last Updated:** 2026-02-05
-
-Get field-level and operation-level authorization working in 5 minutes.
+Get field-level and operation-level authorization working in 5 minutes with FraiseQL's PostgreSQL-backed runtime.
 
 ## Prerequisites
 
@@ -22,94 +16,199 @@ Get field-level and operation-level authorization working in 5 minutes.
 - Understanding of roles (admin, user, guest)
 - Knowledge of your authentication provider (see [Auth Provider Selection](../integrations/authentication/provider-selection-guide.md))
 
-## Step 1: Define Authorization Rules (1 minute)
+## Step 1: Define Field-Level Authorization Rules (1 minute)
+
+Protect individual fields with `@authorize_field`. The permission check is any callable
+that receives the GraphQL `info` (and optionally the resolved `root` object) and returns
+a `bool`. Combine checks with `any_permission` (OR) or `combine_permissions` (AND).
 
 ```python
-<!-- Code example in Python -->
 # users_service/schema.py
-from FraiseQL import type, field, authorize
+import fraiseql
+from fraiseql import field
+from fraiseql.security import authorize_field, any_permission
+from fraiseql.types import ID
 
-@type
+def is_admin(info) -> bool:
+    user = info.context.get("user")
+    return bool(user and user.has_role("admin"))
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
-    email: str = field(authorize={"read": ["admin", "self"]})  # Only admin or user's own
-    salary: float = field(authorize={"read": ["admin"]})       # Admin only
-    role: str = field(authorize={"read": ["admin"]})           # Admin only
 
-@type
+    @field
+    @authorize_field(any_permission(
+        is_admin,
+        # Owner: the requesting user is viewing their own record
+        lambda info, root: info.context.get("user_id") == root.id,
+    ))
+    def email(self) -> str:
+        return self._email
+
+    @field
+    @authorize_field(is_admin)
+    def salary(self) -> float:
+        return self._salary
+
+    @field
+    @authorize_field(is_admin)
+    def role(self) -> str:
+        return self._role
+
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    total: float = field(authorize={"read": ["admin", "owner"]})  # Admin or order owner
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    user_id: ID
+
+    @field
+    @authorize_field(any_permission(
+        is_admin,
+        # Owner: the order belongs to the requesting user
+        lambda info, root: info.context.get("user_id") == root.user_id,
+    ))
+    def total(self) -> float:
+        return self._total
+```
 
 ---
 
-## Step 2: Add Authorization to Queries (1 minute)
+## Step 2: Add Authorization to Operations (1 minute)
+
+There are two complementary ways to gate whole queries and mutations.
+
+### Option A: Role/permission decorators (simple)
+
+For straightforward role or permission checks, wrap the resolver with the auth
+decorators. They read `info.context["user"]` (a `UserContext`) and raise a
+`GraphQLError` when the check fails.
 
 ```python
-<!-- Code example in Python -->
 # users_service/schema.py (continued)
-from FraiseQL import query, authorize
+import fraiseql
+from fraiseql.auth import requires_auth, requires_role
+from fraiseql.auth.decorators import requires_any_role
 
-@query
-@authorize(roles=["admin", "user"])
-def users(limit: int = 10) -> list[User]:
-    """List users - requires admin or user role"""
-    pass
+@fraiseql.query
+@requires_any_role("admin", "user")
+async def users(info, limit: int = 10) -> list[User]:
+    """List users - requires admin or user role."""
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
 
-@query
-@authorize(roles=["admin"])
-def all_users(limit: int = 100) -> list[User]:
-    """List all users with sensitive data - admin only"""
-    pass
+@fraiseql.query
+@requires_role("admin")
+async def all_users(info, limit: int = 100) -> list[User]:
+    """List all users with sensitive data - admin only."""
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
 
-@query
-@authorize(requires_context={"user_id"})  # Must have user_id in context
-def my_orders(limit: int = 50) -> list[Order]:
-    """List current user's orders"""
-    pass
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query
+@requires_auth  # Must be authenticated; user_id flows from context
+async def my_orders(info, limit: int = 50) -> list[Order]:
+    """List the current user's orders."""
+    db = info.context["db"]
+    return await db.find("v_order", user_id=info.context["user_id"], limit=limit)
+```
+
+### Option B: An `Authorizer` (centralized policy)
+
+For richer or centralized policy, implement the `Authorizer` protocol and attach it
+per-operation with `@fraiseql.query(authorizer=...)` (also available on
+`@fraiseql.mutation` and `@fraiseql.subscription`), or globally via
+`create_fraiseql_app(authorizer=...)`. An allow decision can carry `filters`, which are
+AND-ed into the read path's mandatory filters for row scoping.
+
+```python
+import fraiseql
+from fraiseql.security import Authorizer, AuthorizationDecision
+
+class RoleAuthorizer:
+    """Implements the Authorizer protocol (structural; no base class required)."""
+
+    def __init__(self, *, allowed_roles: set[str]) -> None:
+        self._allowed_roles = allowed_roles
+
+    async def authorize_operation(
+        self,
+        *,
+        context: dict,
+        operation_type: str,
+        operation_name: str,
+        arguments: dict,
+    ) -> AuthorizationDecision:
+        user = context.get("user")
+        if user and any(user.has_role(r) for r in self._allowed_roles):
+            return AuthorizationDecision.allow()
+        return AuthorizationDecision.deny(message="Operation not authorized")
+
+admin_only: Authorizer = RoleAuthorizer(allowed_roles={"admin"})
+
+@fraiseql.query(authorizer=admin_only)
+async def all_users(info, limit: int = 100) -> list[User]:
+    """List all users with sensitive data - admin only."""
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
+```
 
 ---
 
-## Step 3: Configure Authorization Provider (1 minute)
+## Step 3: Wire Up Authentication and Build the App (1 minute)
 
-```toml
-<!-- Code example in TOML -->
-# FraiseQL.toml
-[FraiseQL.authentication]
-provider = "oauth2"
-discovery_url = "https://auth.example.com/.well-known/openid-configuration"
+There is no config file and no compile step. You configure FraiseQL by passing keyword
+arguments to `create_fraiseql_app(...)` (or building a `FraiseQLConfig`); the schema is
+assembled in memory at app startup. Roles and permissions come from the authenticated
+`UserContext`, which your auth provider populates from JWT claims.
 
-[FraiseQL.authorization]
-strategy = "jwt-claims"
-roles_claim = "roles"
-user_id_claim = "sub"
-cache_ttl_seconds = 300
+```python
+# users_service/app.py
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.auth import Auth0Config, Auth0Provider
 
-# Field-level enforcement
-[FraiseQL.authorization.enforcement]
-level = "field"          # "operation" (queries only) or "field" (queries + fields)
-fail_closed = true       # Deny if no explicit permission
-audit_log = true         # Log all authorization decisions
-```text
-<!-- Code example in TEXT -->
+# Validate tokens against your Auth0 tenant (claims become the UserContext)
+auth = Auth0Provider(Auth0Config(
+    domain="myapp.auth0.com",
+    api_identifier="https://api.myapp.com",
+))
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User, Order],
+    queries=[users, all_users, my_orders],
+    auth=auth,
+    # Attach a global default operation authorizer (optional; see Step 2 Option B)
+    authorizer=admin_only,
+    production=True,
+)
+```
+
+Run it with any ASGI server, for example `uvicorn users_service.app:app`.
+
+### Row scoping with PostgreSQL RLS
+
+For tenant or per-user data isolation, push enforcement into the database with
+Row-Level Security. FraiseQL's CQRS repository issues `SET LOCAL app.tenant_id = …`
+(and `app.user_id`, `app.is_super_admin`, …) per transaction from `info.context`, so
+your RLS policies see the current principal:
+
+```sql
+ALTER TABLE tb_order ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY order_tenant_isolation ON tb_order
+    USING (fk_tenant = current_setting('app.tenant_id')::uuid);
+```
+
+Have your `context_getter` place `tenant_id` (and `user_id`) into `info.context`, and
+every read/write is automatically scoped — no application-side filtering required.
 
 ---
 
-## Step 4: Deploy and Test (2 minutes)
+## Step 4: Run and Test (2 minutes)
 
 ```bash
-<!-- Code example in BASH -->
-# Compile schema with authorization
-FraiseQL compile --config ./FraiseQL.toml
-
-# Start server
-FraiseQL run --port 8000
+# Start the FastAPI app (schema is built in memory at startup)
+uvicorn users_service.app:app --port 8000
 
 # Test: Query as admin (should see all fields)
 curl -X POST http://localhost:8000/graphql \
@@ -141,58 +240,62 @@ curl -X POST http://localhost:8000/graphql \
     "query": "{ users(limit: 1) { id name email salary } }"
   }'
 
-# Expected response (user blocked from salary field):
+# Expected response (user blocked from the salary field):
 # {
 #   "errors": [
 #     {
-#       "message": "Unauthorized to access field 'salary'",
+#       "message": "Not authorized to access field 'salary'",
+#       "path": ["users", 0, "salary"],
 #       "extensions": {
-#         "field": "salary",
-#         "required_roles": ["admin"]
+#         "code": "FORBIDDEN"
 #       }
 #     }
 #   ],
 #   "data": {
 #     "users": [
 #       {
-#         "id": "1",
+#         "id": "...",
 #         "name": "Alice",
-#         "email": null  # Blocked
+#         "email": "alice@example.com",
+#         "salary": null
 #       }
 #     ]
 #   }
 # }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## That's It
 
-You now have role-based field-level authorization! 🔐
+You now have role-based, field-level, and operation-level authorization.
 
 ### Next Steps
 
-- Set up RBAC with Azure AD, Auth0, or Keycloak (see [Auth Provider Selection](../integrations/authentication/provider-selection-guide.md))
+- Set up an authentication provider such as Auth0 (see [Auth Provider Selection](../integrations/authentication/provider-selection-guide.md))
 - Configure audit logging for compliance (see [Observability Guide](../guides/observability.md))
 - Implement attribute-based access control (ABAC) for fine-grained control (see [RBAC Patterns](./patterns.md#role-based-access-control))
-- Understand authorization in federation (see [Federation Guide](../integrations/federation/guide.md))
+- Cache authorization decisions with `AuthorizationCacheConfig` for hot paths
 
 ### Common Issues
 
-**"Unauthorized to access query"**
-→ Token missing or expired. Check `Authorization: Bearer <token>` header and verify token is valid for the required roles.
+**"Operation not authorized"**
+→ Token missing or expired, or the principal lacks the required role/permission. Check the
+`Authorization: Bearer <token>` header and verify the JWT claims populate the `UserContext`.
 
-**"Field blocked but no error"**
-→ With `fail_closed = true`, fields are silently filtered. Set `fail_closed = false` in tests to see blocking errors.
+**"Field shows null instead of an error"**
+→ The field resolver was denied. Confirm the `@authorize_field` check reads the right value
+from `info.context`, and that your `context_getter` set `user`/`user_id` correctly.
 
 **"Same token works in dev, fails in production"**
-→ Check `discovery_url` in `FraiseQL.toml` is accessible in production, and CORS headers are configured correctly.
+→ Verify your provider config (for example the Auth0 `domain`/`api_identifier`) is correct in
+production, and that CORS headers are configured on `create_fraiseql_app(...)`.
 
 **"Authorization too slow"**
-→ Increase `cache_ttl_seconds` from 300 to 3600. Or use JWT claims directly instead of external provider calls.
+→ Enable decision caching by passing `authorization_cache=AuthorizationCacheConfig(...)` to
+`create_fraiseql_app(...)`, or read roles directly from JWT claims instead of an external call.
 
-See [Troubleshooting](../troubleshooting.md) for complete troubleshooting guide.
+See [Troubleshooting](./troubleshooting.md) for the complete troubleshooting guide.
 
 ---
 
@@ -201,4 +304,3 @@ See [Troubleshooting](../troubleshooting.md) for complete troubleshooting guide.
 - **[Auth Provider Selection](../integrations/authentication/provider-selection-guide.md)** - Choosing your auth provider
 - **[Observability](./observability.md)** - Logging and monitoring authorization
 - **[RBAC Patterns](./patterns.md#role-based-access-control)** - Real-world RBAC examples
-- **[Federation](../integrations/federation/guide.md)** - Cross-service authorization in federation
