@@ -582,5 +582,3 @@ nothing less.
 - [View Selection Guide](../database/view-selection-guide.md)
 - [Performance Characteristics](../../foundation/12-performance-characteristics.md)
 - [Schema Conventions](../../specs/schema-conventions.md)
-</content>
-</invoke>

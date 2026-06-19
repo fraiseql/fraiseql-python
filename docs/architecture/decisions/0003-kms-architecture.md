@@ -204,5 +204,4 @@ kms_response_time_seconds
 ---
 
 *Accepted: 2025-11-24*
-*Review: Security and Performance Team*</content>
-</xai:function_call">Create the KMS Architecture ADR
+*Review: Security and Performance Team*

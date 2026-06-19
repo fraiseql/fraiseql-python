@@ -530,5 +530,3 @@ See `examples/sql/` for complete DDL examples:
 - [Schema Conventions](../../specs/schema-conventions.md)
 - [Naming Patterns](../../reference/naming-patterns.md)
 - [Database-Centric Architecture](../../foundation/03-database-centric-architecture.md)
-</content>
-</invoke>
