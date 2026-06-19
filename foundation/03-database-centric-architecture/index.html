@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL treats the PostgreSQL database as the primary application interface, not as a storage afterthought. This page explains why that choice matters and how it shapes FraiseQL's runtime design.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/foundation/03-database-centric-architecture/">
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#13-database-centric-architecture" class="md-skip">
+        <a href="#database-centric-architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -1019,10 +1021,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mapping-tables-types-relationships" class="md-nav__link">
+  <a href="#mapping-tables-views-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mapping: Tables → Types → Relationships
+        Mapping: Tables → Views → Types
       
     </span>
   </a>
@@ -1035,15 +1037,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-3-the-four-tier-view-system" class="md-nav__link">
+  <a href="#part-3-read-views-v_-and-tv_" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 3: The Four-Tier View System
+        Part 3: Read Views — v_ and tv_
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 3: The Four-Tier View System">
+    <nav class="md-nav" aria-label="Part 3: Read Views — v_ and tv_">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1058,10 +1060,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1-v_-views-logical-read-views-json-plane" class="md-nav__link">
+  <a href="#1-v_-logical-read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. v_* Views: Logical Read Views (JSON Plane)
+        1. v_* — Logical Read Views
       
     </span>
   </a>
@@ -1069,82 +1071,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-tv_-views-table-backed-json-views" class="md-nav__link">
+  <a href="#2-tv_-table-backed-projection-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. tv_* Views: Table-Backed JSON Views
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-va_-views-logical-analytics-views-arrow-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. va_* Views: Logical Analytics Views (Arrow Plane)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-ta_-views-table-backed-analytics-views-arrow-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. ta_* Views: Table-Backed Analytics Views (Arrow Plane)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. ta_* Views: Table-Backed Analytics Views (Arrow Plane)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#component-1-measures-direct-sql-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 1: Measures (Direct SQL Columns)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#component-2-dimensions-jsonb-column" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 2: Dimensions (JSONB Column)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#component-3-denormalized-filters-indexed-sql-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 3: Denormalized Filters (Indexed SQL Columns)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#calendar-dimensions-temporal-performance-optimization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Calendar Dimensions: Temporal Performance Optimization
+        2. tv_* — Table-Backed Projection Views
       
     </span>
   </a>
@@ -1157,22 +1087,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-4-multi-database-support" class="md-nav__link">
+  <a href="#part-4-postgresql-specific-strengths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 4: Multi-Database Support
+        Part 4: PostgreSQL-Specific Strengths
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 4: Multi-Database Support">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-5-cqrs-reads-vs-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 5: CQRS — Reads vs. Writes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 5: CQRS — Reads vs. Writes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-multi-database-philosophy" class="md-nav__link">
+  <a href="#reads-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Multi-Database Philosophy
+        Reads (Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writes-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writes (Mutations)
       
     </span>
   </a>
@@ -1181,6 +1133,117 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-6-architecture-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 6: Architecture Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 6: Architecture Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-complete-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Complete Picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-7-consequences-of-database-centric-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 7: Consequences of Database-Centric Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 7: Consequences of Database-Centric Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate Benefits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Constraints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-the-database-centric-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: The Database-Centric Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Takeaways
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5298,10 +5361,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mapping-tables-types-relationships" class="md-nav__link">
+  <a href="#mapping-tables-views-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mapping: Tables → Types → Relationships
+        Mapping: Tables → Views → Types
       
     </span>
   </a>
@@ -5314,15 +5377,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-3-the-four-tier-view-system" class="md-nav__link">
+  <a href="#part-3-read-views-v_-and-tv_" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 3: The Four-Tier View System
+        Part 3: Read Views — v_ and tv_
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 3: The Four-Tier View System">
+    <nav class="md-nav" aria-label="Part 3: Read Views — v_ and tv_">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5337,10 +5400,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#1-v_-views-logical-read-views-json-plane" class="md-nav__link">
+  <a href="#1-v_-logical-read-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. v_* Views: Logical Read Views (JSON Plane)
+        1. v_* — Logical Read Views
       
     </span>
   </a>
@@ -5348,82 +5411,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-tv_-views-table-backed-json-views" class="md-nav__link">
+  <a href="#2-tv_-table-backed-projection-views" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. tv_* Views: Table-Backed JSON Views
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-va_-views-logical-analytics-views-arrow-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. va_* Views: Logical Analytics Views (Arrow Plane)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-ta_-views-table-backed-analytics-views-arrow-plane" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. ta_* Views: Table-Backed Analytics Views (Arrow Plane)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. ta_* Views: Table-Backed Analytics Views (Arrow Plane)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#component-1-measures-direct-sql-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 1: Measures (Direct SQL Columns)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#component-2-dimensions-jsonb-column" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 2: Dimensions (JSONB Column)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#component-3-denormalized-filters-indexed-sql-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Component 3: Denormalized Filters (Indexed SQL Columns)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#calendar-dimensions-temporal-performance-optimization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Calendar Dimensions: Temporal Performance Optimization
+        2. tv_* — Table-Backed Projection Views
       
     </span>
   </a>
@@ -5436,22 +5427,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-4-multi-database-support" class="md-nav__link">
+  <a href="#part-4-postgresql-specific-strengths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 4: Multi-Database Support
+        Part 4: PostgreSQL-Specific Strengths
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Part 4: Multi-Database Support">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-5-cqrs-reads-vs-writes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 5: CQRS — Reads vs. Writes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 5: CQRS — Reads vs. Writes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-multi-database-philosophy" class="md-nav__link">
+  <a href="#reads-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Multi-Database Philosophy
+        Reads (Queries)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writes-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writes (Mutations)
       
     </span>
   </a>
@@ -5460,6 +5473,117 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-6-architecture-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 6: Architecture Layers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 6: Architecture Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-complete-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Complete Picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-7-consequences-of-database-centric-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 7: Consequences of Database-Centric Design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 7: Consequences of Database-Centric Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate Benefits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-constraints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Constraints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-the-database-centric-philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary: The Database-Centric Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Takeaways
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5483,28 +5607,20 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: 1.3: Database-Centric Architecture
-description: FraiseQL's fundamental design choice is to treat the <strong>database as the primary application interface</strong>, not as a storage afterthought. This topic explains why t
-keywords: ["design", "query-execution", "security", "patterns", "data-planes", "graphql", "scalability", "performance"]
-tags: ["documentation", "reference"]</p>
-<hr />
-<h1 id="13-database-centric-architecture">1.3: Database-Centric Architecture<a class="headerlink" href="#13-database-centric-architecture" title="Permanent link">&para;</a></h1>
+<h1 id="database-centric-architecture">Database-Centric Architecture<a class="headerlink" href="#database-centric-architecture" title="Permanent link">&para;</a></h1>
 <p><strong>Audience:</strong> Architects, database teams, developers building data systems
-<strong>Prerequisite:</strong> Topics 1.1 (What is FraiseQL?), 1.2 (Core Concepts)
+<strong>Prerequisite:</strong> <a href="../02-core-concepts/">Core Concepts</a>
 <strong>Reading Time:</strong> 20-25 minutes</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's fundamental design choice is to treat the <strong>database as the primary application interface</strong>, not as a storage afterthought. This topic explains why this choice matters, how it shapes FraiseQL's architecture, and what implications it has for your systems.</p>
-<p><strong>Core insight:</strong> In FraiseQL, the database schema is not an implementation detail—it's your API definition. The database is the source of truth for data relationships, types, validation, and performance.</p>
+<p>FraiseQL's fundamental design choice is to treat the <strong>PostgreSQL database as the primary application interface</strong>, not as a storage afterthought. This page explains why this choice matters, how it shapes FraiseQL's architecture, and what implications it has for your systems.</p>
+<p><strong>Core insight:</strong> In FraiseQL, the database schema is not an implementation detail—it is your API definition. PostgreSQL is the source of truth for data relationships, types, validation, and performance.</p>
+<p>FraiseQL is a <strong>runtime</strong> framework: you describe your types, queries, and mutations with Python decorators, and the GraphQL schema is built <strong>in memory at application startup</strong> by <code>create_fraiseql_app</code> (or <code>build_fraiseql_schema</code>). There is no build step and no compiled artifact—the running FastAPI process is the whole story.</p>
 <hr />
 <h2 id="part-1-the-core-philosophy">Part 1: The Core Philosophy<a class="headerlink" href="#part-1-the-core-philosophy" title="Permanent link">&para;</a></h2>
 <h3 id="graphql-as-a-database-access-layer-not-api-aggregation">GraphQL as a Database Access Layer, Not API Aggregation<a class="headerlink" href="#graphql-as-a-database-access-layer-not-api-aggregation" title="Permanent link">&para;</a></h3>
 <p>Traditional GraphQL servers are designed to aggregate data from multiple sources:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client
+<div class="highlight"><pre><span></span><code>Client
   ↓ (GraphQL Query)
 GraphQL Server
   ├→ REST API call
@@ -5515,43 +5631,37 @@ GraphQL Server
   └→ Webhook
   ↓
 Client (aggregated response)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Problem:</strong> The server becomes a coordination layer, and you need to write resolvers for every field, cache invalidation logic, N+1 prevention, etc.</p>
+</code></pre></div>
+<p><strong>Problem:</strong> The server becomes a coordination layer, and you need to write resolvers for every field, cache invalidation logic, N+1 prevention, and so on.</p>
 <hr />
 <h3 id="fraiseqls-approach-database-first-architecture">FraiseQL's Approach: Database-First Architecture<a class="headerlink" href="#fraiseqls-approach-database-first-architecture" title="Permanent link">&para;</a></h3>
-<p>FraiseQL assumes the database is your <strong>primary and usually only data source</strong>:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client
+<p>FraiseQL assumes PostgreSQL is your <strong>primary and usually only data source</strong>:</p>
+<div class="highlight"><pre><span></span><code>Client
   ↓ (GraphQL Query)
-FraiseQL Server
-  ├→ Validate (schema already compiled)
-  ├→ Authorize (rules from schema)
-  └→ Execute (pre-compiled SQL)
+FraiseQL (FastAPI app)
+  ├→ Validate (against the in-memory schema)
+  ├→ Authorize (declarative rules)
+  └→ Execute (read a v_/tv_ view or call an fn_ function)
   ↓
-Database (single source of truth)
+PostgreSQL (single source of truth)
   ↓
 Client (direct result)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Advantage:</strong> Clear data flow, no custom resolvers, deterministic behavior.</p>
+</code></pre></div>
+<p><strong>Advantage:</strong> Clear data flow, minimal custom resolver code, deterministic behavior.</p>
 <hr />
 <h3 id="why-this-assumption-matters">Why This Assumption Matters<a class="headerlink" href="#why-this-assumption-matters" title="Permanent link">&para;</a></h3>
 <p>This design choice has profound consequences:</p>
 <p><strong>1. Simplicity</strong></p>
 <ul>
-<li>No custom resolver code needed</li>
+<li>Little to no custom resolver code needed</li>
 <li>Schema definition = API definition</li>
 <li>What you see in the schema is what you get</li>
 </ul>
 <p><strong>2. Performance</strong></p>
 <ul>
-<li>Database handles all query optimization</li>
+<li>PostgreSQL handles query planning and optimization</li>
 <li>No application-level coordination overhead</li>
-<li>SQL is optimized at compile time</li>
+<li>Reads come from purpose-built views; the optional Rust extension (<code>fraiseql_rs</code>) accelerates JSON shaping on the hot path</li>
 </ul>
 <p><strong>3. Correctness</strong></p>
 <ul>
@@ -5567,1262 +5677,563 @@ Client (direct result)
 </ul>
 <p><strong>5. Debuggability</strong></p>
 <ul>
-<li>Look at the SQL, understand the query</li>
+<li>Look at the view or function, understand the query</li>
 <li>No hidden resolver logic</li>
 <li>Performance bottlenecks are clear (database metrics)</li>
 </ul>
 <hr />
 <h3 id="when-this-assumption-is-valid">When This Assumption is Valid<a class="headerlink" href="#when-this-assumption-is-valid" title="Permanent link">&para;</a></h3>
 <p>FraiseQL works best when:</p>
-<p>✅ Your primary data source is a <strong>relational database</strong> (PostgreSQL, MySQL, etc.)
-✅ Your data has <strong>clear structure and relationships</strong> (not fully unstructured)
-✅ Your API needs to be <strong>performant</strong> (N+1 queries unacceptable)
-✅ Your team has <strong>database expertise</strong> (schemas, views, indexes)
-✅ You value <strong>predictability</strong> over flexibility</p>
+<ul>
+<li>Your primary data source is <strong>PostgreSQL</strong></li>
+<li>Your data has <strong>clear structure and relationships</strong> (not fully unstructured)</li>
+<li>Your API needs to be <strong>performant</strong> (N+1 queries unacceptable)</li>
+<li>Your team has <strong>database expertise</strong> (schemas, views, indexes, functions)</li>
+<li>You value <strong>predictability</strong> over unconstrained flexibility</li>
+</ul>
 <hr />
 <h3 id="when-this-assumption-breaks-down">When This Assumption Breaks Down<a class="headerlink" href="#when-this-assumption-breaks-down" title="Permanent link">&para;</a></h3>
 <p>FraiseQL is <strong>not</strong> the right choice when:</p>
-<p>❌ Your primary data is <strong>unstructured</strong> (documents, blobs)
-❌ You need to aggregate from <strong>many external APIs</strong> (microservices federation)
-❌ Your schema is <strong>highly dynamic</strong> (must change at runtime)
-❌ You have <strong>deeply nested custom logic</strong> (better in application code)
-❌ You're <strong>just prototyping</strong> (Hasura might be faster)</p>
+<ul>
+<li>Your primary data is <strong>unstructured</strong> (documents, blobs)</li>
+<li>You need to aggregate from <strong>many external APIs</strong> (microservices federation)</li>
+<li>Your schema is <strong>highly dynamic</strong> (must change at runtime per request)</li>
+<li>You have <strong>deeply nested custom logic</strong> better expressed in application code</li>
+<li>You're using a non-PostgreSQL database (FraiseQL v1 is PostgreSQL-only)</li>
+</ul>
 <hr />
 <h2 id="part-2-how-fraiseql-thinks-about-data">Part 2: How FraiseQL Thinks About Data<a class="headerlink" href="#part-2-how-fraiseql-thinks-about-data" title="Permanent link">&para;</a></h2>
 <h3 id="the-data-hierarchy">The Data Hierarchy<a class="headerlink" href="#the-data-hierarchy" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database Schema (DBA responsibility)
+<div class="highlight"><pre><span></span><code>PostgreSQL Schema (DBA responsibility)
     ↓
 FraiseQL Type Definition (Developer responsibility)
     ↓
 GraphQL API (Client interface)
-```text</p>
-<!-- Code example in TEXT -->
+</code></pre></div>
+<p>Each level maps directly. Note the identifier discipline: tables use an internal <code>pk_</code> BIGINT for fast joins (never exposed), a public <code>id</code> UUID for the GraphQL <code>id</code>, and an optional human-readable <code>identifier</code> slug.</p>
+<p><strong>Database Level (write tables — the source of truth):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_user</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">username</span><span class="w">   </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w">      </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_active</span><span class="w">  </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">deleted_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span>
+<span class="p">);</span>
 
-<p>Each level maps directly:</p>
-<p><strong>Database Level:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user (
-    pk_user BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    username VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
-);</p>
-<p>CREATE TABLE tb_order (
-    pk_order BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-    total DECIMAL(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text</p>
-<!-- Code example in TEXT -->
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_order</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">    </span><span class="n">total</span><span class="w">      </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
+</code></pre></div>
+<p><strong>Read View Level (what GraphQL actually queries):</strong></p>
+<p>A read view always exposes a public <code>id</code> column (for <code>WHERE id = $1</code>) plus a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>. Internal <code>pk_</code>/<code>fk_</code> keys never appear inside <code>data</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- public UUID, used for lookups</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;isActive&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">is_active</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span><span class="w">     </span><span class="c1">-- only active users</span>
+</code></pre></div>
+<p><strong>FraiseQL Type Level (maps the type to its read view):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<p><strong>FraiseQL Type Level:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    user_id: int              # ← pk_user
-    username: str             # ← username
-    email: str                # ← email
-    is_active: bool           # ← is_active
-    created_at: datetime      # ← created_at
-    updated_at: datetime      # ← updated_at
-    deleted_at: datetime | None # ← deleted_at (soft delete)
-    orders: List[Order]       # ← foreign key relationship</p>
-<p>@FraiseQL.type
-class Order:
-    order_id: int             # ← pk_order
-    user_id: int              # ← fk_user
-    total: Decimal            # ← total
-    user: User                # ← reverse relationship
-    created_at: datetime      # ← created_at
-```text</p>
-<!-- Code example in TEXT -->
 
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Order&quot;</span><span class="p">]</span>          <span class="c1"># resolved from the order view</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>                     <span class="c1"># nested read, composed in the view</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+</code></pre></div>
 <p><strong>GraphQL API Level:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  userId: Int!
-  username: String!
-  email: String!
-  isActive: Boolean!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  deletedAt: DateTime
-  orders: [Order!]!
-}</p>
-<p>type Order {
-  orderId: Int!
-  userId: Int!
-  total: Decimal!
-  user: User!
-  createdAt: DateTime!
-}</p>
-<p>query GetUser {
-  user(id: 1) {
-    userId
-    username
-    orders {
-      orderId
-      total
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">username</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">isActive</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">orders</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Order</span><span class="err">!]!</span>
+<span class="p">}</span>
 
+<span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">total</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">user</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="p">}</span>
+
+<span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">username</span>
+<span class="w">    </span><span class="n">orders</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">total</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
-<h3 id="mapping-tables-types-relationships">Mapping: Tables → Types → Relationships<a class="headerlink" href="#mapping-tables-types-relationships" title="Permanent link">&para;</a></h3>
-<p><strong>FraiseQL automatically derives relationships from foreign keys:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Database: Foreign key defines relationship
-ALTER TABLE tb_order
-ADD CONSTRAINT fk_order_user
-FOREIGN KEY (fk_user) REFERENCES tb_user(pk_user);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Becomes in FraiseQL:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Order:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    user: User  # Automatically available because of FK
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>No extra configuration needed.</strong> The database structure is the API structure.</p>
+<h3 id="mapping-tables-views-types">Mapping: Tables → Views → Types<a class="headerlink" href="#mapping-tables-views-types" title="Permanent link">&para;</a></h3>
+<p>Foreign keys in the write tables express relationships. You realize those relationships in the <strong>read view</strong> by composing nested JSONB, then point the GraphQL type at that view:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- A view that pre-composes the order together with its user.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">email</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>                     <span class="c1"># available because the view composed it</span>
+</code></pre></div>
+<p>The view structure is the API structure. You shape data once, in SQL, and FraiseQL serves exactly the requested fields out of the <code>data</code> JSONB.</p>
 <hr />
-<h2 id="part-3-the-four-tier-view-system">Part 3: The Four-Tier View System<a class="headerlink" href="#part-3-the-four-tier-view-system" title="Permanent link">&para;</a></h2>
-<p>FraiseQL uses four types of database views, each optimized for different access patterns and performance characteristics:</p>
+<h2 id="part-3-read-views-v_-and-tv_">Part 3: Read Views — <code>v_</code> and <code>tv_</code><a class="headerlink" href="#part-3-read-views-v_-and-tv_" title="Permanent link">&para;</a></h2>
+<p>FraiseQL reads come from views whose <code>data</code> JSONB column carries the entity payload. There are two flavors, chosen by how the read is materialized:</p>
 <h3 id="overview-matrix">Overview Matrix<a class="headerlink" href="#overview-matrix" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>View Type</th>
 <th>Prefix</th>
-<th>Plane</th>
 <th>Storage</th>
 <th>Use Case</th>
-<th>Latency</th>
-<th>Index Type</th>
+<th>Refresh</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Logical Read</strong></td>
+<td><strong>Logical Read View</strong></td>
 <td><code>v_*</code></td>
-<td>JSON</td>
-<td>None</td>
-<td>Simple queries</td>
-<td>100-500ms</td>
-<td>None</td>
+<td>none (computed on read)</td>
+<td>simple to moderate queries; real-time data</td>
+<td>always live</td>
 </tr>
 <tr>
-<td><strong>Table-Backed JSON</strong></td>
+<td><strong>Table-Backed Projection</strong></td>
 <td><code>tv_*</code></td>
-<td>JSON</td>
-<td>JSONB tables</td>
-<td>Complex nested queries</td>
-<td>50-200ms</td>
-<td>JSONB GIN</td>
-</tr>
-<tr>
-<td><strong>Logical Analytics</strong></td>
-<td><code>va_*</code></td>
-<td>Arrow</td>
-<td>None</td>
-<td>Small analytics &lt;100K</td>
-<td>500ms-5s</td>
-<td>None</td>
-</tr>
-<tr>
-<td><strong>Table-Backed Analytics</strong></td>
-<td><code>ta_*</code></td>
-<td>Arrow</td>
-<td>Columnar</td>
-<td>Large analytics &gt;1M</td>
-<td>50-100ms</td>
-<td>BRIN + B-tree</td>
+<td>a real table holding pre-composed JSONB</td>
+<td>heavy nested reads, high read volume</td>
+<td>functions/triggers</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h3 id="1-v_-views-logical-read-views-json-plane">1. <code>v_*</code> Views: Logical Read Views (JSON Plane)<a class="headerlink" href="#1-v_-views-logical-read-views-json-plane" title="Permanent link">&para;</a></h3>
-<p><strong>Definition:</strong> Database views (no physical storage) optimized for GraphQL transactional access.</p>
+<h3 id="1-v_-logical-read-views">1. <code>v_*</code> — Logical Read Views<a class="headerlink" href="#1-v_-logical-read-views" title="Permanent link">&para;</a></h3>
+<p><strong>Definition:</strong> Plain PostgreSQL views (no physical storage) that build a <code>data</code> JSONB on every read.</p>
 <p><strong>When to use:</strong></p>
 <ul>
-<li>Simple queries (1-2 tables involved)</li>
-<li>Small to medium result sets (&lt;10K rows)</li>
-<li>Real-time data needed</li>
+<li>Simple to moderate queries (a handful of joined tables)</li>
+<li>Small to medium result sets</li>
+<li>Real-time data needed (the view always reflects current state)</li>
 <li>Data changes frequently</li>
 </ul>
-<p><strong>Example:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Write table (source of truth)
-CREATE TABLE tb_user (
-    pk_user BIGINT PRIMARY KEY,
-    username VARCHAR(255),
-    email VARCHAR(255),
-    created_at TIMESTAMP,
-    deleted_at TIMESTAMP
-);</p>
-<p>-- Read view (filters soft-deleted records)
-CREATE VIEW v_user AS
-SELECT
-    pk_user AS user_id,
-    username,
-    email,
-    created_at
-FROM tb_user
-WHERE deleted_at IS NULL;  -- Only active users
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span><span class="w">        </span><span class="c1">-- only active users</span>
+</code></pre></div>
 <p><strong>Characteristics:</strong></p>
 <ul>
 <li><strong>Storage overhead:</strong> 0% (logical view only)</li>
-<li><strong>Maintenance:</strong> None (automatic via base table)</li>
-<li><strong>Performance:</strong> Database determines (can't be optimized separately)</li>
-<li><strong>Staleness:</strong> Real-time (always reflects current state)</li>
-<li><strong>Index support:</strong> Uses indexes from base table</li>
+<li><strong>Maintenance:</strong> none (computed from base tables)</li>
+<li><strong>Staleness:</strong> real-time</li>
+<li><strong>Index support:</strong> uses the base tables' indexes</li>
 </ul>
-<p><strong>FraiseQL Integration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
-    email: str
-    created_at: datetime
-    # Automatically queries v_user view
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+</code></pre></div>
+<p>Queries simply read the view:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
 
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+</code></pre></div>
 <hr />
-<h3 id="2-tv_-views-table-backed-json-views">2. <code>tv_*</code> Views: Table-Backed JSON Views<a class="headerlink" href="#2-tv_-views-table-backed-json-views" title="Permanent link">&para;</a></h3>
-<p><strong>Definition:</strong> Materialized JSONB tables with trigger-based refresh for complex nested JSON queries.</p>
+<h3 id="2-tv_-table-backed-projection-views">2. <code>tv_*</code> — Table-Backed Projection Views<a class="headerlink" href="#2-tv_-table-backed-projection-views" title="Permanent link">&para;</a></h3>
+<p><strong>Definition:</strong> A real table that stores <strong>pre-composed JSONB</strong>, refreshed by functions or triggers. Because the nested structure is already assembled, reads avoid join work at query time.</p>
 <p><strong>When to use:</strong></p>
 <ul>
-<li>Complex nested structures (User + Orders + Items in one query)</li>
-<li>High read volume (&gt;1000 QPS)</li>
-<li>Moderate write volume (&lt;100 writes/sec)</li>
-<li>Data can be 1-5 seconds stale</li>
+<li>Complex nested structures (User + Orders + Items in a single payload)</li>
+<li>High read volume</li>
+<li>Moderate write volume</li>
+<li>A small, bounded staleness window is acceptable</li>
 </ul>
-<p><strong>Example:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Write table
-CREATE TABLE tb_order (
-    pk_order BIGINT PRIMARY KEY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-    total DECIMAL(10,2),
-    created_at TIMESTAMP
-);</p>
-<p>-- Materialized JSON view (pre-composed nested data)
-CREATE TABLE tv_order_with_user (
-    pk_order BIGINT PRIMARY KEY REFERENCES tb_order(pk_order) ON DELETE CASCADE,
-    data JSONB NOT NULL,  -- Contains: {orderId, total, user: {userId, username, email}}
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);</p>
-<p>-- Trigger: Update tv_order_with_user when tb_order or tb_user changes
-CREATE TRIGGER trg_refresh_tv_order_with_user
-AFTER INSERT OR UPDATE ON tb_order
-FOR EACH ROW
-EXECUTE FUNCTION refresh_tv_order_with_user();</p>
-<p>-- Trigger function (PostgreSQL)
-CREATE OR REPLACE FUNCTION refresh_tv_order_with_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO tv_order_with_user (pk_order, data)
-    SELECT
-        o.pk_order,
-        jsonb_build_object(
-            'orderId', o.pk_order,
-            'total', o.total,
-            'user', jsonb_build_object(
-                'userId', u.pk_user,
-                'username', u.username,
-                'email', u.email
-            )
-        )
-    FROM tb_order o
-    JOIN tb_user u ON u.pk_user = o.fk_user
-    WHERE o.pk_order = NEW.pk_order
-    ON CONFLICT (pk_order) DO UPDATE
-    SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- A table-backed projection: pre-composed nested JSONB.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_order_with_user</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w">       </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- {id, total, user: {id, username, email}}</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 
+<span class="c1">-- GIN index for path lookups inside the JSONB payload.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tv_order_with_user_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_order_with_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
+
+<span class="c1">-- Refresh function: rebuild the projection for one order.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_refresh_tv_order_with_user</span><span class="p">(</span><span class="n">p_order</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">void</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_order_with_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
+<span class="w">    </span><span class="k">SELECT</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">email</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="w">    </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_order</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span>
+<span class="w">        </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">();</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="c1">-- Trigger keeps the projection current as orders change.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_refresh_tv_order_with_user</span>
+<span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
+<span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_refresh_tv_order_with_user</span><span class="p">();</span>
+</code></pre></div>
 <p><strong>Characteristics:</strong></p>
 <ul>
-<li><strong>Storage overhead:</strong> 20-50% (JSONB pre-composition)</li>
-<li><strong>Maintenance:</strong> Trigger-based refresh (automatic)</li>
-<li><strong>Performance:</strong> 50-200ms (pre-composed, no joins at query time)</li>
-<li><strong>Staleness:</strong> 1-5 seconds (dependent on trigger frequency)</li>
+<li><strong>Storage overhead:</strong> the size of the pre-composed JSONB</li>
+<li><strong>Maintenance:</strong> function/trigger-based refresh (automatic)</li>
+<li><strong>Performance:</strong> fast reads (no join work at query time)</li>
+<li><strong>Staleness:</strong> bounded by the refresh cadence</li>
 <li><strong>Index support:</strong> JSONB GIN indexes for path searches</li>
 </ul>
-<p><strong>FraiseQL Integration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class OrderWithUser:
-    order_id: UUID  # UUID v4 for GraphQL ID
-    total: Decimal
-    user: User  # From pre-composed JSONB
-    # Automatically queries tv_order_with_user view
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="3-va_-views-logical-analytics-views-arrow-plane">3. <code>va_*</code> Views: Logical Analytics Views (Arrow Plane)<a class="headerlink" href="#3-va_-views-logical-analytics-views-arrow-plane" title="Permanent link">&para;</a></h3>
-<p><strong>Definition:</strong> Database views (no physical storage) optimized for Arrow Flight columnar queries.</p>
-<p><strong>When to use:</strong></p>
-<ul>
-<li>Analytics on small datasets (&lt;100K rows)</li>
-<li>One-time reports</li>
-<li>Data can be 5-60 seconds stale</li>
-<li>Minimal storage overhead acceptable</li>
-</ul>
-<p><strong>Example:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Read view optimized for columnar extraction
-CREATE VIEW va_user_stats AS
-SELECT
-    pk_user,
-    username,
-    email,
-    COUNT(*) OVER (PARTITION BY EXTRACT(YEAR FROM created_at)) AS users_per_year,
-    EXTRACT(YEAR FROM created_at) AS signup_year,
-    created_at
-FROM tb_user
-WHERE deleted_at IS NULL;
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Characteristics:</strong></p>
-<ul>
-<li><strong>Storage overhead:</strong> 0% (logical view only)</li>
-<li><strong>Maintenance:</strong> None (automatic)</li>
-<li><strong>Performance:</strong> 500ms-5s (depends on base table size)</li>
-<li><strong>Staleness:</strong> Real-time (always reflects current state)</li>
-<li><strong>Arrow compatibility:</strong> Fully compatible with Arrow Flight protocol</li>
-</ul>
-<p><strong>FraiseQL Integration:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.aggregate_query(
-    fact_table=None,  # Uses va_user_stats logical view
-)
-@FraiseQL.query
-def user_stats_by_year() -&gt; list[dict]:
-    """Returns user count by signup year via Arrow Flight."""
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="4-ta_-views-table-backed-analytics-views-arrow-plane">4. <code>ta_*</code> Views: Table-Backed Analytics Views (Arrow Plane)<a class="headerlink" href="#4-ta_-views-table-backed-analytics-views-arrow-plane" title="Permanent link">&para;</a></h3>
-<p><strong>Definition:</strong> Materialized columnar tables with trigger-based refresh for high-performance analytics.</p>
-<p><strong>When to use:</strong></p>
-<ul>
-<li>Large analytics datasets (&gt;1M rows)</li>
-<li>High-volume analytics (&gt;100 queries/sec)</li>
-<li>Aggregations across multiple dimensions</li>
-<li>Can tolerate 1-5 minute staleness</li>
-</ul>
-<p><strong>The Three-Component Architecture:</strong></p>
-<h4 id="component-1-measures-direct-sql-columns">Component 1: Measures (Direct SQL Columns)<a class="headerlink" href="#component-1-measures-direct-sql-columns" title="Permanent link">&para;</a></h4>
-<p>Numeric columns for fast aggregation. <strong>225x faster</strong> than JSONB aggregation.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE ta_sales (
-    id BIGSERIAL PRIMARY KEY,</p>
-<div class="highlight"><pre><span></span><code>-- MEASURES: Direct SQL columns for fast aggregation
-measure_revenue DECIMAL(10,2) NOT NULL,
-measure_quantity INT NOT NULL,
-measure_cost DECIMAL(10,2) NOT NULL,
-
--- ... dimensions and filters below
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_order_with_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderWithUser</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>                     <span class="c1"># from the pre-composed JSONB</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Queries: Direct column access
-SELECT
-    SUM(measure_revenue) AS total_revenue,
-    AVG(measure_quantity) AS avg_qty,
-    COUNT(*) AS transaction_count
-FROM ta_sales
-WHERE created_at &gt;= '2026-01-01';
--- Result: &lt;1ms (1M rows)
-```text</p>
-<!-- Code example in TEXT -->
+<p>For an in-depth treatment of when to reach for <code>tv_*</code> and how to keep projections fresh, see the <a href="../../architecture/database/tv-table-pattern/">tv table pattern</a> and the <a href="../../architecture/database/view-selection-guide/">view selection guide</a>.</p>
+<hr />
+<h2 id="part-4-postgresql-specific-strengths">Part 4: PostgreSQL-Specific Strengths<a class="headerlink" href="#part-4-postgresql-specific-strengths" title="Permanent link">&para;</a></h2>
+<p>FraiseQL v1 targets PostgreSQL exclusively, which lets it lean on capabilities that generic, lowest-common-denominator database layers cannot use. The architecture above is built directly on these:</p>
+<p><strong>JSONB as the wire format.</strong> Read views build their payload with <code>jsonb_build_object</code>, and FraiseQL serves exactly the requested GraphQL fields straight out of that <code>data</code> column. JSONB also supports rich indexing and containment operators:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_event</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w">         </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">data</span><span class="w">       </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- native JSONB</span>
+<span class="w">    </span><span class="n">tags</span><span class="w">       </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span><span class="w">   </span><span class="c1">-- native array type</span>
+<span class="w">    </span><span class="n">status</span><span class="w">     </span><span class="k">public</span><span class="p">.</span><span class="n">event_status</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">    </span><span class="c1">-- custom enum type</span>
+<span class="p">);</span>
 
-<h4 id="component-2-dimensions-jsonb-column">Component 2: Dimensions (JSONB Column)<a class="headerlink" href="#component-2-dimensions-jsonb-column" title="Permanent link">&para;</a></h4>
-<p>Flexible grouping attributes in a single JSON column. No schema migration needed to add new dimensions.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE ta_sales (
-    -- ... measures above</p>
-<div class="highlight"><pre><span></span><code>-- DIMENSIONS: JSONB column for flexible grouping
-dimension_data JSONB NOT NULL,
--- Contains: {category, product_name, region, customer_segment, ...}
--- Schema defined at ETL time, not database schema time
-
--- ... filters and timestamps below
+<span class="c1">-- GIN index over the JSONB document for fast containment/path queries.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_event_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Queries: Extract dimension paths
-SELECT
-    dimension_data-&gt;&gt;'category' AS category,
-    dimension_data-&gt;&gt;'region' AS region,
-    SUM(measure_revenue) AS total_revenue
-FROM ta_sales
-WHERE created_at &gt;= '2026-01-01'
-GROUP BY
-    dimension_data-&gt;&gt;'category',
-    dimension_data-&gt;&gt;'region'
-ORDER BY total_revenue DESC;
--- Result: 50-100ms (1M rows), grouping by 2 dimensions
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">JSON</span>
 
-<p><strong>Database-Specific Dimension Extraction:</strong></p>
-<p>PostgreSQL:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>dimension_data-&gt;&gt;'category'              -- JSONB operator
-```text</p>
-<!-- Code example in TEXT -->
 
-<p>MySQL:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>JSON_UNQUOTE(JSON_EXTRACT(dimension_data, '$.category'))
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>SQLite:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>json_extract(dimension_data, '$.category')
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>SQL Server:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>JSON_VALUE(dimension_data, '$.category')
-```text</p>
-<!-- Code example in TEXT -->
-
-<h4 id="component-3-denormalized-filters-indexed-sql-columns">Component 3: Denormalized Filters (Indexed SQL Columns)<a class="headerlink" href="#component-3-denormalized-filters-indexed-sql-columns" title="Permanent link">&para;</a></h4>
-<p>High-selectivity filter columns for fast WHERE clauses.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE ta_sales (
-    -- ... measures and dimensions above</p>
-<div class="highlight"><pre><span></span><code>-- DENORMALIZED FILTERS: Indexed SQL columns for fast WHERE
-filter_customer_id UUID NOT NULL,
-filter_product_id UUID NOT NULL,
-filter_occurred_at TIMESTAMPTZ NOT NULL,
-filter_status VARCHAR(50) NOT NULL,
-
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_event&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">JSON</span>                     <span class="c1"># maps to JSONB</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                <span class="c1"># maps to a PostgreSQL array</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>                    <span class="c1"># maps to a PostgreSQL enum</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Indexes for microsecond filtering
-CREATE INDEX idx_ta_sales_customer ON ta_sales(filter_customer_id);
-CREATE INDEX idx_ta_sales_product ON ta_sales(filter_product_id);
-CREATE INDEX idx_ta_sales_occurred ON ta_sales(filter_occurred_at);
-CREATE INDEX idx_ta_sales_status ON ta_sales(filter_status);
-CREATE INDEX idx_ta_sales_data_gin ON ta_sales USING GIN(dimension_data);
-CREATE INDEX idx_ta_sales_revenue_brin ON ta_sales USING BRIN(measure_revenue);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Query with All Three Components:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Fast WHERE (filters), GROUP BY (dimensions), aggregation (measures)
-SELECT
-    dimension_data-&gt;&gt;'category' AS category,
-    DATE_TRUNC('month', filter_occurred_at)::DATE AS month,
-    COUNT(*) AS transaction_count,
-    SUM(measure_revenue) AS total_revenue,
-    AVG(measure_quantity) AS avg_quantity
-FROM ta_sales
-WHERE
-    filter_customer_id = '550e8400-e29b-41d4-a716-446655440000'  -- Fast index lookup
-    AND filter_occurred_at &gt;= '2026-01-01'                        -- Fast index lookup
-    AND filter_status = 'completed'                               -- Fast index lookup
-GROUP BY
-    dimension_data-&gt;&gt;'category',
-    DATE_TRUNC('month', filter_occurred_at)
-HAVING
-    SUM(measure_revenue) &gt; 1000
-ORDER BY month DESC
-LIMIT 100;</p>
-<p>-- Performance: 30-100ms (100M rows)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Complete Example with Triggers:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Write table (source of truth)
-CREATE TABLE tb_sales (
-    pk_sale BIGINT PRIMARY KEY,
-    fk_customer UUID NOT NULL,
-    fk_product UUID NOT NULL,
-    revenue DECIMAL(10,2),
-    quantity INT,
-    cost DECIMAL(10,2),
-    status VARCHAR(50),
-    occurred_at TIMESTAMP,
-    created_at TIMESTAMP
-);</p>
-<p>-- Materialized analytics table (denormalized for speed)
-CREATE TABLE ta_sales (
-    id BIGSERIAL PRIMARY KEY,</p>
-<div class="highlight"><pre><span></span><code>-- Measures (225x faster than JSONB aggregation)
-measure_revenue DECIMAL(10,2) NOT NULL,
-measure_quantity INT NOT NULL,
-measure_cost DECIMAL(10,2) NOT NULL,
-
--- Dimensions (flexible, no schema migration)
-dimension_data JSONB NOT NULL,  -- {category, product_name, region, segment}
-
--- Filters (indexed, fast WHERE)
-filter_customer_id UUID NOT NULL,
-filter_product_id UUID NOT NULL,
-filter_occurred_at TIMESTAMPTZ NOT NULL,
-filter_status VARCHAR(50) NOT NULL,
-
--- Timestamps
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-source_updated_at TIMESTAMP  -- Track staleness
+<p><strong>CTEs and window functions.</strong> Read views can use common table expressions and window functions to express analytics-style shaping (running totals, rankings, partitioned aggregates) without leaving SQL.</p>
+<p><strong>PostgreSQL functions for all writes.</strong> Mutations call <code>fn_</code> functions, so transactional write logic, validation, and complex multi-table updates live in the database where they are atomic. See Part 5.</p>
+<p><strong><code>ltree</code> for hierarchies.</strong> Tree-structured data (categories, org charts, threaded comments) can be modeled with the <code>ltree</code> extension and exposed via the <code>LTree</code> scalar (<code>from fraiseql.types import LTree</code>), with native ancestor/descendant operators.</p>
+<p><strong>Rich indexing.</strong> Beyond B-tree, PostgreSQL offers GIN (JSONB/arrays/full-text), GiST, and BRIN (large append-mostly tables) indexes—pick the right index per access pattern and the read views inherit the benefit.</p>
+<p>Because there is a single supported database, FraiseQL never has to abstract these away or emulate them; the SQL you write is the SQL that runs.</p>
+<hr />
+<h2 id="part-5-cqrs-reads-vs-writes">Part 5: CQRS — Reads vs. Writes<a class="headerlink" href="#part-5-cqrs-reads-vs-writes" title="Permanent link">&para;</a></h2>
+<p>FraiseQL follows a Command/Query Responsibility Segregation split that maps cleanly onto PostgreSQL primitives.</p>
+<h3 id="reads-queries">Reads (Queries)<a class="headerlink" href="#reads-queries" title="Permanent link">&para;</a></h3>
+<p><code>@fraiseql.query</code> resolvers call <code>db.find</code> / <code>db.find_one</code> against a <code>v_*</code> or <code>tv_*</code> view. The view's <code>data</code> JSONB is returned and shaped to exactly the requested GraphQL fields.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Indexes
-CREATE INDEX idx_ta_sales_customer ON ta_sales(filter_customer_id);
-CREATE INDEX idx_ta_sales_occurred ON ta_sales(filter_occurred_at);
-CREATE INDEX idx_ta_sales_status ON ta_sales(filter_status);
-CREATE INDEX idx_ta_sales_data_gin ON ta_sales USING GIN(dimension_data);
-CREATE INDEX idx_ta_sales_revenue_brin ON ta_sales USING BRIN(measure_revenue);</p>
-<p>-- Trigger: Populate ta_sales from tb_sales
-CREATE TRIGGER trg_populate_ta_sales
-AFTER INSERT OR UPDATE ON tb_sales
-FOR EACH ROW
-EXECUTE FUNCTION populate_ta_sales();</p>
-<p>CREATE OR REPLACE FUNCTION populate_ta_sales()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO ta_sales (
-        measure_revenue, measure_quantity, measure_cost,
-        dimension_data,
-        filter_customer_id, filter_product_id, filter_occurred_at, filter_status,
-        source_updated_at
-    )
-    SELECT
-        NEW.revenue,
-        NEW.quantity,
-        NEW.cost,
-        jsonb_build_object(
-            'category', p.category,
-            'product_name', p.name,
-            'region', c.region,
-            'segment', c.segment
-        ),
-        NEW.fk_customer,
-        NEW.fk_product,
-        NEW.occurred_at,
-        NEW.status,
-        NEW.created_at
-    FROM tb_product p
-    JOIN tb_customer c ON c.fk_customer = NEW.fk_customer
-    WHERE p.pk_product = NEW.fk_product
-    ON CONFLICT (id) DO UPDATE
-    SET
-        measure_revenue = EXCLUDED.measure_revenue,
-        source_updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="writes-mutations">Writes (Mutations)<a class="headerlink" href="#writes-mutations" title="Permanent link">&para;</a></h3>
+<p><code>@fraiseql.mutation</code> resolvers call PostgreSQL <code>fn_*</code> functions via <code>db.execute_function</code>. The function performs validation and the write inside a transaction, then returns JSONB describing success or failure. <strong>All write business logic lives in PostgreSQL.</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<p><strong>Characteristics:</strong></p>
-<ul>
-<li><strong>Storage overhead:</strong> 10-30% (columnar format + indexes)</li>
-<li><strong>Maintenance:</strong> Trigger-based refresh (&lt;100ms latency)</li>
-<li><strong>Performance:</strong> 50-100ms (1M rows), 300-1000ms (100M rows)</li>
-<li><strong>Staleness:</strong> 1-5 minutes (dependent on refresh triggers)</li>
-<li><strong>Index support:</strong> BRIN indexes (10KB vs 1MB for B-tree), GIN for JSONB</li>
-</ul>
-<hr />
-<h3 id="calendar-dimensions-temporal-performance-optimization">Calendar Dimensions: Temporal Performance Optimization<a class="headerlink" href="#calendar-dimensions-temporal-performance-optimization" title="Permanent link">&para;</a></h3>
-<p><strong>Problem:</strong> Grouping by temporal buckets (month, quarter, year) requires runtime computation.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Slow: Runtime computation
-SELECT
-    DATE_TRUNC('month', occurred_at) AS month,
-    SUM(measure_revenue) AS revenue
-FROM ta_sales
-GROUP BY DATE_TRUNC('month', occurred_at);
--- Result: 500ms (1M rows)
-```text</p>
-<!-- Code example in TEXT -->
 
-<p><strong>Solution:</strong> Pre-computed temporal buckets in JSONB.</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Fast: Pre-computed extraction
-CREATE TABLE ta_sales_with_calendar (
-    -- ... all columns from ta_sales above</p>
-<div class="highlight"><pre><span></span><code>-- Calendar dimension: Pre-computed temporal buckets
-calendar_info JSONB NOT NULL,
--- Contains: {date: &quot;2026-03-15&quot;, week: 11, month: 3, quarter: 1, year: 2026}
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>                     <span class="c1"># @success auto-injects status/message/etc.</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
 </code></pre></div>
-<p>);</p>
-<p>-- Query: Direct extraction (no computation)
-SELECT
-    calendar_info-&gt;&gt;'month' AS month,
-    calendar_info-&gt;&gt;'year' AS year,
-    SUM(measure_revenue) AS revenue
-FROM ta_sales_with_calendar
-WHERE calendar_info-&gt;&gt;'year' = '2026'
-GROUP BY
-    calendar_info-&gt;&gt;'year',
-    calendar_info-&gt;&gt;'month'
-ORDER BY calendar_info-&gt;&gt;'month';
--- Result: 30ms (1M rows) - 16x faster!
-```text</p>
-<!-- Code example in TEXT -->
+<p>The corresponding PostgreSQL function owns the write:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email is required&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<p><strong>Performance Impact by Rows:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Rows</th>
-<th>Without Calendar</th>
-<th>With Calendar</th>
-<th>Speedup</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>100K</td>
-<td>50ms</td>
-<td>5ms</td>
-<td>10x</td>
-</tr>
-<tr>
-<td>1M</td>
-<td>500ms</td>
-<td>30ms</td>
-<td>16x</td>
-</tr>
-<tr>
-<td>10M</td>
-<td>5000ms</td>
-<td>300ms</td>
-<td>16x</td>
-</tr>
-</tbody>
-</table>
-<p><strong>FraiseQL Automatic Detection:</strong>
-FraiseQL introspects columns ending with <code>_info</code> containing <code>{date, week, month, quarter, year}</code> and automatically generates optimal SQL:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.fact_table(table_name="ta_sales")
-@FraiseQL.type
-class Sale:
-    measure_revenue: float
-    dimension_data: dict  # {category, product_name, region}
-    calendar_info: dict   # {date, week, month, quarter, year} ← Auto-detected
-    # FraiseQL uses: calendar_info-&gt;&gt;'month' (not DATE_TRUNC)
-```text</p>
-<!-- Code example in TEXT -->
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">username</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<p>The schema that wires all of this together is assembled <strong>at application startup, in memory</strong>—there are no generated files to ship or keep in sync.</p>
 <hr />
-<h2 id="part-4-multi-database-support">Part 4: Multi-Database Support<a class="headerlink" href="#part-4-multi-database-support" title="Permanent link">&para;</a></h2>
-<h3 id="the-multi-database-philosophy">The Multi-Database Philosophy<a class="headerlink" href="#the-multi-database-philosophy" title="Permanent link">&para;</a></h3>
-<p>FraiseQL supports multiple database backends with <strong>one schema definition</strong>:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<h1 id="one-schema-definition">One schema definition...<a class="headerlink" href="#one-schema-definition" title="Permanent link">&para;</a></h1>
-<p>@FraiseQL.type
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
-    email: str
-    orders: List[Order]</p>
-<h1 id="works-with-any-supported-database">...works with any supported database<a class="headerlink" href="#works-with-any-supported-database" title="Permanent link">&para;</a></h1>
-<h1 id="-postgresql-primary-most-features">- PostgreSQL (primary, most features)<a class="headerlink" href="#-postgresql-primary-most-features" title="Permanent link">&para;</a></h1>
-<h1 id="-mysql-secondary-good-support">- MySQL (secondary, good support)<a class="headerlink" href="#-mysql-secondary-good-support" title="Permanent link">&para;</a></h1>
-<h1 id="-sqlite-local-dev-testing">- SQLite (local dev, testing)<a class="headerlink" href="#-sqlite-local-dev-testing" title="Permanent link">&para;</a></h1>
-<h1 id="-sql-server-enterprise-deployments">- SQL Server (enterprise deployments)<a class="headerlink" href="#-sql-server-enterprise-deployments" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h3 id="database-selection-matrix">Database Selection Matrix<a class="headerlink" href="#database-selection-matrix" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Database</th>
-<th>Strengths</th>
-<th>Typical Use</th>
-<th>Analytics</th>
-<th>Maturity</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>PostgreSQL</strong></td>
-<td>Full-featured, JSONB, BRIN indexes, window functions</td>
-<td>Production primary</td>
-<td>✅ Best</td>
-<td>✅ Full support</td>
-</tr>
-<tr>
-<td><strong>MySQL</strong></td>
-<td>Widely deployed, fast, JSON</td>
-<td>Legacy systems, scale-out</td>
-<td>⚠️ Basic JSON</td>
-<td>✅ Full support</td>
-</tr>
-<tr>
-<td><strong>SQLite</strong></td>
-<td>Lightweight, embedded, portable</td>
-<td>Local dev, testing, mobile</td>
-<td>⚠️ Limited</td>
-<td>✅ Full support</td>
-</tr>
-<tr>
-<td><strong>SQL Server</strong></td>
-<td>Enterprise Windows, T-SQL, JSON</td>
-<td>Enterprise deployments</td>
-<td>⚠️ JSON as NVARCHAR</td>
-<td>✅ Full support</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h3 id="schema-portability-example">Schema Portability Example<a class="headerlink" href="#schema-portability-example" title="Permanent link">&para;</a></h3>
-<p><strong>Same FraiseQL schema:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@FraiseQL.type
-class Product:
-    product_id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    price: Decimal
-    in_stock: bool
-    created_at: datetime
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Works on PostgreSQL:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL
-CREATE TABLE tb_product (
-    pk_product BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(255),
-    price NUMERIC(10, 2),
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Works on MySQL:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- MySQL
-CREATE TABLE tb_product (
-    pk_product BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255),
-    price DECIMAL(10, 2),
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Works on SQLite:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- SQLite
-CREATE TABLE tb_product (
-    pk_product BIGINTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    price REAL,
-    in_stock BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Same GraphQL API</strong> ✓
-<strong>Same FraiseQL schema definition</strong> ✓
-<strong>Different database implementations</strong> ✓</p>
-<hr />
-<h3 id="database-specific-features">Database-Specific Features<a class="headerlink" href="#database-specific-features" title="Permanent link">&para;</a></h3>
-<p>While the schema is portable, FraiseQL can leverage database-specific features:</p>
-<p><strong>PostgreSQL (Primary, Most Features):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- PostgreSQL-specific: JSONB, arrays, types
-CREATE TABLE tb_events (
-    pk_event BIGINT PRIMARY KEY,
-    data JSONB,  -- PostgreSQL JSONB type
-    tags TEXT[],  -- PostgreSQL array type
-    status public.event_status  -- Custom enum type
-);</p>
-<p>-- FraiseQL can leverage these
-@FraiseQL.type
-class Event:
-    event_id: UUID  # UUID v4 for GraphQL ID
-    data: JSON  # Maps to JSONB
-    tags: List[str]  # Maps to array
-    status: EventStatus  # Maps to enum
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>MySQL (Limited Custom Types):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- MySQL: Standard types, JSON as string
-CREATE TABLE tb_events (
-    pk_event BIGINT AUTO_INCREMENT PRIMARY KEY,
-    data JSON,  -- JSON as string
-    tags JSON,  -- Array as JSON string
-    status VARCHAR(50)  -- Enum as string
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>SQLite (Minimal Types):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- SQLite: TEXT for everything complex
-CREATE TABLE tb_events (
-    pk_event INTEGER PRIMARY KEY,
-    data TEXT,  -- JSON as text
-    tags TEXT,  -- JSON array as text
-    status TEXT  -- Enum as text
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>FraiseQL handles the differences transparently.</strong></p>
-<hr />
-<h2 id="part-5-fact-tables-for-analytics-tf_">Part 5: Fact Tables for Analytics (tf_*)<a class="headerlink" href="#part-5-fact-tables-for-analytics-tf_" title="Permanent link">&para;</a></h2>
-<h3 id="what-are-fact-tables">What Are Fact Tables?<a class="headerlink" href="#what-are-fact-tables" title="Permanent link">&para;</a></h3>
-<p>Fact tables (<code>tf_*</code> prefix) are the <strong>core analytics data structure</strong> in FraiseQL. They denormalize transactional data into a structure optimized for rapid aggregation across multiple dimensions.</p>
-<p><strong>Key principle:</strong> NO JOINS during queries. All dimensional context is denormalized at ETL time.</p>
-<hr />
-<h3 id="the-three-component-architecture">The Three-Component Architecture<a class="headerlink" href="#the-three-component-architecture" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Fact Table (tf_*)
-├── Measures (SQL Columns) ← 225x faster aggregation
-├── Dimensions (JSONB Column) ← Flexible grouping
-└── Filters (Indexed SQL Columns) ← Fast WHERE clauses
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>This structure enables:</p>
-<ul>
-<li><strong>Measures:</strong> Direct aggregation (SUM, AVG, COUNT) at database speed</li>
-<li><strong>Dimensions:</strong> Flexible grouping without schema changes</li>
-<li><strong>Filters:</strong> Instant WHERE clause evaluation via indexes</li>
-</ul>
-<hr />
-<h3 id="python-authoring-for-analytics">Python Authoring for Analytics<a class="headerlink" href="#python-authoring-for-analytics" title="Permanent link">&para;</a></h3>
-<p>FraiseQL provides decorators for analytics:</p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import fact_table, aggregate_query, type as fraiseql_type</p>
-<h1 id="define-fact-table">Define fact table<a class="headerlink" href="#define-fact-table" title="Permanent link">&para;</a></h1>
-<p>@fact_table(
-    table_name="tf_sales",
-    measures=[
-        {"name": "revenue", "type": "float", "aggregates": ["sum", "avg"]},
-        {"name": "quantity", "type": "int", "aggregates": ["sum", "avg"]},
-        {"name": "cost", "type": "float", "aggregates": ["sum"]},
-    ],
-    dimension_paths=[
-        {"name": "category", "json_path": "dimension_data-&gt;&gt;'category'"},
-        {"name": "product_name", "json_path": "dimension_data-&gt;&gt;'product_name'"},
-        {"name": "region", "json_path": "dimension_data-&gt;&gt;'region'"},
-    ],
-    denormalized_filters=[
-        {"name": "customer_id", "type": "uuid"},
-        {"name": "product_id", "type": "uuid"},
-        {"name": "occurred_at", "type": "timestamp"},
-        {"name": "status", "type": "string"},
-    ],
-    calendar_dimensions=[
-        {"name": "calendar_info", "type": "date_info"}  # {date, week, month, quarter, year}
-    ],
-)
-@fraiseql_type
-class Sale:
-    """Sales fact table for analytics."""
-    id: UUID  # UUID v4 for GraphQL ID
-    measure_revenue: float
-    measure_quantity: int
-    measure_cost: float
-    dimension_data: dict
-    filter_customer_id: UUID  # UUID v4 for GraphQL ID
-    filter_product_id: UUID  # UUID v4 for GraphQL ID
-    filter_occurred_at: datetime
-    filter_status: str
-    calendar_info: dict
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Generated GraphQL Aggregate Query:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  sales_aggregate(
-    where: {
-      filter_occurred_at: { _gte: "2026-01-01", _lt: "2026-02-01" }
-      filter_status: "completed"
-    }
-    groupBy: {
-      category: true
-      month: true  # From calendar_info-&gt;&gt;'month'
-    }
-    having: {
-      measure_revenue_sum_gt: 1000
-    }
-    orderBy: [{ field: "measure_revenue_sum", direction: DESC }]
-    limit: 100
-  ) {
-    category
-    month
-    count
-    measure_revenue_sum
-    measure_revenue_avg
-    measure_quantity_sum
-    measure_quantity_avg
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-6-arrow-flight-for-streaming-analytics">Part 6: Arrow Flight for Streaming Analytics<a class="headerlink" href="#part-6-arrow-flight-for-streaming-analytics" title="Permanent link">&para;</a></h2>
-<h3 id="arrow-flight-protocol">Arrow Flight Protocol<a class="headerlink" href="#arrow-flight-protocol" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses <strong>Apache Arrow Flight</strong> to stream columnar analytics data directly to clients.</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Client
-  ↓ (Arrow Flight Request with ticket)
-FraiseQL Arrow Server (gRPC)
-  ├─ Validate query
-  ├─ Authorize access
-  ├─ Execute compiled SQL
-  └─ Stream columnar Arrow batches
-  ↓
-Client (receives Arrow format, zero-copy deserialization)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Performance:</strong></p>
-<ul>
-<li><strong>JSON Plane:</strong> 10-20 MB/sec (row-by-row, HTTP)</li>
-<li><strong>Arrow Plane:</strong> 100-500 MB/sec (columnar, gRPC)</li>
-<li><strong>Speedup:</strong> 5-50x faster for analytics</li>
-</ul>
-<hr />
-<h3 id="flight-tickets">Flight Tickets<a class="headerlink" href="#flight-tickets" title="Permanent link">&para;</a></h3>
-<p>Clients request data by submitting a <strong>Flight Ticket</strong>, which encodes the query:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "type": "OptimizedView",
-  "view": "ta_sales",
-  "filter": "filter_occurred_at &gt; '2026-01-01' AND filter_status = 'completed'",
-  "orderBy": "calendar_info-&gt;&gt;'month' DESC",
-  "limit": 100000,
-  "offset": 0
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Ticket Types:</strong></p>
-<ol>
-<li><strong>GraphQLQuery</strong> - Execute GraphQL query, return Arrow</li>
-<li><strong>OptimizedView</strong> - Query pre-optimized ta_* view directly</li>
-<li><strong>BulkExport</strong> - Export entire table as Arrow</li>
-<li><strong>ObserverEvents</strong> - Stream observer change data</li>
-</ol>
-<hr />
-<h3 id="arrow-flight-schema-registry">Arrow Flight Schema Registry<a class="headerlink" href="#arrow-flight-schema-registry" title="Permanent link">&para;</a></h3>
-<p>FraiseQL automatically registers Arrow schemas:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>va_orders: [id (Int64), total (Float64), created_at (Timestamp), customer_name (Utf8)]
-va_users: [id (Int64), email (Utf8), name (Utf8), created_at (Timestamp)]
-ta_orders: [measure_total (Numeric), dimension_data (Utf8), filter_customer_id (Utf8), calendar_info (Utf8)]
-ta_users: [id (Text), email (Text), name (Text), created_at (Timestamp), source_updated_at (Timestamp)]
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="part-7-architecture-layers">Part 7: Architecture Layers<a class="headerlink" href="#part-7-architecture-layers" title="Permanent link">&para;</a></h2>
+<h2 id="part-6-architecture-layers">Part 6: Architecture Layers<a class="headerlink" href="#part-6-architecture-layers" title="Permanent link">&para;</a></h2>
 <h3 id="the-complete-picture">The Complete Picture<a class="headerlink" href="#the-complete-picture" title="Permanent link">&para;</a></h3>
-<p>FraiseQL's database-centric design manifests in four layers:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>┌─────────────────────────────────────────────┐
-│ Layer 1: AUTHORING (Your Code)              │
-│ Python/TypeScript + @FraiseQL decorators    │
+<p>FraiseQL's database-centric design manifests in three layers:</p>
+<div class="highlight"><pre><span></span><code>┌─────────────────────────────────────────────┐
+│ Layer 2: AUTHORING (Your Code)              │
+│ Python + @fraiseql decorators               │
 │                                             │
-│ @FraiseQL.type                              │
+│ @fraiseql.type(sql_source=&quot;v_user&quot;)         │
 │ class User:                                 │
-│   user_id: int                              │
+│   id: ID                                    │
 │   username: str                             │
 │                                             │
-│ Source: You write this                      │
-│ Output: schema.json                         │
+│ @fraiseql.query / @fraiseql.mutation        │
 └─────────────────────────────────────────────┘
            │
-           │ (FraiseQL-cli compile)
-           │
+           │ create_fraiseql_app(...) builds the
+           │ GraphQL schema in memory at startup
+           ▼
 ┌─────────────────────────────────────────────┐
-│ Layer 2: COMPILATION (Build Time)           │
-│ Validates, optimizes, generates SQL         │
+│ Layer 1: RUNTIME (FastAPI process)          │
 │                                             │
-│ - Validate schema against database          │
-│ - Generate SQL templates                    │
-│ - Optimize queries                          │
-│ - Compile authorization rules               │
-│ - Introspect fact tables &amp; calendar dims    │
-│ - Create Arrow Flight schema registry       │
-│                                             │
-│ Output: schema.compiled.json                │
+│ - Validate the request against the schema   │
+│ - Authorize (declarative rules)             │
+│ - Reads:  db.find / db.find_one on v_/tv_   │
+│ - Writes: db.execute_function on fn_        │
+│ - Shape JSONB to the requested fields       │
+│   (the optional fraiseql_rs extension        │
+│    accelerates this on the hot path)        │
 └─────────────────────────────────────────────┘
-           │
-           │ (deployed to server)
-           │
-┌─────────────────────────────────────────────┐
-│ Layer 3: RUNTIME (Execution)                │
-│ Execute pre-compiled schemas and queries    │
-│                                             │
-│ JSON Plane (GraphQL/HTTP):                  │
-│   - Query v_* views (logical reads)         │
-│   - Query tv_* views (materialized JSON)    │
-│   - Mutation via triggers                   │
-│                                             │
-│ Arrow Plane (Arrow Flight/gRPC):            │
-│   - Stream va_* views (logical analytics)   │
-│   - Stream ta_* views (materialized facts)  │
-│   - Zero-copy columnar delivery             │
-│                                             │
-│ Where databases: PostgreSQL, MySQL,         │
-│ SQLite, SQL Server all supported            │
-└─────────────────────────────────────────────┘
-           │
            │
            ▼
 ┌─────────────────────────────────────────────┐
-│ Layer 0: DATABASE (Source of Truth)         │
-│ Tables, views, functions, constraints       │
+│ Layer 0: POSTGRESQL (Source of Truth)       │
 │                                             │
-│ Write Tables:                               │
-│   - tb_* tables (normalized, DBA-owned)     │
+│ Write side:                                 │
+│   - tb_* normalized tables (DBA-owned)      │
+│   - fn_* functions (mutation write logic)   │
 │                                             │
-│ Read Views:                                 │
-│   - v_* logical views                       │
-│   - tv_* materialized JSON views            │
-│   - va_* logical analytics views            │
-│   - ta_* materialized fact tables           │
-│                                             │
-│ Analytics Foundation:                       │
-│   - tf_* fact tables (if using analytics)   │
-│   - td_* dimension tables (ETL only)        │
+│ Read side:                                  │
+│   - v_*  logical read views                 │
+│   - tv_* table-backed projections           │
 │                                             │
 │ The single source of truth for all data     │
 └─────────────────────────────────────────────┘
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
+<p>The optional Rust extension (<code>fraiseql_rs</code>) is not a separate layer or data plane—it simply speeds up JSON transformation inside Layer 1.</p>
 <hr />
-<h2 id="part-8-consequences-of-database-centric-design">Part 8: Consequences of Database-Centric Design<a class="headerlink" href="#part-8-consequences-of-database-centric-design" title="Permanent link">&para;</a></h2>
+<h2 id="part-7-consequences-of-database-centric-design">Part 7: Consequences of Database-Centric Design<a class="headerlink" href="#part-7-consequences-of-database-centric-design" title="Permanent link">&para;</a></h2>
 <h3 id="immediate-benefits">Immediate Benefits<a class="headerlink" href="#immediate-benefits" title="Permanent link">&para;</a></h3>
 <p><strong>1. Clarity</strong></p>
 <ul>
 <li>What you see is what you get</li>
-<li>Database schema = API definition</li>
+<li>Read views and functions define the API surface</li>
 <li>No hidden resolver logic</li>
 </ul>
 <p><strong>2. Performance</strong></p>
 <ul>
-<li>Database optimization at compile time</li>
-<li>N+1 queries eliminated (database handles it)</li>
-<li>Fact tables enable 100x analytics speedup</li>
-<li>Deterministic query performance</li>
+<li>PostgreSQL plans and optimizes queries</li>
+<li>N+1 reads avoided by composing nested data in views</li>
+<li><code>tv_*</code> projections turn heavy nested reads into single-row lookups</li>
 </ul>
 <p><strong>3. Consistency</strong></p>
 <ul>
 <li>Single source of truth</li>
 <li>No cache invalidation complexity</li>
-<li>Database constraints enforced</li>
-<li>ACID transactions guaranteed</li>
+<li>Database constraints enforced; ACID transactions guaranteed</li>
 </ul>
 <p><strong>4. Security</strong></p>
 <ul>
-<li>Authorization rules compiled into SQL</li>
-<li>Row-level security possible</li>
-<li>Parameterized queries prevent injection</li>
+<li>All writes flow through <code>fn_*</code> functions, validated in the database</li>
+<li>Row-level security available in PostgreSQL</li>
+<li>Parameterized queries prevent SQL injection</li>
 </ul>
 <p><strong>5. Debuggability</strong></p>
 <ul>
-<li>Look at the SQL, understand the query</li>
+<li>Look at the view or function, understand the query</li>
 <li>No hidden resolver logic</li>
-<li>Performance bottlenecks are clear (database metrics)</li>
-<li>Calendar dimensions and filters explain slow queries</li>
+<li>Performance bottlenecks are visible in database metrics</li>
 </ul>
 <hr />
 <h3 id="design-constraints">Design Constraints<a class="headerlink" href="#design-constraints" title="Permanent link">&para;</a></h3>
 <p><strong>1. Schema Must Be Structured</strong></p>
 <ul>
 <li>Requires clear database design (normalization, keys, constraints)</li>
-<li>Not suitable for unstructured/document-based data</li>
-<li>Fact tables require denormalization at ETL time</li>
+<li>Not suitable for unstructured/document-only data</li>
 </ul>
-<p><strong>2. Database Must Be Primary Data Source</strong></p>
+<p><strong>2. PostgreSQL Must Be the Primary Data Source</strong></p>
 <ul>
-<li>Multi-source federation limited</li>
-<li>Aggregating multiple APIs requires federation pattern</li>
-<li>REST/GraphQL/etc. as secondary sources only</li>
+<li>Multi-source federation is limited</li>
+<li>External REST/GraphQL sources are secondary at best</li>
 </ul>
-<p><strong>3. Schema Changes Require Recompilation</strong></p>
+<p><strong>3. Database Expertise Required</strong></p>
 <ul>
-<li>Not suitable for dynamic, runtime schema changes</li>
-<li>Schema must be known at compile time</li>
-<li>Deployment is required for schema changes</li>
-</ul>
-<p><strong>4. Database Expertise Required</strong></p>
-<ul>
-<li>Team must understand SQL, indexes, relationships, triggers</li>
-<li>DBA involvement necessary for analytics (fact tables, calendars)</li>
+<li>The team must understand SQL, indexes, views, functions, and triggers</li>
+<li>DBA involvement helps for non-trivial projections</li>
 <li>Schema design quality directly affects API performance</li>
 </ul>
-<p><strong>5. Analytics Requires ETL Discipline</strong></p>
+<p><strong>4. Reads Live in Views, Writes Live in Functions</strong></p>
 <ul>
-<li>Dimensions must be denormalized at ETL time</li>
-<li>Calendar dimensions must be pre-computed</li>
-<li>No joins allowed in analytics queries (enforced by architecture)</li>
+<li>Read shaping is done in <code>v_*</code>/<code>tv_*</code> views</li>
+<li>Write logic is done in <code>fn_*</code> functions</li>
+<li>This discipline is the source of FraiseQL's simplicity—embrace it</li>
 </ul>
 <hr />
 <h2 id="summary-the-database-centric-philosophy">Summary: The Database-Centric Philosophy<a class="headerlink" href="#summary-the-database-centric-philosophy" title="Permanent link">&para;</a></h2>
 <p>FraiseQL makes a deliberate choice:</p>
-<p><strong>Core assumption:</strong> Your GraphQL API is a <strong>database access interface</strong>, not a general-purpose API aggregator.</p>
+<p><strong>Core assumption:</strong> Your GraphQL API is a <strong>PostgreSQL access interface</strong>, not a general-purpose API aggregator.</p>
 <p><strong>Implementation:</strong></p>
 <ul>
-<li>✅ Transactional queries via <code>v_*</code> and <code>tv_*</code> views (JSON Plane)</li>
-<li>✅ Analytics queries via <code>va_*</code> and <code>ta_*</code> views (Arrow Plane)</li>
-<li>✅ Fact tables (<code>tf_*</code>) for high-performance aggregations</li>
-<li>✅ Calendar dimensions for temporal performance (10-16x speedup)</li>
-<li>✅ Multi-database support (PostgreSQL, MySQL, SQLite, SQL Server)</li>
+<li>Reads via <code>v_*</code> logical views and <code>tv_*</code> table-backed projections (JSONB payloads)</li>
+<li>Writes via <code>fn_*</code> PostgreSQL functions called through <code>db.execute_function</code></li>
+<li>Trinity identifier pattern: hidden <code>pk_</code> BIGINT, public <code>id</code> UUID, optional <code>identifier</code> slug</li>
+<li>Schema built in memory at app startup—no compile step, no artifacts</li>
 </ul>
 <p><strong>Consequences:</strong></p>
 <ul>
-<li>✅ Simpler architecture (no custom resolvers)</li>
-<li>✅ Better performance (database optimization + fact tables)</li>
-<li>✅ Higher consistency (single source of truth)</li>
-<li>✅ Easier debugging (clear SQL + metrics)</li>
-<li>❌ Less flexible (cannot easily add external APIs)</li>
-<li>❌ Requires database expertise</li>
-<li>❌ Schema must be structured</li>
-<li>❌ Analytics requires ETL discipline</li>
+<li>Simpler architecture (little to no custom resolver code)</li>
+<li>Better performance (database optimization + pre-composed projections)</li>
+<li>Higher consistency (single source of truth)</li>
+<li>Easier debugging (clear views/functions + metrics)</li>
+<li>Less flexible (cannot easily add external APIs)</li>
+<li>Requires database expertise and a structured schema</li>
 </ul>
-<p><strong>Best for:</strong> Data-centric applications with clear schemas, transactional + analytics needs, and performance requirements.</p>
-<p><strong>Not suitable for:</strong> Heavily federated systems, unstructured data, or dynamic schemas.</p>
+<p><strong>Best for:</strong> Data-centric applications on PostgreSQL with clear schemas and performance requirements.</p>
+<p><strong>Not suitable for:</strong> Heavily federated systems, unstructured data, dynamic per-request schemas, or non-PostgreSQL databases.</p>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>Now you understand FraiseQL's database-centric approach:</p>
+<p>Now that you understand FraiseQL's database-centric approach:</p>
 <ol>
-<li><strong>Learn how compilation works</strong> → Topic 2.1 (Compilation Pipeline)</li>
-<li>
-<p>How your schema becomes optimized SQL</p>
-</li>
-<li>
-<p><strong>Start designing schemas</strong> → Topic 3.1 (Python Schema Authoring)</p>
-</li>
-<li>
-<p>Write your first FraiseQL schema</p>
-</li>
-<li>
-<p><strong>Understand specific databases</strong> → Topic 4.1 (PostgreSQL Integration)</p>
-</li>
-<li>
-<p>Database-specific features and best practices</p>
-</li>
-<li>
-<p><strong>Learn design principles</strong> → Topic 1.4 (Design Principles)</p>
-</li>
-<li>5 guiding principles of FraiseQL</li>
+<li><strong>Get hands-on</strong> → <a href="../../getting-started/quickstart/">Quickstart</a> and <a href="../../getting-started/first-hour/">First Hour</a></li>
+<li><strong>Review the vocabulary</strong> → <a href="../../core/concepts-glossary/">Concepts Glossary</a> and <a href="../../reference/naming-patterns/">Naming Patterns</a></li>
+<li><strong>Learn design principles</strong> → <a href="../04-design-principles/">Design Principles</a></li>
+<li><strong>Compare alternatives</strong> → <a href="../05-comparisons/">Comparisons</a></li>
 </ol>
 <hr />
 <h2 id="related-topics">Related Topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Topic 1.1:</strong> What is FraiseQL? — High-level positioning</li>
-<li><strong>Topic 1.2:</strong> Core Concepts &amp; Terminology — Database vocabulary</li>
-<li><strong>Topic 1.4:</strong> Design Principles — 5 guiding principles</li>
-<li><strong>Topic 2.1:</strong> Compilation Pipeline — How compilation works</li>
-<li><strong>Topic 4.5:</strong> Database Design Patterns — Fact table design details</li>
-<li><strong>Topic 4.1:</strong> PostgreSQL Integration — Database-specific guidance</li>
+<li><a href="../02-core-concepts/">Core Concepts</a> — database vocabulary and the runtime model</li>
+<li><a href="../04-design-principles/">Design Principles</a> — the guiding principles of FraiseQL</li>
+<li><a href="../09-type-system/">Type System</a> — scalars and type mapping</li>
+<li><a href="../10-error-handling-validation/">Error Handling &amp; Validation</a> — success/error result types</li>
+<li><a href="../12-performance-characteristics/">Performance Characteristics</a> — what to expect at runtime</li>
+<li><a href="../../architecture/database/tv-table-pattern/">tv Table Pattern</a> — designing table-backed projections</li>
+<li><a href="../../architecture/database/view-selection-guide/">View Selection Guide</a> — choosing <code>v_*</code> vs <code>tv_*</code></li>
 </ul>
 <hr />
 <h2 id="key-takeaways">Key Takeaways<a class="headerlink" href="#key-takeaways" title="Permanent link">&para;</a></h2>
-<p>✅ <strong>FraiseQL treats the database as the primary application interface</strong></p>
-<p>✅ <strong>Four-tier view system optimizes for different access patterns:</strong></p>
 <ul>
-<li><code>v_*</code> logical reads (JSON, real-time)</li>
-<li><code>tv_*</code> materialized JSON (complex nested, high volume)</li>
-<li><code>va_*</code> logical analytics (Arrow, small datasets)</li>
-<li><code>ta_*</code> materialized facts (Arrow, large datasets, 50-100ms latency)</li>
+<li><strong>FraiseQL treats PostgreSQL as the primary application interface.</strong></li>
+<li><strong>Two read view types</strong> cover most needs:</li>
+<li><code>v_*</code> logical reads (computed on read, real-time)</li>
+<li><code>tv_*</code> table-backed projections (pre-composed JSONB, fast nested reads)</li>
+<li><strong>All writes go through <code>fn_*</code> PostgreSQL functions</strong> called via <code>db.execute_function</code>.</li>
+<li><strong>The schema is built in memory at startup</strong>—there is no compile step or artifact.</li>
+<li><strong>PostgreSQL-only by design</strong>, which lets FraiseQL exploit JSONB, CTEs, functions, <code>ltree</code>, and rich indexing directly.</li>
+<li><strong>Trade-off: simplicity for unconstrained flexibility</strong> (not suited to heavily federated systems).</li>
 </ul>
-<p>✅ <strong>Fact tables with three components:</strong></p>
-<ul>
-<li>Measures (SQL columns, 225x faster aggregation)</li>
-<li>Dimensions (JSONB, flexible grouping, no migration)</li>
-<li>Filters (indexed SQL, fast WHERE)</li>
-</ul>
-<p>✅ <strong>Calendar dimensions provide 10-16x analytics speedup</strong> (pre-computed temporal buckets)</p>
-<p>✅ <strong>Arrow Flight enables 5-50x faster data streaming</strong> (columnar, gRPC, zero-copy)</p>
-<p>✅ <strong>Multi-database support</strong> (PostgreSQL, MySQL, SQLite, SQL Server with same schema)</p>
-<p>✅ <strong>Trade-off: Simplicity for flexibility</strong> (not suitable for heavily federated systems)</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

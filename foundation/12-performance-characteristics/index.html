@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL v1 performance comes from pushing work into PostgreSQL (views, indexes, the query planner), an optional Rust JSON pipeline, connection pooling, and caching — all at runtime.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/foundation/12-performance-characteristics/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Performance Characteristics - FraiseQL Documentation</title>
+        <title>2.7: Performance Characteristics - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Performance Characteristics
+              2.7: Performance Characteristics
             
           </span>
         </div>
@@ -1182,17 +1184,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#complexity-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complexity Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#common-query-patterns-and-performance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1221,10 +1212,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#query-result-caching" class="md-nav__link">
+  <a href="#result-caching-and-apq" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Result Caching
+        Result Caching and APQ
       
     </span>
   </a>
@@ -1254,10 +1245,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#enabling-cache" class="md-nav__link">
+  <a href="#enabling-caching" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enabling Cache
+        Enabling Caching
       
     </span>
   </a>
@@ -1316,6 +1307,200 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-and-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring and Profiling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Profiling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-metrics-to-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Metrics to Track
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-vertical-scaling-single-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Vertical Scaling (Single Server)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-horizontal-scaling-multiple-app-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Horizontal Scaling (Multiple App Servers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Read Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-caching-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Caching Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-1-n1-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 1: N+1 Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-2-over-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 2: Over-Fetching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-3-unbounded-lists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 3: Unbounded Lists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-4-missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 4: Missing Indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tuning-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tuning Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5316,17 +5501,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#complexity-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complexity Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#common-query-patterns-and-performance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5355,10 +5529,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#query-result-caching" class="md-nav__link">
+  <a href="#result-caching-and-apq" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Result Caching
+        Result Caching and APQ
       
     </span>
   </a>
@@ -5388,10 +5562,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#enabling-cache" class="md-nav__link">
+  <a href="#enabling-caching" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enabling Cache
+        Enabling Caching
       
     </span>
   </a>
@@ -5453,6 +5627,200 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#monitoring-and-profiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring and Profiling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Profiling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-metrics-to-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Metrics to Track
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-vertical-scaling-single-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Vertical Scaling (Single Server)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-horizontal-scaling-multiple-app-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Horizontal Scaling (Multiple App Servers)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-read-replicas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Read Replicas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-caching-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Caching Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-anti-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Anti-Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Anti-Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-1-n1-reads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 1: N+1 Reads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-2-over-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 2: Over-Fetching
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-3-unbounded-lists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 3: Unbounded Lists
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anti-pattern-4-missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anti-Pattern 4: Missing Indexes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tuning-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tuning Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5473,55 +5841,55 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: 2.7: Performance Characteristics
-description: FraiseQL's performance characteristics are determined by its <strong>compiled-first architecture</strong>. Unlike runtime GraphQL servers that interpret queries on every req
-keywords: ["query-execution", "data-planes", "graphql", "performance", "compilation", "architecture"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="27-performance-characteristics">2.7: Performance Characteristics<a class="headerlink" href="#27-performance-characteristics" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's performance characteristics are determined by its <strong>compiled-first architecture</strong>. Unlike runtime GraphQL servers that interpret queries on every request, FraiseQL compiles schema optimizations upfront, leaving only efficient database access and result formatting at runtime.</p>
-<p>This section explains FraiseQL's performance model, typical latency/throughput metrics, and how design choices enable consistent, predictable performance.</p>
+<p>FraiseQL v1 is a <strong>Python runtime GraphQL framework for PostgreSQL</strong>. There is no
+compile step: the GraphQL schema is built in memory at application <strong>startup</strong> and
+served over FastAPI. Performance therefore comes from a small set of runtime levers:</p>
+<ol>
+<li><strong>Pushing work into PostgreSQL</strong> — read views (<code>v_</code>/<code>tv_</code>) shape data with
+   <code>jsonb_build_object(...)</code>, indexes keep lookups fast, and the query planner does
+   the heavy lifting.</li>
+<li><strong>The optional Rust extension (<code>fraiseql_rs</code>)</strong> — accelerates JSON transformation
+   and field selection on the hot path. It is a runtime accelerator, not a separate
+   engine or data plane.</li>
+<li><strong>Connection pooling</strong> — reuse warm PostgreSQL connections instead of paying
+   connect cost per request.</li>
+<li><strong>Caching / Automatic Persisted Queries (APQ)</strong> — avoid recomputing identical work.</li>
+</ol>
+<p>This section explains FraiseQL's runtime performance model, typical latency/throughput
+behaviour, and how design choices enable consistent, predictable performance.</p>
 <h3 id="performance-philosophy">Performance Philosophy<a class="headerlink" href="#performance-philosophy" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Traditional GraphQL Server:
-Query → Parse → Validate → Resolve → Execute SQL → Format → Response
-↑       ↑        ↑         ↑        ↑            ↑        ↑
-Every request pays these costs</p>
-<p>FraiseQL:
-[Compile Time]           [Runtime]
-Schema → Validate →      Pre-compiled → Execute SQL → Format → Response
-         Optimize        Template      (O(1) lookup) ↑        ↑
-         Compile                                      Costs paid here</p>
-<p>Result: 30-50% faster queries, 2-5x more throughput
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>Traditional GraphQL Server (per request):
+Query → Parse → Validate → Resolve (N+1) → Execute SQL → Format → Response
 
+FraiseQL (per request):
+Query → Parse → Validate → Resolve against v_/tv_ view → Execute one SQL → Shape JSON → Response
+
+Key differences:
+- The schema is built once at app startup (in memory), not on every request.
+- Reads hit a single PostgreSQL view that already contains a shaped `data` JSONB column,
+  avoiding the classic GraphQL N+1 resolver fan-out.
+- The Rust `fraiseql_rs` pipeline shapes the JSONB down to the requested fields quickly.
+</code></pre></div>
+<p>The work that matters happens in PostgreSQL and in the JSON-shaping step, both at runtime.</p>
 <hr />
 <h2 id="performance-model">Performance Model<a class="headerlink" href="#performance-model" title="Permanent link">&para;</a></h2>
 <h3 id="latency-breakdown">Latency Breakdown<a class="headerlink" href="#latency-breakdown" title="Permanent link">&para;</a></h3>
 <p>For a typical FraiseQL query, latency is distributed across these phases:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Total Latency: 27ms (example simple query)
-└─ Network (round-trip): 2ms
-└─ Server overhead: 3ms
-   ├─ Schema lookup: 0.01ms (O(1) hash lookup)
-   ├─ Parameter binding: 0.5ms (validation + SQL binding)
-   ├─ Authorization check: 0.5ms (pre-execution rules)
-   └─ Response formatting: 2ms (JSON serialization)
-└─ Database: 20ms
-   ├─ Query planning: 0.1ms (cached plan)
-   ├─ Execution: 15ms (actual data fetch)
-   ├─ Lock wait: 3ms (if contention)
-   └─ Network to client: 2ms
+<div class="highlight"><pre><span></span><code>Total Latency: ~27ms (example simple query)
+├─ Network (round-trip): 2ms
+├─ Server overhead: 3ms
+│  ├─ Schema lookup: ~0.01ms (in-memory hash lookup)
+│  ├─ Parameter binding: ~0.5ms (validation + SQL binding)
+│  ├─ Authorization check: ~0.5ms (pre-execution rules)
+│  └─ Response shaping: ~2ms (JSONB → requested fields, fraiseql_rs)
+├─ Database: 20ms
+│  ├─ Query planning: ~0.1ms (cached plan)
+│  ├─ Execution: ~15ms (actual data fetch)
+│  └─ Lock wait: ~3ms (if contention)
 └─ Client-side parsing: 2ms
-```text</p>
-<!-- Code example in TEXT -->
-
+</code></pre></div>
 <h3 id="latency-tiers">Latency Tiers<a class="headerlink" href="#latency-tiers" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -5559,41 +5927,33 @@ Schema → Validate →      Pre-compiled → Execute SQL → Format → Respons
 </tr>
 </tbody>
 </table>
+<p>These figures are illustrative; always benchmark against your own schema and data.</p>
 <h3 id="real-world-baselines">Real-World Baselines<a class="headerlink" href="#real-world-baselines" title="Permanent link">&para;</a></h3>
-<p>Measured on 4-core 8GB server with PostgreSQL on same machine:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Single Row Fetch (user by ID):</p>
-<ul>
-<li>Latency: 3-4ms</li>
-<li>Throughput: 250+ req/sec</li>
-<li>Database time: 1-2ms</li>
-<li>Server overhead: 1-2ms</li>
-</ul>
-<p>List with Pagination (100 items):</p>
-<ul>
-<li>Latency: 15-25ms</li>
-<li>Throughput: 50-70 req/sec</li>
-<li>Database time: 12-20ms</li>
-<li>Server overhead: 2-5ms</li>
-</ul>
-<p>Nested Query (user + posts + comments):</p>
-<ul>
-<li>Latency: 40-60ms</li>
-<li>Throughput: 20-30 req/sec</li>
-<li>Database time: 35-50ms</li>
-<li>Server overhead: 3-10ms</li>
-</ul>
-<p>Analytical (1K rows with aggregation):</p>
-<ul>
-<li>Latency: 500-800ms</li>
-<li>Throughput: 2-3 req/sec</li>
-<li>Database time: 480-750ms</li>
-<li>Server overhead: 20-100ms
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
+<p>Measured on a 4-core 8GB server with PostgreSQL on the same machine:</p>
+<div class="highlight"><pre><span></span><code>Single Row Fetch (user by id):
+- Latency: 3-4ms
+- Throughput: 250+ req/sec
+- Database time: 1-2ms
+- Server overhead: 1-2ms
 
+List with Pagination (100 items):
+- Latency: 15-25ms
+- Throughput: 50-70 req/sec
+- Database time: 12-20ms
+- Server overhead: 2-5ms
+
+Nested Read (user + posts + comments via a tv_ view):
+- Latency: 40-60ms
+- Throughput: 20-30 req/sec
+- Database time: 35-50ms
+- Server overhead: 3-10ms
+
+Analytical (1K rows with aggregation):
+- Latency: 500-800ms
+- Throughput: 2-3 req/sec
+- Database time: 480-750ms
+- Server overhead: 20-100ms
+</code></pre></div>
 <hr />
 <h2 id="throughput-characteristics">Throughput Characteristics<a class="headerlink" href="#throughput-characteristics" title="Permanent link">&para;</a></h2>
 <h3 id="requestsecond-capacity">Request/Second Capacity<a class="headerlink" href="#requestsecond-capacity" title="Permanent link">&para;</a></h3>
@@ -5635,170 +5995,109 @@ Schema → Validate →      Pre-compiled → Execute SQL → Format → Respons
 </tbody>
 </table>
 <h3 id="scaling-model">Scaling Model<a class="headerlink" href="#scaling-model" title="Permanent link">&para;</a></h3>
-<p>FraiseQL scales <strong>linearly with servers up to database I/O saturation</strong>:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Throughput vs Instance Count (PostgreSQL on dedicated machine)
-─────────────────────────────────────────────────────────────</p>
-<p>1 server:  200 req/sec   ✅ Database is bottleneck
-2 servers: 350 req/sec   ✅ Still scales
-4 servers: 600 req/sec   ✅ Still scales
-8 servers: 900 req/sec   ✅ Still scales
-16 servers: 1000 req/sec ⚠️ Database at 95% CPU (saturation point)
-```text</p>
-<!-- Code example in TEXT -->
+<p>FraiseQL scales <strong>linearly with servers up to PostgreSQL I/O saturation</strong>:</p>
+<div class="highlight"><pre><span></span><code>Throughput vs Instance Count (PostgreSQL on dedicated machine)
+─────────────────────────────────────────────────────────────
 
-<p><strong>Key insight</strong>: Your throughput is limited by database, not by FraiseQL servers.</p>
+1 server:   200 req/sec   Database has headroom
+2 servers:  350 req/sec   Still scales
+4 servers:  600 req/sec   Still scales
+8 servers:  900 req/sec   Still scales
+16 servers: 1000 req/sec  Database at ~95% CPU (saturation point)
+</code></pre></div>
+<p><strong>Key insight</strong>: Your throughput is limited by PostgreSQL, not by the FraiseQL Python
+processes. Once you saturate the database, optimize there.</p>
 <hr />
 <h2 id="query-complexity-and-performance-impact">Query Complexity and Performance Impact<a class="headerlink" href="#query-complexity-and-performance-impact" title="Permanent link">&para;</a></h2>
-<h3 id="complexity-metrics">Complexity Metrics<a class="headerlink" href="#complexity-metrics" title="Permanent link">&para;</a></h3>
-<p>FraiseQL computes <strong>query complexity</strong> at compile time and validates at runtime:</p>
-<p>```json</p>
-<!-- Code example in JSON -->
-<p>{
-  "query": {
-    "name": "posts",
-    "fields": 3,
-    "nested_levels": 2,
-    "relationships": 1
-  },
-  "complexity_score": 12,
-  "estimated_time_ms": 25
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Complexity is calculated as:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Complexity = base_cost + (field_count × field_cost) + (nesting_level × depth_cost)</p>
-<p>Example:</p>
-<ul>
-<li>Base query cost: 1</li>
-<li>10 fields × 0.5 cost each: 5</li>
-<li>Nesting level 2 × 1.5 cost: 3</li>
-<li>Total complexity: 9</li>
-<li>Estimated time: 9 × 5ms = 45ms (rough estimate)
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
-
 <h3 id="common-query-patterns-and-performance">Common Query Patterns and Performance<a class="headerlink" href="#common-query-patterns-and-performance" title="Permanent link">&para;</a></h3>
+<p>Because reads resolve against a single <code>v_</code>/<code>tv_</code> view per type, most queries map to
+one SQL statement. The patterns below show how shape affects cost.</p>
 <p><strong>Pattern 1: Simple Single-Row Query</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: 1) {
-    id
-    name
-    email
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
-<li>Complexity: 2</li>
-<li>Execution plan: Single indexed SELECT</li>
+<li>Execution plan: single indexed SELECT on the view (<code>WHERE id = $1</code>)</li>
 <li>Latency: 2-5ms</li>
 <li>Database queries: 1</li>
 </ul>
 <p><strong>Pattern 2: List with Pagination</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  users(limit: 50, offset: 0) {
-    id
-    name
-    email
-    role
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
-<li>Complexity: 4</li>
-<li>Execution plan: SELECT with LIMIT/OFFSET</li>
+<li>Execution plan: SELECT with LIMIT/OFFSET on the view</li>
 <li>Latency: 10-20ms</li>
 <li>Database queries: 1</li>
 </ul>
-<p><strong>Pattern 3: One-to-Many Relationship</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: 1) {
-    id
-    name
-    posts {
-      id
-      title
-      createdAt
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Pattern 3: Nested Read via a Projection View</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">      </span><span class="n">createdAt</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
-<li>Complexity: 6</li>
-<li>Execution plan: 2 SQL queries (user + posts)</li>
+<li>Execution plan: resolved from a <code>tv_</code> projection view that already nests <code>posts</code>
+  inside the <code>data</code> JSONB, so it stays a single read</li>
 <li>Latency: 15-30ms</li>
-<li>Database queries: 2</li>
+<li>Database queries: 1 (no per-post fan-out)</li>
 </ul>
-<p><strong>Pattern 4: Deeply Nested (Anti-pattern)</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query {
-  user(id: 1) {
-    posts {
-      comments {
-        author {
-          profile {
-            bio
-          }
-        }
-      }
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<p><strong>Pattern 4: Deeply Nested (use a projection view)</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="n">profile</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">bio</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <ul>
-<li>Complexity: 18</li>
-<li>Execution plan: 5 SQL queries</li>
-<li>Latency: 100-200ms</li>
-<li>Database queries: 5 (N+1 problem potential)</li>
+<li>Without a purpose-built view this is the classic N+1 risk.</li>
+<li><strong>Fix</strong>: model the nested shape in a <code>tv_</code> view so the whole tree comes back in one
+  read, then let <code>fraiseql_rs</code> shape it down to the requested fields.</li>
 </ul>
 <hr />
 <h2 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h2>
-<h3 id="query-result-caching">Query Result Caching<a class="headerlink" href="#query-result-caching" title="Permanent link">&para;</a></h3>
-<p>FraiseQL implements <strong>automatic query result caching</strong> with smart invalidation:</p>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>pub struct CacheEntry {
-    key: String,               // Hash of query + parameters
-    result: serde_json::Value, // Cached response
-    cached_at: Instant,        // When cached
-    ttl: Duration,             // How long to keep
-    depends_on: Vec<String>,   // Which tables it reads from
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="result-caching-and-apq">Result Caching and APQ<a class="headerlink" href="#result-caching-and-apq" title="Permanent link">&para;</a></h3>
+<p>FraiseQL supports result caching and <strong>Automatic Persisted Queries (APQ)</strong> so repeated
+work is not recomputed:</p>
+<ul>
+<li><strong>APQ</strong> lets clients send a query hash instead of the full document, cutting parse and
+  network overhead for hot queries.</li>
+<li><strong>Result caching</strong> stores a response keyed by the query plus its parameters, with a TTL.</li>
+</ul>
 <h3 id="cache-coherency">Cache Coherency<a class="headerlink" href="#cache-coherency" title="Permanent link">&para;</a></h3>
-<p>When data is modified, dependent queries are automatically invalidated:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Query cache key: hash(query + params)
-Example: hash("select * from posts where author_id = 1")</p>
-<p>When mutation runs: INSERT INTO posts (author_id=1, ...)
-→ Invalidates all cache entries depending on 'posts' table
-→ Future queries with author_id=1 recompute
-```text</p>
-<!-- Code example in TEXT -->
+<p>When data is modified, dependent cached entries are invalidated so stale reads are not
+served:</p>
+<div class="highlight"><pre><span></span><code>Cache key: hash(query + params)
+Example:   hash(&quot;user(id) { id name }&quot; + {id: …})
 
+When a mutation writes to the underlying table (via an fn_ function),
+entries that read from that table are invalidated, and future queries recompute.
+</code></pre></div>
 <h3 id="cache-hit-rates">Cache Hit Rates<a class="headerlink" href="#cache-hit-rates" title="Permanent link">&para;</a></h3>
 <p>Typical deployment cache statistics:</p>
 <table>
@@ -5816,7 +6115,7 @@ Example: hash("select * from posts where author_id = 1")</p>
 <td>20-30ms per hit</td>
 </tr>
 <tr>
-<td>API dashboard queries</td>
+<td>Dashboard queries</td>
 <td>70-90%</td>
 <td>50-100ms per hit</td>
 </tr>
@@ -5832,52 +6131,55 @@ Example: hash("select * from posts where author_id = 1")</p>
 </tr>
 </tbody>
 </table>
-<h3 id="enabling-cache">Enabling Cache<a class="headerlink" href="#enabling-cache" title="Permanent link">&para;</a></h3>
-<p>```rust</p>
-<!-- Code example in RUST -->
-<p>// Cache configuration
-pub struct CacheConfig {
-    pub enabled: bool,
-    pub ttl_ms: u64,           // Default 5 minutes
-    pub max_size_mb: u32,      // Max 100MB
-    pub invalidation: bool,    // Auto-invalidate on mutations
-}</p>
-<p>// Usage
-let config = CacheConfig {
-    enabled: true,
-    ttl_ms: 5 * 60 * 1000,     // 5 minutes
-    max_size_mb: 100,
-    invalidation: true,
-};</p>
-<p>let schema = CompiledSchema::from_json(&amp;json)?
-    .with_cache_config(config);
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="enabling-caching">Enabling Caching<a class="headerlink" href="#enabling-caching" title="Permanent link">&para;</a></h3>
+<p>Caching and APQ are configured through the application, not a config file. Use
+<code>create_fraiseql_app(...)</code> kwargs, a <code>FraiseQLConfig</code> instance, or <code>FRAISEQL_*</code>
+environment variables:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
+    <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># production mode disables the playground and tightens defaults</span>
+<span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># Equivalent toggles via environment variables</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_PRODUCTION</span><span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+<p>See <a href="../../guides/performance-optimization/">Performance Optimization</a> for the full set of
+caching and APQ options.</p>
 <hr />
 <h2 id="database-optimization">Database Optimization<a class="headerlink" href="#database-optimization" title="Permanent link">&para;</a></h2>
+<p>This is where most FraiseQL performance work happens: the database does the heavy lifting.</p>
 <h3 id="index-strategy">Index Strategy<a class="headerlink" href="#index-strategy" title="Permanent link">&para;</a></h3>
 <p>Proper indexes are <strong>critical</strong> for FraiseQL performance:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Primary key (always)
-CREATE TABLE tb_post (
-    pk_post_id BIGSERIAL PRIMARY KEY,
-    ...
-);</p>
-<p>-- Foreign keys (for relationship queries)
-CREATE INDEX idx_post_author ON tb_post(fk_user);
-CREATE INDEX idx_comment_post ON tb_comment(fk_post_id);</p>
-<p>-- Frequently filtered fields
-CREATE INDEX idx_post_status ON tb_post(status);
-CREATE INDEX idx_user_email ON tb_user(email);
-CREATE INDEX idx_post_created ON tb_post(created_at DESC);</p>
-<p>-- Composite indexes for common patterns
-CREATE INDEX idx_post_author_status ON tb_post(fk_user, status);
-CREATE INDEX idx_post_user_date ON tb_post(fk_user, created_at DESC);
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Write table (source of truth) with internal BIGINT primary key</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_post</span><span class="w"> </span><span class="n">BIGSERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">   </span><span class="c1">-- internal, never exposed</span>
+<span class="w">    </span><span class="n">id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w">  </span><span class="c1">-- public GraphQL id</span>
+<span class="w">    </span><span class="n">fk_user</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">         </span><span class="c1">-- internal foreign key</span>
+<span class="w">    </span><span class="n">status</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
+<span class="p">);</span>
 
+<span class="c1">-- Public id lookups (how queries filter: WHERE id = $1)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+
+<span class="c1">-- Foreign keys (for relationship queries / view joins)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_author</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
+
+<span class="c1">-- Frequently filtered fields</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+
+<span class="c1">-- Composite indexes for common access patterns</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_author_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+</code></pre></div>
 <p><strong>Performance impact:</strong></p>
 <ul>
 <li>Sequential scan: 500-5000ms for filtered queries</li>
@@ -5885,413 +6187,238 @@ CREATE INDEX idx_post_user_date ON tb_post(fk_user, created_at DESC);
 <li>Index overhead: ~1ms per INSERT (acceptable)</li>
 </ul>
 <h3 id="query-planning">Query Planning<a class="headerlink" href="#query-planning" title="Permanent link">&para;</a></h3>
-<p>Always analyze PostgreSQL query plans:</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>EXPLAIN ANALYZE
-SELECT * FROM tb_post
-WHERE fk_user = 1 AND status = 'PUBLISHED'
-ORDER BY created_at DESC
-LIMIT 50;
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Always analyze PostgreSQL query plans for the views your queries hit:</p>
+<div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+</code></pre></div>
 <p>Good plans have:</p>
 <ul>
-<li>✅ Index Scan (not Sequential Scan)</li>
-<li>✅ Correct join conditions</li>
-<li>✅ Proper sort method (indexed)</li>
-<li>✅ Reasonable row estimates (within 10x)</li>
+<li>Index Scan (not Sequential Scan)</li>
+<li>Correct join conditions</li>
+<li>Proper sort method (indexed)</li>
+<li>Reasonable row estimates (within ~10x of actual)</li>
 </ul>
 <h3 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h3>
-<p>Optimal pool configuration:</p>
-<p>```toml</p>
-<!-- Code example in TOML -->
-<p>[database]</p>
-<h1 id="minimum-connections-to-keep-warm">Minimum connections to keep warm<a class="headerlink" href="#minimum-connections-to-keep-warm" title="Permanent link">&para;</a></h1>
-<p>pool_min = 10</p>
-<h1 id="maximum-connections-protect-database">Maximum connections (protect database)<a class="headerlink" href="#maximum-connections-protect-database" title="Permanent link">&para;</a></h1>
-<p>pool_max = 50</p>
-<h1 id="timeout-for-acquiring-connection">Timeout for acquiring connection<a class="headerlink" href="#timeout-for-acquiring-connection" title="Permanent link">&para;</a></h1>
-<p>acquire_timeout_ms = 5000</p>
-<h1 id="timeout-for-idle-connections">Timeout for idle connections<a class="headerlink" href="#timeout-for-idle-connections" title="Permanent link">&para;</a></h1>
-<p>idle_timeout_ms = 300000  # 5 minutes
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>FraiseQL reuses PostgreSQL connections from a pool. Tune the pool through application
+configuration — <code>create_fraiseql_app(...)</code> kwargs, <code>FraiseQLConfig</code>, or <code>FRAISEQL_*</code>
+environment variables — not a standalone config file:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Pool sizing via environment variables</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_MIN</span><span class="o">=</span><span class="m">10</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_MAX</span><span class="o">=</span><span class="m">50</span>
+</code></pre></div>
 <p><strong>Guidelines:</strong></p>
 <ul>
 <li>Light workload: min=5, max=20</li>
 <li>Moderate workload: min=10, max=50</li>
 <li>Heavy workload: min=20, max=100</li>
 </ul>
-<p>Monitor pool usage:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="check-current-pool-stats">Check current pool stats<a class="headerlink" href="#check-current-pool-stats" title="Permanent link">&para;</a></h1>
-<p>curl http://localhost:8080/metrics | grep database_pool</p>
-<h1 id="example-output">Example output:<a class="headerlink" href="#example-output" title="Permanent link">&para;</a></h1>
-<h1 id="fraiseql_database_pool_connections_available-42">fraiseql_database_pool_connections_available 42<a class="headerlink" href="#fraiseql_database_pool_connections_available-42" title="Permanent link">&para;</a></h1>
-<h1 id="fraiseql_database_pool_connections_in_use-8">fraiseql_database_pool_connections_in_use 8<a class="headerlink" href="#fraiseql_database_pool_connections_in_use-8" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
-
+<p>A pool that is too small queues requests; one that is too large can overwhelm
+PostgreSQL. Size <code>pool_max</code> against your database's connection limit and core count.</p>
 <hr />
 <h2 id="monitoring-and-profiling">Monitoring and Profiling<a class="headerlink" href="#monitoring-and-profiling" title="Permanent link">&para;</a></h2>
 <h3 id="key-metrics-to-track">Key Metrics to Track<a class="headerlink" href="#key-metrics-to-track" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code>1. Latency Percentiles
+   - P50 (median): ~20ms is good
+   - P95: ~100ms is acceptable
+   - P99: ~500ms is concerning
 
-<ol>
-<li>Latency Percentiles</li>
-<li>P50 (median): 20ms is good</li>
-<li>P95 (95th %ile): 100ms is acceptable</li>
-<li>
-<p>P99 (99th %ile): 500ms is concerning</p>
-</li>
-<li>
-<p>Throughput</p>
-</li>
-<li>Requests per second</li>
-<li>Successful vs error rate</li>
-<li>
-<p>Queue depth</p>
-</li>
-<li>
-<p>Database</p>
-</li>
-<li>Query time (should be 80%+ of total latency)</li>
-<li>Connection pool utilization</li>
-<li>
-<p>Slow query log hits</p>
-</li>
-<li>
-<p>Application</p>
-</li>
-<li>Memory usage</li>
-<li>GC time</li>
-<li>Thread pool status
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
+2. Throughput
+   - Requests per second
+   - Successful vs error rate
+   - Queue depth
 
-<h3 id="prometheus-metrics">Prometheus Metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h3>
-<p>FraiseQL exports Prometheus-compatible metrics:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<h1 id="query-latency-histogram-seconds">Query latency histogram (seconds)<a class="headerlink" href="#query-latency-histogram-seconds" title="Permanent link">&para;</a></h1>
-<p>fraiseql_query_duration_seconds_bucket{le="0.01"} 250
-fraiseql_query_duration_seconds_bucket{le="0.05"} 280
-fraiseql_query_duration_seconds_bucket{le="0.1"} 290</p>
-<h1 id="query-throughput-requests-per-second">Query throughput (requests per second)<a class="headerlink" href="#query-throughput-requests-per-second" title="Permanent link">&para;</a></h1>
-<p>rate(fraiseql_requests_total[1m])</p>
-<h1 id="cache-hit-rate">Cache hit rate<a class="headerlink" href="#cache-hit-rate" title="Permanent link">&para;</a></h1>
-<p>fraiseql_cache_hits_total / fraiseql_cache_attempts_total</p>
-<h1 id="database-pool-status">Database pool status<a class="headerlink" href="#database-pool-status" title="Permanent link">&para;</a></h1>
-<p>fraiseql_database_pool_connections_available
-fraiseql_database_pool_connections_in_use
-```text</p>
-<!-- Code example in TEXT -->
+3. Database
+   - Query time (should be ~80% of total latency)
+   - Connection pool utilization
+   - Slow query log hits
 
+4. Application
+   - Memory usage
+   - Event-loop / worker saturation
+</code></pre></div>
+<p>If database time is <em>not</em> the dominant slice, look at your views, indexes, or the
+JSON-shaping path before adding servers.</p>
 <h3 id="load-testing">Load Testing<a class="headerlink" href="#load-testing" title="Permanent link">&para;</a></h3>
-<p>Use <code>wrk</code> or Apache Bench for load testing:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="test-with-10-concurrent-connections-for-30-seconds">Test with 10 concurrent connections for 30 seconds<a class="headerlink" href="#test-with-10-concurrent-connections-for-30-seconds" title="Permanent link">&para;</a></h1>
-<p>wrk -t 4 -c 10 -d 30s \
-  -s post_query.lua \
-  http://localhost:8080/graphql</p>
-<h1 id="typical-output">Typical output:<a class="headerlink" href="#typical-output" title="Permanent link">&para;</a></h1>
-<h1 id="running-30s-test-httplocalhost8080graphql">Running 30s test @ http://localhost:8080/graphql<a class="headerlink" href="#running-30s-test-httplocalhost8080graphql" title="Permanent link">&para;</a></h1>
-<h1 id="4-threads-and-10-connections">4 threads and 10 connections<a class="headerlink" href="#4-threads-and-10-connections" title="Permanent link">&para;</a></h1>
-<h1 id="thread-stats-avg-stdev-max-stdev">Thread Stats   Avg      Stdev     Max   +/- Stdev<a class="headerlink" href="#thread-stats-avg-stdev-max-stdev" title="Permanent link">&para;</a></h1>
-<h1 id="latency-253ms-182ms-1562ms-8542">Latency     25.3ms   18.2ms  156.2ms   85.42%<a class="headerlink" href="#latency-253ms-182ms-1562ms-8542" title="Permanent link">&para;</a></h1>
-<h1 id="reqsec-1232-354-250-7219">Req/Sec    123.2     35.4     250      72.19%<a class="headerlink" href="#reqsec-1232-354-250-7219" title="Permanent link">&para;</a></h1>
-<h1 id="14856-requests-in-3009s-1235mb-read">14856 requests in 30.09s, 123.5MB read<a class="headerlink" href="#14856-requests-in-3009s-1235mb-read" title="Permanent link">&para;</a></h1>
-<p>```text</p>
-<!-- Code example in TEXT -->
+<p>Use <code>wrk</code> or Apache Bench against the GraphQL endpoint to establish a baseline:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 4 threads, 10 concurrent connections, 30 seconds</span>
+wrk<span class="w"> </span>-t<span class="w"> </span><span class="m">4</span><span class="w"> </span>-c<span class="w"> </span><span class="m">10</span><span class="w"> </span>-d<span class="w"> </span>30s<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-s<span class="w"> </span>post_query.lua<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>http://localhost:8000/graphql
 
+<span class="c1"># Example output:</span>
+<span class="c1"># Running 30s test @ http://localhost:8000/graphql</span>
+<span class="c1">#   4 threads and 10 connections</span>
+<span class="c1">#   Latency     25.3ms   18.2ms  156.2ms   85.42%</span>
+<span class="c1">#   Req/Sec    123.2     35.4     250      72.19%</span>
+<span class="c1"># 14856 requests in 30.09s, 123.5MB read</span>
+</code></pre></div>
+<p>Run the app with a production ASGI server (for example <code>uvicorn app:app</code>) when
+benchmarking so results reflect real deployment conditions.</p>
 <hr />
 <h2 id="scaling-patterns">Scaling Patterns<a class="headerlink" href="#scaling-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="pattern-1-vertical-scaling-single-server">Pattern 1: Vertical Scaling (Single Server)<a class="headerlink" href="#pattern-1-vertical-scaling-single-server" title="Permanent link">&para;</a></h3>
-<p>Add more CPU/RAM to single server:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>2-core → 4-core:    +50-70% throughput
+<p>Add more CPU/RAM to a single server:</p>
+<div class="highlight"><pre><span></span><code>2-core → 4-core:    +50-70% throughput
 4-core → 8-core:    +30-50% throughput (diminishing returns)
-8GB RAM → 16GB RAM: +20-30% (cache hit rate increase)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>When to use</strong>: Up to ~1000 req/sec</p>
-<h3 id="pattern-2-horizontal-scaling-multiple-servers">Pattern 2: Horizontal Scaling (Multiple Servers)<a class="headerlink" href="#pattern-2-horizontal-scaling-multiple-servers" title="Permanent link">&para;</a></h3>
-<p>Add more FraiseQL server instances:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>1 server:   200 req/sec
-2 servers:  350 req/sec (75% of linear)
-4 servers:  600 req/sec (75% of linear)
-8 servers:  900 req/sec (70% of linear)
-```text</p>
-<!-- Code example in TEXT -->
-
-<p>Scaling efficiency drops when database becomes bottleneck (usually around 8 servers).</p>
+8GB RAM → 16GB RAM: +20-30% (more headroom for caching)
+</code></pre></div>
+<p><strong>When to use</strong>: up to ~1000 req/sec.</p>
+<h3 id="pattern-2-horizontal-scaling-multiple-app-servers">Pattern 2: Horizontal Scaling (Multiple App Servers)<a class="headerlink" href="#pattern-2-horizontal-scaling-multiple-app-servers" title="Permanent link">&para;</a></h3>
+<p>Run more FraiseQL app instances behind a load balancer:</p>
+<div class="highlight"><pre><span></span><code>1 server:   200 req/sec
+2 servers:  350 req/sec (~75% of linear)
+4 servers:  600 req/sec (~75% of linear)
+8 servers:  900 req/sec (~70% of linear)
+</code></pre></div>
+<p>Scaling efficiency drops once PostgreSQL becomes the bottleneck (often around 8 servers).</p>
 <h3 id="pattern-3-read-replicas">Pattern 3: Read Replicas<a class="headerlink" href="#pattern-3-read-replicas" title="Permanent link">&para;</a></h3>
-<p>Use database read replicas for read-heavy workloads:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Primary DB (writes):    200 req/sec
+<p>Use PostgreSQL read replicas for read-heavy workloads:</p>
+<div class="highlight"><pre><span></span><code>Primary DB (writes):    200 req/sec
 + 2 Read Replicas:      400 req/sec
 + 4 Read Replicas:      800 req/sec
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Gotcha:</strong> Replicas have replication lag (typically 10-100ms), so recent writes may not be visible.</p>
+</code></pre></div>
+<p><strong>Gotcha:</strong> replicas have replication lag (typically 10-100ms), so very recent writes
+may not yet be visible.</p>
 <h3 id="pattern-4-caching-layer">Pattern 4: Caching Layer<a class="headerlink" href="#pattern-4-caching-layer" title="Permanent link">&para;</a></h3>
-<p>Add Redis for result caching:</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Without cache:  200 req/sec
-+ Redis cache:  500+ req/sec (hit-dependent)</p>
-<p>With 70% hit rate: (200 × 0.3) + (5000 × 0.7) = 3560 req/sec
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Note</strong>: Cache coherency becomes challenging at scale.</p>
+<p>Layer caching in front of hot reads:</p>
+<div class="highlight"><pre><span></span><code>Without cache:  200 req/sec
++ cache:        500+ req/sec (hit-rate dependent)
+</code></pre></div>
+<p><strong>Note</strong>: cache coherency becomes harder at scale — rely on FraiseQL's invalidation and
+keep TTLs conservative for data that changes often.</p>
 <hr />
 <h2 id="performance-anti-patterns">Performance Anti-Patterns<a class="headerlink" href="#performance-anti-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="anti-pattern-1-n1-queries">Anti-Pattern 1: N+1 Queries<a class="headerlink" href="#anti-pattern-1-n1-queries" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="bad-executes-1-n-queries">❌ BAD: Executes 1 + N queries<a class="headerlink" href="#bad-executes-1-n-queries" title="Permanent link">&para;</a></h1>
-<p>query {
-  users {           # Query 1: Get all users
-    id
-    posts {         # Query 2-101: Get posts for each user (N+1)
-      id
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Fix</strong>: Use query batching or joins</p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Instead of N queries, use JOIN
-SELECT users.id, users.name, posts.id, posts.title
-FROM tb_user
-LEFT JOIN tb_post ON tb_post.fk_user = tb_user.pk_user
-ORDER BY users.id, posts.id;
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="anti-pattern-1-n1-reads">Anti-Pattern 1: N+1 Reads<a class="headerlink" href="#anti-pattern-1-n1-reads" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c"># Risky: a generic resolver that fetches each user&#39;s posts separately</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="c"># one query per user if not modeled in the view</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">title</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Fix</strong>: model the nested shape in a <code>tv_</code> projection view so the tree returns in one
+read, or compose it inside the <code>v_</code> view's <code>data</code> JSONB with <code>jsonb_build_object(...)</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The view already nests posts inside the user&#39;s data JSONB</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
+<span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
+<span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
+</code></pre></div>
 <p>Performance impact:</p>
 <ul>
-<li>N+1 version: 100 users × 10ms each = 1000ms</li>
-<li>Batched version: Single 20ms query</li>
+<li>N+1 version: 100 users × 10ms each ≈ 1000ms</li>
+<li>Single shaped read: one ~20ms query</li>
 </ul>
-<h3 id="anti-pattern-2-excessive-field-projection">Anti-Pattern 2: Excessive Field Projection<a class="headerlink" href="#anti-pattern-2-excessive-field-projection" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="bad-fetches-all-jsonb-fields-from-database">❌ BAD: Fetches all JSONB fields from database<a class="headerlink" href="#bad-fetches-all-jsonb-fields-from-database" title="Permanent link">&para;</a></h1>
-<p>query {
-  users {
-    # This pulls 5KB of JSONB from database for each user
-    data {
-      * # All fields
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="anti-pattern-2-over-fetching">Anti-Pattern 2: Over-Fetching<a class="headerlink" href="#anti-pattern-2-over-fetching" title="Permanent link">&para;</a></h3>
+<p>Requesting every field forces PostgreSQL to return the full <code>data</code> JSONB and makes the
+JSON-shaping step do more work.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Wasteful: pulls the entire data JSONB per row</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="n">bio</span><span class="w"> </span><span class="n">avatarUrl</span><span class="w"> </span><span class="n">preferences</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
-<p><strong>Fix</strong>: Request only needed fields</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="good-requests-only-2-fields">✅ GOOD: Requests only 2 fields<a class="headerlink" href="#good-requests-only-2-fields" title="Permanent link">&para;</a></h1>
-<p>query {
-  users {
-    id
-    name
-    # Database pulls only 100 bytes instead of 5KB
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c"># Lean: request only what you render — fraiseql_rs shapes down to these fields</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
 <p>Performance impact:</p>
 <ul>
-<li>With all fields: 100 users × 5KB = 500KB network + 100ms</li>
-<li>With 2 fields: 100 users × 100B = 10KB network + 5ms</li>
+<li>Wide selection: 100 users × ~5KB ≈ 500KB network + ~100ms</li>
+<li>Lean selection: 100 users × ~100B ≈ 10KB network + ~5ms</li>
 </ul>
 <h3 id="anti-pattern-3-unbounded-lists">Anti-Pattern 3: Unbounded Lists<a class="headerlink" href="#anti-pattern-3-unbounded-lists" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="bad-no-limit-on-result-set">❌ BAD: No limit on result set<a class="headerlink" href="#bad-no-limit-on-result-set" title="Permanent link">&para;</a></h1>
-<p>query {
-  posts {  # Could return 1 million rows!
-    id
-    title
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Fix</strong>: Enforce pagination limits</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="good-maximum-100-items">✅ GOOD: Maximum 100 items<a class="headerlink" href="#good-maximum-100-items" title="Permanent link">&para;</a></h1>
-<p>query {
-  posts(limit: 50, offset: 0) {
-    id
-    title
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="c"># Risky: no limit on the result set</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">   </span><span class="c"># could return millions of rows</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">title</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Fix</strong>: enforce pagination limits.</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">title</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>Performance impact:</p>
 <ul>
-<li>Unbounded: 1,000,000 rows × 50 bytes = 50MB + 5000ms</li>
-<li>With limit: 50 rows × 50 bytes = 2.5KB + 5ms</li>
+<li>Unbounded: 1,000,000 rows × 50 bytes ≈ 50MB + 5000ms</li>
+<li>With a limit: 50 rows × 50 bytes ≈ 2.5KB + 5ms</li>
 </ul>
 <h3 id="anti-pattern-4-missing-indexes">Anti-Pattern 4: Missing Indexes<a class="headerlink" href="#anti-pattern-4-missing-indexes" title="Permanent link">&para;</a></h3>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<h1 id="bad-frequently-filtered-field-has-no-index">❌ BAD: Frequently filtered field has no index<a class="headerlink" href="#bad-frequently-filtered-field-has-no-index" title="Permanent link">&para;</a></h1>
-<p>SELECT * FROM tb_post WHERE status = 'PUBLISHED';
--- Sequential scan: 500-5000ms</p>
-<h1 id="good-index-on-status-field">✅ GOOD: Index on status field<a class="headerlink" href="#good-index-on-status-field" title="Permanent link">&para;</a></h1>
-<p>CREATE INDEX idx_post_status ON tb_post(status);
--- Index scan: 5-50ms
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="c1">-- Slow: frequently filtered field has no index (sequential scan: 500-5000ms)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PUBLISHED&#39;</span><span class="p">;</span>
 
-<hr />
-<h2 id="real-world-performance-examples">Real-World Performance Examples<a class="headerlink" href="#real-world-performance-examples" title="Permanent link">&para;</a></h2>
-<h3 id="example-1-blog-platform">Example 1: Blog Platform<a class="headerlink" href="#example-1-blog-platform" title="Permanent link">&para;</a></h3>
-<p><strong>Workload</strong>: 100 concurrent users, each doing 1 read query/sec</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Single server baseline:</p>
-<ul>
-<li>Throughput: 200 req/sec</li>
-<li>Can handle: 200 concurrent users at 1 req/sec each</li>
-</ul>
-<p>Scaling to 1000 users:</p>
-<ul>
-<li>Need: 5 servers (for safety)</li>
-<li>Cost: $500/month for FraiseQL servers</li>
-<li>Database: Still single $100/month PostgreSQL</li>
-</ul>
-<p>Cache hit rate: 70% (most users viewing same posts)
-- Effective throughput: 200 × (0.3 + 0.7×50) = 7200 req/sec
-- Actually needed: 1000 req/sec
-- ✅ Single server sufficient with cache!
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="example-2-saas-analytics-dashboard">Example 2: SaaS Analytics Dashboard<a class="headerlink" href="#example-2-saas-analytics-dashboard" title="Permanent link">&para;</a></h3>
-<p><strong>Workload</strong>: 50 concurrent users, each doing 5 analytical queries/sec</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Analytical query baseline: 100 req/sec (complex queries)</p>
-<p>Scaling to 250 concurrent queries:</p>
-<ul>
-<li>Need: 2-3 FraiseQL servers</li>
-<li>Database: Multi-core, optimized for analytics</li>
-</ul>
-<p>Cache strategy:</p>
-<ul>
-<li>Queries executed once per minute: 70% hit rate</li>
-<li>Effective throughput: 100 × (0.3 + 0.7×100) = 7000 req/sec</li>
-<li>Actually needed: 250 req/sec</li>
-<li>✅ Two servers sufficient with cache and read replicas
-```text</li>
-</ul>
-<!-- Code example in TEXT -->
-
-<h3 id="example-3-high-traffic-api">Example 3: High-Traffic API<a class="headerlink" href="#example-3-high-traffic-api" title="Permanent link">&para;</a></h3>
-<p><strong>Workload</strong>: 10,000 req/sec of simple queries</p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Simple query baseline: 200 req/sec per server</p>
-<p>Scaling to 10,000 req/sec:</p>
-<ul>
-<li>Need: 50 FraiseQL servers (10,000 / 200)</li>
-<li>Database: Must be dedicated, heavily optimized</li>
-<li>Connection pool: 50 servers × 50 connections = 2500 connections to DB</li>
-</ul>
-<p>Cost breakdown:</p>
-<ul>
-<li>FraiseQL servers: $5000/month (50 servers)</li>
-<li>Database: $2000/month (enterprise PostgreSQL)</li>
-<li>Load balancer: $300/month</li>
-</ul>
-<p>Optimization opportunities:</p>
-<ol>
-<li>Cache: 70% hit rate → 8000 req/sec from cache, 2000 from DB</li>
-<li>Reduces DB servers needed: 2000 / 200 = 10 servers</li>
-<li>Reduces cost: $1000/month database savings</li>
-<li>Read replicas: 4 replicas → 5x database throughput</li>
-<li>Reduces DB servers: 1 instead of 10</li>
-<li>Reduces cost: Additional savings
-```text</li>
-</ol>
-<!-- Code example in TEXT -->
-
+<span class="c1">-- Fast: index the underlying column (index scan: 5-50ms)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+</code></pre></div>
 <hr />
 <h2 id="performance-tuning-checklist">Performance Tuning Checklist<a class="headerlink" href="#performance-tuning-checklist" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Indexes</strong>: All frequently filtered fields have indexes</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Query plans</strong>: Verified with EXPLAIN ANALYZE</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Caching</strong>: Enabled with appropriate TTL</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Connection pool</strong>: Tuned for workload</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Monitoring</strong>: Metrics collected and alerted</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Load testing</strong>: Baseline established</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>N+1 detection</strong>: Identified and fixed in schema</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Field projection</strong>: Only request needed fields</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Pagination</strong>: Enforced maximum limits</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Database</strong>: On dedicated hardware (not shared)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Network</strong>: Low latency to database (&lt;5ms)</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Hardware</strong>: Proportional to expected load</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Indexes</strong>: all frequently filtered columns (including public <code>id</code>) are indexed</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Views</strong>: nested reads modeled in <code>v_</code>/<code>tv_</code> views instead of resolver fan-out</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Query plans</strong>: verified with <code>EXPLAIN ANALYZE</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Caching / APQ</strong>: enabled with appropriate TTL where it helps</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Connection pool</strong>: sized for the workload and the database's connection limit</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Monitoring</strong>: latency, throughput, and pool metrics collected</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Load testing</strong>: a baseline established with <code>wrk</code>/<code>ab</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>N+1 detection</strong>: identified and fixed in the view layer</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Field projection</strong>: clients request only the fields they render</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Pagination</strong>: maximum limits enforced</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Database</strong>: on dedicated hardware, low-latency network (&lt;5ms) to the app</li>
 </ul>
 <hr />
 <h2 id="related-topics">Related Topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>2.1: Compilation Pipeline</strong> - How compilation enables performance</li>
-<li><strong>2.2: Query Execution Model</strong> - Runtime execution path</li>
-<li><strong>2.3: Data Planes Architecture</strong> - JSON vs Arrow performance trade-offs</li>
-<li><strong>2.4: Type System</strong> - Type safety and performance</li>
-<li><strong>2.5: Error Handling &amp; Validation</strong> - Validation overhead</li>
+<li><a href="../03-database-centric-architecture/">2.2: Database-Centric Architecture</a> — why work
+  lives in PostgreSQL views and functions</li>
+<li><a href="../04-design-principles/">2.4: Design Principles</a> — the runtime, database-first model</li>
+<li><a href="../09-type-system/">2.6: Type System</a> — type safety and how types map to views</li>
+<li><a href="../../guides/performance-optimization/">Performance Optimization Guide</a> — concrete
+  caching, APQ, and tuning options</li>
+<li><a href="../../architecture/database/tv-table-pattern/">tv_ Table Pattern</a> — projection views
+  for fast nested reads</li>
 </ul>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's performance model is built on <strong>compile-time optimization</strong> and <strong>deterministic execution</strong>:</p>
+<p>FraiseQL v1's performance model is built on <strong>runtime execution backed by PostgreSQL</strong>:</p>
 <ul>
-<li><strong>Latency</strong>: 2-100ms typical (database-bound), 30-50% faster than runtime GraphQL</li>
-<li><strong>Throughput</strong>: 200+ req/sec per server (scales linearly to database saturation)</li>
-<li><strong>Complexity</strong>: Predictable, proportional to query structure and database design</li>
-<li><strong>Caching</strong>: Automatic with smart invalidation (70%+ hit rates common)</li>
-<li><strong>Scaling</strong>: Horizontal (more servers) until database saturation, then vertical (database optimization)</li>
+<li><strong>No compile step</strong> — the schema is built in memory at app startup and served over
+  FastAPI; there is no compiled artifact.</li>
+<li><strong>Database does the work</strong> — read views shape data, indexes keep lookups fast, and the
+  query planner optimizes execution.</li>
+<li><strong>Rust JSON pipeline</strong> — <code>fraiseql_rs</code> shapes JSONB down to requested fields quickly on
+  the hot path.</li>
+<li><strong>Pooling and caching</strong> — connection pooling and caching/APQ avoid repeated cost.</li>
+<li><strong>Latency</strong>: 2-100ms typical (database-bound).</li>
+<li><strong>Throughput</strong>: 200+ req/sec per server, scaling roughly linearly until PostgreSQL
+  saturates.</li>
 </ul>
-<p>The key insight: <strong>Your performance ceiling is your database, not FraiseQL.</strong> Once you hit database saturation, optimize there (indexes, query plans, replication) rather than adding more FraiseQL servers.</p>
-<p>Most teams achieve acceptable performance with:</p>
-<ol>
-<li>Proper database indexes</li>
-<li>Simple connection pool tuning</li>
-<li>Optional caching layer for analytical queries</li>
-<li>Load-appropriate server count</li>
-</ol>
-<p>Performance is <strong>observable, predictable, and tunable</strong> in FraiseQL—making it suitable for performance-critical applications.</p>
+<p>The key insight: <strong>your performance ceiling is PostgreSQL, not FraiseQL.</strong> Once you hit
+database saturation, optimize there — indexes, query plans, well-shaped views, and
+replication — rather than adding more app servers.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="FraiseQL's type system is the bridge between your Python type hints and your GraphQL API. Python types you declare on @fraiseql.type classes map to GraphQL types when the schema is built at app startup.">
+      
       
       
         <link rel="canonical" href="https://fraiseql.readthedocs.io/foundation/09-type-system/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Type System - FraiseQL Documentation</title>
+        <title>2.4: Type System - FraiseQL Documentation</title>
       
     
     
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Type System
+              2.4: Type System
             
           </span>
         </div>
@@ -1008,10 +1010,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#type-system-architecture" class="md-nav__link">
+  <a href="#type-system-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type System Architecture
+        Type System Flow
       
     </span>
   </a>
@@ -1042,10 +1044,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-inference-examples" class="md-nav__link">
+  <a href="#defining-a-type" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type Inference Examples
+        Defining a Type
       
     </span>
   </a>
@@ -1066,14 +1068,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Nullable vs Non-Nullable Types">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composite-types-objects-and-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composite Types: Objects and Relationships
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Composite Types: Objects and Relationships">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#database-constraints-drive-nullability" class="md-nav__link">
+  <a href="#object-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database Constraints Drive Nullability
+        Object Types
       
     </span>
   </a>
@@ -1081,10 +1094,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#when-types-are-nullable" class="md-nav__link">
+  <a href="#relationships-one-to-many" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When Types Are Nullable
+        Relationships: One-to-Many
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships-many-to-many" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationships: Many-to-Many
       
     </span>
   </a>
@@ -1093,6 +1117,194 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enum-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enum Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#union-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Union Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-safety-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Safety in Action
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Safety in Action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#at-schema-build-app-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At Schema Build (App Startup)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#at-runtime-query-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At Runtime (Query Execution)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-example-user-with-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example: User with Orders
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-system-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type System Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type System Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-be-explicit-about-nullability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Be explicit about nullability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model-relationships-not-foreign-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Model relationships, not foreign keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-use-enums-for-constrained-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Use enums for constrained values
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-prefer-domain-scalars-where-they-add-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Prefer domain scalars where they add validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5031,10 +5243,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#type-system-architecture" class="md-nav__link">
+  <a href="#type-system-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type System Architecture
+        Type System Flow
       
     </span>
   </a>
@@ -5065,10 +5277,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#type-inference-examples" class="md-nav__link">
+  <a href="#defining-a-type" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Type Inference Examples
+        Defining a Type
       
     </span>
   </a>
@@ -5089,14 +5301,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Nullable vs Non-Nullable Types">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composite-types-objects-and-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composite Types: Objects and Relationships
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Composite Types: Objects and Relationships">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#database-constraints-drive-nullability" class="md-nav__link">
+  <a href="#object-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database Constraints Drive Nullability
+        Object Types
       
     </span>
   </a>
@@ -5104,10 +5327,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#when-types-are-nullable" class="md-nav__link">
+  <a href="#relationships-one-to-many" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When Types Are Nullable
+        Relationships: One-to-Many
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships-many-to-many" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationships: Many-to-Many
       
     </span>
   </a>
@@ -5116,6 +5350,194 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enum-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enum Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#union-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Union Types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-safety-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Safety in Action
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Safety in Action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#at-schema-build-app-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At Schema Build (App Startup)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#at-runtime-query-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At Runtime (Query Execution)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-example-user-with-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example: User with Orders
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-system-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type System Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type System Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-be-explicit-about-nullability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Be explicit about nullability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-model-relationships-not-foreign-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Model relationships, not foreign keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-use-enums-for-constrained-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Use enums for constrained values
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-prefer-domain-scalars-where-they-add-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Prefer domain scalars where they add validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Topics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5139,850 +5561,573 @@
   
 
 
-<!-- Skip to main content -->
-<hr />
-<p>title: 2.4: Type System
-description: FraiseQL's type system is the bridge between your database schema and your GraphQL API. Every column in your database maps to a type in your schema, which maps
-keywords: ["query-execution", "data-planes", "graphql", "compilation", "architecture"]
-tags: ["documentation", "reference"]</p>
-<hr />
 <h1 id="24-type-system">2.4: Type System<a class="headerlink" href="#24-type-system" title="Permanent link">&para;</a></h1>
 <p><strong>Audience:</strong> Schema designers, backend developers, API architects
-<strong>Prerequisite:</strong> Topics 1.2 (Core Concepts), 2.1 (Compilation Pipeline)
+<strong>Prerequisite:</strong> <a href="../02-core-concepts/">2.2 Core Concepts</a>, <a href="../03-database-centric-architecture/">2.3 Database-Centric Architecture</a>
 <strong>Reading Time:</strong> 15-20 minutes</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's type system is the bridge between your database schema and your GraphQL API. Every column in your database maps to a type in your schema, which maps to a field in your GraphQL API.</p>
-<p><strong>Key Insight:</strong> Types are automatically inferred from your database, ensuring your GraphQL schema and database schema never get out of sync.</p>
+<p>FraiseQL's type system is the bridge between your Python type hints and your GraphQL API. You declare types with <code>@fraiseql.type</code> and annotate fields with ordinary Python type hints; FraiseQL reads those hints when the schema is built and maps each one to a GraphQL type.</p>
+<p><strong>Key Insight:</strong> Your GraphQL schema is generated from your Python type definitions at <strong>app startup</strong>. There is no separate compile or codegen step — the schema is assembled in memory when the application boots and is served over FastAPI.</p>
+<p>FraiseQL is <strong>PostgreSQL-only</strong>. Object types are backed by read views (<code>v_</code>/<code>tv_</code>) that expose a <code>data</code> JSONB column, and the shape of that JSONB matches the GraphQL type. See <a href="../03-database-centric-architecture/">Database-Centric Architecture</a> for how views and the <code>data</code> column work.</p>
 <hr />
-<h2 id="type-system-architecture">Type System Architecture<a class="headerlink" href="#type-system-architecture" title="Permanent link">&para;</a></h2>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database Schema
-(PostgreSQL, MySQL, SQLite, SQL Server)
+<h2 id="type-system-flow">Type System Flow<a class="headerlink" href="#type-system-flow" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>Python type hints
+(@fraiseql.type field annotations: int, str, bool, datetime, UUID, ...)
          ↓
-Column Types
-(INT, VARCHAR, TIMESTAMP, BOOLEAN, etc.)
+Schema build at app startup
+(FraiseQL reads the annotations in memory)
          ↓
-FraiseQL Infers
-(at compile time)
+GraphQL types
+(Int, String, Boolean, DateTime, ID, ...)
          ↓
-GraphQL Scalar Types
-(Int, String, DateTime, Boolean, etc.)
-         ↓
-API Contracts
-(sent to client)
-```text</p>
-<!-- Code example in TEXT -->
-
+API contract
+(served over FastAPI / graphql-core)
+</code></pre></div>
+<p>Backing the runtime: a PostgreSQL read view returns a <code>data</code> JSONB document whose keys correspond to the GraphQL fields. FraiseQL shapes that JSONB to the fields the client requested.</p>
 <hr />
 <h2 id="built-in-scalar-types">Built-In Scalar Types<a class="headerlink" href="#built-in-scalar-types" title="Permanent link">&para;</a></h2>
 <h3 id="the-mapping">The Mapping<a class="headerlink" href="#the-mapping" title="Permanent link">&para;</a></h3>
+<p>FraiseQL maps common Python types to GraphQL scalars, and provides domain scalars you can use explicitly. Import the scalars you need:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">Date</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">Time</span><span class="p">,</span> <span class="n">EmailAddress</span><span class="p">,</span> <span class="n">JSON</span><span class="p">,</span> <span class="n">LTree</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Database Type</th>
-<th>FraiseQL Type</th>
-<th>GraphQL Type</th>
+<th>Python type</th>
+<th>GraphQL type</th>
+<th>PostgreSQL (<code>data</code> JSONB value)</th>
 <th>Example</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>INT, SERIAL</td>
-<td>int</td>
-<td>Int</td>
-<td>123</td>
+<td><code>int</code></td>
+<td><code>Int</code></td>
+<td>JSON number</td>
+<td><code>123</code></td>
 </tr>
 <tr>
-<td>BIGINT, BIGSERIAL</td>
-<td>long</td>
-<td>Long</td>
-<td>9223372036854775807</td>
+<td><code>float</code></td>
+<td><code>Float</code></td>
+<td>JSON number</td>
+<td><code>3.14</code></td>
 </tr>
 <tr>
-<td>SMALLINT</td>
-<td>short</td>
-<td>Short</td>
-<td>32767</td>
+<td><code>str</code></td>
+<td><code>String</code></td>
+<td>JSON string</td>
+<td><code>"hello"</code></td>
 </tr>
 <tr>
-<td>FLOAT, REAL</td>
-<td>float</td>
-<td>Float</td>
-<td>3.14</td>
+<td><code>bool</code></td>
+<td><code>Boolean</code></td>
+<td>JSON boolean</td>
+<td><code>true</code></td>
 </tr>
 <tr>
-<td>NUMERIC, DECIMAL</td>
-<td>decimal</td>
-<td>Decimal</td>
-<td>1234.56</td>
+<td><code>ID</code></td>
+<td><code>ID</code></td>
+<td>JSON string (UUID)</td>
+<td><code>"550e8400-e29b-41d4-a716-446655440000"</code></td>
 </tr>
 <tr>
-<td>VARCHAR, CHAR, TEXT</td>
-<td>string</td>
-<td>String</td>
-<td>"hello"</td>
+<td><code>UUID</code></td>
+<td><code>UUID</code></td>
+<td>JSON string</td>
+<td><code>"550e8400-..."</code></td>
 </tr>
 <tr>
-<td>BOOLEAN, BOOL</td>
-<td>boolean</td>
-<td>Boolean</td>
-<td>true</td>
+<td><code>Date</code></td>
+<td><code>Date</code></td>
+<td>ISO date string</td>
+<td><code>"2026-01-29"</code></td>
 </tr>
 <tr>
-<td>DATE</td>
-<td>date</td>
-<td>Date</td>
-<td>"2026-01-29"</td>
+<td><code>DateTime</code></td>
+<td><code>DateTime</code></td>
+<td>ISO timestamp string</td>
+<td><code>"2026-01-29T14:30:00Z"</code></td>
 </tr>
 <tr>
-<td>TIME</td>
-<td>time</td>
-<td>Time</td>
-<td>"14:30:00"</td>
+<td><code>Time</code></td>
+<td><code>Time</code></td>
+<td>ISO time string</td>
+<td><code>"14:30:00"</code></td>
 </tr>
 <tr>
-<td>TIMESTAMP</td>
-<td>datetime</td>
-<td>DateTime</td>
-<td>"2026-01-29T14:30:00Z"</td>
+<td><code>EmailAddress</code></td>
+<td><code>EmailAddress</code></td>
+<td>JSON string</td>
+<td><code>"a@example.com"</code></td>
 </tr>
 <tr>
-<td>UUID</td>
-<td>uuid</td>
-<td>UUID</td>
-<td>"550e8400-e29b-41d4-a716-446655440000"</td>
+<td><code>JSON</code></td>
+<td><code>JSON</code></td>
+<td>nested JSON</td>
+<td><code>{"key": "value"}</code></td>
 </tr>
 <tr>
-<td>JSON, JSONB</td>
-<td>json</td>
-<td>JSON</td>
-<td>{"key": "value"}</td>
-</tr>
-<tr>
-<td>BYTEA, BLOB</td>
-<td>bytes</td>
-<td>Bytes</td>
-<td>(binary data)</td>
+<td><code>LTree</code></td>
+<td><code>LTree</code></td>
+<td>JSON string (label path)</td>
+<td><code>"top.science.maths"</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="type-inference-examples">Type Inference Examples<a class="headerlink" href="#type-inference-examples" title="Permanent link">&para;</a></h3>
-<p><strong>PostgreSQL:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user (
-  pk_user BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,              -- ← Int (non-nullable)
-  email VARCHAR(255) NOT NULL,                 -- ← String (non-nullable)
-  age SMALLINT,                                -- ← Short (nullable)
-  balance NUMERIC(10, 2),                      -- ← Decimal (nullable)
-  is_active BOOLEAN DEFAULT true,              -- ← Boolean (non-nullable)
-  created_at TIMESTAMP DEFAULT NOW(),          -- ← DateTime (non-nullable)
-  metadata JSONB,                              -- ← JSON (nullable)
-  avatar_data BYTEA                            -- ← Bytes (nullable)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<blockquote>
+<p>FraiseQL ships many more domain scalars (currency codes, IP addresses, vectors, and more). See the full list in <a href="../../reference/scalars/">Custom Scalar Types</a> — only use scalars documented there.</p>
+</blockquote>
+<h3 id="defining-a-type">Defining a Type<a class="headerlink" href="#defining-a-type" title="Permanent link">&para;</a></h3>
+<p>A <code>@fraiseql.type</code> class declares the GraphQL object type and the read view that backs it. <code>jsonb_column</code> defaults to <code>"data"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">EmailAddress</span>
 
-<p><strong>Generated GraphQL Type:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  userId: Int!              # Non-nullable (PRIMARY KEY)
-  email: String!            # Non-nullable (NOT NULL)
-  age: Short                # Nullable (no constraint)
-  balance: Decimal          # Nullable
-  isActive: Boolean!        # Non-nullable (DEFAULT)
-  createdAt: DateTime!      # Non-nullable (DEFAULT)
-  metadata: JSON            # Nullable
-  avatarData: Bytes         # Nullable
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Python Schema (Optional - explicit definition):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import schema
-from datetime import datetime
-from decimal import Decimal</p>
-<p>@schema.type(table="tb_user")
-class User:
-    user_id: int              # Required (non-nullable)
-    email: str                # Required
-    age: int | None           # Optional (Python 3.10+)
-    balance: Decimal | None   # Optional
-    is_active: bool           # Required
-    created_at: datetime      # Required
-    metadata: dict | None     # Optional
-    avatar_data: bytes | None # Optional
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="n">EmailAddress</span>
+    <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>      <span class="c1"># nullable field</span>
+    <span class="n">last_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>       <span class="c1"># nullable field</span>
+    <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>       <span class="c1"># nullable JSON object</span>
+</code></pre></div>
+<p><strong>Generated GraphQL type:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">EmailAddress</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">firstName</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">lastName</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">isActive</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">metadata</span><span class="p">:</span><span class="w"> </span><span class="n">JSON</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>id</code> field is the public <code>UUID</code> exposed as <code>ID</code>. Internal keys (<code>pk_*</code>, <code>fk_*</code>) are never part of the <code>data</code> JSONB and never appear in GraphQL. See <a href="../03-database-centric-architecture/">Database-Centric Architecture</a> for the trinity identifier pattern (<code>pk_</code> internal, <code>id</code> public UUID, optional <code>identifier</code> slug).</p>
 <hr />
 <h2 id="nullable-vs-non-nullable-types">Nullable vs Non-Nullable Types<a class="headerlink" href="#nullable-vs-non-nullable-types" title="Permanent link">&para;</a></h2>
-<h3 id="database-constraints-drive-nullability">Database Constraints Drive Nullability<a class="headerlink" href="#database-constraints-drive-nullability" title="Permanent link">&para;</a></h3>
-<p><strong>Rule 1: NOT NULL → Non-Nullable in GraphQL</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT PRIMARY KEY,           -- NOT NULL by default (primary key)
-  fk_user BIGINT NOT NULL,               -- NOT NULL constraint
-  total NUMERIC(10, 2),                  -- NULL allowed (nullable)
-  status VARCHAR(20) NOT NULL DEFAULT 'pending'
-);
-```text</p>
-<!-- Code example in TEXT -->
-
+<p>Nullability comes directly from your Python type hints.</p>
+<p><strong>Rule: <code>X | None</code> → nullable; bare <code>X</code> → non-nullable.</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>                  <span class="c1"># → ID!     (non-nullable)</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>            <span class="c1"># → Float!  (non-nullable)</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>        <span class="c1"># → String  (nullable)</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>             <span class="c1"># → String! (non-nullable)</span>
+</code></pre></div>
 <p><strong>Result in GraphQL:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Order {
-  orderId: Int!              # Non-nullable (PRIMARY KEY)
-  userId: Int!               # Non-nullable (NOT NULL)
-  total: Decimal             # Nullable (no constraint)
-  status: String!            # Non-nullable (NOT NULL + DEFAULT)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Rule 2: DEFAULT → Non-Nullable (if NO NULL allowed)</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_product (
-  pk_product BIGINT PRIMARY KEY,
-  price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,  -- Has default, NOT NULL
-  discount NUMERIC(10, 2) DEFAULT 0.00         -- Has default, but NULL allowed
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Result in GraphQL:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Product {
-  productId: Int!     # Non-nullable (PRIMARY KEY)
-  price: Decimal!     # Non-nullable (DEFAULT + NOT NULL)
-  discount: Decimal   # Nullable (can be NULL even with default)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="when-types-are-nullable">When Types Are Nullable<a class="headerlink" href="#when-types-are-nullable" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="nullable-types-optional-fields-user-can-omit-in-graphql-query">Nullable types (optional fields, user can omit in GraphQL query)<a class="headerlink" href="#nullable-types-optional-fields-user-can-omit-in-graphql-query" title="Permanent link">&para;</a></h1>
-<p>type User {
-  email: String!      # Must always be present in response
-  phone: String       # Can be null/absent in response
-  address: String     # Can be null/absent in response
-}</p>
-<h1 id="in-a-query">In a query:<a class="headerlink" href="#in-a-query" title="Permanent link">&para;</a></h1>
-<p>query {
-  user {
-    email    # Always included (non-null in schema)
-    phone    # Included if set, null if not
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">total</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">note</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>A non-nullable field must always be present in the response; a nullable field may be <code>null</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">email</span><span class="w">    </span><span class="c"># always present (non-null in schema)</span>
+<span class="w">    </span><span class="n">phone</span><span class="w">    </span><span class="c"># included if set, null if not</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Make sure your read view's <code>data</code> JSONB always provides a value for non-nullable fields, otherwise resolution will fail at runtime.</p>
 <hr />
 <h2 id="composite-types-objects-and-relationships">Composite Types: Objects and Relationships<a class="headerlink" href="#composite-types-objects-and-relationships" title="Permanent link">&para;</a></h2>
 <h3 id="object-types">Object Types<a class="headerlink" href="#object-types" title="Permanent link">&para;</a></h3>
 <p>An object type is a composite type with multiple fields:</p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Order {
-  orderId: Int!
-  userId: Int!
-  total: Decimal!
-  createdAt: DateTime!
-  status: String!
-}
-```text</p>
-<!-- Code example in TEXT -->
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span>
 
-<p><strong>Database Table:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT PRIMARY KEY,
-  fk_user BIGINT NOT NULL,
-  total NUMERIC(10, 2) NOT NULL,
-  created_at TIMESTAMP NOT NULL,
-  status VARCHAR(20) NOT NULL
-);
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+</code></pre></div>
+<p>The backing read view builds the <code>data</code> JSONB:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                       </span><span class="c1">-- public UUID, exposed as ID</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="relationships-one-to-many">Relationships: One-to-Many<a class="headerlink" href="#relationships-one-to-many" title="Permanent link">&para;</a></h3>
-<p><strong>Database Schema:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user (
-  pk_user BIGINT PRIMARY KEY,
-  email VARCHAR(255) NOT NULL
-);</p>
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT PRIMARY KEY,
-  fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-  total NUMERIC(10, 2) NOT NULL
-);
-```text</p>
-<!-- Code example in TEXT -->
+<p>Relationships are expressed as nested types in Python, and the backing read view composes the nested objects into the <code>data</code> JSONB.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<p><strong>GraphQL Types with Relationship:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  userId: Int!
-  email: String!
-  orders: [Order!]!      # One-to-many: User has many Orders
-}</p>
-<p>type Order {
-  orderId: Int!
-  total: Decimal!
-  user: User!            # Many-to-one: Order belongs to User
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
 
-<p><strong>Query Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUserWithOrders($userId: Int!) {
-  user(userId: $userId) {
-    userId
-    email
-    orders {              # Relationship automatically resolved
-      orderId
-      total
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]</span>       <span class="c1"># one-to-many: a user has many orders</span>
+</code></pre></div>
+<p><strong>Generated GraphQL types:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">orders</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Order</span><span class="err">!]!</span>
+<span class="p">}</span>
 
+<span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">total</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>v_user</code> view builds the nested orders inside the user's <code>data</code> JSONB (for example with <code>jsonb_agg(...)</code> over the related rows), so the relationship is pre-composed in PostgreSQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">&#39;orders&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">            </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">))</span>
+<span class="w">             </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="w">             </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Query example:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUserWithOrders</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">    </span><span class="n">orders</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">id</span>
+<span class="w">      </span><span class="n">total</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="relationships-many-to-many">Relationships: Many-to-Many<a class="headerlink" href="#relationships-many-to-many" title="Permanent link">&para;</a></h3>
-<p><strong>Database Schema (Junction Table):</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_student (
-  pk_student BIGINT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL
-);</p>
-<p>CREATE TABLE tb_course (
-  pk_course BIGINT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL
-);</p>
-<p>CREATE TABLE tj_student_courses (
-  fk_student BIGINT NOT NULL REFERENCES tb_student(pk_student_id),
-  fk_course BIGINT NOT NULL REFERENCES tb_course(pk_course_id),
-  PRIMARY KEY (fk_student_id, fk_course_id)
-);
-```text</p>
-<!-- Code example in TEXT -->
+<p>A junction table (<code>tb_student_courses</code>) links the two sides; each side's read view composes the related objects into its <code>data</code> JSONB.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<p><strong>GraphQL Types with Many-to-Many:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Student {
-  studentId: Int!
-  name: String!
-  courses: [Course!]!    # Many-to-many relationship
-}</p>
-<p>type Course {
-  courseId: Int!
-  title: String!
-  students: [Student!]!  # Many-to-many relationship
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_course&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Course</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
 
-<p><strong>Query Example:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetStudentCourses($studentId: Int!) {
-  student(studentId: $studentId) {
-    name
-    courses {             # Automatically resolved through junction table
-      title
-    }
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_student&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Student</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">courses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Course</span><span class="p">]</span>      <span class="c1"># many-to-many via junction table</span>
+</code></pre></div>
+<p><strong>Generated GraphQL types:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">Student</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">courses</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Course</span><span class="err">!]!</span>
+<span class="p">}</span>
 
+<span class="k">type</span><span class="w"> </span><span class="err">Course</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">title</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="list-types">List Types<a class="headerlink" href="#list-types" title="Permanent link">&para;</a></h2>
-<h3 id="arrays-in-graphql">Arrays in GraphQL<a class="headerlink" href="#arrays-in-graphql" title="Permanent link">&para;</a></h3>
-<p><strong>Non-Empty List:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  tags: [String!]!       # List of non-null strings, list itself is non-null
-}</p>
-<h1 id="valid">Valid:<a class="headerlink" href="#valid" title="Permanent link">&para;</a></h1>
-<p>{ tags: ["vip", "premium"] }</p>
-<h1 id="invalid">Invalid:<a class="headerlink" href="#invalid" title="Permanent link">&para;</a></h1>
-<p>{ tags: null }           # ❌ List is non-null
-{ tags: ["vip", null] }  # ❌ Items must be non-null
-```text</p>
-<!-- Code example in TEXT -->
+<p>Lists come from Python <code>list[...]</code> annotations. Optionality of the list itself follows the same <code>X | None</code> rule.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>            <span class="c1"># → [String!]!  (list and items non-null)</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>    <span class="c1"># → [String!]   (list nullable, items non-null)</span>
+</code></pre></div>
+<p><strong>GraphQL list modifiers:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="err">[String]</span><span class="w">        </span><span class="c"># list can be null, items can be null</span>
+<span class="err">[String!]</span><span class="w">       </span><span class="c"># list can be null, items non-null</span>
+<span class="err">[String]!</span><span class="w">       </span><span class="c"># list non-null, items can be null</span>
+<span class="err">[String!]!</span><span class="w">      </span><span class="c"># list non-null, items non-null</span>
+</code></pre></div>
+<p>A non-empty, non-null list:</p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">tags</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">!]!</span>
+<span class="p">}</span>
 
-<p><strong>Nullable List:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  tags: [String!]        # List can be null, but items must be non-null
-}</p>
-<h1 id="valid_1">Valid:<a class="headerlink" href="#valid_1" title="Permanent link">&para;</a></h1>
-<p>{ tags: ["vip", "premium"] }
-{ tags: null }           # ✅ List can be null</p>
-<h1 id="invalid_1">Invalid:<a class="headerlink" href="#invalid_1" title="Permanent link">&para;</a></h1>
-<p>{ tags: ["vip", null] }  # ❌ Items can't be null
-```text</p>
-<!-- Code example in TEXT -->
+<span class="c"># Valid:</span>
+<span class="p">{</span><span class="w"> </span><span class="err">&quot;</span><span class="n">tags</span><span class="err">&quot;:</span><span class="w"> </span><span class="err">[&quot;</span><span class="n">vip</span><span class="err">&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&quot;</span><span class="n">premium</span><span class="err">&quot;]</span><span class="w"> </span><span class="p">}</span>
 
-<p><strong>List of Nullable Items:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  notes: [String]!       # Non-null list, but items can be null
-}</p>
-<h1 id="valid_2">Valid:<a class="headerlink" href="#valid_2" title="Permanent link">&para;</a></h1>
-<p _note1_="[&quot;note1&quot;," _note3_="&quot;note3&quot;]" notes:="notes:" null_="null,">{ notes: ["note1", "note2"] }</p>
-<h1 id="invalid_2">Invalid:<a class="headerlink" href="#invalid_2" title="Permanent link">&para;</a></h1>
-<p>{ notes: null }          # ❌ List is non-null
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="database-to-list-mapping">Database to List Mapping<a class="headerlink" href="#database-to-list-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>One-to-Many as List:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT PRIMARY KEY,
-  fk_user BIGINT NOT NULL,
-  ...
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Maps to GraphQL List:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  orders: [Order!]!      # Automatically inferred from foreign key relationship
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c"># Invalid:</span>
+<span class="p">{</span><span class="w"> </span><span class="err">&quot;</span><span class="n">tags</span><span class="err">&quot;:</span><span class="w"> </span><span class="n">null</span><span class="w"> </span><span class="p">}</span><span class="w">            </span><span class="c"># list is non-null</span>
+<span class="p">{</span><span class="w"> </span><span class="err">&quot;</span><span class="n">tags</span><span class="err">&quot;:</span><span class="w"> </span><span class="err">[&quot;</span><span class="n">vip</span><span class="err">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">null</span><span class="err">]</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c"># items must be non-null</span>
+</code></pre></div>
+<p>One-to-many relationships are expressed as <code>list[RelatedType]</code> and become <code>[RelatedType!]!</code>, as shown above.</p>
 <hr />
-<h2 id="custom-scalar-types">Custom Scalar Types<a class="headerlink" href="#custom-scalar-types" title="Permanent link">&para;</a></h2>
-<p>While FraiseQL automatically infers types from your database, you can define custom scalars for application-specific types:</p>
-<h3 id="defining-custom-scalars">Defining Custom Scalars<a class="headerlink" href="#defining-custom-scalars" title="Permanent link">&para;</a></h3>
-<p><strong>PostgreSQL with Custom Types:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>-- Create an enum type
-CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'shipped', 'delivered');</p>
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT PRIMARY KEY,
-  status order_status NOT NULL DEFAULT 'pending'
-);
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="input-types">Input Types<a class="headerlink" href="#input-types" title="Permanent link">&para;</a></h2>
+<p>Use <code>@fraiseql.input</code> for arguments to mutations and queries. Inputs follow the same Python-type-hint mapping.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<p><strong>FraiseQL Inference:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-}</p>
-<p>type Order {
-  orderId: Int!
-  status: OrderStatus!   # Automatically inferred enum type
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># optional input field with default</span>
+</code></pre></div>
+<p><strong>Generated GraphQL input:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">input</span><span class="w"> </span><span class="err">CreateUserInput</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">age</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>A mutation consumes the input and delegates the write to a PostgreSQL function:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<h3 id="custom-scalar-definitions">Custom Scalar Definitions<a class="headerlink" href="#custom-scalar-definitions" title="Permanent link">&para;</a></h3>
-<p><strong>For complex types (in Python schema):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>from FraiseQL import schema
-from typing import NewType
-from datetime import datetime</p>
-<h1 id="define-custom-scalar">Define custom scalar<a class="headerlink" href="#define-custom-scalar" title="Permanent link">&para;</a></h1>
-<p>PhoneNumber = NewType('PhoneNumber', str)
-DateRange = NewType('DateRange', dict)</p>
-<p>@schema.type(table="tb_user")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    email: str
-    phone: PhoneNumber      # Custom scalar: validates phone format
-    created_at: datetime
-    available_dates: DateRange  # Custom scalar: complex type
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Validation:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@schema.scalar("PhoneNumber")
-def serialize_phone(value: str) -&gt; str:
-    # Ensure phone format
-    return format_phone(value)</p>
-<p>@schema.scalar("DateRange")
-def serialize_date_range(value: dict) -&gt; dict:
-    # Ensure valid date range
-    return {
-        "start": value["start"],
-        "end": value["end"]
-    }
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+</code></pre></div>
+<p>See <a href="../10-error-handling-validation/">Error Handling &amp; Validation</a> for the success/error result pattern.</p>
 <hr />
-<h2 id="type-modifiers">Type Modifiers<a class="headerlink" href="#type-modifiers" title="Permanent link">&para;</a></h2>
-<h3 id="required-vs-optional">Required vs Optional<a class="headerlink" href="#required-vs-optional" title="Permanent link">&para;</a></h3>
-<p><strong>Required Field (Non-Null):</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  email: String!    # Must always have a value
-}</p>
-<h1 id="query-must-include-this-field-if-requested">Query must include this field if requested<a class="headerlink" href="#query-must-include-this-field-if-requested" title="Permanent link">&para;</a></h1>
-<p>query {
-  user {
-    email  # ✅ Valid
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="enum-types">Enum Types<a class="headerlink" href="#enum-types" title="Permanent link">&para;</a></h2>
+<p>Use <code>@fraiseql.enum</code> on a Python <code>enum.Enum</code> to expose a GraphQL enum.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 
-<p><strong>Optional Field (Nullable):</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  phone: String     # Can be null
-}</p>
-<h1 id="query-can-skip-or-get-null">Query can skip or get null<a class="headerlink" href="#query-can-skip-or-get-null" title="Permanent link">&para;</a></h1>
-<p>query {
-  user {
-    phone  # ✅ Valid (might return null)
-  }
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">enum</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderStatus</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">PENDING</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>
+    <span class="n">CONFIRMED</span> <span class="o">=</span> <span class="s2">&quot;confirmed&quot;</span>
+    <span class="n">SHIPPED</span> <span class="o">=</span> <span class="s2">&quot;shipped&quot;</span>
+    <span class="n">DELIVERED</span> <span class="o">=</span> <span class="s2">&quot;delivered&quot;</span>
 
-<h3 id="list-modifiers">List Modifiers<a class="headerlink" href="#list-modifiers" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>[String]        # List can be null, items can be null
-[String!]       # List can be null, items non-null
-[String]!       # List non-null, items can be null
-[String!]!      # List non-null, items non-null
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">status</span><span class="p">:</span> <span class="n">OrderStatus</span>
+</code></pre></div>
+<p><strong>Generated GraphQL:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">enum</span><span class="w"> </span><span class="err">OrderStatus</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">PENDING</span>
+<span class="w">  </span><span class="n">CONFIRMED</span>
+<span class="w">  </span><span class="n">SHIPPED</span>
+<span class="w">  </span><span class="n">DELIVERED</span>
+<span class="p">}</span>
 
+<span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="n">OrderStatus</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Enums are a good fit for constrained values stored as text (or a PostgreSQL <code>ENUM</code>) in your tables.</p>
+<hr />
+<h2 id="interface-types">Interface Types<a class="headerlink" href="#interface-types" title="Permanent link">&para;</a></h2>
+<p>Use <code>@fraiseql.interface</code> to declare a shared field contract that multiple object types implement.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">interface</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Node</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+</code></pre></div>
+<p><strong>Generated GraphQL:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">interface</span><span class="w"> </span><span class="err">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="p">}</span>
+
+<span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="err">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="p">}</span>
+
+<span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="err">Node</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">total</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="union-types">Union Types<a class="headerlink" href="#union-types" title="Permanent link">&para;</a></h2>
+<p>A union is expressed with the <code>A | B</code> syntax — most commonly as a mutation return type combining a success and an error type.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="o">...</span>
+</code></pre></div>
+<p><strong>Generated GraphQL:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">union</span><span class="w"> </span><span class="err">CreateUserResult</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">CreateUserSuccess</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">CreateUserError</span>
+</code></pre></div>
+<p>Clients use inline fragments to read the result:</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;bob@example.com&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <hr />
 <h2 id="type-safety-in-action">Type Safety in Action<a class="headerlink" href="#type-safety-in-action" title="Permanent link">&para;</a></h2>
-<h3 id="compile-time-type-validation">Compile-Time Type Validation<a class="headerlink" href="#compile-time-type-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Schema Definition:</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@schema.type(table="tb_user")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    email: str
-```text</p>
-<!-- Code example in TEXT -->
+<h3 id="at-schema-build-app-startup">At Schema Build (App Startup)<a class="headerlink" href="#at-schema-build-app-startup" title="Permanent link">&para;</a></h3>
+<p>When the application boots, FraiseQL reads your Python type hints and assembles the GraphQL schema in memory. This is where field-to-type mapping and nullability are resolved.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>          <span class="c1"># → ID!     (non-nullable)</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># → String! (non-nullable)</span>
+    <span class="n">phone</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>  <span class="c1"># → String (nullable)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>✅ id: annotated ID → GraphQL ID! (non-null)
+✅ email: annotated str → GraphQL String! (non-null)
+✅ phone: annotated str | None → GraphQL String (nullable)
+✅ schema assembled in memory, served over FastAPI
+</code></pre></div>
+<h3 id="at-runtime-query-execution">At Runtime (Query Execution)<a class="headerlink" href="#at-runtime-query-execution" title="Permanent link">&para;</a></h3>
+<p>graphql-core validates incoming variables and arguments against the schema, and FraiseQL shapes the read view's <code>data</code> JSONB to the requested fields.</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="p">(</span><span class="nv">$id</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="nv">$id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
-<p><strong>Compile-Time Checks:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>✅ user_id: column pk_user is INT → type int ✓
-✅ email: column email is VARCHAR → type str ✓
-✅ PRIMARY KEY constraint → non-null ✓
-✅ NOT NULL constraint on email → non-null ✓
-✅ All types match database schema ✓
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="runtime-type-validation">Runtime Type Validation<a class="headerlink" href="#runtime-type-validation" title="Permanent link">&para;</a></h3>
-<p><strong>Query Execution:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>query GetUser($userId: Int!) {
-  user(userId: $userId) {
-    userId
-    email
-  }
-}</p>
-<p>Variables: { "userId": "not-a-number" }
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Runtime Check:</strong></p>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>❌ Variable $userId: expected Int, got String
-Error: "Variable $userId of type Int! was not provided a valid Int value"
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="c"># Variables: { &quot;id&quot;: 123 }   # wrong type</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>❌ Variable $id: expected ID, got Int
+Error: &quot;Variable &#39;$id&#39; got invalid value 123; ID cannot represent a non-string value&quot;
+</code></pre></div>
 <hr />
-<h2 id="type-inference-examples_1">Type Inference Examples<a class="headerlink" href="#type-inference-examples_1" title="Permanent link">&para;</a></h2>
-<h3 id="example-1-e-commerce-product-type">Example 1: E-Commerce Product Type<a class="headerlink" href="#example-1-e-commerce-product-type" title="Permanent link">&para;</a></h3>
-<p><strong>Database:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_product (
-  pk_product SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  price NUMERIC(10, 2) NOT NULL,
-  stock_quantity INT NOT NULL DEFAULT 0,
-  is_featured BOOLEAN DEFAULT false,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```text</p>
-<!-- Code example in TEXT -->
+<h2 id="worked-example-user-with-orders">Worked Example: User with Orders<a class="headerlink" href="#worked-example-user-with-orders" title="Permanent link">&para;</a></h2>
+<p><strong>Python types:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">DateTime</span>
 
-<p><strong>Inferred GraphQL Type:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Product {
-  productId: Int!              # SERIAL primary key
-  name: String!                # VARCHAR NOT NULL
-  description: String          # TEXT (nullable)
-  price: Decimal!              # NUMERIC NOT NULL
-  stockQuantity: Int!          # INT NOT NULL DEFAULT
-  isFeatured: Boolean!         # BOOLEAN DEFAULT
-  createdAt: DateTime!         # TIMESTAMP NOT NULL DEFAULT
-  updatedAt: DateTime!         # TIMESTAMP NOT NULL DEFAULT
-}
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
 
-<p><strong>Optional Python Schema (explicit):</strong></p>
-<p>```python</p>
-<!-- Code example in Python -->
-<p>@schema.type(table="tb_product")
-class Product:
-    product_id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    description: str | None
-    price: Decimal
-    stock_quantity: int
-    is_featured: bool
-    created_at: datetime
-    updated_at: datetime
-```text</p>
-<!-- Code example in TEXT -->
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">last_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">DateTime</span>
+    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]</span>
+</code></pre></div>
+<p><strong>Generated GraphQL types:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">firstName</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">lastName</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">orders</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Order</span><span class="err">!]!</span>
+<span class="p">}</span>
 
-<h3 id="example-2-complex-user-type-with-relationships">Example 2: Complex User Type with Relationships<a class="headerlink" href="#example-2-complex-user-type-with-relationships" title="Permanent link">&para;</a></h3>
-<p><strong>Database:</strong></p>
-<p>```sql</p>
-<!-- Code example in SQL -->
-<p>CREATE TABLE tb_user (
-  pk_user BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);</p>
-<p>CREATE TABLE tb_order (
-  pk_order BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-  fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user),
-  total NUMERIC(10, 2) NOT NULL,
-  created_at TIMESTAMP NOT NULL
-);
-```text</p>
-<!-- Code example in TEXT -->
-
-<p><strong>Inferred GraphQL Types:</strong></p>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type User {
-  userId: Int!
-  email: String!
-  firstName: String              # VARCHAR without NOT NULL
-  lastName: String               # VARCHAR without NOT NULL
-  createdAt: DateTime!
-  orders: [Order!]!              # One-to-many relationship
-}</p>
-<p>type Order {
-  orderId: Int!
-  userId: Int!
-  total: Decimal!
-  createdAt: DateTime!
-  user: User!                    # Many-to-one relationship
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<hr />
-<h2 id="type-system-benefits">Type System Benefits<a class="headerlink" href="#type-system-benefits" title="Permanent link">&para;</a></h2>
-<h3 id="1-automatic-consistency">1. Automatic Consistency<a class="headerlink" href="#1-automatic-consistency" title="Permanent link">&para;</a></h3>
-<p>```text</p>
-<!-- Code example in TEXT -->
-<p>Database Schema (source of truth)
-         ↓
-Compile-time Inference
-         ↓
-GraphQL Schema (always in sync)
-         ↓
-No manual type synchronization needed
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-safety-guarantees">2. Safety Guarantees<a class="headerlink" href="#2-safety-guarantees" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<p>type Order {
-  total: Decimal!    # Guaranteed non-null
-                     # Database enforces NOT NULL
-                     # GraphQL enforces non-null
-                     # Application can rely on it
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="3-self-documenting-api">3. Self-Documenting API<a class="headerlink" href="#3-self-documenting-api" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="from-this-type-definition-alone-you-know">From this type definition alone, you know:<a class="headerlink" href="#from-this-type-definition-alone-you-know" title="Permanent link">&para;</a></h1>
-<p>type Order {
-  orderId: Int!        # Always present, always an integer
-  total: Decimal!      # Always present, always a number
-  notes: String        # May be null/absent
-  createdAt: DateTime! # Always present, always a timestamp
-  user: User!          # Always present, always a User object
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<span class="k">type</span><span class="w"> </span><span class="err">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">total</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>v_user</code> read view builds the user's <code>data</code> JSONB (including the nested <code>orders</code> array), and the <code>v_order</code> view builds each order's <code>data</code>. No foreign keys are exposed; the relationship is composed in the view.</p>
 <hr />
 <h2 id="type-system-best-practices">Type System Best Practices<a class="headerlink" href="#type-system-best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="1-use-explicit-nullability">1. Use Explicit Nullability<a class="headerlink" href="#1-use-explicit-nullability" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="avoid-ambiguity">❌ Avoid ambiguity<a class="headerlink" href="#avoid-ambiguity" title="Permanent link">&para;</a></h1>
-<p>type User {
-  email: String       # Is this null when user has no email?
-}</p>
-<h1 id="be-explicit">✅ Be explicit<a class="headerlink" href="#be-explicit" title="Permanent link">&para;</a></h1>
-<p>type User {
-  email: String!      # Always present
-  phone: String       # Can be null (user didn't provide)
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="2-use-relationships-over-foreign-keys">2. Use Relationships Over Foreign Keys<a class="headerlink" href="#2-use-relationships-over-foreign-keys" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="expose-raw-foreign-key">❌ Expose raw foreign key<a class="headerlink" href="#expose-raw-foreign-key" title="Permanent link">&para;</a></h1>
-<p>type Order {
-  orderId: Int!
-  userId: Int!        # User must fetch user separately
-}</p>
-<h1 id="provide-relationship">✅ Provide relationship<a class="headerlink" href="#provide-relationship" title="Permanent link">&para;</a></h1>
-<p>type Order {
-  orderId: Int!
-  user: User!         # Automatic relationship resolution
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="3-name-fields-clearly">3. Name Fields Clearly<a class="headerlink" href="#3-name-fields-clearly" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="unclear">❌ Unclear<a class="headerlink" href="#unclear" title="Permanent link">&para;</a></h1>
-<p>type User {
-  a: String!
-  b: Int!
-}</p>
-<h1 id="clear-intent">✅ Clear intent<a class="headerlink" href="#clear-intent" title="Permanent link">&para;</a></h1>
-<p>type User {
-  email: String!
-  age: Int!
-}
-```text</p>
-<!-- Code example in TEXT -->
-
-<h3 id="4-use-enums-for-constrained-values">4. Use Enums for Constrained Values<a class="headerlink" href="#4-use-enums-for-constrained-values" title="Permanent link">&para;</a></h3>
-<p>```graphql</p>
-<!-- Code example in GraphQL -->
-<h1 id="free-form-string">❌ Free-form string<a class="headerlink" href="#free-form-string" title="Permanent link">&para;</a></h1>
-<p>type Order {
-  status: String!     # Could be anything
-}</p>
-<h1 id="enum-for-clarity">✅ Enum for clarity<a class="headerlink" href="#enum-for-clarity" title="Permanent link">&para;</a></h1>
-<p>enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-}</p>
-<p>type Order {
-  status: OrderStatus!  # Limited to defined values
-}
-```text</p>
-<!-- Code example in TEXT -->
-
+<h3 id="1-be-explicit-about-nullability">1. Be explicit about nullability<a class="headerlink" href="#1-be-explicit-about-nullability" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Be explicit with the | None hint</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># → String! (always present)</span>
+    <span class="n">phone</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>   <span class="c1"># → String  (may be null)</span>
+</code></pre></div>
+<h3 id="2-model-relationships-not-foreign-keys">2. Model relationships, not foreign keys<a class="headerlink" href="#2-model-relationships-not-foreign-keys" title="Permanent link">&para;</a></h3>
+<p>Expose related objects (<code>user: User</code>, <code>orders: list[Order]</code>) rather than raw <code>fk_*</code> columns. The trinity pattern keeps <code>pk_</code>/<code>fk_</code> internal and out of the <code>data</code> JSONB.</p>
+<h3 id="3-use-enums-for-constrained-values">3. Use enums for constrained values<a class="headerlink" href="#3-use-enums-for-constrained-values" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">enum</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderStatus</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">PENDING</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>
+    <span class="n">CONFIRMED</span> <span class="o">=</span> <span class="s2">&quot;confirmed&quot;</span>
+    <span class="n">SHIPPED</span> <span class="o">=</span> <span class="s2">&quot;shipped&quot;</span>
+    <span class="n">DELIVERED</span> <span class="o">=</span> <span class="s2">&quot;delivered&quot;</span>
+</code></pre></div>
+<h3 id="4-prefer-domain-scalars-where-they-add-validation">4. Prefer domain scalars where they add validation<a class="headerlink" href="#4-prefer-domain-scalars-where-they-add-validation" title="Permanent link">&para;</a></h3>
+<p>Use <code>EmailAddress</code> over a bare <code>str</code> for emails, <code>Date</code>/<code>DateTime</code> over strings for dates, and so on. See <a href="../../reference/scalars/">Custom Scalar Types</a>.</p>
 <hr />
 <h2 id="related-topics">Related Topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Topic 1.2:</strong> Core Concepts &amp; Terminology (understanding types)</li>
-<li><strong>Topic 2.1:</strong> Compilation Pipeline (how types are inferred)</li>
-<li><strong>Topic 2.2:</strong> Query Execution Model (type validation at runtime)</li>
-<li><strong>Topic 2.5:</strong> Error Handling &amp; Validation (type error handling)</li>
-<li><strong>Topic 3.1:</strong> Python Schema Authoring (defining types explicitly)</li>
+<li><a href="../02-core-concepts/">2.2 Core Concepts</a> — understanding types and terminology</li>
+<li><a href="../03-database-centric-architecture/">2.3 Database-Centric Architecture</a> — read views, <code>data</code> JSONB, the trinity identifier pattern</li>
+<li><a href="../10-error-handling-validation/">2.5 Error Handling &amp; Validation</a> — success/error result types and validation</li>
+<li><a href="../../reference/scalars/">Custom Scalar Types</a> — the full scalar catalogue</li>
+<li><a href="../../reference/where-operators/">Where Operators</a> — filtering query results</li>
+<li><a href="../../core/concepts-glossary/">Concepts Glossary</a> — terminology reference</li>
+<li><a href="../../getting-started/quickstart/">Quickstart</a> — define your first types end-to-end</li>
 </ul>
 <hr />
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL's type system is automatically inferred from your database schema:</p>
-<p><strong>Built-In Scalar Types:</strong></p>
+<p>FraiseQL's type system maps your Python type hints to GraphQL at <strong>app startup</strong>:</p>
+<p><strong>Built-in scalar mappings:</strong></p>
 <ul>
-<li>Integers: Int, Long, Short</li>
-<li>Decimals: Decimal, Float</li>
-<li>Strings: String</li>
-<li>Dates/Times: Date, Time, DateTime</li>
-<li>Booleans: Boolean</li>
-<li>Special: UUID, JSON, Bytes</li>
+<li>Numbers: <code>int</code> → <code>Int</code>, <code>float</code> → <code>Float</code></li>
+<li>Text: <code>str</code> → <code>String</code></li>
+<li>Booleans: <code>bool</code> → <code>Boolean</code></li>
+<li>Identifiers / dates: <code>ID</code>, <code>UUID</code>, <code>Date</code>, <code>DateTime</code>, <code>Time</code></li>
+<li>Domain scalars: <code>EmailAddress</code>, <code>JSON</code>, <code>LTree</code>, and more (see <a href="../../reference/scalars/">the scalar reference</a>)</li>
 </ul>
-<p><strong>Key Principles:</strong></p>
+<p><strong>Key principles:</strong></p>
 <ol>
-<li><strong>Database constraints drive nullability</strong> - NOT NULL in DB = non-null in GraphQL</li>
-<li><strong>Relationships are automatic</strong> - Foreign keys become GraphQL relationships</li>
-<li><strong>Lists are inferred</strong> - One-to-many becomes [Type!]!</li>
-<li><strong>Type safety guaranteed</strong> - Compile-time and runtime validation</li>
-<li><strong>Self-documenting</strong> - Schema clearly shows what's required vs optional</li>
+<li><strong>Python type hints drive the schema</strong> — types are read in memory when the app boots; there is no compile step.</li>
+<li><strong><code>X | None</code> drives nullability</strong> — bare <code>X</code> is non-null, <code>X | None</code> is nullable.</li>
+<li><strong>Relationships are nested types</strong> — <code>list[Related]</code> becomes <code>[Related!]!</code>, composed in the backing read view.</li>
+<li><strong>PostgreSQL-backed</strong> — object types map to <code>v_</code>/<code>tv_</code> views exposing a <code>data</code> JSONB; <code>pk_</code>/<code>fk_</code> stay internal.</li>
+<li><strong>Self-documenting</strong> — the schema clearly shows what is required vs optional.</li>
 </ol>
-<p><strong>Benefits:</strong></p>
-<ul>
-<li>No manual type synchronization</li>
-<li>Database and GraphQL schema always in sync</li>
-<li>Type safety at compile-time and runtime</li>
-<li>Self-documenting API contracts</li>
-<li>Clear nullability semantics</li>
-</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 
