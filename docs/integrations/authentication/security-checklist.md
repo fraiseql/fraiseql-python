@@ -46,8 +46,8 @@ Complete security checklist for FraiseQL authentication deployment.
 - [ ] Refresh tokens hashed before storage (SHA256)
 - [ ] Sessions table uses strong indexes
 - [ ] Automatic session expiry via TTL
-- [ ] Revoked sessions immediately invalidated
-- [ ] Session revocation tested
+- [ ] Revoked tokens immediately invalidated (`PostgreSQLRevocationStore` / `TokenRevocationService`)
+- [ ] Token revocation tested
 
 ### Token Security
 
@@ -88,6 +88,7 @@ Complete security checklist for FraiseQL authentication deployment.
 - [ ] Rate limiting enabled on /auth/start (1 req/sec per IP)
 - [ ] Rate limiting enabled on /auth/callback (1 req/sec per IP)
 - [ ] Rate limiting enabled on /auth/refresh (10 req/sec per IP)
+- [ ] Rate limiting configured (`RateLimit` rules; `RedisRateLimitStore` for multi-worker deployments)
 - [ ] Brute force protection configured
 - [ ] Failed attempts logged and monitored
 
@@ -111,11 +112,14 @@ Complete security checklist for FraiseQL authentication deployment.
 
 ### Access Control
 
-- [ ] Admin endpoints require authentication
-- [ ] Role-based access control (RBAC) configured
+- [ ] Admin endpoints require authentication (`@requires_auth` / `@requires_role` / `@requires_permission`)
+- [ ] Role-based access control (RBAC) configured (operation `Authorizer`, field `authorize_field`)
 - [ ] Principle of least privilege applied
+- [ ] Tenant isolation enforced via PostgreSQL Row-Level Security (RLS) where applicable
 - [ ] User permissions validated on each request
 - [ ] Unauthorized access attempts logged
+- [ ] Schema introspection policy set appropriately for production (`introspection_policy`)
+- [ ] GraphQL playground disabled in production (`enable_playground` / `production=True`)
 
 ### Environment Configuration
 
@@ -163,7 +167,7 @@ Complete security checklist for FraiseQL authentication deployment.
 
 ### Dependency Management
 
-- [ ] Dependencies scanned monthly (e.g., `cargo audit`)
+- [ ] Dependencies scanned monthly (e.g., `uv pip audit` / `pip-audit`, or Dependabot)
 - [ ] Security updates applied immediately
 - [ ] Beta/dev dependencies removed before production
 - [ ] Unused dependencies removed
@@ -300,17 +304,13 @@ Complete security checklist for FraiseQL authentication deployment.
 
 ### Testing Incident Response
 
-```bash
-<!-- Code example in BASH -->
-# Simulate breach
+Simulate a breach and verify recovery:
 
 1. Manually revoke all sessions
 2. Verify users can't use old tokens
 3. Verify users can log back in
 4. Document time to recovery
 5. Review logs for completeness
-```text
-<!-- Code example in TEXT -->
 
 ## Communication
 

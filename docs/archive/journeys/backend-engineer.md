@@ -264,5 +264,4 @@ curl http://localhost:8000/metrics
 
 - Can we allocate 2-3 weeks for migration?
 - Do we have Rust experience on the team?
-- What's our risk tolerance for newer frameworks?</content>
-<parameter name="filePath">docs/journeys/backend-engineer.md
+- What's our risk tolerance for newer frameworks?

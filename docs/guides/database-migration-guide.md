@@ -1,399 +1,483 @@
-<!-- Skip to main content -->
 ---
-
 title: Database Schema Migration Guide
-description: Step-by-step guide for migrating existing database schemas to FraiseQL v2.0.0-alpha.1.
-keywords: ["debugging", "implementation", "best-practices", "deployment", "schema", "tutorial"]
+description: Step-by-step guide for evolving a FraiseQL PostgreSQL schema with versioned DDL migrations.
+keywords: ["migrations", "ddl", "alembic", "schema", "postgresql", "tutorial"]
 tags: ["documentation", "reference"]
 ---
 
 # Database Schema Migration Guide
 
 **Status:** ✅ Production Ready
-**Audience:** DevOps, Database Administrators, Architects
+**Audience:** Developers, Database Administrators
 **Reading Time:** 25-30 minutes
-**Last Updated:** 2026-02-05
 
-Step-by-step guide for migrating existing database schemas to FraiseQL v2.0.0-alpha.1.
+Step-by-step guide for evolving a FraiseQL PostgreSQL schema with versioned DDL migrations — adding and changing the `tb_` write tables, `v_`/`tv_` read views, and `fn_` functions that back your GraphQL API.
 
 ---
 
 ## Overview
 
-This guide covers migrating from:
+FraiseQL builds its GraphQL schema **at application startup** from your Python decorators, and serves it against PostgreSQL. There is no compile step and no schema artifact: when you change your PostgreSQL objects and your decorators, you simply restart the app.
 
-- **Legacy GraphQL servers** (Apollo Server, Hasura, PostGraphile, etc.)
-- **Existing SQL databases** (PostgreSQL, MySQL, SQLite, SQL Server)
-- **Monolithic schemas** to **federated architectures**
+A "database migration" in FraiseQL therefore means **evolving your PostgreSQL schema** — DDL changes to your tables, views, and functions — applied with ordinary migration tooling such as [Alembic](https://alembic.sqlalchemy.org/) or plain numbered `.sql` files run by `psql`.
 
-**Key principle:** Schema migration is a **data structure change**, not a data migration. Your existing data stays in place; you're restructuring how FraiseQL accesses it.
+This guide covers two common situations:
+
+- **Evolving an existing FraiseQL schema** — adding columns, new entities, or new views as the application grows.
+- **Adopting FraiseQL on an existing PostgreSQL database** — wrapping pre-existing tables in the `v_`/`tv_` read-view layer that FraiseQL queries.
+
+**Key principle:** A schema migration is a **data structure change**, not a bulk data migration. Your existing rows stay in place; you restructure how FraiseQL reads and writes them through views and functions.
+
+> FraiseQL v1 is **PostgreSQL only**. All examples use standard PostgreSQL DDL.
+
+### The FraiseQL object trinity
+
+Every entity is represented by three kinds of PostgreSQL object. Migrations almost always touch one or more of them:
+
+| Prefix | What it is | Exposed in GraphQL? |
+|--------|-----------|---------------------|
+| `tb_`  | normalized **write table** (source of truth) | no (write side) |
+| `v_`   | logical **read view** building a `data` JSONB column | yes (query source) |
+| `tv_`  | **table-backed projection view** holding pre-composed JSONB, refreshed by functions/triggers | yes (query source) |
+| `fn_`  | PostgreSQL **function** implementing a mutation's write logic | called by mutations |
+
+Identifier columns follow the trinity pattern: `pk_<entity>` (internal `BIGINT`, hidden), `id` (public `UUID`, stable), and an optional `identifier` (`TEXT UNIQUE` slug). GraphQL exposes `id` (and optionally `identifier`) but **never** `pk_`/`fk_`.
 
 ---
 
 ## Pre-Migration Planning
 
-### 1. Assess Current Architecture
+### 1. Assess the current schema
 
 **Answer these questions:**
 
-- [ ] Current database: PostgreSQL / MySQL / SQLite / SQL Server?
 - [ ] Total tables: < 50 / 50-200 / 200-1000 / > 1000?
 - [ ] Database size: < 1GB / 1-10GB / 10-100GB / > 100GB?
 - [ ] Peak QPS (queries per second): < 100 / 100-1000 / > 1000?
 - [ ] Uptime requirement: Best-effort / 99% / 99.9% / 99.99%?
-- [ ] Multi-region deployment: Yes / No?
-- [ ] Federation needed: Yes / No?
+- [ ] Are there existing tables to wrap in `v_`/`tv_` views, or is this a greenfield schema?
+- [ ] Which read paths are hot enough to need `tv_` projection views?
 
-### 2. Create Migration Plan
+### 2. Create a migration plan
 
 **Template:**
 
 ```markdown
-<!-- Code example in MARKDOWN -->
 ## Migration Plan: [Project Name]
 
 ### Timeline
-- Phase 1 (Week 1): Preparation and schema analysis
-- Phase 2 (Week 2): FraiseQL schema development
-- Phase 3 (Week 3): Integration testing
-- Phase 4 (Week 4): Staging deployment
-- Phase 5 (Week 5): Production cutover
+- Phase 1 (Week 1): Schema analysis and naming-convention mapping
+- Phase 2 (Week 2): Write tables, views, and functions (DDL migrations)
+- Phase 3 (Week 3): Wire up FraiseQL types/queries/mutations and test
+- Phase 4 (Week 4): Staging deployment and verification
+- Phase 5 (Week 5): Production rollout
 
 ### Rollback Plan
-- Keep old GraphQL server running during testing
-- Traffic: 10% to FraiseQL, 90% to old server (Week 1)
-- Then 50/50 (Week 2)
-- Then 100% FraiseQL (Week 3)
+- Every DDL migration ships with a matching down-migration
+- Take a backup before applying migrations in production
+- Keep new views additive where possible (drop old objects only after cutover)
 
 ### Team
 - Schema Designer: [Name]
 - DevOps Lead: [Name]
 - QA Lead: [Name]
 - Database Admin: [Name]
-```text
-<!-- Code example in TEXT -->
+```
 
-### 3. Audit Current Schema
+### 3. Audit the current schema
 
-**Generate schema export:**
+**Generate a schema export so you can diff before and after:**
 
 ```bash
-<!-- Code example in BASH -->
-# PostgreSQL
-pg_dump --schema-only $DATABASE_URL > schema.sql
-
-# MySQL
-mysqldump --no-data $DATABASE > schema.sql
-
-# SQLite
-sqlite3 $DATABASE ".schema" > schema.sql
-
-# SQL Server
-sqlcmd -S $SERVER -d $DATABASE -i "schema.sql" -x
-```text
-<!-- Code example in TEXT -->
+# Dump the schema only (no data) for review and version control
+pg_dump --schema-only "$DATABASE_URL" > schema.sql
+```
 
 ---
 
-## Phase 1: Analyze Existing Schema
+## Phase 1: Analyze the Existing Schema
 
-### Step 1.1: Document Tables & Views
+### Step 1.1: Document tables & views
 
-**Create inventory:**
+**Create an inventory:**
 
-```bash
-<!-- Code example in BASH -->
-# PostgreSQL: List all tables
-SELECT tablename FROM pg_tables WHERE schemaname='public';
+```sql
+-- List all base tables
+SELECT tablename FROM pg_tables WHERE schemaname = 'public';
 
-# MySQL: List all tables
-SHOW TABLES;
-
-# SQLite: List all tables
-.tables
-
-# SQL Server: List all tables
-SELECT name FROM sys.tables;
-```text
-<!-- Code example in TEXT -->
+-- List all views
+SELECT viewname FROM pg_views WHERE schemaname = 'public';
+```
 
 **Output format:**
 
 ```text
-<!-- Code example in TEXT -->
-TABLE_NAME | COLUMNS | ROWS | SIZE | INDEXES | PK | NOTES
-users      | 12      | 2M   | 500MB | 3      | id | Active users table
-posts      | 8       | 10M  | 2GB   | 4      | id | Need tv_* materialization
-```text
-<!-- Code example in TEXT -->
+TABLE_NAME | COLUMNS | ROWS | SIZE  | INDEXES | PK | NOTES
+tb_user    | 12      | 2M   | 500MB | 3       | id | Active users
+tb_post    | 8       | 10M  | 2GB   | 4       | id | Needs tv_* projection
+```
 
-### Step 1.2: Identify Access Patterns
+### Step 1.2: Identify access patterns
 
-**Analyze queries:**
+**Analyze queries with `pg_stat_statements`:**
 
 ```sql
-<!-- Code example in SQL -->
 -- Find most frequent queries
 SELECT query, calls FROM pg_stat_statements
 ORDER BY calls DESC LIMIT 20;
 
 -- Find slow queries
-SELECT query, mean_time FROM pg_stat_statements
-WHERE mean_time > 100
-ORDER BY mean_time DESC LIMIT 20;
-```text
-<!-- Code example in TEXT -->
+SELECT query, mean_exec_time FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC LIMIT 20;
+```
 
 **Use this to decide:**
 
-- Which fields should have indexes
-- Which views need materialization (tv_*)
-- Which queries need optimization
+- Which columns inside your views need indexes (often on the underlying `tb_` tables).
+- Which read views need a `tv_` projection (pre-composed JSONB).
+- Which queries need restructuring in the view SQL.
 
-### Step 1.3: Map Relationships
+### Step 1.3: Map relationships
 
-**Create relationship diagram:**
+**Sketch the relationships so your `data` JSONB views embed the right nested objects:**
 
 ```text
-<!-- Code example in TEXT -->
-Users (id, name, email)
-  ├─ 1:M → Posts (id, user_id, content)
-  │          ├─ 1:M → Comments (id, post_id, text)
-  │          └─ M:M → Tags (join: post_tags)
-  ├─ M:M → Groups (join: user_groups)
-  └─ M:1 ← Organizations (org_id)
+tb_user (pk_user, id, name, email)
+  ├─ 1:M → tb_post (pk_post, id, fk_user, content)
+  │          ├─ 1:M → tb_comment (pk_comment, id, fk_post, text)
+  │          └─ M:M → tb_tag (join: tb_post_tag)
+  ├─ M:M → tb_group (join: tb_user_group)
+  └─ M:1 ← tb_organization (fk_organization)
 
-Organizations (id, name)
-  ├─ 1:M → Users
-  └─ 1:M → Teams
-```text
-<!-- Code example in TEXT -->
+tb_organization (pk_organization, id, name)
+  ├─ 1:M → tb_user
+  └─ 1:M → tb_team
+```
 
 ---
 
-## Phase 2: Create FraiseQL Schema
+## Phase 2: Build the PostgreSQL Schema
 
-### Step 2.1: Skeleton Schema
+This phase is a sequence of DDL migrations. Keep each step in its own numbered migration file (e.g. `0001_create_user.sql`) or Alembic revision so it is reviewable and reversible.
 
-**Create minimal schema for all tables:**
+### Step 2.1: Write tables (`tb_`)
 
-```python
-<!-- Code example in Python -->
-# schema.py
-from FraiseQL import type, key, field, where, context
-from typing import Optional, List
-from datetime import datetime
-from decimal import Decimal
+The write tables are the source of truth. They use the identifier trinity: a hidden `pk_` BIGINT, a public `id` UUID, and `fk_` foreign keys (never exposed).
 
-@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    email: str
-    created_at: datetime
-    updated_at: datetime
-    is_active: bool
+```sql
+CREATE TABLE tb_organization (
+    pk_organization BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id              UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    name            TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    created_at: datetime
+CREATE TABLE tb_user (
+    pk_user         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id              UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_organization BIGINT NOT NULL REFERENCES tb_organization (pk_organization),
+    name            TEXT NOT NULL,
+    email           TEXT NOT NULL,
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-@type
-class Organization:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    created_at: datetime
-```text
-<!-- Code example in TEXT -->
+CREATE TABLE tb_post (
+    pk_post    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id         UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_user    BIGINT NOT NULL REFERENCES tb_user (pk_user),
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
 
-### Step 2.2: Add Relationships
+### Step 2.2: Read views (`v_`)
 
-**Add 1:M and M:M relationships:**
+A read view always exposes the public `id` column **plus** a `data` JSONB column built with `jsonb_build_object(...)`. Embed relationships directly in the JSONB so a single read returns the nested shape your GraphQL type needs. Never put `pk_`/`fk_` inside `data`.
 
-```python
-<!-- Code example in Python -->
-@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    email: str
-    created_at: datetime
-    # NEW: Relationships
-    posts: List[Post]  # 1:M relationship
-    organization: Organization  # M:1 relationship
-    groups: List[Group]  # M:M relationship
-
-@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    created_at: datetime
-    # NEW: Relationships
-    user: User  # M:1 back-reference
-    comments: List[Comment]  # 1:M relationship
-
-@type
-class Organization:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    created_at: datetime
-    # NEW: Relationships
-    users: List[User]  # 1:M reverse
-```text
-<!-- Code example in TEXT -->
-
-### Step 2.3: Add Row-Level Security
-
-**Add multi-tenancy filtering:**
-
-```python
-<!-- Code example in Python -->
-@type
-class Post:
-    where: Where = FraiseQL.where(
-        fk_organization=FraiseQL.context.org_id,  # Only user's org
-    )
-
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-    user: User
-    comments: List[Comment]
-
-@type
-class Comment:
-    where: Where = FraiseQL.where(
-        # Nested RLS: posts -> comments
-        post_id__in=FraiseQL.subquery(
-            "SELECT id FROM posts WHERE fk_organization = ?",
-            [FraiseQL.context.org_id]
+```sql
+CREATE VIEW v_user AS
+SELECT
+    u.id,                          -- WHERE id = $1 lookups
+    jsonb_build_object(
+        'id', u.id,
+        'name', u.name,
+        'email', u.email,
+        'createdAt', u.created_at,
+        'organization', jsonb_build_object(
+            'id', o.id,
+            'name', o.name
+        ),
+        'posts', COALESCE(
+            (SELECT jsonb_agg(jsonb_build_object('id', p.id, 'content', p.content))
+             FROM tb_post p
+             WHERE p.fk_user = u.pk_user),
+            '[]'::jsonb
         )
-    )
+    ) AS data
+FROM tb_user u
+JOIN tb_organization o ON o.pk_organization = u.fk_organization;
+```
 
-    id: UUID  # UUID v4 for GraphQL ID
-    post_id: UUID  # UUID v4 for GraphQL ID
-    content: str
-```text
-<!-- Code example in TEXT -->
-
-### Step 2.4: Add Authorization
-
-**Add field-level access control:**
+The matching FraiseQL types and queries point at the view via `sql_source`:
 
 ```python
-<!-- Code example in Python -->
-@type
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
+import fraiseql
+from fraiseql.types import ID, DateTime
+from fraiseql.fastapi import create_fraiseql_app
+
+
+@fraiseql.type(sql_source="v_organization", jsonb_column="data")
+class Organization:
+    id: ID
     name: str
-    email: str = field(
-        authorize={Roles.SELF, Roles.ADMIN, Roles.HR}
-    )
-    salary: Decimal = field(
-        authorize={Roles.HR}
-    )
-    password_hash: str = field(
-        authorize=set()  # Never readable
-    )
-```text
-<!-- Code example in TEXT -->
+    created_at: DateTime
 
-### Step 2.5: Optimize with Views
 
-**Add materialized views (tv_*) for performance:**
+@fraiseql.type(sql_source="v_post", jsonb_column="data")
+class Post:
+    id: ID
+    content: str
+    created_at: DateTime
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: ID
+    name: str
+    email: str
+    created_at: DateTime
+    organization: Organization      # embedded by the view's JSONB
+    posts: list[Post]               # embedded by the view's JSONB
+
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
+
+
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", id=id)
+```
+
+### Step 2.3: Multi-tenancy with Row-Level Security
+
+For tenant isolation, add a tenant column to your write tables and enforce it with PostgreSQL **Row-Level Security (RLS)**. FraiseQL's CQRS repository sets the session GUCs from the request context — when `info.context` carries `tenant_id`, it issues `SET LOCAL app.tenant_id = …` per transaction, so your RLS policies see the current tenant.
+
+```sql
+-- Add the tenant key to write tables
+ALTER TABLE tb_post ADD COLUMN fk_organization BIGINT
+    REFERENCES tb_organization (pk_organization);
+
+-- Enable RLS and a policy that reads the session GUC FraiseQL sets
+ALTER TABLE tb_post ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON tb_post
+    USING (fk_organization = (
+        SELECT pk_organization FROM tb_organization
+        WHERE id = current_setting('app.tenant_id')::uuid
+    ));
+```
+
+You can additionally pin a filter on the read side:
 
 ```python
-<!-- Code example in Python -->
-@type
-class UserStats:
-    """Materialized daily - fast lookups for aggregations."""
-    id: UUID  # UUID v4 for GraphQL ID
-    post_count: int
-    comment_count: int
-    avg_likes_per_post: Decimal
-    updated_at: datetime
+@fraiseql.query
+async def posts(info) -> list[Post]:
+    db = info.context["db"]
+    # Belt-and-braces: enforce the tenant on the query as well as via RLS
+    return await db.find("v_post", mandatory_filters={"organization_id": info.context["tenant_id"]})
+```
 
-# Materialization SQL
-CREATE TABLE tv_user_stats AS
+### Step 2.4: Field authorization
+
+FraiseQL enforces operation authorization through an `Authorizer`, wired either globally on the app or per query/subscription:
+
+```python
+from fraiseql.security import Authorizer
+
+
+class OrgAuthorizer(Authorizer):
+    async def authorize(self, info, operation):
+        # Reject anonymous access, check roles from info.context, etc.
+        if not info.context.get("user_id"):
+            raise PermissionError("authentication required")
+
+
+@fraiseql.query(authorizer=OrgAuthorizer())
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
+```
+
+For row- and field-level access control, rely on PostgreSQL RLS policies (Step 2.3) and on what the view exposes: simply omit sensitive columns (for example, never select `password_hash` into `data`).
+
+### Step 2.5: Mutations via `fn_` functions
+
+All write business logic lives in PostgreSQL functions. The function validates, writes, and returns JSONB indicating success or failure.
+
+```sql
+CREATE FUNCTION fn_create_user(input_name TEXT, input_email TEXT, input_org UUID)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    new_user tb_user;
+BEGIN
+    INSERT INTO tb_user (fk_organization, name, email)
+    SELECT o.pk_organization, input_name, input_email
+    FROM tb_organization o WHERE o.id = input_org
+    RETURNING * INTO new_user;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'user', jsonb_build_object('id', new_user.id, 'name', new_user.name, 'email', new_user.email)
+    );
+EXCEPTION WHEN unique_violation THEN
+    RETURN jsonb_build_object('success', false, 'message', 'email already exists');
+END;
+$$;
+```
+
+```python
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
+    organization_id: ID
+
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+
+@fraiseql.error
+class CreateUserError:
+    message: str
+    code: str = "VALIDATION_ERROR"
+
+
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user",
+        {"name": input.name, "email": input.email, "org": input.organization_id},
+    )
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"))
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+### Step 2.6: Projection views (`tv_`) for hot reads
+
+When a logical `v_` view is too expensive for a hot read path, replace it with a `tv_` projection: a real table holding the pre-composed JSONB, refreshed by functions or triggers.
+
+```sql
+-- A table-backed projection: refreshed, not recomputed on every read
+CREATE TABLE tv_user_stats (
+    id              UUID PRIMARY KEY,
+    data            JSONB NOT NULL,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- (Re)build the projection from the base tables
+INSERT INTO tv_user_stats (id, data)
 SELECT
     u.id,
-    COUNT(DISTINCT p.id) as post_count,
-    COUNT(DISTINCT c.id) as comment_count,
-    AVG(l.like_count) as avg_likes_per_post,
-    NOW() as updated_at
-FROM users u
-LEFT JOIN posts p ON u.id = p.user_id
-LEFT JOIN comments c ON p.id = c.post_id
+    jsonb_build_object(
+        'id', u.id,
+        'postCount', COUNT(DISTINCT p.pk_post),
+        'commentCount', COUNT(DISTINCT c.pk_comment),
+        'avgLikesPerPost', COALESCE(AVG(l.like_count), 0)
+    )
+FROM tb_user u
+LEFT JOIN tb_post p ON p.fk_user = u.pk_user
+LEFT JOIN tb_comment c ON c.fk_post = p.pk_post
 LEFT JOIN (
-    SELECT post_id, COUNT(*) as like_count
-    FROM likes
-    GROUP BY post_id
-) l ON p.id = l.post_id
-GROUP BY u.id;
-```text
-<!-- Code example in TEXT -->
+    SELECT fk_post, COUNT(*) AS like_count
+    FROM tb_like
+    GROUP BY fk_post
+) l ON l.fk_post = p.pk_post
+GROUP BY u.id
+ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now();
+```
+
+FraiseQL queries a `tv_` view exactly like a `v_` view — only the `sql_source` name differs:
+
+```python
+@fraiseql.type(sql_source="tv_user_stats", jsonb_column="data")
+class UserStats:
+    id: ID
+    post_count: int
+    comment_count: int
+```
 
 ---
 
 ## Phase 3: Integration Testing
 
-### Step 3.1: Set Up Staging Environment
+### Step 3.1: Set up a staging environment
 
-**Clone production database:**
-
-```bash
-<!-- Code example in BASH -->
-# PostgreSQL
-pg_dump $PROD_DATABASE | psql $STAGING_DATABASE
-
-# MySQL
-mysqldump $PROD_DATABASE | mysql $STAGING_DATABASE
-
-# SQLite
-cp $PROD_DATABASE $STAGING_DATABASE
-```text
-<!-- Code example in TEXT -->
-
-### Step 3.2: Compile FraiseQL Schema
+**Clone the production database:**
 
 ```bash
-<!-- Code example in BASH -->
-# Install FraiseQL CLI
-cargo install FraiseQL-cli
+# Dump production and restore into staging
+pg_dump "$PROD_DATABASE_URL" | psql "$STAGING_DATABASE_URL"
+```
 
-# Compile schema
-FraiseQL compile schema.py --config FraiseQL.toml
+### Step 3.2: Apply the migrations
 
-# Verify compilation
-ls -la schema.compiled.json
-```text
-<!-- Code example in TEXT -->
-
-### Step 3.3: Start FraiseQL Server
+Run your migration tool against staging. With Alembic:
 
 ```bash
-<!-- Code example in BASH -->
-# Start with staging database
-FRAISEQL_DATABASE_URL=postgresql://staging_db FraiseQL serve
+DATABASE_URL="$STAGING_DATABASE_URL" alembic upgrade head
+```
 
-# Test GraphQL endpoint
-curl -X POST http://localhost:5000/graphql \
+Or with plain numbered SQL files:
+
+```bash
+for f in migrations/*.sql; do
+  psql "$STAGING_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+done
+```
+
+### Step 3.3: Start the FraiseQL app
+
+The schema is assembled in memory at startup — just point the FastAPI app at the staging database and run it:
+
+```python
+# app.py
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/staging_db",
+    types=[Organization, User, Post, UserStats],
+    queries=[users, user, posts],
+    mutations=[create_user],
+    production=False,   # enables the GraphQL playground
+)
+```
+
+```bash
+# Run the FastAPI app
+uvicorn app:app --port 8000
+
+# Smoke-test the GraphQL endpoint
+curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{ users { id name } }"}'
-```text
-<!-- Code example in TEXT -->
+```
 
-### Step 3.4: Query Compatibility Testing
+### Step 3.4: Query verification
 
-**Validate old queries work in FraiseQL:**
+**Confirm the migrated views return the shape you expect:**
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Old query (from current server)
 query {
   users {
     id
@@ -401,132 +485,87 @@ query {
     email
     posts {
       id
-      title
-      created_at
+      content
+      createdAt
     }
   }
 }
-
-# Should return same data in FraiseQL
-# Verify: Response structure, field names, values, types
-```text
-<!-- Code example in TEXT -->
+```
 
 **Test harness:**
 
 ```python
-<!-- Code example in Python -->
 # test_migration.py
-import requests
-import json
+import httpx
 
-OLD_SERVER = "http://old-server:3000/graphql"
-NEW_SERVER = "http://localhost:5000/graphql"
+NEW_SERVER = "http://localhost:8000/graphql"
 
 queries = [
-    '{ users { id name } }',
-    '{ posts(first: 100) { id title user { name } } }',
-    '{ organizations { id users { id posts { id } } } }',
+    "{ users { id name } }",
+    "{ posts(first: 100) { id content user { name } } }",
+    "{ organizations { id users { id posts { id } } } }",
 ]
 
-for query in queries:
-    old_result = requests.post(OLD_SERVER, json={"query": query}).json()
-    new_result = requests.post(NEW_SERVER, json={"query": query}).json()
+for q in queries:
+    resp = httpx.post(NEW_SERVER, json={"query": q})
+    body = resp.json()
+    assert "errors" not in body, f"Query failed: {q} -> {body['errors']}"
 
-    assert old_result["data"] == new_result["data"], f"Query mismatch: {query}"
+print("✅ All queries returned data")
+```
 
-print("✅ All queries compatible!")
-```text
-<!-- Code example in TEXT -->
+### Step 3.5: Performance baseline
 
-### Step 3.5: Performance Baseline
-
-**Measure query performance before cutover:**
+**Measure query performance against staging before cutover:**
 
 ```bash
-<!-- Code example in BASH -->
-# Run load test on old server
+# Run a load test against the staging app
 wrk -t4 -c100 -d60s \
   -s load_test.lua \
-  http://old-server:3000/graphql
+  http://localhost:8000/graphql
 
 # Record: latency (P50, P95, P99), throughput, errors
+```
 
-# Run same load test on FraiseQL
-wrk -t4 -c100 -d60s \
-  -s load_test.lua \
-  http://localhost:5000/graphql
-
-# Compare: Should be similar or faster
-```text
-<!-- Code example in TEXT -->
+If P95 latency is too high on a hot path, convert the relevant `v_` view to a `tv_` projection (Step 2.6) and re-measure.
 
 ---
 
-## Phase 4: Staged Cutover
+## Phase 4: Production Rollout
 
-### Step 4.1: Traffic Splitting (Week 1)
+### Step 4.1: Apply migrations to production
 
-**Route 10% of traffic to FraiseQL:**
+DDL migrations are the cutover. Back up first, then apply the same reviewed migrations you ran on staging:
 
-```nginx
-<!-- Code example in NGINX -->
-# nginx configuration
-upstream old_server {
-    server old-server:3000;
-}
+```bash
+# Back up before applying
+pg_dump "$PROD_DATABASE_URL" > backup_pre_migration.dump
 
-upstream new_server {
-    server localhost:5000;
-}
+# Apply migrations (Alembic)
+DATABASE_URL="$PROD_DATABASE_URL" alembic upgrade head
+```
 
-server {
-    listen 443 ssl;
+Keep migrations **additive** where possible: create the new `tb_`/`v_`/`tv_`/`fn_` objects alongside the old ones, deploy the app, verify, and only drop the old objects in a later migration once you are confident.
 
-    location /graphql {
-        # 90% to old server, 10% to new
-        if ($random < 0.1) {
-            proxy_pass http://new_server;
-        }
-        proxy_pass http://old_server;
-    }
-}
-```text
-<!-- Code example in TEXT -->
+### Step 4.2: Deploy the app
 
-**Monitor:**
+Roll out the FraiseQL FastAPI app (which now references the new objects). Because the schema is built at startup, a rolling restart picks up the new schema with no compile step.
 
-- [ ] FraiseQL error rate < 0.1%
+**Monitor after deploy:**
+
+- [ ] Error rate < 0.1%
 - [ ] Response latency acceptable
 - [ ] No data inconsistencies
 - [ ] No unauthorized access
 
-### Step 4.2: Increase Traffic (Week 2)
+### Step 4.3: Decommission old objects
 
-```nginx
-<!-- Code example in NGINX -->
-# 50% to each server
-if ($random < 0.5) {
-    proxy_pass http://new_server;
-}
-proxy_pass http://old_server;
-```text
-<!-- Code example in TEXT -->
+Once the new schema is stable, ship a follow-up migration that drops the now-unused views/columns/functions.
 
-**Monitor:**
-
-- [ ] Error rate < 0.5%
-- [ ] Performance stable
-- [ ] No customer complaints
-
-### Step 4.3: Full Cutover (Week 3)
-
-```nginx
-<!-- Code example in NGINX -->
-# 100% to FraiseQL
-proxy_pass http://new_server;
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Example follow-up migration once cutover is confirmed
+DROP VIEW IF EXISTS v_user_legacy;
+```
 
 **Post-cutover monitoring:**
 
@@ -539,31 +578,23 @@ proxy_pass http://new_server;
 
 ## Phase 5: Production Validation
 
-### Step 5.1: Health Checks
+### Step 5.1: Health checks
 
 ```bash
-<!-- Code example in BASH -->
-# Check server health
-curl http://localhost:5000/health
+# Check app health
+curl http://localhost:8000/health
 
-# Check database connectivity
-curl -X POST http://localhost:5000/graphql \
+# Check database connectivity through GraphQL
+curl -X POST http://localhost:8000/graphql \
+  -H "Content-Type: application/json" \
   -d '{"query": "{ users { id } }"}'
+```
 
-# Check rate limiting
-for i in {1..1000}; do
-  curl http://localhost:5000/graphql &
-done
-wait
-```text
-<!-- Code example in TEXT -->
+### Step 5.2: Monitoring setup
 
-### Step 5.2: Monitoring Setup
-
-**Set up observability:**
+**Set up observability around the FastAPI app and PostgreSQL:**
 
 ```yaml
-<!-- Code example in YAML -->
 # Prometheus metrics
 fraiseql_queries_total{method="query", status="success"}
 fraiseql_query_duration_seconds{method="query", quantile="0.95"}
@@ -574,26 +605,22 @@ fraiseql_db_connections{state="active"}
 error_rate > 1%
 response_latency_p95 > 500ms
 db_connection_exhaustion > 80%
-```text
-<!-- Code example in TEXT -->
+```
 
-### Step 5.3: Rollback Plan
+### Step 5.3: Rollback plan
 
-**If issues arise:**
+**If issues arise after a migration:**
 
-1. **Immediate:** Redirect 100% traffic back to old server
-2. **Investigate:** Debug issue in staging
-3. **Fix:** Update schema, redeploy to staging
-4. **Re-test:** Validate fix
-5. **Retry:** Staged cutover again
+1. **Immediate:** Roll the app back to the previous deploy.
+2. **Down-migration:** Apply the matching down-migration (or restore from `backup_pre_migration.dump` if the change was destructive).
+3. **Investigate:** Reproduce and fix the issue in staging.
+4. **Re-test:** Validate the corrected migration on staging.
+5. **Retry:** Re-run the rollout.
 
 ```bash
-<!-- Code example in BASH -->
-# Emergency rollback (1 minute RTO)
-nginx -s reload  # Change configuration
-# Verify: Traffic going to old server
-```text
-<!-- Code example in TEXT -->
+# Revert the last Alembic migration
+DATABASE_URL="$PROD_DATABASE_URL" alembic downgrade -1
+```
 
 ---
 
@@ -605,34 +632,34 @@ nginx -s reload  # Change configuration
 - [ ] Relationship diagram documented
 - [ ] Access patterns identified
 - [ ] Migration plan approved by team
-- [ ] Rollback plan documented
+- [ ] Rollback (down-migration) plan documented
 
 ### Schema Development
 
-- [ ] All tables mapped to FraiseQL types
-- [ ] All relationships defined
-- [ ] Authorization policies configured
-- [ ] Row-level security implemented
-- [ ] Views optimized (v_*, tv_*)
-- [ ] Indexes identified and created
+- [ ] All entities have `tb_` write tables with the `pk_`/`id`/`identifier` trinity
+- [ ] All read views (`v_`/`tv_`) expose an `id` column and a `data` JSONB
+- [ ] Relationships embedded in the view JSONB
+- [ ] Mutations implemented as `fn_` functions
+- [ ] Row-Level Security policies configured for multi-tenant tables
+- [ ] Authorization wired via `Authorizer`
+- [ ] Indexes identified and created on the underlying tables
 
 ### Testing
 
 - [ ] Staging database cloned from production
-- [ ] FraiseQL schema compiles successfully
-- [ ] Query compatibility tests pass
+- [ ] Migrations apply cleanly on staging
+- [ ] Query verification passes
 - [ ] Performance baseline established
-- [ ] Load testing passed (10x peak load)
-- [ ] Error handling tested
+- [ ] Load testing passed
 - [ ] Authorization tested
 
 ### Cutover
 
-- [ ] Traffic splitting configured
+- [ ] Backup taken before applying production migrations
+- [ ] Migrations kept additive where possible
 - [ ] Monitoring alerts set up
 - [ ] On-call team briefed
-- [ ] Rollback tested
-- [ ] Communication plan ready
+- [ ] Down-migrations tested
 - [ ] Stakeholders notified
 
 ### Post-Migration
@@ -641,7 +668,7 @@ nginx -s reload  # Change configuration
 - [ ] Latency within acceptable range
 - [ ] All health checks passing
 - [ ] No customer-facing issues reported
-- [ ] Old server decommissioned
+- [ ] Old objects decommissioned in a follow-up migration
 - [ ] Documentation updated
 
 ---
@@ -650,126 +677,115 @@ nginx -s reload  # Change configuration
 
 ### Issue: Data Type Mismatches
 
-**Symptom:** Query returns error or unexpected values.
+**Symptom:** Query returns an error or unexpected values.
 
-**Cause:** GraphQL type doesn't match database column type.
+**Cause:** The GraphQL type doesn't match the value built in the view's JSONB.
 
-**Solution:**
+**Solution:** Use precise types — for money, build a string/Decimal-friendly value in the view and map it to a precise Python type, never a float.
 
 ```python
-<!-- Code example in Python -->
+from decimal import Decimal
+
 # Wrong
-@type
+@fraiseql.type(sql_source="v_product", jsonb_column="data")
 class Product:
-    price: float  # ❌ Float loses precision!
+    price: float    # ❌ float loses precision
 
 # Correct
-@type
+@fraiseql.type(sql_source="v_product", jsonb_column="data")
 class Product:
-    price: Decimal  # ✅ Always use Decimal for money
-```text
-<!-- Code example in TEXT -->
+    price: Decimal  # ✅ use Decimal for money
+```
 
 ### Issue: Relationship Not Loading
 
-**Symptom:** Query returns null for relationship field.
+**Symptom:** A nested relationship field returns null.
 
-**Cause:** Foreign key mismatch or missing relationship definition.
+**Cause:** The view's JSONB never built that key, or the foreign key join is wrong.
 
-**Solution:**
+**Solution:** Make sure the join and the `jsonb_build_object` key both exist, and check for orphaned foreign keys.
 
-```python
-<!-- Code example in Python -->
-# Make sure foreign key exists
-@type
-class Post:
-    user_id: str  # Must exist
-    user: User    # Relationship must be defined
+```sql
+-- The view must embed the nested object under the field name the type expects
+-- e.g. jsonb_build_object('user', jsonb_build_object('id', ...))
 
-# Verify in database
-SELECT COUNT(*) FROM posts WHERE user_id IS NULL;
-```text
-<!-- Code example in TEXT -->
+-- Look for broken foreign keys
+SELECT COUNT(*) FROM tb_post WHERE fk_user IS NULL;
+```
 
 ### Issue: Authorization Denying All Queries
 
-**Symptom:** All queries return "Unauthorized" even for public data.
+**Symptom:** Every query returns "Unauthorized" even for public data.
 
-**Cause:** Row-level security WHERE clause too restrictive.
+**Cause:** An RLS policy on the underlying table is too restrictive, or the session GUC isn't set.
 
-**Solution:**
+**Solution:** Verify the request context carries `tenant_id`/`user_id` so FraiseQL issues `SET LOCAL app.tenant_id`, and loosen the policy to allow public rows:
 
-```python
-<!-- Code example in Python -->
-@type
-class Post:
-    where: Where = FraiseQL.where(
-        # This might be too restrictive!
-        is_public=True
-    )
-```text
-<!-- Code example in TEXT -->
-
-**Fix:**
-
-```python
-<!-- Code example in Python -->
-@type
-class Post:
-    where: Where = FraiseQL.where(
-        # OR condition: public OR owned by user
-        is_public=True or fk_user=FraiseQL.context.user_id
-    )
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Allow public rows OR rows owned by the current tenant
+CREATE POLICY post_visibility ON tb_post
+    USING (
+        is_public
+        OR fk_organization = (
+            SELECT pk_organization FROM tb_organization
+            WHERE id = current_setting('app.tenant_id')::uuid
+        )
+    );
+```
 
 ---
 
 ## Performance Tuning Post-Migration
 
-### Step 1: Identify Slow Queries
+### Step 1: Identify slow queries
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL
-SELECT query, calls, mean_time FROM pg_stat_statements
-WHERE mean_time > 100
-ORDER BY mean_time DESC LIMIT 20;
-```text
-<!-- Code example in TEXT -->
+SELECT query, calls, mean_exec_time FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC LIMIT 20;
+```
 
-### Step 2: Add Indexes
+### Step 2: Add indexes
 
 ```sql
-<!-- Code example in SQL -->
--- From slow queries, identify columns in WHERE clauses
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at);
-```text
-<!-- Code example in TEXT -->
+-- From slow queries, index the foreign keys and filter columns on the base tables
+CREATE INDEX idx_tb_post_fk_user ON tb_post (fk_user);
+CREATE INDEX idx_tb_post_created_at ON tb_post (created_at);
+```
 
-### Step 3: Materialize Expensive Views
+For JSONB filtering, a GIN index on the `data` column of a view-backing table helps:
+
+```sql
+CREATE INDEX idx_tv_user_stats_data ON tv_user_stats USING GIN (data);
+```
+
+### Step 3: Materialize expensive views
+
+Convert a hot logical `v_` view into a `tv_` projection (see Step 2.6) and point the type's `sql_source` at it:
 
 ```python
-<!-- Code example in Python -->
-@type
+# Changed from v_user_stats (logical) to tv_user_stats (projection)
+@fraiseql.type(sql_source="tv_user_stats", jsonb_column="data")
 class UserStats:
-    """Changed from v_user_stats (logical) to tv_user_stats (materialized)."""
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     post_count: int
     total_engagement: int
-```text
-<!-- Code example in TEXT -->
+```
 
-### Step 4: Enable Query Caching
+### Step 4: Enable query caching
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.caching]
-enabled = true
-default_ttl_seconds = 300
-```text
-<!-- Code example in TEXT -->
+FraiseQL ships PostgreSQL-backed result caching with cascade invalidation, exposed through the
+`fraiseql.caching` module (`PostgresCache`, `ResultCache`, `CachedRepository`, `CacheConfig`,
+and `setup_auto_cascade_rules`). Wrap the repository with a `CacheConfig` to cache hot read
+paths and invalidate them when the underlying tables change:
+
+```python
+from fraiseql.caching import CacheConfig, CachedRepository, PostgresCache
+
+cache = PostgresCache(...)                      # PostgreSQL-backed cache backend
+config = CacheConfig(default_ttl=300)           # cache reads for 5 minutes
+cached_db = CachedRepository(db, cache, config)
+```
 
 ---
 
@@ -781,15 +797,8 @@ default_ttl_seconds = 300
 - **[Common Gotchas](./common-gotchas.md)** — Pitfalls to avoid during migration
 - **[Performance Tuning Runbook](../operations/performance-tuning-runbook.md)** — Optimizing post-migration
 - **[Production Deployment](./production-deployment.md)** — Deployment procedures
-- **[View Selection Guide](./view-selection-performance-testing.md)** — Optimizing view types
+- **[Performance Optimization](./performance-optimization.md)** — Optimizing view types and reads
 
 **Architecture & Reference:**
 
-- **[Authorization & RBAC](../enterpri../../guides/authorization-quick-start.md)** — Row-level security setup
-- **[Federation Guide](../integrations/federation/guide.md)** — Multi-database migration
-- **[Schema Compilation](../architecture/core/compilation-phases.md)** — How schemas compile
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- **[Authorization Quick Start](./authorization-quick-start.md)** — Row-level security setup

@@ -327,6 +327,4 @@ This checklist ensures FraiseQL documentation meets production quality standards
 
 ---
 
-*This checklist ensures FraiseQL documentation maintains production quality and provides excellent user experience.*</content>
-</xai:function_call name="list">
-<parameter name="path">scripts
+*This checklist ensures FraiseQL documentation maintains production quality and provides excellent user experience.*

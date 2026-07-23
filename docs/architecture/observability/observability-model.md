@@ -1,1325 +1,771 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting
-description: FraiseQL provides a **comprehensive observability model** covering three pillars:
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+title: "FraiseQL Observability Model: Metrics, Logging, and Tracing"
+description: FraiseQL provides a comprehensive observability model covering three pillars - metrics, logs, and traces - for PostgreSQL-backed GraphQL APIs running on FastAPI.
+keywords: ["observability", "metrics", "tracing", "logging", "prometheus", "monitoring"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL Observability Model: Comprehensive Monitoring, Tracing, and Alerting
+# FraiseQL Observability Model: Metrics, Logging, and Tracing
 
-**Date:** January 2026
-**Status:** Complete System Specification
 **Audience:** Operations engineers, SRE teams, platform architects, application developers
 
 ---
 
 ## Executive Summary
 
-FraiseQL provides a **comprehensive observability model** covering three pillars:
+FraiseQL provides observability across three pillars:
 
-1. **Metrics** — Quantitative measurements (queries/second, latency, errors)
-2. **Logs** — Structured event records (per-request, debug, errors)
-3. **Traces** — Distributed request flow (end-to-end execution path)
+1. **Metrics** — Quantitative measurements (queries/second, latency, errors) exposed in Prometheus format.
+2. **Logs** — Structured event records (per-request, debug, errors), including security audit events.
+3. **Traces** — Distributed request flow via OpenTelemetry (end-to-end execution path).
 
-All observability data includes **rich context** (user ID, query plan, authorization rules, database engine, cache status) enabling root-cause analysis without excessive debugging.
+All observability is built into the FastAPI application FraiseQL serves. You opt in with a few setup calls:
 
-**Core principle**: Observable by default. Every operation produces telemetry; zero configuration needed for basic observability.
+```python
+from fastapi import FastAPI
+from fraiseql.monitoring import setup_metrics, MetricsConfig
+from fraiseql.tracing import setup_tracing, TracingConfig
+
+app = FastAPI()
+setup_metrics(app, MetricsConfig(namespace="fraiseql"))
+setup_tracing(app, TracingConfig(service_name="fraiseql"))
+```
+
+**Core principle**: Observable by default. Metrics, health endpoints, and tracing hooks are part of the framework; you wire them in once and they instrument every operation.
 
 ---
 
 ## 1. Metrics Framework
 
+FraiseQL ships a Prometheus integration in `fraiseql.monitoring`. Calling
+`setup_metrics(app, config)` adds the metrics middleware and a `/metrics`
+endpoint (default path) that serves the standard Prometheus exposition format.
+
+```python
+from fastapi import FastAPI
+from fraiseql.monitoring import setup_metrics, MetricsConfig
+
+app = FastAPI()
+
+metrics = setup_metrics(
+    app,
+    MetricsConfig(
+        enabled=True,
+        namespace="fraiseql",        # prefix for every metric name
+        metrics_path="/metrics",     # Prometheus scrape endpoint
+        exclude_paths={"/metrics", "/health", "/ready"},
+    ),
+)
+```
+
+`setup_metrics` returns a `FraiseQLMetrics` instance. You can retrieve the
+global instance later with `get_metrics()`.
+
 ### 1.1 Metric Categories
 
-FraiseQL produces metrics across five dimensions:
+The built-in `FraiseQLMetrics` collector covers these dimensions:
 
 ```text
-<!-- Code example in TEXT -->
 ┌─────────────────────────┐
-│ Operation Metrics       │ Queries/second, mutations/second, subscriptions active
+│ Operation Metrics       │ GraphQL queries/mutations counted by type & name
 ├─────────────────────────┤
-│ Latency Metrics         │ Query duration, mutation duration, database query time
+│ Latency Metrics         │ Query/mutation/DB-query duration histograms
 ├─────────────────────────┤
-│ Error Metrics           │ Error rate by code, error category distribution
+│ Error Metrics           │ Errors by error_type, error_code, operation
 ├─────────────────────────┤
-│ Resource Metrics        │ Database connections, query memory, cache size
+│ Resource Metrics        │ Active/idle/total DB connections, response time
 ├─────────────────────────┤
-│ Business Metrics        │ Custom defined by application (user signups, revenue)
+│ Business Metrics        │ Custom prometheus_client Counters/Gauges you define
 └─────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 1.2 Core Metrics (Always Available)
 
-**1.2.1 Query Metrics**
+With `namespace="fraiseql"` (the default), the collector emits the following
+series.
+
+**1.2.1 GraphQL Query Metrics**
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_query_requests_total
-  {
-    operation_name="GetUserPosts",
-    status="success",     # success, error, timeout
-    error_code="",        # Empty if success
-    database="postgresql",
-    cache_hit=true
-  }
-  5000  # 5000 queries in this time window
-
-fraiseql_query_duration_seconds
-  {
-    operation_name="GetUserPosts",
-    quantile="p50"  # p50, p95, p99, p99.9
-  }
-  0.045  # 45ms
-
-fraiseql_query_duration_seconds
-  {
-    operation_name="GetUserPosts",
-    quantile="p99"
-  }
-  0.250  # 250ms
-
-fraiseql_query_database_time_seconds
-  {
-    operation_name="GetUserPosts"
-  }
-  0.035  # Database query took 35ms out of 45ms total
-
-fraiseql_query_rows_returned
-  {
-    operation_name="GetUserPosts"
-  }
-  1500  # Average rows per query
-```text
-<!-- Code example in TEXT -->
+fraiseql_graphql_queries_total{operation_type="query",operation_name="users"} 5000
+fraiseql_graphql_query_duration_seconds_bucket{operation_type="query",operation_name="users",le="0.05"} 4500
+fraiseql_graphql_query_duration_seconds_sum{operation_type="query",operation_name="users"} 225
+fraiseql_graphql_query_duration_seconds_count{operation_type="query",operation_name="users"} 5000
+fraiseql_graphql_queries_success{operation_type="query"} 4980
+fraiseql_graphql_queries_errors{operation_type="query"} 20
+```
 
 **1.2.2 Mutation Metrics**
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_mutation_requests_total
-  {
-    operation_name="CreatePost",
-    status="success",
-    database="postgresql"
-  }
-  250  # 250 mutations this window
+fraiseql_graphql_mutations_total{mutation_name="create_user"} 250
+fraiseql_graphql_mutation_duration_seconds_sum{mutation_name="create_user"} 37.5
+fraiseql_graphql_mutation_duration_seconds_count{mutation_name="create_user"} 250
+fraiseql_graphql_mutations_success{mutation_name="create_user",result_type="CreateUserSuccess"} 240
+fraiseql_graphql_mutations_errors{mutation_name="create_user",error_type="CreateUserError"} 10
+```
 
-fraiseql_mutation_duration_seconds
-  {
-    operation_name="CreatePost",
-    quantile="p95"
-  }
-  0.150  # 150ms
-
-fraiseql_mutation_rows_affected
-  {
-    operation_name="CreatePost"
-  }
-  1  # Rows modified
-
-fraiseql_mutation_deadlock_retries
-  {
-    operation_name="UpdatePost"
-  }
-  12  # 12 deadlock retries in this window
-```text
-<!-- Code example in TEXT -->
-
-**1.2.3 Subscription Metrics**
+**1.2.3 Database Metrics**
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_subscriptions_active
-  {
-    subscription_name="OnPostCreated",
-    database="postgresql"
-  }
-  450  # 450 active subscriptions
+fraiseql_db_connections_active 43
+fraiseql_db_connections_idle 5
+fraiseql_db_connections_total 50
 
-fraiseql_subscription_events_published
-  {
-    subscription_name="OnPostCreated",
-    status="delivered"  # delivered, dropped, failed
-  }
-  15000  # 15K events delivered this window
+fraiseql_db_queries_total{query_type="select",table_name="v_user"} 5000
+fraiseql_db_query_duration_seconds_sum{query_type="select"} 175
+fraiseql_db_query_duration_seconds_count{query_type="select"} 5000
+```
 
-fraiseql_subscription_event_delay_seconds
-  {
-    subscription_name="OnPostCreated",
-    quantile="p95"
-  }
-  0.050  # 50ms event delay p95
+**1.2.4 Cache Metrics**
 
-fraiseql_subscription_buffer_utilization
-  {
-    subscription_name="OnPostCreated"
-  }
-  0.45  # 45% of buffer used (1000 event capacity)
-```text
-<!-- Code example in TEXT -->
-
-**1.2.4 Authorization Metrics**
+These reflect FraiseQL's PostgreSQL-backed result cache
+(`fraiseql.caching`), labelled by `cache_type`:
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_authorization_checks_total
-  {
-    result="allowed",    # allowed, denied
-    rule_type="owner_only"
-  }
-  45000  # 45K authorization checks
+fraiseql_cache_hits_total{cache_type="result"} 3500
+fraiseql_cache_misses_total{cache_type="result"} 500   # ~87% hit rate
+```
 
-fraiseql_authorization_duration_seconds
-  {
-    rule_type="owner_only",
-    quantile="p95"
-  }
-  0.005  # 5ms for authorization check
-
-fraiseql_authorization_denials
-  {
-    reason="insufficient_role",  # insufficient_role, row_level_denied
-    rule_type="admin_only"
-  }
-  15  # 15 denials this window
-```text
-<!-- Code example in TEXT -->
-
-**1.2.5 Cache Metrics**
+**1.2.5 Error Metrics**
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_cache_requests_total
-  {
-    result="hit",    # hit, miss, expire
-    operation_name="GetUserPosts"
-  }
-  3500  # 3500 cache hits
+fraiseql_errors_total{error_type="QueryTimeout",error_code="DB_TIMEOUT",operation="users"} 25
+fraiseql_errors_total{error_type="PermissionError",error_code="FORBIDDEN",operation="admin_panel"} 500
+fraiseql_errors_total{error_type="ValidationError",error_code="INVALID_TYPE",operation="create_user"} 80
+```
 
-fraiseql_cache_requests_total
-  {
-    result="miss",
-    operation_name="GetUserPosts"
-  }
-  500   # 500 cache misses (87% hit rate)
+**1.2.6 HTTP & Response Time Metrics**
 
-fraiseql_cache_size_bytes
-  {
-    cache_backend="redis"
-  }
-  536870912  # 512MB used
-
-fraiseql_cache_ttl_max_seconds
-  {}
-  300  # Max TTL 5 minutes
-```text
-<!-- Code example in TEXT -->
-
-**1.2.6 Database Connection Metrics**
+The metrics middleware records request-level series for every non-excluded path:
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_db_connections_active
-  {
-    database="postgresql",
-    pool_size=50
-  }
-  43  # 43 connections active
+fraiseql_http_requests_total{method="POST",endpoint="/graphql",status="200"} 8500
+fraiseql_http_request_duration_seconds_sum{method="POST",endpoint="/graphql"} 382.5
+fraiseql_http_request_duration_seconds_count{method="POST",endpoint="/graphql"} 8500
+fraiseql_response_time_seconds_sum 382.5
+fraiseql_response_time_seconds_count 8500
+```
 
-fraiseql_db_connection_wait_time_seconds
-  {
-    database="postgresql",
-    quantile="p95"
-  }
-  0.001  # 1ms max wait for connection
+### 1.3 Custom Business Metrics
 
-fraiseql_db_query_rows_scanned
-  {
-    operation_name="GetUserPosts"
-  }
-  1000  # Scanned 1000 rows to return 20
-
-fraiseql_db_indexes_used
-  {
-    operation_name="GetUserPosts",
-    index="idx_post_published"
-  }
-  1  # Index was used (1 = yes)
-```text
-<!-- Code example in TEXT -->
-
-**1.2.7 Error Metrics**
-
-```text
-<!-- Code example in TEXT -->
-fraiseql_errors_total
-  {
-    error_code="E_DB_QUERY_TIMEOUT_302",
-    category="DATABASE_ERROR"
-  }
-  25  # 25 timeout errors this window
-
-fraiseql_errors_total
-  {
-    error_code="E_AUTH_PERMISSION_401",
-    category="AUTHORIZATION_ERROR"
-  }
-  500  # 500 authorization denials
-
-fraiseql_errors_total
-  {
-    error_code="E_VALIDATION_INVALID_TYPE_103",
-    category="VALIDATION_ERROR"
-  }
-  80   # 80 input validation errors
-```text
-<!-- Code example in TEXT -->
-
-### 1.3 Custom Metrics (Application-Defined)
-
-Applications can define custom business metrics:
+There is no metric decorator. Custom business metrics use standard
+`prometheus_client` objects that you define once and update inside your
+resolvers. Register them against the same registry the collector uses, or
+the default registry, so they are scraped from the `/metrics` endpoint.
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    id: ID
-    email: str
+from prometheus_client import Counter, Gauge
 
-    @FraiseQL.metric(name="user_created", type="counter")
-    def track_creation(self):
-        """Track when users are created"""
-        # Automatically incremented on mutation
+# Define business metrics once, at module scope.
+USERS_CREATED = Counter(
+    "app_users_created_total",
+    "Number of users created",
+)
+ORDER_REVENUE = Gauge(
+    "app_order_revenue",
+    "Total order revenue in USD",
+)
 
-@FraiseQL.type
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user", {"name": input.name, "email": input.email}
+    )
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"))
+
+    USERS_CREATED.inc()                       # update business metric
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+For computed fields, attach a resolver with `@fraiseql.field` and update a
+gauge inside it:
+
+```python
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
     id: ID
     total: float
 
-    @FraiseQL.metric(name="order_revenue", type="gauge", value_field="total")
-    def track_revenue(self):
-        """Track total order revenue"""
-        # Value automatically updated
+    @fraiseql.field
+    def revenue_bucket(self, info) -> str:
+        ORDER_REVENUE.set(self.total)
+        return "high" if self.total > 10_000 else "normal"
+```
 
-@FraiseQL.resolver
-def custom_metric_handler():
-    """Define custom metrics for business logic"""
-    FraiseQL.metrics.gauge(
-        name="active_users",
-        value=count_active_users()
-    )
-    FraiseQL.metrics.gauge(
-        name="pending_orders",
-        value=count_pending_orders()
-    )
-```text
-<!-- Code example in TEXT -->
-
-**Custom metric example:**
+Custom metrics appear in the same Prometheus output:
 
 ```text
-<!-- Code example in TEXT -->
-fraiseql_custom_user_created
-  {}
-  1250  # 1250 users created
+app_users_created_total 1250
+app_order_revenue 450000.5
+```
 
-fraiseql_custom_order_revenue
-  {
-    currency="USD"
-  }
-  450000.50  # $450K in orders
-```text
-<!-- Code example in TEXT -->
+### 1.4 Metric Export Format
 
-### 1.4 Metric Export Formats
-
-**Prometheus format (default):**
+The `/metrics` endpoint serves the standard Prometheus text exposition format
+produced by `prometheus_client.generate_latest`:
 
 ```text
-<!-- Code example in TEXT -->
-# HELP fraiseql_query_requests_total Total queries executed
-# TYPE fraiseql_query_requests_total counter
-fraiseql_query_requests_total{operation_name="GetUserPosts",status="success"} 5000
+# HELP fraiseql_graphql_queries_total Total number of GraphQL queries
+# TYPE fraiseql_graphql_queries_total counter
+fraiseql_graphql_queries_total{operation_type="query",operation_name="users"} 5000
 
-# HELP fraiseql_query_duration_seconds Query execution duration
-# TYPE fraiseql_query_duration_seconds histogram
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.01"} 500
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.05"} 4500
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="0.1"} 4800
-fraiseql_query_duration_seconds_bucket{operation_name="GetUserPosts",le="+Inf"} 5000
-fraiseql_query_duration_seconds_sum{operation_name="GetUserPosts"} 225
-fraiseql_query_duration_seconds_count{operation_name="GetUserPosts"} 5000
-```text
-<!-- Code example in TEXT -->
+# HELP fraiseql_graphql_query_duration_seconds GraphQL query execution time in seconds
+# TYPE fraiseql_graphql_query_duration_seconds histogram
+fraiseql_graphql_query_duration_seconds_bucket{operation_type="query",operation_name="users",le="0.01"} 500
+fraiseql_graphql_query_duration_seconds_bucket{operation_type="query",operation_name="users",le="0.05"} 4500
+fraiseql_graphql_query_duration_seconds_bucket{operation_type="query",operation_name="users",le="0.1"} 4800
+fraiseql_graphql_query_duration_seconds_bucket{operation_type="query",operation_name="users",le="+Inf"} 5000
+fraiseql_graphql_query_duration_seconds_sum{operation_type="query",operation_name="users"} 225
+fraiseql_graphql_query_duration_seconds_count{operation_type="query",operation_name="users"} 5000
+```
 
-**JSON export:**
+Other backends (CloudWatch, Datadog, OTLP) consume these metrics by pointing
+their respective Prometheus-scrape integrations at the `/metrics` endpoint.
 
-```json
-<!-- Code example in JSON -->
-{
-  "metrics": [
-    {
-      "name": "fraiseql_query_requests_total",
-      "value": 5000,
-      "labels": {
-        "operation_name": "GetUserPosts",
-        "status": "success"
-      },
-      "timestamp": "2026-01-15T10:30:45Z"
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
-
-**CloudWatch format (AWS):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "MetricData": [
-    {
-      "MetricName": "FraiseQLQueryRequests",
-      "Dimensions": [
-        {"Name": "OperationName", "Value": "GetUserPosts"}
-      ],
-      "Value": 5000,
-      "Unit": "Count"
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
-
-### 1.5 Metric Aggregation & Queries
-
-**Prometheus queries:**
+### 1.5 Querying Metrics in Prometheus
 
 ```promql
-<!-- Code example in PROMQL -->
 # Average query latency
-rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m])
+rate(fraiseql_graphql_query_duration_seconds_sum[5m]) / rate(fraiseql_graphql_query_duration_seconds_count[5m])
 
 # Query error rate
-rate(fraiseql_query_requests_total{status="error"}[5m]) / rate(fraiseql_query_requests_total[5m])
+rate(fraiseql_graphql_queries_errors[5m]) / rate(fraiseql_graphql_queries_total[5m])
 
 # Cache hit rate
-rate(fraiseql_cache_requests_total{result="hit"}[5m]) / rate(fraiseql_cache_requests_total[5m])
+rate(fraiseql_cache_hits_total[5m]) / (rate(fraiseql_cache_hits_total[5m]) + rate(fraiseql_cache_misses_total[5m]))
 
 # P99 query latency
-histogram_quantile(0.99, rate(fraiseql_query_duration_seconds_bucket[5m]))
+histogram_quantile(0.99, rate(fraiseql_graphql_query_duration_seconds_bucket[5m]))
 
 # Top queries by latency
-topk(5, rate(fraiseql_query_duration_seconds_sum[5m]) / rate(fraiseql_query_duration_seconds_count[5m]))
-```text
-<!-- Code example in TEXT -->
+topk(5, rate(fraiseql_graphql_query_duration_seconds_sum[5m]) / rate(fraiseql_graphql_query_duration_seconds_count[5m]))
+```
 
 ---
 
 ## 2. Structured Logging
 
+FraiseQL uses Python's standard `logging`. Application code logs through the
+`fraiseql.*` logger hierarchy, and security-relevant events go through the
+dedicated audit logger in `fraiseql.audit`.
+
 ### 2.1 Log Levels & Categories
 
-FraiseQL produces structured logs at multiple levels:
+| Level | Usage |
+|-------|-------|
+| **DEBUG** | Development, detailed flow |
+| **INFO** | Significant events (query/mutation completion) |
+| **WARNING** | Unusual but handled situations |
+| **ERROR** | Failed operations |
+| **CRITICAL** | System failures |
 
-| Level | Usage | Frequency | Retention |
-|-------|-------|-----------|-----------|
-| **DEBUG** | Development, detailed flow | High | 24 hours |
-| **INFO** | Significant events | Medium | 7 days |
-| **WARN** | Unusual but handled situations | Low | 30 days |
-| **ERROR** | Failed operations | Low | 90 days |
-| **FATAL** | System failures | Very low | 1 year |
+Configure levels through standard Python logging or `FRAISEQL_`-prefixed
+environment variables. Retention is a property of your log pipeline (e.g.
+Loki, CloudWatch), not the framework.
 
-### 2.2 Log Entry Format
+### 2.2 Security Audit Logging
 
-All logs are structured JSON with consistent schema:
+`fraiseql.audit` provides a structured `SecurityLogger` for security events.
+Events are typed via `SecurityEventType` and severities via
+`SecurityEventSeverity`, then serialized to structured JSON.
+
+```python
+from fraiseql.audit import (
+    SecurityLogger,
+    SecurityEvent,
+    SecurityEventType,
+    SecurityEventSeverity,
+    set_security_logger,
+)
+
+security = SecurityLogger(log_to_stdout=True, log_to_file=False)
+set_security_logger(security)
+
+# Convenience helpers exist for common events:
+security.log_auth_failure(reason="invalid_password", attempted_username="user-456")
+security.log_authorization_denied(
+    user_id="user-456",
+    resource="AdminPanel.api_keys",
+    action="read",
+    reason="insufficient_role",
+)
+
+# Or emit a fully structured event:
+security.log_event(
+    SecurityEvent(
+        event_type=SecurityEventType.QUERY_COMPLEXITY_EXCEEDED,
+        severity=SecurityEventSeverity.WARNING,
+        user_id="user-456",
+        resource="searchUsers",
+        reason="depth_limit",
+    )
+)
+```
+
+Available `SecurityEventType` values cover authentication (`AUTH_SUCCESS`,
+`AUTH_FAILURE`, `AUTH_TOKEN_EXPIRED`, ...), authorization (`AUTHZ_DENIED`,
+`AUTHZ_FIELD_DENIED`, `AUTHZ_PERMISSION_DENIED`, `AUTHZ_ROLE_DENIED`), rate
+limiting, CSRF, query security (`QUERY_COMPLEXITY_EXCEEDED`,
+`QUERY_DEPTH_EXCEEDED`, `QUERY_TIMEOUT`, `QUERY_MALICIOUS_PATTERN`), data
+access, configuration, and system events.
+
+### 2.3 Example Log Entries
+
+Security events are serialized as structured JSON:
 
 ```json
-<!-- Code example in JSON -->
 {
-  "timestamp": "2026-01-15T10:30:45.123Z",
-  "level": "info",
-  "logger": "FraiseQL.query",
-  "message": "Query executed successfully",
-  "context": {
-    "request_id": "req-abc123",
-    "trace_id": "trace-xyz789",
-    "user_id": "user-456",
-    "organization_id": "org-123"
-  },
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "success",
-    "duration_ms": 45
-  },
-  "database": {
-    "engine": "postgresql",
-    "query_time_ms": 35,
-    "rows_affected": 20,
-    "connection_id": "conn-789"
-  },
-  "cache": {
-    "hit": true,
-    "ttl_seconds": 300
-  },
-  "authorization": {
-    "allowed": true,
-    "rules_evaluated": 3,
-    "time_ms": 2
-  },
-  "error": null,
-  "metadata": {
-    "version": "2.0.0",
-    "environment": "production"
-  }
+  "timestamp": "2026-01-15T10:30:45.002Z",
+  "event_type": "authz.role_denied",
+  "severity": "warning",
+  "user_id": "user-456",
+  "resource": "AdminPanel.api_keys",
+  "reason": "insufficient_role"
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### 2.3 Query Execution Logs
-
-**Query start (DEBUG):**
+A typical application query log entry (your own logger):
 
 ```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "debug",
-  "message": "Query execution started",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts"
-  },
-  "parameters": {
-    "userId": "user-456",
-    "limit": 20
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Query completion (INFO):**
-
-```json
-<!-- Code example in JSON -->
 {
   "timestamp": "2026-01-15T10:30:45.045Z",
   "level": "info",
+  "logger": "fraiseql.query",
   "message": "Query executed successfully",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "success",
-    "duration_ms": 45
-  },
-  "database": {
-    "query_time_ms": 35,
-    "rows_affected": 20
-  },
-  "cache": {
-    "hit": false,
-    "cached": true,
-    "ttl_seconds": 300
-  }
+  "operation": {"type": "query", "name": "users", "duration_ms": 45},
+  "database": {"engine": "postgresql", "query_time_ms": 35, "rows_returned": 20}
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Query timeout (ERROR):**
+A query timeout (ERROR):
 
 ```json
-<!-- Code example in JSON -->
 {
   "timestamp": "2026-01-15T10:30:45.000Z",
   "level": "error",
+  "logger": "fraiseql.query",
   "message": "Query timeout",
-  "operation": {
-    "type": "query",
-    "name": "GetUserPosts",
-    "status": "timeout",
-    "duration_ms": 30000
-  },
-  "error": {
-    "code": "E_DB_QUERY_TIMEOUT_302",
-    "message": "Query execution exceeded 30 second timeout",
-    "retryable": true
-  }
+  "operation": {"type": "query", "name": "users", "duration_ms": 30000},
+  "error": {"code": "DB_QUERY_TIMEOUT", "retryable": true}
 }
-```text
-<!-- Code example in TEXT -->
-
-### 2.4 Mutation Execution Logs
-
-**Mutation start (DEBUG):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "debug",
-  "message": "Mutation execution started",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost"
-  },
-  "input": {
-    "title": "New Post",
-    "content": "Content preview..."
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Mutation committed (INFO):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.050Z",
-  "level": "info",
-  "message": "Mutation committed",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost",
-    "status": "success",
-    "duration_ms": 50
-  },
-  "database": {
-    "rows_affected": 1,
-    "transaction_duration_ms": 48
-  },
-  "events": {
-    "published": ["post_created"],
-    "subscribers": 127
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Mutation rolled back (ERROR):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.050Z",
-  "level": "error",
-  "message": "Mutation rolled back due to constraint violation",
-  "operation": {
-    "type": "mutation",
-    "name": "CreatePost",
-    "status": "rolled_back",
-    "duration_ms": 50
-  },
-  "error": {
-    "code": "E_VALIDATION_DUPLICATE_VALUE_107",
-    "message": "Post with title 'New Post' already exists",
-    "retryable": false
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 2.5 Authorization Logs
-
-**Authorization allowed (DEBUG):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.002Z",
-  "level": "debug",
-  "message": "Authorization check passed",
-  "authorization": {
-    "result": "allowed",
-    "rule": "owner_or_admin",
-    "field": "User.email",
-    "user_id": "user-456",
-    "resource_owner": "user-456",
-    "duration_ms": 1
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Authorization denied (WARN):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.002Z",
-  "level": "warn",
-  "message": "Authorization check failed",
-  "authorization": {
-    "result": "denied",
-    "rule": "admin_only",
-    "field": "AdminPanel.api_keys",
-    "user_id": "user-456",
-    "user_roles": ["user"],
-    "required_role": "admin",
-    "duration_ms": 2
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 2.6 Error Logs
-
-**All errors include:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "error": {
-    "code": "E_DB_QUERY_TIMEOUT_302",
-    "category": "DATABASE_ERROR",
-    "message": "Query exceeded timeout",
-    "severity": "error",
-    "retryable": true,
-    "remediable": false,
-    "trace": [
-      "FraiseQL.runtime.execute_query:123",
-      "FraiseQL.db.query:456",
-      "tokio.timeout:789"
-    ]
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 2.7 Log Filtering & Sampling
-
-**Debug log sampling (production):**
-
-```python
-<!-- Code example in Python -->
-# By default, DEBUG logs are sampled (1 in 100)
-FraiseQL.logging.configure({
-    "debug_sampling": {
-        "enabled": True,
-        "rate": 0.01,  # 1% of debug logs
-        "always_sample_errors": True  # Always log errors
-    }
-})
-```text
-<!-- Code example in TEXT -->
-
-**Dynamic log levels:**
-
-```bash
-<!-- Code example in BASH -->
-# Change log level without restart
-curl -X POST http://localhost:8000/admin/logging \
-  -d '{
-    "logger": "FraiseQL.query",
-    "level": "debug"
-  }'
-
-# Result: FraiseQL.query logs now at DEBUG level
-# Reverts after 1 hour or on restart
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## 3. Distributed Tracing
 
+FraiseQL ships an OpenTelemetry integration in `fraiseql.tracing`. Calling
+`setup_tracing(app, config)` instruments the FastAPI app and (when the
+OpenTelemetry packages are installed) auto-instruments the psycopg driver so
+database spans nest under request spans.
+
+```python
+from fastapi import FastAPI
+from fraiseql.tracing import setup_tracing, TracingConfig
+
+app = FastAPI()
+
+setup_tracing(
+    app,
+    TracingConfig(
+        enabled=True,
+        service_name="fraiseql",
+        service_version="1.0.0",
+        deployment_environment="production",
+        sample_rate=0.1,                       # 10% of traces
+        export_format="otlp",                  # otlp, jaeger, or zipkin
+        export_endpoint="http://otel-collector:4317",
+        exclude_paths={"/health", "/ready", "/metrics"},
+    ),
+)
+```
+
+`setup_tracing` returns a `FraiseQLTracer`; retrieve it later with
+`get_tracer()`. Helper functions `trace_graphql_operation` and
+`trace_database_query` create spans around specific operations.
+
 ### 3.1 Trace Context Propagation
 
-Every request includes **trace context** for distributed tracing:
-
-```json
-<!-- Code example in JSON -->
-{
-  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "span_id": "00f067aa0ba902b7",
-  "parent_span_id": "00f067aa0ba902b7",
-  "trace_flags": "01"  // Sampled
-}
-```text
-<!-- Code example in TEXT -->
-
-**Context propagation:**
+Tracing follows the OpenTelemetry / W3C Trace Context model. Inbound
+requests carrying a `traceparent` header continue the existing trace; the
+psycopg instrumentation links database spans to the GraphQL operation span.
 
 ```text
-<!-- Code example in TEXT -->
 Client Request
-  ↓ (contains trace_id)
-FraiseQL API
-  ├─ Creates span: "query.execution"
-  │  ├─ Creates span: "authorization.check"
-  │  ├─ Creates span: "database.query"
-  │  │  └─ Includes trace_id in database driver
-  │  └─ Creates span: "response.transform"
-  └─ Returns response with trace_id
-```text
-<!-- Code example in TEXT -->
+  ↓ (traceparent header)
+FraiseQL FastAPI app
+  ├─ Span: graphql.operation
+  │  ├─ Span: authorization
+  │  ├─ Span: database.query   (auto-instrumented psycopg)
+  │  └─ Span: response.transform
+  └─ Returns response (trace continues downstream)
+```
 
 ### 3.2 W3C Trace Context Headers
 
-FraiseQL uses W3C standard for trace propagation:
-
 ```text
-<!-- Code example in TEXT -->
-HTTP Request:
 traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 tracestate: congo=t61rcWpm35YzTP60
-```text
-<!-- Code example in TEXT -->
+```
 
-**Header format:**
+Header format:
 
 ```text
-<!-- Code example in TEXT -->
 traceparent: version-trace_id-parent_span_id-trace_flags
 00         = version 0 (W3C spec v1)
 4bf92...   = trace ID (16 bytes hex)
 00f067...  = parent span ID (8 bytes hex)
 01         = trace flags (01 = sampled)
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 3.3 Span Hierarchy
 
-Every query generates trace spans:
+A typical GraphQL query produces a span tree like:
 
 ```text
-<!-- Code example in TEXT -->
-Span: query.execution (root)
-├─ start: 2026-01-15T10:30:45.000Z
-├─ end: 2026-01-15T10:30:45.045Z
+Span: graphql.operation (root)
 ├─ duration: 45ms
 ├─ attributes:
-│  ├─ operation_name: "GetUserPosts"
-│  ├─ user_id: "user-456"
-│  └─ status: "success"
-│
-├─ Span: validation (child)
-│  ├─ start: 2026-01-15T10:30:45.000Z
-│  ├─ end: 2026-01-15T10:30:45.002Z
-│  ├─ duration: 2ms
-│  └─ attributes:
-│     └─ valid: true
+│  ├─ graphql.operation.name: "users"
+│  └─ graphql.operation.type: "query"
 │
 ├─ Span: authorization (child)
-│  ├─ start: 2026-01-15T10:30:45.002Z
-│  ├─ end: 2026-01-15T10:30:45.005Z
 │  ├─ duration: 3ms
 │  └─ attributes:
-│     ├─ allowed: true
-│     └─ rules_evaluated: 2
+│     └─ allowed: true
 │
-├─ Span: database.query (child)
-│  ├─ start: 2026-01-15T10:30:45.005Z
-│  ├─ end: 2026-01-15T10:30:45.040Z
+├─ Span: database.query (child, psycopg auto-instrumented)
 │  ├─ duration: 35ms
 │  └─ attributes:
-│     ├─ database: "postgresql"
-│     ├─ statement: "SELECT ... FROM v_post WHERE ..."
-│     ├─ rows: 20
-│     └─ status: "success"
+│     ├─ db.system: "postgresql"
+│     ├─ db.statement: "SELECT data FROM v_user WHERE ..."
+│     └─ db.rows: 20
 │
 └─ Span: response.transform (child)
-   ├─ start: 2026-01-15T10:30:45.040Z
-   ├─ end: 2026-01-15T10:30:45.045Z
    ├─ duration: 5ms
    └─ attributes:
-      ├─ format: "json"
-      └─ size_bytes: 5120
-```text
-<!-- Code example in TEXT -->
+      └─ format: "json"
+```
 
-### 3.4 Span Attributes (Events)
+### 3.4 Sampling Strategy
 
-Each span records attributes about the operation:
-
-```json
-<!-- Code example in JSON -->
-{
-  "spans": [
-    {
-      "name": "database.query",
-      "attributes": {
-        "database.system": "postgresql",
-        "database.connection.pool.name": "default",
-        "database.connection.state": "in_use",
-        "db.statement": "SELECT * FROM v_post WHERE ...",
-        "db.rows_returned": 20,
-        "db.rows_scanned": 1000,
-        "db.execution_time_ms": 35,
-        "db.prepared_statement": true,
-        "db.indexes_used": ["idx_post_published"],
-        "db.cache_hit": false
-      }
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
-
-### 3.5 Sampling Strategy
-
-**Adaptive sampling based on error rate:**
-
-```rust
-<!-- Code example in RUST -->
-// By default: Sample 1% of traces (cost reduction)
-if error_rate > 0.01 {  // If >1% error rate
-    sampling_rate = 0.10;  // Sample 10% (more visibility)
-}
-
-if error_rate > 0.05 {  // If >5% error rate
-    sampling_rate = 1.0;   // Sample 100% (full debugging)
-}
-```text
-<!-- Code example in TEXT -->
-
-**Request context sampling:**
+`sample_rate` controls head-based sampling (0.0–1.0). A value of `0.1` samples
+10% of traces; `1.0` samples everything. For lower-traffic, error-focused
+visibility, run a high sample rate in staging and a lower one in production,
+then rely on metrics and logs to surface anomalies.
 
 ```python
-<!-- Code example in Python -->
-# Sample 100% of requests with errors
-if response.status == "error":
-    trace.sample_rate = 1.0
+TracingConfig(sample_rate=0.1)   # 10% in production
+TracingConfig(sample_rate=1.0)   # 100% in staging / debugging
+```
 
-# Sample 100% of slow requests
-elif response.duration_ms > timeout_threshold:
-    trace.sample_rate = 1.0
+### 3.5 Trace Export
 
-# Sample 100% if user opt-in
-elif user.prefer_full_tracing:
-    trace.sample_rate = 1.0
-
-# Default: Sample 1%
-else:
-    trace.sample_rate = 0.01
-```text
-<!-- Code example in TEXT -->
-
-### 3.6 Trace Export
-
-**Jaeger format (default):**
-
-```json
-<!-- Code example in JSON -->
-{
-  "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "spans": [
-    {
-      "traceID": "4bf92f3577b34da6a3ce929d0e0e4736",
-      "spanID": "00f067aa0ba902b7",
-      "operationName": "query.execution",
-      "startTime": 1642252245000000,
-      "duration": 45000,
-      "tags": {
-        "operation_name": "GetUserPosts",
-        "user_id": "user-456"
-      },
-      "logs": [
-        {
-          "timestamp": 1642252245005000,
-          "fields": [
-            {"key": "event", "value": "authorization_passed"}
-          ]
-        }
-      ]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
-
-**OpenTelemetry format:**
+The exporter is selected by `export_format` (`"otlp"`, `"jaeger"`, or
+`"zipkin"`) and pointed at your collector with `export_endpoint`. OTLP is the
+recommended transport; from an OpenTelemetry Collector you can fan out to
+Jaeger, Tempo, Datadog, or any OTLP-compatible backend.
 
 ```python
-<!-- Code example in Python -->
-{
-  "resourceSpans": [
-    {
-      "resource": {
-        "attributes": [
-          {"key": "service.name", "value": {"stringValue": "FraiseQL"}},
-          {"key": "service.version", "value": {"stringValue": "2.0.0"}}
-        ]
-      },
-      "scopeSpans": [
-        {
-          "span": [
-            {
-              "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-              "spanId": "00f067aa0ba902b7",
-              "name": "query.execution",
-              "startTimeUnixNano": 1642252245000000000,
-              "endTimeUnixNano": 1642252245045000000
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+# OTLP (recommended) → OpenTelemetry Collector
+TracingConfig(export_format="otlp", export_endpoint="http://otel-collector:4317")
+
+# Direct to Jaeger
+TracingConfig(export_format="jaeger", export_endpoint="jaeger-agent:6831")
+```
 
 ---
 
 ## 4. Alerting Rules
 
-### 4.1 Pre-Built Alert Templates
+FraiseQL has no alert decorator or built-in alert engine. Alerting is done the
+standard Prometheus way: write alerting rules over the metrics exposed at
+`/metrics`, and route them with Alertmanager.
 
-FraiseQL includes pre-built Prometheus alert rules:
+### 4.1 Example Prometheus Alert Rules (`alerts.yml`)
 
 ```yaml
-<!-- Code example in YAML -->
 groups:
-  - name: FraiseQL.alerts
+  - name: fraiseql.alerts
     interval: 30s
     rules:
       - alert: QueryLatencyHigh
-        expr: histogram_quantile(0.95, fraiseql_query_duration_seconds_bucket) > 1.0
+        expr: histogram_quantile(0.95, rate(fraiseql_graphql_query_duration_seconds_bucket[5m])) > 1.0
         for: 5m
         annotations:
           summary: "Query latency high (p95 > 1s)"
-          description: "Queries taking > 1s on average"
 
       - alert: QueryErrorRateHigh
-        expr: rate(fraiseql_query_requests_total{status="error"}[5m]) > 0.01
+        expr: rate(fraiseql_graphql_queries_errors[5m]) / rate(fraiseql_graphql_queries_total[5m]) > 0.01
         for: 5m
         annotations:
           summary: "Query error rate > 1%"
 
-      - alert: MutationDeadlockHigh
-        expr: rate(fraiseql_mutation_deadlock_retries[5m]) > 10
-        for: 5m
-        annotations:
-          summary: "High deadlock rate on mutations"
-
       - alert: CacheHitRateLow
-        expr: rate(fraiseql_cache_requests_total{result="hit"}[5m]) / rate(fraiseql_cache_requests_total[5m]) < 0.5
+        expr: rate(fraiseql_cache_hits_total[5m]) / (rate(fraiseql_cache_hits_total[5m]) + rate(fraiseql_cache_misses_total[5m])) < 0.5
         for: 10m
         annotations:
           summary: "Cache hit rate below 50%"
-          remediation: "Check cache configuration or TTL"
+          remediation: "Review cache TTLs or invalidation rules"
 
       - alert: DatabaseConnectionPoolExhausted
-        expr: fraiseql_db_connections_active / fraiseql_db_pool_size > 0.9
+        expr: fraiseql_db_connections_active / fraiseql_db_connections_total > 0.9
         for: 2m
         annotations:
           summary: "Database connection pool 90% utilized"
           remediation: "Increase pool size or check for connection leaks"
 
-      - alert: SubscriptionBufferNearCapacity
-        expr: fraiseql_subscription_buffer_utilization > 0.8
+      - alert: ErrorRateHigh
+        expr: rate(fraiseql_errors_total[5m]) > 5
         for: 5m
         annotations:
-          summary: "Subscription buffer > 80% utilized"
-          remediation: "Check subscription delivery speed"
+          summary: "Elevated error rate"
+```
 
-      - alert: AuthorizationDenialHigh
-        expr: rate(fraiseql_authorization_denials[5m]) > 100
-        for: 5m
-        annotations:
-          summary: "High authorization denial rate"
+### 4.2 Application-Specific Alerts
 
-      - alert: DatabaseQueryTimeout
-        expr: rate(fraiseql_errors_total{error_code="E_DB_QUERY_TIMEOUT_302"}[5m]) > 5
-        for: 5m
-        annotations:
-          summary: "Database queries timing out"
-          remediation: "Optimize slow queries or increase timeout"
-```text
-<!-- Code example in TEXT -->
-
-### 4.2 Custom Alerts
-
-Applications can define custom alerts:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.alert
-def high_order_value(context):
-    """Alert if single order exceeds threshold"""
-    return {
-        "condition": f"order.total > 10000",
-        "for": "immediately",
-        "message": f"High-value order: ${context.order.total}"
-    }
-
-@FraiseQL.alert
-def slow_query_detection(context):
-    """Alert on slow queries"""
-    return {
-        "condition": f"context.operation.duration_ms > 5000",
-        "for": "5m",
-        "message": f"Query {context.operation.name} taking {context.operation.duration_ms}ms"
-    }
-```text
-<!-- Code example in TEXT -->
-
-### 4.3 Alert Routing & Notification
+Define alerts over your own business metrics (Section 1.3) the same way:
 
 ```yaml
-<!-- Code example in YAML -->
-# AlertManager configuration
+groups:
+  - name: app.business.alerts
+    rules:
+      - alert: NoUserSignups
+        expr: rate(app_users_created_total[1h]) == 0
+        for: 1h
+        annotations:
+          summary: "No user signups in the last hour"
+```
+
+### 4.3 Alert Routing & Notification (Alertmanager)
+
+```yaml
 route:
   receiver: default
   routes:
-    # Critical: Database down → PagerDuty
-    - match:
-        severity: critical
+    - match: {severity: critical}
       receiver: pagerduty
-
-    # High: Performance degradation → Slack
-    - match:
-        severity: high
+    - match: {severity: high}
       receiver: slack_eng
-
-    # Medium: Warnings → Email
-    - match:
-        severity: medium
+    - match: {severity: medium}
       receiver: email
 
 receivers:
   - name: pagerduty
     pagerduty_configs:
-      - routing_key: secret
+      - routing_key: <secret>
   - name: slack_eng
     slack_configs:
       - api_url: "https://hooks.slack.com/..."
   - name: email
     email_configs:
       - to: alerts@company.com
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## 5. Health Checks & Readiness Probes
 
-### 5.1 Health Check Endpoints
+The FastAPI app created by `create_fraiseql_app` exposes two endpoints out of
+the box: `/health` (liveness) and `/ready` (readiness).
 
-```bash
-<!-- Code example in BASH -->
-# Liveness probe (is runtime alive?)
-GET /health/live
-200 OK {"status": "alive"}
+### 5.1 Built-in Health Endpoints
 
-# Readiness probe (can runtime serve traffic?)
-GET /health/ready
+```text
+# Liveness probe (is the process alive?)
+GET /health
+200 OK {"status": "healthy", "service": "fraiseql"}
+
+# Readiness probe (can it serve traffic?)
+GET /ready
 200 OK {
   "status": "ready",
-  "database": "connected",
-  "cache": "connected",
-  "auth_provider": "connected"
+  "checks": {"database": "ok", "schema": "ok"}
 }
+```
 
-# Detailed health status
-GET /health
-200 OK {
-  "status": "healthy",
-  "components": {
-    "runtime": {"status": "up", "version": "2.0.0"},
-    "database": {"status": "up", "latency_ms": 2},
-    "cache": {"status": "up", "hit_rate": 0.87},
-    "auth_provider": {"status": "up"},
-    "subscription_manager": {"status": "up", "active_subscriptions": 450}
-  },
-  "uptime_seconds": 86400,
-  "start_time": "2026-01-14T10:30:45Z"
-}
-```text
-<!-- Code example in TEXT -->
+`/ready` validates that the database pool is reachable (a simple query test)
+and that the GraphQL schema is loaded; it returns `503 Service Unavailable`
+when the app is not ready.
 
-### 5.2 Kubernetes Probes
+### 5.2 Composable Health Checks
+
+For richer checks, compose your own with `HealthCheck` from
+`fraiseql.monitoring`, using the pre-built check functions:
+
+```python
+from fraiseql.monitoring import (
+    HealthCheck,
+    CheckResult,
+    HealthStatus,
+    check_database,
+    check_pool_stats,
+)
+
+health = HealthCheck()
+health.add_check("database", lambda: check_database(pool))
+health.add_check("pool", lambda: check_pool_stats(pool))
+
+# Add a custom check:
+async def check_external_api() -> CheckResult:
+    ok = await ping_dependency()
+    return CheckResult(
+        name="external_api",
+        status=HealthStatus.HEALTHY if ok else HealthStatus.UNHEALTHY,
+        message="reachable" if ok else "unreachable",
+    )
+
+health.add_check("external_api", check_external_api)
+
+result = await health.run_checks()
+# {"status": "healthy", "checks": {"database": {...}, "pool": {...}, ...}}
+```
+
+### 5.3 Kubernetes Probes
 
 ```yaml
-<!-- Code example in YAML -->
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: FraiseQL
+  name: fraiseql
 spec:
   template:
     spec:
       containers:
-      - name: FraiseQL
-        livenessProbe:
-          httpGet:
-            path: /health/live
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 2
-          failureThreshold: 3
-
-        readinessProbe:
-          httpGet:
-            path: /health/ready
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 2
-          failureThreshold: 2
-```text
-<!-- Code example in TEXT -->
+        - name: fraiseql
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+```
 
 ---
 
-## 6. Performance Profiling
+## 6. Query Performance Analysis
 
-### 6.1 Built-in Profiler
+FraiseQL exposes PostgreSQL's own query statistics through
+`QueryStatsCollector`, which reads `pg_stat_statements`. There is no built-in
+process profiler; performance analysis leans on PostgreSQL's tooling.
 
-FraiseQL includes built-in CPU and memory profiling:
+### 6.1 pg_stat_statements Integration
 
-```bash
-<!-- Code example in BASH -->
-# Profile CPU (30 seconds)
-GET /debug/pprof/profile?seconds=30
+```python
+from fraiseql.monitoring import init_query_stats, get_query_stats_collector
 
-# Profile memory
-GET /debug/pprof/heap
+collector = init_query_stats(pool)
+stats = await collector.get_stats(top_n=20, order_by="total_exec_time")
+for s in stats:
+    print(f"{s.query_preview[:60]}  calls={s.calls}  mean_ms={s.mean_exec_time_ms:.2f}")
+```
 
-# Profile goroutines
-GET /debug/pprof/goroutine
+Each `QueryStatsSnapshot` includes `calls`, `total_exec_time_ms`,
+`mean_exec_time_ms`, `min`/`max` exec time, `rows_returned`, shared block
+hits/reads, and `cache_hit_ratio`. The collector degrades gracefully
+(returns empty results) when the `pg_stat_statements` extension is not
+installed.
 
-# Download as pprof format
-curl http://localhost:8000/debug/pprof/profile > cpu.prof
-go tool pprof cpu.prof
-```text
-<!-- Code example in TEXT -->
+### 6.2 Analyzing Slow Queries with EXPLAIN
 
-### 6.2 Query Execution Plan Analysis
+Because every read resolves to a `v_`/`tv_` view, use PostgreSQL's
+`EXPLAIN (ANALYZE, BUFFERS)` directly on the generated SQL to find missing
+indexes:
 
-```bash
-<!-- Code example in BASH -->
-# Analyze query plan
-curl -X POST http://localhost:8000/debug/analyze \
-  -d '{
-    "query": "query GetPosts { posts { id title } }"
-  }'
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT data FROM v_user WHERE data->>'status' = 'active';
+```
 
-Response:
-{
-  "query_plan": {
-    "sql": "SELECT ... FROM v_post",
-    "estimated_cost": 100,
-    "estimated_rows": 1000,
-    "indexes": ["idx_post_published"],
-    "joins": 0,
-    "nested_queries": 0
-  },
-  "recommendation": "Query is well-optimized"
-}
-```text
-<!-- Code example in TEXT -->
+If the plan shows a sequential scan over a large table, add an index on the
+underlying write table:
 
-### 6.3 Slow Query Log
+```sql
+CREATE INDEX idx_user_status ON tb_user (status);
+```
 
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.000Z",
-  "level": "warn",
-  "message": "Slow query detected",
-  "operation": {
-    "name": "ComplexUserSearch",
-    "duration_ms": 5234
-  },
-  "database": {
-    "query": "SELECT ... FROM v_user JOIN v_profile ...",
-    "rows_scanned": 50000,
-    "rows_returned": 10,
-    "indexes_not_used": ["idx_user_email"],
-    "suggestion": "Add WHERE clause to filter by email first"
-  }
-}
-```text
-<!-- Code example in TEXT -->
+### 6.3 Slow Query Logging
+
+Combine the `QueryStatsCollector` output with a Prometheus alert on
+`fraiseql_db_query_duration_seconds` to catch regressions, and enable
+PostgreSQL's `log_min_duration_statement` to capture slow statements at the
+database level.
 
 ---
 
 ## 7. Observability Configuration
 
-### 7.1 Configuration Options
+### 7.1 Putting It Together
 
 ```python
-<!-- Code example in Python -->
-FraiseQL.observability.configure({
-    # Metrics
-    "metrics": {
-        "enabled": True,
-        "export_interval_seconds": 60,
-        "format": "prometheus",
-        "include_high_cardinality": False,  # Limit label combinations
-    },
+from fastapi import FastAPI
+from fraiseql.monitoring import setup_metrics, MetricsConfig, init_query_stats
+from fraiseql.tracing import setup_tracing, TracingConfig
+from fraiseql.audit import SecurityLogger, set_security_logger
 
-    # Logging
-    "logging": {
-        "level": "info",
-        "format": "json",
-        "debug_sampling": {
-            "enabled": True,
-            "rate": 0.01,  # 1% of debug logs
-        },
-        "slow_query_threshold_ms": 1000,
-    },
+app = FastAPI()
 
-    # Tracing
-    "tracing": {
-        "enabled": True,
-        "sample_rate": 0.01,  # 1% of requests
-        "export_interval_seconds": 60,
-        "exporters": ["jaeger", "datadog"],
-    },
+# Metrics → /metrics endpoint
+setup_metrics(app, MetricsConfig(namespace="fraiseql", metrics_path="/metrics"))
 
-    # Health checks
-    "health_checks": {
-        "enabled": True,
-        "check_interval_seconds": 30,
-        "database_timeout_ms": 2000,
-        "cache_timeout_ms": 500,
-    },
+# Tracing → OTLP collector
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="fraiseql",
+        sample_rate=0.1,
+        export_format="otlp",
+        export_endpoint="http://otel-collector:4317",
+    ),
+)
 
-    # Profiling
-    "profiling": {
-        "enabled": True,  # In non-production only
-        "cpu_sample_rate": 0.01,
-        "memory_sample_rate": 0.1,
-    },
-})
-```text
-<!-- Code example in TEXT -->
+# Security audit logging
+set_security_logger(SecurityLogger(log_to_stdout=True, log_to_file=False))
 
-### 7.2 Environment Variables
+# Query stats (requires pg_stat_statements)
+init_query_stats(pool)
+```
+
+### 7.2 Configuration Reference
+
+`MetricsConfig` fields: `enabled`, `namespace` (default `"fraiseql"`),
+`metrics_path` (default `"/metrics"`), `buckets` (histogram boundaries),
+`exclude_paths`, `labels`.
+
+`TracingConfig` fields: `enabled`, `service_name`, `service_version`,
+`deployment_environment`, `sample_rate`, `export_format`
+(`otlp`/`jaeger`/`zipkin`), `export_endpoint`, `export_timeout_ms`,
+`propagate_traces`, `exclude_paths`, `attributes`.
+
+### 7.3 Environment Variables
+
+Application-level toggles use the `FRAISEQL_` prefix and your own logging
+configuration:
 
 ```bash
-<!-- Code example in BASH -->
-# Enable debug logging
+# Set the root logging level
 FRAISEQL_LOG_LEVEL=debug
 
-# Set trace sample rate
-FRAISEQL_TRACE_SAMPLE_RATE=0.1
+# Path for the security audit log file
+FRAISEQL_SECURITY_LOG_PATH=/var/log/fraiseql/security_events.log
+```
 
-# Disable metrics (cost reduction)
-FRAISEQL_METRICS_ENABLED=false
-
-# Set slow query threshold
-FRAISEQL_SLOW_QUERY_THRESHOLD_MS=5000
-
-# Export metrics to Datadog
-FRAISEQL_METRICS_EXPORTER=datadog
-DD_AGENT_HOST=localhost
-DD_AGENT_PORT=8125
-
-# Export traces to Jaeger
-FRAISEQL_TRACE_EXPORTER=jaeger
-JAEGER_AGENT_HOST=localhost
-JAEGER_AGENT_PORT=6831
-```text
-<!-- Code example in TEXT -->
+OpenTelemetry exporters also honor the standard `OTEL_*` environment
+variables (e.g. `OTEL_EXPORTER_OTLP_ENDPOINT`) when the OpenTelemetry SDK is
+installed.
 
 ---
 
@@ -1328,57 +774,46 @@ JAEGER_AGENT_PORT=6831
 ### 8.1 Grafana Dashboard: Query Performance
 
 ```text
-<!-- Code example in TEXT -->
 ┌──────────────────────────────────────────────────────────┐
-│ FraiseQL Query Performance Dashboard                      │
+│ FraiseQL Query Performance Dashboard                       │
 ├──────────────────────────────────────────────────────────┤
 │                                                            │
-│  Queries/sec ↑ 8500    Errors ↑ 0.2%    Cache Hit ↑ 87%  │
+│  Queries/sec ↑ 8500    Errors ↑ 0.2%    Cache Hit ↑ 87%   │
 │                                                            │
-│  ┌─────────────────────┐  ┌──────────────────────────┐   │
-│  │ Query Latency (p95) │  │ Top Slow Queries         │   │
-│  │ ████░░░░░░  245ms   │  │ 1. ComplexSearch: 5.2s   │   │
-│  └─────────────────────┘  │ 2. JoinedQuery: 3.1s     │   │
-│                            │ 3. NestedFetch: 2.8s     │   │
-│  ┌─────────────────────┐  │ 4. TimeSeriesAgg: 2.1s   │   │
-│  │ Cache Hit Rate      │  │ 5. UserAnalytics: 1.9s   │   │
-│  │ ██████████ 87%      │  └──────────────────────────┘   │
-│  └─────────────────────┘                                  │
-│                                                            │
-│  Error Distribution        Database Connection Pool       │
-│  ├─ Validation: 45%        Active:     43/50              │
-│  ├─ Authorization: 30%      Waiting:    2                 │
-│  ├─ Database: 20%           Idle:       5                 │
-│  └─ Other: 5%               Utilization: 86%              │
+│  ┌─────────────────────┐  ┌──────────────────────────┐    │
+│  │ Query Latency (p95) │  │ Top Slow Queries         │    │
+│  │ ████░░░░░░  245ms    │  │ 1. complex_search: 5.2s  │    │
+│  └─────────────────────┘  │ 2. joined_query:   3.1s  │    │
+│                           │ 3. nested_fetch:   2.8s  │    │
+│  ┌─────────────────────┐  └──────────────────────────┘    │
+│  │ Cache Hit Rate      │                                  │
+│  │ ██████████ 87%      │   DB Connection Pool             │
+│  └─────────────────────┘   Active: 43 / 50  (86%)         │
 │                                                            │
 └──────────────────────────────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
+
+These panels are driven by the PromQL queries in Section 1.5 against the
+`fraiseql_*` series.
 
 ### 8.2 Grafana Dashboard: System Health
 
 ```text
-<!-- Code example in TEXT -->
 ┌──────────────────────────────────────────────────────────┐
-│ FraiseQL System Health Dashboard                          │
+│ FraiseQL System Health Dashboard                           │
 ├──────────────────────────────────────────────────────────┤
 │                                                            │
-│  Uptime: 28d 15h  Database Latency: 2.1ms  Memory: 512MB │
+│  DB Latency: 2.1ms   Active conns: 43/50   Errors/s: 0.1  │
 │                                                            │
-│  ┌─────────────────────┐  ┌──────────────────────────┐   │
-│  │ Request Rate        │  │ Active Subscriptions     │   │
-│  │ ▁▁▂▂▃▃▄▄▅▅▆▆▇▇██   │  │ ▁▁▁▂▂▂▃▃▃▄▄▄▅▅▅▆▆▆▇▇  │   │
-│  │ 10K req/s           │  │ 450 active               │   │
-│  └─────────────────────┘  └──────────────────────────┘   │
-│                                                            │
-│  Authorization Latency      Cache Backend Status         │
-│  │ owner_only: 2.1ms        Redis: ✅ Connected          │
-│  │ role_based: 3.5ms        Size: 512MB / 1GB            │
-│  │ custom_rule: 8.2ms       Hit Rate: 87%                │
+│  ┌─────────────────────┐  ┌──────────────────────────┐    │
+│  │ Request Rate        │  │ Error Rate by Operation  │    │
+│  │ 10K req/s           │  │ create_user:  0.4%       │    │
+│  └─────────────────────┘  │ users:        0.1%       │    │
+│                           └──────────────────────────┘    │
+│  Cache Hit Rate: 87%                                       │
 │                                                            │
 └──────────────────────────────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1386,60 +821,47 @@ JAEGER_AGENT_PORT=6831
 
 ### 9.1 Using Traces to Debug Slow Queries
 
-**Problem**: Query taking 5 seconds
-
-**Solution:**
+**Problem**: A query is taking ~5 seconds.
 
 ```text
-<!-- Code example in TEXT -->
+1. Inspect the trace span tree for graphql.operation (5000ms):
+   ├─ authorization:      3ms     ✓ fast
+   ├─ database.query:  4990ms     ✗ SLOW
+   └─ response.transform: 5ms     ✓ fast
 
-1. Check trace span: query.execution (5000ms)
-   ├─ validation: 2ms ✓ Fast
-   ├─ authorization: 3ms ✓ Fast
-   ├─ database.query: 4990ms ✗ SLOW
-   └─ response.transform: 5ms ✓ Fast
+2. The database span is the culprit. Check its attributes:
+   - db.system: postgresql
+   - db.statement: SELECT data FROM v_user WHERE ...
+   - db.rows: 100   (but the scan touched far more)
 
-2. Database query is the culprit. Check database span:
-   - Database: PostgreSQL
-   - Statement: SELECT ... FROM v_user WHERE ...
-   - Rows scanned: 500,000
-   - Rows returned: 100
-   - Indexes used: None
+3. Run EXPLAIN (ANALYZE, BUFFERS) on that statement; if it's a seq scan,
+   add an index on the underlying tb_ table:
+   CREATE INDEX idx_user_status ON tb_user (status);
 
-3. Recommendation: Add index on filter column
-   CREATE INDEX idx_user_status ON tb_user(status);
-
-4. After fix: Trace shows 35ms total (100x faster!)
-```text
-<!-- Code example in TEXT -->
+4. Re-trace: the database span drops to ~35ms.
+```
 
 ### 9.2 Using Logs to Debug Authorization
 
-**Problem**: Some users can't access field
-
-**Solution:**
+**Problem**: Some users can't access a field.
 
 ```text
-<!-- Code example in TEXT -->
+1. Find the security audit event:
+   event_type: "authz.role_denied"
+   user_id:    "user-456"
+   resource:   "AdminPanel.api_keys"
+   reason:     "insufficient_role"
 
-1. Find error log:
-   "Authorization check failed"
-   "rule": "owner_or_admin"
-   "user_id": "user-456"
-   "result": "denied"
+2. Verify the user's roles (PostgreSQL or your auth provider):
+   roles = ['user']   (not 'admin')
 
-2. Check if user is owner or admin:
-   SELECT user_id, roles FROM tb_user WHERE id = 'user-456'
-   → roles = ['user'] (not admin)
+3. Verify ownership for owner-or-admin rules:
+   SELECT fk_author FROM tb_post WHERE id = 'post-789';
+   → owner is a different user
 
-3. Check if user is resource owner:
-   SELECT author_id FROM tb_post WHERE id = 'post-789'
-   → author_id = 'user-123' (not user-456)
-
-4. Conclusion: User denied correctly
-   Recommendation: User must be owner or admin
-```text
-<!-- Code example in TEXT -->
+4. Conclusion: the denial is correct. The user must hold the required role
+   or own the resource.
+```
 
 ---
 
@@ -1447,35 +869,30 @@ JAEGER_AGENT_PORT=6831
 
 ### 10.1 Observability Configuration
 
-- ✅ Enable all metrics in production
-- ✅ Use sampling for traces (1-10% by default)
-- ✅ Sample debug logs (1% by default)
-- ✅ Set appropriate alert thresholds
-- ✅ Monitor cache hit rates
-- ✅ Track query latency p95/p99
-- ✅ Track mutation deadlock rates
-- ✅ Monitor subscription buffer utilization
+- Call `setup_metrics(app, ...)` and scrape `/metrics` in every environment.
+- Sample traces (10% in production, higher in staging) to control cost.
+- Emit security events through `SecurityLogger` for an auditable trail.
+- Set Prometheus alert thresholds that match your SLOs.
+- Track query latency p95/p99 and the cache hit rate.
+- Wire `/health` and `/ready` into your liveness/readiness probes.
 
 ### 10.2 Using Traces Effectively
 
-- ✅ Use traces to identify bottlenecks (query vs auth vs database)
-- ✅ Compare traces of slow vs fast queries
-- ✅ Look for unexpected database calls in response transform
-- ✅ Check span duration breakdown
-- ✅ Use custom span attributes for context
+- Use the span tree to localize bottlenecks (auth vs. database vs. transform).
+- Compare traces of slow vs. fast requests for the same operation.
+- Watch for unexpected database spans inside response transformation.
+- Add custom span attributes for request context where it aids debugging.
 
 ### 10.3 Interpreting Alerts
 
-- ⚠️ High query latency → Check slow query log, optimize queries
-- ⚠️ High error rate → Check error logs for patterns
-- ⚠️ Low cache hit rate → Increase cache size or TTL
-- ⚠️ Connection pool near capacity → Increase pool size or profile for leaks
-- ⚠️ High deadlock rate → Add indexes or review transaction logic
+- High query latency → inspect `pg_stat_statements`, run `EXPLAIN`, add indexes.
+- High error rate → group `fraiseql_errors_total` by `error_code`.
+- Low cache hit rate → review cache TTLs / invalidation rules.
+- Connection pool near capacity → raise pool size or hunt for leaks.
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: January 2026
-**Status**: Complete specification for framework v2.x
-
-FraiseQL's observability model provides complete visibility into system behavior through metrics, logs, and traces. Every operation is observable; no special configuration needed.
+FraiseQL's observability model provides visibility into system behavior
+through Prometheus metrics, structured and security-audit logs, and
+OpenTelemetry traces — all served from the same FastAPI application, backed
+by PostgreSQL.

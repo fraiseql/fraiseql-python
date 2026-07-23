@@ -1,9 +1,7 @@
-<!-- Skip to main content -->
 ---
-
 title: Error Handling Model
-description: FraiseQL's error handling model is **deterministic, predictable, and classifiable**. Unlike traditional GraphQL servers where error handling varies by resolver
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+description: FraiseQL's error handling model is deterministic, predictable, and classifiable. Unlike traditional GraphQL servers where error handling varies by resolver, FraiseQL has a unified, classifiable error model.
+keywords: ["design", "errors", "reliability", "patterns", "security"]
 tags: ["documentation", "reference"]
 ---
 
@@ -11,16 +9,17 @@ tags: ["documentation", "reference"]
 
 **Version:** 1.0
 **Status:** Complete
-**Date:** January 11, 2026
 **Audience:** All developers, integrators, operations engineers, architecture reviewers
 
 ---
 
 ## 1. Overview
 
-FraiseQL's error handling model is **deterministic, predictable, and classifiable**. Unlike traditional GraphQL servers where error handling varies by resolver implementation, FraiseQL has a unified, specification-driven error model.
+FraiseQL's error handling model is **deterministic, predictable, and classifiable**. Unlike traditional GraphQL servers where error handling varies by resolver implementation, FraiseQL has a unified, classifiable error model.
 
-**Core principle:** All errors are either **preventable** (caught at compile time) or **recoverable** (clear classification at runtime).
+FraiseQL v1 is a Python runtime framework: you define types, queries, and mutations with decorators, and the GraphQL schema is **built in memory at application startup** and served over FastAPI. There is no compile step and no build artifact. Errors fall into two broad phases:
+
+**Core principle:** All errors are either **preventable** (caught when the schema is validated at app startup) or **recoverable** (clearly classified at runtime).
 
 ### 1.1 Design Philosophy
 
@@ -28,7 +27,7 @@ FraiseQL's error handling model is **deterministic, predictable, and classifiabl
 
 **Classifiable.** Every error falls into a well-defined category with clear semantics.
 
-**Remediable.** Every error either tells you exactly how to fix it (compile-time) or how to recover from it (runtime).
+**Remediable.** Every error either tells you exactly how to fix it (schema-validation errors) or how to recover from it (runtime errors).
 
 **Auditable.** Error context includes enough information for debugging without leaking sensitive data.
 
@@ -36,55 +35,52 @@ FraiseQL's error handling model is **deterministic, predictable, and classifiabl
 
 ## 2. Error Categories
 
-### 2.1 Compile-Time Errors (Schema Definition Phase)
+### 2.1 Schema-Validation Errors (App Startup)
 
-**When:** During schema authoring and compilation
-**Who sees them:** Schema authors, build systems
-**Recovery:** Fix schema, recompile
-**Visibility:** Never reaches clients
+**When:** While the schema is being assembled and validated at application startup
+**Who sees them:** Schema authors, operators starting the app
+**Recovery:** Fix the Python type/query/mutation definitions or the database, then restart
+**Visibility:** Never reaches clients — the app fails to start
+
+FraiseQL validates the in-memory schema as `build_fraiseql_schema(...)` / `create_fraiseql_app(...)` runs. If a type is missing, a view does not exist, or a column does not match, startup fails with a clear message. No partially valid schema is ever served.
 
 #### 2.1.1 Schema Validation Errors
 
 ```text
-<!-- Code example in TEXT -->
 Category: SCHEMA_INVALID
 Code: E_SCHEMA_<subtype>_<number>
 
 Examples:
   E_SCHEMA_TYPE_NOT_DEFINED_001
   E_SCHEMA_FIELD_NOT_FOUND_002
-  E_SCHEMA_BINDING_MISSING_003
+  E_SCHEMA_SOURCE_MISSING_003
   E_SCHEMA_OPERATOR_UNSUPPORTED_004
   E_SCHEMA_AUTHORIZATION_INVALID_005
-```text
-<!-- Code example in TEXT -->
+```
 
 **Causes:**
 
-- Type referenced but not declared
-- Field referenced but not in database view
-- Query/mutation without binding
-- WHERE operator not supported by target database
-- Authorization rule references non-existent auth context field
+- Type referenced but not declared with `@fraiseql.type`
+- Field referenced but not present in the backing database view
+- Query/mutation without an `sql_source`
+- WHERE operator not supported by PostgreSQL
+- Authorization rule references a non-existent auth context field
 
 **Example:**
 
 ```text
-<!-- Code example in TEXT -->
-Error: Schema compilation failed
+Error: Schema validation failed at startup
   Type: Type closure violation
   Code: E_SCHEMA_TYPE_NOT_DEFINED_001
   Query 'users' returns 'list[User]'
   Type 'User' is not defined
-  Suggestion: Add @FraiseQL.type class User or check spelling
+  Suggestion: Add @fraiseql.type class User or check spelling
   File: schema.py, line 42
-```text
-<!-- Code example in TEXT -->
+```
 
 #### 2.1.2 Database Binding Errors
 
 ```text
-<!-- Code example in TEXT -->
 Category: BINDING_INVALID
 Code: E_BINDING_<subtype>_<number>
 
@@ -92,68 +88,59 @@ Examples:
   E_BINDING_VIEW_NOT_FOUND_010
   E_BINDING_COLUMN_NOT_FOUND_011
   E_BINDING_TYPE_MISMATCH_012
-  E_BINDING_PROCEDURE_SIGNATURE_MISMATCH_013
-```text
-<!-- Code example in TEXT -->
+  E_BINDING_FUNCTION_SIGNATURE_MISMATCH_013
+```
 
 **Causes:**
 
-- Binding references view that doesn't exist in database
-- Field maps to column that doesn't exist
-- Field type doesn't match database column type
-- Mutation input doesn't match stored procedure parameters
+- A type's `sql_source` references a view (`v_`/`tv_`) that does not exist in the database
+- Field maps to a column that does not exist in the view's `data` JSONB
+- Field type does not match the database column type
+- A mutation calls a PostgreSQL `fn_` function whose signature does not match the input
 
 **Example:**
 
 ```text
-<!-- Code example in TEXT -->
-Error: Database binding failed
+Error: Database binding failed at startup
   Type: View not found
   Code: E_BINDING_VIEW_NOT_FOUND_010
   Query 'users' bound to view 'v_user_missing'
   Database: postgresql (localhost:5432/mydb)
-  Suggestion: Create view v_user or fix binding to existing view
+  Suggestion: Create view v_user or fix sql_source to an existing view
   Available views: v_user, v_user_archived, v_user_deleted
-```text
-<!-- Code example in TEXT -->
+```
 
 #### 2.1.3 Capability Errors
 
 ```text
-<!-- Code example in TEXT -->
 Category: DATABASE_CAPABILITY_UNSUPPORTED
-Code: E_CAPABILITY_<database>_<operator>
+Code: E_CAPABILITY_<operator>_<number>
 
 Examples:
-  E_CAPABILITY_SQLITE_REGEX_001
-  E_CAPABILITY_MYSQL_COSINE_DISTANCE_002
-  E_CAPABILITY_SQLSERVER_JSONB_CONTAINS_003
-```text
-<!-- Code example in TEXT -->
+  E_CAPABILITY_VECTOR_DISTANCE_001
+  E_CAPABILITY_TRIGRAM_SIMILARITY_002
+  E_CAPABILITY_GEOSPATIAL_CONTAINS_003
+```
 
 **Causes:**
 
-- Schema uses operator not supported by target database
-- Database lacks required extension (pgvector, PostGIS)
+- Schema uses an operator that requires a PostgreSQL extension that is not installed
+- Database lacks a required extension (`pgvector`, `pg_trgm`, PostGIS)
 
 **Example:**
 
 ```text
-<!-- Code example in TEXT -->
-Error: Operator not supported by database
+Error: Operator requires a missing PostgreSQL extension
   Type: Database capability mismatch
-  Code: E_CAPABILITY_SQLITE_REGEX_001
-  Operator: _regex (regular expression matching)
-  Target database: sqlite
-  Field: User.email
-  Suggestion: Use _like operator instead, or target postgresql
-```text
-<!-- Code example in TEXT -->
+  Code: E_CAPABILITY_VECTOR_DISTANCE_001
+  Operator: _cosine_distance (vector similarity)
+  Field: Document.embedding
+  Suggestion: Install the pgvector extension (CREATE EXTENSION vector), or use a supported operator
+```
 
 #### 2.1.4 Authorization Configuration Errors
 
 ```text
-<!-- Code example in TEXT -->
 Category: AUTHORIZATION_INVALID
 Code: E_AUTH_<subtype>_<number>
 
@@ -161,14 +148,15 @@ Examples:
   E_AUTH_CONTEXT_FIELD_NOT_FOUND_020
   E_AUTH_ROLE_UNDEFINED_021
   E_AUTH_RULE_CIRCULAR_DEPENDENCY_022
-```text
-<!-- Code example in TEXT -->
+```
 
 **Causes:**
 
-- Authorization rule references non-existent auth context field
-- Authorization rule references undefined role
+- Authorization rule references a non-existent auth context field
+- Authorization rule references an undefined role
 - Authorization rules have circular dependencies
+
+See [`../../foundation/10-error-handling-validation.md`](../../foundation/10-error-handling-validation.md) for how validation and authorization are wired into the schema, and [`../../specs/schema-conventions.md`](../../specs/schema-conventions.md) for the database naming conventions (`tb_`, `v_`, `tv_`, `fn_`) referenced above.
 
 ---
 
@@ -177,12 +165,11 @@ Examples:
 **When:** During runtime query execution
 **Who sees them:** Client applications
 **Recovery:** Application-specific (retry, notify user, log, etc.)
-**Visibility:** Always returned in GraphQL error list
+**Visibility:** Always returned in the GraphQL error list
 
 #### 2.2.1 Validation Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: VALIDATION_FAILED
 Code: E_VALIDATION_<subtype>
@@ -202,8 +189,7 @@ Structure:
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Error Types:**
 
@@ -220,7 +206,6 @@ Structure:
 **Example:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "Field 'invalid_field' not found on type 'User'",
@@ -236,20 +221,17 @@ Structure:
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 #### 2.2.2 Authorization Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: AUTHORIZATION_DENIED
 Code: E_AUTH_<subtype>
 
 Structure: Same as validation errors above
-```text
-<!-- Code example in TEXT -->
+```
 
 **Error Types:**
 
@@ -266,7 +248,6 @@ Structure: Same as validation errors above
 **Example:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "Insufficient permissions to query 'adminUsers'",
@@ -281,50 +262,49 @@ Structure: Same as validation errors above
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 #### 2.2.3 Database Execution Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: DATABASE_ERROR
-Code: E_DB_<database>_<error_class>
+Code: E_DB_<error_class>_<number>
 
 Structure: Same as others
-```text
-<!-- Code example in TEXT -->
+```
+
+These surface when a query reads a `v_`/`tv_` view, or when a mutation calls a PostgreSQL `fn_` function. PostgreSQL reports failures via SQLSTATE codes; FraiseQL maps them onto the codes below and includes the underlying `SQLSTATE <code>` note in the extensions when available.
 
 **Error Types:**
 
-| Subtype | Code | Cause | Retryable | Example |
-|---------|------|-------|-----------|---------|
-| CONNECTION_FAILED | E_DB_POSTGRES_CONNECTION_FAILED_300 | Cannot connect to database | **Yes** | Connection timeout, network down |
-| CONNECTION_POOL_EXHAUSTED | E_DB_MYSQL_POOL_EXHAUSTED_301 | No available connections | **Yes** | All connections in use, retry later |
-| QUERY_TIMEOUT | E_DB_SQLSERVER_QUERY_TIMEOUT_302 | Query execution exceeded timeout | **Yes** | Long-running query, retry or optimize |
-| DEADLOCK | E_DB_POSTGRES_DEADLOCK_303 | Transaction deadlock detected | **Yes** | Concurrent transaction conflict |
-| CONSTRAINT_VIOLATION | E_DB_MYSQL_CONSTRAINT_VIOLATION_304 | Unique/foreign key constraint violated | No | Duplicate key, referential integrity |
-| SYNTAX_ERROR | E_DB_SQLITE_SYNTAX_ERROR_305 | Generated SQL is malformed | No | Compiler bug or unsupported operation |
-| PERMISSION_DENIED | E_DB_POSTGRES_PERMISSION_DENIED_306 | Database user lacks permission | No | Misconfigured database credentials |
-| OUT_OF_MEMORY | E_DB_SQLSERVER_OUT_OF_MEMORY_307 | Database ran out of memory | **Yes** | Query too large, reduce batch size |
-| DISK_FULL | E_DB_MYSQL_DISK_FULL_308 | Database disk full | **Yes** | Free up disk space |
-| UNKNOWN | E_DB_UNKNOWN_ERROR_309 | Unclassified database error | **Yes** | See error details |
+| Subtype | Code | SQLSTATE | Cause | Retryable | Example |
+|---------|------|----------|-------|-----------|---------|
+| CONNECTION_FAILED | E_DB_CONNECTION_FAILED_300 | 08006 | Cannot connect to database | **Yes** | Connection timeout, network down |
+| CONNECTION_POOL_EXHAUSTED | E_DB_POOL_EXHAUSTED_301 | — | No available connections | **Yes** | All connections in use, retry later |
+| QUERY_TIMEOUT | E_DB_QUERY_TIMEOUT_302 | 57014 | Statement exceeded `statement_timeout` | **Yes** | Long-running query, retry or optimize |
+| DEADLOCK | E_DB_DEADLOCK_303 | 40P01 | Transaction deadlock detected | **Yes** | Concurrent transaction conflict |
+| CONSTRAINT_VIOLATION | E_DB_CONSTRAINT_VIOLATION_304 | 23505 / 23503 | Unique/foreign key constraint violated | No | Duplicate key, referential integrity |
+| SERIALIZATION_FAILURE | E_DB_SERIALIZATION_FAILURE_305 | 40001 | Could not serialize concurrent transactions | **Yes** | Retry the transaction |
+| PERMISSION_DENIED | E_DB_PERMISSION_DENIED_306 | 42501 | Database role lacks permission | No | Misconfigured database credentials |
+| OUT_OF_MEMORY | E_DB_OUT_OF_MEMORY_307 | 53200 | Database ran out of memory | **Yes** | Query too large, reduce batch size |
+| DISK_FULL | E_DB_DISK_FULL_308 | 53100 | Database disk full | **Yes** | Free up disk space |
+| UNKNOWN | E_DB_UNKNOWN_ERROR_309 | — | Unclassified database error | **Yes** | See error details |
 
 **Example (Retryable):**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "Database connection timeout after 5s",
     "extensions": {
-      "code": "E_DB_POSTGRES_CONNECTION_FAILED_300",
+      "code": "E_DB_CONNECTION_FAILED_300",
       "category": "DATABASE_ERROR",
       "remediable": false,
       "retryable": true,
       "retry_after_ms": 1000,
       "database": "postgresql",
+      "sqlstate": "08006",
       "host": "db.example.com",
       "port": 5432,
       "attempt": 1,
@@ -332,22 +312,21 @@ Structure: Same as others
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Example (Non-Retryable):**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "Unique constraint violation on users.email",
     "extensions": {
-      "code": "E_DB_MYSQL_CONSTRAINT_VIOLATION_304",
+      "code": "E_DB_CONSTRAINT_VIOLATION_304",
       "category": "DATABASE_ERROR",
       "remediable": true,
       "retryable": false,
       "user_actionable": true,
+      "sqlstate": "23505",
       "constraint": "unique_email",
       "table": "users",
       "field": "email",
@@ -356,26 +335,25 @@ Structure: Same as others
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+A mutation's `fn_` function can also signal a domain failure in its returned JSONB (for example, `{"success": false, "message": "...", "code": "VALIDATION_ERROR"}`). The resolver translates that into a typed `@fraiseql.error` result, which is then surfaced in the GraphQL response. This is distinct from a raw PostgreSQL execution error: a domain failure is an expected, recoverable outcome, while a SQLSTATE error indicates the statement itself could not run.
 
 #### 2.2.4 Execution Logic Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: EXECUTION_ERROR
 Code: E_EXEC_<subtype>
 
 Structure: Same as others
-```text
-<!-- Code example in TEXT -->
+```
 
 **Error Types:**
 
 | Subtype | Code | Cause | Retryable | Example |
 |---------|------|-------|-----------|---------|
-| FIELD_NOT_FOUND | E_EXEC_FIELD_NOT_FOUND_400 | Field doesn't exist in result | No | Compiler bug |
+| FIELD_NOT_FOUND | E_EXEC_FIELD_NOT_FOUND_400 | Field absent from the view's `data` JSONB | No | View out of sync with schema |
 | PROJECTION_FAILED | E_EXEC_PROJECTION_FAILED_401 | Cannot project field from data | No | Type mismatch |
 | AGGREGATION_FAILED | E_EXEC_AGGREGATION_FAILED_402 | Cannot aggregate result | No | Type mismatch in aggregation |
 | PAGINATION_INVALID | E_EXEC_PAGINATION_INVALID_403 | Invalid pagination parameters | No | Invalid cursor or offset |
@@ -385,7 +363,6 @@ Structure: Same as others
 **Example:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "Query result would exceed maximum size of 100MB",
@@ -401,65 +378,17 @@ Structure: Same as others
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-#### 2.2.5 Federation Errors
-
-```text
-<!-- Code example in TEXT -->
-GraphQL error
-Category: FEDERATION_ERROR
-Code: E_FED_<subtype>
-
-Structure: Same as others
-```text
-<!-- Code example in TEXT -->
-
-**Error Types:**
-
-| Subtype | Code | Cause | Retryable | Example |
-|---------|------|-------|-----------|---------|
-| ENTITY_RESOLUTION_FAILED | E_FED_ENTITY_RESOLUTION_FAILED_500 | Cannot resolve federated entity | **Yes** | Subgraph unavailable |
-| ENTITY_NOT_FOUND | E_FED_ENTITY_NOT_FOUND_501 | Federated entity doesn't exist | No | Entity ID invalid or deleted |
-| SUBGRAPH_UNAVAILABLE | E_FED_SUBGRAPH_UNAVAILABLE_502 | Federation subgraph unreachable | **Yes** | Network/DNS issue |
-| SUBGRAPH_TIMEOUT | E_FED_SUBGRAPH_TIMEOUT_503 | Subgraph response too slow | **Yes** | Slow subgraph, retry |
-| ENTITY_TYPE_MISMATCH | E_FED_TYPE_MISMATCH_504 | Entity has unexpected type | No | Schema mismatch |
-
-**Example:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "errors": [{
-    "message": "Federation subgraph 'orders' unreachable",
-    "extensions": {
-      "code": "E_FED_SUBGRAPH_UNAVAILABLE_502",
-      "category": "FEDERATION_ERROR",
-      "remediable": false,
-      "retryable": true,
-      "retry_after_ms": 2000,
-      "subgraph": "orders",
-      "subgraph_url": "https://orders.internal/graphql",
-      "attempt": 1,
-      "max_attempts": 3
-    }
-  }]
-}
-```text
-<!-- Code example in TEXT -->
-
-#### 2.2.6 Subscription/Event Errors
+#### 2.2.5 Subscription/Event Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: SUBSCRIPTION_ERROR
 Code: E_SUB_<subtype>
 
 Structure: Same as others (sent to client over WebSocket)
-```text
-<!-- Code example in TEXT -->
+```
 
 **Error Types:**
 
@@ -475,7 +404,6 @@ Structure: Same as others (sent to client over WebSocket)
 **Example:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "type": "error",
   "id": "1",
@@ -494,51 +422,45 @@ Structure: Same as others (sent to client over WebSocket)
     }]
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-#### 2.2.7 Internal Errors
+#### 2.2.6 Internal Errors
 
 ```text
-<!-- Code example in TEXT -->
 GraphQL error
 Category: INTERNAL_ERROR
 Code: E_INTERNAL_<subtype>
 
 Structure: Same as others
-```text
-<!-- Code example in TEXT -->
+```
 
 **Error Types:**
 
 | Subtype | Code | Cause | Retryable | Example |
 |---------|------|-------|-----------|---------|
-| COMPILED_SCHEMA_INVALID | E_INTERNAL_SCHEMA_INVALID_700 | Compiled schema corrupted or invalid | No | Deployment/upgrade bug |
-| RUNTIME_PANIC | E_INTERNAL_PANIC_701 | Runtime encountered unexpected condition | No | Compiler/runtime bug |
-| CACHE_CORRUPTED | E_INTERNAL_CACHE_CORRUPTED_702 | Cache backend returned invalid data | **Yes** | Cache corruption, retry |
-| UNKNOWN_ERROR | E_INTERNAL_UNKNOWN_ERROR_703 | Unclassified internal error | **Yes** | Unknown issue, retry |
+| RESOLVER_FAILED | E_INTERNAL_RESOLVER_FAILED_700 | A resolver raised an unexpected exception | No | Bug in resolver code |
+| CACHE_CORRUPTED | E_INTERNAL_CACHE_CORRUPTED_701 | Cache backend returned invalid data | **Yes** | Cache corruption, retry |
+| UNKNOWN_ERROR | E_INTERNAL_UNKNOWN_ERROR_702 | Unclassified internal error | **Yes** | Unknown issue, retry |
 
 **Example:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
-    "message": "Internal server error: unexpected panic",
+    "message": "Internal server error",
     "extensions": {
-      "code": "E_INTERNAL_PANIC_701",
+      "code": "E_INTERNAL_RESOLVER_FAILED_700",
       "category": "INTERNAL_ERROR",
       "remediable": false,
       "retryable": false,
       "timestamp": "2026-01-11T15:35:00Z",
       "trace_id": "req_550e8400",
       "stack_trace": "Available only in debug mode",
-      "support_link": "https://github.com/FraiseQL/FraiseQL/issues"
+      "support_link": "https://github.com/fraiseql/fraiseql/issues"
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -549,7 +471,6 @@ Structure: Same as others
 All runtime errors follow the GraphQL spec with FraiseQL extensions:
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [
     {
@@ -566,8 +487,6 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
         "user_actionable": true,
         "timestamp": "2026-01-11T15:35:00Z",
         "trace_id": "req_550e8400",
-
-        // Context-specific fields (optional)
         "suggestion": "Did you mean field 'email'?",
         "available_options": ["id", "name", "email"],
         "retry_after_ms": null,
@@ -578,8 +497,9 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
   ],
   "data": null
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+The fields under `extensions` after `trace_id` are context-specific and optional; they appear only when relevant to the error.
 
 ### 3.2 Error Context Fields
 
@@ -593,16 +513,16 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
 
 **Conditional fields:**
 
-- `remediable` — Can client fix this? (schema/query fixes)
-- `retryable` — Should client retry? (transient errors)
-- `user_actionable` — Should client show to user? (not security details)
+- `remediable` — Can the client fix this? (schema/query fixes)
+- `retryable` — Should the client retry? (transient errors)
+- `user_actionable` — Should the client show this to a user? (not security details)
 - `suggestion` — How to fix it
 - `retry_after_ms` — Milliseconds to wait before retry
 
 **Context-specific:**
 
-- `database` — Which database (E_DB_* errors)
-- `constraint` — Which constraint violated (database errors)
+- `sqlstate` — The PostgreSQL SQLSTATE code (`E_DB_*` errors)
+- `constraint` — Which constraint was violated (database errors)
 - `field` — Which field caused the error
 - `available_options` — Valid choices for this field
 
@@ -610,7 +530,7 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
 
 **Never expose:**
 
-- SQL queries (even if query is client-safe)
+- SQL queries (even if the query is client-safe)
 - Internal file paths
 - Stack traces (unless debug mode)
 - Database credentials
@@ -619,10 +539,10 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
 
 **Safe to expose:**
 
-- Field names (part of schema)
+- Field names (part of the schema)
 - Constraint names (helps debugging)
 - Error codes (for client classification)
-- Database type (postgresql, mysql, etc.)
+- SQLSTATE codes (standard PostgreSQL classification)
 - Operation type (query, mutation, subscription)
 
 ---
@@ -631,7 +551,7 @@ All runtime errors follow the GraphQL spec with FraiseQL extensions:
 
 ### 4.1 Remediable vs Non-Remediable
 
-**Remediable:** Error indicates client code/schema is wrong. Client can fix it.
+**Remediable:** The error indicates client code or schema is wrong. The client can fix it.
 
 Examples:
 
@@ -640,7 +560,7 @@ Examples:
 - Constraint violation
 - Deprecated field usage
 
-**Non-Remediable:** Error indicates system state issue. Client cannot fix it.
+**Non-Remediable:** The error indicates a system state issue. The client cannot fix it.
 
 Examples:
 
@@ -651,17 +571,17 @@ Examples:
 
 ### 4.2 Retryable vs Non-Retryable
 
-**Retryable:** Error is transient. Retrying may succeed.
+**Retryable:** The error is transient. Retrying may succeed.
 
 Examples:
 
 - Database connection timeout
 - Connection pool exhausted
-- Query timeout (retry with better query)
-- Subgraph unavailable
+- Query timeout (retry with a better query)
+- Serialization failure (SQLSTATE 40001)
 - Event buffer overflow
 
-**Non-Retryable:** Error is deterministic. Retrying will fail identically.
+**Non-Retryable:** The error is deterministic. Retrying will fail identically.
 
 Examples:
 
@@ -672,7 +592,7 @@ Examples:
 
 ### 4.3 User-Actionable vs Hidden
 
-**User-Actionable:** Error message safe to show end-users.
+**User-Actionable:** The error message is safe to show end users.
 
 Examples:
 
@@ -680,13 +600,13 @@ Examples:
 - "You don't have permission to access this"
 - "Invalid input format"
 
-**Hidden:** Error message for developers only, not end-users.
+**Hidden:** The error message is for developers only, not end users.
 
 Examples:
 
-- "Database connection lost" (not user's problem)
+- "Database connection lost" (not the user's problem)
 - "Query timeout after 30s" (implementation detail)
-- "Insufficient permissions" (doesn't explain why)
+- "Insufficient permissions" (does not explain why)
 
 ---
 
@@ -697,7 +617,6 @@ Examples:
 When an error occurs during query execution, FraiseQL follows this strategy:
 
 ```text
-<!-- Code example in TEXT -->
 Query: { user { id name } posts { id title } }
 
 Execution:
@@ -715,28 +634,26 @@ Result:
     "user": {
       "id": "123",
       "name": "Alice",
-      "posts": null  // Field set to null due to error
+      "posts": null
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Rule:** Field with error is set to `null` in partial response. Parent queries continue executing. This allows clients to use partial data.
+**Rule:** The field with the error is set to `null` in the partial response. Parent queries continue executing. This allows clients to use partial data.
 
 ### 5.2 Mutation Error Propagation
 
-Mutations are **atomic**: if ANY part fails, the entire mutation fails with no partial data.
+Mutations are **atomic**: if any part fails, the entire mutation fails with no partial data. Each mutation runs inside a PostgreSQL transaction in its `fn_` function, so a failure rolls back every write.
 
 ```text
-<!-- Code example in TEXT -->
 Mutation: mutation {
-  createUser(name: "Bob", email: "bob@example.com") { id }
-  createPost(title: "Hello", userId: "123") { id }
+  createUser(input: {name: "Bob", email: "bob@example.com"}) { ... on CreateUserSuccess { user { id } } }
+  createPost(input: {title: "Hello", userId: "123"}) { ... on CreatePostSuccess { post { id } } }
 }
 
 Execution:
-  1. Create user (succeeds, userId = 999)
+  1. Create user (succeeds)
   2. Create post (fails with CONSTRAINT_VIOLATION - userId invalid)
 
 Result:
@@ -744,21 +661,19 @@ Result:
   "errors": [{
     "message": "Foreign key constraint violated: userId not found",
     "path": ["createPost"],
-    "extensions": { ... }
+    "extensions": { "code": "E_DB_CONSTRAINT_VIOLATION_304", "sqlstate": "23503", ... }
   }],
-  "data": null  // ENTIRE mutation fails, no partial data
+  "data": null
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Rule:** Mutations provide all-or-nothing semantics. If any part fails, all changes roll back (database transaction semantics).
+**Rule:** Mutations provide all-or-nothing semantics. If any part fails, all changes roll back via the database transaction.
 
 ### 5.3 Subscription Error Propagation
 
-Subscription errors are **per-event**. One event's error doesn't stop subscription.
+Subscription errors are **per-event**. One event's error does not stop the subscription.
 
 ```text
-<!-- Code example in TEXT -->
 Subscription: subscription {
   orderCreated { id amount }
 }
@@ -796,10 +711,11 @@ Event 3: Success (continues after error)
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Rule:** Subscription continues after error. One error event doesn't close subscription (unless close_code indicates connection close).
+**Rule:** A subscription continues after an error. One error event does not close the subscription (unless `close_code` indicates a connection close).
+
+For how these semantics interact with transactional guarantees, see [`./consistency-model.md`](./consistency-model.md). For recovery procedures when database or transport errors occur, see [`./failure-modes-and-recovery.md`](./failure-modes-and-recovery.md).
 
 ---
 
@@ -807,45 +723,44 @@ Event 3: Success (continues after error)
 
 ### 6.1 Recommended Client Error Handling
 
-**Step 1: Check for errors in response**
+**Step 1: Check for errors in the response**
 
 ```python
-<!-- Code example in Python -->
 response = await client.execute(query)
 if response.get("errors"):
     # Handle errors
-    pass
-```text
-<!-- Code example in TEXT -->
+    ...
+```
 
 **Step 2: Classify errors by category**
 
 ```python
-<!-- Code example in Python -->
 for error in response["errors"]:
     code = error["extensions"]["code"]
     category = error["extensions"]["category"]
 
     if category == "VALIDATION_FAILED":
         # Fix query and retry immediately
-        pass
+        ...
     elif category == "AUTHORIZATION_DENIED":
         # Request authentication, then retry
-        pass
+        ...
     elif category == "DATABASE_ERROR" and error["extensions"]["retryable"]:
         # Exponential backoff retry
-        pass
+        ...
     elif category == "INTERNAL_ERROR":
         # Log and notify support
-        pass
-```text
-<!-- Code example in TEXT -->
+        ...
+```
 
 **Step 3: Implement retry logic**
 
 ```python
-<!-- Code example in Python -->
-async def retry_query(query, max_attempts=3, backoff_base=1000):
+import asyncio
+
+
+async def retry_query(query: str, max_attempts: int = 3, backoff_base: int = 1000) -> dict:
+    response: dict = {}
     for attempt in range(1, max_attempts + 1):
         response = await client.execute(query)
 
@@ -863,13 +778,11 @@ async def retry_query(query, max_attempts=3, backoff_base=1000):
         if attempt < max_attempts:
             wait_ms = response["errors"][0]["extensions"].get(
                 "retry_after_ms",
-                backoff_base * (2 ** (attempt - 1))
+                backoff_base * (2 ** (attempt - 1)),
             )
             await asyncio.sleep(wait_ms / 1000)
-        else:
-            return response  # Max attempts reached
-```text
-<!-- Code example in TEXT -->
+    return response  # Max attempts reached
+```
 
 ### 6.2 Error Display to End-Users
 
@@ -878,7 +791,7 @@ async def retry_query(query, max_attempts=3, backoff_base=1000):
 - Validation errors with suggestions (query/input fixes)
 - Constraint violations ("Email already exists")
 - Authorization denials (general message, not details)
-- Timeouts (with retry option)
+- Timeouts (with a retry option)
 
 **Hide these errors from users:**
 
@@ -886,7 +799,7 @@ async def retry_query(query, max_attempts=3, backoff_base=1000):
 - Internal stack traces
 - SQL queries
 - Auth token issues
-- Internal server errors (show support contact instead)
+- Internal server errors (show a support contact instead)
 
 ---
 
@@ -897,7 +810,6 @@ async def retry_query(query, max_attempts=3, backoff_base=1000):
 Every error includes a `trace_id` for correlation:
 
 ```text
-<!-- Code example in TEXT -->
 Client sees:
 {
   "errors": [{
@@ -911,22 +823,20 @@ Client sees:
 Server logs:
 [2026-01-11 15:35:00] TRACE req_550e8400: query { users { id } }
 [2026-01-11 15:35:01] ERROR req_550e8400: connection timeout after 5s
-```text
-<!-- Code example in TEXT -->
+```
 
 **Use trace_id to:**
 
 - Correlate client-side errors with server logs
-- Track error through entire system (across services in federation)
+- Track an error through the system
 - Debug transient errors that are hard to reproduce
 
 ### 7.2 Debug Mode
 
-FraiseQL can enable debug mode to include additional error context:
+FraiseQL can run with debug mode enabled to include additional error context. Set `production=False` in `create_fraiseql_app(...)` or the `FRAISEQL_DEBUG` environment variable in development environments only:
 
 ```text
-<!-- Code example in TEXT -->
-# Enable debug mode (dev environments only!)
+# Enable debug mode (dev environments only)
 FRAISEQL_DEBUG=true
 
 Response with debug mode:
@@ -934,33 +844,32 @@ Response with debug mode:
   "errors": [{
     "message": "Query timeout",
     "extensions": {
-      "code": "E_DB_POSTGRES_QUERY_TIMEOUT_302",
-      "stack_trace": [
-        "FraiseQL::runtime::execute_query (src/runtime.rs:312)",
-        "FraiseQL::db::execute (src/db.rs:45)",
-        "postgres::client::query (src/db/postgres.rs:128)"
+      "code": "E_DB_QUERY_TIMEOUT_302",
+      "sqlstate": "57014",
+      "traceback": [
+        "fraiseql/db.py:312 in find",
+        "psycopg/cursor_async.py:128 in execute"
       ],
-      "query": "SELECT ... FROM users WHERE id = $1",
+      "query": "SELECT data FROM v_user WHERE id = $1",
       "bindings": ["12345"],
       "duration_ms": 30001
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 7.3 Error Context Logging
 
 Enable structured logging to capture error context:
 
 ```json
-<!-- Code example in JSON -->
 {
   "timestamp": "2026-01-11T15:35:00Z",
   "level": "ERROR",
   "trace_id": "req_550e8400",
   "category": "DATABASE_ERROR",
-  "code": "E_DB_POSTGRES_DEADLOCK_303",
+  "code": "E_DB_DEADLOCK_303",
+  "sqlstate": "40P01",
   "operation": "mutation",
   "query_hash": "5f5a3c2b1e0d9f8c",
   "database": "postgresql",
@@ -970,8 +879,7 @@ Enable structured logging to capture error context:
   "duration_ms": 5234,
   "retryable": true
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -988,11 +896,8 @@ Enable structured logging to capture error context:
 | E_VALIDATION_* (100-109) | Query validation | 10 |
 | E_DB_* (300-309) | Database execution | 10 |
 | E_EXEC_* (400-405) | Execution logic | 6 |
-| E_FED_* (500-504) | Federation | 5 |
 | E_SUB_* (600-605) | Subscriptions | 6 |
-| E_INTERNAL_* (700-703) | Internal errors | 4 |
-
-**Total:** 150+ distinct error codes
+| E_INTERNAL_* (700-702) | Internal errors | 3 |
 
 ---
 
@@ -1000,34 +905,34 @@ Enable structured logging to capture error context:
 
 ### 9.1 Error Code Stability Guarantee
 
-**Error codes are stable:** Once assigned, error codes will never change.
+**Error codes are stable:** Once assigned, an error code will never change meaning.
 
 **Adding errors:** New error codes may be added in minor releases (X.Y.Z → X.Y+1.Z).
 
 **Removing errors:** Error codes are never removed, only deprecated.
 
-**Example:** If E_DB_POSTGRES_CONNECTION_FAILED_300 is used today, it will have the same meaning in v2.1, v3.0, v10.0, etc.
+**Example:** If `E_DB_CONNECTION_FAILED_300` is used today, it will have the same meaning in 1.10, 1.11, and later releases.
+
+See [`./versioning-strategy.md`](./versioning-strategy.md) for the full compatibility and deprecation policy.
 
 ### 9.2 Deprecation of Error Types
 
-When an error becomes obsolete, it's marked deprecated:
+When an error becomes obsolete, it is marked deprecated:
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
     "message": "...",
     "extensions": {
       "code": "E_OLD_ERROR_123",
       "deprecated": true,
-      "deprecated_since": "v2.3.0",
+      "deprecated_since": "1.5.0",
       "use_instead": "E_NEW_ERROR_456",
       "removal_date": "2027-01-11"
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1039,7 +944,7 @@ When an error becomes obsolete, it's marked deprecated:
 - Hide all error details (debugging requires transparency)
 - Support custom error codes (standard codes only)
 - Provide error translation per locale (use standard codes)
-- Guarantee error message format changes (messages evolve)
+- Guarantee error message format stability (messages evolve)
 
 ---
 
@@ -1047,12 +952,12 @@ When an error becomes obsolete, it's marked deprecated:
 
 FraiseQL's error handling is **deterministic and classifiable**:
 
-- ✅ All errors fall into well-defined categories
-- ✅ Each error code is stable and never changes
-- ✅ Errors include actionable context (retry, remediable, user-actionable)
-- ✅ Partial results possible (queries), atomic results (mutations)
-- ✅ Clients can implement robust error handling
-- ✅ Operations can debug using trace IDs and structured logs
+- All errors fall into well-defined categories
+- Each error code is stable and never changes meaning
+- Errors include actionable context (retry, remediable, user-actionable)
+- Partial results are possible for queries; mutations are atomic
+- Clients can implement robust error handling
+- Operations can debug using trace IDs and structured logs
 
 **Golden rule:** If the error code is the same, the error is the same. Clients can build deterministic error handling logic.
 

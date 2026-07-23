@@ -1,25 +1,30 @@
-<!-- Skip to main content -->
 ---
-
 title: Schema Conventions Specification
-description: FraiseQL enforces opinionated PostgreSQL schema conventions that enable automatic compilation, efficient filtering, and optimal performance. These conventions a
-keywords: ["format", "compliance", "schema", "protocol", "specification", "standard"]
+description: FraiseQL relies on opinionated PostgreSQL schema conventions for read views, write functions, and identifier columns. The runtime reads these conventions at app startup to build and serve the GraphQL API.
+keywords: ["schema", "conventions", "postgresql", "views", "naming", "specification"]
 tags: ["documentation", "reference"]
 ---
 
 # Schema Conventions Specification
 
 **Version:** 1.0
-**Status:** Draft
+**Status:** Stable
 **Audience:** Database architects, schema designers, DBAs
 
 ---
 
 ## 1. Overview
 
-FraiseQL enforces opinionated PostgreSQL schema conventions that enable automatic compilation, efficient filtering, and optimal performance. These conventions are **mandatory** for FraiseQL to function.
+FraiseQL is a runtime GraphQL framework for PostgreSQL. It relies on a small set of
+opinionated schema conventions so that, at application startup, it can build the GraphQL
+schema in memory and serve it over FastAPI. There is no build or code-generation step — the
+runtime reads your views and functions directly.
 
-**Core principle:** The database schema is the source of truth. The authoring layer declares which views to expose as GraphQL types.
+**Core principle:** The database schema is the source of truth. Your Python decorators
+declare which views to expose as GraphQL types and which functions back your mutations; the
+conventions below let FraiseQL map them efficiently.
+
+These conventions are PostgreSQL-specific. FraiseQL v1 targets PostgreSQL only.
 
 ---
 
@@ -30,7 +35,7 @@ FraiseQL enforces opinionated PostgreSQL schema conventions that enable automati
 | Pattern | Purpose | Example | Notes |
 |---------|---------|---------|-------|
 | `tb_{entity}` | Write table (normalized) | `tb_user`, `tb_post`, `tb_order_item` | Singular entity name |
-| `tb_{entity}_relationship` | Junction/bridge tables | `tb_user_role`, `tb_product_tag` | For many-to-many |
+| `tb_{entity}_{relationship}` | Junction/bridge tables | `tb_user_role`, `tb_product_tag` | For many-to-many |
 
 **Rules:**
 
@@ -38,38 +43,41 @@ FraiseQL enforces opinionated PostgreSQL schema conventions that enable automati
 - Must use snake_case
 - No abbreviations (use `tb_customer`, not `tb_cust`)
 - Entity name should be singular
-- Table exists only if there's a write model for the entity
+- A table exists only if there is a write model for the entity
+
+Write tables are the normalized source of truth. They are never exposed directly to GraphQL —
+queries read from views, and mutations write through `fn_` functions.
 
 ### 2.2 View Naming
 
 | Pattern | Purpose | Example |
 |---------|---------|---------|
-| `v_{entity}` | Base projection (JSON plane) | `v_user`, `v_post` |
-| `v_{entities}_by_{parent}` | Pre-aggregated composition | `v_posts_by_user`, `v_order_items_by_order` |
-| `tv_{entity}` | Table-backed view (JSON plane) | `tv_user_summary` |
+| `v_{entity}` | Logical read view producing a `data` JSONB column | `v_user`, `v_post` |
+| `v_{entities}_by_{parent}` | Pre-aggregated composition view | `v_posts_by_user`, `v_order_items_by_order` |
+| `tv_{entity}` | Table-backed projection view (real table holding pre-composed JSONB) | `tv_user_summary` |
 | `mv_{entity}` | Materialized view (cached) | `mv_user_stats` |
-| `va_{entity}` | Logical view (Arrow plane) | `va_user`, `va_post` |
-| `ta_{entity}` | Table-backed view (Arrow plane) | `ta_user`, `ta_orders` |
 
 **Rules:**
 
-- Base views MUST produce a `data` JSONB column
-- Pre-aggregated views group by foreign key
-- Arrow views are flat, single-level only
+- Read views (`v_`, `tv_`) MUST produce a `data` JSONB column
+- Pre-aggregated views group by the internal foreign key
 - View names must be lowercase snake_case
 
 **When to use each pattern:**
 
-See [View Selection Guide](../architecture/database/view-selection-guide.md) for detailed decision trees:
+See the [View Selection Guide](../architecture/database/view-selection-guide.md) for detailed
+decision trees, and the [tv_ table pattern](../architecture/database/tv-table-pattern.md) for
+table-backed projections:
 
-- `v_*` vs `tv_*`: Logical vs table-backed for JSON/GraphQL queries
-- `va_*` vs `ta_*`: Logical vs table-backed for Arrow/Analytics queries
+- `v_*` is a logical view: the SQL runs on every query, composing the `data` JSONB on the fly.
+  Best for simple to moderate reads.
+- `tv_*` is a real table holding pre-composed JSONB, refreshed by functions or triggers. Best
+  for heavy, deeply nested reads where re-composing JSONB on every query would be too slow.
 
 **Quick decision:**
 
-- Simple queries → `v_*` (JSON) or `va_*` (Arrow)
-- Complex queries with 3+ JOINs → `tv_*` (JSON)
-- Large datasets (>1M rows) → `ta_*` (Arrow)
+- Simple to moderate queries → `v_*` (logical view)
+- Complex queries with 3+ JOINs or deep nesting → `tv_*` (table-backed projection)
 
 ### 2.3 Function Naming (Stored Procedures)
 
@@ -82,8 +90,11 @@ See [View Selection Guide](../architecture/database/view-selection-guide.md) for
 
 - Must be lowercase snake_case
 - Action verbs: `create`, `update`, `delete`, `upsert`, `archive`, etc.
-- Function must return JSON with result data
+- Function returns JSON with the result data (see section 5)
 - Function is transaction-safe
+
+All mutation business logic lives in these PostgreSQL functions. A `@fraiseql.mutation`
+resolver calls them via `db.execute_function("fn_...", {...})`.
 
 ### 2.4 Constraint Naming
 
@@ -95,58 +106,62 @@ See [View Selection Guide](../architecture/database/view-selection-guide.md) for
 | Check | `ck_{table}_{condition}` | `ck_order_amount_positive` |
 | Index | `idx_{table}_{columns}` | `idx_post_created_at` |
 
+For a complete listing of identifier patterns, see
+[Naming Patterns](../reference/naming-patterns.md).
+
 ---
 
 ## 3. Column Conventions
 
-### 3.1 Primary & Foreign Keys
+### 3.1 The Trinity Identifier Pattern
+
+Every entity carries three identifiers with distinct roles:
+
+- `pk_{entity}` — internal `BIGINT` primary key. Used for fast joins. **Never** exposed in GraphQL.
+- `id` — public `UUID` column. Stable external identity, exposed as the GraphQL `id`.
+- `identifier` — optional human-readable `TEXT UNIQUE` slug. Exposed when present.
 
 ```sql
-<!-- Code example in SQL -->
 -- Write table (tb_*)
 CREATE TABLE tb_user (
-    pk_user BIGINTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    pk_user BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    identifier TEXT NOT NULL UNIQUE,
-    ...
+    identifier TEXT NOT NULL UNIQUE
 );
 
 -- Related write table
 CREATE TABLE tb_post (
-    pk_post INTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    pk_post BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    fk_user BIGINTEGER NOT NULL REFERENCES tb_user(pk_user),
-    ...
+    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user)
 );
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
-- Primary key: `pk_{entity}` (INTEGER, auto-generated)
-- Foreign key: `fk_{entity}` (INTEGER, NOT NULL, references pk_*)
-- Public ID: `id` (UUID, exposed via GraphQL)
-- Surrogate key: `identifier` (TEXT, human-readable, indexed)
+- Primary key: `pk_{entity}` (`BIGINT`, auto-generated)
+- Foreign key: `fk_{entity}` (`BIGINT`, references `pk_*`)
+- Public ID: `id` (`UUID`, exposed via GraphQL)
+- Human-readable slug: `identifier` (`TEXT`, indexed)
 
 **Why this dual-key strategy?**
 
 | Key | Type | Purpose | Index |
 |-----|------|---------|-------|
-| `pk_user` | INT | Internal joins, max performance | PRIMARY KEY |
-| `id` | UUID | External references, federation | UNIQUE |
-| `identifier` | TEXT | Human-readable URLs | UNIQUE |
+| `pk_user` | `BIGINT` | Internal joins, max performance | PRIMARY KEY |
+| `id` | `UUID` | External references | UNIQUE |
+| `identifier` | `TEXT` | Human-readable URLs | UNIQUE |
+
+GraphQL exposes `id: ID!` and optionally `identifier: String`, never `pk_*`. Keep `pk_*` and
+`fk_*` out of the `data` JSONB entirely.
 
 ### 3.2 Filterable Foreign Keys in Views
 
 ```sql
-<!-- Code example in SQL -->
--- View includes native FK columns for efficient filtering
+-- View includes a UUID FK column for efficient filtering
 CREATE VIEW v_post AS
 SELECT
-    pk_post,
-    fk_user,
     id,
-    identifier,
     (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
     jsonb_build_object(
         'id', id,
@@ -158,39 +173,38 @@ FROM tb_post
 WHERE deleted_at IS NULL;
 
 -- Index the foreign key column for fast filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_v_post_user_id ON tb_post(fk_user);
+```
 
 **Rules:**
 
-- Related views expose `{parent}_id` as native column
-- This column is UUID (matches public `id`)
+- Related views expose `{parent}_id` as a native column
+- This column is `UUID` (matches the public `id`)
 - Always indexed for fast filtering
-- Appears in both `data` JSONB and as native column
+- Appears in both the `data` JSONB and as a native column
 
 ### 3.3 Deep Path Filter Columns
 
 For frequently-filtered nested paths, add denormalized columns:
 
 ```sql
-<!-- Code example in SQL -->
 CREATE VIEW v_order AS
 SELECT
-    pk_order,
-    id,
-    identifier,
+    o.id,
 
     -- Direct relationships
     user_id,
 
     -- Deep paths (denormalized for filtering)
-    items__product__category_id,
-    items__product__vendor_id,
-    items__product__tag_ids,
+    paths.items__product__category_id,
+    paths.items__product__vendor_id,
+    paths.items__product__tag_ids,
 
-    jsonb_build_object(...) AS data
-FROM ...
+    jsonb_build_object(
+        'id', o.id
+        -- ... remaining fields ...
+    ) AS data
+FROM tb_order o
 LEFT JOIN LATERAL (
     SELECT
         array_agg(DISTINCT c.id) AS items__product__category_id,
@@ -203,80 +217,74 @@ LEFT JOIN LATERAL (
     LEFT JOIN tb_product_tag pt ON pt.fk_product = p.pk_product
     LEFT JOIN tb_tag t ON t.pk_tag = pt.fk_tag
     WHERE oi.fk_order = o.pk_order
-) paths ON true;
+) paths ON true
+WHERE o.deleted_at IS NULL;
 
--- Index each path column
-CREATE INDEX idx_v_order_items__product__category_id
-  ON v_order USING GIN(items__product__category_id);
-```text
-<!-- Code example in TEXT -->
+-- Index each path column (GIN for array columns)
+CREATE INDEX idx_tb_order_category
+  ON tb_order_item(fk_product);
+```
 
 **Rules:**
 
 - Column name = GraphQL filter path with `__` separators
-- Singular relationships: UUID type
-- Array relationships: UUID[] type
-- Must be indexed (B-tree for UUID, GIN for UUID[])
-- Compiler introspects these columns automatically
+- Singular relationships: `UUID` type
+- Array relationships: `UUID[]` type
+- Must be indexed (B-tree for `UUID`, GIN for `UUID[]`)
+- FraiseQL reads these columns at startup and offers them as filter arguments
 
 ### 3.4 Audit Columns
 
-All tables MUST include audit columns:
+All write tables SHOULD include audit columns:
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE tb_user (
-    pk_user BIGINTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    pk_user BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     email TEXT NOT NULL,
 
     -- Audit columns
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER REFERENCES tb_user(pk_user),
+    created_by BIGINT REFERENCES tb_user(pk_user),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by INTEGER REFERENCES tb_user(pk_user),
+    updated_by BIGINT REFERENCES tb_user(pk_user),
     deleted_at TIMESTAMPTZ,
-    deleted_by INTEGER REFERENCES tb_user(pk_user),
+    deleted_by BIGINT REFERENCES tb_user(pk_user),
 
     CHECK (updated_at >= created_at),
     CHECK (deleted_at >= created_at)
 );
 
--- Trigger to update updated_at
+-- Trigger to maintain updated_at
 CREATE TRIGGER trigger_tb_user_updated_at
 BEFORE UPDATE ON tb_user
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
-- `created_at`: TIMESTAMPTZ, NOT NULL, default CURRENT_TIMESTAMP
-- `created_by`: INTEGER FK to user (nullable if system creates it)
-- `updated_at`: TIMESTAMPTZ, NOT NULL, updated by trigger
-- `updated_by`: INTEGER FK to user
-- `deleted_at`: TIMESTAMPTZ, NULL if active (soft delete)
-- `deleted_by`: INTEGER FK to user
+- `created_at`: `TIMESTAMPTZ`, NOT NULL, default `CURRENT_TIMESTAMP`
+- `created_by`: `BIGINT` FK to user (nullable if the system creates the row)
+- `updated_at`: `TIMESTAMPTZ`, NOT NULL, maintained by trigger
+- `updated_by`: `BIGINT` FK to user
+- `deleted_at`: `TIMESTAMPTZ`, NULL if active (soft delete)
+- `deleted_by`: `BIGINT` FK to user
 - Add CHECK constraints to prevent invalid timestamps
 
 **Usage:**
 
 - Views filter on `WHERE deleted_at IS NULL` for soft delete
-- Cache invalidation uses `updated_at` as signal
-- CDC events use audit columns for timestamps
+- Cache invalidation can use `updated_at` as a freshness signal
 
 ### 3.5 Projection Data Column
 
-All views MUST include a `data` JSONB column:
+All read views MUST include a `data` JSONB column:
 
 ```sql
-<!-- Code example in SQL -->
 CREATE VIEW v_user AS
 SELECT
-    pk_user,
     id,
-    identifier,
     jsonb_build_object(
         'id', id,
         'identifier', identifier,
@@ -287,32 +295,34 @@ SELECT
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
-- Column must be named `data`
-- Type: JSONB
-- Contains fully-formed projection in GraphQL field case
-- Must be at the END of SELECT (last column)
+- The column must be named `data` (configurable via `jsonb_column`, default `"data"`)
+- Type: `JSONB`
+- Contains the fully-formed projection in GraphQL field case
+- Place it at the END of the SELECT (last column) by convention
 - Never null (use `{}` for empty objects, `[]` for empty arrays)
+- Never put `pk_*` or `fk_*` inside `data`
 
 **Field naming in JSONB:**
 
 - Convert snake_case to camelCase
 - `created_at` → `createdAt`
 - `user_id` → `userId`
-- Avoid nested objects; flatten or use pre-aggregated views
+
+At startup, FraiseQL maps each `@fraiseql.type` field to a key in this `data` JSONB. The hot
+path reads `data` and shapes it to the requested GraphQL fields (the optional `fraiseql_rs`
+Rust extension accelerates this transformation).
 
 ### 3.6 Reserved Column Names
 
-These columns are reserved by FraiseQL and MUST NOT be used elsewhere:
+These columns have a special meaning to FraiseQL and SHOULD NOT be repurposed:
 
 ```text
-<!-- Code example in TEXT -->
-pk_*         — Primary key (internal only)
-fk_*         — Foreign key (internal only)
+pk_*         — Primary key (internal only, never exposed)
+fk_*         — Foreign key (internal only, never exposed)
 id           — Public identifier (UUID)
 identifier   — Human-readable slug
 *_id         — Filterable FK in views (UUID or UUID[])
@@ -324,8 +334,7 @@ updated_at   — Audit column
 updated_by   — Audit column
 deleted_at   — Audit column (soft delete)
 deleted_by   — Audit column
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -334,12 +343,9 @@ deleted_by   — Audit column
 ### 4.1 Base Entity View
 
 ```sql
-<!-- Code example in SQL -->
 CREATE VIEW v_user AS
 SELECT
-    pk_user,                              -- Internal key
     id,                                   -- Public ID
-    identifier,                           -- Slug
     jsonb_build_object(                   -- Projection
         'id', id,
         'identifier', identifier,
@@ -349,27 +355,20 @@ SELECT
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;                 -- Soft delete
-```text
-<!-- Code example in TEXT -->
+```
 
 **Must include:**
 
-- `pk_*` for internal reference
-- `id` for public identity
-- `identifier` for URLs
+- `id` for public identity (and `WHERE id = $1` lookups)
 - `data` JSONB with camelCase fields
-- Soft delete filter
+- A soft-delete filter
 
 ### 4.2 Related Entity View with Foreign Key
 
 ```sql
-<!-- Code example in SQL -->
 CREATE VIEW v_post AS
 SELECT
-    pk_post,
-    fk_user,
     id,
-    identifier,
     (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
     jsonb_build_object(
         'id', id,
@@ -381,75 +380,70 @@ SELECT
 FROM tb_post
 WHERE deleted_at IS NULL;
 
--- Index the FK column for filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-```text
-<!-- Code example in TEXT -->
+-- Index the underlying FK column for filtering
+CREATE INDEX idx_tb_post_fk_user ON tb_post(fk_user);
+```
 
 **Must include:**
 
-- Native `{parent}_id` column for filtering
-- Index on FK columns
-- FK value in `data` JSONB for clients
+- A native `{parent}_id` (`UUID`) column for filtering
+- An index on the underlying FK column
+- The FK value (as `UUID`) in the `data` JSONB for clients
 
 ### 4.3 Pre-aggregated Composition View
 
 ```sql
-<!-- Code example in SQL -->
--- Group related entities by parent key
+-- Group related entities by the parent key
 CREATE VIEW v_posts_by_user AS
 SELECT
-    fk_user,
-    jsonb_agg(data ORDER BY created_at DESC) AS posts
-FROM v_post
-GROUP BY fk_user;
+    p.fk_user,
+    jsonb_agg(v.data ORDER BY p.created_at DESC) AS posts
+FROM v_post v
+JOIN tb_post p ON p.id = (v.data->>'id')::uuid
+GROUP BY p.fk_user;
 
 -- Composition view joins base + pre-aggregated
 CREATE VIEW v_user_with_posts AS
 SELECT
-    u.pk_user,
     u.id,
-    u.identifier,
-    u.data || jsonb_build_object(
+    (u.data || jsonb_build_object(
         'posts', COALESCE(p.posts, '[]'::jsonb)
-    ) AS data
+    )) AS data
 FROM v_user u
-LEFT JOIN v_posts_by_user p ON p.fk_user = u.pk_user;
-```text
-<!-- Code example in TEXT -->
+JOIN tb_user tu ON tu.id = u.id
+LEFT JOIN v_posts_by_user p ON p.fk_user = tu.pk_user;
+```
 
 **Rules:**
 
-- Pre-aggregated views are NOT exposed directly to GraphQL
-- Used only for efficient composition
-- Join on internal `fk_*` columns
-- Compose using JSONB merge (`||`)
+- Pre-aggregated `_by_` views are NOT exposed directly to GraphQL
+- They are used only for efficient composition
+- Join on internal `fk_*` / `pk_*` columns
+- Compose using the JSONB merge operator (`||`)
 
-### 4.3.1 Analytical Fact Tables
+### 4.4 Fact and Dimension Tables (Analytical Modeling)
 
-For analytical workloads, FraiseQL supports **fact tables** with the `tf_` prefix:
+Fact and dimension tables are a legitimate data-modeling pattern. You build the tables and an
+ETL/refresh process; FraiseQL queries them through views like any other read source. When a
+GraphQL query selects aggregate fields, FraiseQL derives `GROUP BY` and aggregate SQL at
+runtime against your views (supported aggregates: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`,
+`STDDEV`, `VARIANCE`).
 
-**Fact tables** (`tf_*`):
+**Fact tables** hold transactional or event data:
 
-- Transactional/event data at any granularity
-- Measures: SQL columns (numeric types for fast aggregation)
-- Dimensions: JSONB `dimensions` column (flexible grouping)
-- Denormalized filters: Indexed SQL columns (customer_id, occurred_at)
-- Pre-aggregated versions use descriptive suffixes: `tf_sales_daily`, `tf_events_monthly`
+- Measures: SQL columns (numeric types, for fast aggregation)
+- Dimensions: a JSONB `dimensions` column for flexible grouping
+- Denormalized filters: indexed SQL columns (e.g. `customer_id`, `occurred_at`)
 
-**Dimension tables** (`td_*`):
-
-- Reference data used at ETL time to denormalize into fact tables
-- Never joined at query time (FraiseQL does not support joins)
-- Managed by DBA/data team
+**Dimension tables** hold reference data used at ETL time to denormalize into fact tables.
 
 **Example:**
 
 ```sql
-<!-- Code example in SQL -->
--- Fact table: Raw sales transactions (finest granularity)
-CREATE TABLE tf_sales (
-    id BIGSERIAL PRIMARY KEY,
+-- Fact table: raw sales transactions (finest granularity)
+CREATE TABLE tb_sales_fact (
+    pk_sales_fact BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     -- Measures (SQL columns for fast aggregation)
     revenue DECIMAL(10,2) NOT NULL,
     quantity INT NOT NULL,
@@ -461,82 +455,40 @@ CREATE TABLE tf_sales (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_sales_customer ON tf_sales(customer_id);
-CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
-CREATE INDEX idx_sales_dimensions_gin ON tf_sales USING GIN(dimensions);
+CREATE INDEX idx_sales_customer ON tb_sales_fact(customer_id);
+CREATE INDEX idx_sales_occurred ON tb_sales_fact(occurred_at);
+CREATE INDEX idx_sales_dimensions_gin ON tb_sales_fact USING GIN(dimensions);
 
--- Pre-aggregated fact table: Daily granularity (same structure, different granularity)
-CREATE TABLE tf_sales_daily (
-    id BIGSERIAL PRIMARY KEY,
+-- Pre-aggregated fact table: daily granularity
+CREATE TABLE tb_sales_fact_daily (
+    pk_sales_fact_daily BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
     day DATE NOT NULL UNIQUE,
-    -- Pre-aggregated measures
     revenue DECIMAL(10,2) NOT NULL,      -- SUM(revenue)
     quantity INT NOT NULL,               -- SUM(quantity)
     transaction_count INT NOT NULL,      -- COUNT(*)
-    -- Dimensions (can still group within daily aggregates)
     dimensions JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_sales_daily_day ON tf_sales_daily(day);
-CREATE INDEX idx_sales_daily_dimensions_gin ON tf_sales_daily USING GIN(dimensions);
+CREATE INDEX idx_sales_daily_dimensions_gin ON tb_sales_fact_daily USING GIN(dimensions);
 
--- Dimension table: Product catalog (for ETL denormalization)
-CREATE TABLE td_products (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
+-- Dimension table: product catalog (for ETL denormalization)
+CREATE TABLE tb_product_dim (
+    pk_product_dim BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ETL process denormalizes td_products into tf_sales.dimensions
--- Example: dimensions->>'product_name', dimensions->>'product_category'
-```text
-<!-- Code example in TEXT -->
+-- An ETL process denormalizes product attributes into tb_sales_fact.dimensions,
+-- e.g. dimensions->>'product_name', dimensions->>'product_category'.
+```
 
-**Key architectural principle**: FraiseQL does NOT support joins. All dimensional data must be denormalized into the `dimensions` JSONB column at ETL time. The DBA/data team manages ETL pipelines; FraiseQL provides the GraphQL query interface.
-
-**Related documentation**: See `docs/specs/analytical-schema-conventions.md` for complete analytical naming conventions, and `docs/architecture/analytics/fact-dimension-pattern.md` for detailed patterns.
-
-### 4.4 Arrow Plane View (Flat, Single-Level)
-
-```sql
-<!-- Code example in SQL -->
-CREATE VIEW av_user AS
-SELECT
-    pk_user,
-    id,
-    identifier,
-    email,
-    name,
-    created_at,
-    updated_at
-FROM tb_user
-WHERE deleted_at IS NULL;
-
-CREATE VIEW av_post AS
-SELECT
-    pk_post,
-    fk_user,
-    id,
-    identifier,
-    (SELECT id FROM tb_user WHERE pk_user = fk_user) AS user_id,
-    title,
-    content,
-    created_at
-FROM tb_post
-WHERE deleted_at IS NULL;
-```text
-<!-- Code example in TEXT -->
-
-**Rules:**
-
-- Single level only (no nesting)
-- Each entity = separate Arrow batch
-- FK columns included for client-side joins
-- Columnar, not JSONB
-- Suitable for analytics/BI tools
+Window functions (`ROW_NUMBER`, `RANK`, `LAG`, `LEAD`, `OVER (PARTITION BY ...)`) and richer
+analytics are standard PostgreSQL that you embed in your `v_`/`tv_` view SQL — FraiseQL serves
+the resulting view, no special API required.
 
 ---
 
@@ -544,10 +496,11 @@ WHERE deleted_at IS NULL;
 
 ### 5.1 Mutation Response Contract
 
-All stored procedures (mutations) MUST return a standardized JSON response matching this structure:
+A `@fraiseql.mutation` resolver calls a `fn_` function via `db.execute_function(...)`. The
+function performs validation and the write, then returns a JSON response. A practical
+response shape:
 
 ```json
-<!-- Code example in JSON -->
 {
   "status": "success|error|noop",
   "message": "Human-readable message",
@@ -560,66 +513,24 @@ All stored procedures (mutations) MUST return a standardized JSON response match
     "email": "..."
   },
   "updated_fields": ["field1", "field2"],
-  "cascade": {
-    "updated": [
-      {
-        "__typename": "User",
-        "id": "uuid",
-        "operation": "CREATED|UPDATED",
-        "entity": { ... }
-      }
-    ],
-    "deleted": [
-      {
-        "__typename": "User",
-        "id": "uuid",
-        "operation": "DELETED"
-      }
-    ],
-    "invalidations": [
-      {
-        "query_name": "users",
-        "strategy": "INVALIDATE|REPLACE|APPEND",
-        "scope": "PREFIX|EXACT|SUFFIX"
-      }
-    ],
-    "metadata": {
-      "timestamp": "2026-01-11T...",
-      "transaction_id": "txid",
-      "depth": 1,
-      "affected_count": 1
-    }
-  },
   "metadata": {
     "trigger": "api_create|api_update|api_delete",
-    "reason": "entity_created|entity_updated|conflict|not_found",
-    "input_payload": { ... }
+    "reason": "entity_created|entity_updated|conflict|not_found"
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Response fields (all required):**
+**Response fields:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `status` | TEXT | `success`, `error`, or `noop` |
-| `message` | TEXT | Human-readable message for client |
-| `entity_id` | TEXT | UUID of affected entity |
-| `entity_type` | TEXT | Entity type name (e.g., "User") |
-| `entity` | JSONB | The mutated entity (full view data) |
+| `message` | TEXT | Human-readable message for the client |
+| `entity_id` | TEXT | UUID of the affected entity |
+| `entity_type` | TEXT | Entity type name (e.g. `"User"`) |
+| `entity` | JSONB | The mutated entity (full view projection) |
 | `updated_fields` | ARRAY | Fields that were actually changed |
-| `cascade` | JSONB | Cache invalidation + cascaded updates |
-| `metadata` | JSONB | Operation metadata and input |
-
-**Cascade structure:**
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `updated` | ARRAY | Entities that were created/updated with `operation` and `__typename` |
-| `deleted` | ARRAY | Entities that were deleted |
-| `invalidations` | ARRAY | Cache keys to invalidate with strategy |
-| `metadata` | OBJECT | Timestamp, transaction_id, depth, affected_count |
+| `metadata` | JSONB | Operation metadata |
 
 **Status values:**
 
@@ -629,124 +540,82 @@ All stored procedures (mutations) MUST return a standardized JSON response match
 | `error` | Mutation failed (validation, constraint, etc.) |
 | `noop` | No changes applied (idempotent, already exists, etc.) |
 
-**Note:** The mutation response above is the **public-facing API response**. Internally, all mutations are also logged to `tb_entity_change_log` with a full Debezium envelope for complete audit trails. See **section 6: Mutation Logging & Audit Tables** for details. This enables:
+The Python resolver inspects `status` and returns a `@fraiseql.success` or `@fraiseql.error`
+type accordingly.
 
-- Complete audit trail of all entity writes
-- CDC event emission for real-time systems
-- Observability and performance monitoring
-- Error diagnostics and debugging
-- Multi-source mutation tracking (GraphQL, batch imports, ETL, direct SQL)
-
-### 5.2 Basic Create Function (PostgreSQL)
+### 5.2 Basic Create Function
 
 ```sql
-<!-- Code example in SQL -->
 CREATE FUNCTION fn_create_user(
     tenant_id UUID,
     user_id UUID,
     payload JSONB
 )
-RETURNS TEXT  -- Returns JSON response (portable format)
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
     v_new_id UUID := gen_random_uuid();
     v_entity JSONB;
-    v_response JSONB;
 BEGIN
-    -- Insert new user
     INSERT INTO tb_user (id, email, name, created_by)
     VALUES (
         v_new_id,
         payload->>'email',
         payload->>'name',
-        user_id
+        (SELECT pk_user FROM tb_user WHERE id = user_id)
     );
 
-    -- Fetch full projection
-    SELECT data INTO v_entity
-    FROM v_user
-    WHERE id = v_new_id;
+    -- Fetch the full projection from the read view
+    SELECT data INTO v_entity FROM v_user WHERE id = v_new_id;
 
-    -- Build response
-    v_response := jsonb_build_object(
+    RETURN jsonb_build_object(
         'status', 'success',
         'message', 'User created successfully',
         'entity_id', v_new_id::text,
         'entity_type', 'User',
         'entity', v_entity,
         'updated_fields', ARRAY['email', 'name'],
-        'cascade', jsonb_build_object(
-            'updated', jsonb_build_array(
-                jsonb_build_object(
-                    '__typename', 'User',
-                    'id', v_new_id::text,
-                    'operation', 'CREATED',
-                    'entity', v_entity
-                )
-            ),
-            'invalidations', jsonb_build_array(
-                jsonb_build_object(
-                    'query_name', 'users',
-                    'strategy', 'INVALIDATE',
-                    'scope', 'PREFIX'
-                )
-            ),
-            'metadata', jsonb_build_object(
-                'timestamp', NOW()::text,
-                'depth', 1,
-                'affected_count', 1
-            )
-        ),
         'metadata', jsonb_build_object(
             'trigger', 'api_create',
-            'reason', 'entity_created',
-            'input_payload', payload
+            'reason', 'entity_created'
         )
     );
-
-    RETURN v_response::TEXT;
 EXCEPTION WHEN OTHERS THEN
-    v_response := jsonb_build_object(
+    RETURN jsonb_build_object(
         'status', 'error',
         'message', SQLERRM,
         'entity_id', NULL,
         'entity_type', 'User',
         'entity', NULL,
         'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
         'metadata', jsonb_build_object(
             'trigger', 'api_create',
-            'reason', 'error',
-            'input_payload', payload
+            'reason', 'error'
         )
     );
-    RETURN v_response::TEXT;
 END;
 $$;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
 - Function name: `fn_{action}_{entity}`
-- Parameters: `tenant_id UUID`, `user_id UUID` (from auth context), `payload JSONB` (input)
-- Return type: **TEXT** (JSON serialized, portable across databases)
-- Must handle errors with try-catch, return error status
-- Entity must be full projection from view
-- Cascade field is REQUIRED (even if empty for simple mutations)
+- Parameters: auth context (`tenant_id`, `user_id`) plus a `payload JSONB`
+- Return type: `JSONB` (the response contract above)
+- Handle errors and return an `error` status rather than propagating raw exceptions
+- The `entity` field is the full projection fetched from the read view
 
 ### 5.3 Update Function with Audit
 
 ```sql
-<!-- Code example in SQL -->
 CREATE FUNCTION fn_update_user(
     tenant_id UUID,
     user_id UUID,
     payload JSONB
 )
-RETURNS TEXT
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
@@ -755,9 +624,8 @@ DECLARE
     v_entity JSONB;
     v_before JSONB;
     v_updated_fields TEXT[];
-    v_response JSONB;
 BEGIN
-    -- Fetch BEFORE snapshot
+    -- Fetch the BEFORE snapshot
     SELECT data INTO v_before FROM v_user WHERE id = v_id;
     IF v_before IS NULL THEN
         RETURN jsonb_build_object(
@@ -767,66 +635,35 @@ BEGIN
             'entity_type', 'User',
             'entity', NULL,
             'updated_fields', ARRAY[]::TEXT[],
-            'cascade', NULL,
             'metadata', jsonb_build_object('trigger', 'api_update', 'reason', 'not_found')
-        )::TEXT;
+        );
     END IF;
 
-    -- Update fields conditionally
+    -- Update only the fields present in the payload
     UPDATE tb_user
     SET
         name = COALESCE(payload->>'name', name),
-        updated_by = user_id,
+        updated_by = (SELECT pk_user FROM tb_user WHERE id = user_id),
         updated_at = NOW()
     WHERE id = v_id;
 
-    -- Track which fields actually changed
+    -- Track which fields were actually supplied
     v_updated_fields := ARRAY(
-        SELECT key FROM jsonb_each_text(payload)
-        WHERE key != 'id'
+        SELECT key FROM jsonb_each_text(payload) WHERE key != 'id'
     );
 
-    -- Fetch AFTER snapshot
+    -- Fetch the AFTER snapshot
     SELECT data INTO v_entity FROM v_user WHERE id = v_id;
 
-    -- Build response
-    v_response := jsonb_build_object(
+    RETURN jsonb_build_object(
         'status', 'success',
         'message', 'User updated successfully',
         'entity_id', v_id::text,
         'entity_type', 'User',
         'entity', v_entity,
         'updated_fields', v_updated_fields,
-        'cascade', jsonb_build_object(
-            'updated', jsonb_build_array(
-                jsonb_build_object(
-                    '__typename', 'User',
-                    'id', v_id::text,
-                    'operation', 'UPDATED',
-                    'entity', v_entity
-                )
-            ),
-            'invalidations', jsonb_build_array(
-                jsonb_build_object(
-                    'query_name', 'users',
-                    'strategy', 'INVALIDATE',
-                    'scope', 'PREFIX'
-                )
-            ),
-            'metadata', jsonb_build_object(
-                'timestamp', NOW()::text,
-                'depth', 1,
-                'affected_count', 1
-            )
-        ),
-        'metadata', jsonb_build_object(
-            'trigger', 'api_update',
-            'reason', 'entity_updated',
-            'input_payload', payload
-        )
+        'metadata', jsonb_build_object('trigger', 'api_update', 'reason', 'entity_updated')
     );
-
-    RETURN v_response::TEXT;
 EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object(
         'status', 'error',
@@ -835,95 +672,63 @@ EXCEPTION WHEN OTHERS THEN
         'entity_type', 'User',
         'entity', NULL,
         'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
         'metadata', jsonb_build_object('trigger', 'api_update', 'reason', 'error')
-    )::TEXT;
+    );
 END;
 $$;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
-- Extract entity ID from payload
-- Fetch BEFORE snapshot for comparison
-- Update only fields present in payload
+- Extract the entity ID from the payload
+- Fetch a BEFORE snapshot for comparison
+- Update only the fields present in the payload
 - Track which fields actually changed
-- Fetch AFTER snapshot
-- Include both snapshots in cascade
-- Always return standard response format
+- Fetch an AFTER snapshot for the response
+- Always return the standard response shape
 
 ### 5.4 Delete Function (Soft Delete)
 
 ```sql
-<!-- Code example in SQL -->
 CREATE FUNCTION fn_delete_user(
     tenant_id UUID,
     user_id UUID,
     payload JSONB
 )
-RETURNS TEXT
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
     v_id UUID := (payload->>'id')::UUID;
-    v_response JSONB;
 BEGIN
     UPDATE tb_user
     SET
         deleted_at = NOW(),
-        deleted_by = user_id
+        deleted_by = (SELECT pk_user FROM tb_user WHERE id = user_id)
     WHERE id = v_id AND deleted_at IS NULL;
 
     IF NOT FOUND THEN
-        v_response := jsonb_build_object(
+        RETURN jsonb_build_object(
             'status', 'noop',
             'message', 'User already deleted or not found',
             'entity_id', v_id::text,
             'entity_type', 'User',
             'entity', NULL,
             'updated_fields', ARRAY[]::TEXT[],
-            'cascade', jsonb_build_object(
-                'deleted', jsonb_build_array(
-                    jsonb_build_object(
-                        '__typename', 'User',
-                        'id', v_id::text,
-                        'operation', 'DELETED'
-                    )
-                )
-            ),
             'metadata', jsonb_build_object('trigger', 'api_delete', 'reason', 'not_found')
-        );
-    ELSE
-        v_response := jsonb_build_object(
-            'status', 'success',
-            'message', 'User deleted successfully',
-            'entity_id', v_id::text,
-            'entity_type', 'User',
-            'entity', NULL,
-            'updated_fields', ARRAY['deleted_at', 'deleted_by'],
-            'cascade', jsonb_build_object(
-                'deleted', jsonb_build_array(
-                    jsonb_build_object(
-                        '__typename', 'User',
-                        'id', v_id::text,
-                        'operation', 'DELETED'
-                    )
-                ),
-                'invalidations', jsonb_build_array(
-                    jsonb_build_object(
-                        'query_name', 'users',
-                        'strategy', 'INVALIDATE',
-                        'scope', 'PREFIX'
-                    )
-                )
-            ),
-            'metadata', jsonb_build_object('trigger', 'api_delete', 'reason', 'entity_deleted')
         );
     END IF;
 
-    RETURN v_response::TEXT;
+    RETURN jsonb_build_object(
+        'status', 'success',
+        'message', 'User deleted successfully',
+        'entity_id', v_id::text,
+        'entity_type', 'User',
+        'entity', NULL,
+        'updated_fields', ARRAY['deleted_at', 'deleted_by'],
+        'metadata', jsonb_build_object('trigger', 'api_delete', 'reason', 'entity_deleted')
+    );
 EXCEPTION WHEN OTHERS THEN
     RETURN jsonb_build_object(
         'status', 'error',
@@ -932,470 +737,104 @@ EXCEPTION WHEN OTHERS THEN
         'entity_type', 'User',
         'entity', NULL,
         'updated_fields', ARRAY[]::TEXT[],
-        'cascade', NULL,
         'metadata', jsonb_build_object('trigger', 'api_delete', 'reason', 'error')
-    )::TEXT;
+    );
 END;
 $$;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
 - Soft delete: set `deleted_at` and `deleted_by`
 - Never hard-delete from `tb_*`
-- Use `deleted` array in cascade (no `updated`)
-- Deleted entities have no entity data
-- Return `operation: DELETED` in cascade
-
-### 5.5 Database-Specific Optimizations (Optional)
-
-This spec defines the **response contract** that all databases must follow.
-
-**PostgreSQL can further optimize:**
-
-- See: `docs/specs/stored-procedures-postgresql.md`
-- Use composite types for efficiency
-- Two-layer architecture (app.*wrapper → core.* implementation)
-- Built-in mutation logging and CDC
-- Industry-standard stored procedure patterns
-
-**Other databases:**
-
-- SQLite: See `docs/specs/stored-procedures-sqlite.md`
-- MySQL: See `docs/specs/stored-procedures-mysql.md`
-- Each maintains the JSON response contract above
+- Deleted entities carry no `entity` data in the response
+- Read views filter `WHERE deleted_at IS NULL`, so the row disappears from queries
 
 ---
 
-## 6. Mutation Logging & Audit Tables
+## 6. Many-to-Many Relationships
 
-### 6.1 Entity Change Log Table
-
-The `tb_entity_change_log` table provides a **centralized, source-agnostic audit log** for all entity writes across the system, whether from GraphQL mutations, batch imports, ETL processes, direct SQL, or any other source.
+### 6.1 Junction Table
 
 ```sql
-<!-- Code example in SQL -->
-CREATE TABLE core.tb_entity_change_log (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    pk_entity_change_log UUID NOT NULL DEFAULT gen_random_uuid(),
-
-    fk_customer_org UUID NOT NULL,      -- Multi-tenant isolation
-    fk_contact UUID,                     -- User ID who made the change (nullable)
-
-    object_type TEXT NOT NULL,           -- Entity type (User, Post, Order, etc.)
-    object_id UUID NOT NULL,             -- Entity UUID being modified
-
-    modification_type TEXT NOT NULL CHECK (
-        modification_type IN ('INSERT', 'UPDATE', 'DELETE', 'NOOP')
-    ),
-
-    change_status TEXT NOT NULL CHECK (
-        change_status ~ '^(new|existing|updated|deleted|synced|completed|ok|done|success|failed:[a-z_]+|noop:[a-z_]+|conflict:[a-z_]+|duplicate:[a-z_]+|validation:[a-z_]+|not_found|forbidden|unauthorized|blocked:[a-z_]+)$'
-    ),
-
-    object_data JSONB NOT NULL,          -- Debezium envelope (see 6.2)
-    extra_metadata JSONB DEFAULT '{}'::jsonb,
-
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_entity_log_object ON core.tb_entity_change_log (object_type, object_id);
-CREATE INDEX idx_entity_log_org ON core.tb_entity_change_log (fk_customer_org, created_at);
-CREATE INDEX idx_entity_log_status ON core.tb_entity_change_log (change_status);
-```text
-<!-- Code example in TEXT -->
-
-**Purpose:**
-
-- Centralized audit log for all entity writes (GraphQL mutations, batch imports, ETL, direct SQL, triggers, etc.)
-- Source of truth for observability and debugging
-- Enables CDC event emission for real-time systems
-- Powers admin timelines, analytics, and compliance audits
-- **Source-agnostic:** Tracks any write operation regardless of origin
-
-### 6.2 Debezium Envelope Format
-
-The `object_data` JSONB column contains a **Debezium-style change envelope** for compatibility with CDC systems:
-
-```json
-<!-- Code example in JSON -->
-{
-  "before": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "old@example.com",
-    "updated_at": "2026-01-11T14:00:00Z"
-  },
-  "after": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "new@example.com",
-    "updated_at": "2026-01-11T15:00:00Z"
-  },
-  "op": "u",
-  "source": {
-    "table": "tb_user",
-    "schema": "public",
-    "db": "production",
-    "organization": "550e8400-e29b-41d4-a716-446655440001",
-    "ts_ms": 1704067200000
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Operation Codes:**
-
-- `"c"` — Create (INSERT)
-- `"u"` — Update (UPDATE)
-- `"d"` — Delete (DELETE)
-- `"r"` — Read/Noop (NOOP, no change)
-
-**Field Semantics:**
-
-- `before` — Entity state before modification (null for INSERT)
-- `after` — Entity state after modification (null for DELETE)
-- `op` — Database operation code
-- `source` — Metadata about the change source (table, schema, organization, timestamp)
-
-### 6.3 Status Taxonomy
-
-The `change_status` field uses **structured, machine-readable status codes** for pattern matching and aggregation:
-
-| Category | Pattern | Examples | Use Case |
-|----------|---------|----------|----------|
-| Success | Plain word | `new`, `existing`, `updated`, `deleted`, `synced`, `completed`, `success` | Operation succeeded |
-| Error | `failed:{reason}` | `failed:not_found`, `failed:validation`, `failed:constraint` | Operation failed |
-| Conflict | `conflict:{reason}` | `conflict:already_exists`, `conflict:duplicate_email` | Data conflict detected |
-| Validation | `validation:{reason}` | `validation:invalid_format`, `validation:missing_field` | Validation error |
-| No-op | `noop:{reason}` | `noop:unchanged`, `noop:already_synced`, `noop:duplicate` | No change made |
-| Blocked | `blocked:{reason}` | `blocked:permission_denied`, `blocked:rate_limit` | Operation prevented |
-
-### 6.4 Helper Functions
-
-**log_mutation_event()** — Writes change to `tb_entity_change_log`
-
-```sql
-<!-- Code example in SQL -->
-CREATE OR REPLACE FUNCTION log_mutation_event(
-    input_fk_customer_org UUID,
-    input_fk_contact UUID,
-    input_object_type TEXT,
-    input_object_id UUID,
-    input_modification_type TEXT,
-    input_change_status TEXT,
-    input_payload_before JSONB DEFAULT NULL,
-    input_payload_after JSONB DEFAULT NULL,
-    input_source_table TEXT DEFAULT NULL,
-    input_source_schema TEXT DEFAULT 'public',
-    input_extra_metadata JSONB DEFAULT '{}'::jsonb
-)
-RETURNS UUID
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Builds Debezium envelope and inserts into change log
-    -- Returns pk_entity_change_log for tracing
-    ...
-END;
-$$;
-```text
-<!-- Code example in TEXT -->
-
-**build_mutation_response()** — Constructs mutation response without logging
-
-```sql
-<!-- Code example in SQL -->
-CREATE OR REPLACE FUNCTION core.build_mutation_response(
-    input_change_status TEXT,
-    input_message TEXT,
-    input_entity_id UUID,
-    input_entity_type TEXT,
-    input_custom_entity JSONB,
-    input_fields TEXT[] DEFAULT ARRAY[]::TEXT[],
-    input_cascade_data JSONB DEFAULT NULL,
-    input_extra_metadata JSONB DEFAULT '{}'::JSONB
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-IMMUTABLE
-AS $$
-BEGIN
-    -- Pure function: builds and returns mutation_response type
-    -- No side effects; safe to call multiple times
-    RETURN (
-        input_change_status,
-        input_message,
-        input_entity_id::TEXT,
-        input_entity_type,
-        input_custom_entity,
-        input_fields,
-        input_cascade_data,
-        input_extra_metadata
-    )::app.mutation_response;
-END;
-$$;
-```text
-<!-- Code example in TEXT -->
-
-**log_and_return_mutation()** — Combined helper (logs + returns response)
-
-```sql
-<!-- Code example in SQL -->
-CREATE OR REPLACE FUNCTION core.log_and_return_mutation(
-    input_tenant_id UUID,
-    input_user_id UUID,
-    input_entity_type TEXT,
-    input_entity_id UUID,
-    input_modification_type TEXT,
-    input_change_status TEXT,
-    input_fields TEXT[],
-    input_message TEXT,
-    input_payload_before JSONB DEFAULT NULL,
-    input_payload_after JSONB DEFAULT NULL,
-    input_cascade_data JSONB DEFAULT NULL,
-    input_extra_metadata JSONB DEFAULT '{}'::JSONB
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    -- Step 1: Log the mutation (side effect)
-    PERFORM log_mutation_event(
-        input_tenant_id,
-        input_user_id,
-        input_entity_type,
-        input_entity_id,
-        input_modification_type,
-        input_change_status,
-        input_payload_before,
-        input_payload_after,
-        input_entity_type,
-        'public',
-        input_extra_metadata
-    );
-
-    -- Step 2: Build and return response (pure function)
-    RETURN core.build_mutation_response(
-        input_change_status,
-        input_message,
-        input_entity_id,
-        input_entity_type,
-        COALESCE(input_payload_after, input_payload_before),
-        input_fields,
-        input_cascade_data,
-        input_extra_metadata
-    );
-END;
-$$;
-```text
-<!-- Code example in TEXT -->
-
-### 6.5 Usage Patterns
-
-**Standard mutation with automatic logging:**
-
-```sql
-<!-- Code example in SQL -->
-CREATE OR REPLACE FUNCTION fn_create_user(
-    input_tenant_id UUID,
-    input_user_id UUID,
-    input_email TEXT,
-    input_name TEXT
-)
-RETURNS app.mutation_response
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_new_user_id UUID;
-    v_before JSONB := NULL;
-    v_after JSONB;
-BEGIN
-    -- Create user
-    INSERT INTO tb_user (email, name)
-    VALUES (input_email, input_name)
-    RETURNING id INTO v_new_user_id;
-
-    -- Fetch created state
-    SELECT jsonb_build_object(
-        'id', id,
-        'email', email,
-        'name', name,
-        'createdAt', created_at
-    ) INTO v_after
-    FROM tb_user WHERE id = v_new_user_id;
-
-    -- Log and return
-    RETURN core.log_and_return_mutation(
-        input_tenant_id,
-        input_user_id,
-        'User',
-        v_new_user_id,
-        'INSERT',
-        'new',
-        ARRAY['id', 'email', 'name', 'createdAt'],
-        'User created successfully',
-        v_before,
-        v_after,
-        NULL,
-        jsonb_build_object('trigger', 'api_create')
-    );
-END;
-$$;
-```text
-<!-- Code example in TEXT -->
-
-**Custom error response:**
-
-```sql
-<!-- Code example in SQL -->
--- Check for conflict
-IF EXISTS (SELECT 1 FROM tb_user WHERE email = input_email) THEN
-    PERFORM log_mutation_event(
-        input_tenant_id,
-        input_user_id,
-        'User',
-        '00000000-0000-0000-0000-000000000000',
-        'NOOP',
-        'conflict:already_exists',
-        NULL,
-        jsonb_build_object('email', input_email),
-        'tb_user',
-        'public',
-        jsonb_build_object('attempted_email', input_email)
-    );
-
-    RETURN core.build_mutation_response(
-        'conflict:already_exists',
-        'User with this email already exists',
-        '00000000-0000-0000-0000-000000000000',
-        'User',
-        jsonb_build_object('email', input_email, 'error', 'duplicate'),
-        ARRAY[]::TEXT[],
-        NULL,
-        jsonb_build_object('trigger', 'api_create', 'conflict_reason', 'duplicate_email')
-    );
-END IF;
-```text
-<!-- Code example in TEXT -->
-
-### 6.6 Separation of Concerns Pattern
-
-This design separates **side effects (logging)** from **pure functions (response building)**:
-
-- `log_mutation_event()` — Side effect only; writes to database
-- `build_mutation_response()` — Pure function; no side effects
-- `log_and_return_mutation()` — Combines both for typical mutations
-
-**Benefits:**
-
-- Testable: Each function can be tested independently
-- Flexible: Can log without returning, or return without logging if needed
-- Clear: Easy to understand what each function does
-- Follows functional programming principles
-
----
-
-## 7. Many-to-Many Relationships
-
-### 7.1 Junction Table
-
-```sql
-<!-- Code example in SQL -->
 CREATE TABLE tb_user_role (
-    pk_user_role INTEGER PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
-    fk_user BIGINTEGER NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
-    fk_role INTEGER NOT NULL REFERENCES tb_role(pk_role),
+    pk_user_role BIGINT PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user) ON DELETE CASCADE,
+    fk_role BIGINT NOT NULL REFERENCES tb_role(pk_role),
     assigned_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(fk_user, fk_role)
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-### 7.2 View for Array Aggregation
+### 6.2 View for Array Aggregation
 
 ```sql
-<!-- Code example in SQL -->
 -- Aggregate role IDs per user
 CREATE VIEW v_user_role_ids_by_user AS
 SELECT
-    fk_user,
-    array_agg(fk_role) AS role_ids,
-    array_agg(r.id) AS role_ids_uuid
+    ur.fk_user,
+    array_agg(r.id) AS role_ids
 FROM tb_user_role ur
 JOIN tb_role r ON r.pk_role = ur.fk_role
-GROUP BY fk_user;
+GROUP BY ur.fk_user;
 
--- Include in user view
+-- Include the role IDs in the user view
 CREATE VIEW v_user AS
 SELECT
-    u.pk_user,
     u.id,
-    u.identifier,
-    COALESCE(ur.role_ids_uuid, ARRAY[]::UUID[]) AS role_ids,
+    COALESCE(ur.role_ids, ARRAY[]::UUID[]) AS role_ids,
     jsonb_build_object(
         'id', u.id,
         'identifier', u.identifier,
         'email', u.email,
-        'roleIds', COALESCE(ur.role_ids_uuid, ARRAY[]::UUID[])
+        'roleIds', COALESCE(ur.role_ids, ARRAY[]::UUID[])
     ) AS data
 FROM tb_user u
 LEFT JOIN v_user_role_ids_by_user ur ON ur.fk_user = u.pk_user
 WHERE u.deleted_at IS NULL;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
-- Junction table uses internal keys (`fk_*`)
-- View aggregates to UUID array
-- Include both array column AND in JSONB
-- Index the array column for GIN filtering
+- The junction table uses internal keys (`fk_*`)
+- The view aggregates to a `UUID[]` array of public IDs
+- Include the array both as a native column AND inside the `data` JSONB
+- Index the array column with GIN for filtering
 
 ---
 
-## 8. Indexing Strategy
+## 7. Indexing Strategy
 
-### 8.1 Essential Indexes
+### 7.1 Essential Indexes
 
 ```sql
-<!-- Code example in SQL -->
--- On write table
+-- On the write table
 CREATE INDEX idx_tb_user_id ON tb_user(id);
 CREATE INDEX idx_tb_user_identifier ON tb_user(identifier);
 CREATE INDEX idx_tb_user_created_at ON tb_user(created_at);
 CREATE UNIQUE INDEX idx_tb_user_email ON tb_user(email) WHERE deleted_at IS NULL;
 
--- On related table
+-- On related tables
 CREATE INDEX idx_tb_post_fk_user ON tb_post(fk_user);
 CREATE INDEX idx_tb_post_id ON tb_post(id);
 CREATE INDEX idx_tb_post_created_at ON tb_post(created_at);
 
--- On view for filtering
-CREATE INDEX idx_v_post_user_id ON v_post(user_id);
-CREATE INDEX idx_v_post_created_at ON v_post(created_at);
-
 -- On array/JSONB columns (GIN)
-CREATE INDEX idx_v_order_items__product__category_id
-  ON v_order USING GIN(items__product__category_id);
-CREATE INDEX idx_v_user_role_ids
-  ON v_user USING GIN(role_ids);
-CREATE INDEX idx_v_post_data_gin
-  ON v_post USING GIN(data);
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_tb_user_role_user ON tb_user_role(fk_user);
+```
 
 **Rules:**
 
 - B-tree on: public `id`, `identifier`, audit columns, FK columns
 - UNIQUE on: `id` and `identifier`
-- GIN on: array columns, deep path columns, `data` JSONB (optional)
-- Index what will be filtered
+- GIN on: array columns, deep path columns, and `data` JSONB (optional)
+- Index what will actually be filtered
 
 ---
 
-## 9. View Materialization Strategy
+## 8. View Materialization Strategy
 
-### 9.1 When to Materialize
+### 8.1 When to Materialize
 
 Use materialized views for:
 
@@ -1405,57 +844,65 @@ Use materialized views for:
 - High-cardinality pre-aggregations
 
 ```sql
-<!-- Code example in SQL -->
 CREATE MATERIALIZED VIEW mv_user_stats AS
 SELECT
-    fk_user,
-    COUNT(DISTINCT fk_post) AS post_count,
-    COUNT(DISTINCT fk_comment) AS comment_count,
-    MAX(post.created_at) AS latest_post_at
+    u.pk_user AS fk_user,
+    COUNT(DISTINCT p.pk_post) AS post_count,
+    MAX(p.created_at) AS latest_post_at
 FROM tb_user u
-LEFT JOIN tb_post ON tb_post.fk_user = u.pk_user
-LEFT JOIN tb_comment ON tb_comment.fk_user = u.pk_user
-GROUP BY fk_user;
+LEFT JOIN tb_post p ON p.fk_user = u.pk_user
+GROUP BY u.pk_user;
 
--- Refresh strategy
 CREATE INDEX idx_mv_user_stats_fk_user ON mv_user_stats(fk_user);
 
--- Refresh manually or on schedule
+-- Refresh manually or on a schedule
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_stats;
-```text
-<!-- Code example in TEXT -->
+```
 
 **Rules:**
 
 - Name: `mv_{entity}`
 - Index on grouping columns
-- Refresh strategy documented
-- Use CONCURRENTLY to avoid locks
+- Document the refresh strategy
+- Use `CONCURRENTLY` to avoid locks
+
+For heavy nested reads, prefer a `tv_*` table-backed projection refreshed by triggers — see
+the [tv_ table pattern](../architecture/database/tv-table-pattern.md).
 
 ---
 
-## 10. Validation Checklist
+## 9. Validation Checklist
 
 When creating a schema for FraiseQL:
 
 - [ ] All write tables prefixed `tb_*`
-- [ ] All read views prefixed `v_*`
-- [ ] All functions prefixed `fn_*`
-- [ ] Primary keys: `pk_{entity}` (INTEGER)
-- [ ] Foreign keys: `fk_{entity}` (INTEGER)
-- [ ] Public IDs: `id` (UUID)
-- [ ] Surrogates: `identifier` (TEXT, indexed)
-- [ ] All views have `data` JSONB column
-- [ ] Related entity views expose `{parent}_id`
-- [ ] Deep path columns follow `entity__path__field` pattern
-- [ ] All tables have audit columns
-- [ ] All views filter on `deleted_at IS NULL`
+- [ ] All read views prefixed `v_*` (or `tv_*` for table-backed projections)
+- [ ] All mutation functions prefixed `fn_*`
+- [ ] Primary keys: `pk_{entity}` (`BIGINT`, hidden)
+- [ ] Foreign keys: `fk_{entity}` (`BIGINT`, hidden)
+- [ ] Public IDs: `id` (`UUID`)
+- [ ] Slugs: `identifier` (`TEXT`, indexed) where applicable
+- [ ] All read views have a `data` JSONB column
+- [ ] Related entity views expose `{parent}_id` (`UUID`)
+- [ ] Deep path columns follow the `entity__path__field` pattern
+- [ ] Tables have audit columns
+- [ ] Views filter on `deleted_at IS NULL`
 - [ ] Pre-aggregated views named `v_{entities}_by_{parent}`
-- [ ] Arrow views named `av_{entity}` and are flat
-- [ ] Mutation functions return JSONB
-- [ ] All relevant columns indexed
+- [ ] Mutation functions return the standard JSON response
+- [ ] Relevant columns are indexed
 - [ ] JSONB fields use camelCase
-- [ ] No nullable JSONB (use {} or [])
+- [ ] No `pk_*` / `fk_*` inside `data`
+- [ ] No nullable JSONB (use `{}` or `[]`)
+
+---
+
+## See Also
+
+- [Naming Patterns](../reference/naming-patterns.md) — full identifier reference
+- [Scalars](../reference/scalars.md) — built-in GraphQL scalar types
+- [View Selection Guide](../architecture/database/view-selection-guide.md) — `v_` vs `tv_`
+- [tv_ Table Pattern](../architecture/database/tv-table-pattern.md) — table-backed projections
+- [Database-Centric Architecture](../foundation/03-database-centric-architecture.md) — the CQRS model
 
 ---
 

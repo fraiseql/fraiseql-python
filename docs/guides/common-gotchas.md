@@ -1,6 +1,4 @@
-<!-- Skip to main content -->
 ---
-
 title: Common Gotchas & Pitfalls
 description: Learn from common mistakes and pitfalls when using FraiseQL. Each gotcha includes diagnosis steps and solutions.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
@@ -33,7 +31,6 @@ This guide documents common mistakes, surprising behaviors, and anti-patterns di
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users {
     id
@@ -44,8 +41,7 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **What happens:**
 
@@ -55,90 +51,65 @@ query {
 
 ### Why This Happens
 
-FraiseQL executes nested fields one level at a time. Without optimization, it fetches parent entities first, then child entities separately.
+FraiseQL resolves nested fields one level at a time. Without optimization, it fetches parent entities first, then child entities separately.
 
 ### How to Diagnose
 
-**Check database query count:**
+**Enable query logging:**
 
-```bash
-<!-- Code example in BASH -->
-# Enable query logging
-FRAISEQL_LOG_LEVEL=debug cargo run
+```python
+import logging
 
-# Count queries in logs
-grep "SELECT" logs.txt | wc -l
-```text
-<!-- Code example in TEXT -->
+logging.getLogger("fraiseql").setLevel(logging.DEBUG)
+```
 
-**Check profiling output:**
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  users {
-    id
-    __fraiseql_timing {
-      executionTimeMs
-      queryCount
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+Then run the FastAPI app (for example `uvicorn app:app`) and count the `SELECT` statements emitted per request in the logs.
 
 ### Solutions
 
-**Solution 1: Use batch fetching (RECOMMENDED)**
+**Solution 1: Use a DataLoader field (RECOMMENDED)**
 
-FraiseQL automatically batches nested field queries:
+Batch a relationship with `@fraiseql.dataloader_field` so all children load in a single query:
 
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  users(first: 100) {
-    id
-    name
-    posts(first: 50) {   # Batched! All users' posts in ~1 query
-      id
-      title
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+
+@fraiseql.dataloader_field
+async def posts(user: User, info) -> list[Post]:
+    db = info.context["db"]
+    return await db.find("v_post", fk_user=user.id)
+```
 
 **Result:** ~2 queries total (users + batched posts)
 
 **Solution 2: Use table-backed views (tv_*)**
 
+Pre-compose the nested data in a projection view so the child list ships inside the parent's `data` JSONB:
+
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+
+@fraiseql.type(sql_source="tv_user_with_posts", jsonb_column="data")
 class UserWithPosts:
-    """Denormalized view with posts included."""
+    """Projection view with posts already composed in the data JSONB."""
     id: ID
     name: str
-    posts_json: List[PostSummary]  # Pre-fetched via view
-```text
-<!-- Code example in TEXT -->
+    posts: list[PostSummary]  # Pre-composed in tv_user_with_posts
+```
 
 **Solution 3: Flatten queries temporarily**
 
 Instead of:
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users { posts { comments { likes } } }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 Do:
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users { id posts { id } }
 }
@@ -150,13 +121,11 @@ query {
 query {
   comments { id likes }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Solution 4: Add pagination to nested fields**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users(first: 50) {          # Smaller parent batch
     id
@@ -167,8 +136,7 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Prevention
 
@@ -193,15 +161,13 @@ query {
 **Use keyset pagination (RECOMMENDED):**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users(after: "user123", first: 100) {
     id
     name
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Keyset advantages:**
 
@@ -209,73 +175,51 @@ query {
 - Works with sorting
 - Handles inserts/deletes during pagination
 
-**Or limit maximum offset:**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.pagination]
-max_offset = 5000  # Disallow offset > 5000
-```text
-<!-- Code example in TEXT -->
-
 ### Edge Case: Results Changing During Pagination
 
 **Symptom:** When paginating through results, you get duplicate records or skip records.
 
-**Why:** If data is inserted/deleted between pagination requests, result set changes.
+**Why:** If data is inserted/deleted between pagination requests, the result set changes.
 
 **Example:**
 
 ```text
-<!-- Code example in TEXT -->
 Request 1: skip 0, take 10   → gets records 1-10
 [New record inserted]
 Request 2: skip 10, take 10  → gets records 12-21 (record 11 is new)
 Result: Skipped record 11!
-```text
-<!-- Code example in TEXT -->
+```
 
 **Solutions:**
 
 **Use keyset pagination:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users(after: "cursor_from_previous", first: 10) {
     id
     cursor
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Keyset pagination uses the last record's ID as cursor, immune to inserts.
+Keyset pagination uses the last record's `id` as the cursor, which is immune to inserts.
 
-**Or use snapshot isolation:**
+**Or use a stable snapshot:**
 
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  users(snapshotAt: "2026-02-05T10:00:00Z", skip: 10, take: 10) {
-    id
-  }
-}
-```text
-<!-- Code example in TEXT -->
+Wrap a multi-page export in a single PostgreSQL transaction (`REPEATABLE READ`) so every page reads from the same snapshot.
 
 ### Edge Case: Cursor Expiry
 
 **Symptom:** Pagination cursor becomes invalid after database changes.
 
-**Why:** Cursor points to a record that was deleted or modified.
+**Why:** The cursor points to a record that was deleted or modified.
 
 **Solution:**
 
-**Handle expired cursor gracefully:**
+**Handle an expired cursor gracefully on the client:**
 
 ```python
-<!-- Code example in Python -->
 try:
     result = await client.query(query, variables={"after": cursor})
 except FraiseQLError as e:
@@ -283,8 +227,7 @@ except FraiseQLError as e:
         # Restart from beginning or last valid position
         cursor = None
         result = await client.query(query, variables={"after": cursor})
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -292,12 +235,11 @@ except FraiseQLError as e:
 
 ### Gotcha: Stale Cache After Mutation
 
-**Symptom:** Mutation succeeds, but query still returns old cached value.
+**Symptom:** Mutation succeeds, but a subsequent query still returns the old cached value.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation {
   updateUser(id: "123", name: "Alice") {
     id
@@ -310,46 +252,51 @@ query {
     name  # Still returns old name!
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Why:** Cache key doesn't match. Query uses `{id: "123"}`, but mutation might cache invalidate `{id: "123", name: "Alice"}`.
+**Why:** The cached query result was not invalidated by the write. FraiseQL's PostgreSQL-backed cache (`ResultCache`/`CachedRepository`) needs a cascade rule that links the mutation's table to the cached query.
 
 ### Solutions
 
-**Solution 1: Explicit cache invalidation**
+**Solution 1: Configure cascade invalidation rules**
 
-```graphql
-<!-- Code example in GraphQL -->
-mutation {
-  updateUser(id: "123", name: "Alice") @cache(invalidate: true) {
-    id
-    name
-  }
-}
-```text
-<!-- Code example in TEXT -->
+Use `setup_auto_cascade_rules` (with the `SchemaAnalyzer`) so writes to a table automatically invalidate the query results that depend on it:
+
+```python
+from fraiseql.caching import setup_auto_cascade_rules
+
+await setup_auto_cascade_rules(cache, schema_analyzer)
+```
 
 **Solution 2: TTL-based invalidation**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.caching]
-ttl_seconds = 60  # All caches expire after 60 seconds
-```text
-<!-- Code example in TEXT -->
-
-**Solution 3: Dependency-based invalidation**
+Set a short cache TTL so stale entries expire on their own:
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.mutation
-def update_user(id: str, name: str):
-    # Mark all queries involving this user as invalid
-    cache.invalidate(User, id=id)
-    return update_user_in_db(id, name)
-```text
-<!-- Code example in TEXT -->
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    cache_ttl=60,  # All cached query results expire after 60 seconds
+)
+```
+
+`cache_ttl` is also settable via the `FRAISEQL_CACHE_TTL` environment variable.
+
+**Solution 3: Manual invalidation in the mutation**
+
+```python
+import fraiseql
+
+@fraiseql.mutation
+async def update_user(info, input: UpdateUserInput) -> UpdateUserSuccess | UpdateUserError:
+    db = info.context["db"]
+    cache = info.context["cache"]
+    result = await db.execute_function("fn_update_user", {"id": input.id, "name": input.name})
+    await cache.invalidate(User, id=input.id)  # Drop stale query results for this user
+    return UpdateUserSuccess(user=User(**result["user"]))
+```
 
 ### Gotcha: Cache Hit When You Need Fresh Data
 
@@ -358,54 +305,29 @@ def update_user(id: str, name: str):
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   inventory(productId: "123") {
-    quantity  # Cached for 5 minutes, but inventory changes every second!
+    quantity  # Cached, but inventory changes every second!
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Solutions
 
-**Solution 1: Disable caching for critical fields**
+**Solution 1: Skip caching for volatile reads**
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class Inventory:
-    id: ID
-    quantity: int = field(cache=False)  # Never cache inventory
-    updated_at: DateTime = field(cache=False)
-```text
-<!-- Code example in TEXT -->
+Don't wrap volatile queries in `CachedRepository`; read straight from the view via `db.find` so every request hits PostgreSQL.
 
 **Solution 2: Use subscriptions for real-time data**
 
 ```graphql
-<!-- Code example in GraphQL -->
 subscription {
   inventoryChanged(productId: "123") {
     quantity
-    updated_at
+    updatedAt
   }
 }
-```text
-<!-- Code example in TEXT -->
-
-**Solution 3: Add versioning to cache keys**
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  user(id: "123", version: "current") {  # Always gets latest
-    id
-    name
-  }
-}
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -413,52 +335,55 @@ query {
 
 ### Gotcha: Forgetting Field-Level Authorization
 
-**Symptom:** Sensitive field is readable by unauthorized users.
+**Symptom:** A sensitive field is readable by unauthorized users.
 
 **Example:**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
     id: ID
     name: str
     email: str
-    password_hash: str  # ← OOPS! No @authorize decorator
-    salary: Decimal    # ← OOPS! No @authorize decorator
-```text
-<!-- Code example in TEXT -->
+    password_hash: str  # ← OOPS! Exposed to everyone
+    salary: Decimal     # ← OOPS! Exposed to everyone
+```
 
-**Why:** Field-level authorization is opt-in. If you don't add `@authorize`, the field is readable by anyone.
+**Why:** Anything you put in the read view's `data` JSONB and expose as a field is readable by any caller unless you restrict it. The safest fix is to never project secrets into the view at all.
 
 ### Solution
 
-**Add authorization to every sensitive field:**
+**Keep secrets out of the read view.** `password_hash` and similar columns live only on the `tb_` write table and are never selected into the `v_user.data` JSONB, so they cannot be queried:
+
+```sql
+CREATE VIEW v_user AS
+SELECT
+    id,
+    jsonb_build_object(
+        'id', id,
+        'name', name,
+        'email', email
+        -- password_hash is intentionally NOT exposed
+    ) AS data
+FROM tb_user;
+```
+
+**Restrict whole-type or per-query access with an `Authorizer`:**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    id: ID
-    name: str
-    email: str = field(authorize={Roles.ADMIN, Roles.SELF})
-    password_hash: str = field(authorize=set())  # Never readable
-    salary: Decimal = field(authorize={Roles.HR, Roles.SELF})
-```text
-<!-- Code example in TEXT -->
+import fraiseql
 
-**Or use row-level security:**
+@fraiseql.query(authorizer=salary_authorizer)
+async def user_compensation(info, id: ID) -> Compensation | None:
+    db = info.context["db"]
+    return await db.find_one("v_compensation", id=id)
+```
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    where: Where = FraiseQL.where(
-        fk_org=FraiseQL.context.org_id,  # Only users in same org
-        is_sensitive_visible=FraiseQL.context.role in [Roles.ADMIN, Roles.SELF]
-    )
-```text
-<!-- Code example in TEXT -->
+**Or enforce row visibility with PostgreSQL Row-Level Security (RLS):**
+
+Define an RLS policy on the underlying table that reads request context set by FraiseQL (for example `current_setting('app.tenant_id')` and `current_setting('app.user_id')`), so callers only ever see rows they are allowed to read.
 
 ---
 
@@ -466,253 +391,137 @@ class User:
 
 ### Gotcha: String vs Number Comparison
 
-**Symptom:** Filter doesn't match expected records, or returns error.
+**Symptom:** A filter doesn't match the expected records, or returns an error.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   products(where: { id: { eq: "123" } }) {  # String
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Database schema:**
 
 ```sql
-<!-- Code example in SQL -->
-CREATE TABLE products (
-  id INT PRIMARY KEY,  -- Number!
-  ...
+CREATE TABLE tb_product (
+  pk_product BIGINT GENERATED ALWAYS AS IDENTITY,
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  sku TEXT
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-**Why:** Type mismatch. GraphQL string `"123"` doesn't match database INT.
+**Why:** Type mismatch. The GraphQL field type must line up with what the view exposes. Comparing a string literal against a numeric or UUID column produces no matches (or a coercion error).
 
 ### Solution
 
-**Ensure types match in schema:**
+**Make Python field types match the columns the view projects:**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+
+@fraiseql.type(sql_source="v_product", jsonb_column="data")
 class Product:
-    id: int          # Use int, not str
-    sku: str         # Use str for text IDs
-    price: Decimal   # Use Decimal for money, not float
-```text
-<!-- Code example in TEXT -->
+    id: ID           # public UUID column
+    sku: str         # text identifier
+    price: Decimal   # use Decimal for money, not float
+```
 
 ### Gotcha: NULL Handling in WHERE Clauses
 
-**Symptom:** Filter with NULL doesn't work as expected.
+**Symptom:** A filter with NULL doesn't work as expected.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users(where: { middleName: { eq: null } }) {  # Finds users WITH middle names!
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Why:** In SQL, `column = NULL` returns false (use `IS NULL` instead).
+**Why:** In SQL, `column = NULL` is never true (use `IS NULL` instead).
 
 ### Solution
 
-**Use is_null operator:**
+**Use the `isnull` operator:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
-  users(where: { middleName: { is_null: true } }) {  # Correct!
+  users(where: { middleName: { isnull: true } }) {  # Correct!
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## 6. Circular Dependencies in Federation
-
-### Gotcha: Type A extends Type B, Type B extends Type A
-
-**Symptom:** Schema compilation fails with "circular dependency" error.
-
-**Example:**
-
-```python
-<!-- Code example in Python -->
-# users-service
-@FraiseQL.type
-@extends
-class Order:
-    id: str = external()
-    user: User  # Extends to User
-
-# orders-service
-@FraiseQL.type
-@extends
-class User:
-    id: str = external()
-    orders: List[Order]  # Extends back to Order
-```text
-<!-- Code example in TEXT -->
-
-### Solution
-
-**Flatten the hierarchy:**
-
-```python
-<!-- Code example in Python -->
-# Solution: Only users-service owns User, only orders-service owns Order
-# Don't create bidirectional extends
-
-# users-service
-@FraiseQL.type
-@key("id")
-class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: str
-
-# orders-service
-@FraiseQL.type
-@key("id")
-class Order:
-    id: UUID  # UUID v4 for GraphQL ID
-    user_id: str  # Foreign key reference, not @extends
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 7. SAGA Timeout During Long Operations
-
-### Gotcha: SAGA Times Out Before Compensation Can Complete
-
-**Symptom:** SAGA succeeds partially, then times out during compensation.
-
-**Why:** Long-running database operations (data migration, bulk updates) take longer than SAGA timeout.
-
-### Solutions
-
-**Solution 1: Increase SAGA timeout**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.federation.sagas]
-timeout_seconds = 300  # 5 minutes instead of default 30 seconds
-```text
-<!-- Code example in TEXT -->
-
-**Solution 2: Break into smaller steps**
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.saga
-async def bulk_update_users(user_ids: List[str]):
-    # Instead of updating 10,000 users in one step:
-    # Break into batches of 100
-    for batch in chunks(user_ids, 100):
-        step = await saga.add_step(
-            update_user_batch,
-            args=[batch],
-            undo=undo_user_batch
-        )
-```text
-<!-- Code example in TEXT -->
-
-**Solution 3: Use async tasks instead**
-For very long operations, use background tasks instead of SAGA:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.mutation
-async def bulk_update_users(user_ids: List[str]):
-    # Queue background job
-    background_tasks.add_task(
-        bulk_update_in_background,
-        user_ids=user_ids
-    )
-    return { "status": "processing", "job_id": job_id }
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 8. View Performance Degradation
+## 6. View Performance Degradation
 
 ### Gotcha: Logical View Gets Slower Over Time
 
-**Symptom:** Query that was fast at launch gets slower as table grows.
+**Symptom:** A query that was fast at launch gets slower as the table grows.
 
-**Why:** Logical views (v_*) compute aggregations on-the-fly. With 1M rows, computing JSON aggregation is expensive.
+**Why:** Logical views (`v_*`) compute their `data` JSONB on the fly. With millions of rows, building nested JSON aggregations per query becomes expensive.
 
 ### Solution
 
-**Switch to table-backed views (tv_*):**
+**Switch to a table-backed projection view (`tv_*`):**
 
 ```python
-<!-- Code example in Python -->
-# Replace v_user_summary (logical view):
-@FraiseQL.type
-class UserSummary:  # Was v_user_summary
+import fraiseql
+
+# Replace v_user_summary (logical view computed per query):
+@fraiseql.type(sql_source="v_user_summary", jsonb_column="data")
+class UserSummary:
     id: ID
     name: str
     post_count: int
 
-# With tv_user_summary_materialized (table-backed):
-@FraiseQL.type
-class UserSummary:  # Now tv_user_summary_materialized
+# With tv_user_summary (a real table holding pre-composed JSONB,
+# refreshed by triggers/functions):
+@fraiseql.type(sql_source="tv_user_summary", jsonb_column="data")
+class UserSummary:
     id: ID
     name: str
     post_count: int
     updated_at: DateTime
-```text
-<!-- Code example in TEXT -->
+```
 
-**Table-backed views advantages:**
+**Table-backed view advantages:**
 
-- Pre-computed and stored (fast reads)
+- Pre-composed and stored (fast reads)
 - No recalculation per query
-- Trade-off: requires refresh strategy
+- Trade-off: requires a refresh strategy (triggers or scheduled functions)
 
 ---
 
-## 9. Date/Time Timezone Issues
+## 7. Date/Time Timezone Issues
 
 ### Gotcha: DateTime vs Date Comparison
 
-**Symptom:** Date filter includes wrong records or excludes correct ones.
+**Symptom:** A date filter includes the wrong records or excludes correct ones.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   orders(where: { createdAt: { gte: "2026-02-05" } }) {
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Problem:** `"2026-02-05"` is interpreted as `2026-02-05T00:00:00Z`. If user created order at `2026-02-04T23:00:00Z` (previous day in their timezone), it won't match.
+**Problem:** `"2026-02-05"` is interpreted as `2026-02-05T00:00:00Z`. If a user created an order at `2026-02-04T23:00:00Z` (the previous day in their timezone), it won't match.
 
 ### Solutions
 
-**Solution 1: Use DateTime with timezone**
+**Solution 1: Use DateTime with an explicit timezone**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   orders(where: {
     createdAt: {
@@ -722,292 +531,188 @@ query {
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Solution 2: Use Date type for date-only fields**
+**Solution 2: Use the Date type for date-only fields**
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import Date, DateTime
+
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
     id: ID
-    created_date: Date  # Use Date, not DateTime
-    created_at: DateTime  # Use DateTime for timestamps
-```text
-<!-- Code example in TEXT -->
+    created_date: Date     # Use Date for date-only values
+    created_at: DateTime   # Use DateTime for timestamps
+```
 
-**Solution 3: Compare at database level**
+**Solution 3: Compare at the database level inside the view**
 
 ```sql
-<!-- Code example in SQL -->
-SELECT * FROM orders
+SELECT * FROM tb_order
 WHERE DATE(created_at AT TIME ZONE 'UTC') = '2026-02-05'
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## 10. Memory Leaks from Unclosed Subscriptions
+## 8. Memory Leaks from Unclosed Subscriptions
 
 ### Gotcha: Subscription Connections Not Closed Properly
 
 **Symptom:** Memory usage grows indefinitely in production.
 
-**Why:** WebSocket connections held open but not properly closed on disconnect.
+**Why:** WebSocket connections are held open but not properly closed on disconnect.
 
 ### Solutions
 
-**Solution 1: Set subscription timeout**
+**Solution 1: Clean up the async generator**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.subscriptions]
-timeout_seconds = 3600  # Close connection after 1 hour
-idle_timeout_seconds = 300  # Close if idle for 5 minutes
-```text
-<!-- Code example in TEXT -->
-
-**Solution 2: Explicit subscription cleanup**
+A `@fraiseql.subscription` resolver is an async generator. Use `try/finally` so resources are released when the client disconnects and the generator is closed:
 
 ```python
-<!-- Code example in Python -->
-try:
-    async for event in subscription:
-        process_event(event)
-finally:
-    subscription.close()  # Always close
-```text
-<!-- Code example in TEXT -->
+import fraiseql
 
-**Solution 3: Monitor active subscriptions**
+@fraiseql.subscription
+async def inventory_changed(info, product_id: UUID):
+    listener = await open_listener(product_id)
+    try:
+        async for event in listener:
+            yield event
+    finally:
+        await listener.close()  # Always release on disconnect
+```
 
-```bash
-<!-- Code example in BASH -->
-# Check for zombie subscriptions
+**Solution 2: Monitor active subscriptions**
+
+```sql
+-- Check for long-lived backend connections
 SELECT COUNT(*) FROM pg_stat_activity
-WHERE state = 'active' AND query LIKE '%subscription%'
-```text
-<!-- Code example in TEXT -->
+WHERE state = 'active' AND query LIKE '%LISTEN%';
+```
 
 ---
 
-## 11. Race Conditions in Multi-Region
-
-### Gotcha: Data Inconsistency Across Regions
-
-**Symptom:** User sees different data depending on which region they connect to.
-
-**Why:** Replication lag between regions. Write completes in US, but Asia region hasn't replicated yet.
-
-### Solution
-
-**Use strong consistency guarantees:**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.federation]
-consistency_level = "strong"  # Wait for all replicas
-```text
-<!-- Code example in TEXT -->
-
-**Or use regional routing:**
-
-```python
-<!-- Code example in Python -->
-# Route writes to primary region
-# Route reads to local region (accept eventual consistency)
-@FraiseQL.query
-async def get_user(id: str, region: str = "primary"):
-    db = db_connection(region)
-    return await db.query("SELECT * FROM users WHERE id = ?", [id])
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 12. Query Alias Shadowing
+## 9. Query Alias Shadowing
 
 ### Gotcha: Query Aliases Hiding Field Names
 
-**Symptom:** Query returns unexpected fields or overwrites data.
+**Symptom:** A query returns unexpected keys, causing confusion about the response structure.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
-  user: users(id: "123") {  # Alias "user" shadows field "users"
+  user: users(status: "active") {  # Alias "user" renames field "users"
     id
     name
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Result:**
 
 ```json
-<!-- Code example in JSON -->
 {
-  "user": {
-    "id": "123",
-    "name": "Alice"
-  }
+  "user": [
+    { "id": "123", "name": "Alice" }
+  ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Later:**
+**Later, a different query uses the real field name:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
-  users(id: "123") {  # Different field name
+  users(status: "active") {  # Now the key is "users"
     id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Leads to confusion about response structure.**
+The two responses use different top-level keys for the same field, which leads to confusion.
 
 ### Solution
 
-**Use aliases carefully and consistently:**
+**Use aliases consistently and only when you need two of the same field:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   activeUsers: users(status: "active") {
     id
     name
   }
-  inactiveUsers: users(status: "inactive") {  # Clear alias
+  inactiveUsers: users(status: "inactive") {
     id
     name
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Document expected response structure:**
+**Document the expected response structure in the resolver:**
 
 ```python
-<!-- Code example in Python -->
-# Add comment to schema
-@FraiseQL.query
-def users(status: str = None):
-    """
-    Returns list of users, optionally filtered by status.
+import fraiseql
 
-    Response structure:
-    {
-      "users": [
-        {"id": "...", "name": "..."}
-      ]
-    }
+@fraiseql.query
+async def users(info, status: str | None = None) -> list[User]:
+    """Return a list of users, optionally filtered by status.
+
+    Response key: "users" (an array of User objects) unless aliased.
     """
-```text
-<!-- Code example in TEXT -->
+    db = info.context["db"]
+    return await db.find("v_user", status=status)
+```
 
 ---
 
-## 13. Array Type Confusion (PostgreSQL vs Others)
-
-### Gotcha: Array Operators Don't Work on MySQL
-
-**Symptom:** Query with array operators fails on MySQL/SQLite.
-
-**Example:**
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  products(where: { tags: { contains: ["sale", "new"] } }) {  # Works on PostgreSQL, fails on MySQL!
-    id
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### Solution
-
-**Check database support:**
-
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.validation]
-array_operators_postgresql_only = true  # Warn if using array operators
-```text
-<!-- Code example in TEXT -->
-
-**Or store arrays as JSON:**
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class Product:
-    id: ID
-    tags: JSON  # Store as JSON, works everywhere
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 14. Connection Pool Exhaustion
+## 10. Connection Pool Exhaustion
 
 ### Gotcha: All Connections Held by Slow Queries
 
 **Symptom:** New queries fail with "no connections available".
 
-**Why:** Slow query holds connection, preventing other queries from running.
+**Why:** A slow query holds a connection, preventing other queries from running.
 
 ### Solutions
 
-**Solution 1: Set connection timeout**
+**Solution 1: Tune the pool and timeouts**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.database]
-connection_timeout_seconds = 10
-```text
-<!-- Code example in TEXT -->
+Configure the pool through `create_fraiseql_app` kwargs (or `FRAISEQL_` environment variables):
 
-**Solution 2: Implement query timeout**
+```python
+from fraiseql.fastapi import create_fraiseql_app
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.database]
-query_timeout_seconds = 30
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    database_pool_size=20,       # FRAISEQL_DATABASE_POOL_SIZE
+    database_pool_timeout=10,    # FRAISEQL_DATABASE_POOL_TIMEOUT (seconds)
+    query_timeout=30,            # FRAISEQL_QUERY_TIMEOUT (seconds)
+)
+```
 
-**Solution 3: Monitor connection pool**
+**Solution 2: Monitor the pool from PostgreSQL**
 
-```bash
-<!-- Code example in BASH -->
-# Check active connections
-SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active'
+```sql
+-- Check active connections
+SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active';
 
-# Kill slow queries
+-- Identify and cancel runaway queries
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity
-WHERE query_start < now() - interval '5 minutes'
-```text
-<!-- Code example in TEXT -->
+WHERE query_start < now() - interval '5 minutes';
+```
 
 ---
 
-## 15. Recursive Queries Without Limits
+## 11. Recursive Queries Without Limits
 
-### Gotcha: Infinite Recursion in Self-Referential Queries
+### Gotcha: Unbounded Self-Referential Queries
 
-**Symptom:** Query hangs or times out.
+**Symptom:** A query hangs or times out.
 
 **Example:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   user(id: "1") {
     id
@@ -1020,24 +725,27 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Solution
 
-**Implement depth limits:**
+**Set a maximum query depth in the app config:**
 
-```toml
-<!-- Code example in TOML -->
-[FraiseQL.validation]
-max_query_depth = 15  # Prevent deep nesting
-```text
-<!-- Code example in TEXT -->
+```python
+from fraiseql.fastapi import create_fraiseql_app
 
-**Or use explicit iteration:**
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    max_query_depth=15,  # Reject queries nested deeper than 15 levels
+)
+```
+
+`max_query_depth` is also settable via `FRAISEQL_MAX_QUERY_DEPTH`. FraiseQL additionally runs query-complexity analysis (`complexity_max_depth`, `complexity_max_score`) that you can tune the same way.
+
+**Or bound the recursion explicitly in the query:**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   user(id: "1") {
     id
@@ -1050,8 +758,7 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -1061,22 +768,21 @@ query {
 
 - **[Common Patterns](./patterns.md)** — Real-world solutions avoiding gotchas
 - **[Performance Tuning Runbook](../operations/performance-tuning-runbook.md)** — Optimizing query performance
-- **[Testing Strategy](./testing-strategy.md)** — Testing to catch gotchas early
+- **[Testing Checklist](../reference/testing-checklist.md)** — Testing to catch gotchas early
 - **[Troubleshooting Decision Tree](./troubleshooting-decision-tree.md)** — Route to correct guide
 - **[Consistency Model](./consistency-model.md)** — Understanding consistency guarantees
+- **[Testing Checklist](../reference/testing-checklist.md)** — Testing to catch gotchas early
 
 **Architecture & Design:**
 
-- **[Execution Semantics](../architecture/core/execution-semantics.md)** — How queries execute
+- **[CQRS Design](../architecture/cqrs-design.md)** — How reads and writes execute
 - **[Schema Design Best Practices](./schema-design-best-practices.md)** — Designing to avoid issues
-- **[Federation Guide](../integrations/federation/guide.md)** — Federation pitfalls
 
 **Operations:**
 
 - **[Monitoring & Observability](./monitoring.md)** — Catching issues in production
-- **[Observability Architecture](../operations/observability-architecture.md)** — Observing patterns
+- **[Observability](../operations/observability.md)** — Observing patterns
 
 ---
 
 **Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1

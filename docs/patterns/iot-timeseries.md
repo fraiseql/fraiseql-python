@@ -1,459 +1,603 @@
-<!-- Skip to main content -->
 ---
-
 title: IoT Platform with Time-Series Data
-description: Complete guide to building a scalable IoT platform for collecting and querying sensor data efficiently.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]
+description: Build a scalable IoT platform on FraiseQL and PostgreSQL — collect sensor readings, bucket and roll them up with views, and serve them over GraphQL.
+keywords: ["iot", "time-series", "sensors", "aggregation", "postgresql"]
+tags: ["documentation", "patterns"]
 ---
 
 # IoT Platform with Time-Series Data
 
-**Status:** ✅ Production Ready
-**Complexity:** ⭐⭐⭐⭐ (Advanced)
+**Status:** Production Ready
+**Complexity:** Advanced
 **Audience:** IoT architects, DevOps engineers, data engineers
 **Reading Time:** 25-30 minutes
-**Last Updated:** 2026-02-05
 
-Complete guide to building a scalable IoT platform for collecting and querying sensor data efficiently.
+A blueprint for building an IoT platform on FraiseQL v1. Readings land in normalized
+`tb_` tables (optionally partitioned by time range), `v_`/`tv_` views bucket and roll
+them up with `DATE_TRUNC` and PostgreSQL aggregates, and `@fraiseql.query` resolvers serve
+the views over GraphQL. FraiseQL is a Python runtime GraphQL framework for **PostgreSQL
+only** — there is no compile step and no separate database engine. Everything below runs at
+app startup against your PostgreSQL database.
 
 ---
 
 ## Architecture Overview
 
 ```text
-<!-- Code example in TEXT -->
 ┌──────────────┬──────────────┬──────────────┐
 │   Devices    │   Devices    │   Devices    │
-│  (millions)  │  (millions)  │  (millions)  │
+│  (sensors)   │  (sensors)   │  (sensors)   │
 └──────────┬───┴──────┬───────┴──────┬───────┘
-           │          │               │
-           └──────────┼───────────────┘
-                      ↓ (MQTT/HTTP)
-         ┌────────────────────────┐
-         │  Message Broker        │
-         │  (Kafka/MQTT/Redis)    │
-         └────────────┬───────────┘
+           │          │              │
+           └──────────┼──────────────┘
+                      ↓ (HTTP / MQTT bridge)
+         ┌────────────────────────────┐
+         │  Ingestion                 │
+         │  fn_record_reading()       │
+         │  or COPY (bulk)            │
+         └────────────┬───────────────┘
                       ↓
-         ┌────────────────────────┐
-         │  Stream Processor      │
-         │  (Validation,          │
-         │   Aggregation)         │
-         └────────────┬───────────┘
-                      ↓
-         ┌────────────────────────┐
-         │  Time-Series Database  │
-         │  (PostgreSQL +         │
-         │   TimescaleDB)         │
-         └────────────┬───────────┘
-                      ↓
-         ┌────────────────────────┐
-         │  FraiseQL GraphQL      │
-         │  (Query Layer)         │
-         └────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+         ┌────────────────────────────┐
+         │  PostgreSQL                │
+         │  tb_sensor_reading         │
+         │  (PARTITION BY RANGE time) │
+         │  tv_reading_1h / _1d       │
+         │  (pre-aggregated rollups)  │
+         └────────────┬───────────────┘
+                      ↓  v_/tv_ views
+         ┌────────────────────────────┐
+         │  FraiseQL (FastAPI)        │
+         │  @fraiseql.query / runtime │
+         │  auto-aggregation          │
+         └────────────────────────────┘
+```
+
+The message broker (MQTT/Kafka) and any stream processor live *outside* FraiseQL. They are
+optional plumbing that lands readings into PostgreSQL. FraiseQL's job is the read/write path
+against PostgreSQL: queries read `v_`/`tv_` views, mutations call `fn_` functions.
 
 ---
 
 ## Schema Design
 
+FraiseQL follows a CQRS layout: normalized `tb_` write tables are the source of truth,
+`v_`/`tv_` read views expose a `data` JSONB column for GraphQL, and `fn_` functions hold
+write logic. Each public row carries a `pk_` internal BIGINT (hidden), a public `id` UUID,
+and an optional human-readable `identifier`.
+
 ### Devices & Metadata
 
 ```sql
-<!-- Code example in SQL -->
--- Device registry
-CREATE TABLE devices (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id VARCHAR(100) UNIQUE NOT NULL,  -- External ID (MAC, serial)
-  name VARCHAR(255) NOT NULL,
-  device_type VARCHAR(50) NOT NULL,  -- temperature_sensor, humidity_sensor, etc.
-  location VARCHAR(255),  -- Building/Room
-  latitude NUMERIC(10, 8),
-  longitude NUMERIC(11, 8),
-  owner_id UUID NOT NULL,
-  status VARCHAR(50) NOT NULL,  -- active, inactive, error
-  last_heartbeat TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_device_id (device_id),
-  INDEX idx_owner_id (owner_id),
-  INDEX idx_status (status),
-  INDEX idx_device_type (device_type)
+-- Device registry (write table)
+CREATE TABLE tb_device (
+    pk_device       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id              UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    identifier      TEXT UNIQUE,              -- external slug (MAC, serial)
+    name            TEXT NOT NULL,
+    device_type     TEXT NOT NULL,           -- temperature_sensor, humidity_sensor, ...
+    location        TEXT,
+    latitude        NUMERIC(10, 8),
+    longitude       NUMERIC(11, 8),
+    fk_owner        BIGINT NOT NULL REFERENCES tb_owner (pk_owner),
+    status          TEXT NOT NULL DEFAULT 'active',  -- active, inactive, error
+    last_heartbeat  TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Device configuration
-CREATE TABLE device_config (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id UUID NOT NULL UNIQUE REFERENCES devices(id) ON DELETE CASCADE,
-  read_interval INT NOT NULL,  -- Seconds between readings
-  alert_threshold JSONB,  -- { temperature: { min: 0, max: 100 } }
-  data_retention_days INT DEFAULT 365,
-  custom_fields JSONB,  -- Any device-specific config
-  updated_at TIMESTAMP DEFAULT NOW(),
+CREATE INDEX idx_device_status      ON tb_device (status);
+CREATE INDEX idx_device_type        ON tb_device (device_type);
+CREATE INDEX idx_device_owner       ON tb_device (fk_owner);
 
-  INDEX idx_device_id (device_id)
+-- Per-device configuration
+CREATE TABLE tb_device_config (
+    pk_device_config    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_device           BIGINT NOT NULL UNIQUE REFERENCES tb_device (pk_device) ON DELETE CASCADE,
+    read_interval_s     INT NOT NULL,                -- seconds between readings
+    alert_threshold     JSONB,                       -- {"temperature": {"min": 0, "max": 100}}
+    data_retention_days INT NOT NULL DEFAULT 365,
+    custom_fields       JSONB,
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Sensor metadata (what each device measures)
-CREATE TABLE sensors (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
-  sensor_name VARCHAR(100) NOT NULL,  -- temperature, humidity, pressure
-  unit VARCHAR(20),  -- Celsius, %, hPa
-  sensor_type VARCHAR(50),  -- analog, digital, counter
-  accuracy DECIMAL(5, 2),
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  UNIQUE(device_id, sensor_name),
-  INDEX idx_device_id (device_id)
+CREATE TABLE tb_sensor (
+    pk_sensor   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id          UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_device   BIGINT NOT NULL REFERENCES tb_device (pk_device) ON DELETE CASCADE,
+    sensor_name TEXT NOT NULL,                -- temperature, humidity, pressure
+    unit        TEXT,                         -- Celsius, %, hPa
+    sensor_type TEXT,                         -- analog, digital, counter
+    accuracy    NUMERIC(5, 2),
+    UNIQUE (fk_device, sensor_name)
 );
-```text
-<!-- Code example in TEXT -->
 
-### Time-Series Data
+CREATE INDEX idx_sensor_device ON tb_sensor (fk_device);
+```
+
+### Time-Series Readings (Native Partitioning)
+
+Raw readings are high-volume and append-only, which makes them a natural fit for
+PostgreSQL **native range partitioning** by time. Partitioning keeps indexes small,
+makes retention a metadata operation (`DROP`/`DETACH PARTITION` instead of a slow
+`DELETE`), and lets the planner prune to the partitions a query touches.
 
 ```sql
-<!-- Code example in SQL -->
--- Raw sensor readings (hypertable with TimescaleDB)
-CREATE TABLE sensor_readings (
-  time TIMESTAMP NOT NULL,
-  device_id UUID NOT NULL,
-  sensor_name VARCHAR(100) NOT NULL,
-  value NUMERIC(10, 4) NOT NULL,
-  unit VARCHAR(20),
-  quality VARCHAR(50),  -- good, poor, unknown
-  FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
-);
+-- Raw sensor readings, partitioned by month
+CREATE TABLE tb_sensor_reading (
+    "time"      TIMESTAMPTZ NOT NULL,
+    fk_device   BIGINT NOT NULL REFERENCES tb_device (pk_device) ON DELETE CASCADE,
+    sensor_name TEXT NOT NULL,
+    value       NUMERIC(12, 4) NOT NULL,
+    unit        TEXT,
+    quality     TEXT                          -- good, poor, unknown
+) PARTITION BY RANGE ("time");
 
--- Create hypertable (TimescaleDB extension)
-SELECT create_hypertable('sensor_readings', 'time');
+-- One partition per month (create ahead of time, e.g. via cron)
+CREATE TABLE tb_sensor_reading_2026_06
+    PARTITION OF tb_sensor_reading
+    FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
 
--- Automatic compression of old data
-SELECT add_compression_policy('sensor_readings', INTERVAL '7 days');
+CREATE TABLE tb_sensor_reading_2026_07
+    PARTITION OF tb_sensor_reading
+    FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
 
--- Automatic retention (delete data older than 1 year)
-SELECT add_retention_policy('sensor_readings', INTERVAL '1 year');
+-- Indexes are created on the parent and inherited by every partition
+CREATE INDEX idx_reading_device_time ON tb_sensor_reading (fk_device, "time" DESC);
+CREATE INDEX idx_reading_sensor_time ON tb_sensor_reading (sensor_name, "time" DESC);
+```
 
--- Indexes for common queries
-CREATE INDEX idx_device_time ON sensor_readings (device_id, time DESC);
-CREATE INDEX idx_sensor_time ON sensor_readings (sensor_name, time DESC);
-```text
-<!-- Code example in TEXT -->
-
-### Aggregated Data (Pre-Computed)
+Retention then becomes cheap — drop the partition once it ages out:
 
 ```sql
-<!-- Code example in SQL -->
--- Hourly aggregates (faster for dashboards)
-CREATE TABLE sensor_readings_1h (
-  time TIMESTAMP NOT NULL,
-  device_id UUID NOT NULL,
-  sensor_name VARCHAR(100) NOT NULL,
-  avg_value NUMERIC(10, 4),
-  min_value NUMERIC(10, 4),
-  max_value NUMERIC(10, 4),
-  reading_count INT,
-  FOREIGN KEY (device_id) REFERENCES devices(id)
+-- Retire June once it is older than the retention window
+DROP TABLE tb_sensor_reading_2026_06;
+-- or keep it queryable but off the hot path:
+-- ALTER TABLE tb_sensor_reading DETACH PARTITION tb_sensor_reading_2026_06;
+```
+
+### Pre-Aggregated Rollups (`tv_` projection tables)
+
+For dashboards you don't want to scan raw readings on every request. A `tv_` table holds
+**pre-aggregated** rollups: a real table populated by a function (run from a trigger or a
+cron job) that FraiseQL queries directly. This is the standard v1 way to serve heavy reads
+fast — see [tv-table pattern](../architecture/database/tv-table-pattern.md).
+
+```sql
+-- Hourly rollup table (a real table, refreshed incrementally)
+CREATE TABLE tv_reading_1h (
+    bucket        TIMESTAMPTZ NOT NULL,
+    fk_device     BIGINT NOT NULL,
+    sensor_name   TEXT NOT NULL,
+    data          JSONB NOT NULL,          -- pre-composed payload FraiseQL returns
+    PRIMARY KEY (bucket, fk_device, sensor_name)
 );
 
--- Create hypertable
-SELECT create_hypertable('sensor_readings_1h', 'time');
+-- Refresh one window (call from cron, or from a trigger on tb_sensor_reading)
+CREATE OR REPLACE FUNCTION fn_refresh_reading_1h(p_from TIMESTAMPTZ, p_to TIMESTAMPTZ)
+RETURNS void
+LANGUAGE sql
+AS $$
+    INSERT INTO tv_reading_1h (bucket, fk_device, sensor_name, data)
+    SELECT
+        DATE_TRUNC('hour', r."time")               AS bucket,
+        r.fk_device,
+        r.sensor_name,
+        jsonb_build_object(
+            'avgValue',     AVG(r.value),
+            'minValue',     MIN(r.value),
+            'maxValue',     MAX(r.value),
+            'stddevValue',  STDDEV(r.value),
+            'readingCount', COUNT(*)
+        )                                          AS data
+    FROM tb_sensor_reading r
+    WHERE r."time" >= p_from AND r."time" < p_to
+    GROUP BY DATE_TRUNC('hour', r."time"), r.fk_device, r.sensor_name
+    ON CONFLICT (bucket, fk_device, sensor_name)
+    DO UPDATE SET data = EXCLUDED.data;
+$$;
+```
 
--- Continuous aggregate (automatically updated)
-CREATE MATERIALIZED VIEW sensor_readings_1h AS
-SELECT
-  time_bucket('1 hour', time) as time,
-  device_id,
-  sensor_name,
-  AVG(value) as avg_value,
-  MIN(value) as min_value,
-  MAX(value) as max_value,
-  COUNT(*) as reading_count
-FROM sensor_readings
-GROUP BY time_bucket('1 hour', time), device_id, sensor_name;
+A daily `tv_reading_1d` table follows the same shape with `DATE_TRUNC('day', ...)`.
+For details on automatic `GROUP BY` derivation, see the
+[aggregation model](../architecture/analytics/aggregation-model.md).
 
--- Same for daily
-CREATE MATERIALIZED VIEW sensor_readings_1d AS
+### Read Views
+
+Read views always expose an `id` (for `WHERE id = $1`) plus a `data` JSONB column built
+with `jsonb_build_object(...)`. `pk_`/`fk_` columns stay out of `data`.
+
+```sql
+-- Device read view
+CREATE VIEW v_device AS
 SELECT
-  time_bucket('1 day', time) as time,
-  device_id,
-  sensor_name,
-  AVG(value) as avg_value,
-  MIN(value) as min_value,
-  MAX(value) as max_value,
-  COUNT(*) as reading_count
-FROM sensor_readings
-WHERE time >= NOW() - INTERVAL '1 year'
-GROUP BY time_bucket('1 day', time), device_id, sensor_name;
-```text
-<!-- Code example in TEXT -->
+    d.id,
+    jsonb_build_object(
+        'id',           d.id,
+        'identifier',   d.identifier,
+        'name',         d.name,
+        'deviceType',   d.device_type,
+        'location',     d.location,
+        'latitude',     d.latitude,
+        'longitude',    d.longitude,
+        'status',       d.status,
+        'lastHeartbeat', d.last_heartbeat
+    ) AS data
+FROM tb_device d;
+
+-- Hourly metric view over the rollup table
+CREATE VIEW v_reading_1h AS
+SELECT
+    t.bucket,
+    dev.id AS device_id,
+    t.sensor_name,
+    jsonb_build_object(
+        'bucket',       t.bucket,
+        'sensorName',   t.sensor_name,
+        'avgValue',     t.data ->> 'avgValue',
+        'minValue',     t.data ->> 'minValue',
+        'maxValue',     t.data ->> 'maxValue',
+        'stddevValue',  t.data ->> 'stddevValue',
+        'readingCount', t.data ->> 'readingCount'
+    ) AS data
+FROM tv_reading_1h t
+JOIN tb_device dev ON dev.pk_device = t.fk_device;
+```
+
+### Moving Averages with Window Functions
+
+Moving averages and rate-of-change are plain PostgreSQL **window functions** embedded in a
+view — not a FraiseQL API. FraiseQL serves whatever the view returns. See
+[window functions](../architecture/analytics/window-functions.md).
+
+```sql
+-- 3-bucket moving average of hourly readings
+CREATE VIEW v_reading_1h_smoothed AS
+SELECT
+    dev.id AS device_id,
+    t.sensor_name,
+    jsonb_build_object(
+        'bucket',     t.bucket,
+        'sensorName', t.sensor_name,
+        'avgValue',   (t.data ->> 'avgValue')::numeric,
+        'movingAvg3', AVG((t.data ->> 'avgValue')::numeric) OVER (
+            PARTITION BY t.fk_device, t.sensor_name
+            ORDER BY t.bucket
+            ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        )
+    ) AS data
+FROM tv_reading_1h t
+JOIN tb_device dev ON dev.pk_device = t.fk_device;
+```
 
 ### Alerts & Events
 
 ```sql
-<!-- Code example in SQL -->
-CREATE TABLE device_alerts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  device_id UUID NOT NULL REFERENCES devices(id),
-  alert_type VARCHAR(50) NOT NULL,  -- threshold_exceeded, device_offline, low_battery
-  severity VARCHAR(50) NOT NULL,  -- info, warning, critical
-  value NUMERIC(10, 4),
-  threshold NUMERIC(10, 4),
-  acknowledged BOOLEAN DEFAULT FALSE,
-  acknowledged_by UUID,
-  acknowledged_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT NOW(),
-
-  INDEX idx_device_id (device_id),
-  INDEX idx_severity (severity),
-  INDEX idx_acknowledged (acknowledged),
-  INDEX idx_created_at (created_at)
+CREATE TABLE tb_device_alert (
+    pk_device_alert  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id               UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    fk_device        BIGINT NOT NULL REFERENCES tb_device (pk_device),
+    alert_type       TEXT NOT NULL,           -- threshold_exceeded, device_offline, low_battery
+    severity         TEXT NOT NULL,           -- info, warning, critical
+    value            NUMERIC(12, 4),
+    threshold        NUMERIC(12, 4),
+    acknowledged     BOOLEAN NOT NULL DEFAULT FALSE,
+    fk_acknowledged_by BIGINT REFERENCES tb_user (pk_user),
+    acknowledged_at  TIMESTAMPTZ,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-```text
-<!-- Code example in TEXT -->
+
+CREATE INDEX idx_alert_device       ON tb_device_alert (fk_device);
+CREATE INDEX idx_alert_severity     ON tb_device_alert (severity);
+CREATE INDEX idx_alert_open         ON tb_device_alert (acknowledged) WHERE NOT acknowledged;
+
+CREATE VIEW v_alert AS
+SELECT
+    a.id,
+    jsonb_build_object(
+        'id',           a.id,
+        'alertType',    a.alert_type,
+        'severity',     a.severity,
+        'value',        a.value,
+        'threshold',    a.threshold,
+        'acknowledged', a.acknowledged,
+        'createdAt',    a.created_at
+    ) AS data
+FROM tb_device_alert a;
+```
 
 ---
 
 ## FraiseQL Schema
 
+Types bind to a read view via `sql_source`; FraiseQL reads the view's `data` JSONB and
+shapes it to the requested GraphQL fields. Queries call `db.find`/`db.find_one`; mutations
+call `fn_` functions via `db.execute_function`.
+
 ```python
-<!-- Code example in Python -->
 # iot_schema.py
-from FraiseQL import types
-from datetime import datetime
+import fraiseql
+from fraiseql.types import ID, DateTime
 from decimal import Decimal
 
-@types.object
+
+@fraiseql.type(sql_source="v_device", jsonb_column="data")
 class Device:
-    id: UUID  # UUID v4 for GraphQL ID
-    device_id: UUID  # UUID v4 for GraphQL ID
+    id: ID
+    identifier: str | None
     name: str
     device_type: str
     location: str | None
     latitude: Decimal | None
     longitude: Decimal | None
-    status: str  # active, inactive, error
-    last_heartbeat: datetime | None
-    sensors: list['Sensor']
-    current_readings: list['SensorReading']
-    alerts: list['Alert']
+    status: str                       # active, inactive, error
+    last_heartbeat: DateTime | None
 
-@types.object
+
+@fraiseql.type(sql_source="v_sensor", jsonb_column="data")
 class Sensor:
-    id: UUID  # UUID v4 for GraphQL ID
-    device: Device
+    id: ID
     sensor_name: str
-    unit: str
-    accuracy: Decimal
+    unit: str | None
+    accuracy: Decimal | None
 
-@types.object
-class SensorReading:
-    time: datetime
-    device: Device
-    sensor_name: str
-    value: Decimal
-    unit: str
-    quality: str
 
-@types.object
+@fraiseql.type(sql_source="v_reading_1h", jsonb_column="data")
 class SensorMetric:
-    """Aggregated metric"""
-    time: datetime
-    avg_value: Decimal
-    min_value: Decimal
-    max_value: Decimal
+    """Pre-aggregated hourly metric from tv_reading_1h."""
+    bucket: DateTime
+    sensor_name: str
+    avg_value: Decimal | None
+    min_value: Decimal | None
+    max_value: Decimal | None
+    stddev_value: Decimal | None
     reading_count: int
 
-@types.object
+
+@fraiseql.type(sql_source="v_alert", jsonb_column="data")
 class Alert:
-    id: UUID  # UUID v4 for GraphQL ID
-    device: Device
+    id: ID
     alert_type: str
-    severity: str  # info, warning, critical
+    severity: str                     # info, warning, critical
     value: Decimal | None
     threshold: Decimal | None
     acknowledged: bool
-    created_at: datetime
+    created_at: DateTime
 
-@types.object
-class Query:
-    def device(self, id: str) -> Device:
-        """Get device details"""
-        pass
 
-    def devices(self, device_type: str | None = None) -> list[Device]:
-        """List all devices"""
-        pass
+@fraiseql.input
+class RecordReadingInput:
+    device_id: ID
+    sensor_name: str
+    value: Decimal
+    timestamp: DateTime | None = None
 
-    def sensor_readings(
-        self,
-        device_id: str,
-        sensor_name: str,
-        start_time: str,
-        end_time: str,
-        limit: int = 1000
-    ) -> list[SensorReading]:
-        """Get raw sensor readings"""
-        pass
 
-    def sensor_metrics(
-        self,
-        device_id: str,
-        sensor_name: str,
-        start_time: str,
-        end_time: str,
-        granularity: str = '1h'  # 1h, 1d, 1w
-    ) -> list[SensorMetric]:
-        """Get aggregated metrics (faster)"""
-        pass
+@fraiseql.success
+class RecordReadingSuccess:
+    device_id: ID
+    sensor_name: str
 
-    def active_alerts(self) -> list[Alert]:
-        """Unacknowledged alerts"""
-        pass
 
-    def device_status_summary(self) -> dict:
-        """Status summary (active, offline, error counts)"""
-        pass
+@fraiseql.error
+class RecordReadingError:
+    message: str
+    code: str = "INGEST_ERROR"
 
-@types.object
-class Mutation:
-    def create_device(
-        self,
-        device_id: str,
-        name: str,
-        device_type: str
-    ) -> Device:
-        """Register new device"""
-        pass
 
-    def record_reading(
-        self,
-        device_id: str,
-        sensor_name: str,
-        value: Decimal,
-        timestamp: str
-    ) -> SensorReading:
-        """Record sensor reading"""
-        pass
+@fraiseql.input
+class AcknowledgeAlertInput:
+    alert_id: ID
 
-    def acknowledge_alert(self, alert_id: str) -> Alert:
-        """Mark alert as acknowledged"""
-        pass
 
-@types.subscription
-class Subscription:
-    def device_status(self, device_id: str) -> dict:
-        """Real-time device status updates"""
-        pass
+@fraiseql.success
+class AcknowledgeAlertSuccess:
+    alert: Alert
 
-    def alerts(self) -> Alert:
-        """Real-time alert stream"""
-        pass
 
-    def metrics(self, device_id: str) -> SensorMetric:
-        """Real-time metric updates"""
-        pass
-```text
-<!-- Code example in TEXT -->
+@fraiseql.error
+class AcknowledgeAlertError:
+    message: str
+    code: str = "NOT_FOUND"
+```
+
+### Queries
+
+```python
+@fraiseql.query
+async def devices(info, device_type: str | None = None) -> list[Device]:
+    """List devices, optionally filtered by type."""
+    db = info.context["db"]
+    filters = {"device_type": device_type} if device_type else {}
+    return await db.find("v_device", **filters)
+
+
+@fraiseql.query
+async def device(info, id: ID) -> Device | None:
+    """Get one device by id."""
+    db = info.context["db"]
+    return await db.find_one("v_device", id=id)
+
+
+@fraiseql.query
+async def sensor_metrics(
+    info,
+    device_id: ID,
+    sensor_name: str,
+    start_time: DateTime,
+    end_time: DateTime,
+) -> list[SensorMetric]:
+    """Pre-aggregated hourly metrics from tv_reading_1h (fast for dashboards)."""
+    db = info.context["db"]
+    return await db.find(
+        "v_reading_1h",
+        device_id=device_id,
+        sensor_name=sensor_name,
+        bucket__gte=start_time,
+        bucket__lte=end_time,
+    )
+
+
+@fraiseql.query
+async def active_alerts(info) -> list[Alert]:
+    """Unacknowledged alerts."""
+    db = info.context["db"]
+    return await db.find("v_alert", acknowledged=False)
+```
+
+`start_time`/`end_time` map to the WHERE operators `bucket__gte` / `bucket__lte`, which
+FraiseQL translates into a partition-prunable `BETWEEN` against the view. When a query
+selects only aggregate fields, FraiseQL's **runtime auto-aggregation** derives the
+`GROUP BY` and the COUNT/SUM/AVG/MIN/MAX/STDDEV/VARIANCE SQL for you against the view — so
+you can aggregate `v_reading_1h` further without writing a second view. See the
+[aggregation model](../architecture/analytics/aggregation-model.md).
+
+### Mutations
+
+```python
+@fraiseql.mutation
+async def record_reading(
+    info, input: RecordReadingInput
+) -> RecordReadingSuccess | RecordReadingError:
+    """Ingest a single reading and run threshold checks (in PostgreSQL)."""
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_record_reading",
+        {
+            "device_id": str(input.device_id),
+            "sensor_name": input.sensor_name,
+            "value": str(input.value),
+            "ts": input.timestamp,
+        },
+    )
+    if not result.get("success"):
+        return RecordReadingError(message=result.get("message", "ingest failed"))
+    return RecordReadingSuccess(
+        device_id=input.device_id, sensor_name=input.sensor_name
+    )
+
+
+@fraiseql.mutation
+async def acknowledge_alert(
+    info, input: AcknowledgeAlertInput
+) -> AcknowledgeAlertSuccess | AcknowledgeAlertError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_acknowledge_alert", {"alert_id": str(input.alert_id)}
+    )
+    if not result.get("success"):
+        return AcknowledgeAlertError(message=result.get("message", "not found"))
+    return AcknowledgeAlertSuccess(alert=Alert(**result["alert"]))
+```
+
+### Real-Time Push (Subscriptions)
+
+FraiseQL exposes GraphQL subscriptions over WebSocket. A `@fraiseql.subscription` decorates
+an **async generator** — you write the event source, FraiseQL streams what you yield. Back
+it with PostgreSQL `LISTEN/NOTIFY` (e.g. a trigger on `tb_device_alert` that runs
+`pg_notify('alert', ...)`), polling, or any external stream.
+
+```python
+from collections.abc import AsyncGenerator
+
+
+@fraiseql.subscription
+async def alerts(info) -> AsyncGenerator[Alert, None]:
+    """Stream new alerts to dashboards as they are created."""
+    async for alert in watch_alerts(info.context["db"]):   # your LISTEN/NOTIFY loop
+        yield alert
+```
+
+### Mounting the App
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/iot",
+    types=[Device, Sensor, SensorMetric, Alert],
+    queries=[devices, device, sensor_metrics, active_alerts],
+    mutations=[record_reading, acknowledge_alert],
+    subscriptions=[alerts],
+    production=False,        # False enables the GraphQL playground
+)
+```
+
+Run it with `uvicorn app:app`.
 
 ---
 
-## MQTT Ingestion
+## Ingestion
 
-### Stream Processor
+All write logic lives in PostgreSQL. The `fn_record_reading` function validates the device,
+inserts the reading, and evaluates thresholds in one transaction.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_record_reading(
+    device_id   UUID,
+    sensor_name TEXT,
+    value       NUMERIC,
+    ts          TIMESTAMPTZ DEFAULT now()
+) RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_pk_device BIGINT;
+    v_threshold NUMERIC;
+BEGIN
+    SELECT pk_device INTO v_pk_device FROM tb_device WHERE id = device_id;
+    IF v_pk_device IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'unknown device');
+    END IF;
+
+    INSERT INTO tb_sensor_reading ("time", fk_device, sensor_name, value)
+    VALUES (ts, v_pk_device, sensor_name, value);
+
+    -- Threshold check
+    SELECT (alert_threshold -> sensor_name ->> 'max')::numeric
+      INTO v_threshold
+      FROM tb_device_config WHERE fk_device = v_pk_device;
+
+    IF v_threshold IS NOT NULL AND value > v_threshold THEN
+        INSERT INTO tb_device_alert (fk_device, alert_type, severity, value, threshold)
+        VALUES (v_pk_device, 'threshold_exceeded', 'warning', value, v_threshold);
+        PERFORM pg_notify('alert', jsonb_build_object(
+            'device', device_id, 'sensor', sensor_name, 'value', value
+        )::text);
+    END IF;
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$;
+```
+
+### Bulk Ingestion with COPY
+
+For backfills or high-throughput ingestion, bypass per-row mutations and stream straight
+into the partitioned table with `COPY` — the fastest path PostgreSQL offers. An MQTT/Kafka
+bridge can batch readings and pipe them in:
+
+```sql
+COPY tb_sensor_reading ("time", fk_device, sensor_name, value, unit)
+FROM STDIN WITH (FORMAT csv);
+```
 
 ```python
-<!-- Code example in Python -->
-import asyncio
-import aiomqtt
-from datetime import datetime
+# Async bulk load via psycopg copy (run outside FraiseQL, in your ingestion worker)
+async with pool.connection() as conn:
+    async with conn.cursor().copy(
+        "COPY tb_sensor_reading (\"time\", fk_device, sensor_name, value) FROM STDIN"
+    ) as copy:
+        for row in batch:
+            await copy.write_row(row)
+```
 
-class MQTTIngestionService:
-    def __init__(self, db_client, kafka_producer):
-        self.db = db_client
-        self.kafka = kafka_producer
+After a bulk load, refresh the affected rollup windows by calling
+`fn_refresh_reading_1h(p_from, p_to)`.
 
-    async def start(self):
-        async with aiomqtt.Client('mqtt.broker.local') as client:
-            async with client.messages() as messages:
-                async for message in messages:
-                    await self.process_message(message)
-
-    async def process_message(self, message):
-        """
-        Expected MQTT topic: sensors/{device_id}/{sensor_name}
-        Expected payload: { value: 23.5, timestamp: ISO8601 }
-        """
-        try:
-            # Parse topic
-            parts = message.topic.split('/')
-            if len(parts) < 3:
-                return
-
-            device_id = parts[1]
-            sensor_name = parts[2]
-            payload = json.loads(message.payload.decode())
-
-            # Validate device exists
-            device = await self.db.fetchrow(
-                'SELECT id FROM devices WHERE device_id = $1',
-                device_id
-            )
-            if not device:
-                print(f'Unknown device: {device_id}')
-                return
-
-            # Insert reading
-            await self.db.execute("""
-                INSERT INTO sensor_readings
-                (time, device_id, sensor_name, value)
-                VALUES ($1, $2, $3, $4)
-            """, (
-                datetime.fromisoformat(payload.get('timestamp', datetime.now().isoformat())),
-                device['id'],
-                sensor_name,
-                payload['value']
-            ))
-
-            # Check for alerts
-            await self.check_alerts(device['id'], sensor_name, payload['value'])
-
-            # Publish to Kafka for other consumers
-            self.kafka.send('sensor-readings', {
-                'device_id': device_id,
-                'sensor_name': sensor_name,
-                'value': payload['value'],
-                'timestamp': datetime.now().isoformat()
-            })
-
-        except Exception as e:
-            print(f'Error processing message: {e}')
-
-    async def check_alerts(self, device_id, sensor_name, value):
-        """Check if value exceeds threshold"""
-        config = await self.db.fetchrow("""
-            SELECT alert_threshold FROM device_config WHERE device_id = $1
-        """, device_id)
-
-        if not config:
-            return
-
-        thresholds = config.get('alert_threshold', {})
-        sensor_threshold = thresholds.get(sensor_name)
-
-        if not sensor_threshold:
-            return
-
-        # Check if value exceeds
-        if value > sensor_threshold.get('max'):
-            await self.db.execute("""
-                INSERT INTO device_alerts
-                (device_id, alert_type, severity, value, threshold)
-                VALUES ($1, 'threshold_exceeded', 'warning', $2, $3)
-            """, (device_id, value, sensor_threshold['max']))
-```text
-<!-- Code example in TEXT -->
+> **Brokers are external.** Kafka, MQTT, and stream processors are separate systems that
+> feed PostgreSQL. Dedicated time-series stores (e.g. ClickHouse, InfluxDB) are also separate
+> systems — FraiseQL itself targets PostgreSQL only. Pick whichever ingestion plumbing you
+> like; FraiseQL reads from the PostgreSQL tables and views.
 
 ---
 
@@ -462,53 +606,43 @@ class MQTTIngestionService:
 ### Real-Time Dashboard
 
 ```graphql
-<!-- Code example in GraphQL -->
 query DeviceDashboard($deviceId: ID!) {
   device(id: $deviceId) {
     id
     name
     status
-    current_readings {
-      sensor_name
-      value
-      unit
-      time
-    }
-    alerts {
-      id
-      alert_type
-      severity
-      value
-    }
+    lastHeartbeat
+  }
+  activeAlerts {
+    id
+    alertType
+    severity
+    value
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Time-Series Analysis
+### Time-Series Trend
 
 ```graphql
-<!-- Code example in GraphQL -->
 query TemperatureTrend(
   $deviceId: ID!
-  $startTime: String!
-  $endTime: String!
+  $startTime: DateTime!
+  $endTime: DateTime!
 ) {
   sensorMetrics(
     deviceId: $deviceId
     sensorName: "temperature"
     startTime: $startTime
     endTime: $endTime
-    granularity: "1h"
   ) {
-    time
-    avg_value
-    min_value
-    max_value
+    bucket
+    avgValue
+    minValue
+    maxValue
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -516,187 +650,141 @@ query TemperatureTrend(
 
 ### Time-Based Partitioning
 
-```sql
-<!-- Code example in SQL -->
--- Automatic partitioning by date with TimescaleDB
-SELECT set_integer_now_func('sensor_readings', 'pg_catalog.extract_epoch(now())::bigint'::regprocedure);
+Native range partitioning (above) is the core scaling lever. Pre-create partitions ahead of
+time with a small cron job so writes never hit a missing partition:
 
--- Chunks are automatically created
-SELECT show_chunks('sensor_readings');
-```text
-<!-- Code example in TEXT -->
+```sql
+-- Create next month's partition (run monthly)
+CREATE TABLE IF NOT EXISTS tb_sensor_reading_2026_08
+    PARTITION OF tb_sensor_reading
+    FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
+```
 
 ### Data Retention
 
+Drop or detach aged partitions — a metadata operation, far cheaper than a bulk `DELETE`:
+
 ```sql
-<!-- Code example in SQL -->
--- Automatically delete old data
-SELECT add_retention_policy('sensor_readings', INTERVAL '1 year');
-
--- Or manually archive to cold storage
-INSERT INTO sensor_readings_archive
-SELECT * FROM sensor_readings
-WHERE time < NOW() - INTERVAL '1 year';
-
-DELETE FROM sensor_readings
-WHERE time < NOW() - INTERVAL '1 year';
-```text
-<!-- Code example in TEXT -->
+-- Archive then drop the oldest partition
+ALTER TABLE tb_sensor_reading DETACH PARTITION tb_sensor_reading_2026_06;
+-- Optionally move the detached table to cheaper storage, then:
+DROP TABLE tb_sensor_reading_2026_06;
+```
 
 ### Downsampling
 
+For long-term storage, keep only the daily rollup and let raw partitions expire. The
+`tv_reading_1d` table (refreshed like `tv_reading_1h`) becomes the system of record for
+historical trends, served through `v_reading_1d`.
+
 ```sql
-<!-- Code example in SQL -->
--- For very long-term storage, downsample to daily
-CREATE MATERIALIZED VIEW sensor_summary_long_term AS
-SELECT
-  DATE(time) as date,
-  device_id,
-  sensor_name,
-  AVG(value) as avg_value,
-  MIN(value) as min_value,
-  MAX(value) as max_value
-FROM sensor_readings
-WHERE time < NOW() - INTERVAL '90 days'
-GROUP BY DATE(time), device_id, sensor_name;
-```text
-<!-- Code example in TEXT -->
+-- Daily rollup window refresh
+SELECT fn_refresh_reading_1d(DATE_TRUNC('day', now() - INTERVAL '1 day'),
+                             DATE_TRUNC('day', now()));
+```
 
 ---
 
 ## Alerting
 
-### Rule Engine
+Threshold alerts are evaluated inside `fn_record_reading` (above) so every write is checked
+in the same transaction. For time-window rules (device offline, sustained anomalies) run a
+periodic job that calls an `fn_` function:
 
-```python
-<!-- Code example in Python -->
-# Define alert rules
-ALERT_RULES = [
-    {
-        'id': 'high_temp',
-        'condition': 'sensor_name == "temperature" AND value > 100',
-        'severity': 'critical',
-        'message': 'High temperature detected'
-    },
-    {
-        'id': 'device_offline',
-        'condition': 'last_heartbeat < NOW() - INTERVAL 5 minutes',
-        'severity': 'warning',
-        'message': 'Device offline for 5+ minutes'
-    },
-    {
-        'id': 'low_battery',
-        'condition': 'sensor_name == "battery_level" AND value < 10',
-        'severity': 'warning',
-        'message': 'Battery level low'
-    }
-]
+```sql
+-- Flag devices that haven't reported in 5 minutes (run from cron)
+CREATE OR REPLACE FUNCTION fn_flag_offline_devices()
+RETURNS void
+LANGUAGE sql
+AS $$
+    INSERT INTO tb_device_alert (fk_device, alert_type, severity)
+    SELECT d.pk_device, 'device_offline', 'warning'
+    FROM tb_device d
+    WHERE d.last_heartbeat < now() - INTERVAL '5 minutes'
+      AND d.status = 'active'
+      AND NOT EXISTS (
+          SELECT 1 FROM tb_device_alert a
+          WHERE a.fk_device = d.pk_device
+            AND a.alert_type = 'device_offline'
+            AND NOT a.acknowledged
+      );
+$$;
+```
 
-# Evaluate rules periodically
-async def evaluate_alert_rules():
-    for rule in ALERT_RULES:
-        results = await db.fetch(f"""
-            SELECT * FROM sensor_readings
-            WHERE {rule['condition']}
-            AND time > NOW() - INTERVAL '1 minute'
-        """)
-
-        for reading in results:
-            await create_alert(
-                device_id=reading['device_id'],
-                alert_type=rule['id'],
-                severity=rule['severity'],
-                message=rule['message']
-            )
-```text
-<!-- Code example in TEXT -->
+Subscribers receive new alerts in real time via the `alerts` subscription, backed by the
+`pg_notify('alert', ...)` call in `fn_record_reading`.
 
 ---
 
 ## Testing
 
-```typescript
-<!-- Code example in TypeScript -->
-describe('IoT Platform', () => {
-  it('should ingest sensor readings', async () => {
-    const deviceId = 'device_123';
-    const reading = {
-      sensorName: 'temperature',
-      value: 23.5,
-      timestamp: new Date().toISOString(),
-    };
+Integration tests run GraphQL operations against a real PostgreSQL database.
 
-    await recordReading(deviceId, reading);
+```python
+import pytest
 
-    const result = await client.query(GET_READINGS, {
-      variables: {
-        deviceId,
-        sensorName: 'temperature',
-        startTime: readingTime,
-        endTime: new Date().toISOString(),
-      },
-    });
 
-    expect(result.data.sensorReadings).toHaveLength(1);
-    expect(result.data.sensorReadings[0].value).toBe(23.5);
-  });
+@pytest.mark.asyncio
+async def test_record_reading_ingests(schema, db):
+    """A reading is persisted and queryable."""
+    result = await schema.execute(
+        """
+        mutation Ingest($input: RecordReadingInput!) {
+          recordReading(input: $input) {
+            ... on RecordReadingSuccess { deviceId sensorName }
+            ... on RecordReadingError { message }
+          }
+        }
+        """,
+        variable_values={
+            "input": {
+                "deviceId": str(device_id),
+                "sensorName": "temperature",
+                "value": "23.5",
+            }
+        },
+        context_value={"db": db},
+    )
+    assert result.errors is None
+    assert result.data["recordReading"]["sensorName"] == "temperature"
 
-  it('should trigger alert on threshold', async () => {
-    const device = await createDevice({
-      alertThreshold: { temperature: { max: 30 } }
-    });
 
-    await recordReading(device.id, {
-      sensorName: 'temperature',
-      value: 35,  // Exceeds 30
-    });
-
-    const alerts = await getAlerts(device.id);
-    expect(alerts).toHaveLength(1);
-    expect(alerts[0].severity).toBe('warning');
-  });
-
-  it('should aggregate data correctly', async () => {
-    const times = [1, 2, 3, 4, 5].map(i => new Date(Date.now() - i * 60000));
-    const values = [20, 22, 21, 23, 24];
-
-    for (let i = 0; i < 5; i++) {
-      await recordReading(deviceId, {
-        sensorName: 'temperature',
-        value: values[i],
-        timestamp: times[i],
-      });
-    }
-
-    const metrics = await getMetrics(deviceId, 'temperature');
-
-    expect(metrics[0].avg_value).toBe(22);  // (20+22+21+23+24)/5
-    expect(metrics[0].min_value).toBe(20);
-    expect(metrics[0].max_value).toBe(24);
-  });
-});
-```text
-<!-- Code example in TEXT -->
+@pytest.mark.asyncio
+async def test_threshold_triggers_alert(schema, db):
+    """A reading above the configured max raises an alert."""
+    await schema.execute(
+        "mutation { recordReading(input: "
+        '{ deviceId: "%s", sensorName: "temperature", value: "120" }) '
+        "{ ... on RecordReadingSuccess { sensorName } } }" % device_id,
+        context_value={"db": db},
+    )
+    alerts = await db.find("v_alert", acknowledged=False)
+    assert any(a["data"]["severity"] == "warning" for a in alerts)
+```
 
 ---
 
 ## Monitoring
 
+A status-summary view aggregates device health for an operations dashboard. Build it as a
+view and let runtime auto-aggregation count the buckets, or precompute it in a `tv_` table.
+
 ```graphql
-<!-- Code example in GraphQL -->
-query ClusterHealth {
-  deviceStatusSummary {
-    total_devices
-    active_devices
-    offline_devices
-    error_devices
-    average_response_time_ms
-    critical_alerts_count
-    readings_per_second
+query FleetHealth {
+  devices {
+    id
+    status
+    lastHeartbeat
+  }
+  activeAlerts {
+    severity
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+For production deployment and observability practices, see
+[Production Deployment](../guides/production-deployment.md) and
+[Observability & Monitoring](../guides/observability.md).
 
 ---
 
@@ -704,19 +792,12 @@ query ClusterHealth {
 
 **Related Patterns:**
 
-- [Analytics Platform](./analytics-olap-platform.md) - OLAP for metrics
-- [Real-Time Collaboration](./realtime-collaboration.md) - Real-time updates
+- [Patterns Index](./README.md)
+- [Analytics / OLAP Platform](./analytics-olap-platform.md) — views + runtime aggregation for metrics
+- [Real-Time Collaboration](./realtime-collaboration.md) — subscriptions over WebSocket
 
-**Deployment:**
+**Architecture:**
 
-- [Production Deployment](../guides/production-deployment.md)
-- [Kubernetes Scaling](../guides/production-deployment.md)
-
-**Monitoring:**
-
-- [Observability & Monitoring](../guides/observability.md)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- [Aggregation Model](../architecture/analytics/aggregation-model.md) — runtime auto-aggregation
+- [Window Functions](../architecture/analytics/window-functions.md) — moving averages in views
+- [tv-table Pattern](../architecture/database/tv-table-pattern.md) — pre-aggregated projection tables

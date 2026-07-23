@@ -2,14 +2,32 @@
 ---
 
 title: Keycloak OAuth 2.0 / OIDC Setup Guide
-description: This guide walks you through setting up Keycloak authentication with FraiseQL.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
+description: This guide walks you through using Keycloak as the identity provider for a FraiseQL application.
+keywords: ["framework", "sdk", "authentication", "keycloak", "oidc"]
 tags: ["documentation", "reference"]
 ---
 
 # Keycloak OAuth 2.0 / OIDC Setup Guide
 
-This guide walks you through setting up Keycloak authentication with FraiseQL.
+This guide walks you through using Keycloak as the identity provider for a FraiseQL application.
+
+FraiseQL v1 is a Python runtime GraphQL framework served over FastAPI, and its
+authentication runs **inside the FastAPI app** (Python). It ships exactly three
+provider modes — `auth_provider="auth0"`, `auth_provider="custom"`, and
+`auth_provider="none"`. There is **no built-in Keycloak provider class**. To use
+Keycloak you have two honest paths:
+
+- **Path A — Auth0 as a broker.** Add Keycloak as an OIDC/enterprise connection
+  upstream of Auth0. FraiseQL still uses `auth_provider="auth0"`; Keycloak issues
+  identities into Auth0, and your app validates Auth0 tokens. Good when you already
+  use Auth0 or want zero custom code.
+- **Path B — Custom provider (natural for Keycloak).** Set `auth_provider="custom"`
+  and implement an `AuthProvider` subclass that validates Keycloak's own JWTs
+  directly against Keycloak's JWKS/issuer/audience, mapping Keycloak realm and
+  client roles onto `UserContext.roles`. Good when you talk to Keycloak directly,
+  with no Auth0 in the middle.
+
+Both paths reuse the same Keycloak realm, client, and role setup, covered first.
 
 ## Why Keycloak?
 
@@ -32,13 +50,13 @@ This guide walks you through setting up Keycloak authentication with FraiseQL.
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- Docker 20.10+ and Docker Compose 1.29+ (for local Keycloak)
+- FraiseQL v1
+- Docker 20.10+ and Docker Compose (for local Keycloak)
   - OR: Keycloak 20+ server (if self-hosted separately)
 - curl or Postman (for API testing)
 - A code editor for configuration files
 - Bash or similar shell for environment variables
-- PostgreSQL 14+ (included in Docker Compose, or separate instance)
+- PostgreSQL 14+ (for FraiseQL, and for Keycloak's own state)
 
 **Required Infrastructure:**
 
@@ -53,8 +71,8 @@ This guide walks you through setting up Keycloak authentication with FraiseQL.
 
 - Keycloak server instance (self-hosted or cloud-hosted)
 - PostgreSQL 14+ database for Keycloak state
-- PostgreSQL database for FraiseQL session storage
-- FraiseQL server instance
+- PostgreSQL database for your FraiseQL application
+- A deployed FraiseQL FastAPI app (`uvicorn app:app`)
 - Publicly accessible URL for OAuth callbacks
 - Load balancer (optional, for HA)
 - TLS/HTTPS certificate
@@ -66,16 +84,15 @@ This guide walks you through setting up Keycloak authentication with FraiseQL.
 - Keycloak Realm Backup (for production recovery)
 - Nginx reverse proxy with SSL (for production)
 
-**Time Estimate:** 25-45 minutes (15 min for Docker setup + 10-30 min for client/realm configuration and testing)
+**Time Estimate:** 25-45 minutes (15 min for Keycloak setup + 10-30 min for client/realm configuration and FraiseQL wiring)
 
-## Option 1: Running Keycloak Locally (Docker)
+## Step 1: Run Keycloak
 
-### Step 1: Start Keycloak with Docker
+### Option 1: Local Keycloak (Docker)
 
 Create `docker-compose.yml`:
 
 ```yaml
-<!-- Code example in YAML -->
 version: '3.8'
 services:
   keycloak:
@@ -105,53 +122,77 @@ services:
 
 volumes:
   postgres_data:
-```text
-<!-- Code example in TEXT -->
+```
 
 Start it:
 
 ```bash
-<!-- Code example in BASH -->
 docker-compose up -d
-```text
-<!-- Code example in TEXT -->
+```
 
-Access Keycloak at `http://localhost:8080`
+Access Keycloak at `http://localhost:8080`.
 
-### Step 2: Create Realm
+### Option 2: Managed / Self-Hosted Keycloak (Production)
+
+If using a hosted Keycloak service, skip the Docker step and note your base URL
+(for example `https://keycloak.example.com`). The realm, client, and role steps
+below are identical.
+
+## Step 2: Create Realm
 
 1. Go to `http://localhost:8080`
 2. Click "Administration Console"
 3. Login with `admin` / `admin123`
 4. Hover over "Master" (top left) → Click "Create Realm"
-5. Enter realm name: `FraiseQL`
+5. Enter realm name: `fraiseql`
 6. Click "Create"
 
-### Step 3: Create Client
+## Step 3: Create Client
 
-1. In the `FraiseQL` realm, go to "Clients" (left sidebar)
+1. In the `fraiseql` realm, go to "Clients" (left sidebar)
 2. Click "Create client"
-3. Client ID: `FraiseQL-server`
+3. Client ID: `fraiseql-api`
 4. Client Protocol: `openid-connect`
 5. Click "Next"
 6. Enable:
-   - ✅ Client authentication
-   - ✅ Authorization
+   - Client authentication
+   - Authorization
 7. Click "Next"
 8. Root URL: `http://localhost:8000`
 9. Valid redirect URIs:
    - `http://localhost:8000/auth/callback`
-   - `http://localhost:3000/*` (if frontend on different port)
+   - `http://localhost:3000/*` (if frontend on a different port)
 10. Valid post logout redirect URIs:
     - `http://localhost:3000`
 11. Click "Save"
 
-### Step 4: Get Client Secret
+This client ID (`fraiseql-api`) is also the **audience** your FraiseQL app will
+require on incoming access tokens.
+
+## Step 4: Get Client Secret
 
 1. In the client settings, go to "Credentials" tab
-2. Copy the **Client Secret** (you'll need this)
+2. Copy the **Client Secret** (your frontend or broker uses this to exchange codes)
 
-### Step 5: Create Test User (Optional)
+## Step 5: Create Roles
+
+Create custom roles for RBAC:
+
+1. Go to "Realm roles" (left sidebar)
+2. Click "Create role"
+3. Role name: `api-admin`
+4. Click "Create"
+5. Assign the role to a user:
+   - Go to "Users" → click a user
+   - Go to "Role mapping" → "Assign role"
+   - Select `api-admin`
+
+You can also create **client roles** under the client's "Roles" tab. Keycloak
+places realm roles under `realm_access.roles` and client roles under
+`resource_access.<client>.roles` in the token; the custom provider in Path B maps
+both onto `UserContext.roles`.
+
+## Step 6: Create Test User (Optional)
 
 1. Go to "Users" (left sidebar)
 2. Click "Add user"
@@ -159,98 +200,288 @@ Access Keycloak at `http://localhost:8080`
 4. Email: `test@example.com`
 5. Click "Create"
 6. Go to "Credentials" tab
-7. Set password: (click "Set password")
-8. Enter password and confirm
+7. Click "Set password", enter a password, and confirm
 
-## Option 2: Using Managed Keycloak (Production)
+## Useful Keycloak URLs
 
-If using a hosted Keycloak service:
+For realm `fraiseql` and base URL `{base}` (e.g. `http://localhost:8080`):
 
-1. Create realm in your managed Keycloak
-2. Create client with your production URLs
-3. Note the issuer URL: `https://your-keycloak.example.com/realms/FraiseQL`
-4. Follow client setup steps above
+| Purpose | URL |
+|---------|-----|
+| OIDC discovery | `{base}/realms/fraiseql/.well-known/openid-configuration` |
+| Issuer (token `iss`) | `{base}/realms/fraiseql` |
+| JWKS (signing keys) | `{base}/realms/fraiseql/protocol/openid-connect/certs` |
+| Token endpoint | `{base}/realms/fraiseql/protocol/openid-connect/token` |
 
-## Configure FraiseQL
+You will need the **issuer**, **JWKS**, and **audience** (your client ID) to
+validate tokens in Path B.
 
-Create `.env` file:
+## Path A: Auth0 as a Broker
+
+Use this path when you already run Auth0, or want FraiseQL to do zero custom
+token-validation work. Keycloak becomes an upstream **enterprise / OIDC
+connection** in Auth0; users authenticate against Keycloak, Auth0 mints the
+tokens your app actually sees.
+
+1. In the Auth0 dashboard, add an **Enterprise → OpenID Connect** connection (or
+   a Social/Custom OIDC connection) pointing at your Keycloak realm's discovery
+   URL: `{base}/realms/fraiseql/.well-known/openid-configuration`.
+2. Supply the Keycloak client ID and secret from Step 3/Step 4 as the connection's
+   credentials, and enable the connection for your Auth0 application.
+3. Configure FraiseQL to validate **Auth0** tokens — Keycloak is invisible to the
+   app at this point:
+
+```python
+import fraiseql
+from fraiseql.auth import Auth0Config
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    queries=[...],
+    mutations=[...],
+    auth=Auth0Config(
+        domain="myapp.auth0.com",
+        api_identifier="https://api.myapp.com",  # the Auth0 API audience
+    ),
+)
+```
+
+Equivalently, via environment variables / `FraiseQLConfig`:
 
 ```bash
-<!-- Code example in BASH -->
-# Keycloak Configuration
-KEYCLOAK_URL=http://localhost:8080
-KEYCLOAK_REALM=FraiseQL
-KEYCLOAK_CLIENT_ID=FraiseQL-server
-KEYCLOAK_CLIENT_SECRET=<copy-from-credentials>
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=myapp.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.myapp.com
+```
 
-# JWT Configuration
-JWT_ISSUER=http://localhost:8080/realms/FraiseQL
-JWT_ALGORITHM=RS256
+See the [Auth0 setup guide](./setup-auth0.md) for the full Auth0-side
+configuration. Map the Keycloak roles you created in Step 5 into the Auth0 token
+(via an Auth0 Action/rule that copies the upstream claims) so they land in the
+`UserContext` your resolvers see.
 
-# Database Configuration
-DATABASE_URL=postgres://user:password@localhost/FraiseQL
-```text
-<!-- Code example in TEXT -->
+## Path B: Custom `AuthProvider` (validate Keycloak directly)
 
-## Configure FraiseQL Server
+Use this path when your app talks to Keycloak directly, with no Auth0 in the
+middle. You set `auth_provider="custom"` and pass an `AuthProvider` subclass that
+validates Keycloak's JWTs against Keycloak's JWKS, issuer, and your client as the
+audience.
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::auth::OidcProvider;
-use std::sync::Arc;
+### The `AuthProvider` interface
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let issuer_url = format!(
-        "{}/realms/{}",
-        std::env::var("KEYCLOAK_URL")?,
-        std::env::var("KEYCLOAK_REALM")?
-    );
+The base class lives in `src/fraiseql/auth/base.py`. A custom provider must
+implement two coroutines:
 
-    let oauth_provider = Arc::new(
-        OidcProvider::new(
-            "keycloak",
-            &issuer_url,
-            &std::env::var("KEYCLOAK_CLIENT_ID")?,
-            &std::env::var("KEYCLOAK_CLIENT_SECRET")?,
-            &std::env::var("OAUTH_REDIRECT_URI")?,
+```python
+from abc import ABC, abstractmethod
+from typing import Any
+
+
+class AuthProvider(ABC):
+    @abstractmethod
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        """Validate a token and return its decoded payload."""
+
+    @abstractmethod
+    async def get_user_from_token(self, token: str) -> UserContext:
+        """Validate a token and return the UserContext for the request."""
+```
+
+`UserContext` (also in `base.py`) is what every resolver receives at
+`info.context["user"]`:
+
+```python
+@dataclass
+class UserContext:
+    user_id: str
+    email: str | None = None
+    name: str | None = None
+    roles: list[str] = field(default_factory=list)
+    permissions: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    # .has_role(...) / .has_permission(...) / .has_any_role(...) / .has_any_permission(...)
+```
+
+### A Keycloak provider implementation
+
+```python
+import time
+
+import httpx
+from jose import jwt
+from jose.exceptions import JWTError
+
+from fraiseql.auth.base import AuthProvider, AuthenticationError, UserContext
+
+
+class KeycloakAuthProvider(AuthProvider):
+    """Validate Keycloak-issued JWTs directly (no Auth0 broker).
+
+    Keycloak realm roles arrive under ``realm_access.roles`` and client roles
+    under ``resource_access.<client>.roles``; both are mapped onto
+    ``UserContext.roles``.
+    """
+
+    def __init__(self, base_url: str, realm: str, audience: str) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.realm = realm
+        self.audience = audience  # your Keycloak client ID
+        self.issuer = f"{self.base_url}/realms/{realm}"
+        self.jwks_url = (
+            f"{self.base_url}/realms/{realm}/protocol/openid-connect/certs"
         )
-        .await?
-    );
+        self._jwks: dict[str, Any] | None = None
+        self._jwks_fetched_at: float = 0.0
 
-    // Register auth endpoints...
-    Ok(())
-}
-```text
-<!-- Code example in TEXT -->
+    async def _get_jwks(self) -> dict[str, Any]:
+        # Cache the signing keys briefly; refresh on rotation.
+        if self._jwks is None or time.monotonic() - self._jwks_fetched_at > 3600:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(self.jwks_url)
+                response.raise_for_status()
+                self._jwks = response.json()
+                self._jwks_fetched_at = time.monotonic()
+        return self._jwks
+
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        jwks = await self._get_jwks()
+        try:
+            return jwt.decode(
+                token,
+                jwks,
+                algorithms=["RS256"],
+                audience=self.audience,
+                issuer=self.issuer,
+            )
+        except JWTError as exc:
+            raise AuthenticationError(f"Invalid Keycloak token: {exc}") from exc
+
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+
+        realm_roles = payload.get("realm_access", {}).get("roles", [])
+        client_roles = (
+            payload.get("resource_access", {})
+            .get(self.audience, {})
+            .get("roles", [])
+        )
+
+        return UserContext(
+            user_id=payload["sub"],
+            email=payload.get("email"),
+            name=payload.get("name") or payload.get("preferred_username"),
+            roles=[*realm_roles, *client_roles],
+            permissions=payload.get("scope", "").split(),
+            metadata={"issuer": payload.get("iss")},
+        )
+```
+
+> The token-decode call uses `python-jose` here for illustration; any JWT/JWKS
+> library works as long as you verify the signature against Keycloak's JWKS and
+> check the `issuer` and `audience`.
+
+### Wire it into the app
+
+`create_fraiseql_app(auth=...)` accepts either an `Auth0Config` or any
+`AuthProvider` instance, so you pass your provider directly:
+
+```python
+import os
+
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    queries=[...],
+    mutations=[...],
+    auth=KeycloakAuthProvider(
+        base_url=os.environ["KEYCLOAK_URL"],          # e.g. http://localhost:8080
+        realm=os.environ["KEYCLOAK_REALM"],           # e.g. fraiseql
+        audience=os.environ["KEYCLOAK_CLIENT_ID"],    # e.g. fraiseql-api
+    ),
+    production=False,  # False enables the GraphQL playground
+)
+```
+
+A matching `.env`:
+
+```bash
+# Keycloak Configuration (consumed by KeycloakAuthProvider)
+KEYCLOAK_URL=http://localhost:8080
+KEYCLOAK_REALM=fraiseql
+KEYCLOAK_CLIENT_ID=fraiseql-api
+
+# FraiseQL application database
+DATABASE_URL=postgresql://user:password@localhost/mydb
+```
+
+Run the app like any FastAPI service:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+### Enforce roles in resolvers
+
+Once the provider populates `UserContext.roles`, use FraiseQL's auth decorators
+(from `fraiseql.auth`) or check the context directly:
+
+```python
+import fraiseql
+from fraiseql.auth import requires_role
+
+
+@fraiseql.query
+@requires_role("api-admin")
+async def admin_stats(info) -> AdminStats:
+    db = info.context["db"]
+    return await db.find_one("v_admin_stats")
+
+
+@fraiseql.query
+async def my_profile(info) -> User | None:
+    user = info.context["user"]  # UserContext, or None if unauthenticated
+    if user is None:
+        return None
+    db = info.context["db"]
+    return await db.find_one("v_user", id=user.user_id)
+```
+
+Denied access surfaces as a GraphQL error with `extensions.code = "FORBIDDEN"`.
 
 ## Testing the Flow
 
-### 1. Start Login
+### 1. Obtain a token from Keycloak
+
+For a quick test, use Keycloak's token endpoint with the direct-access grant
+(enable "Direct access grants" on the client first):
 
 ```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "keycloak"}'
-```text
-<!-- Code example in TEXT -->
+curl -X POST \
+  "http://localhost:8080/realms/fraiseql/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=fraiseql-api" \
+  -d "client_secret=<client-secret>" \
+  -d "username=testuser" \
+  -d "password=<password>"
+```
 
-### 2. Complete Authentication
+The response includes an `access_token`.
 
-Visit the returned authorization URL and log in with your Keycloak account.
-
-### 3. Use Tokens
+### 2. Call the GraphQL endpoint
 
 ```bash
-<!-- Code example in BASH -->
 curl -X POST http://localhost:8000/graphql \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id } }"}'
-```text
-<!-- Code example in TEXT -->
+  -d '{"query": "{ myProfile { id } }"}'
+```
+
+A valid token returns data; an invalid or expired one returns a GraphQL error.
 
 ## Advanced: User Federation
 
@@ -264,7 +495,7 @@ To set up LDAP federation:
 
 1. Go to "User Federation" (left sidebar)
 2. Click "Add provider" → "ldap"
-3. Configure LDAP connection:
+3. Configure the LDAP connection:
    - Vendor: `Active Directory` or `LDAP`
    - Connection URL: `ldap://your-ldap-server`
    - Bind DN: `cn=admin,dc=example,dc=com`
@@ -272,30 +503,8 @@ To set up LDAP federation:
 4. Configure user mapping
 5. Click "Save"
 
-## Advanced: Custom Roles
-
-Create custom roles for RBAC:
-
-1. Go to "Roles" (left sidebar)
-2. Click "Create role"
-3. Role name: `api-admin`
-4. Click "Create"
-5. Assign role to user:
-   - Go to "Users"
-   - Click user
-   - Go to "Role mapping"
-   - Assign roles
-
-In your code, check roles:
-
-```rust
-<!-- Code example in RUST -->
-let user = auth::AuthenticatedUser { /* ... */ };
-if user.has_role("api-admin") {
-    // Admin access
-}
-```text
-<!-- Code example in TEXT -->
+Federated users still authenticate against your `fraiseql` realm, so neither path
+above changes.
 
 ## Troubleshooting
 
@@ -305,9 +514,9 @@ if user.has_role("api-admin") {
 
 **Solution**:
 
-- Verify realm name in Keycloak
-- Check `KEYCLOAK_REALM` environment variable
-- Try accessing `http://localhost:8080/realms/FraiseQL/.well-known/openid-configuration`
+- Verify the realm name in Keycloak
+- Check the `KEYCLOAK_REALM` environment variable
+- Try `http://localhost:8080/realms/fraiseql/.well-known/openid-configuration`
 
 ### Error: "Invalid Client"
 
@@ -315,26 +524,25 @@ if user.has_role("api-admin") {
 
 **Solution**:
 
-- Verify client ID in Keycloak
-- Copy client secret from "Credentials" tab
-- Check environment variables match exactly
+- Verify the client ID in Keycloak
+- Copy the client secret from the "Credentials" tab
+- Check that environment variables match exactly
 
-### Error: "Redirect URI mismatch"
+### Error: "Invalid Keycloak token" / signature failures
 
-**Cause**: Callback URL doesn't match Keycloak configuration.
+**Cause**: Wrong issuer, audience, or stale signing keys.
 
 **Solution**:
 
-- Update "Valid redirect URIs" in client settings
-- Include all redirect URLs (dev, staging, production)
-- Check for trailing slashes and protocol (http vs https)
+- Confirm the `issuer` matches `{base}/realms/{realm}` exactly (including http vs https)
+- Confirm the `audience` matches your client ID
+- Re-fetch JWKS from `{base}/realms/{realm}/protocol/openid-connect/certs` after a key rotation
 
 ### Keycloak Container Won't Start
 
 **Solution**:
 
 ```bash
-<!-- Code example in BASH -->
 # Check logs
 docker-compose logs keycloak
 
@@ -344,14 +552,13 @@ docker-compose restart keycloak
 # Recreate if needed
 docker-compose down
 docker-compose up -d
-```text
-<!-- Code example in TEXT -->
+```
 
 ## Production Deployment
 
 For production Keycloak:
 
-1. Use PostgreSQL (not H2)
+1. Use PostgreSQL (not H2) for Keycloak state
 2. Enable HTTPS with valid certificates
 3. Use strong passwords
 4. Configure backup and restore procedures
@@ -359,79 +566,27 @@ For production Keycloak:
 6. Use environment-specific realms
 7. Enable audit logging
 
-Example production environment:
+Example production `.env`:
 
 ```bash
-<!-- Code example in BASH -->
 # .env.prod
 KEYCLOAK_URL=https://keycloak.example.com
 KEYCLOAK_REALM=production
-KEYCLOAK_CLIENT_ID=FraiseQL-prod
-KEYCLOAK_CLIENT_SECRET=<strong-secret>
-OAUTH_REDIRECT_URI=https://api.example.com/auth/callback
+KEYCLOAK_CLIENT_ID=fraiseql-prod
 
-JWT_ISSUER=https://keycloak.example.com/realms/production
-JWT_ALGORITHM=RS256
-
-DATABASE_URL=postgres://user:strong-pass@db.internal/FraiseQL
-```text
-<!-- Code example in TEXT -->
-
-## Using with Docker Compose in Production
-
-Production `docker-compose.yml`:
-
-```yaml
-<!-- Code example in YAML -->
-version: '3.8'
-services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://${KC_DB_HOST}:5432/${KC_DB_NAME}
-      KC_DB_USERNAME: ${KC_DB_USER}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      KC_PROXY: edge
-    ports:
-      - "8080:8080"
-    command:
-      - start
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  FraiseQL:
-    image: FraiseQL/server:latest
-    environment:
-      KEYCLOAK_URL: http://keycloak:8080
-      # ... other env vars
-    depends_on:
-      keycloak:
-        condition: service_healthy
-    ports:
-      - "8000:8000"
-    restart: always
-```text
-<!-- Code example in TEXT -->
+DATABASE_URL=postgresql://user:strong-pass@db.internal/mydb
+```
 
 ## Multi-Realm Setup
 
 For different environments, create separate realms:
 
 ```text
-<!-- Code example in TEXT -->
 Keycloak
 ├── development (uses test users)
 ├── staging (mirrors production)
 └── production (uses enterprise LDAP)
-```text
-<!-- Code example in TEXT -->
+```
 
 Each realm has:
 
@@ -439,12 +594,16 @@ Each realm has:
 - Different OIDC configurations
 - Environment-specific roles and policies
 
+Point each deployment's `KEYCLOAK_REALM` (and `KEYCLOAK_URL`) at the right realm.
+
 ## See Also
 
 - [Keycloak Documentation](https://www.keycloak.org/documentation)
 - [Keycloak Admin Guide](https://www.keycloak.org/docs/latest/server_admin/)
-- [FraiseQL API Reference](./api-reference.md)
+- [Auth0 Setup Guide](./setup-auth0.md)
+- [Provider Selection Guide](./provider-selection-guide.md)
+- [FraiseQL Auth API Reference](./api-reference.md)
 
 ---
 
-**Next Step**: See [API Reference](./api-reference.md) for complete endpoint documentation.
+**Next Step**: See [API Reference](./api-reference.md) for the full authentication API.

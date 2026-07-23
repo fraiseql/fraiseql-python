@@ -1,56 +1,53 @@
-<!-- Skip to main content -->
 ---
-
-title: 2.5: Error Handling & Validation
-description: FraiseQL's error handling and validation strategy ensures predictable, safe query execution across compile-time and runtime boundaries. Unlike traditional Graph
-keywords: ["query-execution", "data-planes", "graphql", "compilation", "architecture"]
+title: Error Handling & Validation
+description: FraiseQL's error handling and validation strategy ensures predictable, safe query execution. Validation happens at runtime — in Python resolvers and in PostgreSQL functions — producing structured, classified errors.
+keywords: ["error-handling", "validation", "graphql", "postgresql", "mutations"]
 tags: ["documentation", "reference"]
 ---
 
-# 2.5: Error Handling & Validation
+# Error Handling & Validation
 
 ## Overview
 
-FraiseQL's error handling and validation strategy ensures predictable, safe query execution across compile-time and runtime boundaries. Unlike traditional GraphQL servers that discover errors at runtime, FraiseQL catches entire classes of errors during compilation, leaving only narrow categories of runtime errors (database failures, timeouts, authorization denials) to handle.
+FraiseQL's error handling and validation strategy ensures predictable, safe query execution. FraiseQL is a **runtime** GraphQL framework: the schema is assembled in memory at application startup, and validation happens while requests are served — in Python resolvers and in the PostgreSQL functions that back mutations. There is no separate compile step.
 
 This topic explains:
 
-- **Error hierarchy**: All 14 error types with classification (client vs server, retryable vs permanent)
-- **Validation layers**: When errors are caught (schema compilation, query compilation, parameter binding, authorization, execution)
+- **Error classification**: How errors are grouped (client vs server, retryable vs permanent)
+- **Validation layers**: Where errors are caught (type definitions, schema assembly, request parameters, authorization, execution)
+- **Mutation result pattern**: The `success | error` union returned by mutations
 - **Error handling patterns**: How to handle errors in client applications, HTTP responses, and recovery strategies
 - **Validation best practices**: Input validation, authorization enforcement, conflict detection
 
 ### Error Handling Architecture
 
 ```text
-<!-- Code example in TEXT -->
-Authoring Layer          Compilation Layer        Runtime Layer
+Authoring Layer          Startup Layer            Runtime Layer
 ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│ Python/TypeScript│    │ FraiseQL-cli     │    │ FraiseQL-server  │
-│ schema.py        │    │ compile          │    │ GraphQL API      │
+│ Python decorators│    │ Schema assembly  │    │ FastAPI app      │
+│ schema.py        │    │ (in memory)      │    │ GraphQL API      │
 │                  │    │                  │    │                  │
 │ VALIDATION PHASE │    │ VALIDATION PHASE │    │ VALIDATION PHASE │
 │ - Type syntax    │    │ - Schema refs    │    │ - Auth rules     │
 │ - Field names    │    │ - Relationships  │    │ - Parameter type │
-│ - Decorators     │    │ - SQL generation │    │ - Resource refs  │
+│ - Decorators     │    │ - SQL sources    │    │ - PostgreSQL fn  │
 └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘
          │                       │                       │
          └──────→ Errors         └──────→ Errors        └──────→ Errors
-            (Failed)                (Failed)               (Failed)
-```text
-<!-- Code example in TEXT -->
+            (raised)                (raised)               (raised)
+```
 
 ---
 
-## Error Hierarchy
+## Error Classification
 
-FraiseQL uses a unified error type that represents all possible failures. Errors are classified by:
+FraiseQL errors are classified by:
 
 1. **Source**: Where the error originated (GraphQL, Database, Authorization, etc.)
 2. **Severity**: Client error (4xx) vs Server error (5xx)
 3. **Retryability**: Whether the operation can be safely retried
 
-### All 14 Error Types
+### Common Error Types
 
 | Error Type | Category | HTTP Status | Retryable | Cause |
 |------------|----------|-------------|-----------|-------|
@@ -66,64 +63,54 @@ FraiseQL uses a unified error type that represents all possible failures. Errors
 | **Authentication** | Client | 401 | ❌ | Invalid/missing/expired credentials |
 | **NotFound** | Client | 404 | ❌ | Requested resource doesn't exist |
 | **Conflict** | Client | 409 | ❌ | Operation conflicts with existing data |
-| **Configuration** | Server | 500 | ❌ | Invalid server configuration |
+| **Configuration** | Server | 500 | ❌ | Invalid application configuration |
 | **Internal** | Server | 500 | ❌ | Unexpected internal error (rare) |
 
-### Error Classification
+### Error Categories
 
 **Client Errors (4xx):**
 
 ```text
-<!-- Code example in TEXT -->
 Parse, Validation, UnknownField, UnknownType,
 Authentication, Authorization, NotFound, Conflict
-```text
-<!-- Code example in TEXT -->
+```
 
-User made a mistake. The same request will fail repeatedly. Example:
+The caller made a mistake. The same request will fail repeatedly. Example:
 
 ```graphql
-<!-- Code example in GraphQL -->
 # Query has unknown field 'usernam' instead of 'username'
 query {
   user(id: 1) {
-    usernam  # ← Parse error (4xx)
+    usernam  # ← Validation error (4xx)
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Server Errors (5xx):**
 
 ```text
-<!-- Code example in TEXT -->
 Database, ConnectionPool, Timeout, Cancelled,
 Configuration, Internal
-```text
-<!-- Code example in TEXT -->
+```
 
-System failure outside user control. May succeed if retried. Example:
+System failure outside the caller's control. May succeed if retried. Example:
 
 ```text
-<!-- Code example in TEXT -->
-Database { message: "connection refused" }  # ← 5xx error
+"Database error: connection refused"  # ← 5xx error
 # May succeed if database recovers and request is retried
-```text
-<!-- Code example in TEXT -->
+```
 
 **Retryable Errors (can be safely retried):**
 
 ```text
-<!-- Code example in TEXT -->
 ConnectionPool, Timeout, Cancelled
-```text
-<!-- Code example in TEXT -->
+```
 
 Safe to retry with exponential backoff. Examples:
 
 - Connection pool exhausted → retry when connections available
 - Query timeout → retry with possibly reduced complexity
-- Client cancellation → external event, user can retry manually
+- Client cancellation → external event, caller can retry manually
 
 ---
 
@@ -131,86 +118,83 @@ Safe to retry with exponential backoff. Examples:
 
 ### Layer 1: Authoring-Time Validation
 
-Errors caught while writing Python/TypeScript schema definitions:
+Errors caught while writing Python type definitions:
 
 ```python
-<!-- Code example in Python -->
-# ✅ VALID: Proper type annotation
-from FraiseQL import type, field
+import fraiseql
+from fraiseql.types import ID
 
-@type
+# ✅ VALID: Proper type annotation
+@fraiseql.type(sql_source="v_user")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
 
-# ❌ INVALID: Invalid field type (caught by Python type checker)
-@type
+# ❌ INVALID: Unknown field type (caught by your Python type checker)
+@fraiseql.type(sql_source="v_user")
 class User:
-    id: UUID  # UUID v4 for GraphQL ID
-    name: BadType  # ← Python type error (before compilation)
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    name: BadType  # ← Python type error before the app even starts
+```
 
-**Tools:** Python type checking (`py`, `mypy`), TypeScript compiler
+**Tools:** Python type checking (`ty`, your editor / IDE).
 
-### Layer 2: Compilation-Time Validation
+### Layer 2: Schema-Assembly Validation
 
-Errors caught by `FraiseQL-cli compile schema.json`:
+When the app starts, FraiseQL assembles the GraphQL schema in memory and validates references between types:
 
 **Schema Reference Validation:**
 
 ```python
-<!-- Code example in Python -->
-@type
+@fraiseql.type(sql_source="v_post")
 class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    author: User  # ← Must exist and be a @type, not a Python class
+    id: ID
+    author: User  # ← Must reference a registered @fraiseql.type
 
-# ❌ FAILS COMPILATION: Author references non-existent type
-@type
+# ❌ FAILS AT STARTUP: author references a type that was never registered
+@fraiseql.type(sql_source="v_post")
 class Post:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     author: NonExistentUser
 
-# Error: Compilation { message: "Unknown type 'NonExistentUser' referenced in Post.author" }
-```text
-<!-- Code example in TEXT -->
+# Error: schema build fails — "Unknown type 'NonExistentUser' referenced in Post.author"
+```
 
-**Relationship Validation:**
-
-```sql
-<!-- Code example in SQL -->
--- ✅ VALID: Foreign key exists and matches type definition
-CREATE TABLE tb_post (
-    pk_post_id BIGSERIAL PRIMARY KEY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_user)
-);
-
--- ❌ INVALID: Foreign key points to non-existent column
-CREATE TABLE tb_post (
-    pk_post_id BIGSERIAL PRIMARY KEY,
-    fk_user BIGINT NOT NULL REFERENCES tb_user(pk_nonexistent_id)
-);
-
--- Error: Validation { message: "Foreign key fk_user references non-existent column tb_user.pk_nonexistent_id" }
-```text
-<!-- Code example in TEXT -->
-
-**SQL Generation Validation:**
+**Read-Source Validation:**
 
 ```python
-<!-- Code example in Python -->
-@type
+@fraiseql.type(sql_source="v_post")
 class Post:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     title: str
-    # Compiler validates:
-    # - Table tb_post exists in connected database
-    # - Columns pk_post_id, title exist
-    # - Type mapping (db int → GraphQL Int) is valid
-    # If any validation fails, compilation errors
-```text
-<!-- Code example in TEXT -->
+    # At startup FraiseQL records that this type reads from the v_post view.
+    # The view's `data` JSONB column must contain the fields you expose.
+    # If the view is missing at query time, the database raises an error.
+```
+
+The underlying PostgreSQL objects follow FraiseQL's naming conventions. Writes go to a normalized `tb_` table; reads come from a `v_` view (or a `tv_` projection view) that exposes a public `id UUID` plus a `data` JSONB column built with `jsonb_build_object(...)`:
+
+```sql
+-- Write table (source of truth, never exposed directly)
+CREATE TABLE tb_post (
+    pk_post   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,  -- internal, hidden
+    id        UUID NOT NULL DEFAULT gen_random_uuid(),          -- public GraphQL id
+    fk_author BIGINT NOT NULL REFERENCES tb_user(pk_user),      -- internal FK, hidden
+    title     TEXT NOT NULL
+);
+
+-- Read view exposed to GraphQL
+CREATE VIEW v_post AS
+SELECT
+    p.id,
+    jsonb_build_object(
+        'id', p.id,
+        'title', p.title,
+        'author', jsonb_build_object('id', u.id, 'name', u.name)
+    ) AS data
+FROM tb_post p
+JOIN tb_user u ON u.pk_user = p.fk_author;
+```
 
 ### Layer 3: Request-Time Validation
 
@@ -219,218 +203,194 @@ Errors caught before query execution (parameter binding, authorization):
 **Parameter Type Validation:**
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Schema defines: user(id: Int!)
+# Schema defines: user(id: ID!)
 query {
-  user(id: "abc") {  # ← String instead of Int
+  user(id: 123) {  # ← Number where an ID is expected
     name
   }
 }
 
-# Error: Validation { message: "Expected Int for parameter 'id', got String" }
-```text
-<!-- Code example in TEXT -->
+# Error: "Expected value of type 'ID' for argument 'id'"
+```
 
 **Parameter Range Validation:**
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Schema defines: users(limit: Int, offset: Int)
-# Typical impl: limit [1, 10000], offset [0, ∞)
+# Schema defines: users(limit: Int = 20, offset: Int = 0)
+# A resolver can enforce: limit [1, 10000], offset [0, ∞)
 query {
   users(limit: 100000) {  # ← Exceeds maximum
     name
   }
 }
 
-# Error: Validation { message: "Parameter 'limit' must be ≤ 10000, got 100000" }
-```text
-<!-- Code example in TEXT -->
+# Error: "Parameter 'limit' must be ≤ 10000, got 100000"
+```
 
 **Authorization Validation:**
 
-```rust
-<!-- Code example in RUST -->
-// Pre-execution: Check if user can execute mutation
-let auth_result = check_authorization(
-    user_id: "user_123",
-    action: "write",           // What they want to do
-    resource: "Post:456",      // What they want to access
-    rules: &schema.auth_rules
-);
+Authorization in FraiseQL v1 is implemented in Python. The `info.context` carries the authenticated principal, and resolvers (or a shared authorization helper) decide whether the operation is allowed before any SQL is executed:
 
-match auth_result {
-    Ok(()) => {
-        // User has permission, execute query
-    }
-    Err(FraiseQLError::Authorization { .. }) => {
-        // User lacks permission
-        // Return 403 immediately without executing SQL
-    }
-}
-```text
-<!-- Code example in TEXT -->
+```python
+@fraiseql.mutation
+async def update_post(info, input: UpdatePostInput) -> UpdatePostSuccess | UpdatePostError:
+    user = info.context.get("user")
+    if user is None:
+        return UpdatePostError(message="authentication required", code="UNAUTHENTICATED")
+    if not user.can_write("Post", input.id):
+        # Deny before touching the database
+        return UpdatePostError(message="insufficient permissions", code="FORBIDDEN")
+
+    db = info.context["db"]
+    result = await db.execute_function("fn_update_post", {"id": str(input.id), "title": input.title})
+    if not result.get("success"):
+        return UpdatePostError(message=result.get("message", "failed"), code=result.get("code", "ERROR"))
+    return UpdatePostSuccess(post=Post(**result["post"]))
+```
+
+For the full authorization model and decision API, see [Authorization](../security/authorization.md). Describe access rules in Python; do not assume a separate server enforces them.
 
 ### Layer 4: Execution-Time Validation
 
-Errors caught during or after SQL execution:
+Errors caught during or after SQL execution. For mutations, business validation lives inside the `fn_` PostgreSQL function, which returns a JSONB result indicating success or failure.
 
-**Conflict Detection:**
+**Conflict Detection (inside the PostgreSQL function):**
 
 ```sql
-<!-- Code example in SQL -->
--- ✅ Query succeeds
-INSERT INTO tb_user (username) VALUES ('alice');
+-- fn_create_user: validates and writes, returns JSONB
+CREATE FUNCTION fn_create_user(input JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    new_id UUID;
+BEGIN
+    IF EXISTS (SELECT 1 FROM tb_user WHERE username = input->>'username') THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'code', 'CONFLICT',
+            'message', format('username %s is already taken', input->>'username')
+        );
+    END IF;
 
--- ❌ Fails at execution: User 'alice' already exists
-INSERT INTO tb_user (username) VALUES ('alice');
+    INSERT INTO tb_user (username, email)
+    VALUES (input->>'username', input->>'email')
+    RETURNING id INTO new_id;
 
--- Error: Database {
---   message: "duplicate key value violates unique constraint \"uc_user_username\"",
---   sql_state: Some("23505")  -- PostgreSQL unique violation code
--- }
+    RETURN jsonb_build_object(
+        'success', true,
+        'message', 'user created',
+        'user', jsonb_build_object('id', new_id, 'name', input->>'username')
+    );
+END;
+$$;
+```
+
+If a database constraint is violated despite the checks (a race condition, for example), PostgreSQL raises an error the framework surfaces as a `Database` error:
+
 ```text
-<!-- Code example in TEXT -->
+Database {
+  message: "duplicate key value violates unique constraint \"uc_user_username\"",
+  sql_state: "23505"   -- PostgreSQL unique violation code
+}
+```
 
-**Post-Fetch Authorization (visibility filtering):**
+**Post-Fetch Authorization (field filtering):**
 
-```rust
-<!-- Code example in RUST -->
-// Execution succeeds, but post-fetch rules may remove rows:
+Because reads return a `data` JSONB document shaped to the requested GraphQL fields, a resolver can strip fields the caller is not allowed to see before returning the object:
 
-// Query: { posts { id, title, secret } }
-// User permission: "read" on "Post" but NOT "Post.secret"
-
-// SQL executes and returns: [
-//   { id: 1, title: "Public", secret: "sensitive" },
-//   { id: 2, title: "Draft", secret: "draft-data" }
-// ]
-
-// Post-fetch filtering removes 'secret' field from all rows:
-// Result: [
-//   { id: 1, title: "Public" },
-//   { id: 2, title: "Draft" }
-// ]
-// No error - silently drops unauthorized fields
-```text
-<!-- Code example in TEXT -->
+```python
+@fraiseql.query
+async def post(info, id: ID) -> Post | None:
+    db = info.context["db"]
+    row = await db.find_one("v_post", id=id)
+    if row is None:
+        return None
+    user = info.context.get("user")
+    if user is None or not user.can_read("Post.secret", id):
+        row.secret = None  # silently drop the unauthorized field
+    return row
+```
 
 **Timeout Detection:**
 
-```rust
-<!-- Code example in RUST -->
-// Query execution exceeds configured timeout (default 30s)
-let result = tokio::time::timeout(
-    Duration::from_secs(30),
-    execute_sql(&query)
-).await;
-
-match result {
-    Ok(Ok(rows)) => Ok(rows),
-    Ok(Err(db_error)) => Err(FraiseQLError::Database { .. }),
-    Err(_) => Err(FraiseQLError::Timeout {
-        timeout_ms: 30000,
-        query: Some(truncate_query(&query, 200))
-    })
-}
-```text
-<!-- Code example in TEXT -->
+A query that exceeds the configured statement timeout is surfaced as a retryable `Timeout` error rather than hanging the request.
 
 ---
 
 ## GraphQL Error Response Format
 
-FraiseQL follows the GraphQL specification for error responses. All errors are returned as JSON with error codes, locations, and path information.
+FraiseQL follows the GraphQL specification for error responses. Errors are returned as JSON with error codes, locations, and path information.
 
 ### Single Error Response
 
 ```json
-<!-- Code example in JSON -->
-HTTP/1.1 400 Bad Request
-Content-Type: application/json
-
 {
   "errors": [
     {
       "message": "Unknown field 'usernam' on type 'User'",
-      "code": "UNKNOWN_FIELD",
-      "status": 400,
+      "extensions": {
+        "code": "UNKNOWN_FIELD",
+        "status": 400
+      },
       "locations": [
-        {
-          "line": 3,
-          "column": 5
-        }
+        { "line": 3, "column": 5 }
       ],
       "path": ["user", "usernam"]
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Multiple Errors Response
 
 ```json
-<!-- Code example in JSON -->
-HTTP/1.1 400 Bad Request
-Content-Type: application/json
-
 {
   "errors": [
     {
       "message": "Unknown field 'usernam' on type 'User'",
-      "code": "UNKNOWN_FIELD",
+      "extensions": { "code": "UNKNOWN_FIELD" },
       "path": ["user", "usernam"],
-      "locations": [{"line": 3, "column": 5}]
+      "locations": [{ "line": 3, "column": 5 }]
     },
     {
-      "message": "Expected Int for parameter 'id', got String",
-      "code": "GRAPHQL_VALIDATION_FAILED",
+      "message": "Expected type 'ID' for argument 'id'",
+      "extensions": { "code": "GRAPHQL_VALIDATION_FAILED" },
       "path": ["user"],
-      "locations": [{"line": 2, "column": 8}]
+      "locations": [{ "line": 2, "column": 8 }]
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Database Error Response
 
 ```json
-<!-- Code example in JSON -->
-HTTP/1.1 500 Internal Server Error
-Content-Type: application/json
-
 {
   "errors": [
     {
       "message": "Database error: duplicate key value violates unique constraint",
-      "code": "DATABASE_ERROR",
-      "status": 500,
       "extensions": {
+        "code": "DATABASE_ERROR",
+        "status": 500,
         "sql_state": "23505",
         "retryable": false
       }
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ### Authorization Error Response
 
 ```json
-<!-- Code example in JSON -->
-HTTP/1.1 403 Forbidden
-Content-Type: application/json
-
 {
   "errors": [
     {
       "message": "Authorization error: insufficient permissions",
-      "code": "FORBIDDEN",
-      "status": 403,
       "extensions": {
+        "code": "FORBIDDEN",
+        "status": 403,
         "action": "read",
         "resource": "Post:456",
         "reason": "user_role is 'viewer', requires 'editor' or above"
@@ -438,8 +398,65 @@ Content-Type: application/json
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+---
+
+## The Mutation Result Pattern
+
+FraiseQL mutations return a **union** of a success type and an error type. This makes both outcomes part of the typed GraphQL schema, so clients can branch on the concrete type instead of parsing a top-level `errors` array.
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User                # @success auto-injects status/message/updated_fields/id
+
+@fraiseql.error               # @fraiseql.failure is an accepted alias
+class CreateUserError:
+    message: str
+    code: str = "VALIDATION_ERROR"
+
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user",
+        {"name": input.name, "email": input.email},
+    )
+    if not result.get("success"):
+        return CreateUserError(
+            message=result.get("message", "failed"),
+            code=result.get("code", "VALIDATION_ERROR"),
+        )
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+The PostgreSQL `fn_create_user` function performs the validation and the write, returning a JSONB document of the shape `{success, message, code, ...}`. The resolver translates that document into the success or error branch of the union.
+
+Clients select on the concrete type:
+
+```graphql
+mutation {
+  createUser(input: { name: "Alice", email: "alice@example.com" }) {
+    __typename
+    ... on CreateUserSuccess {
+      user { id name }
+    }
+    ... on CreateUserError {
+      message
+      code
+    }
+  }
+}
+```
 
 ---
 
@@ -447,23 +464,20 @@ Content-Type: application/json
 
 ### Strategy 1: Fail Fast (Default)
 
-Return first error immediately, stop processing:
+Return the first error immediately, stop processing:
 
-```rust
-<!-- Code example in RUST -->
-// Schema: query { posts { id, title, author { name } } }
-// Query execution order:
-// 1. Validate GraphQL syntax       → ✅ Pass
-// 2. Validate query structure      → ✅ Pass
-// 3. Check authorization          → ❌ FAIL → Return 403 immediately
-// 4. Execute SQL                   → (skipped)
-// 5. Format response               → (skipped)
-
-// Response:
-// HTTP 403 Forbidden
-// { "errors": [{"message": "...", "code": "FORBIDDEN"}] }
 ```text
-<!-- Code example in TEXT -->
+# Schema: query { posts { id, title, author { name } } }
+# Execution order:
+# 1. Validate GraphQL syntax       → ✅ Pass
+# 2. Validate query structure      → ✅ Pass
+# 3. Check authorization           → ❌ FAIL → Return 403 immediately
+# 4. Execute SQL                   → (skipped)
+# 5. Format response               → (skipped)
+
+# Response:
+# { "errors": [{ "message": "...", "extensions": { "code": "FORBIDDEN" } }] }
+```
 
 **When to use:** Default for all queries. Safe and predictable.
 
@@ -472,8 +486,6 @@ Return first error immediately, stop processing:
 Return available data with errors for failed fields:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Query with nested fields
 query {
   posts {
     id           # ✅ Succeeds
@@ -484,33 +496,30 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Response:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "data": {
     "posts": [
       {
         "id": 1,
         "title": "GraphQL Guide",
-        "author": null  // Authorization error below
+        "author": null
       }
     ]
   },
   "errors": [
     {
       "message": "Authorization error: cannot read author.name",
-      "code": "FORBIDDEN",
+      "extensions": { "code": "FORBIDDEN" },
       "path": ["posts", 0, "author", "name"]
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **When to use:** When some fields are public and others require permission. Provides better UX.
 
@@ -519,15 +528,13 @@ query {
 For retryable errors (ConnectionPool, Timeout, Cancelled):
 
 ```python
-<!-- Code example in Python -->
 import asyncio
 import random
 
-async def execute_with_retry(query, max_attempts=3):
+async def execute_with_retry(client, query, max_attempts: int = 3):
     for attempt in range(1, max_attempts + 1):
         try:
-            result = await client.execute(query)
-            return result
+            return await client.execute(query)
         except RetryableError as e:
             if attempt >= max_attempts:
                 raise
@@ -536,75 +543,50 @@ async def execute_with_retry(query, max_attempts=3):
             backoff = 2 ** (attempt - 1)  # 1s, 2s, 4s
             jitter = random.uniform(0, backoff * 0.1)
             wait_time = backoff + jitter
-
-            print(f"Attempt {attempt} failed: {e}")
-            print(f"Retrying in {wait_time:.2f}s...")
             await asyncio.sleep(wait_time)
 
 # Usage
-result = await execute_with_retry(query)
-```text
-<!-- Code example in TEXT -->
+result = await execute_with_retry(client, query)
+```
 
 **Error types to retry:**
 
-- `ConnectionPool`: Wait for available connection
-- `Timeout`: May succeed with longer timeout or simpler query
-- `Cancelled`: Query was interrupted, user can retry
+- `ConnectionPool`: Wait for an available connection
+- `Timeout`: May succeed with a longer timeout or simpler query
+- `Cancelled`: Query was interrupted, caller can retry
 
 **Error types NOT to retry:**
 
-- `Parse`, `Validation`: Same query will fail identically
+- `Parse`, `Validation`: The same query will fail identically
 - `Database` (constraint violation): Data hasn't changed
-- `Authorization`: User permissions unchanged
+- `Authorization`: Permissions are unchanged
 
 ### Strategy 4: Graceful Degradation
 
 Provide fallback behavior when queries fail:
 
-```typescript
-<!-- Code example in TypeScript -->
-// Original query with analytics
-const analyticsQuery = `
+```python
+ANALYTICS_QUERY = """
   query {
-    sales {
-      date
-      revenue
-      costs
-      margin
-    }
+    sales { date revenue costs margin }
   }
-`;
+"""
 
-// Fallback query (simpler, fewer fields, faster)
-const fallbackQuery = `
+FALLBACK_QUERY = """
   query {
-    sales {
-      date
-      revenue
-    }
+    sales { date revenue }
   }
-`;
+"""
 
-async function getAnalytics() {
-  try {
-    // Try full analytics
-    const result = await client.query(analyticsQuery);
-    return result;
-  } catch (error) {
-    if (error.code === 'TIMEOUT' ||
-        error.code === 'CONNECTION_POOL_ERROR') {
-      // Try simpler query
-      console.warn('Analytics timeout, using simplified view');
-      const fallback = await client.query(fallbackQuery);
-      return fallback;
-    }
-    // Other errors: propagate
-    throw error;
-  }
-}
-```text
-<!-- Code example in TEXT -->
+async def get_analytics(client):
+    try:
+        return await client.execute(ANALYTICS_QUERY)
+    except FraiseQLError as error:
+        if error.code in {"TIMEOUT", "CONNECTION_POOL_ERROR"}:
+            # Fall back to a simpler, faster query
+            return await client.execute(FALLBACK_QUERY)
+        raise
+```
 
 ---
 
@@ -612,69 +594,71 @@ async function getAnalytics() {
 
 ### Practice 1: Validate at Entry Points
 
-Validate all user input before executing SQL:
+Validate user input before executing SQL. Type and shape validation come from the `@fraiseql.input` type; business rules live in the resolver and the PostgreSQL function:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL import type, field
-from typing import Annotated
+import fraiseql
+from fraiseql.types import ID, EmailAddress
 
-# Define input type with validation rules
-@type
-class UserInput:
-    username: Annotated[str, "length: 1-50, pattern: ^[a-zA-Z0-9_]+$"]
-    email: Annotated[str, "pattern: ^[^@]+@[^@]+$"]
-    age: Annotated[int, "min: 13, max: 150"]
+@fraiseql.input
+class CreateUserInput:
+    username: str
+    email: EmailAddress
+    age: int
 
-# Validation happens in compilation and at request time
-@mutation
-def create_user(input: UserInput) -> User:
-    # By this point:
-    # - input.username is guaranteed valid
-    # - input.email is guaranteed valid email format
-    # - input.age is in [13, 150]
-    return db.insert_user(input)
-```text
-<!-- Code example in TEXT -->
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    # Resolver-level business validation
+    if not (1 <= len(input.username) <= 50):
+        return CreateUserError(message="username must be 1-50 characters", code="VALIDATION_ERROR")
+    if not (13 <= input.age <= 150):
+        return CreateUserError(message="age must be between 13 and 150", code="VALIDATION_ERROR")
 
-**Validation rules are compiled into SQL or application logic:**
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_user", {
+        "username": input.username,
+        "email": str(input.email),
+        "age": input.age,
+    })
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"), code=result.get("code", "ERROR"))
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+**Defense in depth — enforce the same rules with database constraints:**
 
 ```sql
-<!-- Code example in SQL -->
--- PostgreSQL constraint (enforced by database)
+-- PostgreSQL constraints (enforced by the database, even under race conditions)
 CREATE TABLE tb_user (
-    pk_user BIGSERIAL PRIMARY KEY,
+    pk_user  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id       UUID NOT NULL DEFAULT gen_random_uuid(),
     username VARCHAR(50) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    age INT NOT NULL CHECK (age >= 13 AND age <= 150),
+    email    VARCHAR(255) NOT NULL,
+    age      INT NOT NULL CHECK (age >= 13 AND age <= 150),
     CONSTRAINT uc_user_username UNIQUE (username),
     CONSTRAINT uc_user_email UNIQUE (email)
 );
 
--- If insert violates constraint:
-
--- Error: Database { sql_state: "23514" } (CHECK constraint violation)
-```text
-<!-- Code example in TEXT -->
+-- A CHECK violation surfaces with SQLSTATE 23514 (check_violation)
+```
 
 ### Practice 2: List-Size Limits
 
-Prevent queries from returning excessive data:
+Prevent queries from returning excessive data. Enforce limits in the query resolver:
+
+```python
+@fraiseql.query
+async def users(info, limit: int = 20, offset: int = 0) -> list[User]:
+    if not (1 <= limit <= 10000):
+        raise ValueError(f"limit must be 1-10000, got {limit}")
+    if offset < 0:
+        raise ValueError("offset must be ≥ 0")
+
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit, offset=offset)
+```
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Schema definition with limits
-type Query {
-  users(
-    limit: Int = 20
-    offset: Int = 0
-  ): [User!]!
-}
-
-# Validation rules (compiled):
-# limit: [1, 10000]       # Can't fetch more than 10k at once
-# offset: [0, ∞)          # Can start at any position
-
 # ✅ Valid request
 query {
   users(limit: 100, offset: 200) { id name }
@@ -684,218 +668,137 @@ query {
 query {
   users(limit: 100000, offset: 0) { id name }
 }
-# Error: Validation { message: "Parameter 'limit' must be ≤ 10000" }
-```text
-<!-- Code example in TEXT -->
+# Error: "limit must be 1-10000"
+```
 
-**Implementation:**
+### Practice 3: String Safety (Implicit via Parameterization)
 
-```rust
-<!-- Code example in RUST -->
-// Runtime parameter validation (before SQL execution)
-fn validate_parameters(params: &QueryParams) -> Result<()> {
-    let limit = params.limit.unwrap_or(20);
-    let offset = params.offset.unwrap_or(0);
-
-    if !(1..=10000).contains(&limit) {
-        return Err(FraiseQLError::validation(
-            format!("limit must be 1-10000, got {}", limit)
-        ));
-    }
-
-    if offset < 0 {
-        return Err(FraiseQLError::validation(
-            "offset must be ≥ 0"
-        ));
-    }
-
-    Ok(())
-}
-```text
-<!-- Code example in TEXT -->
-
-### Practice 3: String Sanitization (Implicit via Parameterization)
-
-FraiseQL prevents SQL injection by never interpolating user input into SQL strings:
+FraiseQL prevents SQL injection by never interpolating user input into SQL strings. Values are always passed as bound parameters:
 
 ```python
-<!-- Code example in Python -->
-# ❌ UNSAFE (don't do this):
-query = f"SELECT * FROM users WHERE name = '{user_input}'"
-# If user_input = "' OR '1'='1", this becomes:
-# SELECT * FROM users WHERE name = '' OR '1'='1'  <- SQL injection!
+# ❌ UNSAFE (never do this):
+query = f"SELECT * FROM tb_user WHERE name = '{user_input}'"
+# If user_input = "' OR '1'='1", this becomes a SQL injection.
 
-# ✅ SAFE (what FraiseQL does automatically):
-query = "SELECT * FROM users WHERE name = ?"
-params = [user_input]
-# Parameterized query - user_input is treated as pure data, never as SQL
-```text
-<!-- Code example in TEXT -->
+# ✅ SAFE (what FraiseQL does internally — parameterized):
+await db.fetchval("SELECT * FROM tb_user WHERE name = $1", user_input)
+# user_input is treated as pure data, never as SQL
+```
 
-FraiseQL handles this internally:
-
-```rust
-<!-- Code example in RUST -->
-// User provides:
-query_params: { userId: "123\"; DROP TABLE users; --" }
-
-// FraiseQL generates:
-// SQL: SELECT * FROM posts WHERE pk_user = $1
-// Params: ["123\"; DROP TABLE users; --"]
-// The harmful string is treated as pure data, not executed
-```text
-<!-- Code example in TEXT -->
+Mutation arguments reach PostgreSQL the same way — `db.execute_function("fn_x", {...})` binds the payload as a JSONB parameter, so a hostile string is data, not executable SQL.
 
 ### Practice 4: Enumeration over Free Text
 
 Use enums to restrict input to valid values:
 
 ```python
-<!-- Code example in Python -->
+import fraiseql
 from enum import Enum
-from FraiseQL import type, field
+from fraiseql.types import ID
 
+@fraiseql.enum
 class UserRole(str, Enum):
     ADMIN = "admin"
     EDITOR = "editor"
     VIEWER = "viewer"
 
-@type
+@fraiseql.input
 class UpdateUserInput:
-    id: UUID  # UUID v4 for GraphQL ID
-    role: UserRole  # ← Restricted to 3 valid values
+    id: ID
+    role: UserRole  # ← Restricted to three valid values
+```
 
-# Valid requests:
+```graphql
+# Valid request
 mutation {
-  updateUser(input: {id: 1, role: ADMIN})  # ✅
+  updateUser(input: { id: "…", role: ADMIN }) { __typename }
 }
 
-# Invalid requests:
+# Invalid request
 mutation {
-  updateUser(input: {id: 1, role: "superuser"})  # ❌
-  # Error: Validation { message: "Expected one of [admin, editor, viewer]" }
+  updateUser(input: { id: "…", role: "superuser" }) { __typename }
+  # Error: "Expected one of [ADMIN, EDITOR, VIEWER]"
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## Authorization Patterns
 
+Authorization in FraiseQL v1 is implemented in Python. The authenticated principal is carried in `info.context`, and resolvers (often through a shared authorization helper) decide whether to allow an operation or filter a field. The patterns below describe how to structure those decisions; for the supported decision API see [Authorization](../security/authorization.md).
+
 ### Pattern 1: Role-Based Access Control (RBAC)
 
-Control access based on user role:
+Control access based on user role. Check the role in the resolver before fetching or returning sensitive fields:
 
 ```python
-<!-- Code example in Python -->
-from FraiseQL import type, field, permission
+@fraiseql.query
+async def post(info, id: ID) -> Post | None:
+    db = info.context["db"]
+    row = await db.find_one("v_post", id=id)
+    if row is None:
+        return None
 
-@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    title: str
-
-    @permission("read", roles=["viewer", "editor", "admin"])
-    secret: str
-
-    @permission("write", roles=["editor", "admin"])
-    def update(self, title: str) -> Post:
-        pass
-
-# User with role='viewer': Can read post.title, but not post.secret
-# User with role='editor': Can read and write everything
-# User with role='admin': Can do anything
-```text
-<!-- Code example in TEXT -->
-
-**Runtime enforcement:**
-
-```rust
-<!-- Code example in RUST -->
-// When resolving 'secret' field
-match user.role {
-    Role::Viewer => Err(FraiseQLError::unauthorized("viewers cannot read post.secret")),
-    Role::Editor | Role::Admin => Ok(secret_value),
-}
-```text
-<!-- Code example in TEXT -->
+    user = info.context.get("user")
+    # Only editors and admins may see the `secret` field
+    if user is None or user.role not in {"editor", "admin"}:
+        row.secret = None
+    return row
+```
 
 ### Pattern 2: Ownership-Based Access Control
 
-Control access based on data ownership:
-
-```python
-<!-- Code example in Python -->
-@type
-class Post:
-    id: UUID  # UUID v4 for GraphQL ID
-    title: str
-
-    @permission(
-        "read",
-        rule="owner_id == current_user_id OR is_published"
-    )
-    content: str
-
-# Only the post's author or readers of published posts can read content
-```text
-<!-- Code example in TEXT -->
-
-**SQL with authorization:**
+Control access based on data ownership. The cleanest place to enforce ownership is in the read view itself, which can mask fields the caller does not own:
 
 ```sql
-<!-- Code example in SQL -->
--- Query: user_123 requests unpublished post_456
--- Rule: owner_id == $1 OR is_published
-
--- Generated SQL:
+-- v_post exposes `content` only to the owner or when the post is published.
+CREATE VIEW v_post AS
 SELECT
-  pk_post_id, title,
-  CASE
-    WHEN owner_id = $1 OR is_published THEN content
-    ELSE NULL  -- Unauthorized
-  END AS content
-FROM tb_post
-WHERE pk_post_id = 456
--- User 456 can only see content if they own it or it's published
-```text
-<!-- Code example in TEXT -->
+    p.id,
+    jsonb_build_object(
+        'id', p.id,
+        'title', p.title,
+        'content',
+            CASE
+                WHEN p.fk_owner = current_setting('app.current_user_pk', true)::BIGINT
+                     OR p.is_published
+                THEN p.content
+                ELSE NULL
+            END
+    ) AS data
+FROM tb_post p;
+```
+
+The resolver sets `app.current_user_pk` for the session from the authenticated principal before reading, so the view applies the ownership rule per request.
 
 ### Pattern 3: Attribute-Based Access Control (ABAC)
 
-Control access based on user attributes, resource attributes, and context:
+Control access based on user attributes, resource attributes, and context. Express the combined rule in a Python authorization helper invoked by the resolver:
 
 ```python
-<!-- Code example in Python -->
-@type
-class Document:
-    id: UUID  # UUID v4 for GraphQL ID
-    title: str
-
-    @permission(
-        "read",
-        rule="""
-        user.department == resource.department
-        AND (resource.classification < user.clearance
-             OR resource.owner_id == user.id)
-        """
+def can_read_document(user, doc) -> bool:
+    return (
+        user.department == doc.department
+        and (doc.classification < user.clearance or doc.owner_id == user.id)
     )
-    content: str
 
-# User can read if:
-# 1. They're in the same department, AND
-# 2. Either the document is less classified than their clearance, OR they own it
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query
+async def document(info, id: ID) -> Document | None:
+    db = info.context["db"]
+    doc = await db.find_one("v_document", id=id)
+    user = info.context.get("user")
+    if doc is None or user is None or not can_read_document(user, doc):
+        return None
+    return doc
+```
 
 ---
 
 ## Common Error Scenarios and Recovery
 
-### Scenario 1: User Tries to Access Unauthorized Resource
+### Scenario 1: User Tries to Access an Unauthorized Field
 
 ```graphql
-<!-- Code example in GraphQL -->
 # User 'alice' with role 'viewer' requests:
 query {
   post(id: 123) {
@@ -903,13 +806,11 @@ query {
     secret      # ❌ Denied for viewers
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Response:**
 
 ```json
-<!-- Code example in JSON -->
 {
   "data": {
     "post": {
@@ -920,188 +821,110 @@ query {
   "errors": [
     {
       "message": "Authorization error: viewers cannot read post.secret",
-      "code": "FORBIDDEN",
+      "extensions": { "code": "FORBIDDEN" },
       "path": ["post", "secret"]
     }
   ]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Client recovery:**
 
-```typescript
-<!-- Code example in TypeScript -->
-try {
-  const result = await client.query(query);
+```python
+result = await client.execute(query)
 
-  if (result.errors) {
-    // Filter errors by type
-    const authErrors = result.errors.filter(e => e.code === 'FORBIDDEN');
-    const otherErrors = result.errors.filter(e => e.code !== 'FORBIDDEN');
+if result.errors:
+    auth_errors = [e for e in result.errors if e["extensions"]["code"] == "FORBIDDEN"]
+    other_errors = [e for e in result.errors if e["extensions"]["code"] != "FORBIDDEN"]
 
-    if (authErrors.length > 0 && result.data) {
-      // Partially available - show what we have
-      showData(result.data);
-      showNotification(`Some fields unavailable (${authErrors.length} access denied)`);
-    } else {
-      // Complete failure
-      throw new Error(otherErrors[0].message);
-    }
-  } else {
-    showData(result.data);
-  }
-} catch (error) {
-  showError(error.message);
-}
-```text
-<!-- Code example in TEXT -->
+    if auth_errors and result.data:
+        # Partially available — show what we have
+        show_data(result.data)
+        notify(f"Some fields unavailable ({len(auth_errors)} access denied)")
+    elif other_errors:
+        raise RuntimeError(other_errors[0]["message"])
+else:
+    show_data(result.data)
+```
 
 ### Scenario 2: Database Connection Lost
 
 ```text
-<!-- Code example in TEXT -->
 Database operation fails with ConnectionPool error
 ↓
-Retryable: Yes (eventually, connections will become available)
+Retryable: Yes (connections will eventually become available)
 ↓
 Client strategy: Retry with exponential backoff
-```text
-<!-- Code example in TEXT -->
+```
 
-**Implementation:**
-
-```rust
-<!-- Code example in RUST -->
-pub async fn execute_with_connection_retry(
-    query: &str,
-    max_retries: u32,
-) -> Result<Vec<Row>> {
-    let mut attempt = 0;
-
-    loop {
-        match execute_sql(query).await {
-            Ok(rows) => return Ok(rows),
-            Err(FraiseQLError::ConnectionPool { .. }) => {
-                attempt += 1;
-                if attempt >= max_retries {
-                    return Err(FraiseQLError::ConnectionPool {
-                        message: format!("Failed after {} retries", max_retries),
-                    });
-                }
-
-                // Exponential backoff: 100ms, 200ms, 400ms, ...
-                let wait_ms = 100 * 2_u64.pow(attempt - 1);
-                tokio::time::sleep(Duration::from_millis(wait_ms)).await;
-            }
-            Err(e) => return Err(e),  // Non-retryable error
-        }
-    }
-}
-```text
-<!-- Code example in TEXT -->
+```python
+async def execute_with_connection_retry(client, query, max_retries: int = 3):
+    attempt = 0
+    while True:
+        try:
+            return await client.execute(query)
+        except ConnectionPoolError:
+            attempt += 1
+            if attempt >= max_retries:
+                raise
+            # Exponential backoff: 100ms, 200ms, 400ms, ...
+            await asyncio.sleep(0.1 * 2 ** (attempt - 1))
+```
 
 ### Scenario 3: Query Exceeds Timeout
 
 ```text
-<!-- Code example in TEXT -->
-Query execution exceeds 30s limit
+Query execution exceeds the statement timeout
 ↓
-Error: Timeout { timeout_ms: 30000 }
+Error: "Query exceeded the 30000ms statement timeout"
 ↓
-Retryable: Possibly (with simpler query or raised timeout)
+Retryable: Possibly (with a simpler query or a raised timeout)
 ↓
 Client strategy: Retry with reduced complexity
-```text
-<!-- Code example in TEXT -->
+```
 
-**Implementation:**
+```python
+FULL_REPORT = """
+  query { sales(year: 2024) { id date revenue costs margin region } }
+"""
 
-```graphql
-<!-- Code example in GraphQL -->
-# Original query (expensive analytics)
-query FullReport {
-  sales(year: 2024) {
-    id
-    date
-    revenue
-    costs
-    margin
-    region
-    product_category
-    customer_segment
-  }
-}
+QUICK_REPORT = """
+  query { sales(year: 2024) { date revenue costs } }
+"""
 
-# Fallback query (reduced dimensions)
-query QuickReport {
-  sales(year: 2024) {
-    date
-    revenue
-    costs
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-```typescript
-<!-- Code example in TypeScript -->
-async function getReport() {
-  try {
-    console.log("Fetching full report...");
-    return await client.query(FullReport);
-  } catch (error) {
-    if (error.code === 'TIMEOUT') {
-      console.warn('Full report timeout, using simplified view');
-      return await client.query(QuickReport);
-    }
-    throw error;
-  }
-}
-```text
-<!-- Code example in TEXT -->
+async def get_report(client):
+    try:
+        return await client.execute(FULL_REPORT)
+    except FraiseQLError as error:
+        if error.code == "TIMEOUT":
+            return await client.execute(QUICK_REPORT)
+        raise
+```
 
 ### Scenario 4: Data Constraint Violation
 
 ```text
-<!-- Code example in TEXT -->
-User tries to create duplicate username
+User tries to create a duplicate username
 ↓
-INSERT violates UNIQUE constraint
+INSERT violates a UNIQUE constraint
 ↓
-Error: Database { sql_state: "23505" }
+Error: SQLSTATE 23505 (unique_violation)
 ↓
 Retryable: No (constraint violation, not transient)
 ↓
-Client strategy: Show error, ask user for different username
-```text
-<!-- Code example in TEXT -->
+Client strategy: Show error, ask for a different username
+```
 
-**Implementation:**
+Most commonly this is caught inside `fn_create_user` (Layer 4 above) and returned as a typed `CreateUserError` with `code = "CONFLICT"`. If a race slips past the check, the raw `Database` error is surfaced:
 
-```typescript
-<!-- Code example in TypeScript -->
-async function createUser(username: string, email: string) {
-  try {
-    const result = await client.mutate(CreateUserMutation, {
-      username,
-      email
-    });
-    return result;
-  } catch (error) {
-    if (error.code === 'DATABASE_ERROR') {
-      if (error.extensions.sql_state === '23505') {
-        // Unique constraint violation
-        throw new UserFriendlyError(
-          "This username is already taken. Please try another."
-        );
-      }
-    }
-    throw error;
-  }
-}
-```text
-<!-- Code example in TEXT -->
+```python
+async def create_user(client, username: str, email: str):
+    result = await client.execute(CREATE_USER_MUTATION, {"username": username, "email": email})
+    payload = result.data["createUser"]
+    if payload["__typename"] == "CreateUserError" and payload["code"] == "CONFLICT":
+        raise UserFriendlyError("This username is already taken. Please try another.")
+    return payload
+```
 
 ---
 
@@ -1110,63 +933,56 @@ async function createUser(username: string, email: string) {
 ### Scenario A: Simple Read Query
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
-  user(id: 1) {
+  user(id: "…") {
     name
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Validation order:**
 
 1. ✅ Parse GraphQL syntax
-2. ✅ Validate 'user' query exists
-3. ✅ Validate 'id' parameter is Int
-4. ✅ Validate 'name' field exists on User type
-5. ✅ Check authorization (user can read User.name)
-6. ✅ Execute SQL: SELECT name FROM tb_user WHERE pk_user = $1
-7. ✅ Check authorization (post-fetch, if any field-level rules)
+2. ✅ Validate that the `user` query exists
+3. ✅ Validate that `id` is an `ID`
+4. ✅ Validate that `name` exists on the `User` type
+5. ✅ Check authorization (caller may read `User.name`)
+6. ✅ Execute SQL: `SELECT data FROM v_user WHERE id = $1`
+7. ✅ Apply field-level authorization (if any)
 8. ✅ Format JSON response
 9. ✅ Return result
 
 ### Scenario B: Mutation with Input Validation
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation {
   createPost(input: {
     title: "New Post"
     content: "Content here"
-    tags: ["rust", "graphql"]
+    tags: ["postgres", "graphql"]
   }) {
-    id
-    title
+    __typename
+    ... on CreatePostSuccess { post { id title } }
+    ... on CreatePostError { message code }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Validation order:**
 
 1. ✅ Parse GraphQL syntax
-2. ✅ Validate 'createPost' mutation exists
-3. ✅ Validate 'input' structure matches PostInput type:
-   - title: String (length: 1-500) ✅
-   - content: String (length: 1-10000) ✅
-   - tags: [String] (max items: 10) ✅
-4. ✅ Check authorization (user can write posts)
-5. ✅ Execute SQL: INSERT INTO tb_post (title, content) VALUES ($1, $2)
-6. ✅ Validate FOREIGN KEY constraints (tags table exists, etc.)
-7. ✅ If constraint violation: Database error (non-retryable)
-8. ✅ Format response with created post
-9. ✅ Return result
+2. ✅ Validate that the `createPost` mutation exists
+3. ✅ Validate that `input` matches the `CreatePostInput` shape
+4. ✅ Resolver business validation (lengths, item counts)
+5. ✅ Check authorization (caller may write posts)
+6. ✅ Call `fn_create_post` — it validates and inserts into `tb_post`
+7. ✅ The function returns `{success, message, code, ...}` JSONB
+8. ✅ Resolver maps the result to `CreatePostSuccess` or `CreatePostError`
+9. ✅ Return the union result
 
-### Scenario C: Complex Analytics Query
+### Scenario C: Nested Read Query
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   salesByRegion(limit: 100, year: 2024) {
     region
@@ -1178,36 +994,35 @@ query {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **Validation order:**
 
 1. ✅ Parse GraphQL syntax
-2. ✅ Validate 'salesByRegion' query exists
-3. ✅ Validate parameters: limit (1-10000), year (1900-2100)
-4. ✅ Check authorization (user can read analytics)
-5. ✅ Check authorization (post-fetch filtering on sensitive fields)
-6. ✅ Execute Arrow Flight streaming query (large result set)
-7. ✅ If timeout: Return Timeout error after 30s
-8. ✅ If connection pool exhausted: Return ConnectionPool error (retryable)
-9. ✅ Format Arrow response (binary, 5-10x smaller than JSON)
+2. ✅ Validate that `salesByRegion` exists
+3. ✅ Validate parameters: `limit` (1–10000), `year` (1900–2100)
+4. ✅ Check authorization (caller may read this data)
+5. ✅ Apply field-level authorization on sensitive fields
+6. ✅ Execute the read against the `tv_` projection view (pre-composed JSONB)
+7. ✅ If the statement times out: return a retryable `Timeout` error
+8. ✅ If the pool is exhausted: return a retryable `ConnectionPool` error
+9. ✅ Format the JSON response (Rust accelerates field selection on the hot path)
 10. ✅ Return result
 
 ---
 
 ## Validation Best Practices Checklist
 
-- [ ] **Fail early**: Catch errors at compile time when possible (types, references)
-- [ ] **Validate input types**: Ensure parameters match expected types before SQL execution
-- [ ] **Enforce range limits**: Set min/max for numeric inputs, length for strings
-- [ ] **Use enums**: Restrict categorical input to fixed set of valid values
+- [ ] **Validate input shapes**: Use `@fraiseql.input` types so parameters match expected types before SQL runs
+- [ ] **Enforce range limits**: Set min/max for numeric inputs and length for strings in the resolver
+- [ ] **Use enums**: Restrict categorical input to a fixed set of valid values
 - [ ] **Check authorization first**: Deny access before executing expensive queries
+- [ ] **Push business rules into PostgreSQL**: Let `fn_` functions and constraints be the final authority
 - [ ] **Classify errors**: Distinguish client errors (4xx) from server errors (5xx)
 - [ ] **Retry responsibly**: Only retry retryable errors (ConnectionPool, Timeout, Cancelled)
-- [ ] **Expose error codes**: Let clients distinguish error types by code, not message text
+- [ ] **Expose error codes**: Let clients distinguish error types by `code`, not message text
 - [ ] **Log errors consistently**: Include error code, user ID, resource, timestamp
-- [ ] **Don't leak internals**: Error messages to clients should not expose DB schema or system details
+- [ ] **Don't leak internals**: Client-facing messages should not expose DB schema or system details
 - [ ] **Track error rates**: Monitor error types and rates to detect issues early
 
 ---
@@ -1217,206 +1032,205 @@ query {
 ### E-Commerce: Order Creation with Full Validation
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation {
   createOrder(input: {
-    userId: 123
+    userId: "…"
     items: [
-      { productId: 1, quantity: 2 }
-      { productId: 2, quantity: 1 }
+      { productId: "…", quantity: 2 }
+      { productId: "…", quantity: 1 }
     ]
     shippingAddress: "123 Main St"
   }) {
-    orderId
-    status
-    total
+    __typename
+    ... on CreateOrderSuccess { orderId status total }
+    ... on CreateOrderError { message code }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Comprehensive error handling:**
+**Resolver: thin authorization + delegation to PostgreSQL:**
 
-```rust
-<!-- Code example in RUST -->
-pub async fn create_order(
-    input: CreateOrderInput,
-    user_id: i64,
-) -> Result<Order> {
-    // LAYER 1: Input validation (before DB access)
-    validate_order_input(&input)?;  // Errors: ValidationError (4xx)
+```python
+@fraiseql.mutation
+async def create_order(info, input: CreateOrderInput) -> CreateOrderSuccess | CreateOrderError:
+    # LAYER 1 — input validation
+    if not input.items:
+        return CreateOrderError(message="order must contain at least one item", code="VALIDATION_ERROR")
 
-    // LAYER 2: Authorization (before DB access)
-    check_user_exists(user_id).await?;  // Errors: NotFoundError (4xx)
-    check_user_can_order(user_id).await?;  // Errors: AuthorizationError (4xx)
+    # LAYER 2 — authorization (Python, before touching the database)
+    user = info.context.get("user")
+    if user is None:
+        return CreateOrderError(message="authentication required", code="UNAUTHENTICATED")
+    if not user.is_active:
+        return CreateOrderError(message="user is not active", code="FORBIDDEN")
 
-    // LAYER 3: Resource validation (before transaction)
-    let mut total_price = 0.0;
-    for item in &input.items {
-        let product = find_product(item.product_id).await?;
-        // Errors: NotFoundError (4xx), DatabaseError (5xx)
+    # LAYER 3 & 4 — stock check, totals, and the write happen atomically in fn_create_order
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_order", {
+        "user_id": str(input.user_id),
+        "items": [{"product_id": str(i.product_id), "quantity": i.quantity} for i in input.items],
+        "shipping_address": input.shipping_address,
+    })
 
-        if !product.in_stock(item.quantity) {
-            return Err(FraiseQLError::Conflict {
-                message: format!(
-                    "Product {} only has {} units available",
-                    product.id, product.stock_count
-                ),
-            });
-        }
+    if not result.get("success"):
+        return CreateOrderError(
+            message=result.get("message", "failed"),
+            code=result.get("code", "ERROR"),
+        )
+    return CreateOrderSuccess(
+        order_id=result["order_id"],
+        status=result["status"],
+        total=result["total"],
+    )
+```
 
-        total_price += product.price * item.quantity as f64;
-    }
+**PostgreSQL function: stock validation, totals, and the write in one transaction:**
 
-    // LAYER 4: Transaction execution (with retries for transient errors)
-    loop {
-        match execute_order_transaction(user_id, &input, total_price).await {
-            Ok(order) => return Ok(order),
+```sql
+CREATE FUNCTION fn_create_order(input JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    item        JSONB;
+    stock       INT;
+    total       NUMERIC := 0;
+    new_id      UUID;
+BEGIN
+    -- Validate stock for every item
+    FOR item IN SELECT * FROM jsonb_array_elements(input->'items')
+    LOOP
+        SELECT stock_count INTO stock
+        FROM tb_product
+        WHERE id = (item->>'product_id')::UUID;
 
-            Err(FraiseQLError::Timeout { .. }) => {
-                // Transient: Retry
-                warn!("Order creation timeout, retrying...");
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                continue;
-            }
+        IF stock IS NULL THEN
+            RETURN jsonb_build_object('success', false, 'code', 'NOT_FOUND',
+                'message', format('product %s not found', item->>'product_id'));
+        END IF;
 
-            Err(FraiseQLError::ConnectionPool { .. }) => {
-                // Transient: Retry
-                warn!("Connection pool exhausted, retrying...");
-                tokio::time::sleep(Duration::from_millis(200)).await;
-                continue;
-            }
+        IF stock < (item->>'quantity')::INT THEN
+            RETURN jsonb_build_object('success', false, 'code', 'CONFLICT',
+                'message', format('only %s units available', stock));
+        END IF;
+    END LOOP;
 
-            Err(FraiseQLError::Database { sql_state, .. }) => {
-                // Non-transient: Classify and return
-                match sql_state.as_deref() {
-                    Some("23505") => {  // Unique constraint
-                        return Err(FraiseQLError::Conflict {
-                            message: "Order already exists for this user at this time"
-                                .to_string(),
-                        });
-                    }
-                    Some("23503") => {  // Foreign key
-                        return Err(FraiseQLError::NotFound {
-                            resource_type: "Product".to_string(),
-                            identifier: format!("{}", input.items[0].product_id),
-                        });
-                    }
-                    _ => return Err(FraiseQLError::Database {
-                        message: "Failed to create order".to_string(),
-                        sql_state,
-                    }),
-                }
-            }
+    -- ... compute total, insert the order and line items, decrement stock ...
+    INSERT INTO tb_order (fk_user, shipping_address, total_amount)
+    VALUES (
+        (SELECT pk_user FROM tb_user WHERE id = (input->>'user_id')::UUID),
+        input->>'shipping_address',
+        total
+    )
+    RETURNING id INTO new_id;
 
-            Err(e) => return Err(e),  // Other errors: propagate
-        }
-    }
-}
-```text
-<!-- Code example in TEXT -->
+    RETURN jsonb_build_object(
+        'success', true,
+        'message', 'order created',
+        'order_id', new_id,
+        'status', 'pending',
+        'total', total
+    );
+END;
+$$;
+```
 
 **GraphQL response scenarios:**
 
 Success:
 
 ```json
-<!-- Code example in JSON -->
 {
   "data": {
     "createOrder": {
+      "__typename": "CreateOrderSuccess",
       "orderId": "ord_12345",
       "status": "pending",
       "total": 99.99
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 Validation error:
 
 ```json
-<!-- Code example in JSON -->
 {
-  "errors": [{
-    "message": "Validation error: quantity must be 1-1000",
-    "code": "GRAPHQL_VALIDATION_FAILED",
-    "path": ["createOrder"]
-  }]
+  "data": {
+    "createOrder": {
+      "__typename": "CreateOrderError",
+      "message": "order must contain at least one item",
+      "code": "VALIDATION_ERROR"
+    }
+  }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 Authorization error:
 
 ```json
-<!-- Code example in JSON -->
 {
-  "errors": [{
-    "message": "Authorization error: user is not active",
-    "code": "FORBIDDEN",
-    "extensions": {
-      "action": "create",
-      "resource": "Order"
+  "data": {
+    "createOrder": {
+      "__typename": "CreateOrderError",
+      "message": "user is not active",
+      "code": "FORBIDDEN"
     }
-  }]
+  }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Conflict error:
+Conflict error (insufficient stock, raised by the PostgreSQL function):
 
 ```json
-<!-- Code example in JSON -->
 {
-  "errors": [{
-    "message": "Conflict: Product 42 only has 5 units available",
-    "code": "CONFLICT"
-  }]
+  "data": {
+    "createOrder": {
+      "__typename": "CreateOrderError",
+      "message": "only 5 units available",
+      "code": "CONFLICT"
+    }
+  }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Database error (transient, should retry):
+Transient database error (surfaced as a top-level GraphQL error, should retry):
 
 ```json
-<!-- Code example in JSON -->
 {
   "errors": [{
-    "message": "Query timeout after 30000ms",
-    "code": "TIMEOUT",
+    "message": "Query timeout",
     "extensions": {
+      "code": "TIMEOUT",
       "retryable": true
     }
   }]
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## Related Topics
 
-- **2.1: Compilation Pipeline** - How errors are caught at compile time
-- **2.2: Query Execution Model** - How errors occur during runtime execution
-- **2.4: Type System** - Type validation and inference
-- **2.6: Compiled Schema Structure** - Schema definition with error metadata
-- **2.7: Performance Characteristics** - Impact of validation on performance
+- [Core Concepts](02-core-concepts.md) — How FraiseQL assembles a schema at startup
+- [Database-Centric Architecture](03-database-centric-architecture.md) — Why business logic lives in PostgreSQL functions
+- [Design Principles](04-design-principles.md) — The principles behind the success/error pattern
+- [Type System](09-type-system.md) — Type validation and inference
+- [Performance Characteristics](12-performance-characteristics.md) — Impact of validation on performance
+- [Authorization](../security/authorization.md) — FraiseQL's Python authorization model
+- [Concepts Glossary](../core/concepts-glossary.md) — Definitions of terms used here
 
 ---
 
 ## Summary
 
-FraiseQL's error handling strategy is **multi-layered**:
+FraiseQL's error handling strategy is **multi-layered** and entirely **runtime**:
 
-1. **Authoring time**: Python/TypeScript type checking prevents syntax errors
-2. **Compilation time**: `FraiseQL-cli` validates schema structure and relationships
-3. **Request time**: Parameter types, ranges, and authorization checked before SQL
-4. **Execution time**: Database constraints, timeouts, and post-fetch rules applied
+1. **Authoring time**: Python type checking prevents annotation mistakes
+2. **Schema assembly (startup)**: FraiseQL validates type references and read sources in memory
+3. **Request time**: Parameter types, ranges, and authorization are checked in Python before SQL runs
+4. **Execution time**: PostgreSQL `fn_` functions and constraints enforce business rules and surface conflicts
 
-Errors are **classified** (client vs server, retryable vs permanent), **exposed** as structured JSON with error codes, and **recoverable** through intelligent retry logic.
+Errors are **classified** (client vs server, retryable vs permanent), **exposed** as structured JSON with error codes, and **recoverable** through intelligent retry logic. Mutations return a typed `success | error` union so clients branch on the concrete result type.
 
-Validation follows best practices: **fail early** (catch at compilation if possible), **validate at boundaries** (user input only), **use strong types** (enums over strings), and **check authorization first** (before expensive operations).
-
-With these patterns, FraiseQL applications can handle errors confidently, providing better user experience through targeted error messages and graceful degradation.
+Validation follows best practices: **validate at boundaries** (input types), **use strong types** (enums over strings), **check authorization first** (before expensive operations), and **push business rules into PostgreSQL** (functions and constraints as the final authority).

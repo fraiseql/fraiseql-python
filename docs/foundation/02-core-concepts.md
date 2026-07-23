@@ -1,16 +1,13 @@
-<!-- Skip to main content -->
 ---
-
-title: 1.2: Core Concepts & Terminology
-description: Before diving into FraiseQL's architecture and capabilities, you need to understand the vocabulary and mental models that underpin the system. This topic define
-keywords: ["query-execution", "data-planes", "graphql", "compilation", "architecture"]
+title: Core Concepts & Terminology
+description: The vocabulary and mental models that underpin FraiseQL. This topic defines the core concepts that appear throughout the documentation and helps you build the right mental model for how the framework works at runtime.
+keywords: ["graphql", "postgresql", "runtime-schema", "database-centric", "architecture"]
 tags: ["documentation", "reference"]
 ---
 
-# 1.2: Core Concepts & Terminology
+# Core Concepts & Terminology
 
 **Audience:** All users (developers, architects, operations)
-**Prerequisite:** Topic 1.1 (What is FraiseQL?)
 **Reading Time:** 15-20 minutes
 
 ---
@@ -21,6 +18,8 @@ Before diving into FraiseQL's architecture and capabilities, you need to underst
 
 **Key insight:** FraiseQL uses database-native vocabulary, not application code vocabulary. This is intentional and reflects its philosophy: databases are the source of truth, not an afterthought.
 
+FraiseQL is a **runtime GraphQL framework for PostgreSQL**. You author types, queries, and mutations as decorated Python; the GraphQL schema is assembled in memory at application startup and served over FastAPI. There is no build step and no compiled artifact.
+
 ---
 
 ## Part 1: Core Terminology
@@ -29,7 +28,7 @@ Before diving into FraiseQL's architecture and capabilities, you need to underst
 
 **Definition:** A complete specification of your API's structure, including all types, fields, relationships, and validation rules.
 
-In FraiseQL, a schema is authored once (in Python or TypeScript) and defines:
+In FraiseQL, a schema is authored once in Python and defines:
 
 - What types exist (User, Order, Product, etc.)
 - What fields each type has (name, email, created_at, etc.)
@@ -38,19 +37,20 @@ In FraiseQL, a schema is authored once (in Python or TypeScript) and defines:
 - Authorization rules (who can access what)
 
 ```python
-<!-- Code example in Python -->
+import fraiseql
+from fraiseql.types import ID
+
 # Schema definition (Python)
-@FraiseQL.type
+@fraiseql.type(sql_source="v_user")
 class User:
     """User in the system"""
-    user_id: int              # Field: unique identifier
-    username: str             # Field: text name
+    id: ID                    # Field: public UUID identifier
+    name: str                 # Field: text name
     email: str                # Field: email address
-    orders: List[Order]       # Relationship: one user has many orders
+    orders: list[Order]       # Relationship: one user has many orders
     is_active: bool           # Field: boolean flag
-    created_at: datetime      # Field: timestamp
-```text
-<!-- Code example in TEXT -->
+    created_at: str           # Field: timestamp
+```
 
 **Mental model:** Schema is a *contract* between your client and server. It says "these are the exact types, fields, and relationships available to query."
 
@@ -65,56 +65,57 @@ FraiseQL has several type categories:
 **1. Object Types** - Represent entities in your domain
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_user")
 class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
+    id: ID
+    name: str
     email: str
 
-@FraiseQL.type
+@fraiseql.type(sql_source="v_order")
 class Order:
-    order_id: UUID  # UUID v4 for GraphQL ID
-    total: Decimal
-    created_at: datetime
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    total: float
+    created_at: str
+```
 
 **2. Scalar Types** - Basic values (strings, numbers, dates, etc.)
 
 ```text
-<!-- Code example in TEXT -->
-String    → text (username, email, description)
-Int       → whole numbers (user_id, quantity)
-Float     → decimal numbers (price, rating)
-Boolean   → true/false (is_active, has_shipped)
-DateTime  → timestamps (created_at, updated_at)
-Date      → just dates (birthday, due_date)
-UUID      → unique identifiers (tracking IDs)
-Decimal   → precise decimals (prices, amounts)
-JSON      → arbitrary data (metadata, config)
-```text
-<!-- Code example in TEXT -->
+String        → text (name, email, description)
+Int           → whole numbers (quantity)
+Float         → decimal numbers (price, rating)
+Boolean       → true/false (is_active, has_shipped)
+DateTime      → timestamps (created_at, updated_at)
+Date          → just dates (birthday, due_date)
+ID            → public UUID identifiers
+JSON          → arbitrary data (metadata, config)
+EmailAddress  → validated email strings
+```
+
+FraiseQL ships these scalars from `fraiseql.types`: `ID`, `Date`, `DateTime`, `EmailAddress`, `JSON`, `LTree`, plus many domain-specific scalars.
 
 **3. Enum Types** - Limited set of named values
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.enum
+import fraiseql
+
+@fraiseql.enum
 class OrderStatus:
     PENDING = "pending"
     PROCESSING = "processing"
     SHIPPED = "shipped"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
-```text
-<!-- Code example in TEXT -->
+```
 
 **4. Interface Types** - Shared fields across multiple types (advanced)
 
 **5. Union Types** - "One of these types" (advanced)
 
-**Mental model:** Types are *blueprints*. Just like a database table defines the columns and their types, a GraphQL type defines the fields and their types.
+**Mental model:** Types are *blueprints*. Just like a database view defines the columns and their types, a GraphQL type defines the fields and their types.
 
 ---
 
@@ -123,31 +124,29 @@ class OrderStatus:
 **Definition:** A named value within a type, with a specific data type and optional validation rules.
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_product")
 class Product:
-    product_id: int          # Field name: product_id, type: Int
+    id: ID                   # Field name: id, type: ID
     name: str                # Field name: name, type: String
-    price: Decimal           # Field name: price, type: Decimal
+    price: float             # Field name: price, type: Float
     in_stock: bool           # Field name: in_stock, type: Boolean
-    created_at: datetime     # Field name: created_at, type: DateTime
-```text
-<!-- Code example in TEXT -->
+    created_at: str          # Field name: created_at, type: DateTime
+```
 
 **Field modifiers:**
 
 ```python
-<!-- Code example in Python -->
 # Required (must always have a value)
 name: str                    # Required - cannot be null
 
 # Optional (can be null/absent)
 middle_name: str | None      # Optional - can be null
-nickname: Optional[str]      # Alternative Python syntax
-```text
-<!-- Code example in TEXT -->
+```
 
-**Mental model:** Fields are *columns in a database table*. Each field has a name, type, and nullability.
+**Mental model:** Fields are *columns in a database view*. Each field has a name, type, and nullability.
 
 ---
 
@@ -156,25 +155,38 @@ nickname: Optional[str]      # Alternative Python syntax
 **Definition:** A read operation that retrieves data from the system without modifying it.
 
 ```graphql
-<!-- Code example in GraphQL -->
 # A query is a request for data
 query GetUser {
-  user(id: 1) {
-    user_id
-    username
+  user(id: "00000000-0000-0000-0000-000000000001") {
+    id
+    name
     email
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **How it works in FraiseQL:**
 
-1. Query is received by server
-2. Server looks up pre-compiled SQL template for this query shape
-3. Server binds variables (id = 1) to parameters
-4. Server executes SQL on database
-5. Server formats results and returns
+1. The query arrives at the FastAPI GraphQL endpoint.
+2. The query resolver — registered with `@fraiseql.query` — runs.
+3. It reads from a `v_`/`tv_` view through the repository, e.g. `await db.find_one("v_user", id=id)`.
+4. PostgreSQL returns the view's `data` JSONB.
+5. FraiseQL shapes the result to exactly the GraphQL fields the client requested.
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", id=id)
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
+```
 
 **Mental model:** A query is a *SELECT statement*. It specifies what data you want and returns results without modifying the database.
 
@@ -185,64 +197,79 @@ query GetUser {
 **Definition:** A write operation that modifies data (creates, updates, or deletes).
 
 ```graphql
-<!-- Code example in GraphQL -->
 # A mutation modifies data
-mutation CreateOrder {
-  createOrder(input: {
-    user_id: 1
-    total: 99.99
+mutation CreateUser {
+  createUser(input: {
+    name: "Ada"
+    email: "ada@example.com"
   }) {
-    order_id
-    status
-    created_at
+    ... on CreateUserSuccess {
+      user { id name email }
+    }
+    ... on CreateUserError {
+      message
+      code
+    }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 **How it works in FraiseQL:**
 
-1. Mutation is received by server
-2. Authorization rules checked (can user modify this data?)
-3. Validation rules checked (are all required fields present?)
-4. Server looks up pre-compiled SQL template for this mutation
-5. Server executes SQL on database (INSERT, UPDATE, or DELETE)
-6. Server formats result and returns
+1. The mutation arrives at the FastAPI GraphQL endpoint.
+2. Authorization is checked (can this user perform this write?).
+3. Input arguments are validated and coerced against the GraphQL types.
+4. The mutation resolver calls a PostgreSQL `fn_` function through the repository, e.g. `await db.execute_function("fn_create_user", {...})`.
+5. The function performs validation plus the write inside the database and returns JSONB indicating success or failure.
+6. FraiseQL returns the success or error payload to the client.
 
-**Mental model:** A mutation is an *INSERT, UPDATE, or DELETE statement*. It modifies the database and returns the modified data.
+```python
+import fraiseql
+
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user",
+        {"name": input.name, "email": input.email},
+    )
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"))
+    return CreateUserSuccess(user=User(**result["user"]))
+```
+
+**Mental model:** A mutation is an *INSERT, UPDATE, or DELETE* — but in FraiseQL the DML lives inside a PostgreSQL function. The function modifies the database and returns the result.
 
 ---
 
 ### Resolver
 
-**Definition:** Logic that determines what data to return for a field or relationship.
+**Definition:** Logic that determines what data to return for a field or operation.
 
-In traditional GraphQL servers, resolvers are *custom code* you write:
-
-```javascript
-<!-- Code example in JAVASCRIPT -->
-// Apollo Server - Traditional resolver (you write this)
-const userResolver = async (parent, args, context) => {
-  return db.query("SELECT * FROM tb_user WHERE pk_user = ?", [args.id]);
-};
-```text
-<!-- Code example in TEXT -->
-
-In FraiseQL, resolvers are *automatically generated* at compile time:
+In traditional GraphQL servers, resolvers are *custom code* you write by hand for every field:
 
 ```python
-<!-- Code example in Python -->
-# FraiseQL - Resolver compiled, not written
-@FraiseQL.type
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
-    # Resolver for user_id field automatically generated
-    # Resolver maps to: SELECT pk_user FROM tb_user WHERE ...
-```text
-<!-- Code example in TEXT -->
+# Traditional GraphQL - hand-written resolver
+async def user_resolver(parent, info, id):
+    return await db.fetchrow("SELECT * FROM users WHERE id = $1", id)
+```
 
-**Mental model:** A resolver is the *glue between GraphQL and database*. In FraiseQL, this glue is generated and optimized at compile time, not written by hand.
+In FraiseQL, you write resolvers for **operations** (`@fraiseql.query` / `@fraiseql.mutation`), and FraiseQL generates the per-field resolvers automatically at runtime when the schema is built. Field resolvers read straight from the view's `data` JSONB, so you do not write glue code per field:
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+# Field resolvers are generated when the schema is built at startup
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+    email: str
+    # FraiseQL reads each field from the `data` JSONB of v_user
+```
+
+**Mental model:** A resolver is the *glue between GraphQL and the database*. In FraiseQL, the field-level glue is generated at startup from your decorated types — you only hand-write the query and mutation entry points.
 
 ---
 
@@ -253,65 +280,68 @@ class User:
 **One-to-Many** (User has many Orders):
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
-    orders: List[Order]  # One user → many orders
+import fraiseql
+from fraiseql.types import ID
 
-@FraiseQL.type
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+    orders: list[Order]  # One user → many orders
+
+@fraiseql.type(sql_source="v_order")
 class Order:
-    order_id: UUID  # UUID v4 for GraphQL ID
-    total: Decimal
-    fk_user: int         # Foreign key back to user
-```text
-<!-- Code example in TEXT -->
+    id: ID
+    total: float
+```
 
 **Many-to-One** (Order belongs to User):
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_order")
 class Order:
-    order_id: UUID  # UUID v4 for GraphQL ID
-    total: Decimal
+    id: ID
+    total: float
     user: User           # Many orders → one user
-```text
-<!-- Code example in TEXT -->
+```
 
 **Many-to-Many** (Students enroll in Courses):
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class Student:
-    student_id: UUID  # UUID v4 for GraphQL ID
-    name: str
-    courses: List[Course]  # Many students → many courses
+import fraiseql
+from fraiseql.types import ID
 
-@FraiseQL.type
-class Course:
-    course_id: UUID  # UUID v4 for GraphQL ID
+@fraiseql.type(sql_source="v_student")
+class Student:
+    id: ID
     name: str
-    students: List[Student]  # Many courses → many students
-```text
-<!-- Code example in TEXT -->
+    courses: list[Course]  # Many students → many courses
+
+@fraiseql.type(sql_source="v_course")
+class Course:
+    id: ID
+    name: str
+    students: list[Student]  # Many courses → many students
+```
 
 **Self-Relationships** (Employee has manager):
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_employee")
 class Employee:
-    employee_id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
     manager: Employee | None  # Self-relationship
-    reports: List[Employee]   # Reverse relationship
-```text
-<!-- Code example in TEXT -->
+    reports: list[Employee]   # Reverse relationship
+```
 
-**Mental model:** Relationships are *foreign keys in databases*. They connect tables and define how data relates.
+**Mental model:** Relationships are *foreign keys in databases*. They connect tables and define how data relates. The read views compose related data into the `data` JSONB so nested fields are served without N+1 round-trips.
 
 ---
 
@@ -348,178 +378,168 @@ A schema is a contract between client and server:
 
 ### Mental Model 2: "Types Map to Database Tables"
 
-In FraiseQL, types directly correspond to database tables:
+In FraiseQL, types correspond to database structures — you read from a view and write through tables and functions:
 
 ```python
-<!-- Code example in Python -->
-# GraphQL Type
-@FraiseQL.type
+import fraiseql
+from fraiseql.types import ID
+
+# GraphQL Type, backed by a read view
+@fraiseql.type(sql_source="v_user")
 class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-    username: str
+    id: ID
+    name: str
     email: str
 
-# Maps directly to database table
+# Backed by a write table + read view
 # CREATE TABLE tb_user (
-#     pk_user BIGINT PRIMARY KEY,
-#     username VARCHAR(255),
-#     email VARCHAR(255)
+#     pk_user BIGINT PRIMARY KEY,   -- internal, never exposed
+#     id      UUID NOT NULL,        -- public id
+#     name    VARCHAR(255),
+#     email   VARCHAR(255)
 # );
-```text
-<!-- Code example in TEXT -->
+#
+# CREATE VIEW v_user AS
+# SELECT id, jsonb_build_object('id', id, 'name', name, 'email', email) AS data
+# FROM tb_user WHERE deleted_at IS NULL;
+```
 
 **Why this matters:**
 
 | Aspect | Implication |
 |--------|-------------|
-| **Table names** | Prefix with `tb_` (write tables) |
+| **Write tables** | Prefix with `tb_` (normalized, source of truth) |
+| **Read views** | Prefix with `v_` (expose a `data` JSONB column) |
 | **Column names** | Use snake_case (SQL convention) |
-| **Primary keys** | Named `pk_{table_singular}` |
-| **Foreign keys** | Named `fk_{table_singular}` |
-| **Type safety** | Python type = database column type |
-| **Relationships** | Foreign keys become GraphQL relationships |
+| **Internal keys** | `pk_*` / `fk_*` BIGINT keys — never exposed |
+| **Public id** | `id` UUID column becomes the GraphQL `id` |
+| **Relationships** | Composed into the view's `data` JSONB |
 
-**Mental model:** Your Python/TypeScript schema is *metadata about your database*. The database is the source of truth; schema describes it.
+**Mental model:** Your Python schema is *metadata about your database*. The database is the source of truth; the schema describes it.
 
 ---
 
 ### Mental Model 3: "Queries Map to SELECT Statements"
 
-Every GraphQL query compiles to a SQL SELECT statement:
+Every GraphQL query reads from a PostgreSQL view via a SELECT statement:
 
 ```graphql
-<!-- Code example in GraphQL -->
 # GraphQL Query
 query GetUser {
-  user(id: 1) {
-    user_id
-    username
+  user(id: "00000000-0000-0000-0000-000000000001") {
+    id
+    name
     orders {
-      order_id
+      id
       total
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Compiles to approximately:
+Reads from the `v_user` view, whose `data` JSONB already composes the nested orders:
 
 ```sql
-<!-- Code example in SQL -->
--- Compiled SQL (simplified)
-SELECT
-    u.pk_user,
-    u.username,
-    o.pk_order,
-    o.total
-FROM tb_user u
-LEFT JOIN tb_order o ON u.pk_user = o.fk_user
-WHERE u.pk_user = 1;
-```text
-<!-- Code example in TEXT -->
+-- Read path (simplified)
+SELECT data
+FROM v_user
+WHERE id = $1;
+```
 
 **Why this matters:**
 
-- You can predict query performance (look at the SQL)
-- Complex queries use database optimization (JOINs, indexes)
-- No application-level N+1 queries (database handles it)
-- You understand the data flow (no magic resolvers)
+- You can predict query performance (look at the view's SQL)
+- Complex shapes are composed in the database (JSONB, JOINs, indexes)
+- No application-level N+1 queries (the view does the composition)
+- You understand the data flow (no hidden per-field round-trips)
 
-**Mental model:** Think of GraphQL queries as *SQL SELECT statements written in GraphQL syntax*. The database executes them, not your application.
+**Mental model:** Think of GraphQL queries as *SELECT statements against read views*. The database composes the result; FraiseQL shapes it to the requested fields.
 
 ---
 
 ### Mental Model 4: "Mutations Map to DML Statements"
 
-GraphQL mutations compile to SQL INSERT, UPDATE, or DELETE statements:
+GraphQL mutations perform INSERT, UPDATE, or DELETE — encapsulated in a PostgreSQL function:
 
 ```graphql
-<!-- Code example in GraphQL -->
 # GraphQL Mutation
 mutation CreateOrder {
   createOrder(input: {
-    user_id: 1
+    userId: "00000000-0000-0000-0000-000000000001"
     total: 99.99
   }) {
-    order_id
-    status
-    created_at
+    ... on CreateOrderSuccess {
+      order { id status createdAt }
+    }
+    ... on CreateOrderError {
+      message
+    }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Compiles to:
+Calls a `fn_` function that does the DML and returns a result:
 
 ```sql
-<!-- Code example in SQL -->
--- Compiled SQL
-INSERT INTO tb_order (fk_user, total, created_at)
-VALUES (1, 99.99, CURRENT_TIMESTAMP)
-RETURNING pk_order, status, created_at;
-```text
-<!-- Code example in TEXT -->
+-- Inside fn_create_order (simplified)
+INSERT INTO tb_order (fk_user, id, total, created_at)
+VALUES ($1, gen_random_uuid(), $2, CURRENT_TIMESTAMP)
+RETURNING id, status, created_at;
+```
 
 **Why this matters:**
 
 - Mutations are database transactions (ACID guarantees)
-- Validation happens before SQL (prevent bad data)
-- Authorization checked before mutation (security)
-- Results are consistent (database returns actual values)
+- Validation happens inside the function (prevent bad data)
+- Authorization is checked before the function runs (security)
+- Results are consistent (the function returns the actual values)
 
-**Mental model:** Mutations are *transactional database operations*, not application logic.
+**Mental model:** Mutations are *transactional database operations* implemented as PostgreSQL functions, not application logic.
 
 ---
 
-### Mental Model 5: "Compilation Happens Once, Execution Happens Many Times"
+### Mental Model 5: "The Schema Is Built Once at Startup, Then Served"
 
-FraiseQL separates **build time** from **runtime**:
+FraiseQL is a runtime framework — there is no compile step and no build artifact. Instead it separates **schema construction** (at app startup) from **request handling** (per request):
 
-**Build Time (Compilation):**
+**At app startup:**
 
 ```text
-<!-- Code example in TEXT -->
-Python/TypeScript Schema → Compiler → Optimized SQL Templates
+Decorated Python (@fraiseql.type / @query / @mutation)
                         ↓
-                   schema.compiled.json
+        build_fraiseql_schema / create_fraiseql_app
+                        ↓
+        GraphQL schema assembled in memory (graphql-core)
+```
+
+When the schema is built:
+
+- ✅ Types and fields are validated for structural correctness
+- ✅ Relationships are wired into the type system
+- ✅ Field resolvers are generated
+- ✅ The schema is held in memory — no file is written
+
+**Per request (runtime):**
+
 ```text
-<!-- Code example in TEXT -->
+GraphQL Query → resolver → db.find / execute_function → PostgreSQL → results
+```
 
-At build time:
+Per request:
 
-- ✅ Types validated against database
-- ✅ Relationships verified
-- ✅ SQL generated and optimized
-- ✅ Authorization rules compiled
-- ✅ All errors caught
-
-**Runtime (Execution):**
-
-```text
-<!-- Code example in TEXT -->
-GraphQL Query → Pre-compiled SQL Template → Database → Results
-             ↓
-        Microseconds (no interpretation)
-```text
-<!-- Code example in TEXT -->
-
-At runtime:
-
-- ✅ Query validated (type check)
-- ✅ Authorization verified
-- ✅ Parameters bound to SQL
-- ✅ SQL executed on database
-- ✅ Results formatted
+- ✅ The query is validated against the in-memory schema
+- ✅ Authorization is verified
+- ✅ Arguments are validated and coerced
+- ✅ A read view is queried, or a write function is called
+- ✅ Results are shaped to the requested fields
 
 **Why this matters:**
 
-- Errors caught at compile time, not runtime
-- No schema validation overhead at query time
-- Predictable performance (no interpretation)
-- Deployment is deterministic (schema → binary)
+- Structural errors surface when the schema builds at startup
+- Authorization, validation, and constraints run per request
+- No artifact to manage or keep in sync — the running process is the schema
 
-**Mental model:** *Compilation separates concerns*. Build time is for safety and optimization; runtime is for pure execution.
+**Mental model:** *Building the schema is for structural correctness; each request is for authorization, validation, and execution.* The optional `fraiseql_rs` Rust extension only accelerates JSON shaping on the read path — it is not a separate stage.
 
 ---
 
@@ -530,30 +550,25 @@ At runtime:
 Traditional application architecture:
 
 ```text
-<!-- Code example in TEXT -->
 Client → Application Code → ORM → Database
                     ↑
          (custom resolvers, business logic, caching)
-```text
-<!-- Code example in TEXT -->
+```
 
 FraiseQL architecture:
 
 ```text
-<!-- Code example in TEXT -->
-Client → Compiled SQL Templates → Database
-         (no application code)
-         (deterministic)
-```text
-<!-- Code example in TEXT -->
+Client → FraiseQL resolvers → v_ views (read) / fn_ functions (write) → PostgreSQL
+         (thin runtime; logic lives in the database)
+```
 
 **Why this matters:**
 
 | Aspect | Traditional | FraiseQL |
 |--------|-------------|----------|
-| **Where logic lives** | Application code | Database schema |
+| **Where logic lives** | Application code | Database (views + functions) |
 | **Consistency** | Depends on code quality | Database enforces rules |
-| **Debugging** | "Why is resolver slow?" | Look at SQL query plan |
+| **Debugging** | "Why is resolver slow?" | Look at the SQL query plan |
 | **Performance** | Application bottleneck | Database determines speed |
 | **Data integrity** | Application validation | Database constraints |
 
@@ -561,270 +576,194 @@ Client → Compiled SQL Templates → Database
 
 ### View vs Table vs Relationship
 
-FraiseQL uses database **views** extensively:
+FraiseQL relies on a clear split between write tables and read views:
 
 **Write Tables** (`tb_*` prefix):
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE tb_user (
-    pk_user BIGINT PRIMARY KEY,
-    username VARCHAR(255),
-    email VARCHAR(255),
+    pk_user BIGINT PRIMARY KEY,   -- internal, never exposed
+    id      UUID NOT NULL,        -- public id
+    name    VARCHAR(255),
+    email   VARCHAR(255),
     created_at TIMESTAMP
 );
-```text
-<!-- Code example in TEXT -->
+```
 
-→ Normalized, DBA-owned, source of truth
+→ Normalized, DBA-owned, source of truth. Never exposed directly to GraphQL.
 
 **Read Views** (`v_*` prefix):
 
 ```sql
-<!-- Code example in SQL -->
 CREATE VIEW v_user AS
 SELECT
-    pk_user AS user_id,
-    username,
-    email,
-    created_at
+    id,
+    jsonb_build_object(
+        'id', id,
+        'name', name,
+        'email', email,
+        'createdAt', created_at
+    ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;  -- Soft deletes
-```text
-<!-- Code example in TEXT -->
+```
 
-→ Curated for GraphQL, handles soft deletes, derived fields
+→ Curated for GraphQL. Each read view carries an `id` column (for `WHERE id = $1`) plus a `data` JSONB column built with `jsonb_build_object(...)`. Never put `pk_*` inside `data`.
 
-**Analytics Views** (`va_*` prefix):
-
-```sql
-<!-- Code example in SQL -->
-CREATE VIEW va_user AS
-SELECT
-    pk_user,
-    username,
-    COUNT(*) OVER (PARTITION BY EXTRACT(YEAR FROM created_at)) AS users_per_year,
-    created_at
-FROM tb_user;
-```text
-<!-- Code example in TEXT -->
-
-→ Optimized for columnar queries (Arrow plane)
-
-**Transaction Views** (`tv_*` prefix):
+**Table-Backed Projection Views** (`tv_*` prefix):
 
 ```sql
-<!-- Code example in SQL -->
-CREATE VIEW tv_user AS
-SELECT * FROM tb_user;
--- Used for mutations (INSERT, UPDATE, DELETE)
-```text
-<!-- Code example in TEXT -->
+-- A real table holding pre-composed JSONB, refreshed by functions/triggers.
+-- Used for heavy nested reads where computing the JSONB on the fly is too costly.
+CREATE TABLE tv_user (
+    id   UUID PRIMARY KEY,
+    data JSONB NOT NULL
+);
+```
 
-**Mental model:** Views are *application-facing interfaces* to database tables. Tables are DBA-owned and normalized; views are curated for different access patterns.
+→ A read projection — queried exactly like a `v_` view, but materialized for performance. It is **not** a write path; mutations still go through `fn_` functions.
+
+**Mental model:** Views are *application-facing read interfaces* to database tables. Tables are DBA-owned and normalized; views (`v_` logical, `tv_` materialized) are curated for read access; functions (`fn_`) own all writes.
 
 ---
 
-### Multi-Database Philosophy
+## Part 4: Schema Construction vs Request Handling
 
-FraiseQL supports multiple databases:
-
-```python
-<!-- Code example in Python -->
-# PostgreSQL (primary, most features)
-@FraiseQL.database("postgresql")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-
-# MySQL (secondary)
-@FraiseQL.database("mysql")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-
-# SQLite (local dev)
-@FraiseQL.database("sqlite")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-
-# SQL Server (enterprise)
-@FraiseQL.database("sqlserver")
-class User:
-    user_id: UUID  # UUID v4 for GraphQL ID
-```text
-<!-- Code example in TEXT -->
-
-**Why this matters:**
-
-- Use best database for the job
-- Avoid vendor lock-in
-- Same schema definition works everywhere
-- Database-specific optimizations transparent
-
-**Mental model:** Database is *pluggable*. Schema describes intent; database handles implementation.
-
----
-
-## Part 4: Compilation vs Runtime
-
-### Compilation (Build Time)
+### Schema Construction (App Startup)
 
 **What happens:**
 
 ```text
-<!-- Code example in TEXT -->
-Schema (Python/TypeScript)
+Decorated Python types, queries, mutations
     ↓
-Parser (validates syntax)
+build_fraiseql_schema / create_fraiseql_app
     ↓
-Type Resolver (maps types to database)
+Type registry assembled (types mapped to their sql_source views)
     ↓
-SQL Generator (creates templates)
+Field resolvers generated
     ↓
-Optimizer (improves performance)
-    ↓
-Validator (finds errors)
-    ↓
-schema.compiled.json (output artifact)
-```text
-<!-- Code example in TEXT -->
+graphql-core schema held in memory
+```
 
-**What is caught at compile time:**
+**What is validated when the schema builds:**
 
-- ❌ Type mismatches (User.username should be VARCHAR, not INT)
-- ❌ Missing relationships (Reference to non-existent table)
-- ❌ Invalid queries (Field doesn't exist on type)
-- ❌ Authorization rule errors
-- ❌ Constraint violations
+- Field types resolve to known GraphQL types
+- Relationships reference existing types
+- Query/mutation signatures are well-formed
+- Result/success/error unions are consistent
 
-**Example - Caught at Compile Time:**
+**Example - surfaced at startup:**
 
 ```python
-<!-- Code example in Python -->
-# Error: Column type mismatch
-@FraiseQL.type
-class User:
-    user_id: str  # ❌ ERROR: database has INT, schema has str
+import fraiseql
+from fraiseql.types import ID
 
-# Compilation fails with clear error message
-# "Type mismatch: User.user_id is String, but pk_user in tb_user is BIGINT"
-```text
-<!-- Code example in TEXT -->
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    profile: MissingType   # Building the schema fails: MissingType is not a registered type
+```
 
 ---
 
-### Runtime (Query Execution)
+### Request Handling (Runtime)
 
 **What happens:**
 
 ```text
-<!-- Code example in TEXT -->
-GraphQL Query
+GraphQL Query / Mutation
     ↓
-Parser (validate syntax - compiled already)
+Validate against the in-memory schema
     ↓
-Authorizer (check permissions)
+Authorize (check permissions)
     ↓
-Parameter Binder (bind variables to SQL)
+Validate & coerce arguments
     ↓
-SQL Executor (run on database)
+Read: db.find on a v_ view    |    Write: db.execute_function on a fn_ function
     ↓
-Formatter (shape results to schema)
+Shape results to requested fields
     ↓
 Response (send to client)
-```text
-<!-- Code example in TEXT -->
+```
 
-**What is checked at runtime:**
+**What is checked per request:**
 
-- ✅ Authorization (does user have permission?)
-- ✅ Parameter validation (is ID a valid number?)
-- ✅ Constraint checks (unique violation, foreign key, etc.)
-- ✅ Business logic (application-defined rules)
+- ✅ Authorization (does the user have permission?)
+- ✅ Argument validation (is the id a valid UUID?)
+- ✅ Constraint checks (unique violation, foreign key, etc., raised by PostgreSQL)
+- ✅ Business logic (implemented inside the `fn_` functions)
 
-**Example - Checked at Runtime:**
+**Example - checked per request:**
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Runtime check: Does user have permission?
+# Runtime check: does the user have permission?
 query GetUser {
-  user(id: 123) {  # Authorization: Can I see user 123?
-    username
+  user(id: "00000000-0000-0000-0000-000000000123") {
+    name
   }
 }
 
-# Error (if unauthorized): "Not authorized to view user 123"
-```text
-<!-- Code example in TEXT -->
+# Error (if unauthorized): "Not authorized to view this user"
+```
 
 ---
 
-### Comparison: Compile vs Runtime
+### Comparison: Startup vs Request
 
 | Check | When | What | Who Decides |
 |-------|------|------|-------------|
-| **Type check** | Compile | Does field exist? | Schema |
-| **Type match** | Compile | Is type correct? | Schema |
-| **Relationship** | Compile | Does FK exist? | Database |
-| **Authorization** | Runtime | Can user access? | Application |
-| **Validation** | Runtime | Is value valid? | Application rules |
-| **Constraint** | Runtime | Does database allow? | Database |
+| **Type check** | Startup | Does the field exist? | Schema |
+| **Type match** | Startup | Is the type known? | Schema |
+| **Relationship** | Startup | Is the related type registered? | Schema |
+| **Authorization** | Request | Can the user access this? | Application |
+| **Validation** | Request | Is the value valid? | Application + PostgreSQL |
+| **Constraint** | Request | Does the database allow it? | PostgreSQL |
 
-**Mental model:** *Compile time catches structural errors; runtime handles business logic.*
+**Mental model:** *Schema construction catches structural errors; request handling enforces authorization, validation, and constraints.*
 
 ---
 
 ## Summary: The FraiseQL Mental Model
 
 ```text
-<!-- Code example in TEXT -->
 ┌─────────────────────────────────────────────────────┐
 │ Your Business Domain                                │
 │ (E-commerce, SaaS, Data Platform, etc.)             │
 └────────────────┬────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────┐
-│ Database Schema (Source of Truth)                   │
+│ PostgreSQL Database (Source of Truth)               │
 │ - tb_* tables (normalized, write)                   │
-│ - v_* views (curated, read)                         │
-│ - fn_* functions (business logic)                   │
+│ - v_* / tv_* views (curated, read; data JSONB)      │
+│ - fn_* functions (write business logic)             │
 └────────────────┬────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────┐
-│ FraiseQL Schema (Python/TypeScript)                 │
-│ @FraiseQL.type                                      │
-│ - Types mirror database tables                      │
-│ - Fields map to columns                             │
-│ - Relationships map to foreign keys                 │
+│ FraiseQL Decorators (Python)                        │
+│ @fraiseql.type / @fraiseql.query / @fraiseql.mutation│
+│ - Types map to read views (sql_source="v_x")        │
+│ - Queries read from v_/tv_ views                    │
+│ - Mutations call fn_ functions                      │
 └────────────────┬────────────────────────────────────┘
                  │
-         (COMPILATION HAPPENS HERE)
+      (SCHEMA BUILT AT STARTUP — in memory)
+   build_fraiseql_schema / create_fraiseql_app
                  │
 ┌────────────────▼────────────────────────────────────┐
-│ Compiled Schema (schema.compiled.json)              │
-│ - Validated types                                   │
-│ - Optimized SQL templates                          │
-│ - Authorization rules                              │
-│ - Ready for runtime                                │
-└────────────────┬────────────────────────────────────┘
-                 │
-         (RUNTIME EXECUTES HERE)
-                 │
-┌────────────────▼────────────────────────────────────┐
-│ GraphQL Server (Execution)                          │
-│ - Validates queries                                 │
-│ - Checks authorization                             │
-│ - Executes SQL                                      │
-│ - Returns results                                   │
+│ FastAPI GraphQL Server (Runtime Execution)          │
+│ - Validates queries against the in-memory schema    │
+│ - Checks authorization                              │
+│ - Reads views / calls functions                     │
+│ - Shapes and returns results                        │
 └────────────────┬────────────────────────────────────┘
                  │
 ┌────────────────▼────────────────────────────────────┐
 │ Client Application                                  │
-│ - Uses GraphQL queries                             │
-│ - Receives typed results                           │
-│ - Type safe (guaranteed by schema)                 │
+│ - Sends GraphQL queries                             │
+│ - Receives typed results                            │
+│ - Type safe (guaranteed by schema)                  │
 └─────────────────────────────────────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -833,27 +772,28 @@ query GetUser {
 **Terminology:**
 
 - **Schema** = Full specification of your API
-- **Type** = Data object definition (maps to table)
-- **Field** = Named value in a type (maps to column)
-- **Query** = Read operation (SELECT statement)
-- **Mutation** = Write operation (INSERT/UPDATE/DELETE)
-- **Resolver** = Logic connecting GraphQL to database (auto-generated)
-- **Relationship** = Connection between types (foreign key)
+- **Type** = Data object definition (maps to a read view)
+- **Field** = Named value in a type (maps to a column in the view's `data`)
+- **Query** = Read operation (SELECT against a `v_`/`tv_` view)
+- **Mutation** = Write operation (calls a `fn_` function)
+- **Resolver** = Logic connecting GraphQL to the database (field resolvers generated at startup)
+- **Relationship** = Connection between types (composed into the view's `data` JSONB)
 
 **Mental Models:**
 
 - Schemas are *API contracts*
-- Types map to *database tables*
+- Types map to *read views*
 - Queries map to *SELECT statements*
-- Mutations map to *DML statements*
-- Compilation separates *safety from execution*
+- Mutations map to *PostgreSQL functions*
+- The schema is *built once at startup*, then served per request
 
 **Database Concepts:**
 
-- Tables (`tb_*`) = write tables
-- Views (`v_*`) = read views
-- Database is *source of truth*
-- Multi-database support is *pluggable*
+- Write tables (`tb_*`) = normalized source of truth
+- Read views (`v_*`) = curated reads with a `data` JSONB column
+- Projection views (`tv_*`) = materialized reads for heavy nested data
+- Functions (`fn_*`) = write business logic
+- The database is the *source of truth*
 
 ---
 
@@ -861,23 +801,26 @@ query GetUser {
 
 Now that you understand the terminology and mental models:
 
-1. **Learn the architecture** → Topic 2.1 (Compilation Pipeline)
-   - How Python schemas become compiled SQL
+1. **Understand the design** → [Database-Centric Architecture](./03-database-centric-architecture.md)
+   - Why FraiseQL puts the database at the center
 
-2. **Start authoring schemas** → Topic 3.1 (Python Schema Authoring)
-   - Write your first FraiseQL schema
+2. **Build your first app** → [Quickstart](../getting-started/quickstart.md)
+   - Stand up a FraiseQL GraphQL API
 
-3. **Understand design** → Topic 1.3 (Database-Centric Architecture)
-   - Why FraiseQL is built this way
+3. **Learn the type system** → [Type System](./09-type-system.md)
+   - Scalars, objects, enums, inputs, and results
 
 ---
 
 ## Related Topics
 
-- **Topic 1.1:** What is FraiseQL? — High-level positioning
-- **Topic 1.3:** Database-Centric Architecture — Why databases are central
-- **Topic 2.1:** Compilation Pipeline — How compilation works
-- **Topic 3.1:** Python Schema Authoring — Start writing schemas
+- [Database-Centric Architecture](./03-database-centric-architecture.md) — Why the database is central
+- [Design Principles](./04-design-principles.md) — The thinking behind FraiseQL
+- [Comparisons](./05-comparisons.md) — How FraiseQL relates to other approaches
+- [Error Handling & Validation](./10-error-handling-validation.md) — Success/error result patterns
+- [Performance Characteristics](./12-performance-characteristics.md) — What to expect at runtime
+- [Concepts Glossary](../core/concepts-glossary.md) — Quick definitions
+- [Scalars Reference](../reference/scalars.md) — Built-in scalar types
 
 ---
 
@@ -885,16 +828,17 @@ Now that you understand the terminology and mental models:
 
 | Term | Means | Example |
 |------|-------|---------|
-| **Schema** | Full API specification | `@FraiseQL.type class User:` |
+| **Schema** | Full API specification | `@fraiseql.type(sql_source="v_user")` |
 | **Type** | Data object definition | `class User:` |
-| **Field** | Value in a type | `username: str` |
+| **Field** | Value in a type | `name: str` |
 | **Query** | Read operation | `query GetUser { ... }` |
-| **Mutation** | Write operation | `mutation CreateOrder { ... }` |
-| **Resolver** | GraphQL ↔ DB logic | Auto-generated at compile time |
-| **Relationship** | Connection between types | `orders: List[Order]` |
-| **Table** | Database write table | `tb_user` |
-| **View** | Database read view | `v_user` |
+| **Mutation** | Write operation | `mutation CreateUser { ... }` |
+| **Resolver** | GraphQL ↔ DB logic | Field resolvers generated at startup |
+| **Relationship** | Connection between types | `orders: list[Order]` |
+| **Write table** | Normalized source of truth | `tb_user` |
+| **Read view** | Curated read with `data` JSONB | `v_user` |
+| **Function** | Write business logic | `fn_create_user` |
 
 ---
 
-**Key Takeaway:** FraiseQL uses *database-native terminology* because databases are the source of truth. Understand the database concepts, and FraiseQL becomes intuitive.
+**Key Takeaway:** FraiseQL uses *database-native terminology* because the PostgreSQL database is the source of truth. Understand the database concepts — write tables, read views, and functions — and FraiseQL becomes intuitive.

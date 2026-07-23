@@ -1,1330 +1,317 @@
-<!-- Skip to main content -->
----
-
-title: WHERE Clause Operators Reference
-description: FraiseQL provides 150+ WHERE clause operators for filtering, searching, and comparing data across all supported column types. These operators enable:
-keywords: ["directives", "types", "scalars", "schema", "api"]
-tags: ["documentation", "reference"]
----
-
 # WHERE Clause Operators Reference
 
-**Status:** ✅ Production Ready
-**Version:** FraiseQL v2.0.0-alpha.1+
-**Total Operators**: 150+
-**Categories**: 15 operator categories
-
----
+FraiseQL provides a rich set of WHERE clause operators for filtering, searching, and comparing data in your GraphQL queries. Operators are translated directly to **PostgreSQL** SQL (including JSONB and PostgreSQL-specific operators) at runtime when a query is executed.
 
 ## Overview
 
-FraiseQL provides 150+ WHERE clause operators for filtering, searching, and comparing data across all supported column types. These operators enable:
+Filters are supplied through the generated `where:` input argument on a query. Each field exposes the operators appropriate for its type, and FraiseQL maps each operator to the equivalent PostgreSQL expression:
 
-- **Type-safe filtering**: Operators validated at GraphQL execution time
-- **Database efficiency**: Direct SQL translation with optimal query plans
-- **Complex queries**: Boolean logic (AND/OR/NOT) with nested conditions
-- **Specialized operations**: Geographic distance, vector similarity, hierarchical paths, full-text search
+- **Type-aware filtering** — each field only accepts operators valid for its column type.
+- **Direct SQL translation** — operators map to PostgreSQL operators (`=`, `LIKE`, `ILIKE`, `@>`, `&&`, etc.) for efficient, index-friendly query plans.
+- **Boolean composition** — combine conditions with `AND` / `OR` / `NOT`.
+- **Specialized families** — hierarchical paths (`ltree`) and vector similarity (`pgvector`) have dedicated references; see [LTree operators](./ltree-operators.md) and [Vector operators](./vector-operators.md).
 
-All operators are type-aware and only work with compatible column types. Invalid operator/type combinations return GraphQL errors at query time.
-
----
-
-## Database Support Matrix
-
-**Quick Reference**: Operators supported per database
-
-| Operator Category | PostgreSQL | MySQL | SQLite | SQL Server | Notes |
-|---|:---:|:---:|:---:|:---:|---|
-| **Basic Comparison** (eq, neq, gt, gte, lt, lte) | ✅ Full | ✅ Full | ✅ Full | ✅ Full | Universal, always available |
-| **String Operators** (contains, startswith, icontains) | ✅ Full | ✅ Full | ✅ Full | ✅ Full | All databases support LIKE/ILIKE equivalents |
-| **Array Operators** (@>, @<, ? ANY, IN) | ✅ Full | ⚠️ Limited | ❌ None | ⚠️ Workaround | PostgreSQL native arrays optimal; MySQL needs workaround |
-| **JSON/JSONB Operators** (->>, @>, @?) | ✅ Full | ⚠️ Limited | ⚠️ Limited | ⚠️ Limited | PostgreSQL JSONB best; others use JSON operators |
-| **Full-Text Search** (fts, plainto_tsquery) | ✅ Full | ✅ Full | ⚠️ Limited | ⚠️ Limited | PostgreSQL FTS most complete; MySQL/SQL Server partial |
-| **Geometric** (ST_Distance, <@) | ✅ Full | ⚠️ Limited | ❌ None | ⚠️ Limited | Requires PostGIS or equivalent; PostgreSQL best support |
-| **Range Operators** (contained_by, overlaps) | ✅ Full | ❌ None | ❌ None | ❌ None | PostgreSQL range types only |
-| **UUID Operations** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | All support UUID as string/binary |
-| **Date/Time Operators** | ✅ Full | ✅ Full | ✅ Full | ✅ Full | All support standard date/time functions |
-| **Case-Insensitive** (ilike, icontains) | ✅ Native | ✅ Native | ✅ Full | ✅ Full | All support case-insensitive comparisons |
-| **NULL Handling** (is_null, is_not_null) | ✅ Full | ✅ Full | ✅ Full | ✅ Full | Universal |
-| **Bitwise** (& bitwise AND, \| bitwise OR) | ✅ Full | ✅ Full | ✅ Full | ✅ Full | Universal for numeric types |
-
-**Legend**:
-
-- ✅ **Full** = Fully supported, optimal performance
-- ⚠️ **Limited** = Supported with workarounds or reduced functionality
-- ❌ **None** = Not supported; no direct equivalent
-
----
-
-### Database-Specific Notes
-
-#### PostgreSQL (Recommended for operators)
-
-- ✅ All operators fully supported
-- ✅ JSONB operators optimized with GIN indexes
-- ✅ Full-text search with tsvector
-- ✅ PostGIS for geometric queries
-- ✅ Range types with native operators
-
-### MySQL
-
-- ✅ Standard SQL operators all work
-- ⚠️ JSON operators available but slower than PostgreSQL
-- ⚠️ Full-text search available (MATCH AGAINST) but less powerful than PostgreSQL
-- ⚠️ No array types; use JSON workaround
-- ⚠️ No range types; use comparison operators
-
-### SQLite
-
-- ✅ Standard SQL operators work
-- ⚠️ Minimal JSON support (JSON1 extension required)
-- ⚠️ Limited full-text search (FTS5 extension needed)
-- ❌ No array, range, or geometric types
-- ⚠️ Case-insensitive searches with `COLLATE NOCASE`
-
-### SQL Server
-
-- ✅ Standard SQL operators work
-- ⚠️ JSON operators available (JSON_VALUE, JSON_QUERY)
-- ⚠️ Full-text search available but different syntax
-- ❌ No array or range types
-- ✅ Case-insensitive by default (collation)
-
----
-
-## Operator Categories
-
-### 1. Basic Comparison Operators
-
-Basic comparison operators work with all comparable types (numeric, string, date, etc.).
-
-#### **Equality Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `=` | Equality | `{age: {eq: 25}}` |
-| `neq` | `!=` / `<>` | Not equal | `{status: {neq: "inactive"}}` |
-
-**Supported Types**: All types (strings, numbers, dates, UUIDs, etc.)
-
-**Examples**:
+A `where:` filter is an input object keyed by field name; each field holds an object keyed by operator name:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Numeric
-{age: {eq: 25}}
-{price: {eq: 99.99}}
-
-# String
-{status: {eq: "active"}}
-{email: {eq: "user@example.com"}}
-
-# Date
-{birthDate: {eq: "1990-05-15"}}
-
-# UUID
-{id: {eq: "550e8400-e29b-41d4-a716-446655440000"}}
-
-# Boolean
-{isActive: {eq: true}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Comparison Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `gt` | `>` | Greater than | `{age: {gt: 18}}` |
-| `gte` | `>=` | Greater than or equal | `{age: {gte: 21}}` |
-| `lt` | `<` | Less than | `{age: {lt: 65}}` |
-| `lte` | `<=` | Less than or equal | `{age: {lte: 65}}` |
-
-**Supported Types**: Numeric (int, float, decimal), Date, DateTime, String (lexical comparison)
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Numeric ranges
-{age: {gte: 18, lte: 65}}
-{price: {gt: 100, lt: 500}}
-
-# Date ranges
-{createdAt: {gte: "2024-01-01", lt: "2025-01-01"}}
-{birthDate: {lte: "2007-01-01"}}
-
-# String lexical comparison
-{name: {gte: "A", lt: "B"}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 2. String/Text Operators
-
-String operators provide flexible text searching with case-sensitivity control and pattern matching.
-
-#### **Substring Operators**
-
-| Operator | SQL Equivalent | Description | Case-Sensitive | Example |
-|----------|---|---|---|---|
-| `contains` | `LIKE '%value%'` | Contains substring | Yes | `{name: {contains: "John"}}` |
-| `icontains` | `ILIKE '%value%'` | Contains substring | No | `{name: {icontains: "john"}}` |
-| `startswith` | `LIKE 'value%'` | Starts with | Yes | `{name: {startswith: "J"}}` |
-| `istartswith` | `ILIKE 'value%'` | Starts with | No | `{name: {istartswith: "j"}}` |
-| `endswith` | `LIKE '%value'` | Ends with | Yes | `{name: {endswith: "son"}}` |
-| `iendswith` | `ILIKE '%value'` | Ends with | No | `{name: {iendswith: "SON"}}` |
-
-**Supported Types**: String, Text, Slug, domains, URLs
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Case-sensitive
-{email: {contains: "@example.com"}}
-{title: {startswith: "The"}}
-{filename: {endswith: ".pdf"}}
-
-# Case-insensitive
-{name: {icontains: "smith"}}
-{city: {istartswith: "san"}}
-
-# Combined
-{email: {contains: "@"}}
-{url: {startswith: "https://"}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Pattern Operators**
-
-| Operator | SQL Equivalent | Description | Pattern Support | Example |
-|----------|---|---|---|---|
-| `like` | `LIKE` | User-provided pattern | SQL wildcards (% = any, _ = single) | `{name: {like: "%J_hn%"}}` |
-| `ilike` | `ILIKE` | Case-insensitive pattern | SQL wildcards | `{name: {ilike: "%SMITH%"}}` |
-
-**Wildcard Rules**:
-
-- `%` = Any characters (0 or more)
-- `_` = Exactly one character
-- Escape with backslash: `\%` for literal percent
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find names with pattern
-{name: {like: "John%"}}        # Starts with John
-{name: {like: "%Smith"}}       # Ends with Smith
-{name: {like: "%Robert%"}}     # Contains Robert
-{name: {like: "A_C"}}          # Three-letter, starts with A, ends with C
-
-# Case-insensitive
-{email: {ilike: "%@example.com"}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Regular Expression Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `matches` | `~` | Regex match (case-sensitive) | `{email: {matches: ".*@example\\.com$"}}` |
-| `imatches` | `~*` | Regex match (case-insensitive) | `{email: {imatches: ".*@example\\.com$"}}` |
-| `not_matches` | `!~` | Negated regex match | `{email: {not_matches: ".*@spam\\.com$"}}` |
-
-**PostgreSQL POSIX Regular Expressions**:
-
-- `.` = Any character
-- `*` = Zero or more
-- `+` = One or more
-- `?` = Zero or one
-- `^` = Start of string
-- `$` = End of string
-- `[...]` = Character class
-- `(...)` = Group
-- `|` = OR
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Email validation pattern
-{email: {matches: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"}}
-
-# Phone number pattern
-{phone: {matches: "^\\+?[1-9]\\d{1,14}$"}}
-
-# Exclude pattern
-{email: {not_matches: ".*@(spam|test)\\.com$"}}
-
-# Case-insensitive domain check
-{email: {imatches: ".*@EXAMPLE\\.COM$"}}
-
-# URL protocol check
-{url: {matches: "^https?://"}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 3. Containment/List Operators
-
-List operators check if values are in a provided list.
-
-#### **List Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `in` | `IN (...)` | Value in list | `{status: {in: ["active", "pending"]}}` |
-| `nin` / `notin` | `NOT IN (...)` | Value not in list | `{status: {nin: ["deleted", "archived"]}}` |
-
-**Supported Types**: All types (numeric, string, UUID, date, etc.)
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# String values
-{status: {in: ["active", "pending", "approved"]}}
-{country: {nin: ["XX", "YY"]}}
-
-# Numeric values
-{userId: {in: [1, 2, 3, 4, 5]}}
-{priority: {nin: [0, -1]}}
-
-# UUID values
-{parentId: {in: ["550e8400-e29b-41d4-a716-446655440000", "abcd1234-e29b-41d4-a716-446655440000"]}}
-
-# Date values
-{status: {in: ["2024-01-01", "2024-12-31"]}}
-
-# Mixed with other operators
-{status: {in: ["active", "pending"]}, age: {gte: 18}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 4. NULL Checking
-
-#### **NULL Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `isnull` | `IS NULL` / `IS NOT NULL` | Check if NULL | `{deletedAt: {isnull: true}}` |
-
-**Supported Types**: All types
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Records with NULL values
-{deletedAt: {isnull: true}}
-{middleName: {isnull: true}}
-
-# Records without NULL values
-{email: {isnull: false}}
-{phone: {isnull: false}}
-
-# Soft delete pattern
-{AND: [{isnull: false}, {deletedAt: {isnull: true}}]}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 5. Array Operators
-
-Array operators work with JSONB array columns (columns storing JSON arrays).
-
-#### **Array Comparison**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` / `array_eq` | `=` | Array equality | `{tags: {eq: ["a", "b"]}}` |
-| `neq` / `array_neq` | `!=` | Array inequality | `{tags: {neq: ["x"]}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-{tags: {eq: ["important", "review"]}}
-{items: {neq: []}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Array Containment**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `contains` / `array_contains` | `@>` | Array contains all elements | `{tags: {contains: ["important"]}}` |
-| `contained_by` / `array_contained_by` | `<@` | Array is contained by | `{tags: {contained_by: ["a", "b", "c"]}}` |
-| `overlaps` / `array_overlaps` | `&&` | Arrays have common elements | `{tags: {overlaps: ["urgent", "review"]}}` |
-
-**Containment vs Overlaps**:
-
-- `contains`: Subject array must have ALL elements of provided array
-- `overlaps`: Subject array must have AT LEAST ONE element of provided array
-- `contained_by`: Subject array must be subset of provided array
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Must have ALL these tags
-{tags: {contains: ["important", "urgent"]}}
-
-# Must overlap with any of these
-{tags: {overlaps: ["todo", "review", "pending"]}}
-
-# Must be subset of allowed tags
-{tags: {contained_by: ["dev", "qa", "prod", "staging"]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Array Length**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `len_eq` / `array_length_eq` | `array_length(,1) =` | Length equals | `{items: {len_eq: 5}}` |
-| `len_neq` / `array_length_neq` | `array_length(,1) !=` | Length not equal | `{items: {len_neq: 0}}` |
-| `len_gt` / `array_length_gt` | `array_length(,1) >` | Length greater than | `{items: {len_gt: 3}}` |
-| `len_gte` / `array_length_gte` | `array_length(,1) >=` | Length >= | `{items: {len_gte: 1}}` |
-| `len_lt` / `array_length_lt` | `array_length(,1) <` | Length less than | `{items: {len_lt: 10}}` |
-| `len_lte` / `array_length_lte` | `array_length(,1) <=` | Length <= | `{items: {len_lte: 20}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Array length checks
-{items: {len_eq: 5}}           # Exactly 5 items
-{tags: {len_gte: 1}}           # At least 1 tag
-{attachments: {len_lt: 100}}   # Fewer than 100
-{reviews: {len_neq: 0}}        # Non-empty reviews
-```text
-<!-- Code example in TEXT -->
-
-#### **Array Element Matching**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `any_eq` / `array_any_eq` | `= ANY(array)` | Any element equals | `{items: {any_eq: "important"}}` |
-| `all_eq` / `array_all_eq` | `= ALL(array)` | All elements equal | `{items: {all_eq: "same"}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Any element matches
-{items: {any_eq: "completed"}}
-
-# All elements match (rarely useful, for uniform arrays)
-{statuses: {all_eq: "active"}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 6. Network/IP Address Operators
-
-Network operators work with INET and CIDR PostgreSQL types (IPv4 and IPv6 addresses/networks).
-
-#### **IP Address Comparison**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `=` | IP equality | `{ip: {eq: "192.168.1.1"}}` |
-| `neq` | `!=` | IP inequality | `{ip: {neq: "10.0.0.1"}}` |
-| `in` | `IN (...)` | IP in list | `{ip: {in: ["192.168.1.1", "10.0.0.1"]}}` |
-| `nin` / `notin` | `NOT IN (...)` | IP not in list | `{ip: {nin: ["10.0.0.0/8"]}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Exact IP match
-{ip: {eq: "192.168.1.100"}}
-
-# IPv6
-{ip: {eq: "2001:db8::1"}}
-
-# IP in list
-{sourceIp: {in: ["192.168.1.1", "192.168.1.2", "192.168.1.3"]}}
-
-# Exclude ranges
-{ip: {nin: ["10.0.0.0/8", "172.16.0.0/12"]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **IP Address Classification**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `isprivate` / `isPrivate` | RFC 1918 check | Is private IP | `{ip: {isprivate: true}}` |
-| `ispublic` / `isPublic` | NOT RFC 1918 check | Is public IP | `{ip: {ispublic: true}}` |
-| `isipv4` / `isIPv4` | `family() = 4` | Is IPv4 address | `{ip: {isipv4: true}}` |
-| `isipv6` / `isIPv6` | `family() = 6` | Is IPv6 address | `{ip: {isipv6: true}}` |
-
-**Private IP Ranges (RFC 1918)**:
-
-- `10.0.0.0/8` (10.0.0.0 to 10.255.255.255)
-- `172.16.0.0/12` (172.16.0.0 to 172.31.255.255)
-- `192.168.0.0/16` (192.168.0.0 to 192.168.255.255)
-- `127.0.0.0/8` (Loopback)
-- `169.254.0.0/16` (Link-local)
-- Etc.
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find public IPs (security audits)
-{ip: {ispublic: true}}
-
-# Find private/internal IPs
-{ip: {isprivate: true}}
-
-# Filter by IP version
-{ip: {isipv4: true}}          # IPv4 only
-{ip: {isipv6: true}}          # IPv6 only
-
-# Combined filtering
-{AND: [{ip: {isipv4: true}}, {ip: {isprivate: true}}]}
-```text
-<!-- Code example in TEXT -->
-
-#### **Network Range Operators**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `insubnet` / `inSubnet` | `<<=` | IP in subnet | `{ip: {insubnet: "192.168.0.0/16"}}` |
-| `inrange` / `inRange` | `<<=` | IP in CIDR range (alias) | `{ip: {inrange: "10.0.0.0/8"}}` |
-| `overlaps` | `&&` | Networks overlap | `{network: {overlaps: "192.168.0.0/24"}}` |
-| `strictleft` | `<<` | Network strictly left of | `{network: {strictleft: "192.169.0.0/16"}}` |
-| `strictright` | `>>` | Network strictly right of | `{network: {strictright: "192.167.0.0/16"}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Check if IP is in corporate network
-{ip: {insubnet: "203.0.113.0/24"}}
-
-# Check if in restricted range
-{sourceIp: {inrange: "10.0.0.0/8"}}
-
-# Network overlap check
-{network: {overlaps: "192.168.0.0/24"}}
-
-# Ordering checks
-{network: {strictleft: "192.170.0.0/16"}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 7. MAC Address Operators
-
-MAC address operators work with `macaddr` PostgreSQL type.
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `=` | MAC equality | `{mac: {eq: "08:00:2b:01:02:03"}}` |
-| `neq` | `!=` | MAC inequality | `{mac: {neq: "ff:ff:ff:ff:ff:ff"}}` |
-| `in` | `IN (...)` | MAC in list | `{mac: {in: ["00:11:22:33:44:55"]}}` |
-| `nin` / `notin` | `NOT IN (...)` | MAC not in list | `{mac: {nin: ["ff:ff:ff:ff:ff:ff"]}}` |
-| `isnull` | `IS NULL` | Check if NULL | `{mac: {isnull: false}}` |
-
-**Format**: Colon-separated hexadecimal octets
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Device identification
-{mac: {eq: "a0:1d:48:12:34:56"}}
-
-# Allowlist
-{mac: {in: ["08:00:2b:01:02:03", "0c:42:a1:23:45:67"]}}
-
-# Exclude broadcast
-{mac: {neq: "ff:ff:ff:ff:ff:ff"}}
-
-# Exclude DHCP
-{mac: {isnull: false}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 8. Date Range Operators
-
-Date range operators work with PostgreSQL `daterange` type.
-
-#### **Date Range Comparison**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `=` | Range equality | `{period: {eq: "[2024-01-01, 2024-12-31]"}}` |
-| `neq` | `!=` | Range inequality | `{period: {neq: "[2023-01-01, 2023-12-31]"}}` |
-| `in` | `IN (...)` | Range in list | `{period: {in: ["[2024-01-01, 2024-12-31]", "[2025-01-01, 2025-12-31]"]}}` |
-| `nin` / `notin` | `NOT IN (...)` | Range not in list | `{period: {nin: ["[2023-01-01, 2023-12-31]"]}}` |
-
-**Range Notation**:
-
-- `[start, end]` = Inclusive on both sides
-- `(start, end)` = Exclusive on both sides
-- `[start, end)` = Inclusive start, exclusive end
-- `(start, end]` = Exclusive start, inclusive end
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Year 2024 (inclusive)
-{period: {eq: "[2024-01-01, 2024-12-31]"}}
-
-# Excluding year 2023
-{period: {nin: ["[2023-01-01, 2023-12-31]"]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Date Range Containment**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `contains_date` | `@>` | Range contains date | `{period: {contains_date: "2024-06-15"}}` |
-| `overlaps` | `&&` | Ranges overlap | `{period: {overlaps: "[2024-01-01, 2024-12-31]"}}` |
-| `adjacent` | `-\|-` | Ranges adjacent | `{period: {adjacent: "[2025-01-01, 2025-12-31]"}}` |
-| `strictly_left` | `<<` | Range strictly left of | `{period: {strictly_left: "[2025-01-01, 2025-12-31]"}}` |
-| `strictly_right` | `>>` | Range strictly right of | `{period: {strictly_right: "[2023-01-01, 2023-12-31]"}}` |
-| `not_left` | `&>` | Range does not extend left | `{period: {not_left: "[2024-06-01, 2025-12-31]"}}` |
-| `not_right` | `&<` | Range does not extend right | `{period: {not_right: "[2023-01-01, 2024-06-30]"}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Events during 2024
-{period: {contains_date: "2024-06-15"}}
-
-# Overlapping projects
-{period: {overlaps: "[2024-03-01, 2024-09-30]"}}
-
-# Adjacent phases
-{period: {adjacent: "[2024-Q2, 2024-Q3]"}}
-
-# Before date
-{period: {strictly_left: "[2024-01-01, 2025-01-01]"}}
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 9. LTree (Hierarchical Path) Operators
-
-LTree operators work with PostgreSQL `ltree` type for hierarchical data (categories, org charts, etc.).
-
-#### **Path Comparison**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `=` | Path equality | `{path: {eq: "Top.Sciences.Astronomy"}}` |
-| `neq` | `!=` | Path inequality | `{path: {neq: "Other"}}` |
-| `in` | `IN (...)` | Path in list | `{path: {in: ["Top.Science", "Top.Technology"]}}` |
-| `nin` / `notin` | `NOT IN (...)` | Path not in list | `{path: {nin: ["Deleted"]}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-{path: {eq: "Organization.Engineering.Backend"}}
-{path: {in: ["Products.Electronics", "Products.Software"]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Path Hierarchy**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `ancestor_of` | `@>` | Is ancestor of path | `{path: {ancestor_of: "Top.Sciences.Astronomy.Cosmology"}}` |
-| `descendant_of` | `<@` | Is descendant of path | `{path: {descendant_of: "Top.Sciences"}}` |
-
-**Hierarchy Rules**:
-
-- `ancestor_of`: Current path is parent/ancestor of provided path
-- `descendant_of`: Current path is child/descendant of provided path
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find all ancestor categories
-{path: {ancestor_of: "Top.Sciences.Physics.Quantum.Superposition"}}
-# Matches: "Top", "Top.Sciences", "Top.Sciences.Physics", etc.
-
-# Find all subcategories
-{path: {descendant_of: "Top.Sciences"}}
-# Matches: "Top.Sciences.Physics", "Top.Sciences.Astronomy", etc.
-
-# Organization hierarchy
-{path: {ancestor_of: "Company.Engineering.Backend.Database.Migration"}}
-# Matches all parent org units
-```text
-<!-- Code example in TEXT -->
-
-#### **Path Pattern Matching**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `matches_lquery` | `~` | Matches lquery pattern | `{path: {matches_lquery: "Top.*.Ast*"}}` |
-| `matches_ltxtquery` | `?` | Matches ltxtquery pattern | `{path: {matches_ltxtquery: "Top & (Sciences \| Technology)"}}` |
-| `matches_any_lquery` | Array of patterns | Matches any lquery pattern | `{path: {matches_any_lquery: ["Top.*", "Other.*"]}}` |
-
-**lquery Pattern Syntax** (SQL wildcards):
-
-- `*` = Any level (single label)
-- `*{n}` = Exactly n levels
-- `*{n,}` = n or more levels
-- `*{,n}` = Up to n levels
-- `*{n,m}` = Between n and m levels
-- `?[*]` = Optional level
-- `!` = Prefix match (case-insensitive alternative)
-
-**ltxtquery Syntax** (Boolean):
-
-- `&` = AND
-- `|` = OR
-- `!` = NOT
-- `(...)` = Grouping
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find all paths with 3 levels starting with Top
-{path: {matches_lquery: "Top.*.*"}}
-
-# Find all paths in Sciences or Technology
-{path: {matches_ltxtquery: "(Sciences | Technology)"}}
-
-# Complex Boolean queries
-{path: {matches_ltxtquery: "(Physics | Chemistry) & ! Deprecated"}}
-
-# Match any pattern
-{path: {matches_any_lquery: ["Products.*", "Services.*", "Other"]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Path Depth/Navigation**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `depth_eq` | `nlevel() =` | Depth equals | `{path: {depth_eq: 3}}` |
-| `depth_neq` | `nlevel() !=` | Depth not equal | `{path: {depth_neq: 1}}` |
-| `depth_gt` | `nlevel() >` | Depth greater | `{path: {depth_gt: 2}}` |
-| `depth_gte` | `nlevel() >=` | Depth >= | `{path: {depth_gte: 2}}` |
-| `depth_lt` | `nlevel() <` | Depth less | `{path: {depth_lt: 5}}` |
-| `depth_lte` | `nlevel() <=` | Depth <= | `{path: {depth_lte: 4}}` |
-
-**Depth Calculation**:
-
-- `"Top"` = depth 1
-- `"Top.Sciences"` = depth 2
-- `"Top.Sciences.Physics"` = depth 3
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Top-level categories only
-{path: {depth_eq: 1}}
-
-# No deeply nested paths
-{path: {depth_lt: 5}}
-
-# Second-level categories
-{path: {depth_eq: 2}}
-
-# Deep hierarchies (3+ levels)
-{path: {depth_gte: 3}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Path Concatenation**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `concat` | `\|\|` | Concatenate paths | `{path: {concat: "Astronomy"}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Append label to path
-{path: {concat: "NewSubcategory"}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Lowest Common Ancestor**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `lca` | `lca()` | Lowest common ancestor | `{path: {lca: ["Top.Sciences.Astronomy", "Top.Sciences.Physics"]}}` |
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find common ancestor
-{path: {lca: ["Org.Engineering.Backend", "Org.Engineering.Frontend"]}}
-# Returns: "Org.Engineering"
-```text
-<!-- Code example in TEXT -->
-
----
-
-### 10. Vector Operators
-
-Vector operators work with pgvector extension for semantic search and similarity matching.
-
-#### **Vector Distance Operators**
-
-| Operator | SQL Equivalent | Distance Metric | Use Case | Example |
-|----------|---|---|---|---|
-| `cosine_distance` | `<=>` | Cosine similarity (0=identical, 2=opposite) | **Default for embeddings** | `{embedding: {cosine_distance: {vector: [...], threshold: 0.1}}}` |
-| `l2_distance` | `<->` | Euclidean (L2) distance | Spatial distance, clustering | `{embedding: {l2_distance: {vector: [...], threshold: 5.0}}}` |
-| `l1_distance` | `<+>` | Manhattan (L1) distance | Grid-based distance | `{embedding: {l1_distance: {vector: [...], threshold: 10.0}}}` |
-| `hamming_distance` | `<~>` | Hamming distance (binary vectors) | Bit similarity | `{bits: {hamming_distance: {vector: [...], threshold: 3}}}` |
-| `jaccard_distance` | `<%>` | Jaccard distance (binary vectors) | Set similarity | `{bits: {jaccard_distance: {vector: [...], threshold: 0.5}}}` |
-
-**Distance Methods Explained**:
-
-**Cosine Distance** (recommended for embeddings):
-
-- Measures angle between vectors (0 = identical, 1 = perpendicular, 2 = opposite)
-- Dimension-invariant (works with any embedding size)
-- Best for: Text embeddings, image embeddings, semantic search
-- Range: [0, 2]
-- Lower = more similar
-
-**Euclidean Distance** (L2):
-
-- Straight-line distance in multi-dimensional space
-- Depends on vector magnitude and dimension
-- Best for: Spatial data, clustering, RMS error
-- Formula: sqrt(sum((a-b)²))
-
-**Manhattan Distance** (L1):
-
-- Sum of absolute differences
-- Useful in high-dimensional spaces (curse of dimensionality)
-- Best for: Categorical data with grid structure
-- Formula: sum(|a-b|)
-
-**Hamming Distance** (binary vectors):
-
-- Count differing bits
-- Best for: Binary vectors, bit flags
-- Range: [0, n] where n = vector length
-
-**Jaccard Distance** (binary vectors):
-
-- Set overlap similarity
-- Best for: Set membership, presence/absence
-
-**Query Format**:
-
-```graphql
-<!-- Code example in GraphQL -->
-{
-  vector_field: {
-    distance_operator: {
-      vector: [dimension1, dimension2, ...],
-      threshold: number_threshold,
-      comparison: "lt" | "lte" | "gt" | "gte"  # How to compare
-    }
+query {
+  users(where: {
+    status: { eq: "active" }
+    age: { gte: 18 }
+  }) {
+    id
+    name
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-**Examples**:
+Multiple fields at the same level are combined with `AND`.
+
+---
+
+## Comparison Operators
+
+Comparison operators work with comparable scalar types (numeric, string, date, datetime, UUID, etc.).
+
+| Operator | SQL | Description | Example |
+|----------|-----|-------------|---------|
+| `eq` | `=` | Equal | `{ age: { eq: 25 } }` |
+| `neq` | `!=` / `<>` | Not equal | `{ status: { neq: "inactive" } }` |
+| `gt` | `>` | Greater than | `{ age: { gt: 18 } }` |
+| `gte` | `>=` | Greater than or equal | `{ age: { gte: 21 } }` |
+| `lt` | `<` | Less than | `{ age: { lt: 65 } }` |
+| `lte` | `<=` | Less than or equal | `{ age: { lte: 65 } }` |
+| `in` | `IN (...)` | Value in list | `{ status: { in: ["active", "pending"] } }` |
+| `nin` / `notin` | `NOT IN (...)` | Value not in list | `{ status: { nin: ["deleted", "archived"] } }` |
+| `isnull` | `IS NULL` / `IS NOT NULL` | NULL check | `{ deletedAt: { isnull: true } }` |
+
+`notin` is an accepted alias for `nin`.
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Semantic search (find similar embeddings)
-{
-  embedding: {
-    cosine_distance: {
-      vector: [0.1, 0.2, 0.3, -0.1, 0.05],
-      threshold: 0.2,
-      comparison: "lt"  # Find embeddings with distance < 0.2
-    }
+query {
+  users(where: {
+    age: { gte: 18, lte: 65 }
+    status: { in: ["active", "pending"] }
+    deletedAt: { isnull: true }
+  }) {
+    id
+    name
   }
 }
+```
 
-# Spatial search (find nearby points)
-{
-  location: {
-    l2_distance: {
-      vector: [40.7128, -74.0060],  # NYC coordinates
-      threshold: 10,  # Within 10 units
-      comparison: "lt"
-    }
+This translates to roughly:
+
+```sql
+WHERE (data->>'age')::int >= 18
+  AND (data->>'age')::int <= 65
+  AND data->>'status' IN ('active', 'pending')
+  AND data->>'deleted_at' IS NULL
+```
+
+Numeric comparisons (`gt`, `gte`, `lt`, `lte`) apply to numeric, date, datetime, and lexically to text. The equality, list, and NULL operators apply to all scalar types.
+
+---
+
+## Text and Pattern Operators
+
+Text operators provide substring matching, prefix/suffix matching, and regular-expression matching, each with a case-insensitive variant.
+
+### Substring, prefix, and suffix
+
+| Operator | SQL | Description | Case-sensitive |
+|----------|-----|-------------|:---:|
+| `contains` | `LIKE '%value%'` | Contains substring | Yes |
+| `icontains` | `ILIKE '%value%'` | Contains substring | No |
+| `startswith` | `LIKE 'value%'` | Starts with | Yes |
+| `istartswith` | `ILIKE 'value%'` | Starts with | No |
+| `endswith` | `LIKE '%value'` | Ends with | Yes |
+| `iendswith` | `ILIKE '%value'` | Ends with | No |
+
+```graphql
+query {
+  users(where: {
+    email: { contains: "@example.com" }
+    name: { icontains: "smith" }
+    city: { istartswith: "san" }
+  }) {
+    id
   }
 }
+```
 
-# Find closest match
-{
-  embedding: {
-    l2_distance: {
-      vector: [reference_vector],
-      threshold: 100,
-      comparison: "lt"
-    }
+```sql
+WHERE data->>'email' LIKE '%@example.com%'
+  AND data->>'name' ILIKE '%smith%'
+  AND data->>'city' ILIKE 'san%'
+```
+
+### LIKE patterns
+
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `like` | `LIKE` | Match a user-supplied SQL `LIKE` pattern |
+| `ilike` | `ILIKE` | Case-insensitive `LIKE` pattern |
+
+Wildcards follow PostgreSQL `LIKE` semantics: `%` matches any sequence of characters and `_` matches a single character.
+
+```graphql
+query {
+  users(where: {
+    name: { like: "John%" }
+    email: { ilike: "%@example.com" }
+  }) {
+    id
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
+
+### Regular expressions
+
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `matches` | `~` | POSIX regex match (case-sensitive) |
+| `imatches` | `~*` | POSIX regex match (case-insensitive) |
+| `not_matches` | `!~` | Negated POSIX regex match |
+
+These use PostgreSQL POSIX regular expressions (`^`, `$`, `.`, `*`, `+`, `?`, `[...]`, `(...)`, `|`).
+
+```graphql
+query {
+  users(where: {
+    email: { matches: "^[a-z0-9._%+-]+@example\\.com$" }
+  }) {
+    id
+  }
+}
+```
+
+```sql
+WHERE data->>'email' ~ '^[a-z0-9._%+-]+@example\.com$'
+```
 
 ---
 
-### 11. Full-Text Search Operators
+## Array Operators
 
-Full-text search operators work with PostgreSQL `tsvector` type for advanced text searching.
+Array operators work with array-valued fields (JSONB arrays). They map to PostgreSQL's array/containment operators.
 
-#### **Full-Text Query Types**
+### Equality
 
-| Operator | Function | Description | Example |
-|----------|---|---|---|
-| `matches` | `tsquery` | Boolean full-text query | `{content: {matches: "search & query"}}` |
-| `plain_query` | `plainto_tsquery` | Simple phrase (auto-split on whitespace) | `{content: {plain_query: "quick brown fox"}}` |
-| `phrase_query` | `phraseto_tsquery` | Exact phrase (consecutive words) | `{content: {phrase_query: "quick brown"}}` |
-| `websearch_query` | `websearch_to_tsquery` | Web search syntax (Google-like) | `{content: {websearch_query: '"exact phrase" -exclude'}}` |
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `eq` / `array_eq` | `=` | Array equals |
+| `neq` / `array_neq` | `!=` | Array not equal |
 
-**Boolean Query Syntax** (`matches`):
+### Containment and overlap
 
-- `&` = AND (both must match)
-- `|` = OR (either must match)
-- `!` = NOT (negation)
-- `(...)` = Grouping
-- `:*` = Prefix match
-
-**Websearch Syntax** (`websearch_query`):
-
-- `"phrase"` = Exact phrase
-- `-word` = Exclude word
-- `word1 word2` = AND (both required)
-- `word1 | word2` = OR
-
-**Examples**:
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `contains` / `array_contains` | `@>` | Array contains **all** the given elements |
+| `contained_by` / `array_contained_by` | `<@` | Array is a subset of the given elements |
+| `overlaps` / `array_overlaps` | `&&` | Arrays share **at least one** element |
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Boolean query (AND)
-{content: {matches: "database & search"}}
+query {
+  posts(where: {
+    tags: { contains: ["important", "urgent"] }
+  }) {
+    id
+  }
+  reviewQueue: posts(where: {
+    tags: { overlaps: ["todo", "review", "pending"] }
+  }) {
+    id
+  }
+}
+```
 
-# Boolean query (OR)
-{content: {matches: "python | java"}}
+```sql
+-- contains: must have every listed tag
+WHERE data->'tags' @> '["important", "urgent"]'::jsonb
 
-# Exclude terms
-{content: {matches: "database & !nosql"}}
+-- overlaps: must share at least one tag
+WHERE data->'tags' && '["todo", "review", "pending"]'::text[]
+```
 
-# Complex Boolean
-{content: {matches: "(python | java) & (database & !mongodb)"}}
+Distinguishing the three:
 
-# Prefix match
-{content: {matches: "graphql:*"}}
+- `contains` — the field must include **all** supplied elements.
+- `overlaps` — the field must include **at least one** supplied element.
+- `contained_by` — the field must be a **subset** of the supplied elements.
 
-# Plain phrase (auto-split)
-{content: {plain_query: "apollo federation gateway"}}
+### Array length and element matching
 
-# Exact phrase (consecutive)
-{content: {phrase_query: "apollo federation"}}
-
-# Web search
-{content: {websearch_query: '"exact phrase" -exclude-word"}}
-
-# Web search OR
-{content: {websearch_query: 'python | java'}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Full-Text Ranking**
-
-| Operator | Function | Description | Example |
-|----------|---|---|---|
-| `rank_gt` | `ts_rank() >` | Rank greater than | `{content: {rank_gt: {query: "search", threshold: 0.5}}}` |
-| `rank_lt` | `ts_rank() <` | Rank less than | `{content: {rank_lt: {query: "search", threshold: 0.1}}}` |
-| `rank_cd_gt` | `ts_rank_cd() >` | Cover density rank > | `{content: {rank_cd_gt: "search:0.5"}}` |
-| `rank_cd_lt` | `ts_rank_cd() <` | Cover density rank < | `{content: {rank_cd_lt: "search:0.1"}}` |
-
-**Ranking Types**:
-
-- `ts_rank()`: Standard ranking (0-1 scale)
-  - Uses position and frequency
-  - Faster, suitable for most cases
-- `ts_rank_cd()`: Cover density ranking (0-1 scale)
-  - Considers proximity of query terms
-  - Better for phrase relevance
-  - Slower but more accurate for phrases
-
-**Score Interpretation**:
-
-- 0 = No relevance
-- 0-0.3 = Low relevance
-- 0.3-0.7 = Medium relevance
-- 0.7-1.0 = High relevance
-
-**Examples**:
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `len_eq` | `array_length(...) =` | Length equals |
+| `len_neq` | `array_length(...) !=` | Length not equal |
+| `len_gt` | `array_length(...) >` | Length greater than |
+| `len_gte` | `array_length(...) >=` | Length greater than or equal |
+| `len_lt` | `array_length(...) <` | Length less than |
+| `len_lte` | `array_length(...) <=` | Length less than or equal |
+| `any_eq` | `= ANY(...)` | Any element equals the value |
+| `all_eq` | `= ALL(...)` | All elements equal the value |
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Only highly relevant results
-{content: {rank_gt: {query: "machine learning", threshold: 0.7}}}
-
-# Filter out low-relevance noise
-{content: {rank_gt: {query: "data", threshold: 0.2}}}
-
-# Cover density ranking (better for phrases)
-{content: {rank_cd_gt: "artificial intelligence:0.5"}}
-```text
-<!-- Code example in TEXT -->
+query {
+  posts(where: {
+    tags: { len_gte: 1 }
+    statuses: { any_eq: "completed" }
+  }) {
+    id
+  }
+}
+```
 
 ---
 
-### 12. JSONB Operators
+## Hierarchical Path and Vector Operators
 
-JSONB operators work with PostgreSQL `jsonb` columns for flexible, semi-structured data.
+Two specialized operator families have their own dedicated references:
 
-#### **JSONB Containment**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `overlaps` | `&&` | JSONB objects/arrays overlap | `{metadata: {overlaps: {"key": "value"}}}` |
-| `strictly_contains` | `@>` AND `!=` | Contains but not equal | `{metadata: {strictly_contains: {"key": "value"}}}` |
-
-**Overlap Rules**:
-
-- Objects: Share at least one key-value pair
-- Arrays: Share at least one element
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Check if metadata contains required field
-{metadata: {strictly_contains: {"environment": "production"}}}
-
-# Check overlap between JSONB fields
-{config: {overlaps: {"debug": true}}}
-```text
-<!-- Code example in TEXT -->
+- **LTree (hierarchical paths)** — operators such as `ancestor_of`, `descendant_of`, `matches_lquery`, and `nlevel_*` for PostgreSQL `ltree` columns. See [LTree operators](./ltree-operators.md).
+- **Vector similarity (pgvector)** — distance operators such as `cosine_distance`, `l2_distance`, `inner_product`, and `hamming_distance` for embedding search. See [Vector operators](./vector-operators.md).
 
 ---
 
-### 13. Coordinate/Geographic Operators
+## Logical Operators
 
-Geographic operators work with PostgreSQL `point` type for coordinate-based filtering.
+Combine field conditions with boolean operators. Conditions at the same level are `AND`-combined by default.
 
-#### **Coordinate Comparison**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `eq` | `POINT = POINT` | Exact coordinate match | `{location: {eq: (40.7128, -74.0060)}}` |
-| `neq` | `POINT != POINT` | Coordinate not equal | `{location: {neq: (0, 0)}}` |
-| `in` | `IN (points)` | Coordinate in list | `{location: {in: [(40.7128, -74.0060), (51.5074, -0.1278)]}}` |
-| `notin` | `NOT IN (points)` | Coordinate not in list | `{location: {notin: [(0, 0)]}}` |
-
-**Format**: `(latitude, longitude)` tuples
-
-**Examples**:
+| Operator | SQL | Description |
+|----------|-----|-------------|
+| `AND` | `AND` | All conditions must match |
+| `OR` | `OR` | At least one condition must match |
+| `NOT` | `NOT` | Negate the condition |
 
 ```graphql
-<!-- Code example in GraphQL -->
-# New York
-{location: {eq: (40.7128, -74.0060)}}
-
-# Major cities
-{location: {in: [(40.7128, -74.0060), (51.5074, -0.1278), (48.8566, 2.3522)]}}
-
-# Exclude null island
-{location: {notin: [(0, 0)]}}
-```text
-<!-- Code example in TEXT -->
-
-#### **Distance-Based Queries**
-
-| Operator | Distance Method | Description | Example |
-|----------|---|---|---|
-| `distance_within` | Haversine / PostGIS / Earthdistance | Find within distance | `{location: {distance_within: ((40.7128, -74.0060), 5000)}}` |
-
-**Distance Methods** (configurable):
-
-| Method | Pros | Cons | Best For |
-|--------|------|------|----------|
-| **Haversine** (default) | No dependencies, fast | Assumes spherical Earth | General purpose, globe-scale |
-| **PostGIS** | Most accurate, rich operators | Requires PostGIS | Advanced geospatial |
-| **Earthdistance** | PostgreSQL native | Requires extension | Earth distances only |
-
-**Distance Units**:
-
-- **Haversine**: Kilometers by default (R = 6,371 km)
-- **PostGIS**: Depends on SRID (usually meters)
-- **Earthdistance**: Earth radii
-
-**Format**: `((latitude, longitude), distance)`
-
-**Examples**:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Find locations within 5 km of NYC
-{location: {distance_within: ((40.7128, -74.0060), 5000)}}
-
-# Within 1 degree (≈111 km at equator)
-{location: {distance_within: ((0, 0), 1)}}
-
-# Cities within 50 km of reference point
-{location: {distance_within: ((48.8566, 2.3522), 50000)}}
-```text
-<!-- Code example in TEXT -->
+query {
+  users(where: {
+    AND: [
+      { age: { gte: 18 } },
+      { OR: [
+        { status: { eq: "active" } },
+        { status: { eq: "pending" } }
+      ] },
+      { NOT: { email: { isnull: true } } }
+    ]
+  }) {
+    id
+    name
+  }
+}
+```
 
 ---
 
-### 14. Logical Operators
+## Combining Operators
 
-Logical operators combine multiple conditions.
-
-#### **Logical Combinations**
-
-| Operator | SQL Equivalent | Description | Example |
-|----------|---|---|---|
-| `AND` | `AND` | All conditions must match (default) | `{AND: [{status: {eq: "active"}}, {age: {gte: 18}}]}` |
-| `OR` | `OR` | At least one condition must match | `{OR: [{status: {eq: "active"}}, {status: {eq: "pending"}}]}` |
-| `NOT` | `NOT` | Negate condition | `{NOT: {status: {eq: "deleted"}}}` |
-
-**Default Behavior**:
-
-- Multiple conditions at same level are ANDed by default
-- Explicit AND/OR for clarity and complex logic
-
-**Examples**:
+Operators across fields and families compose freely in a single `where:` input:
 
 ```graphql
-<!-- Code example in GraphQL -->
-# Implicit AND (default)
-{
-  status: {eq: "active"},
-  age: {gte: 18}
+query {
+  products(where: {
+    AND: [
+      { price: { gte: 100, lte: 500 } },
+      { tags: { overlaps: ["featured", "bestseller"] } },
+      { name: { icontains: "pro" } },
+      { discontinuedAt: { isnull: true } }
+    ]
+  }) {
+    id
+    name
+    price
+  }
 }
-
-# Explicit AND (more readable)
-{
-  AND: [
-    {status: {eq: "active"}},
-    {age: {gte: 18}},
-    {country: {eq: "US"}}
-  ]
-}
-
-# OR logic
-{
-  OR: [
-    {status: {eq: "vip"}},
-    {purchaseTotal: {gte: 10000}}
-  ]
-}
-
-# NOT logic
-{
-  NOT: {status: {eq: "banned"}}
-}
-
-# Complex nested logic
-{
-  AND: [
-    {age: {gte: 18}},
-    {OR: [
-      {status: {eq: "active"}},
-      {status: {eq: "pending"}}
-    ]},
-    {NOT: {email: {isnull: true}}}
-  ]
-}
-
-# De Morgan's Law example
-# Not (A AND B) = (Not A) OR (Not B)
-{
-  OR: [
-    {NOT: {age: {gte: 18}}},
-    {NOT: {status: {eq: "active"}}}
-  ]
-}
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-### 15. Boolean Operators
+## Performance Notes
 
-Boolean operators work with boolean columns.
+WHERE operators translate to PostgreSQL expressions, so the relevant PostgreSQL indexing strategies apply:
 
-| Operator | Description | Example |
-|----------|---|---|
-| `eq` | Boolean equality | `{isActive: {eq: true}}` |
-| `neq` | Boolean inequality | `{isActive: {neq: false}}` |
-| `isnull` | Check if NULL | `{isActive: {isnull: false}}` |
+| Field type | Recommended index | Operators it accelerates |
+|------------|-------------------|--------------------------|
+| Text / scalar | B-tree | `eq`, `gt`, `gte`, `lt`, `lte`, `in` |
+| Text pattern (`LIKE`/`ILIKE`) | `pg_trgm` GIN/GiST | `contains`, `icontains`, `startswith`, `like`, `ilike` |
+| JSONB / array | GIN | `contains`, `contained_by`, `overlaps` |
+| `ltree` | GiST | `ancestor_of`, `descendant_of`, `matches_lquery` |
+| `vector` (pgvector) | HNSW / IVFFlat | distance operators |
 
-**Examples**:
+Tips:
 
-```graphql
-<!-- Code example in GraphQL -->
-# Active users
-{isActive: {eq: true}}
-
-# Non-deleted records
-{isDeleted: {eq: false}}
-
-# Required boolean fields
-{isVerified: {isnull: false}}
-
-# Inactive AND unverified
-{AND: [{isActive: {eq: false}}, {isVerified: {eq: false}}]}
-```text
-<!-- Code example in TEXT -->
+1. Filter on indexed fields where possible.
+2. Combine narrow filters with `AND` to reduce the candidate set early.
+3. Anchored patterns (`startswith` / `LIKE 'value%'`) use B-tree indexes; unanchored substring patterns benefit from a `pg_trgm` index.
+4. Add a GIN index on JSONB array fields you filter with `contains` / `overlaps`.
 
 ---
 
-## Operator Combinations
+## See Also
 
-Operators can be combined in complex queries:
-
-### Complex Query Examples
-
-```graphql
-<!-- Code example in GraphQL -->
-# Users aged 18-65, active, from specific countries
-{
-  AND: [
-    {age: {gte: 18, lte: 65}},
-    {status: {eq: "active"}},
-    {country: {in: ["US", "CA", "MX"]}}
-  ]
-}
-
-# Products in price range, with matching tags
-{
-  AND: [
-    {price: {gte: 100, lte: 500}},
-    {tags: {overlaps: ["featured", "bestseller"]}}
-  ]
-}
-
-# Articles matching search OR by author
-{
-  OR: [
-    {content: {matches: "postgresql & graphql"}},
-    {author: {icontains: "Smith"}}
-  ]
-}
-
-# Locations within distance with specific properties
-{
-  AND: [
-    {location: {distance_within: ((40.7128, -74.0060), 10000)}},
-    {type: {eq: "restaurant"}},
-    {rating: {gte: 4.0}}
-  ]
-}
-
-# Hierarchical filtering
-{
-  AND: [
-    {category: {descendant_of: "Products.Electronics"}},
-    {inStock: {eq: true}},
-    {OR: [
-      {discount: {gte: 20}},
-      {price: {lt: 100}}
-    ]}
-  ]
-}
-
-# Full-text search with filters
-{
-  AND: [
-    {content: {matches: "machine & learning"}},
-    {createdAt: {gte: "2024-01-01"}},
-    {NOT: {archived: {eq: true}}}
-  ]
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Performance Considerations
-
-### Indexing Recommendations
-
-| Column Type | Recommended Indexes | Operators | Notes |
-|----------|---|---|---|
-| String | B-tree | contains, icontains, startswith, like | Pattern matching slower without indexes |
-| Numeric | B-tree | gt, gte, lt, lte, between | Range queries benefit from B-tree |
-| UUID | B-tree | eq, in | Fast lookups |
-| INET/CIDR | GiST | insubnet, overlaps, isprivate | GiST indexes optimal |
-| tsvector | GIN | matches, plain_query, phrase_query | Full-text search requires GIN |
-| ltree | GiST | ancestor_of, descendant_of, matches_lquery | Hierarchical queries benefit from GiST |
-| vector (pgvector) | IVFFlat or HNSW | cosine_distance, l2_distance | Vector indexes critical for performance |
-| point | GiST | distance_within | Spatial indexes improve distance queries |
-| daterange | GiST | overlaps, contains_date, adjacent | Range queries benefit from GiST |
-
-### Query Optimization Tips
-
-1. **Use indexed operators**: Operators matching indexes execute faster
-2. **Combine filters**: AND multiple simple filters before OR
-3. **Filter early**: Narrow results early to reduce downstream computation
-4. **Use specific types**: Choose typed operators over generic fallbacks
-5. **Limit vector searches**: Use tight thresholds to reduce result set
-6. **Regular expression complexity**: Simple patterns faster than complex regex
-7. **JSONB path indexes**: Consider indexes on frequently queried JSONB paths
-
----
-
-## Error Handling
-
-Invalid operator/type combinations return GraphQL errors:
-
-```graphql
-<!-- Code example in GraphQL -->
-# Error: `matches` not supported for numeric fields
-{age: {matches: "^2[0-9]$"}}
-# GraphQL Error: "Operator 'matches' not supported for type 'integer'"
-
-# Error: `distance_within` requires valid distance value
-{location: {distance_within: (40.7128, -74.0060)}}
-# GraphQL Error: "Operator 'distance_within' requires distance parameter"
-
-# Error: `array_contains` for non-array field
-{name: {contains: ["a", "b"]}}
-# GraphQL Error: "Operator 'array_contains' not supported for type 'string'"
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Summary
-
-FraiseQL's 150+ WHERE clause operators provide:
-
-✅ **Type Safety**: Operators validated per column type
-✅ **SQL Efficiency**: Direct translation to optimal SQL
-✅ **Flexibility**: 15 categories covering all use cases
-✅ **Readability**: Intuitive, chainable syntax
-✅ **Performance**: Indexable operators, efficient execution
-✅ **Specialized Features**: Vector search, full-text, hierarchies, geospatial
-
-Whether filtering simple strings, searching text, querying hierarchies, or finding nearby coordinates, FraiseQL's operators provide efficient, type-safe solutions.
+- [LTree operators](./ltree-operators.md) — hierarchical path filtering
+- [Vector operators](./vector-operators.md) — pgvector similarity search
+- [Scalars reference](./scalars.md) — scalar types accepted by these operators
+- [Type system](../foundation/09-type-system.md) — how fields and types are defined

@@ -1,26 +1,60 @@
-<!-- Skip to main content -->
 ---
-
-title: Window Functions Architecture
-description: Window functions (analytical functions) perform calculations across rows related to the current row, using an OVER clause to define the window. Unlike aggregate
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+title: Window Functions in FraiseQL Views
+description: How to use PostgreSQL window functions (ROW_NUMBER, RANK, LAG, LEAD, running totals, moving averages) inside your v_/tv_ view SQL and expose the computed columns through the view's data JSONB so FraiseQL serves them like any other field.
+keywords: ["window functions", "postgresql", "views", "analytics", "ranking"]
 tags: ["documentation", "reference"]
 ---
 
-# Window Functions Architecture
+# Window Functions in FraiseQL Views
 
-**Version:** 1.0
-**Status:** Implemented
-**Audience:** Compiler developers, runtime engineers, SDK users
-**Date:** January 18, 2026
+Window functions (analytical functions) perform calculations across rows related to
+the current row, using an `OVER` clause to define the window. Unlike aggregate
+functions with `GROUP BY`, window functions return a value for **every** row.
+
+In FraiseQL v1, window functions are **not** a GraphQL feature — they are plain
+PostgreSQL. You write them inside the `SELECT` of your `v_`/`tv_` read view, fold the
+computed columns into the view's `data` JSONB with `jsonb_build_object(...)`, and
+FraiseQL serves them at runtime like any other field. There is no special syntax, no
+decorator, and nothing to configure: the work happens in your view SQL.
 
 ---
 
-## Overview
+## The Pattern
 
-Window functions (analytical functions) perform calculations across rows related to the current row, using an OVER clause to define the window. Unlike aggregate functions with GROUP BY, window functions return a value for EVERY row.
+A FraiseQL read view always exposes a public `id` (UUID) column plus a `data` JSONB
+column. To surface a window function, compute it in a subquery (or CTE) and reference
+its result when building `data`:
 
-**Status**: Implemented in FraiseQL v2
+```sql
+CREATE VIEW v_sales_ranked AS
+SELECT
+    s.id,
+    jsonb_build_object(
+        'id',          s.id,
+        'category',    s.category,
+        'product',     s.product_name,
+        'revenue',     s.revenue,
+        'rank_in_category',
+            ROW_NUMBER() OVER (
+                PARTITION BY s.category
+                ORDER BY s.revenue DESC
+            ),
+        'running_total',
+            SUM(s.revenue) OVER (
+                PARTITION BY s.category
+                ORDER BY s.occurred_at
+                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+            )
+    ) AS data
+FROM tb_sales s;
+```
+
+A `@fraiseql.type(sql_source="v_sales_ranked")` then exposes `rankInCategory` and
+`runningTotal` as ordinary scalar fields — FraiseQL reads them straight out of `data`.
+
+For heavy or frequently-queried calculations, materialize the same SELECT as a `tv_`
+table-backed view refreshed by a function or trigger (see
+[tv-table pattern](../database/tv-table-pattern.md)).
 
 ---
 
@@ -30,77 +64,81 @@ Window functions (analytical functions) perform calculations across rows related
 
 Assign ranks to rows within partitions.
 
-- `ROW_NUMBER()` - Unique sequential number (1, 2, 3, 4...)
-- `RANK()` - Ranking with gaps for ties (1, 2, 2, 4...)
-- `DENSE_RANK()` - Ranking without gaps (1, 2, 2, 3...)
-- `NTILE(n)` - Divide rows into n buckets (quartiles, deciles, etc.)
-- `PERCENT_RANK()` - Relative rank from 0.0 to 1.0
-- `CUME_DIST()` - Cumulative distribution (0.0 to 1.0)
-
-**Example**:
+- `ROW_NUMBER()` — Unique sequential number (1, 2, 3, 4...)
+- `RANK()` — Ranking with gaps for ties (1, 2, 2, 4...)
+- `DENSE_RANK()` — Ranking without gaps (1, 2, 2, 3...)
+- `NTILE(n)` — Divide rows into n buckets (quartiles, deciles, etc.)
+- `PERCENT_RANK()` — Relative rank from 0.0 to 1.0
+- `CUME_DIST()` — Cumulative distribution (0.0 to 1.0)
 
 ```sql
-<!-- Code example in SQL -->
+CREATE VIEW v_sales_rankings AS
 SELECT
-    data->>'category' AS category,
-    revenue,
-    ROW_NUMBER() OVER (PARTITION BY data->>'category' ORDER BY revenue DESC) AS row_num,
-    RANK() OVER (PARTITION BY data->>'category' ORDER BY revenue DESC) AS rank,
-    DENSE_RANK() OVER (PARTITION BY data->>'category' ORDER BY revenue DESC) AS dense_rank
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
+    s.id,
+    jsonb_build_object(
+        'id',         s.id,
+        'category',   s.category,
+        'revenue',    s.revenue,
+        'row_num',    ROW_NUMBER() OVER (PARTITION BY s.category ORDER BY s.revenue DESC),
+        'rank',       RANK()       OVER (PARTITION BY s.category ORDER BY s.revenue DESC),
+        'dense_rank', DENSE_RANK() OVER (PARTITION BY s.category ORDER BY s.revenue DESC)
+    ) AS data
+FROM tb_sales s;
+```
 
 ### 2. Value Functions
 
 Access values from other rows in the window.
 
-- `LAG(field, offset, default)` - Access previous row value
-- `LEAD(field, offset, default)` - Access next row value
-- `FIRST_VALUE(field)` - First value in window
-- `LAST_VALUE(field)` - Last value in window
-- `NTH_VALUE(field, n)` - Nth value in window
-
-**Example**:
+- `LAG(field, offset, default)` — Access previous row value
+- `LEAD(field, offset, default)` — Access next row value
+- `FIRST_VALUE(field)` — First value in window
+- `LAST_VALUE(field)` — Last value in window
+- `NTH_VALUE(field, n)` — Nth value in window
 
 ```sql
-<!-- Code example in SQL -->
+CREATE VIEW v_sales_deltas AS
 SELECT
-    data->>'category' AS category,
-    occurred_at,
-    revenue,
-    LAG(revenue, 1) OVER (PARTITION BY data->>'category' ORDER BY occurred_at) AS prev_day_revenue,
-    LEAD(revenue, 1) OVER (PARTITION BY data->>'category' ORDER BY occurred_at) AS next_day_revenue
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
+    s.id,
+    jsonb_build_object(
+        'id',                s.id,
+        'category',          s.category,
+        'occurred_at',       s.occurred_at,
+        'revenue',           s.revenue,
+        'prev_day_revenue',  LAG(s.revenue, 1)  OVER (PARTITION BY s.category ORDER BY s.occurred_at),
+        'next_day_revenue',  LEAD(s.revenue, 1) OVER (PARTITION BY s.category ORDER BY s.occurred_at)
+    ) AS data
+FROM tb_sales s;
+```
 
 ### 3. Aggregate Functions as Windows
 
 Apply aggregate functions with window semantics (running totals, moving averages).
 
-- `SUM(field) OVER (...)` - Running total
-- `AVG(field) OVER (...)` - Moving average
-- `COUNT(*) OVER (...)` - Running count
-- `MIN(field) OVER (...)` - Running minimum
-- `MAX(field) OVER (...)` - Running maximum
-
-**Example**:
+- `SUM(field) OVER (...)` — Running total
+- `AVG(field) OVER (...)` — Moving average
+- `COUNT(*) OVER (...)` — Running count
+- `MIN(field) OVER (...)` — Running minimum
+- `MAX(field) OVER (...)` — Running maximum
 
 ```sql
-<!-- Code example in SQL -->
+CREATE VIEW v_sales_running AS
 SELECT
-    data->>'category' AS category,
-    occurred_at,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data->>'category'
-        ORDER BY occurred_at
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-    ) AS running_total
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
+    s.id,
+    jsonb_build_object(
+        'id',          s.id,
+        'category',    s.category,
+        'occurred_at', s.occurred_at,
+        'revenue',     s.revenue,
+        'running_total',
+            SUM(s.revenue) OVER (
+                PARTITION BY s.category
+                ORDER BY s.occurred_at
+                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+            )
+    ) AS data
+FROM tb_sales s;
+```
 
 ---
 
@@ -108,375 +146,257 @@ FROM tf_sales;
 
 ### PARTITION BY
 
-Divides rows into partitions (groups). Window function applies separately to each partition.
-
-**Syntax**:
+Divides rows into partitions (groups). The window function applies separately to each
+partition.
 
 ```sql
-<!-- Code example in SQL -->
 OVER (PARTITION BY column1, column2, ...)
-```text
-<!-- Code example in TEXT -->
-
-**Example**:
+```
 
 ```sql
-<!-- Code example in SQL -->
 -- Row number within each category
-ROW_NUMBER() OVER (PARTITION BY data->>'category' ORDER BY revenue DESC)
+ROW_NUMBER() OVER (PARTITION BY s.category ORDER BY s.revenue DESC)
 
 -- No partition = single global window
-ROW_NUMBER() OVER (ORDER BY revenue DESC)
-```text
-<!-- Code example in TEXT -->
+ROW_NUMBER() OVER (ORDER BY s.revenue DESC)
+```
 
 ### ORDER BY
 
-Defines row ordering within each partition. Required for ranking functions and frame clauses.
-
-**Syntax**:
+Defines row ordering within each partition. Required for ranking functions and frame
+clauses.
 
 ```sql
-<!-- Code example in SQL -->
 OVER (PARTITION BY ... ORDER BY column1 [ASC|DESC], column2 [ASC|DESC], ...)
-```text
-<!-- Code example in TEXT -->
-
-**Example**:
+```
 
 ```sql
-<!-- Code example in SQL -->
 -- Rank by revenue descending within category
-RANK() OVER (PARTITION BY data->>'category' ORDER BY revenue DESC)
+RANK() OVER (PARTITION BY s.category ORDER BY s.revenue DESC)
 
 -- Running total ordered by date
-SUM(revenue) OVER (PARTITION BY data->>'category' ORDER BY occurred_at ASC)
-```text
-<!-- Code example in TEXT -->
+SUM(s.revenue) OVER (PARTITION BY s.category ORDER BY s.occurred_at ASC)
+```
 
 ### Frame Clauses
 
-Define which rows are included in the window frame relative to current row. Used with aggregate window functions.
+Define which rows are included in the window frame relative to the current row. Used
+with aggregate window functions.
 
 **Frame Types**:
 
-- `ROWS` - Physical row-based window (count rows)
-- `RANGE` - Logical value-based window (based on ORDER BY value)
-- `GROUPS` - Group-based window (PostgreSQL only)
+- `ROWS` — Physical row-based window (count rows)
+- `RANGE` — Logical value-based window (based on the `ORDER BY` value)
+- `GROUPS` — Group-based window
 
 **Frame Boundaries**:
 
-- `UNBOUNDED PRECEDING` - Start of partition
-- `n PRECEDING` - n rows/range units before current
-- `CURRENT ROW` - Current row
-- `n FOLLOWING` - n rows/range units after current
-- `UNBOUNDED FOLLOWING` - End of partition
+- `UNBOUNDED PRECEDING` — Start of partition
+- `n PRECEDING` — n rows/range units before current
+- `CURRENT ROW` — Current row
+- `n FOLLOWING` — n rows/range units after current
+- `UNBOUNDED FOLLOWING` — End of partition
 
 **Default Frame** (if not specified):
 
-- With ORDER BY: `RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`
-- Without ORDER BY: `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`
-
-**Examples**:
+- With `ORDER BY`: `RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`
+- Without `ORDER BY`: `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`
 
 ```sql
-<!-- Code example in SQL -->
 -- Cumulative sum (all rows up to current)
-SUM(revenue) OVER (
-    PARTITION BY data->>'category'
-    ORDER BY occurred_at
+SUM(s.revenue) OVER (
+    PARTITION BY s.category
+    ORDER BY s.occurred_at
     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
 )
 
 -- 7-day moving average (last 7 rows including current)
-AVG(revenue) OVER (
-    PARTITION BY data->>'category'
-    ORDER BY occurred_at
+AVG(s.revenue) OVER (
+    PARTITION BY s.category
+    ORDER BY s.occurred_at
     ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
 )
 
 -- Centered 3-row moving average (current ± 1 row)
-AVG(revenue) OVER (
-    PARTITION BY data->>'category'
-    ORDER BY occurred_at
+AVG(s.revenue) OVER (
+    PARTITION BY s.category
+    ORDER BY s.occurred_at
     ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
 )
 
 -- All rows in partition (default without ORDER BY)
-SUM(revenue) OVER (
-    PARTITION BY data->>'category'
+SUM(s.revenue) OVER (
+    PARTITION BY s.category
     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
 )
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-## Compilation Strategy
+## Evaluation Order
 
-### Compiler Tasks
-
-1. **Parse Window Function Specifications** from schema decorators
-2. **Validate Columns**:
-   - PARTITION BY columns exist in table
-   - ORDER BY columns exist in table
-   - Field references are valid
-3. **Generate Window Clause SQL**:
-   - Build OVER clause with PARTITION BY, ORDER BY, frame
-4. **Database-Specific Lowering**:
-   - Adjust syntax for target database
-   - Validate frame clause support
-
-### Runtime Execution
-
-1. Apply WHERE filters first (before window functions)
-2. Compute window functions (database-side)
-3. Apply HAVING if present (after aggregates)
-4. Apply final ORDER BY and LIMIT
-5. Return results with window columns
-
-**Execution Order**:
+PostgreSQL evaluates window functions at a fixed point in the query pipeline. Knowing
+this order matters when you combine them with filters and aggregates inside a view:
 
 ```text
-<!-- Code example in TEXT -->
 WHERE → GROUP BY → HAVING → Window Functions → ORDER BY → LIMIT
-```text
-<!-- Code example in TEXT -->
+```
+
+- `WHERE` filters rows **before** window functions see them.
+- `GROUP BY` / `HAVING` aggregate **before** window functions run, so a window can
+  operate over already-aggregated rows (e.g. `LAG(SUM(revenue), 12)`).
+- Because window functions run after `WHERE`, you cannot filter on a window result in
+  the same query level — wrap the view (or a subquery) and filter the outer level (see
+  [Top-N Per Category](#4-top-n-per-category)).
 
 ---
 
-## Database-Specific Support
+## PostgreSQL Support
 
-### PostgreSQL
+PostgreSQL has full window-function support, which is everything these patterns need:
 
-**Support Level**: ✅ Full
-
-**Features**:
-
-- All ranking functions (ROW_NUMBER, RANK, DENSE_RANK, NTILE, PERCENT_RANK, CUME_DIST)
-- All value functions (LAG, LEAD, FIRST_VALUE, LAST_VALUE, NTH_VALUE)
-- All frame types (ROWS, RANGE, GROUPS)
-- EXCLUDE clause (EXCLUDE CURRENT ROW, EXCLUDE GROUP, EXCLUDE TIES, EXCLUDE NO OTHERS)
-
-**Example**:
+- All ranking functions (`ROW_NUMBER`, `RANK`, `DENSE_RANK`, `NTILE`, `PERCENT_RANK`, `CUME_DIST`)
+- All value functions (`LAG`, `LEAD`, `FIRST_VALUE`, `LAST_VALUE`, `NTH_VALUE`)
+- All frame types (`ROWS`, `RANGE`, `GROUPS`)
+- The `EXCLUDE` clause (`EXCLUDE CURRENT ROW`, `EXCLUDE GROUP`, `EXCLUDE TIES`, `EXCLUDE NO OTHERS`)
 
 ```sql
-<!-- Code example in SQL -->
+CREATE VIEW v_sales_excluded AS
 SELECT
-    data->>'category' AS category,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data->>'category'
-        ORDER BY occurred_at
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-        EXCLUDE CURRENT ROW
-    ) AS cumulative_revenue_excluding_current
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
-
-### MySQL (8.0+)
-
-**Support Level**: ✅ Near-full (requires MySQL 8.0+)
-
-**Features**:
-
-- All ranking functions
-- All value functions
-- Frame types: ROWS, RANGE
-- ❌ No GROUPS frame type
-- ❌ No EXCLUDE clause
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    JSON_EXTRACT(data, '$.category') AS category,
-    revenue,
-    ROW_NUMBER() OVER (PARTITION BY JSON_EXTRACT(data, '$.category') ORDER BY revenue DESC) AS rank
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
-
-### SQLite (3.25+)
-
-**Support Level**: ✅ Good (requires SQLite 3.25+, released 2018)
-
-**Features**:
-
-- All ranking functions
-- All value functions
-- Frame types: ROWS, RANGE
-- ❌ No GROUPS frame type
-- ❌ No EXCLUDE clause
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    json_extract(data, '$.category') AS category,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY json_extract(data, '$.category')
-        ORDER BY occurred_at
-        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) AS moving_avg_7d
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
-
-### SQL Server
-
-**Support Level**: ✅ Full
-
-**Features**:
-
-- All ranking functions
-- All value functions (LAG, LEAD, FIRST_VALUE, LAST_VALUE)
-- Frame types: ROWS, RANGE
-- ❌ No GROUPS frame type
-- ❌ No EXCLUDE clause
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
-SELECT
-    JSON_VALUE(data, '$.category') AS category,
-    revenue,
-    LAG(revenue, 1) OVER (
-        PARTITION BY JSON_VALUE(data, '$.category')
-        ORDER BY occurred_at
-    ) AS prev_day_revenue
-FROM tf_sales;
-```text
-<!-- Code example in TEXT -->
+    s.id,
+    jsonb_build_object(
+        'id',       s.id,
+        'category', s.category,
+        'revenue',  s.revenue,
+        'cumulative_revenue_excluding_current',
+            SUM(s.revenue) OVER (
+                PARTITION BY s.category
+                ORDER BY s.occurred_at
+                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                EXCLUDE CURRENT ROW
+            )
+    ) AS data
+FROM tb_sales s;
+```
 
 ---
 
 ## Use Cases
 
+Each example below is the body of a view's `SELECT`. Wrap it in
+`CREATE VIEW v_... AS SELECT s.id, jsonb_build_object(...) AS data FROM ...` to expose
+the result through FraiseQL.
+
 ### 1. Running Totals
 
-Calculate cumulative sum up to current row.
+Calculate a cumulative sum up to the current row.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    data->>'category' AS category,
-    occurred_at,
-    revenue,
-    SUM(revenue) OVER (
-        PARTITION BY data->>'category'
-        ORDER BY occurred_at
+    s.category,
+    s.occurred_at,
+    s.revenue,
+    SUM(s.revenue) OVER (
+        PARTITION BY s.category
+        ORDER BY s.occurred_at
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     ) AS cumulative_revenue
-FROM tf_sales
-ORDER BY data->>'category', occurred_at;
-```text
-<!-- Code example in TEXT -->
+FROM tb_sales s
+ORDER BY s.category, s.occurred_at;
+```
 
 ### 2. Moving Averages
 
-Calculate average over sliding window (e.g., 7-day moving average).
+Calculate an average over a sliding window (e.g. a 7-day moving average). Note the
+window runs over already-aggregated daily totals.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    data->>'category' AS category,
-    occurred_at::DATE AS day,
-    SUM(revenue) AS daily_revenue,
-    AVG(SUM(revenue)) OVER (
-        PARTITION BY data->>'category'
-        ORDER BY occurred_at::DATE
+    s.category,
+    s.occurred_at::DATE AS day,
+    SUM(s.revenue) AS daily_revenue,
+    AVG(SUM(s.revenue)) OVER (
+        PARTITION BY s.category
+        ORDER BY s.occurred_at::DATE
         ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
     ) AS moving_avg_7d
-FROM tf_sales
-GROUP BY data->>'category', occurred_at::DATE
-ORDER BY data->>'category', occurred_at::DATE;
-```text
-<!-- Code example in TEXT -->
+FROM tb_sales s
+GROUP BY s.category, s.occurred_at::DATE
+ORDER BY s.category, s.occurred_at::DATE;
+```
 
 ### 3. Year-Over-Year Comparison
 
-Compare current period to same period last year using LAG.
+Compare the current period to the same period last year using `LAG`.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    DATE_TRUNC('month', occurred_at) AS month,
-    SUM(revenue) AS monthly_revenue,
-    LAG(SUM(revenue), 12) OVER (ORDER BY DATE_TRUNC('month', occurred_at)) AS same_month_last_year,
-    SUM(revenue) - LAG(SUM(revenue), 12) OVER (ORDER BY DATE_TRUNC('month', occurred_at)) AS yoy_change
-FROM tf_sales
-GROUP BY DATE_TRUNC('month', occurred_at)
+    DATE_TRUNC('month', s.occurred_at) AS month,
+    SUM(s.revenue) AS monthly_revenue,
+    LAG(SUM(s.revenue), 12) OVER (ORDER BY DATE_TRUNC('month', s.occurred_at)) AS same_month_last_year,
+    SUM(s.revenue) - LAG(SUM(s.revenue), 12) OVER (ORDER BY DATE_TRUNC('month', s.occurred_at)) AS yoy_change
+FROM tb_sales s
+GROUP BY DATE_TRUNC('month', s.occurred_at)
 ORDER BY month;
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 4. Top-N Per Category
 
-Rank items within each category and filter to top N.
+Rank items within each category and filter to the top N. Because window results cannot
+be filtered at the same query level, compute the rank in an inner subquery and filter
+the outer one.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT * FROM (
     SELECT
-        data->>'category' AS category,
-        data->>'product_name' AS product,
-        SUM(revenue) AS total_revenue,
+        s.category,
+        s.product_name AS product,
+        SUM(s.revenue) AS total_revenue,
         ROW_NUMBER() OVER (
-            PARTITION BY data->>'category'
-            ORDER BY SUM(revenue) DESC
+            PARTITION BY s.category
+            ORDER BY SUM(s.revenue) DESC
         ) AS rank
-    FROM tf_sales
-    GROUP BY data->>'category', data->>'product_name'
+    FROM tb_sales s
+    GROUP BY s.category, s.product_name
 ) ranked
 WHERE rank <= 10
 ORDER BY category, rank;
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 5. Percentile Ranking
 
-Assign percentile ranks to rows.
+Assign percentile ranks and quartiles to rows.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    data->>'product_name' AS product,
-    SUM(revenue) AS total_revenue,
-    PERCENT_RANK() OVER (ORDER BY SUM(revenue) DESC) AS percentile_rank,
-    NTILE(4) OVER (ORDER BY SUM(revenue) DESC) AS quartile
-FROM tf_sales
-GROUP BY data->>'product_name'
+    s.product_name AS product,
+    SUM(s.revenue) AS total_revenue,
+    PERCENT_RANK() OVER (ORDER BY SUM(s.revenue) DESC) AS percentile_rank,
+    NTILE(4)       OVER (ORDER BY SUM(s.revenue) DESC) AS quartile
+FROM tb_sales s
+GROUP BY s.product_name
 ORDER BY total_revenue DESC;
-```text
-<!-- Code example in TEXT -->
+```
 
 ### 6. Trend Analysis
 
-Compare to previous period to identify trends.
+Compare to the previous period to identify trends.
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    occurred_at::DATE AS day,
-    SUM(revenue) AS daily_revenue,
-    LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE) AS prev_day_revenue,
-    SUM(revenue) - LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE) AS day_over_day_change,
+    s.occurred_at::DATE AS day,
+    SUM(s.revenue) AS daily_revenue,
+    LAG(SUM(s.revenue), 1) OVER (ORDER BY s.occurred_at::DATE) AS prev_day_revenue,
+    SUM(s.revenue) - LAG(SUM(s.revenue), 1) OVER (ORDER BY s.occurred_at::DATE) AS day_over_day_change,
     ROUND(
-        100.0 * (SUM(revenue) - LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE)) /
-        NULLIF(LAG(SUM(revenue), 1) OVER (ORDER BY occurred_at::DATE), 0),
+        100.0 * (SUM(s.revenue) - LAG(SUM(s.revenue), 1) OVER (ORDER BY s.occurred_at::DATE)) /
+        NULLIF(LAG(SUM(s.revenue), 1) OVER (ORDER BY s.occurred_at::DATE), 0),
         2
     ) AS day_over_day_pct
-FROM tf_sales
-GROUP BY occurred_at::DATE
-ORDER BY occurred_at::DATE;
-```text
-<!-- Code example in TEXT -->
+FROM tb_sales s
+GROUP BY s.occurred_at::DATE
+ORDER BY s.occurred_at::DATE;
+```
 
 ---
 
@@ -484,243 +404,66 @@ ORDER BY occurred_at::DATE;
 
 ### Indexing Strategy
 
-**PARTITION BY Columns**:
+Index the columns your windows partition and order by. Window functions read the table
+in partition/order sequence, so matching indexes let PostgreSQL avoid extra sorts.
 
 ```sql
-<!-- Code example in SQL -->
 -- Index columns used in PARTITION BY
-CREATE INDEX idx_sales_category ON tf_sales ((dimensions->>'category'));
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_sales_category ON tb_sales (category);
 
-**ORDER BY Columns**:
+-- Index columns used in ORDER BY within the window
+CREATE INDEX idx_sales_occurred ON tb_sales (occurred_at);
 
-```sql
-<!-- Code example in SQL -->
--- Index columns used in ORDER BY within window
-CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
-```text
-<!-- Code example in TEXT -->
+-- Composite index for a common (partition, order) pattern
+CREATE INDEX idx_sales_category_occurred ON tb_sales (category, occurred_at);
+```
 
-**Composite Indexes**:
+### Cost Notes
 
-```sql
-<!-- Code example in SQL -->
--- Composite index for common window pattern
-CREATE INDEX idx_sales_category_occurred
-    ON tf_sales ((dimensions->>'category'), occurred_at);
-```text
-<!-- Code example in TEXT -->
-
-### Window Function Evaluation
-
-**Execution Order**:
-
-1. WHERE clause filters rows
-2. GROUP BY aggregates (if present)
-3. HAVING filters aggregated results (if present)
-4. **Window functions compute** ← Happens here
-5. Final ORDER BY sorts results
-6. LIMIT/OFFSET applies
-
-**Performance Impact**:
-
-- Window functions evaluated AFTER WHERE/GROUP BY/HAVING
-- Can be expensive for large windows (UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
-- Proper indexes on PARTITION BY and ORDER BY columns critical
+- Window functions are evaluated **after** `WHERE`/`GROUP BY`/`HAVING`, so filtering
+  early reduces the rows the window has to scan.
+- Large frames (`UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`) are more expensive than
+  bounded frames.
+- Proper indexes on `PARTITION BY` and `ORDER BY` columns are critical for large tables.
 
 ### Optimization Tips
 
-1. **Use Specific Frame Clauses**:
+1. **Use specific frame clauses** — bound the frame whenever the calculation allows it:
 
    ```sql
-<!-- Code example in SQL -->
-   -- ❌ SLOW: Large frame
-   SUM(revenue) OVER (
-       ORDER BY occurred_at
+   -- Slower: unbounded frame
+   SUM(s.revenue) OVER (
+       ORDER BY s.occurred_at
        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
    )
 
-   -- ✅ FAST: Bounded frame
-   SUM(revenue) OVER (
-       ORDER BY occurred_at
+   -- Faster: bounded frame
+   SUM(s.revenue) OVER (
+       ORDER BY s.occurred_at
        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
    )
-   ```text
-<!-- Code example in TEXT -->
+   ```
 
-2. **Partition Data Appropriately**:
-   - Balance partition size (not too large, not too many)
-   - Use meaningful partitions (category, region, etc.)
+2. **Partition data appropriately** — balance partition size (not too large, not too
+   many) and use meaningful partitions (category, region, etc.).
 
-3. **Consider Materialized Views**:
+3. **Promote heavy views to `tv_` table-backed views** — for window calculations that
+   are queried often, precompute them into a `tv_` projection table refreshed by a
+   function or trigger, rather than recomputing on every read. See
+   [tv-table pattern](../database/tv-table-pattern.md) and the
+   [view-selection guide](../database/view-selection-guide.md) for when to choose a
+   plain `v_` view versus a `tv_` table.
 
-   ```sql
-<!-- Code example in SQL -->
-   -- For frequently-used window calculations
-   CREATE MATERIALIZED VIEW mv_sales_running_totals AS
-   SELECT
-       data->>'category' AS category,
-       occurred_at,
-       revenue,
-       SUM(revenue) OVER (
-           PARTITION BY data->>'category'
-           ORDER BY occurred_at
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-       ) AS cumulative_revenue
-   FROM tf_sales;
-
-   CREATE INDEX idx_mv_category_occurred
-       ON mv_sales_running_totals(category, occurred_at);
-   ```text
-<!-- Code example in TEXT -->
-
-4. **Limit Window Size**:
-   - Prefer `ROWS BETWEEN 6 PRECEDING` over `UNBOUNDED PRECEDING` when possible
-   - Use WHERE clause to reduce data volume before window computation
+4. **Reduce data volume first** — prefer `ROWS BETWEEN 6 PRECEDING` over
+   `UNBOUNDED PRECEDING` when possible, and use a `WHERE` clause to shrink the input
+   before window computation.
 
 ---
 
-## GraphQL API (Proposed)
+## Related Documentation
 
-**Status**: Proposed for future enhancement
-
-### Query Structure
-
-```graphql
-<!-- Code example in GraphQL -->
-input WindowFunctionInput {
-  function: WindowFunction!
-  field: String
-  alias: String!
-  partition_by: [String!]
-  order_by: [OrderByInput!]
-  frame: WindowFrameInput
-  offset: Int  # For LAG/LEAD
-  default: JSON  # For LAG/LEAD default value
-}
-
-enum WindowFunction {
-  # Ranking
-  ROW_NUMBER
-  RANK
-  DENSE_RANK
-  NTILE
-  PERCENT_RANK
-  CUME_DIST
-
-  # Value
-  LAG
-  LEAD
-  FIRST_VALUE
-  LAST_VALUE
-  NTH_VALUE
-
-  # Aggregates
-  SUM
-  AVG
-  COUNT
-  MIN
-  MAX
-}
-
-input WindowFrameInput {
-  type: WindowFrameType!
-  start: WindowFrameBoundary!
-  end: WindowFrameBoundary!
-}
-
-enum WindowFrameType {
-  ROWS
-  RANGE
-  GROUPS  # PostgreSQL only
-}
-
-input WindowFrameBoundary {
-  type: BoundaryType!
-  offset: Int
-}
-
-enum BoundaryType {
-  UNBOUNDED_PRECEDING
-  N_PRECEDING
-  CURRENT_ROW
-  N_FOLLOWING
-  UNBOUNDED_FOLLOWING
-}
-```text
-<!-- Code example in TEXT -->
-
-### Example Query
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_window(
-    select: ["category", "occurred_at", "revenue"]
-    windows: [
-      {
-        function: ROW_NUMBER
-        alias: "rank_by_revenue"
-        partition_by: ["category"]
-        order_by: [{field: "revenue", direction: DESC}]
-      }
-      {
-        function: SUM
-        field: "revenue"
-        alias: "running_total"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-        frame: {
-          type: ROWS
-          start: {type: UNBOUNDED_PRECEDING}
-          end: {type: CURRENT_ROW}
-        }
-      }
-      {
-        function: AVG
-        field: "revenue"
-        alias: "moving_avg_7d"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-        frame: {
-          type: ROWS
-          start: {type: N_PRECEDING, offset: 6}
-          end: {type: CURRENT_ROW}
-        }
-      }
-      {
-        function: LAG
-        field: "revenue"
-        offset: 1
-        alias: "prev_day_revenue"
-        partition_by: ["category"]
-        order_by: [{field: "occurred_at", direction: ASC}]
-      }
-    ]
-    where: {occurred_at: {_gte: "2026-01-01"}}
-    orderBy: [{field: "category"}, {field: "occurred_at"}]
-  ) {
-    category
-    occurred_at
-    revenue
-    rank_by_revenue
-    running_total
-    moving_avg_7d
-    prev_day_revenue
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Related Specifications
-
-- **Aggregation Model** (`aggregation-model.md`) - GROUP BY and basic aggregates
-- **Window Operators Reference** (`../specs/window-operators.md`) - Complete function reference
-- **Analytics Patterns** (`../guides/analytics-patterns.md`) - Practical examples
-
----
-
-*End of Window Functions Architecture*
+- [Aggregation Model](./aggregation-model.md) — `GROUP BY`, `HAVING`, and basic aggregates
+- [Fact / Dimension Pattern](./fact-dimension-pattern.md) — modeling fact tables for analytics
+- [Calendar Dimensions](./calendar-dimensions.md) — date attributes for time-based windows
+- [tv-table Pattern](../database/tv-table-pattern.md) — materializing heavy views into projection tables
+- [View Selection Guide](../database/view-selection-guide.md) — choosing `v_` vs `tv_`

@@ -90,9 +90,9 @@ Once you've completed these guides, continue your learning journey:
 
 **Installation**: `pip install fraiseql`
 
-**Documentation Hub**: [docs/README.md](../README.md)
+**Documentation Hub**: [Documentation Home](../index.md)
 
-**Need help?**: [GitHub Discussions](../discussions)
+**Need help?**: [GitHub Discussions](https://github.com/fraiseql/fraiseql-python/discussions)
 
 ---
 

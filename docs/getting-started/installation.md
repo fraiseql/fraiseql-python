@@ -549,5 +549,4 @@ After successful installation:
 
 ---
 
-*Installation Guide - Choose your path, verify setup, troubleshoot issues*</content>
-</xai:function_call">Write file to INSTALLATION.md
+*Installation Guide - Choose your path, verify setup, troubleshoot issues*

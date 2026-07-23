@@ -1,842 +1,468 @@
-<!-- Skip to main content -->
 ---
-
-title: FraiseQL Extension Points: Plugins, Customization, and Integration Hooks
-description: FraiseQL provides extension points for customization without modifying core framework. Developers can extend behavior through hooks, custom validators, authoriz
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+title: "FraiseQL Extension Points: Customizing and Extending the Framework"
+description: FraiseQL v1 is extensible through custom field resolvers, dataloaders, scalars, FastAPI/ASGI middleware, operation authorizers, and PostgreSQL itself. This guide documents the real extension surfaces.
+keywords: ["extension", "customization", "resolvers", "dataloaders", "scalars", "middleware", "authorization", "postgresql"]
 tags: ["documentation", "reference"]
 ---
 
-# FraiseQL Extension Points: Plugins, Customization, and Integration Hooks
+# FraiseQL Extension Points: Customizing and Extending the Framework
 
-**Date:** January 2026
-**Status:** Complete System Specification
-**Audience:** Framework extension developers, plugin authors, integration engineers
+**Audience:** Application developers, integration engineers, framework users
 
 ---
 
 ## Executive Summary
 
-FraiseQL provides extension points for customization without modifying core framework. Developers can extend behavior through hooks, custom validators, authorization rules, and metrics.
+FraiseQL v1 is a Python runtime GraphQL framework for PostgreSQL. You define your
+schema with decorators; at application startup the schema is built in memory and
+served over FastAPI. There is no compile step and no separate plugin runtime.
 
-**Core principle**: Extensibility through composition, not modification. All extensions operate within compiled schema constraints.
+Extensibility is achieved through **composition** — you extend behavior by adding
+your own resolvers, scalars, middleware, and authorizers, and by pushing logic into
+PostgreSQL. The framework exposes the following real extension points:
+
+| Extension point | What it customizes |
+|-----------------|--------------------|
+| `@fraiseql.field` | Computed / derived fields on a type (sync or async) |
+| `@fraiseql.dataloader_field` | Batched field resolution to prevent N+1 queries |
+| Custom scalars | Domain-specific typed values |
+| FastAPI / ASGI middleware | Cross-cutting request/response behavior |
+| `Authorizer` + `authorizer=` | Per-operation and global authorization |
+| PostgreSQL | The deepest surface: `fn_` functions, triggers, custom types, extensions |
 
 ---
 
-## 1. Authorization Rule Extensions
+## 1. Custom Field Resolvers
 
-### 1.1 Custom Authorization Rules
-
-Define custom rules beyond built-in:
+Use `@fraiseql.field` to add a computed or derived field to a `@fraiseql.type`. The
+decorated method becomes a GraphQL field whose value is produced at resolution time
+rather than read directly from the view's `data` JSONB.
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.authorization_rule(name="published_or_author")
-def rule_published_or_author(
-    resource: Any,
-    user_context: UserContext
-) -> bool:
-    """Published posts or posts by current user"""
-    return (
-        resource.published == True
-        or resource.author_id == user_context.user_id
-    )
+import fraiseql
 
-@FraiseQL.authorization_rule(name="team_member")
-def rule_team_member(
-    resource: Any,
-    user_context: UserContext
-) -> bool:
-    """User is member of resource's team"""
-    return resource.team_id in user_context.team_ids
 
-# Use in schema
-@FraiseQL.type
+@fraiseql.field(resolver=None, description=None, track_n1=True)
+def field(...): ...
+```
+
+The signature is:
+
+- `resolver` — an optional custom resolver to override the default behavior
+  (defaults to `None`, in which case the decorated method body is the resolver).
+- `description` — the field description that appears in the GraphQL schema.
+- `track_n1` — whether to track N+1 query patterns for this field (default `True`).
+
+### 1.1 Synchronous computed field
+
+```python
+import fraiseql
+
+
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: fraiseql.ID
+    first_name: str
+    last_name: str
+
+    @fraiseql.field(description="User's full display name")
+    def display_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+```
+
+### 1.2 Async field with database access
+
+The resolver receives the GraphQL `info` object, so it can reach the request-scoped
+repository through `info.context["db"]` and run additional reads.
+
+```python
+import fraiseql
+from uuid import UUID
+
+
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: UUID
+
+    @fraiseql.field(description="Number of posts authored by this user")
+    async def post_count(self, info) -> int:
+        db = info.context["db"]
+        return await db.fetchval(
+            "SELECT count(*) FROM v_post WHERE author_id = $1", self.id
+        )
+```
+
+Because the parent object (`self`) and `info` are both available, a custom field can
+combine already-loaded data with a targeted query. Keep these resolvers cheap: if a
+field issues one query per parent row, batch it with a dataloader instead (next
+section).
+
+---
+
+## 2. Dataloaders: Batching to Prevent N+1
+
+When a field needs to look up a related record for every parent in a list, resolving
+it one row at a time produces an N+1 query pattern. `@fraiseql.dataloader_field`
+batches those lookups into a single load.
+
+```python
+def dataloader_field(
+    loader_class: type[DataLoader],
+    *,
+    key_field: str,
+    description: str | None = None,
+) -> ...: ...
+```
+
+- `loader_class` — a `DataLoader` subclass that knows how to batch-load by key.
+- `key_field` — the attribute on the parent object holding the key to load.
+- `description` — optional field description for the GraphQL schema.
+
+The decorated method must have the signature `(self, info) -> ReturnType`; its body
+is auto-implemented by the decorator.
+
+```python
+import fraiseql
+from uuid import UUID
+from fraiseql.optimization.dataloader import DataLoader
+
+
+class UserDataLoader(DataLoader):
+    async def batch_load(self, keys: list[UUID]) -> list["User | None"]:
+        db = self.context["db"]
+        rows = await db.find("v_user", id__in=keys)
+        by_id = {row.id: row for row in rows}
+        return [by_id.get(key) for key in keys]
+
+
+@fraiseql.type(sql_source="v_post")
 class Post:
-    @FraiseQL.authorize(rule="published_or_author")
-    content: str
+    id: UUID
+    author_id: UUID
 
-@FraiseQL.type
-class Project:
-    @FraiseQL.authorize(rule="team_member")
-    budget: float
-```text
-<!-- Code example in TEXT -->
+    @fraiseql.dataloader_field(UserDataLoader, key_field="author_id")
+    async def author(self, info) -> "User | None":
+        """Load the post author. Batched across all posts in the request."""
+        ...  # implementation generated by the decorator
+```
 
-### 1.2 Complex Rule Logic
+All `author` lookups across a page of posts collapse into one batched load instead
+of one query per post.
 
-Rules can access database for context:
+See also: [type system](../../foundation/09-type-system.md).
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.authorization_rule(name="department_lead_or_admin")
-async def rule_department_lead(
-    resource: Any,
-    user_context: UserContext,
-    db: Database  # Database connection provided
-) -> bool:
-    """User is department lead or admin"""
-    if user_context.is_admin:
-        return True
+---
 
-    # Query to check if user is lead of this department
-    is_lead = await db.query_one(
-        "SELECT COUNT(*) FROM tb_department_leads "
-        "WHERE user_id = $1 AND department_id = $2",
-        [user_context.user_id, resource.department_id]
-    )
-    return bool(is_lead)
-```text
-<!-- Code example in TEXT -->
+## 3. Custom Scalars
 
-### 1.3 Dynamic Rule Caching
-
-Cache authorization decisions:
+FraiseQL ships a library of domain scalars in `fraiseql.types`. Importing and
+annotating a field with one of these gives you parsing, serialization, and GraphQL
+schema typing for free.
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.authorization_rule(
-    name="expensive_rule",
-    cache_ttl_seconds=300,
-    cache_key_fields=["user_id", "resource_id"]
+import fraiseql
+from fraiseql.types import ID, DateTime, EmailAddress, JSON, LTree
+
+
+@fraiseql.type(sql_source="v_account")
+class Account:
+    id: ID
+    email: EmailAddress      # validated email scalar
+    created_at: DateTime     # ISO-8601 timestamp scalar
+    metadata: JSON           # arbitrary JSON payload
+    path: LTree              # PostgreSQL ltree hierarchical path
+```
+
+Available scalars include `ID`, `Date`, `DateTime`, `EmailAddress`, `JSON`, `LTree`,
+and many more domain types. Each scalar carries its own validation and
+serialization, so an `EmailAddress` field rejects malformed input at the GraphQL
+boundary before it ever reaches your resolver, and an `LTree` value maps cleanly onto
+PostgreSQL's `ltree` type.
+
+For the complete catalog and the rules each scalar enforces, see the
+[scalars reference](../../reference/scalars.md).
+
+---
+
+## 4. FastAPI / ASGI Middleware
+
+FraiseQL serves its GraphQL endpoint as a FastAPI application, so the entire FastAPI
+and Starlette middleware ecosystem is available to you. There are two ways to add
+cross-cutting request/response behavior.
+
+### 4.1 Add middleware to the generated app
+
+`create_fraiseql_app` returns a `FastAPI` instance. Add standard middleware to it
+with `add_middleware`:
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    production=True,
 )
-async def expensive_rule(resource, user_context, db):
-    """Rule with expensive computation"""
-    # Cached automatically for 5 minutes
-    # Cache key: {user_id}:{resource_id}
 
-    result = await db.query_expensive(...)
-    return result
-```text
-<!-- Code example in TEXT -->
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://app.example.com"],
+    allow_methods=["POST"],
+    allow_headers=["authorization", "content-type"],
+)
+```
+
+### 4.2 Mount FraiseQL inside a larger FastAPI app
+
+To run FraiseQL alongside your own REST routes and middleware, build your FastAPI app
+first and pass it to `create_fraiseql_app` via the `app=` parameter. FraiseQL extends
+that app with its GraphQL endpoint rather than creating a new one:
+
+```python
+from fastapi import FastAPI
+from fraiseql.fastapi import create_fraiseql_app
+
+parent = FastAPI(title="My Service")
+
+
+@parent.get("/healthz")
+async def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+# Add your own middleware to the parent app, then hand it to FraiseQL.
+app = create_fraiseql_app(
+    app=parent,
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+)
+```
+
+Because middleware runs at the ASGI layer, it wraps every GraphQL request uniformly —
+ideal for request IDs, structured logging, compression, CORS, and security headers.
 
 ---
 
-## 2. Validation Rule Extensions
+## 5. Authorization
 
-### 2.1 Custom Validators
+FraiseQL enforces authorization at the **operation** level through the `Authorizer`
+protocol. An authorizer decides whether a top-level query, mutation, or subscription
+may run for the current request.
 
-Define validation on input fields:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.validator(name="email_validator")
-def validate_email(value: str) -> None:
-    """Validate email format and domain"""
-    if not "@" in value:
-        raise ValidationError("Invalid email format")
-
-    domain = value.split("@")[1]
-    if domain not in ["company.com", "trusted-partner.com"]:
-        raise ValidationError(f"Email domain {domain} not allowed")
-
-@FraiseQL.validator(name="password_strength")
-def validate_password(value: str) -> None:
-    """Validate password meets security requirements"""
-    if len(value) < 12:
-        raise ValidationError("Password must be at least 12 characters")
-
-    if not any(c.isupper() for c in value):
-        raise ValidationError("Password must contain uppercase letter")
-
-    if not any(c.isdigit() for c in value):
-        raise ValidationError("Password must contain digit")
-
-# Use in schema
-@FraiseQL.type
-class User:
-    @FraiseQL.validate(rule="email_validator")
-    email: str
-
-    @FraiseQL.mutation
-    @FraiseQL.validate(rule="password_strength")
-    def update_password(self, new_password: str) -> bool:
-        """Update user password"""
-        pass
-```text
-<!-- Code example in TEXT -->
-
-### 2.2 Async Validators
-
-Validators can query database:
+### 5.1 The Authorizer protocol
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.validator(name="unique_email")
-async def validate_unique_email(
-    value: str,
-    db: Database
-) -> None:
-    """Ensure email is unique in database"""
-    existing = await db.query_one(
-        "SELECT id FROM tb_user WHERE email = $1",
-        [value]
+from typing import Any
+from fraiseql.security import AuthorizationDecision
+
+
+class Authorizer:
+    async def authorize_operation(
+        self,
+        *,
+        context: dict[str, Any],
+        operation_type,        # OperationType (query / mutation / subscription)
+        operation_name: str,
+        arguments: dict[str, Any],
+    ) -> AuthorizationDecision | bool:
+        ...
+```
+
+`authorize_operation` may be sync or async and may return either a plain `bool` (sugar
+for allow/deny) or an `AuthorizationDecision` carrying a stable `code`, message, and
+optional row filters. Enforcement is **fail-closed**: if no authorizer is configured
+the operation is allowed; if a configured authorizer raises an unexpected error the
+operation is denied and the raw error is never surfaced to the client.
+
+### 5.2 Global and per-operation authorizers
+
+Pass an authorizer to `create_fraiseql_app` to apply it to every operation, and
+override it on a single operation with `@fraiseql.query(authorizer=...)` or
+`@fraiseql.subscription(authorizer=...)`. The per-operation authorizer wins over the
+global default.
+
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+
+
+class TenantAuthorizer:
+    async def authorize_operation(self, *, context, operation_type, operation_name, arguments):
+        return context.get("tenant_id") is not None
+
+
+@fraiseql.query(authorizer=AdminOnlyAuthorizer())
+async def all_tenants(info) -> list[Tenant]:
+    db = info.context["db"]
+    return await db.find("v_tenant")
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[Tenant],
+    queries=[all_tenants],
+    authorizer=TenantAuthorizer(),   # global default
+)
+```
+
+### 5.3 Decision caching
+
+Repeated authorization checks for the same context and operation can be served from a
+decision cache instead of re-running the authorizer. Enable it by passing an
+`AuthorizationCacheConfig` to `create_fraiseql_app`:
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security import AuthorizationCacheConfig
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[Tenant],
+    queries=[all_tenants],
+    authorizer=TenantAuthorizer(),
+    authorization_cache=AuthorizationCacheConfig(),
+)
+```
+
+A fresh cache hit replays the prior decision without calling the authorizer. Clean
+returns (allow or deny) are cached; an authorizer that raises hits the fail-closed
+branch and is never cached, so a transient error can neither pin a deny nor leak an
+allow.
+
+### 5.4 Enterprise RBAC
+
+For role-based access control at scale, the optional `fraiseql.enterprise.rbac`
+module provides hierarchical roles, PostgreSQL-native permission caching with
+automatic invalidation, and supporting GraphQL directives and middleware. Initialize
+it during startup with `setup_rbac_cache(db_pool)` and layer it on top of the
+`Authorizer` surface described above.
+
+For the full authorization model, see the
+[authorization guide](../../security/authorization.md).
+
+---
+
+## 6. PostgreSQL: The Deepest Extension Surface
+
+In FraiseQL, PostgreSQL is not just storage — it is where most extension actually
+happens. Reads are served from `v_`/`tv_` views and writes run through `fn_`
+functions, so you can extend behavior end to end without touching the framework.
+
+### 6.1 Business logic in `fn_` functions
+
+Every mutation calls a PostgreSQL function that performs validation and the write,
+then returns JSONB describing success or failure. This is the primary place to put
+domain logic.
+
+```sql
+CREATE FUNCTION fn_create_user(input jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    new_id uuid;
+BEGIN
+    IF NOT (input->>'email') ~ '^[^@]+@[^@]+$' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'invalid email');
+    END IF;
+
+    INSERT INTO tb_user (id, name, email)
+    VALUES (gen_random_uuid(), input->>'name', input->>'email')
+    RETURNING id INTO new_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'user', jsonb_build_object('id', new_id, 'name', input->>'name')
+    );
+END;
+$$;
+```
+
+```python
+import fraiseql
+
+
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    db = info.context["db"]
+    result = await db.execute_function(
+        "fn_create_user", {"name": input.name, "email": input.email}
     )
+    if not result.get("success"):
+        return CreateUserError(message=result.get("message", "failed"))
+    return CreateUserSuccess(user=User(**result["user"]))
+```
 
-    if existing:
-        raise ValidationError(f"Email {value} already exists")
+### 6.2 Triggers and custom types
 
-# Use in mutation
-@FraiseQL.mutation
-def create_user(input: CreateUserInput) -> User:
-    """Create user with unique email validation"""
-    # @unique_email validator runs during input validation
-    pass
-```text
-<!-- Code example in TEXT -->
+Use triggers to keep projection views (`tv_`) in sync, maintain audit trails, or
+populate denormalized columns. Use PostgreSQL `CREATE TYPE` (composite or enum types)
+and `DOMAIN` constraints to model domain values at the database level — the shape your
+views return flows straight into the GraphQL response.
 
----
+### 6.3 PostgreSQL extensions
 
-## 3. Lifecycle Hooks
+Because views are just SQL, any installed PostgreSQL extension is available to your
+read and write paths:
 
-### 3.1 Query Hooks
+- **pgvector** — similarity search over embeddings inside a `v_` view.
+- **pg_trgm** — fuzzy text matching and trigram indexes.
+- **PostGIS** — geospatial queries and indexing.
+- **ltree** — hierarchical paths, surfaced through the `LTree` scalar.
 
-Execute code before/after queries:
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.hook(event="query.before_execution")
-async def log_query_start(
-    query_name: str,
-    variables: dict,
-    user_context: UserContext
-) -> None:
-    """Log query execution start"""
-    logger.info(
-        f"Query {query_name} started",
-        extra={
-            "user_id": user_context.user_id,
-            "variables": variables
-        }
-    )
+CREATE VIEW v_document_search AS
+SELECT
+    d.id,
+    jsonb_build_object(
+        'id', d.id,
+        'title', d.title,
+        'similarity', 1 - (d.embedding <=> :query_embedding)
+    ) AS data
+FROM tb_document d
+ORDER BY d.embedding <=> :query_embedding;
+```
 
-@FraiseQL.hook(event="query.after_execution")
-async def log_query_end(
-    query_name: str,
-    duration_ms: float,
-    error: Exception | None,
-    user_context: UserContext
-) -> None:
-    """Log query execution end"""
-    if error:
-        logger.error(
-            f"Query {query_name} failed: {error}",
-            extra={"user_id": user_context.user_id}
-        )
-    else:
-        logger.info(
-            f"Query {query_name} completed in {duration_ms}ms",
-            extra={"user_id": user_context.user_id}
-        )
-```text
-<!-- Code example in TEXT -->
-
-### 3.2 Mutation Hooks
-
-Execute code before/after mutations:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.hook(event="mutation.before_execution")
-async def audit_mutation_intent(
-    mutation_name: str,
-    input_data: dict,
-    user_context: UserContext
-) -> None:
-    """Log intention to perform mutation"""
-    logger.info(
-        f"Mutation {mutation_name} requested",
-        extra={
-            "user_id": user_context.user_id,
-            "mutation": mutation_name,
-            "data_summary": summarize_data(input_data)
-        }
-    )
-
-@FraiseQL.hook(event="mutation.after_execution")
-async def handle_mutation_side_effects(
-    mutation_name: str,
-    result: Any,
-    user_context: UserContext
-) -> None:
-    """Handle side effects after mutation"""
-    if mutation_name == "DeleteUser":
-        # Trigger cleanup jobs
-        await trigger_user_cleanup(result.user_id)
-    elif mutation_name == "CreateOrder":
-        # Send confirmation email
-        await send_order_confirmation(result.order_id)
-```text
-<!-- Code example in TEXT -->
-
-### 3.3 Subscription Hooks
-
-Execute code on subscription lifecycle:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.hook(event="subscription.connected")
-async def on_subscription_connected(
-    subscription_id: str,
-    subscription_name: str,
-    user_context: UserContext
-) -> None:
-    """Handle new subscription connection"""
-    logger.info(
-        f"Subscription {subscription_name} connected",
-        extra={
-            "subscription_id": subscription_id,
-            "user_id": user_context.user_id
-        }
-    )
-
-    # Track active subscriptions
-    await metrics.gauge("active_subscriptions", increment=1)
-
-@FraiseQL.hook(event="subscription.disconnected")
-async def on_subscription_disconnected(
-    subscription_id: str,
-    subscription_name: str,
-    reason: str
-) -> None:
-    """Handle subscription disconnection"""
-    logger.info(
-        f"Subscription {subscription_name} disconnected: {reason}",
-        extra={"subscription_id": subscription_id}
-    )
-
-    await metrics.gauge("active_subscriptions", increment=-1)
-```text
-<!-- Code example in TEXT -->
-
-### 3.4 Error Hooks
-
-Execute code on errors:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.hook(event="error.occurred")
-async def handle_error(
-    error: Exception,
-    error_code: str,
-    operation_type: str,
-    user_context: UserContext
-) -> None:
-    """Handle any error in operation"""
-
-    # Log authorization errors separately
-    if error_code.startswith("E_AUTH_"):
-        logger.warning(
-            f"Authorization error: {error_code}",
-            extra={"user_id": user_context.user_id}
-        )
-        await notify_security(error_code, user_context.user_id)
-
-    # Alert on database errors
-    elif error_code.startswith("E_DB_"):
-        logger.error(
-            f"Database error: {error_code}",
-            extra={"error": str(error)}
-        )
-        await alert_oncall("Database error detected")
-```text
-<!-- Code example in TEXT -->
+The resolver queries this view like any other read; the extension does the heavy
+lifting inside PostgreSQL.
 
 ---
 
-## 4. Custom Metrics
-
-### 4.1 Counter Metrics
-
-Track occurrences:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.metric(name="user_created", type="counter")
-def track_user_creation():
-    """Track user creation count"""
-    # Auto-incremented on mutation
-    pass
-
-# Use in code
-@FraiseQL.hook(event="mutation.after_execution")
-async def track_mutations(mutation_name, result):
-    if mutation_name == "CreateUser":
-        metrics.increment("user_created")
-        metrics.increment("mutations_total", labels={"type": "create"})
-```text
-<!-- Code example in TEXT -->
-
-### 4.2 Gauge Metrics
-
-Track instantaneous values:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.metric(name="active_sessions", type="gauge")
-async def update_active_sessions():
-    """Track active user sessions"""
-    count = await db.query_one(
-        "SELECT COUNT(*) FROM tb_session WHERE active = true"
-    )
-    metrics.set("active_sessions", count)
-
-# Periodic update
-@FraiseQL.schedule(interval_seconds=60)
-async def refresh_gauge_metrics():
-    await update_active_sessions()
-```text
-<!-- Code example in TEXT -->
-
-### 4.3 Histogram Metrics
-
-Track distributions:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.metric(name="query_duration_ms", type="histogram")
-async def track_query_latency(duration_ms: float):
-    """Track query latency distribution"""
-    metrics.histogram("query_duration_ms", duration_ms)
-
-# Use in hook
-@FraiseQL.hook(event="query.after_execution")
-async def record_latency(duration_ms, query_name):
-    metrics.histogram(
-        "query_duration_ms",
-        duration_ms,
-        labels={"operation": query_name}
-    )
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 5. Custom Scalars
-
-### 5.1 Custom Scalar Types
-
-Define domain-specific types:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.scalar(name="Email")
-class EmailScalar:
-    """Custom Email scalar with validation"""
-
-    @staticmethod
-    def serialize(value: str) -> str:
-        """Convert to JSON"""
-        return value
-
-    @staticmethod
-    def parse_value(value: Any) -> str:
-        """Parse from JSON"""
-        if not isinstance(value, str):
-            raise ValueError("Email must be string")
-        if "@" not in value:
-            raise ValueError("Invalid email format")
-        return value
-
-    @staticmethod
-    def parse_literal(ast) -> str:
-        """Parse from GraphQL query literal"""
-        if ast.value == "null":
-            return None
-        return EmailScalar.parse_value(ast.value)
-
-@FraiseQL.scalar(name="Money")
-class MoneyScalar:
-    """Custom Money scalar (amount + currency)"""
-
-    @staticmethod
-    def serialize(value: dict) -> dict:
-        return {"amount": value.amount, "currency": value.currency}
-
-    @staticmethod
-    def parse_value(value: dict) -> dict:
-        return {
-            "amount": Decimal(str(value["amount"])),
-            "currency": value["currency"]
-        }
-
-# Use in schema
-@FraiseQL.type
-class User:
-    email: Email  # Custom scalar
-
-@FraiseQL.type
-class Order:
-    total: Money  # Custom scalar
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 6. Custom Directives
-
-### 6.1 Field Directives
-
-Apply behavior to fields:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.directive(name="uppercase")
-def uppercase_directive(value: str) -> str:
-    """Convert field value to uppercase"""
-    return value.upper() if value else value
-
-@FraiseQL.directive(name="redact")
-def redact_directive(value: str) -> str:
-    """Redact sensitive value"""
-    if len(value) > 4:
-        return value[:2] + "****" + value[-2:]
-    return "****"
-
-# Use in schema
-@FraiseQL.type
-class User:
-    @uppercase_directive
-    name: str
-
-    @redact_directive
-    ssn: str
-```text
-<!-- Code example in TEXT -->
-
-### 6.2 Query Directives
-
-Apply behavior to queries:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.directive(name="cache")
-def cache_directive(result: Any, ttl_seconds: int) -> Any:
-    """Cache query result"""
-    # Framework handles caching
-    return result
-
-@FraiseQL.directive(name="rateLimit")
-def rate_limit_directive(
-    user_context: UserContext,
-    limit: int,
-    window_seconds: int
-) -> None:
-    """Rate limit query per user"""
-    key = f"ratelimit:{user_context.user_id}"
-    current = cache.get(key) or 0
-
-    if current >= limit:
-        raise RateLimitError(f"Rate limit exceeded: {limit}/{window_seconds}s")
-
-    cache.increment(key, 1, ttl=window_seconds)
-
-# Use in query
-@FraiseQL.query
-@cache_directive(ttl_seconds=300)
-@rate_limit_directive(limit=100, window_seconds=60)
-def get_user_posts(user_id: ID) -> [Post]:
-    """Get user's posts (cached, rate-limited)"""
-    pass
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 7. Transform Hooks
-
-### 7.1 Input Transform
-
-Transform input before validation:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.transform(event="input.before_validation")
-def normalize_email(input_data: dict) -> dict:
-    """Normalize email to lowercase"""
-    if "email" in input_data:
-        input_data["email"] = input_data["email"].lower().strip()
-    return input_data
-
-@FraiseQL.transform(event="input.before_validation")
-def sanitize_text(input_data: dict) -> dict:
-    """Sanitize text inputs to prevent XSS"""
-    for field in ["title", "content", "description"]:
-        if field in input_data and isinstance(input_data[field], str):
-            input_data[field] = sanitize_html(input_data[field])
-    return input_data
-```text
-<!-- Code example in TEXT -->
-
-### 7.2 Output Transform
-
-Transform response before sending:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.transform(event="response.before_sending")
-def add_metadata(response: dict) -> dict:
-    """Add request metadata to response"""
-    response["_metadata"] = {
-        "timestamp": now_iso(),
-        "version": "2.0.0"
-    }
-    return response
-
-@FraiseQL.transform(event="response.before_sending")
-def redact_sensitive(response: dict) -> dict:
-    """Redact sensitive fields from response"""
-    if "user" in response.get("data", {}):
-        user = response["data"]["user"]
-        if "password_hash" in user:
-            del user["password_hash"]
-    return response
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 8. Middleware Extensions
-
-### 8.1 Request Middleware
-
-Process requests:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.middleware(type="request")
-async def add_request_id(request, next_handler):
-    """Add unique request ID"""
-    request.id = generate_uuid()
-    logger.info(f"Request {request.id} started")
-
-    try:
-        response = await next_handler(request)
-        logger.info(f"Request {request.id} completed")
-        return response
-    except Exception as e:
-        logger.error(f"Request {request.id} failed: {e}")
-        raise
-
-@FraiseQL.middleware(type="request")
-async def extract_user_context(request, next_handler):
-    """Extract user from token"""
-    token = extract_bearer_token(request)
-    if token:
-        request.user_context = verify_token(token)
-    return await next_handler(request)
-```text
-<!-- Code example in TEXT -->
-
-### 8.2 Response Middleware
-
-Process responses:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.middleware(type="response")
-async def add_cache_headers(request, response, next_handler):
-    """Add cache control headers"""
-    if is_cacheable_query(request):
-        response.headers["Cache-Control"] = "public, max-age=300"
-    return response
-
-@FraiseQL.middleware(type="response")
-async def compress_response(request, response, next_handler):
-    """Compress response if large"""
-    if len(response.body) > 1024:
-        response.body = gzip_compress(response.body)
-        response.headers["Content-Encoding"] = "gzip"
-    return response
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 9. Database Extensions
-
-### 9.1 Custom Database Functions
-
-Call custom database functions from queries:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.database_function(name="search_full_text")
-def search_full_text(
-    db: Database,
-    query: str,
-    table: str
-) -> list:
-    """Full-text search using database function"""
-    return db.query(
-        f"SELECT * FROM {table} WHERE search_vector @@ to_tsquery($1)",
-        [query]
-    )
-
-# Use in schema
-@FraiseQL.query
-def search_posts(query: str) -> [Post]:
-    """Search posts by full-text"""
-    return search_full_text(query, "tb_post")
-```text
-<!-- Code example in TEXT -->
-
-### 9.2 Custom Database Views
-
-Define custom materialized views:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.view(name="v_user_stats")
-def create_user_stats_view(db: Database) -> str:
-    """Create materialized view with user statistics"""
-    return """
-    CREATE MATERIALIZED VIEW IF NOT EXISTS v_user_stats AS
-    SELECT
-        u.id,
-        u.username,
-        COUNT(p.id) as post_count,
-        COUNT(DISTINCT c.id) as comment_count,
-        MAX(p.created_at) as last_post_date
-    FROM tb_user u
-    LEFT JOIN tb_post p ON u.id = p.author_id
-    LEFT JOIN tb_comment c ON u.id = c.author_id
-    GROUP BY u.id, u.username
-    WITH DATA;
-
-    CREATE INDEX idx_user_stats_id ON v_user_stats(id);
-    """
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 10. Extension Configuration
-
-### 10.1 Enable/Disable Extensions
-
-Control which extensions are active:
-
-```python
-<!-- Code example in Python -->
-FraiseQL.extensions.configure({
-    "authorization": {
-        "custom_rules": True,
-        "enable_rules": [
-            "published_or_author",
-            "team_member",
-            "department_lead"
-        ]
-    },
-    "validators": {
-        "enabled": True,
-        "enable_validators": [
-            "email_validator",
-            "password_strength",
-            "unique_email"
-        ]
-    },
-    "hooks": {
-        "enabled": True,
-        "enable_hooks": [
-            "query.before_execution",
-            "mutation.after_execution",
-            "error.occurred"
-        ]
-    },
-    "metrics": {
-        "enabled": True,
-        "custom_metrics": True
-    },
-    "middleware": {
-        "enabled": True,
-        "order": [
-            "add_request_id",
-            "extract_user_context",
-            "rate_limiting"
-        ]
-    }
-})
-```text
-<!-- Code example in TEXT -->
-
-### 10.2 Extension Namespace
-
-Organize extensions:
-
-```python
-<!-- Code example in Python -->
-# Define extension namespace
-class CustomExtensions:
-    @FraiseQL.authorization_rule(name="my_rule_1")
-    def rule_1(resource, user_context):
-        pass
-
-    @FraiseQL.validator(name="my_validator_1")
-    def validator_1(value):
-        pass
-
-    @FraiseQL.hook(event="query.before_execution")
-    async def on_query_start(query_name, variables, user_context):
-        pass
-
-# Register namespace
-FraiseQL.extensions.register(CustomExtensions)
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 11. Best Practices
-
-### 11.1 Extension Development
+## 7. Best Practices
 
 **DO:**
 
-- ✅ Keep extensions focused (single responsibility)
-- ✅ Use async/await for I/O operations
-- ✅ Cache expensive computations
-- ✅ Log extension execution (for debugging)
-- ✅ Test extensions in isolation
-- ✅ Document extension behavior
-- ✅ Use strong typing (type hints)
+- Keep custom field resolvers cheap; batch related lookups with a dataloader.
+- Use `async`/`await` for any I/O in resolvers, authorizers, and middleware.
+- Push validation and write logic into `fn_` functions where it stays transactional.
+- Use the built-in domain scalars before reaching for a custom type.
+- Make authorizers fail-closed and free of side effects.
 
 **DON'T:**
 
-- ❌ Modify user context (read-only)
-- ❌ Perform long-running operations in hooks (use async)
-- ❌ Bypass authorization checks
-- ❌ Log sensitive data (email, password, tokens)
-- ❌ Assume extension execution order
-- ❌ Create side effects in validators (should be pure)
-
-### 11.2 Performance Considerations
-
-```python
-<!-- Code example in Python -->
-# ❌ SLOW: Complex rule evaluated for every request
-@FraiseQL.authorization_rule(name="slow_rule")
-async def slow_rule(resource, user_context, db):
-    # Database query for every field access
-    result = await db.query_expensive(...)
-    return result
-
-# ✅ FAST: Rule with caching
-@FraiseQL.authorization_rule(
-    name="fast_rule",
-    cache_ttl_seconds=300
-)
-async def fast_rule(resource, user_context, db):
-    # Cached for 5 minutes
-    result = await db.query_expensive(...)
-    return result
-```text
-<!-- Code example in TEXT -->
+- Issue one query per row in a field resolver — that is the N+1 pattern dataloaders
+  exist to prevent.
+- Expose internal `pk_`/`fk_` columns through a view's `data` JSONB.
+- Bypass the authorizer by reaching past `info.context`.
+- Log sensitive data (tokens, passwords, full email lists) from middleware or hooks.
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: January 2026
-**Status**: Complete specification for framework v2.x
+## Related Documentation
 
-FraiseQL extensions enable powerful customization while maintaining framework constraints and consistency guarantees.
+- [Integration patterns](./integration-patterns.md)
+- [Error handling model](../reliability/error-handling-model.md)
+- [Type system](../../foundation/09-type-system.md)
+- [Scalars reference](../../reference/scalars.md)
+- [Decorators reference](../../reference/decorators.md)
+- [Authorization](../../security/authorization.md)

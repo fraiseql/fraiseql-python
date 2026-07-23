@@ -1,9 +1,7 @@
-<!-- Skip to main content -->
 ---
-
-title: 1.5: FraiseQL Compared to Other Approaches
-description: FraiseQL is one of several approaches to building GraphQL APIs. This topic compares FraiseQL with popular alternatives to help you understand where each approac
-keywords: ["query-execution", "data-planes", "graphql", "compilation", "architecture"]
+title: "1.5: FraiseQL Compared to Other Approaches"
+description: FraiseQL is one of several approaches to building GraphQL APIs. This topic compares FraiseQL with popular alternatives to help you understand where each approach excels and where it makes tradeoffs.
+keywords: ["graphql", "comparison", "architecture", "postgresql", "runtime-framework"]
 tags: ["documentation", "reference"]
 ---
 
@@ -19,11 +17,13 @@ tags: ["documentation", "reference"]
 
 FraiseQL is one of several approaches to building GraphQL APIs. This topic compares FraiseQL with popular alternatives to help you understand where each approach excels and where it makes tradeoffs.
 
+FraiseQL is a **Python runtime GraphQL framework for PostgreSQL**. You define types, queries, and mutations with decorators; at application startup the GraphQL schema is built in memory and served over FastAPI. Reads come from PostgreSQL views that return a `data` JSONB column, and writes are delegated to PostgreSQL functions. An optional Rust extension (`fraiseql_rs`) accelerates JSON transformation and field selection on the hot path.
+
 **Key Question:** Which approach is right for your project?
 
 The answer depends on:
 
-- Your data source (relational database vs. mixed sources)
+- Your data source (a single PostgreSQL database vs. mixed sources)
 - Your team's expertise (database, backend, frontend)
 - Your performance requirements (predictability vs. flexibility)
 - Your development speed priorities (time-to-market vs. long-term maintainability)
@@ -34,16 +34,16 @@ The answer depends on:
 
 | Aspect | FraiseQL | Apollo Server | Hasura | WunderGraph | Custom REST |
 |--------|----------|---------------|--------|-------------|-------------|
-| **Primary Data Source** | Single relational DB | Multiple sources | PostgreSQL | Multiple sources | Anything |
-| **Schema Definition** | Python/TypeScript code | GraphQL schema language | PostgreSQL schema | Multiple languages | Not applicable |
-| **Compilation** | Build-time | Runtime | Runtime | Runtime | N/A |
-| **Resolver Code** | Automatic (SQL) | Manual custom code | Automatic rules | Automatic + manual | Manual code |
+| **Primary Data Source** | PostgreSQL | Multiple sources | PostgreSQL (and others) | Multiple sources | Anything |
+| **Schema Definition** | Python decorators | GraphQL schema language | PostgreSQL schema | Multiple languages | Not applicable |
+| **Execution Model** | Runtime (Python over FastAPI), schema built at startup | Runtime | Runtime | Runtime | N/A |
+| **Resolver Code** | Automatic (views + functions) | Manual custom code | Automatic rules | Automatic + manual | Manual code |
 | **Type Safety** | Database + GraphQL | GraphQL only | PostgreSQL only | GraphQL + custom validation | Code-level only |
-| **Performance** | Predictable | Variable (resolver dependent) | Variable (rule based) | Moderate (middleware overhead) | Variable |
+| **Performance** | Fast (JSONB + optional Rust pipeline, no N+1) | Variable (resolver dependent) | Variable (rule based) | Moderate (middleware overhead) | Variable |
 | **Flexibility** | Limited to DB schema | Very high | Limited to DB + rules | High | Complete |
-| **Time to API** | Fast (schema → SQL) | Slow (code resolvers) | Fast (introspection) | Moderate | Slow |
+| **Time to API** | Fast (decorators → views) | Slow (code resolvers) | Fast (introspection) | Moderate | Slow |
 | **Learning Curve** | Medium (GraphQL + SQL) | High (GraphQL + resolver patterns) | Low (just SQL) | Moderate | N/A |
-| **Best For** | Deterministic OLTP APIs | Complex multi-source APIs | Quick PostgreSQL APIs | Flexible API gateway | Simple services |
+| **Best For** | PostgreSQL-backed OLTP APIs | Complex multi-source APIs | Quick PostgreSQL APIs | Flexible API gateway | Simple services |
 
 ---
 
@@ -55,20 +55,18 @@ The answer depends on:
 
 #### What Apollo Server Excels At
 
-#### Flexibility
+**Flexibility**
 
 ```graphql
-<!-- Code example in GraphQL -->
 type Query {
   user(id: Int!): User
   trendingUsers: [User!]!
   searchUsers(query: String!): [User!]!
   recommendations(userId: Int!): [Recommendation!]!
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Each field can resolve from different sources:
+Each field can resolve from a different source:
 
 - Database query
 - REST API call
@@ -76,10 +74,9 @@ Each field can resolve from different sources:
 - Computed value
 - File system
 
-### Multi-Source Integration
+**Multi-Source Integration**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // Apollo: Combine data from multiple sources
 const resolvers = {
   Query: {
@@ -91,22 +88,20 @@ const resolvers = {
     }
   }
 };
-```text
-<!-- Code example in TEXT -->
+```
 
-### Ecosystem & Plugins
+**Ecosystem & Plugins**
 
-- Apollo Server Extensions (authentication, logging, monitoring)
-- Data loader (N+1 prevention)
+- Apollo Server extensions (authentication, logging, monitoring)
+- DataLoader (N+1 prevention)
 - Apollo Federation (schema stitching)
 - Hundreds of community plugins
 
 #### Where Apollo Server Struggles
 
-#### Resolver Complexity
+**Resolver Complexity**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // Apollo: Every field needs a resolver
 const resolvers = {
   Query: {
@@ -123,52 +118,47 @@ const resolvers = {
     items: (order, _, context) => context.db.findItems(order.id),  // Another N+1?
   }
 };
-```text
-<!-- Code example in TEXT -->
+```
 
-### Manual Optimization
+**Manual Optimization**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // Apollo: You must implement optimization patterns
 const dataLoaders = {
   userLoader: new DataLoader(async (userIds) => {
     return context.db.query('SELECT * FROM users WHERE id = ANY(?)', [userIds]);
   }),
 };
-```text
-<!-- Code example in TEXT -->
+```
 
-### Performance Unpredictability
+**Performance Unpredictability**
 
 - Query performance depends on resolver implementation
 - N+1 problems can hide until production
-- No compile-time visibility into query costs
+- No structural visibility into query costs
 - Hard to debug performance issues
 
-### Synchronizing Schemas
+**Synchronizing Schemas**
 
 ```text
-<!-- Code example in TEXT -->
 TypeScript type definitions
-       ↔️ (must match)
+       ↕ (must match)
 GraphQL schema
-       ↔️ (must match)
+       ↕ (must match)
 Database schema
-```text
-<!-- Code example in TEXT -->
+```
 
-If you change the database, you must update two more places.
+If you change the database, you must update two more places. With FraiseQL the read view's `data` JSONB and your `@fraiseql.type` are the single source of truth.
 
 #### FraiseQL vs. Apollo: Decision
 
 | Your Priority | Better Choice | Why |
 |---------------|---------------|-----|
-| **Single-source API from relational database** | FraiseQL | Simpler, faster, more predictable |
-| **Multi-source data aggregation** | Apollo Server | FraiseQL doesn't support this well |
-| **Complex custom business logic in resolvers** | Apollo Server | FraiseQL executes at database layer |
-| **Time-to-market with existing REST APIs** | Apollo Server | Easier to wrap external services |
-| **Performance predictability** | FraiseQL | Compile-time analysis guarantees |
+| **Single PostgreSQL-backed API** | FraiseQL | Simpler, faster, fewer N+1 surprises |
+| **Multi-source data aggregation** | Apollo Server | FraiseQL targets a single PostgreSQL database |
+| **Complex custom business logic in resolvers** | Apollo Server | FraiseQL pushes write logic into PostgreSQL functions |
+| **Time-to-market wrapping existing REST APIs** | Apollo Server | Easier to wrap external services |
+| **Performance predictability** | FraiseQL | View-driven reads, no per-field resolver fan-out |
 | **Team has database expertise** | FraiseQL | Database knowledge directly applies |
 | **Team has JavaScript expertise** | Apollo Server | Lower learning curve |
 
@@ -180,22 +170,19 @@ If you change the database, you must update two more places.
 
 #### What Hasura Excels At
 
-#### Fast Time to API
+**Fast Time to API**
 
 ```bash
-<!-- Code example in BASH -->
 # Hasura: Point at database, get GraphQL API instantly
 docker run hasura/graphql-engine:latest \
   --database-url postgresql://user:pass@db:5432/mydb
-```text
-<!-- Code example in TEXT -->
+```
 
-Result: Complete GraphQL API with CRUD operations, relationships, and filtering—without writing a line of code.
+Result: a complete GraphQL API with CRUD operations, relationships, and filtering—without writing a line of code.
 
-### Database-First Approach
+**Database-First Approach**
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -207,13 +194,11 @@ CREATE TABLE orders (
   user_id INTEGER REFERENCES users(id),
   total DECIMAL(10, 2)
 );
-```text
-<!-- Code example in TEXT -->
+```
 
 Hasura immediately exposes:
 
 ```graphql
-<!-- Code example in GraphQL -->
 type User {
   id: Int!
   email: String!
@@ -226,13 +211,11 @@ type Order {
   user: User!
   total: Float!
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Permission Rules
+**Permission Rules**
 
 ```yaml
-<!-- Code example in YAML -->
 # Hasura: Row-level security via rules
 Users:
   select:
@@ -241,13 +224,11 @@ Users:
       - email
     filter:
       id: { _eq: X-Hasura-User-Id }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Simplicity for Standard CRUD
+**Simplicity for Standard CRUD**
 
 ```graphql
-<!-- Code example in GraphQL -->
 query {
   users {
     id
@@ -259,15 +240,13 @@ query {
   }
 }
 # Hasura handles the SQL automatically
-```text
-<!-- Code example in TEXT -->
+```
 
 #### Where Hasura Struggles
 
-#### Fixed Query Patterns
+**Fixed Query Patterns**
 
 ```graphql
-<!-- Code example in GraphQL -->
 # Hasura: No custom computed fields without Actions
 query {
   user(id: 1) {
@@ -283,13 +262,13 @@ query {
     orderCount       # ❌ Requires custom Action (REST API call)
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Action-Based Extensions
+With FraiseQL, a computed field is just another key built into the view's `data` JSONB, so it is available without an external Action.
+
+**Action-Based Extensions**
 
 ```yaml
-<!-- Code example in YAML -->
 # Hasura: Must implement custom logic via Actions
 actions:
   - name: searchUsers
@@ -299,27 +278,23 @@ actions:
         query: string!
       output_type: SearchResult
       handler: https://api.example.com/search
-```text
-<!-- Code example in TEXT -->
+```
 
 This converts back to the multi-source problem (like Apollo).
 
-### Runtime Performance
+**Runtime Permission Overhead**
 
-- No compile-time query analysis
-- Permission checks at runtime
-- No optimization of permission rules
-- Can cause N+1 queries if permissions are complex
+- Permission checks evaluated per request
+- Permission rules are not statically analyzed
+- Complex permissions can cause N+1 queries
 
-### Schema Coupling
+**Schema Coupling**
 
 ```text
-<!-- Code example in TEXT -->
-PostgreSQL schema ←→ GraphQL schema (1:1 mapping)
-```text
-<!-- Code example in TEXT -->
+PostgreSQL table/column names ←→ GraphQL schema (1:1 mapping)
+```
 
-Change the database table name, and the GraphQL API changes. This can break clients.
+Rename a table or column and the GraphQL API changes, which can break clients. FraiseQL decouples this: the GraphQL shape is defined by the view's `data` JSONB and your `@fraiseql.type`, independent of the underlying write tables.
 
 #### FraiseQL vs. Hasura: Decision
 
@@ -327,25 +302,24 @@ Change the database table name, and the GraphQL API changes. This can break clie
 |---------------|---------------|-----|
 | **Time to basic CRUD API** | Hasura | Introspection is instant |
 | **Standard database queries** | Hasura | Zero code needed |
-| **Custom computed fields** | FraiseQL | Explicit schema control |
-| **Query performance visibility** | FraiseQL | Compile-time analysis |
-| **Schema versioning/evolution** | FraiseQL | Explicit schema lets you version |
-| **Team only knows SQL** | Hasura | No need for Python/TypeScript |
-| **Production SLA requirements** | FraiseQL | Predictable performance |
-| **Rapid prototyping** | Hasura | Get API in minutes |
+| **Custom computed fields** | FraiseQL | Built into the read view's JSONB |
+| **Decoupling API shape from table layout** | FraiseQL | Views isolate the public schema from write tables |
+| **Schema versioning/evolution** | FraiseQL | Explicit types let you version deliberately |
+| **Team only knows SQL** | Hasura | No Python needed |
+| **Write logic in the database** | FraiseQL | Mutations call PostgreSQL functions |
+| **Rapid prototyping** | Hasura | Get an API in minutes |
 
 ---
 
 ### FraiseQL vs. WunderGraph
 
-**WunderGraph** is a newer framework that positions itself as a "serverless GraphQL federation platform." It supports multiple data sources and aims for developer productivity.
+**WunderGraph** positions itself as a "serverless GraphQL federation platform." It supports multiple data sources and aims for developer productivity.
 
 #### What WunderGraph Excels At
 
-#### Configuration-First Development
+**Configuration-First Development**
 
 ```yaml
-<!-- Code example in YAML -->
 # WunderGraph: Configure data sources and relationships
 dataSources:
   - name: database
@@ -354,35 +328,31 @@ dataSources:
   - name: external_api
     kind: graphql
     url: https://api.example.com/graphql
-```text
-<!-- Code example in TEXT -->
+```
 
-### Flexible Data Source Support
+**Flexible Data Source Support**
 
 - Relational databases (PostgreSQL, MySQL, MongoDB)
 - GraphQL APIs
 - REST APIs
 - Custom operations
 
-### Built-in Authentication
+**Built-in Authentication**
 
 ```yaml
-<!-- Code example in YAML -->
 # WunderGraph: Auth integrated
 authentication:
   providers:
     - github
     - auth0
     - custom_webhook
-```text
-<!-- Code example in TEXT -->
+```
 
-### Federation Support
+**Federation Support**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // WunderGraph: Compose multiple GraphQL APIs
-import { introspectAndCompose } from '@wundergraph/SDK';
+import { introspectAndCompose } from '@wundergraph/sdk';
 
 export default {
   apis: [
@@ -396,15 +366,13 @@ export default {
     }),
   ],
 };
-```text
-<!-- Code example in TEXT -->
+```
 
 #### Where WunderGraph Struggles
 
-#### Still Manual for Complex Queries
+**Still Manual for Complex Queries**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // WunderGraph: You write resolvers for complex operations
 export default async function GetUserRecommendations(
   ctx: Context,
@@ -415,22 +383,18 @@ export default async function GetUserRecommendations(
   // Still writing custom code
   return recommendations;
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Middle-Ground Positioning
+**Middle-Ground Positioning**
 
-- Not as fast as Hasura (requires more code)
-- Not as predictable as FraiseQL (runtime interpretation)
+- Not as fast to stand up as Hasura (requires more code)
+- More moving parts than FraiseQL's single PostgreSQL path
 - Not as flexible as Apollo (no custom middleware)
-- Good at everything, expert at nothing
 
-### Performance Still Variable
+**Optimization Still on You**
 
 ```typescript
-<!-- Code example in TypeScript -->
 // WunderGraph: You're still responsible for optimization
-// No compile-time guarantees about query efficiency
 export default async function GetUserWithOrders(
   ctx: Context,
   input: GetUserWithOrdersInput,
@@ -441,18 +405,17 @@ export default async function GetUserWithOrders(
   // You have to handle this manually
   return { user, orders };
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 #### FraiseQL vs. WunderGraph: Decision
 
 | Your Priority | Better Choice | Why |
 |---------------|---------------|-----|
-| **Single relational database** | FraiseQL | More predictable, simpler |
+| **Single PostgreSQL database** | FraiseQL | Simpler, one data path |
 | **Multiple data sources** | WunderGraph | Explicit multi-source support |
-| **Quick API for single service** | Hasura | Faster than both |
+| **Quick API for a single service** | Hasura | Faster than both |
 | **Complex business logic** | Apollo Server | More mature ecosystem |
-| **Performance predictability** | FraiseQL | Compile-time guarantees |
+| **No N+1 by construction** | FraiseQL | Nested data comes from view JSONB |
 | **Team learning curve** | WunderGraph | Mid-point between options |
 
 ---
@@ -463,56 +426,49 @@ Before GraphQL was popular, teams built custom REST APIs. This is still the base
 
 #### What Custom REST Excels At
 
-#### Simplicity for Simple Services
+**Simplicity for Simple Services**
 
 ```python
-<!-- Code example in Python -->
 # REST: Simple to understand
 @app.get("/users/{user_id}")
 def get_user(user_id: int):
     return db.query("SELECT * FROM users WHERE id = ?", [user_id])
-```text
-<!-- Code example in TEXT -->
+```
 
-### Familiarity
+**Familiarity**
 
 - Every developer knows REST
 - No GraphQL learning curve
 - Mature tooling and libraries
 
-### Fine-Grained Control
+**Fine-Grained Control**
 
 ```python
-<!-- Code example in Python -->
 # REST: You control exactly what goes into each endpoint
 @app.get("/users/{user_id}/recommendations")
 def get_recommendations(user_id: int, limit: int = 10):
     # Your logic: exactly what you need, nothing more
     return db.query(
         "SELECT * FROM recommendations WHERE user_id = ? LIMIT ?",
-        [user_id, limit]
+        [user_id, limit],
     )
-```text
-<!-- Code example in TEXT -->
+```
 
 #### Where Custom REST Struggles
 
-#### Versioning Chaos
+**Versioning Chaos**
 
 ```text
-<!-- Code example in TEXT -->
 /api/v1/users/{id}
 /api/v2/users/{id}
 /api/v3/users/{id}
-```text
-<!-- Code example in TEXT -->
+```
 
 Each API version requires separate endpoints and testing.
 
-### Over-fetching & Under-fetching
+**Over-fetching & Under-fetching**
 
 ```text
-<!-- Code example in TEXT -->
 REST API returns:
 GET /api/users/1
 {
@@ -524,22 +480,18 @@ GET /api/users/1
 }
 
 Returned 500 bytes, needed 200 bytes
-```text
-<!-- Code example in TEXT -->
+```
 
 Or:
 
 ```text
-<!-- Code example in TEXT -->
 You need user + orders + order items
 3 separate requests: GET /users/1, GET /users/1/orders, GET /orders/123/items
-```text
-<!-- Code example in TEXT -->
+```
 
-### No Standard Query Language
+**No Standard Query Language**
 
 ```text
-<!-- Code example in TEXT -->
 Custom filtering:
 GET /api/users?filter=email:contains:@example.com&sort=-created_at&limit=10
 
@@ -547,13 +499,11 @@ Different service:
 GET /api/products?q=coffee&sort=price&page=1&per_page=20
 
 Inconsistent APIs everywhere
-```text
-<!-- Code example in TEXT -->
+```
 
-### Documentation Burden
+**Documentation Burden**
 
 ```text
-<!-- Code example in TEXT -->
 Each endpoint needs separate documentation:
 
 - GET /users/{id}
@@ -565,8 +515,7 @@ Each endpoint needs separate documentation:
 - GET /users?search=...&limit=...&offset=...
 
 And that's just for users. Multiply by 20 resources = 100s of endpoints
-```text
-<!-- Code example in TEXT -->
+```
 
 #### FraiseQL vs. REST: Decision
 
@@ -585,80 +534,35 @@ And that's just for users. Multiply by 20 resources = 100s of endpoints
 
 ### What FraiseQL Brings
 
-#### 1. Compile-Time Guarantees
+**1. PostgreSQL as the Source of Truth**
 
-```text
-<!-- Code example in TEXT -->
-Query performance, authorization, and schema correctness all verified at build time,
-not discovered in production.
-```text
-<!-- Code example in TEXT -->
+Reads come from `v_`/`tv_` views that build a `data` JSONB column; writes go through `fn_` PostgreSQL functions. Your database team's work (indexes, views, function logic) directly improves API behavior, with no separate resolver layer to keep in sync.
 
-### 2. Database Expertise as API Design
+**2. No N+1 by Construction**
 
-```text
-<!-- Code example in TEXT -->
-Your database team's work (indexes, views, optimization) directly
-improves API performance. No resolver code to optimize.
-```text
-<!-- Code example in TEXT -->
+Nested data is assembled inside the view's `data` JSONB, so a single GraphQL query maps to a single read. There are no per-field resolvers fanning out into extra queries.
 
-### 3. Deterministic Behavior
+**3. Fast JSON Path**
 
-```text
-<!-- Code example in TEXT -->
-Every query's performance is predictable and reproducible.
-No "sometimes slow" queries. No hidden N+1 problems.
-```text
-<!-- Code example in TEXT -->
+PostgreSQL JSONB feeds an optional Rust pipeline (`fraiseql_rs`) that handles field selection and JSON transformation efficiently. The framework runs in Python over FastAPI, with the schema assembled in memory at startup.
 
-### 4. Minimal Code
+**4. Minimal Application Code**
 
-```text
-<!-- Code example in TEXT -->
-No custom resolvers. No data loaders. No optimization patterns.
-Just schema definitions and SQL automatically generated.
-```text
-<!-- Code example in TEXT -->
+Define types and operations with decorators (`@fraiseql.type`, `@fraiseql.query`, `@fraiseql.mutation`). No hand-written resolvers, no DataLoaders, no manual optimization patterns.
 
 ### What FraiseQL Trades Off
 
-#### Single Data Source
+**Single Data Source**
 
-```text
-<!-- Code example in TEXT -->
-Cannot easily aggregate data from multiple external APIs.
-Best for monolithic database-centric services.
-```text
-<!-- Code example in TEXT -->
+FraiseQL targets one PostgreSQL database. It is not designed to aggregate data from multiple external APIs in a single query—best for database-centric services.
 
-### No Custom Resolver Logic
+**Logic Lives in the Database**
 
-```text
-<!-- Code example in TEXT -->
-Complex business logic must happen in the database (functions/views)
-or in separate services.
-Cannot add computed fields easily without database changes.
-```text
-<!-- Code example in TEXT -->
+Complex write logic happens in PostgreSQL functions, and computed read fields are built into views. Teams that prefer to keep all logic in application code may find this constraining.
 
-### Build-Time Schema
+**PostgreSQL Only**
 
-```text
-<!-- Code example in TEXT -->
-All queries must be known at compile time.
-Dynamic queries require recompilation.
-```text
-<!-- Code example in TEXT -->
-
-### PostgreSQL-First
-
-```text
-<!-- Code example in TEXT -->
-Primary focus on PostgreSQL. MySQL/SQLite/SQL Server support,
-but PostgreSQL gets features first.
-```text
-<!-- Code example in TEXT -->
+FraiseQL v1 deliberately supports PostgreSQL and leans into its strengths (JSONB, functions, views, indexes). This is a focused choice, not a missing feature—if you need a different database, FraiseQL is not the right tool.
 
 ---
 
@@ -666,13 +570,13 @@ but PostgreSQL gets features first.
 
 ### If You Answer "YES" to Most of These → Use FraiseQL
 
-- [ ] Your primary data is in a relational database (PostgreSQL, MySQL, SQLite, SQL Server)
-- [ ] You want predictable, deterministic query performance
+- [ ] Your primary data is in a PostgreSQL database
+- [ ] You want fast, predictable query performance without N+1 surprises
 - [ ] Your team has database expertise
-- [ ] Performance visibility and compile-time verification matter to you
+- [ ] You are comfortable putting write logic in PostgreSQL functions
 - [ ] Your data relationships are well-defined (not highly dynamic)
 - [ ] You want minimal application code (no custom resolvers)
-- [ ] You can define your entire API schema upfront
+- [ ] You want the public API shape decoupled from your write tables
 
 ### If You Answer "YES" to Most of These → Use Hasura
 
@@ -703,54 +607,60 @@ but PostgreSQL gets features first.
 
 ### Example 1: E-Commerce Platform
 
-#### Requirements:
+**Requirements:**
 
 - Product catalog with search, filtering, recommendations
 - Orders with items and order history
 - User profiles and permissions
 - Shopping cart state
 
-### Best Choice: FraiseQL
+**Best Choice: FraiseQL**
 
 Why:
 
 - Well-defined schema (products, orders, users, cart)
-- Deterministic queries (catalog, recommendations)
+- Fast, predictable reads from view JSONB (catalog, recommendations)
 - Performance is critical (search must be fast)
 - Clear data relationships
-- Database team can optimize indexes independently
+- Database team can optimize indexes and views independently
 
-### API would include:
+**API would include:**
 
 ```python
-<!-- Code example in Python -->
-@schema.type(table="v_products")
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type(sql_source="v_product", jsonb_column="data")
 class Product:
-    id: UUID  # UUID v4 for GraphQL ID
+    id: ID
     name: str
     price: float
     rating: float
 
-@schema.query()
-def product_search(query: str, limit: int = 10) -> List[Product]:
-    pass
 
-@schema.query()
-def user_recommendations(user_id: int) -> List[Product]:
-    pass
-```text
-<!-- Code example in TEXT -->
+@fraiseql.query
+async def product_search(info, query: str, limit: int = 10) -> list[Product]:
+    db = info.context["db"]
+    return await db.find("v_product")
+
+
+@fraiseql.query
+async def user_recommendations(info, user_id: ID) -> list[Product]:
+    db = info.context["db"]
+    return await db.find("v_product")
+```
 
 ### Example 2: Multi-Tenant SaaS Dashboard
 
-#### Requirements:
+**Requirements:**
 
 - Multiple data sources (main DB, analytics DB, external services)
 - Complex permission rules (tenant isolation, role-based)
 - Custom computed fields (user's total spend, team metrics)
 - Real-time updates via WebSocket
 
-### Best Choice: Apollo Server
+**Best Choice: Apollo Server**
 
 Why:
 
@@ -761,14 +671,14 @@ Why:
 
 ### Example 3: Rapid Internal Tool
 
-#### Requirements:
+**Requirements:**
 
-- Quick GraphQL API over existing PostgreSQL database
+- Quick GraphQL API over an existing PostgreSQL database
 - Standard CRUD operations
 - Simple permission rules
 - Time to launch: 1 week
 
-### Best Choice: Hasura
+**Best Choice: Hasura**
 
 Why:
 
@@ -779,19 +689,19 @@ Why:
 
 ### Example 4: Mobile App Backend
 
-#### Requirements:
+**Requirements:**
 
 - Minimize bandwidth (mobile networks)
 - Fetch exactly the fields needed
 - Consistent schema across multiple client versions
 - Performance matters (cellular networks)
 
-### Best Choice: FraiseQL or Apollo Server
+**Best Choice: FraiseQL or Apollo Server**
 
 Why:
 
 - GraphQL eliminates over-fetching (good for mobile)
-- FraiseQL for predictable performance
+- FraiseQL for predictable PostgreSQL-backed performance
 - Apollo Server for complex aggregation (if needed)
 
 ---
@@ -800,24 +710,25 @@ Why:
 
 | Situation | Best Choice | Runner-Up |
 |-----------|-------------|-----------|
-| **Single relational DB, performance critical** | FraiseQL | Hasura |
+| **Single PostgreSQL DB, performance critical** | FraiseQL | Hasura |
 | **Multiple data sources, complex logic** | Apollo Server | WunderGraph |
 | **Rapid API for existing PostgreSQL** | Hasura | FraiseQL |
 | **Flexible federation of services** | WunderGraph | Apollo Server |
 | **Simple CRUD service** | Custom REST | Hasura |
 | **Mobile app backend** | FraiseQL | Apollo Server |
-| **Data platform / analytics** | FraiseQL | Custom REST |
-| **Complex business logic, monolith** | Apollo Server | FraiseQL |
+| **Write logic in the database** | FraiseQL | Hasura |
+| **Complex business logic, multi-source** | Apollo Server | WunderGraph |
 
 ---
 
 ## Related Topics
 
-- **Topic 1.1:** What is FraiseQL? (benefits that differentiate FraiseQL)
-- **Topic 1.4:** Design Principles (why FraiseQL makes these tradeoffs)
-- **Topic 2.1:** Compilation Pipeline (how FraiseQL enables compile-time optimization)
-- **Topic 4.1:** Schema Design Best Practices (database design patterns for FraiseQL)
-- **Topic 5.1:** Performance Optimization (how to get the most from FraiseQL)
+- **[Core Concepts](02-core-concepts.md):** the building blocks of a FraiseQL API
+- **[Database-Centric Architecture](03-database-centric-architecture.md):** how reads and writes map to views and functions
+- **[Design Principles](04-design-principles.md):** why FraiseQL makes these tradeoffs
+- **[Performance Characteristics](12-performance-characteristics.md):** how FraiseQL stays fast
+- **[Choosing FraiseQL](../guides/choosing-fraiseql.md):** a deeper fit-for-purpose guide
+- **[Quickstart](../getting-started/quickstart.md):** build your first FraiseQL API
 
 ---
 
@@ -825,11 +736,11 @@ Why:
 
 FraiseQL is not the right tool for every job. It excels when:
 
-1. **Your data is in a relational database** (primary source)
-2. **You want deterministic performance** (compile-time guarantees)
-3. **Your team values database expertise** (schema design knowledge)
-4. **You prefer simplicity over flexibility** (minimal code)
+1. **Your data is in PostgreSQL** (the single source of truth)
+2. **You want fast, predictable reads** (view JSONB, no N+1)
+3. **Your team values database expertise** (views and functions carry the logic)
+4. **You prefer simplicity over flexibility** (minimal application code)
 
-If your use case matches these criteria, FraiseQL will give you a fast, predictable, auditable GraphQL API with minimal code. If you need multi-source aggregation or extreme flexibility, other tools (Apollo Server, WunderGraph) may be better choices.
+If your use case matches these criteria, FraiseQL gives you a fast, predictable GraphQL API with minimal code. If you need multi-source aggregation or extreme flexibility, other tools (Apollo Server, WunderGraph) may be better choices.
 
 The key insight: **Different tools for different jobs. Choose based on your actual constraints, not hype.**

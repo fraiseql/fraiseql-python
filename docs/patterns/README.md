@@ -1,297 +1,128 @@
-<!-- Skip to main content -->
 ---
-
 title: Real-World Application Patterns
-description: Complete architectural patterns and implementation guides for production FraiseQL applications.
-keywords: ["workflow", "saas", "realtime", "ecommerce", "analytics", "federation"]
-tags: ["documentation", "reference"]
+description: Application blueprints for production FraiseQL v1 services built on Python, PostgreSQL, and FastAPI.
+keywords: ["patterns", "saas", "realtime", "ecommerce", "analytics", "iot", "postgresql"]
+tags: ["documentation", "patterns"]
 ---
 
 # Real-World Application Patterns
 
-**Status:** ✅ Production Ready
+**Status:** Production Ready
 **Audience:** Architects, senior developers
-**Last Updated:** 2026-02-05
 
-Complete architectural patterns and implementation guides for production FraiseQL applications.
-
----
-
-## Overview
-
-This section contains production-tested patterns for building scalable applications with FraiseQL. Each pattern includes:
-
-- Complete schema design
-- Architecture diagrams
-- Database structure
-- Query optimization strategies
-- Security considerations
-- Scaling guidelines
+Application blueprints for building production services with FraiseQL v1. Each blueprint
+is a complete, opinionated design built on the same runtime foundation: Python decorators
+(`@fraiseql.type`, `@fraiseql.query`, `@fraiseql.mutation`, `@fraiseql.subscription`)
+served over FastAPI, with all data and write logic living in PostgreSQL.
 
 ---
 
-## SaaS & Multi-Tenancy
+## How these blueprints fit together
+
+Every pattern below follows FraiseQL's CQRS model:
+
+- **Reads** — `@query` resolvers call `db.find` / `db.find_one` on `v_` / `tv_` views.
+  The view's `data` JSONB is shaped to the requested GraphQL fields at runtime.
+- **Writes** — `@mutation` resolvers call PostgreSQL `fn_` functions via
+  `db.execute_function`. All write business logic and validation live in the database.
+- **Streams** — `@subscription` resolvers are async generators (often backed by
+  PostgreSQL `LISTEN/NOTIFY`) whose yielded values FraiseQL pushes over WebSocket.
+- **Identity** — the trinity pattern (`pk_` internal BIGINT, `id` public UUID,
+  optional `identifier` slug) keeps internal keys out of the API.
+
+The schema is assembled in memory at app startup. There is no build step and no
+generated artifact — `create_fraiseql_app(...)` (or `build_fraiseql_schema(...)`)
+wires your types, queries, and mutations into a running GraphQL service.
+
+---
+
+## The Blueprints
 
 ### [Multi-Tenant SaaS with Row-Level Security](./saas-multi-tenant.md)
 
-**Use Case:** Build a SaaS platform where customers are isolated at the database row level.
-
-**Architecture:**
-
-- Single PostgreSQL instance with tenant ID per row
-- Automatic tenant context injection from JWT claims
-- Row-level security policies in database
-- Billing integration with Stripe
-
-**Includes:**
-
-- Tenant isolation schema design
-- Dynamic data filtering at query time
-- Subscription management
-- Usage-based billing calculations
-- Audit logging per tenant
-
----
-
-## Analytics & Data Warehousing
+Build a B2B SaaS where tenants are isolated at the database row level. Each row carries
+a `tenant_id`; PostgreSQL Row-Level Security policies read `current_setting('app.tenant_id')`,
+and FraiseQL sets that session GUC per transaction from `info.context["tenant_id"]`.
 
 ### [Analytics Platform with OLAP](./analytics-olap-platform.md)
 
-**Use Case:** Build a BI/analytics dashboard querying large datasets efficiently.
-
-**Architecture:**
-
-- Fact tables for events (millions of rows)
-- Dimension tables for context
-- Materialized views for aggregations
-- Real-time and batch query support
-- Arrow Flight for bulk exports
-
-**Includes:**
-
-- Star schema design
-- Aggregation query patterns
-- Time-series data handling
-- Drill-down analytics queries
-- Performance optimization for large datasets
-- Export to Excel/CSV/Parquet
-
----
-
-## Database Federation
-
-### [Multi-Database Federation](./federation-patterns.md)
-
-**Use Case:** Query across multiple databases (PostgreSQL, MySQL, SQLite) as a unified GraphQL API.
-
-**Architecture:**
-
-- PostgreSQL as primary (customer data)
-- MySQL as secondary (historical data)
-- SQLite for local caching
-- Cross-database joins
-- Transaction coordination
-
-**Includes:**
-
-- Federation setup and configuration
-- Cross-database query execution
-- Consistency guarantees
-- Failover handling
-- Performance considerations
-
----
-
-## Real-Time Collaborative Apps
+Build a BI/analytics service over star-schema fact and dimension tables. Aggregations use
+FraiseQL's runtime auto-aggregation (COUNT, SUM, AVG, MIN, MAX, STDDEV, VARIANCE) and
+standard PostgreSQL `GROUP BY` / `HAVING` / `FILTER` inside your `v_` / `tv_` views.
 
 ### [Real-Time Collaboration with Subscriptions](./realtime-collaboration.md)
 
-**Use Case:** Build collaborative tools (document editor, project management) with real-time updates.
-
-**Architecture:**
-
-- WebSocket subscriptions for live updates
-- Operational transformation for conflict resolution
-- Event sourcing for audit trail
-- Presence tracking (who's online)
-- Optimistic concurrency control
-
-**Includes:**
-
-- Subscription patterns for live data
-- Conflict resolution strategies
-- Presence management
-- Activity feeds
-- Notification system
-
----
-
-## IoT & Time-Series Data
-
-### [IoT Platform with Time-Series Data](./iot-timeseries.md)
-
-**Use Case:** Collect and query IoT sensor data efficiently (millions of data points).
-
-**Architecture:**
-
-- Time-partitioned tables for sensor readings
-- Aggregation tables for rollups (hourly, daily)
-- Retention policies
-- Real-time alerts
-- Streaming ingestion
-
-**Includes:**
-
-- Schema design for high-cardinality data
-- Efficient time-range queries
-- Downsampling strategies
-- Alert query patterns
-- Scaling to billions of points
-
----
-
-## E-Commerce Platform
+Build collaborative tools (document editors, project boards) with live updates. Uses
+`@fraiseql.subscription` async generators over WebSocket, typically backed by PostgreSQL
+`LISTEN/NOTIFY`, plus presence tracking and activity feeds.
 
 ### [E-Commerce with Complex Workflows](./ecommerce-workflows.md)
 
-**Use Case:** Build e-commerce with orders, inventory, fulfillment workflows.
+Build an online store with product catalogs, an order state machine, inventory reservations,
+and fulfillment. Writes flow through `fn_` functions; reads come from `v_` / `tv_` views;
+order state transitions are enforced in the database.
 
-**Architecture:**
+### [IoT Platform with Time-Series Data](./iot-timeseries.md)
 
-- Product catalog with variants
-- Order management with state machine
-- Inventory tracking and reservations
-- Fulfillment pipeline
-- Returns and refunds
-
-**Includes:**
-
-- Schema for products/variants/SKUs
-- Order state machine design
-- Inventory allocation queries
-- Reporting dashboards
-- Integration with payment processors
-
----
-
-## Content Management System (CMS)
-
-### [Headless CMS with Versioning](../patterns/realtime-collaboration.md)
-
-**Use Case:** Build a headless CMS with content versioning, drafts, and publishing workflows.
-
-**Architecture:**
-
-- Content models (dynamic types)
-- Version history tracking
-- Draft/published states
-- Media management
-- Content relationship graphs
-
-**Includes:**
-
-- Polymorphic content types
-- Version control and rollback
-- Publication workflows
-- SEO metadata management
-- API-first design
-
----
-
-## Social Network Platform
-
-### [Social Network with Activity Feeds](../patterns/realtime-collaboration.md)
-
-**Use Case:** Build a social network with feeds, followers, messaging, and notifications.
-
-**Architecture:**
-
-- User graph with follower relationships
-- Activity feed generation
-- Real-time notifications
-- Messaging with threading
-- Privacy controls per post
-
-**Includes:**
-
-- Graph queries for friends/followers
-- Feed algorithms (chronological, algorithmic)
-- Notification delivery
-- Private messaging
-- Content visibility rules
-
----
-
-## Common Patterns Across All Applications
-
-### Data Validation
-
-- Pre-insert validation on mutation
-- Custom business rule validation
-- Referential integrity checks
-- Type coercion and sanitization
-
-### Error Handling
-
-- Validation error responses with field-level details
-- Business logic error codes
-- User-friendly error messages
-- Error tracking and monitoring
-
-### Performance Optimization
-
-- Query result caching strategies
-- N+1 query prevention
-- Pagination for large result sets
-- Connection pooling at backend
-- Database index strategy
-
-### Security
-
-- Authentication with JWT tokens
-- Authorization per object and field
-- SQL injection prevention (prepared statements)
-- Rate limiting per user/IP
-- Audit logging for sensitive operations
-
-### Monitoring & Observability
-
-- Query execution time tracking
-- Error rate monitoring
-- Database query metrics
-- Application performance monitoring (APM)
-- Distributed tracing
+Collect and query high-volume sensor data. Uses time-partitioned tables, rollup tables for
+hourly/daily aggregates refreshed by functions, retention policies, and time bucketing with
+`DATE_TRUNC` inside views.
 
 ---
 
 ## Pattern Selection Guide
 
-Choose a pattern based on your application needs:
-
 | Pattern | Best For | Scale |
 |---------|----------|-------|
-| **Multi-Tenant SaaS** | B2B SaaS platforms, white-label solutions | 10K-100K+ customers |
-| **Analytics OLAP** | BI dashboards, business intelligence, reporting | 100GB-100TB+ data |
-| **Database Federation** | Legacy system migration, data warehouse queries | Multiple data sources |
-| **Real-Time Collaboration** | Google Docs-like, Figma-like, project management | 100-10K+ concurrent users |
-| **IoT Time-Series** | Sensor networks, monitoring systems, metrics | Billions of data points |
-| **E-Commerce** | Online stores, marketplaces, product catalogs | 1M-100M+ products |
-| **Headless CMS** | Content platforms, publishing, websites | 10K-100K+ content items |
-| **Social Network** | User communities, social platforms, forums | 1M-1B+ users |
+| **Multi-Tenant SaaS** | B2B SaaS platforms, white-label products | 10K-100K+ tenants |
+| **Analytics OLAP** | BI dashboards, reporting, business intelligence | 100GB-100TB+ data |
+| **Real-Time Collaboration** | Document editors, boards, project management | 100-10K+ concurrent users |
+| **E-Commerce** | Online stores, marketplaces, catalogs | 1M-100M+ products |
+| **IoT Time-Series** | Sensor networks, monitoring, metrics | Billions of data points |
+
+---
+
+## Concerns Common to Every Blueprint
+
+### Data validation
+
+- Validation lives in PostgreSQL `fn_` functions, which return JSONB indicating success
+  or a structured error.
+- Referential integrity is enforced by foreign keys and constraints on `tb_` tables.
+- GraphQL input types coerce and type-check arguments before they reach the database.
+
+### Error handling
+
+- Mutations return a success-or-error union (`@fraiseql.success` / `@fraiseql.error`),
+  so clients receive field-level details and stable error codes.
+- Internal error details stay in the database/server logs, not in the API response.
+
+### Performance
+
+- Result caching with cascade invalidation via FraiseQL's PostgreSQL-backed cache
+  (`ResultCache`, `CachedRepository`, `cached_query`).
+- N+1 prevention with `@fraiseql.dataloader_field` and view-level joins.
+- Cursor-based pagination for large result sets; PostgreSQL indexes on read views.
+
+### Security
+
+- Authentication via JWT; authorization via an `Authorizer` passed to
+  `@fraiseql.query(authorizer=...)` / `@fraiseql.subscription(authorizer=...)` and/or
+  PostgreSQL RLS policies.
+- SQL injection prevention through parameterized queries everywhere.
+- Rate limiting and audit logging for sensitive operations.
 
 ---
 
 ## Common Challenges & Solutions
 
-### Challenge: N+1 Queries
+### Challenge: N+1 queries
 
-**Problem:** Fetching parent then iterating children causes excessive queries
-
-**Solution:** Use FraiseQL's nested query syntax or batch queries
+Fetching a parent then iterating its children issues one query per child. Request nested
+relationships in a single GraphQL query (FraiseQL resolves them from the view's JSONB) and
+use `@fraiseql.dataloader_field` for batched lookups.
 
 ```graphql
-<!-- Code example in GraphQL -->
-# ✅ Good: Single query with nested relationships
 query GetPostsWithAuthors {
   posts {
     id
@@ -308,17 +139,13 @@ query GetPostsWithAuthors {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Challenge: Large Result Sets
+### Challenge: Large result sets
 
-**Problem:** Querying millions of rows causes memory issues
-
-**Solution:** Implement cursor-based pagination
+Querying millions of rows at once strains memory. Use cursor-based pagination.
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetPostsPaginated($first: Int!, $after: String) {
   posts(first: $first, after: $after) {
     edges {
@@ -334,71 +161,51 @@ query GetPostsPaginated($first: Int!, $after: String) {
     }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-### Challenge: Complex Authorization Rules
+### Challenge: Tenant and row-level authorization
 
-**Problem:** Some users can see only subset of data
+Some users may see only a subset of rows. Enforce visibility with PostgreSQL RLS policies
+that read session GUCs FraiseQL sets from the request context.
 
-**Solution:** Use row-level security in database + custom claims in JWT
+```sql
+-- RLS policy on a tenant-scoped table
+CREATE POLICY tenant_isolation ON tb_document
+  USING (
+    tenant_id = current_setting('app.tenant_id')::uuid
+    AND (is_public OR owner_id = current_setting('app.user_id')::uuid)
+  );
+```
 
-```text
-<!-- Code example in TEXT -->
-JWT Claims: { userId: "123", role: "admin", tenantId: "tenant_456" }
-              ↓
-Database RLS Policy: WHERE tenant_id = JWT.tenantId AND (is_public OR owner_id = JWT.userId)
-```text
-<!-- Code example in TEXT -->
+### Challenge: Real-time updates
 
-### Challenge: Real-Time Updates
-
-**Problem:** Need live data updates for subscriptions
-
-**Solution:** Use WebSocket subscriptions with intelligent filtering
+Clients need live data without polling. Stream changes with a WebSocket subscription whose
+async generator yields on PostgreSQL `LISTEN/NOTIFY` events.
 
 ```graphql
-<!-- Code example in GraphQL -->
-subscription OnUserOnline {
+subscription OnUserStatusChanged {
   userStatusChanged {
     userId
-    status  # online, idle, offline
+    status
     lastSeen
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
 ## See Also
 
-**Detailed Patterns:**
+**Detailed blueprints:**
 
 - [Multi-Tenant SaaS with RLS](./saas-multi-tenant.md)
 - [Analytics Platform with OLAP](./analytics-olap-platform.md)
-- [Database Federation](./federation-patterns.md)
 - [Real-Time Collaboration](./realtime-collaboration.md)
-- [IoT Time-Series Data](./iot-timeseries.md)
 - [E-Commerce Workflows](./ecommerce-workflows.md)
-- [Headless CMS](../patterns/realtime-collaboration.md)
-- [Social Network Platform](../patterns/realtime-collaboration.md)
+- [IoT Time-Series Data](./iot-timeseries.md)
 
-**Related Guides:**
+**Foundations:**
 
-- [Production Deployment](../guides/production-deployment.md)
-- [Performance Optimization](../guides/performance-optimization.md)
-- [Schema Design Best Practices](../guides/schema-design-best-practices.md)
-- [Security Checklist](../guides/production-security-checklist.md)
-
-**Full-Stack Examples:**
-
-- [Python + React Example](../tutorials/fullstack-python-react.md)
-- [TypeScript + Vue Example](../examples/fullstack-typescript-vue.md)
-- [Go + Flutter Example](../examples/fullstack-go-flutter.md)
-- [Java + Next.js Example](../examples/fullstack-java-nextjs.md)
-
----
-
-**Last Updated:** 2026-02-05
-**Version:** v2.0.0-alpha.1
+- [Documentation Home](../index.md)
+- [Core Concepts](../foundation/02-core-concepts.md)
+- [Quickstart](../getting-started/quickstart.md)

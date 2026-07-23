@@ -1,520 +1,318 @@
-<!-- Skip to main content -->
 ---
 
 title: OAuth Provider Selection Guide
-description: ├─ YES → Keycloak (self-hosted) or SCRAM
+description: Choose between Auth0, a custom AuthProvider, or no auth in FraiseQL v1.
 keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
 tags: ["documentation", "reference"]
 ---
 
 # OAuth Provider Selection Guide
 
-**Status:** ✅ Production Ready
+**Status:** Production Ready
 **Audience:** Architects, DevOps, Security Engineers
-**Reading Time:** 15-20 minutes
-**Last Updated:** 2026-02-05
+**Reading Time:** 10-15 minutes
+**Last Updated:** 2026-06-19
+
+## The Three Provider Modes
+
+FraiseQL v1 authentication runs **inside the FastAPI app** (Python). There is exactly one
+configuration knob that selects how tokens are validated — `auth_provider` on
+`FraiseQLConfig`:
+
+```python
+auth_provider: Literal["auth0", "custom", "none"] = "none"
+```
+
+Everything else (Google, Keycloak, Cognito, Okta, Azure AD, your own issuer) is a *choice of
+who issues the JWT*, not a separate FraiseQL provider class. You reach those issuers through
+**one of two paths**:
+
+- **Auth0** brokers them for you (`auth_provider="auth0"`), or
+- a **custom `AuthProvider`** validates that issuer's JWTs directly (`auth_provider="custom"`).
+
+There is no `GoogleProvider`, `KeycloakProvider`, or `OidcProvider` class in FraiseQL.
+
+```text
+                      auth_provider = ?
+
+   "auth0"  ───────────────────────────────────────────────
+      Managed broker. Set auth0_domain / auth0_api_identifier.
+      Auth0 fronts Google, GitHub, social, SAML, enterprise OIDC.
+
+   "custom" ───────────────────────────────────────────────
+      Subclass AuthProvider and validate any OIDC/JWT issuer
+      (Keycloak, Cognito, Azure AD, Okta, your own).
+      RustCustomJWTProvider = accelerated JWT validation.
+      NativeAuthProvider    = built-in username/password.
+
+   "none"   ───────────────────────────────────────────────
+      Auth disabled. Dev / internal only.
+```
+
+---
 
 ## Quick Decision
 
 ```text
-<!-- Code example in TEXT -->
-Internal Team Only?
-├─ YES → Keycloak (self-hosted) or SCRAM
+Do you want to write/operate token validation yourself?
+├─ NO, give me a managed service that brokers Google/social/SAML
+│     └─ auth_provider = "auth0"
 │
-Public Users?
-├─ YES → Google OAuth (easiest) or Auth0 (more features)
+├─ YES, I have my own OIDC/JWT issuer (Keycloak, Cognito, Azure AD, Okta, in-house)
+│     └─ auth_provider = "custom"  → subclass AuthProvider
+│         (use RustCustomJWTProvider for fast JWKS-based JWT validation)
 │
-Need Specific IDP?
-├─ AWS Cognito → Configure as OIDC provider
-├─ Azure AD → Configure as OIDC provider
-├─ Okta → Configure as OIDC provider
-├─ GitHub (developers) → GitHub OAuth
-└─ SAML requirement? → Keycloak + SAML bridge
-```text
-<!-- Code example in TEXT -->
+├─ I just need built-in username/password stored in PostgreSQL
+│     └─ auth_provider = "custom"  → NativeAuthProvider
+│
+└─ Local dev / fully internal, no auth needed yet
+      └─ auth_provider = "none"
+```
 
 ---
 
 ## Comparison Matrix
 
-### Setup & Operations
+| Mode | What it is | Effort | Brokers external IdPs? | Self-hosted? |
+|------|-----------|--------|------------------------|--------------|
+| **auth0** | Managed Auth0 tenant validates RS256 JWTs | Low | Yes (Google, social, SAML, enterprise OIDC) | No |
+| **custom** | Your `AuthProvider` subclass validates JWTs | Medium | Yes (any OIDC/JWT issuer you point it at) | Yes (your issuer) |
+| **custom + `NativeAuthProvider`** | Built-in username/password backed by PostgreSQL | Low | No (self-contained) | Yes |
+| **none** | Authentication disabled | None | N/A | N/A |
 
-| Provider | Effort | Time | Complexity | Cost |
-|----------|--------|------|-----------|------|
-| **Google OAuth** | 🟢 Easy | 15 min | 🟢 Low | Free |
-| **Auth0** | 🟡 Medium | 30 min | 🟡 Medium | $0-$2,500/mo |
-| **Keycloak** | 🔴 Hard | 2-4 hrs | 🔴 High | Free (self-hosted) |
-| **SCRAM** | 🟢 Easy | 10 min | 🟢 Very Low | Free |
-| **AWS Cognito** | 🟡 Medium | 45 min | 🟡 Medium | Pay-per-auth |
-| **Azure AD** | 🟡 Medium | 45 min | 🟡 Medium | Included w/Azure |
-| **Okta** | 🔴 Hard | 1-2 hrs | 🔴 High | $2,000+/mo |
+### Capabilities by issuer (reached via the mode above)
 
-### Features
+| Feature | Auth0 | Keycloak (custom) | Cognito (custom) | Azure AD (custom) | Native (custom) |
+|---------|-------|-------------------|------------------|-------------------|-----------------|
+| **OIDC / JWT** | Yes | Yes | Yes | Yes | JWT (built-in) |
+| **MFA / 2FA** | Yes | Yes | Yes | Yes | No |
+| **Social login** | Yes (20+) | Setup | No | No | No |
+| **SAML** | Yes | Yes | No | Yes | No |
+| **LDAP / AD** | Yes | Yes | No | Yes | No |
+| **Self-hosted** | No | Yes | No | No | Yes |
+| **Managed service** | Yes | No | Yes | Yes | No |
 
-| Feature | Google | Auth0 | Keycloak | SCRAM | Cognito | Azure AD |
-|---------|--------|--------|----------|-------|---------|----------|
-| **OAuth 2.0** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| **OIDC** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| **MFA/2FA** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| **Social Login** | N/A | ✅ Multiple | ⚠️ Setup | ❌ | ❌ | ❌ |
-| **SAML** | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| **LDAP/AD** | ❌ | ✅ | ✅ | ⚠️ Custom | ❌ | ✅ |
-| **Self-Hosted** | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Managed Service** | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Role-Based Access** | ⚠️ Custom | ✅ | ✅ | ❌ | ✅ | ✅ |
-| **Custom Attributes** | ⚠️ Limited | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-### Users & Teams
-
-| Provider | Public API? | Team Users? | Enterprise? | Compliance |
-|----------|-----------|-----------|-----------|-----------|
-| **Google** | ✅ Yes | ⚠️ Workspace | ⚠️ Basic | SOC 2 |
-| **Auth0** | ✅ Yes | ✅ Yes | ✅ Yes | SOC 2, GDPR |
-| **Keycloak** | N/A | ✅ Yes | ✅ Yes | Depends |
-| **SCRAM** | N/A | ✅ Yes | ❌ No | None |
-| **Cognito** | ✅ AWS only | ✅ Yes | ✅ Yes | SOC 2, HIPAA |
-| **Azure AD** | ✅ Enterprise | ✅ Yes | ✅ Yes | SOC 2, GDPR |
+The FraiseQL-side wiring is the same in every "custom" column: validate the issuer's JWTs
+against its JWKS, issuer, and audience inside your `AuthProvider`.
 
 ---
 
-## Decision Flowchart
-
-### Question 1: Scale & Control
-
-```text
-<!-- Code example in TEXT -->
-Need complete control over authentication?
-├─ YES → Keycloak (self-hosted) ✅
-│        (Full ownership, highest complexity)
-│
-├─ NO: Need managed service?
-│  ├─ YES → Auth0 or Google ✅
-│  │        (Managed, less operational burden)
-│  │
-│  └─ NO: Simple password auth?
-│     └─ YES → SCRAM ✅
-│              (Simplest, lowest overhead)
-│
-└─ Enterprise infrastructure?
-   ├─ AWS → AWS Cognito ✅
-   ├─ Azure → Azure AD ✅
-   └─ Other → Use OIDC-compliant provider
-```text
-<!-- Code example in TEXT -->
-
-### Question 2: User Base
-
-```text
-<!-- Code example in TEXT -->
-Public internet users?
-├─ YES → Google OAuth ✅
-│        (Easiest, familiar to users)
-│
-├─ NO: Internal team only?
-│  ├─ YES → Keycloak or SCRAM ✅
-│  │        (Self-contained)
-│  │
-│  └─ NO: Enterprise customers?
-│     └─ YES → Auth0 or Keycloak ✅
-│              (SAML, provisioning, compliance)
-│
-└─ Social login needed?
-   ├─ YES → Auth0 ✅
-   │        (Multiple providers, easy setup)
-   │
-   └─ NO → Any provider fine
-```text
-<!-- Code example in TEXT -->
-
-### Question 3: Features
-
-```text
-<!-- Code example in TEXT -->
-Need MFA/2FA?
-├─ YES → Auth0, Keycloak, Cognito ✅
-│
-Need SAML?
-├─ YES → Keycloak or Auth0 ✅
-│
-Need directory sync (LDAP/AD)?
-├─ YES → Keycloak or Azure AD ✅
-│
-Need fine-grained RBAC?
-├─ YES → Auth0, Keycloak ✅
-│
-Need custom attributes?
-├─ YES → Keycloak, Auth0, SCRAM ✅
-│
-Simple auth only?
-└─ YES → Google, SCRAM ✅
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Detailed Recommendations
-
-### Google OAuth (Best for Startups)
+## Mode: `auth0` (managed broker)
 
 **Best for:**
 
-- Public users (simplest)
-- Startups wanting quick launch
-- Teams with Google Workspace
-- No complex enterprise needs
+- You want a managed service and no token-validation code.
+- You need to broker Google, GitHub, other social logins, SAML, or enterprise OIDC behind a
+  single tenant.
+- Public users, SaaS, or enterprise customers wanting SSO.
 
-**Why it wins:**
+**How to configure** — set three fields on `FraiseQLConfig` (env vars are `FRAISEQL_*`):
 
-- 🟢 Super easy setup (15 minutes)
-- 🟢 Familiar to users
-- 🟢 Free
-- 🟢 Minimal operational overhead
-- 🟡 Limited customization
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.auth import Auth0Config
 
-**Setup Example:**
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    queries=[...],
+    auth=Auth0Config(
+        domain="your-tenant.auth0.com",
+        api_identifier="https://api.myapp.com",
+        algorithms=["RS256"],            # default
+    ),
+)
+```
+
+Equivalent via configuration / environment:
 
 ```bash
-<!-- Code example in BASH -->
-# 1. Create Google Cloud Project
-# 2. Enable Google+ API
-# 3. Create OAuth credentials
-# 4. Copy to FraiseQL.toml
-GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=xxxxx
-```text
-<!-- Code example in TEXT -->
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=your-tenant.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.myapp.com
+# FRAISEQL_AUTH0_ALGORITHMS defaults to ["RS256"]
+```
 
-**Time to production:** 30 minutes
-**Cost:** Free
-**Maintenance:** Minimal
+Auth0 then handles Google, social, SAML, MFA, and enterprise OIDC for you — FraiseQL only
+validates the RS256 JWT that Auth0 issues.
 
-**Limitations:**
+**Trade-offs:** managed (no ops), broad feature set, but a hosted third party and a cost tier
+beyond the free plan.
 
-- Can't customize login flow
-- Relies on Google's infrastructure
-- GDPR: Data in US
-- No SAML support
+See **[Auth0 Setup](./setup-auth0.md)** for the full walkthrough.
 
 ---
 
-### Auth0 (Best for Growing Companies)
+## Mode: `custom` (any OIDC / JWT issuer)
 
-**Best for:**
+When your tokens come from Keycloak, AWS Cognito, Azure AD, Okta, or your own issuer, set
+`auth_provider="custom"` and supply an `AuthProvider`. The base class
+(`fraiseql.auth.AuthProvider`) defines two abstract methods you implement:
 
-- Feature-rich authentication needs
-- Enterprise customers
-- Multiple social login providers
-- Complex authorization requirements
+```python
+from typing import Any
 
-**Why it wins:**
+from fraiseql.auth import AuthProvider, UserContext
 
-- ✅ Managed service (no ops)
-- ✅ SAML + OAuth 2.0
-- ✅ Social login (20+ providers)
-- ✅ MFA/2FA, device flow
-- ✅ Excellent documentation
-- 🟡 More expensive ($0-$2,500/mo)
 
-**Setup Example:**
+class MyIssuerProvider(AuthProvider):
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        # Validate against your issuer's JWKS / issuer / audience and return the payload.
+        ...
 
-```bash
-<!-- Code example in BASH -->
-# 1. Create Auth0 account
-# 2. Create application
-# 3. Copy settings
-AUTH0_DOMAIN=your-domain.auth0.com
-AUTH0_CLIENT_ID=xxxxx
-AUTH0_CLIENT_SECRET=xxxxx
-```text
-<!-- Code example in TEXT -->
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return UserContext(
+            user_id=payload["sub"],
+            email=payload.get("email"),
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+        )
+```
 
-**Time to production:** 1-2 hours
-**Cost:** Free tier available, $13-$2,500/mo for paid
-**Maintenance:** Minimal
+Pass the instance to the app:
 
-**Use when:**
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    auth=MyIssuerProvider(...),
+)
+```
 
-- Building SaaS (most customers want SSO/SAML)
-- Enterprise features important
-- Want managed service reliability
-- Multiple authentication methods needed
+`UserContext` carries `user_id`, optional `email` / `name`, `roles`, `permissions`, and free
+-form `metadata`, with helpers `.has_role()`, `.has_permission()`, `.has_any_role()`, and
+`.has_any_permission()`. It is available to every resolver as `info.context["user"]`.
 
----
+### Accelerated JWT validation: `RustCustomJWTProvider`
 
-### Keycloak (Best for Enterprise)
+For standard JWKS-based JWT validation you do not have to hand-roll `validate_token`.
+`RustCustomJWTProvider` validates JWTs from any custom issuer using the optional `fraiseql_rs`
+extension:
 
-**Best for:**
+```python
+from fraiseql.auth.rust_provider import RustCustomJWTProvider
 
-- Complete control needed
-- Self-hosted infrastructure required
-- SAML + OIDC both needed
-- LDAP/Active Directory integration
+provider = RustCustomJWTProvider(
+    issuer="https://keycloak.example.com/realms/production",
+    audience="my-api",
+    jwks_url="https://keycloak.example.com/realms/production/protocol/openid-connect/certs",
+)
+```
 
-**Why it wins:**
+The same shape works for Cognito, Azure AD, Okta, or any OIDC issuer — point `issuer`,
+`audience`, and `jwks_url` at that provider's well-known endpoints. The `jwks_url` must be
+HTTPS.
 
-- ✅ Open source (full control)
-- ✅ Self-hosted (data stays on-prem)
-- ✅ SAML + OAuth 2.0 + OIDC
-- ✅ LDAP/AD integration
-- ✅ User federation
-- 🔴 Complex setup (2-4 hours)
+### Built-in username/password: `NativeAuthProvider`
 
-**Setup Example:**
+If you only need self-contained username/password auth backed by your PostgreSQL database
+(no external IdP, no social login), use `NativeAuthProvider`. It ships a FastAPI router for
+login/registration endpoints and stores credentials in your database. This is the FraiseQL-
+native equivalent of "simplest possible auth" for an internal team.
 
-```bash
-<!-- Code example in BASH -->
-# 1. Deploy Keycloak (Docker)
-docker run -d \
-  -e KEYCLOAK_ADMIN=admin \
-  -e KEYCLOAK_ADMIN_PASSWORD=password \
-  -p 8080:8080 \
-  quay.io/keycloak/keycloak:latest
+**Trade-offs of `custom`:** full control and self-hosting, no third-party dependency for your
+issuer, but you operate the issuer (Keycloak, your DB) and own its availability and backups.
 
-# 2. Create realm and client
-# 3. Configure FraiseQL
-KEYCLOAK_URL=http://keycloak:8080
-KEYCLOAK_REALM=production
-KEYCLOAK_CLIENT_ID=FraiseQL
-```text
-<!-- Code example in TEXT -->
-
-**Time to production:** 4-8 hours (includes setup)
-**Cost:** Free (self-hosted) + infrastructure costs
-**Maintenance:** Medium (monitoring, updates, backups)
-
-**Use when:**
-
-- Enterprise security requirements
-- Need to integrate LDAP/AD
-- Regulatory compliance (GDPR, HIPAA) critical
-- Want to own authentication system
+See **[Keycloak Setup](./setup-keycloak.md)** and
+**[Google OAuth Setup](./setup-google-oauth.md)** for issuer-specific walkthroughs (both route
+through Auth0 or a custom provider — there is no dedicated class for either).
 
 ---
 
-### SCRAM (Simplest Option)
+## Mode: `none` (auth disabled)
 
-**Best for:**
+`auth_provider="none"` is the default. Every request is unauthenticated and
+`info.context["user"]` is absent. Use it for local development or fully internal/trusted
+deployments. Do not ship `none` to a public surface.
 
-- Internal teams only
-- Minimal authentication needs
-- Just username/password (no social login)
-- Maximum simplicity
-
-**Why it wins:**
-
-- 🟢 Simplest possible setup
-- 🟢 No external dependencies
-- 🟢 Direct database storage
-- 🟢 No 3rd party involved
-- 🟡 No advanced features
-
-**Setup Example:**
-
-```toml
-<!-- Code example in TOML -->
-# FraiseQL.toml
-[auth]
-enabled = true
-scheme = "scram"
-database_url = "postgresql://..."
-```text
-<!-- Code example in TEXT -->
-
-**Time to production:** 10 minutes
-**Cost:** Free
-**Maintenance:** None (uses your database)
-
-**Use when:**
-
-- Internal team (5-50 people)
-- No social login needed
-- Want complete simplicity
-- No regulatory requirements
-
----
-
-### AWS Cognito (Best for AWS Ecosystem)
-
-**Best for:**
-
-- Existing AWS infrastructure
-- Pay-per-authentication billing
-- Already using AWS services
-- HIPAA compliance needed
-
-**Pros:**
-
-- ✅ Integrated with AWS ecosystem
-- ✅ Integrated MFA
-- ✅ Simple setup
-- ✅ Pay-per-auth (low cost at startup)
-
-**Cons:**
-
-- ❌ Limited to AWS
-- ❌ No SAML
-- ❌ Vendor lock-in
-- 🟡 Limited customization
-
-**Use when:**
-
-- Already committed to AWS
-- Prefer pay-as-you-go
-- No need for on-prem
-
----
-
-### Azure AD (Best for Microsoft Ecosystem)
-
-**Best for:**
-
-- Existing Azure infrastructure
-- Microsoft 365 integration
-- Enterprise customers
-- On-prem Active Directory
-
-**Pros:**
-
-- ✅ SAML + OAuth 2.0 + OIDC
-- ✅ Direct AD/LDAP integration
-- ✅ Enterprise support
-- ✅ Compliance certifications
-
-**Cons:**
-
-- ❌ Limited to Azure
-- ❌ Higher complexity
-- ❌ Vendor lock-in
-
-**Use when:**
-
-- Enterprise Microsoft customer
-- Have Active Directory
-- SAML required
+For development you can also enable a dev login via `dev_auth_username` /
+`dev_auth_password` instead of standing up a real provider.
 
 ---
 
 ## Decision Table
 
-| Use Case | Recommendation | Reason |
-|----------|---|---|
-| Startup, public users | Google OAuth | Fastest to market |
-| SaaS platform | Auth0 | Enterprise features, managed |
-| Internal team (10 people) | SCRAM | Simplest |
-| Internal team (100+ people) | Keycloak | Scale + control |
-| Enterprise customer base | Auth0 or Keycloak | SAML + features |
-| AWS infrastructure | Cognito | Integration |
-| Azure infrastructure | Azure AD | Integration |
-| Regulated industry (HIPAA) | Keycloak or Cognito | Compliance + control |
-| GDPR compliance critical | Keycloak | Data stays on-prem |
-| Need LDAP/AD sync | Keycloak or Azure AD | Integration |
+| Use case | Mode | Why |
+|----------|------|-----|
+| Public users, want managed | `auth0` | No token code; brokers Google/social |
+| SaaS needing SSO / SAML | `auth0` | SAML + enterprise OIDC via one tenant |
+| Self-hosted Keycloak | `custom` | Validate Keycloak JWTs (RustCustomJWTProvider) |
+| AWS Cognito user pool | `custom` | Validate Cognito JWTs via its JWKS |
+| Azure AD / Okta | `custom` | Validate that issuer's JWTs |
+| Your own JWT issuer | `custom` | Subclass `AuthProvider` |
+| Internal team, username/password | `custom` + `NativeAuthProvider` | Self-contained, PostgreSQL-backed |
+| Local dev / internal only | `none` | Auth disabled |
 
 ---
 
-## Migration Scenarios
+## Switching Modes
 
-### Scenario: Migrate from Google OAuth to Auth0
+Provider choice is configuration, not architecture — switching modes is a config change plus a
+redeploy. The main user-facing effect is that existing tokens issued by the old provider stop
+validating, so users re-authenticate once after cutover.
 
-**Effort:** Low (1-2 hours)
-**Downtime:** 10-15 minutes
+### Example: Native/custom issuer to Auth0
 
-```bash
-<!-- Code example in BASH -->
-# 1. Create Auth0 account and application
-# 2. Update FraiseQL.toml with Auth0 credentials
-# 3. Deploy update
-# 4. Test: Existing sessions from Google remain valid
+```python
+# Before: custom issuer
+auth=MyIssuerProvider(...)
 
-# Users who were authenticated by Google:
-# - First login after migration must re-authenticate with Auth0
-# - New Google account linking handled by Auth0
+# After: Auth0 brokers it
+auth=Auth0Config(
+    domain="your-tenant.auth0.com",
+    api_identifier="https://api.myapp.com",
+)
+```
 
-# Timeline:
-# - During update: Brief outage (users log out)
-# - After update: Users re-authenticate once
-# - No data loss
-```text
-<!-- Code example in TEXT -->
-
-### Scenario: Self-Host Keycloak for Enterprise
-
-**Effort:** High (4-8 hours first time)
-**Downtime:** 30 minutes (scheduled)
-
-```bash
-<!-- Code example in BASH -->
-# 1. Deploy Keycloak in production
-# 2. Set up database (PostgreSQL recommended)
-# 3. Configure realm and clients
-# 4. Test with staging environment
-# 5. Sync existing users (if needed)
-# 6. Update FraiseQL to use Keycloak
-# 7. Gradual rollout (10% → 50% → 100%)
-
-# Timeline:
-# - Setup: 2-4 hours
-# - Testing: 1-2 hours
-# - Cutover: 1 hour
-# - Monitoring: Ongoing
-```text
-<!-- Code example in TEXT -->
+Deploy the change; on first request after cutover users authenticate against Auth0. No data
+migration is required on the FraiseQL side — `UserContext` is rebuilt from the new tokens.
 
 ---
 
-## Troubleshooting Provider Selection
+## Authorization (after authentication)
 
-### "We chose Google OAuth but need SAML"
+Selecting a provider only establishes *who the user is*. To control *what they can do*,
+FraiseQL gives you:
 
-**Options:**
+- **Decorators** (`from fraiseql.auth`): `requires_auth`, `requires_permission`,
+  `requires_role`, `requires_any_role`, `requires_any_permission` — they read
+  `info.context["user"]`.
+- **Operation authorization**: an `Authorizer` attached via
+  `@fraiseql.query(authorizer=...)` / `@fraiseql.mutation(authorizer=...)` /
+  `@fraiseql.subscription(authorizer=...)`, or globally with
+  `create_fraiseql_app(authorizer=..., authorization_cache=...)`.
+- **Field authorization**: `@fraiseql.type(..., authorize_fields=...)` plus `authorize_field`
+  / `any_permission` / `combine_permissions`.
+- **PostgreSQL Row-Level Security** keyed on `tenant_id` / `user_id` flowed from
+  `info.context` into session GUCs.
 
-1. Migrate to Auth0 or Keycloak (2-4 hours)
-2. Accept OAuth-only limitation
-3. Use Auth0 bridge (external service)
+Denied access surfaces as a GraphQL error with `extensions.code = "FORBIDDEN"`.
 
-**Recommendation:** Migrate if SAML critical for customers
+---
 
-### "Keycloak is too complex to operate"
+## A note on SCRAM
 
-**Solutions:**
-
-1. Use managed Keycloak service (Kloudless, etc.)
-2. Simplify: Use only OAuth 2.0 subset
-3. Migrate to Auth0 (managed alternative)
-
-### "SCRAM doesn't have features we need"
-
-**Options:**
-
-1. Migrate to OAuth/OIDC provider (1-2 hours)
-2. Implement features in application layer
-3. Wait for future OAuth support
-
-### "We're stuck with legacy provider (old system)"
-
-**Bridge Pattern:**
-
-```text
-<!-- Code example in TEXT -->
-Client → New OAuth Provider (Auth0, Keycloak)
-           ↓
-         Bridge Service
-           ↓
-         Legacy LDAP/AD/Custom
-```text
-<!-- Code example in TEXT -->
-
-Use an OAuth provider as a bridge to your legacy system.
+SCRAM-SHA-256 is **not** a FraiseQL authentication scheme. It is PostgreSQL's own
+connection authentication — the psycopg/libpq client negotiates `scram-sha-256` based on your
+`pg_hba.conf` and `database_url`. It secures the database connection, not your GraphQL users,
+and is configured in PostgreSQL rather than in FraiseQL. See
+**[SCRAM / Database Connection Auth](./scram.md)** if you are hardening the PostgreSQL
+connection.
 
 ---
 
 ## See Also
 
-- **[Google OAuth Setup](./setup-google-oauth.md)** - Quick start
-- **[Auth0 Setup](./setup-auth0.md)** - Quick start
-- **[Keycloak Setup](./setup-keycloak.md)** - Quick start
-- **[Security Checklist](./security-checklist.md)** - Pre-production verification
-- **[API Reference](./api-reference.md)** - Complete API
+- **[Auth0 Setup](./setup-auth0.md)** — `auth_provider="auth0"` walkthrough
+- **[Google OAuth Setup](./setup-google-oauth.md)** — Google via Auth0 or a custom provider
+- **[Keycloak Setup](./setup-keycloak.md)** — Keycloak via a custom provider
+- **[SCRAM / Database Connection Auth](./scram.md)** — PostgreSQL connection security
+- **[Security Checklist](./security-checklist.md)** — pre-production verification
+- **[API Reference](./api-reference.md)** — auth providers, decorators, `UserContext`
 
 ---
 
-**Remember:** OAuth provider choice is not permanent. Most migrations take just a few hours. Choose based on current needs and scale up as you grow.
+**Remember:** provider choice is a config setting (`auth_provider` plus a few `FRAISEQL_`
+fields or `create_fraiseql_app(auth=...)` kwargs), and switching is a redeploy away. Choose
+based on current needs and scale up as you grow.

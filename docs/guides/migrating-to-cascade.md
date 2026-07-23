@@ -911,6 +911,4 @@ FROM graphql.create_post('{"title": "Test", "author_id": "user-123"}');
 
 **Migration Effort**: Low to Medium (2-5 days for typical application)
 **Risk Level**: Low (opt-in feature with easy rollback)
-**Performance Impact**: Minimal (typically < 5% overhead)</content>
-</xai:function_call</xai:function_call name="write">
-<parameter name="filePath">README.md
+**Performance Impact**: Minimal (typically < 5% overhead)

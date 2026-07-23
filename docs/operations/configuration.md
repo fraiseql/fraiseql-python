@@ -1,17 +1,24 @@
-<!-- Skip to main content -->
 ---
 
-title: Observability Configuration Reference
-description: This document provides complete configuration reference for FraiseQL's observability system. All settings are **opt-in** and carefully tuned for production safe
+title: Configuration Reference
+description: Complete configuration reference for a FraiseQL application. Settings are managed through FraiseQLConfig (pydantic), FRAISEQL_-prefixed environment variables, and create_fraiseql_app(...) keyword arguments.
 keywords: ["deployment", "scaling", "performance", "monitoring", "troubleshooting"]
 tags: ["documentation", "reference"]
 ---
 
-# Observability Configuration Reference
+# Configuration Reference
 
 ## Overview
 
-This document provides complete configuration reference for FraiseQL's observability system. All settings are **opt-in** and carefully tuned for production safety.
+FraiseQL is a Python runtime GraphQL framework for PostgreSQL. A FraiseQL app is
+configured at startup through a single pydantic settings object, `FraiseQLConfig`.
+You can populate it from environment variables (prefixed `FRAISEQL_`), a `.env`
+file, or directly in Python. There is no separate config file format, no CLI, and
+no build step: the GraphQL schema is assembled in memory when the FastAPI app
+starts.
+
+This document is the complete reference for `FraiseQLConfig` (the main application
+config) and `MetricsConfig` (the optional Prometheus metrics integration).
 
 ---
 
@@ -19,1095 +26,756 @@ This document provides complete configuration reference for FraiseQL's observabi
 
 ### Minimal Configuration
 
-Enable observability with defaults:
+The only required setting is the PostgreSQL connection URL. Set it via an
+environment variable:
 
 ```bash
-<!-- Code example in BASH -->
-# Environment variable
-export FRAISEQL_OBSERVABILITY_ENABLED=true
-export FRAISEQL_DATABASE_URL=postgres://user:pass@localhost/mydb
-```text
-<!-- Code example in TEXT -->
+export FRAISEQL_DATABASE_URL=postgresql://user:pass@localhost/mydb
+```
 
-Or in `FraiseQL.toml`:
+Then create the app:
 
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
+```python
+from fraiseql.fastapi import create_fraiseql_app
 
-[database]
-url = "postgres://user:pass@localhost/mydb"
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+)
+```
 
-That's it! The system will use conservative defaults.
+Run it with uvicorn:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+That's it. Every other setting has a conservative default.
 
 ---
 
 ## Configuration Methods
 
-FraiseQL supports three configuration methods (in order of precedence):
+`FraiseQLConfig` is a `pydantic_settings.BaseSettings` subclass, so values resolve
+in this order of precedence:
 
-1. **Environment Variables** (highest priority)
-2. **Configuration File** (`FraiseQL.toml`)
-3. **Default Values** (lowest priority)
+1. **Explicit Python values** (highest priority) — passed to `FraiseQLConfig(...)`
+   or directly as `create_fraiseql_app(...)` keyword arguments.
+2. **Environment variables** — any field can be set with a `FRAISEQL_`-prefixed,
+   case-insensitive env var (e.g. `FRAISEQL_DATABASE_URL`,
+   `FRAISEQL_ENVIRONMENT`).
+3. **`.env` file** — a `.env` file in the working directory is loaded
+   automatically.
+4. **Field defaults** (lowest priority).
 
-### Environment Variables
+### Building a config object
 
-```bash
-<!-- Code example in BASH -->
-# Core settings
-export FRAISEQL_OBSERVABILITY_ENABLED=true
-export FRAISEQL_OBSERVABILITY_SAMPLE_RATE=0.1
-export FRAISEQL_METRICS_DATABASE_URL=postgres://...
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-# Retention settings
-export FRAISEQL_METRICS_RETENTION_DAYS=30
-export FRAISEQL_METRICS_BUFFER_SIZE=100
+# Production configuration
+config = FraiseQLConfig(
+    database_url="postgresql://user:pass@localhost/mydb",
+    environment="production",
+    auth_enabled=True,
+    auth_provider="auth0",
+    auth0_domain="myapp.auth0.com",
+    auth0_api_identifier="https://api.myapp.com",
+)
 
-# Performance tuning
-export FRAISEQL_METRICS_FLUSH_INTERVAL_SECS=60
-export FRAISEQL_METRICS_BATCH_SIZE=100
-```text
-<!-- Code example in TEXT -->
+app = create_fraiseql_app(types=[User, Post], config=config)
+```
 
-### Configuration File
-
-Create `FraiseQL.toml` in your project root:
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
-sample_rate = 0.1
-retention_days = 30
-
-[observability.metrics]
-buffer_size = 100
-flush_interval_secs = 60
-batch_size = 100
-
-[observability.database]
-# Optional: Separate database for metrics (recommended for production)
-url = "postgres://metrics:pass@metrics-db:5432/fraiseql_metrics"
-pool_size = 10
-timeout_secs = 30
-
-[observability.analysis]
-# Default thresholds for analyze command
-min_frequency = 1000
-min_speedup = 5.0
-min_selectivity = 0.1
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Core Configuration
-
-### `observability.enabled`
-
-**Type**: `boolean`
-**Default**: `false`
-**Environment**: `FRAISEQL_OBSERVABILITY_ENABLED`
-
-Enable or disable observability system.
-
-**Important**: Observability is **opt-in** for production safety. You must explicitly enable it.
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
-```text
-<!-- Code example in TEXT -->
+### Letting environment variables drive everything
 
 ```bash
-<!-- Code example in BASH -->
-export FRAISEQL_OBSERVABILITY_ENABLED=true
-```text
-<!-- Code example in TEXT -->
+export FRAISEQL_DATABASE_URL=postgresql://user:pass@localhost/mydb
+export FRAISEQL_ENVIRONMENT=production
+export FRAISEQL_AUTH_ENABLED=true
+export FRAISEQL_AUTH_PROVIDER=auth0
+export FRAISEQL_AUTH0_DOMAIN=myapp.auth0.com
+export FRAISEQL_AUTH0_API_IDENTIFIER=https://api.myapp.com
+```
 
----
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-### `observability.sample_rate`
+# Reads all FRAISEQL_-prefixed env vars / .env automatically
+config = FraiseQLConfig()
+app = create_fraiseql_app(types=[User, Post], config=config)
+```
 
-**Type**: `float` (0.0 - 1.0)
-**Default**: `0.1` (10%)
-**Environment**: `FRAISEQL_OBSERVABILITY_SAMPLE_RATE`
+### `create_fraiseql_app(...)` keyword arguments
 
-Percentage of queries to collect metrics for.
+Some settings can also be passed directly to `create_fraiseql_app`, which builds a
+config for you. Verified keyword arguments:
 
-**Guidelines**:
+```python
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/mydb",
+    types=[User, Post],
+    queries=[users, user],
+    mutations=[create_user],
+    auth=auth_provider,                # an AuthProvider instance
+    context_getter=get_context,        # custom GraphQL context builder
+    config=config,                     # a FraiseQLConfig instance
+    title="My API",
+    version="1.0.0",
+    description="My GraphQL API",
+    production=False,                  # False enables the GraphQL playground
+    connection_pool_size=20,
+    connection_max_overflow=10,
+    connection_timeout=30,
+    connection_recycle=3600,
+)
+```
 
-| Traffic Level | Recommended Rate | Expected Overhead |
-|--------------|------------------|-------------------|
-| Low (< 100 qps) | 1.0 (100%) | < 2% |
-| Medium (100-1000 qps) | 0.1 (10%) | < 5% |
-| High (> 1000 qps) | 0.01 (1%) | < 1% |
-
-**Example**:
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-# Sample 1% of queries in high-traffic production
-sample_rate = 0.01
-```text
-<!-- Code example in TEXT -->
-
-**Note**: Even at 1% sampling, patterns are reliably detected with sufficient traffic.
-
----
-
-### `observability.retention_days`
-
-**Type**: `integer`
-**Default**: `30`
-**Environment**: `FRAISEQL_METRICS_RETENTION_DAYS`
-
-How long to keep metrics data before automatic cleanup.
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-retention_days = 30  # Keep metrics for 30 days
-```text
-<!-- Code example in TEXT -->
-
-**Storage Estimates** (per day, 10% sampling, 1000 qps):
-
-| Database Size | Metrics Storage Per Day |
-|--------------|------------------------|
-| Small (< 10 tables) | ~50 MB |
-| Medium (10-50 tables) | ~200 MB |
-| Large (> 50 tables) | ~500 MB |
-
-**Cleanup Query** (runs daily):
-
-```sql
-<!-- Code example in SQL -->
--- PostgreSQL
-DELETE FROM fraiseql_metrics.query_executions
-WHERE executed_at < NOW() - INTERVAL '30 days';
-
--- SQL Server
-DELETE FROM fraiseql_metrics.query_executions
-WHERE executed_at < DATEADD(day, -30, GETDATE());
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Metrics Collection
-
-### `observability.metrics.buffer_size`
-
-**Type**: `integer`
-**Default**: `100`
-**Environment**: `FRAISEQL_METRICS_BUFFER_SIZE`
-
-In-memory buffer size before flushing to database.
-
-```toml
-<!-- Code example in TOML -->
-[observability.metrics]
-buffer_size = 100  # Flush after 100 queries
-```text
-<!-- Code example in TEXT -->
-
-**Trade-offs**:
-
-- **Smaller buffer** (50): More frequent writes, less memory, higher DB load
-- **Larger buffer** (500): Fewer writes, more memory, risk of data loss on crash
-
-**Recommendation**: Use default 100 for most cases.
-
----
-
-### `observability.metrics.flush_interval_secs`
-
-**Type**: `integer`
-**Default**: `60`
-**Environment**: `FRAISEQL_METRICS_FLUSH_INTERVAL_SECS`
-
-Maximum seconds to wait before flushing buffer (even if not full).
-
-```toml
-<!-- Code example in TOML -->
-[observability.metrics]
-flush_interval_secs = 60  # Flush at least every minute
-```text
-<!-- Code example in TEXT -->
-
-**Why needed**: Ensures metrics aren't delayed indefinitely during low traffic.
-
----
-
-### `observability.metrics.batch_size`
-
-**Type**: `integer`
-**Default**: `100`
-**Environment**: `FRAISEQL_METRICS_BATCH_SIZE`
-
-Number of metrics to insert in a single database transaction.
-
-```toml
-<!-- Code example in TOML -->
-[observability.metrics]
-batch_size = 100
-```text
-<!-- Code example in TEXT -->
-
-**Performance Impact**:
-
-| Batch Size | Inserts/sec | Latency | Transaction Log |
-|-----------|-------------|---------|-----------------|
-| 1 | 100 | High | Large |
-| 100 | 10,000 | Low | Small |
-| 1000 | 50,000 | Very Low | Tiny |
-
-**Recommendation**: 100-500 for balanced performance.
+There is **no `middleware=` keyword argument**. Add middleware with
+`app.add_middleware(...)` on the returned app, or pass your own FastAPI app via
+`create_fraiseql_app(app=...)`.
 
 ---
 
 ## Database Configuration
 
-### `observability.database.url`
+### `database_url`
 
-**Type**: `string`
-**Default**: Same as main database
-**Environment**: `FRAISEQL_METRICS_DATABASE_URL`
+**Type**: `str` (PostgreSQL DSN)
+**Required**: yes
+**Environment**: `FRAISEQL_DATABASE_URL`
 
-Database connection string for metrics storage.
+PostgreSQL connection URL. Must start with `postgresql://` or `postgres://`.
+Unix-domain socket URLs are also supported
+(`postgresql://user@/var/run/postgresql:5432/mydb`).
 
-**Options**:
+```bash
+export FRAISEQL_DATABASE_URL=postgresql://app:pass@localhost:5432/myapp
+```
 
-1. **Same database as application** (simple):
+```python
+config = FraiseQLConfig(database_url="postgresql://app:pass@localhost:5432/myapp")
+```
 
-   ```toml
-<!-- Code example in TOML -->
-   # Omit this setting to use main database
-   ```text
-<!-- Code example in TEXT -->
+### `database_pool_size`
 
-2. **Separate database on same server** (recommended):
+**Type**: `int`
+**Default**: `20`
+**Environment**: `FRAISEQL_DATABASE_POOL_SIZE`
 
-   ```toml
-<!-- Code example in TOML -->
-   [observability.database]
-   url = "postgres://app:pass@localhost:5432/fraiseql_metrics"
-   ```text
-<!-- Code example in TEXT -->
-
-3. **Separate metrics server** (production best practice):
-
-   ```toml
-<!-- Code example in TOML -->
-   [observability.database]
-   url = "postgres://metrics:pass@metrics-db.internal:5432/metrics"
-   ```text
-<!-- Code example in TEXT -->
-
-**Benefits of Separate Database**:
-
-- ✅ Isolation: Metrics don't impact application database
-- ✅ Scaling: Scale metrics storage independently
-- ✅ Retention: Different backup/retention policies
-- ✅ Security: Restricted access to metrics
-
----
-
-### `observability.database.pool_size`
-
-**Type**: `integer`
-**Default**: `10`
-**Environment**: `FRAISEQL_METRICS_DB_POOL_SIZE`
-
-Connection pool size for metrics database.
-
-```toml
-<!-- Code example in TOML -->
-[observability.database]
-pool_size = 10
-```text
-<!-- Code example in TEXT -->
-
-**Guidelines**:
+Number of persistent connections kept open in the pool.
 
 | Traffic | Pool Size | Reasoning |
 |---------|-----------|-----------|
-| Low (< 100 qps) | 5 | Minimal connections needed |
-| Medium (100-1000 qps) | 10 | Default works well |
-| High (> 1000 qps) | 20 | More concurrent writes |
+| Low (< 100 rps) | 5–10 | Minimal connections needed |
+| Medium (100–1000 rps) | 20 | Default works well |
+| High (> 1000 rps) | 40+ | More concurrent connections |
 
----
+### `database_max_overflow`
 
-### `observability.database.timeout_secs`
+**Type**: `int`
+**Default**: `10`
+**Environment**: `FRAISEQL_DATABASE_MAX_OVERFLOW`
 
-**Type**: `integer`
+Extra connections the pool may open beyond `database_pool_size` under load.
+
+### `database_pool_timeout`
+
+**Type**: `int` (seconds)
 **Default**: `30`
-**Environment**: `FRAISEQL_METRICS_DB_TIMEOUT_SECS`
+**Environment**: `FRAISEQL_DATABASE_POOL_TIMEOUT`
 
-Query timeout for metrics writes (seconds).
+How long a request waits for a free connection before raising.
 
-```toml
-<!-- Code example in TOML -->
-[observability.database]
-timeout_secs = 30
-```text
-<!-- Code example in TEXT -->
+### `database_pool_recycle`
 
-**Important**: If metrics writes timeout, they're dropped (doesn't block application queries).
+**Type**: `int` (seconds)
+**Default**: `3600`
+**Environment**: `FRAISEQL_DATABASE_POOL_RECYCLE`
+
+Recycle a connection after this many seconds, even if idle. Prevents stale
+connections behind proxies and load balancers.
+
+### `database_echo`
+
+**Type**: `bool`
+**Default**: `false`
+**Environment**: `FRAISEQL_DATABASE_ECHO`
+
+Log generated SQL. Useful in development; keep off in production.
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost:5432/myapp",
+    database_pool_size=20,
+    database_max_overflow=10,
+    database_pool_timeout=30,
+    database_pool_recycle=3600,
+)
+```
 
 ---
 
-## Analysis Configuration
+## Application Settings
 
-These settings control the `FraiseQL-cli analyze` command behavior.
+### `environment`
 
-### `observability.analysis.min_frequency`
+**Type**: `"development" | "production" | "testing"`
+**Default**: `"development"`
+**Environment**: `FRAISEQL_ENVIRONMENT`
 
-**Type**: `integer`
+Setting `environment="production"` tightens defaults automatically: introspection
+is disabled (unless explicitly set) and the GraphQL playground is turned off.
+
+### `app_name`
+
+**Type**: `str`
+**Default**: `"FraiseQL API"`
+**Environment**: `FRAISEQL_APP_NAME`
+
+### `app_version`
+
+**Type**: `str`
+**Default**: `"1.0.0"`
+**Environment**: `FRAISEQL_APP_VERSION`
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    environment="production",
+    app_name="My GraphQL API",
+    app_version="2.3.1",
+)
+```
+
+---
+
+## GraphQL Settings
+
+### `introspection_policy`
+
+**Type**: `IntrospectionPolicy` (`"public" | "disabled" | "authenticated"`)
+**Default**: `"public"` (forced to `"disabled"` in production unless set)
+**Environment**: `FRAISEQL_INTROSPECTION_POLICY`
+
+Controls who may run GraphQL introspection queries.
+
+```python
+from fraiseql.fastapi import FraiseQLConfig
+from fraiseql.fastapi.config import IntrospectionPolicy
+
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    introspection_policy=IntrospectionPolicy.AUTHENTICATED,
+)
+```
+
+### `enable_playground`
+
+**Type**: `bool`
+**Default**: `true` (forced to `false` in production unless explicitly set)
+**Environment**: `FRAISEQL_ENABLE_PLAYGROUND`
+
+Mount the in-browser GraphQL IDE. The `production=False` flag on
+`create_fraiseql_app(...)` is the convenient way to enable it during development.
+
+### `playground_tool`
+
+**Type**: `"graphiql" | "apollo-sandbox"`
+**Default**: `"graphiql"`
+**Environment**: `FRAISEQL_PLAYGROUND_TOOL`
+
+Which GraphQL IDE to serve.
+
+### `max_query_depth`
+
+**Type**: `int | None`
+**Default**: `None` (no depth limit)
+**Environment**: `FRAISEQL_MAX_QUERY_DEPTH`
+
+Maximum nesting depth allowed in a query.
+
+### `auto_camel_case`
+
+**Type**: `bool`
+**Default**: `true`
+**Environment**: `FRAISEQL_AUTO_CAMEL_CASE`
+
+Auto-convert `snake_case` Python field names to `camelCase` in the GraphQL schema.
+
+### `query_timeout`
+
+**Type**: `int` (seconds)
+**Default**: `30`
+**Environment**: `FRAISEQL_QUERY_TIMEOUT`
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    enable_playground=False,
+    max_query_depth=12,
+    query_timeout=30,
+)
+```
+
+---
+
+## Performance Settings
+
+### `cache_ttl`
+
+**Type**: `int` (seconds)
+**Default**: `300`
+**Environment**: `FRAISEQL_CACHE_TTL`
+
+Default time-to-live for cached query results.
+
+### `execution_timeout_ms`
+
+**Type**: `int` (milliseconds)
+**Default**: `30000`
+**Environment**: `FRAISEQL_EXECUTION_TIMEOUT_MS`
+
+Maximum time a query may execute before being cancelled.
+
+### `include_execution_metadata`
+
+**Type**: `bool`
+**Default**: `false`
+**Environment**: `FRAISEQL_INCLUDE_EXECUTION_METADATA`
+
+Include timing/diagnostic metadata in GraphQL responses. Useful during
+development and profiling.
+
+### `jsonb_field_limit_threshold`
+
+**Type**: `int`
+**Default**: `20`
+**Environment**: `FRAISEQL_JSONB_FIELD_LIMIT_THRESHOLD`
+
+When a query selects more than this many fields, FraiseQL switches to returning
+the full `data` JSONB column instead of projecting individual paths.
+
+### `turbo_router_cache_size`
+
+**Type**: `int`
 **Default**: `1000`
-**CLI Flag**: `--min-frequency`
+**Environment**: `FRAISEQL_TURBO_ROUTER_CACHE_SIZE`
 
-Minimum queries per day to suggest optimization.
+Maximum number of prepared queries to cache for the fast-path router.
 
-```toml
-<!-- Code example in TOML -->
-[observability.analysis]
-min_frequency = 1000
-```text
-<!-- Code example in TEXT -->
-
-```bash
-<!-- Code example in BASH -->
-FraiseQL-cli analyze --min-frequency 500  # Override default
-```text
-<!-- Code example in TEXT -->
-
-**Guidelines**:
-
-| Threshold | Result | Use Case |
-|-----------|--------|----------|
-| 100 | Many suggestions | Development/testing |
-| 1000 (default) | High-impact only | Production |
-| 5000 | Critical paths only | High-traffic apps |
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    cache_ttl=300,
+    execution_timeout_ms=30000,
+    include_execution_metadata=False,
+    jsonb_field_limit_threshold=20,
+)
+```
 
 ---
 
-### `observability.analysis.min_speedup`
+## Security Settings
 
-**Type**: `float`
-**Default**: `5.0`
-**CLI Flag**: `--min-speedup`
+### Query Complexity
 
-Minimum speedup factor (e.g., 5.0 = 5x faster) to suggest optimization.
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `complexity_enabled` | bool | `true` | `FRAISEQL_COMPLEXITY_ENABLED` |
+| `complexity_max_score` | int | `1000` | `FRAISEQL_COMPLEXITY_MAX_SCORE` |
+| `complexity_max_depth` | int | `10` | `FRAISEQL_COMPLEXITY_MAX_DEPTH` |
+| `complexity_default_list_size` | int | `10` | `FRAISEQL_COMPLEXITY_DEFAULT_LIST_SIZE` |
+| `complexity_include_in_response` | bool | `false` | `FRAISEQL_COMPLEXITY_INCLUDE_IN_RESPONSE` |
 
-```toml
-<!-- Code example in TOML -->
-[observability.analysis]
-min_speedup = 5.0
-```text
-<!-- Code example in TEXT -->
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    complexity_enabled=True,
+    complexity_max_score=1000,
+    complexity_max_depth=10,
+)
+```
 
-```bash
-<!-- Code example in BASH -->
-FraiseQL-cli analyze --min-speedup 3.0  # Lower threshold
-```text
-<!-- Code example in TEXT -->
+### Rate Limiting
 
-**Guidelines**:
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `rate_limit_enabled` | bool | `true` | `FRAISEQL_RATE_LIMIT_ENABLED` |
+| `rate_limit_requests_per_minute` | int | `60` | `FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE` |
+| `rate_limit_requests_per_hour` | int | `1000` | `FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR` |
+| `rate_limit_burst_size` | int | `10` | `FRAISEQL_RATE_LIMIT_BURST_SIZE` |
+| `rate_limit_window_type` | str | `"sliding"` | `FRAISEQL_RATE_LIMIT_WINDOW_TYPE` |
 
-| Threshold | Result | Trade-off |
-|-----------|--------|-----------|
-| 2.0 | Many suggestions | More noise, smaller gains |
-| 5.0 (default) | Clear wins | Conservative, high-impact |
-| 10.0 | Only huge gains | May miss good optimizations |
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=120,
+    rate_limit_window_type="sliding",
+)
+```
+
+### CORS
+
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `cors_enabled` | bool | `false` | `FRAISEQL_CORS_ENABLED` |
+| `cors_origins` | list[str] | `[]` | `FRAISEQL_CORS_ORIGINS` |
+| `cors_methods` | list[str] | `["GET", "POST"]` | `FRAISEQL_CORS_METHODS` |
+| `cors_headers` | list[str] | `["Content-Type", "Authorization"]` | `FRAISEQL_CORS_HEADERS` |
+
+CORS is **disabled by default** — the recommended pattern is to handle CORS at the
+reverse proxy. If you enable it, set explicit origins; a wildcard `*` origin in
+production triggers a warning.
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    cors_enabled=True,
+    cors_origins=["https://app.example.com"],
+)
+```
 
 ---
 
-### `observability.analysis.min_selectivity`
+## Authentication Settings
 
-**Type**: `float` (0.0 - 1.0)
-**Default**: `0.1` (10%)
-**CLI Flag**: `--min-selectivity`
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `auth_enabled` | bool | `true` | `FRAISEQL_AUTH_ENABLED` |
+| `auth_provider` | `"auth0" \| "custom" \| "none"` | `"none"` | `FRAISEQL_AUTH_PROVIDER` |
+| `auth0_domain` | str \| None | `None` | `FRAISEQL_AUTH0_DOMAIN` |
+| `auth0_api_identifier` | str \| None | `None` | `FRAISEQL_AUTH0_API_IDENTIFIER` |
+| `auth0_algorithms` | list[str] | `["RS256"]` | `FRAISEQL_AUTH0_ALGORITHMS` |
+| `dev_auth_username` | str \| None | `"admin"` | `FRAISEQL_DEV_AUTH_USERNAME` |
+| `dev_auth_password` | str \| None | `None` | `FRAISEQL_DEV_AUTH_PASSWORD` |
 
-Minimum filter selectivity (% of rows filtered) for denormalization suggestions.
+Three provider modes exist: `"auth0"`, `"custom"`, and `"none"`. For Auth0,
+`auth0_domain` is required. For any other OIDC/JWT issuer, set
+`auth_provider="custom"` and implement an `AuthProvider` subclass (or front the
+issuer with Auth0). See the authentication guides for details.
 
-```toml
-<!-- Code example in TOML -->
-[observability.analysis]
-min_selectivity = 0.1  # 10% of rows filtered
-```text
-<!-- Code example in TEXT -->
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    auth_enabled=True,
+    auth_provider="auth0",
+    auth0_domain="myapp.auth0.com",
+    auth0_api_identifier="https://api.myapp.com",
+)
+```
 
-**Example**:
+---
+
+## Token Revocation Settings
+
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `revocation_enabled` | bool | `true` | `FRAISEQL_REVOCATION_ENABLED` |
+| `revocation_check_enabled` | bool | `true` | `FRAISEQL_REVOCATION_CHECK_ENABLED` |
+| `revocation_ttl` | int (seconds) | `86400` | `FRAISEQL_REVOCATION_TTL` |
+| `revocation_cleanup_interval` | int (seconds) | `3600` | `FRAISEQL_REVOCATION_CLEANUP_INTERVAL` |
+| `revocation_store_type` | str | `"memory"` | `FRAISEQL_REVOCATION_STORE_TYPE` |
+
+`revocation_store_type` accepts `"memory"` or `"redis"`. A PostgreSQL-backed
+revocation store is also available programmatically via
+`fraiseql.auth.token_revocation.PostgreSQLRevocationStore`.
+
+---
+
+## Automatic Persisted Queries (APQ)
+
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `apq_mode` | `"optional" \| "required" \| "disabled"` | `"optional"` | `FRAISEQL_APQ_MODE` |
+| `apq_storage_backend` | `"memory" \| "postgresql" \| "custom"` | `"memory"` | `FRAISEQL_APQ_STORAGE_BACKEND` |
+| `apq_cache_responses` | bool | `false` | `FRAISEQL_APQ_CACHE_RESPONSES` |
+| `apq_response_cache_ttl` | int (seconds) | `600` | `FRAISEQL_APQ_RESPONSE_CACHE_TTL` |
+| `apq_queries_dir` | str \| None | `None` | `FRAISEQL_APQ_QUERIES_DIR` |
+
+In `apq_mode="required"`, only persisted query hashes are accepted; arbitrary
+queries are rejected. Set `apq_queries_dir` to a directory of `.graphql`/`.gql`
+files to auto-register them at startup — useful for security-hardened
+deployments.
+
+---
+
+## Schema and Session Settings
+
+### Default schemas
+
+| Field | Type | Default | Environment |
+|-------|------|---------|-------------|
+| `default_query_schema` | str | `"public"` | `FRAISEQL_DEFAULT_QUERY_SCHEMA` |
+| `default_mutation_schema` | str | `"public"` | `FRAISEQL_DEFAULT_MUTATION_SCHEMA` |
+| `default_entity_schema` | str \| None | `None` | `FRAISEQL_DEFAULT_ENTITY_SCHEMA` |
+
+PostgreSQL schemas to use for query views, mutation functions, and `tb_*` entity
+tables when not specified on the decorator.
+
+### `coordinate_distance_method`
+
+**Type**: `"postgis" | "haversine" | "earthdistance"`
+**Default**: `"haversine"`
+**Environment**: `FRAISEQL_COORDINATE_DISTANCE_METHOD`
+
+How coordinate-distance filters are computed. `"haversine"` works without
+extensions; `"postgis"` is the most accurate but requires the PostGIS extension.
+
+### `default_string_collation`
+
+**Type**: `str | None`
+**Default**: `None` (use the database default)
+**Environment**: `FRAISEQL_DEFAULT_STRING_COLLATION`
+
+PostgreSQL collation applied to text `ORDER BY` clauses, e.g. `"fr_FR.utf8"` or
+`"C"`.
+
+### `session_variables`
+
+**Type**: `dict[str, str]`
+**Default**: `{}`
+
+Maps request-context keys to PostgreSQL session variable names that FraiseQL sets
+via `SET LOCAL` before each query/mutation. This is how request context reaches
+your views and Row-Level Security policies:
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    session_variables={"locale": "app.locale", "timezone": "app.timezone"},
+)
+```
+
+When `context["locale"] == "fr-FR"`, the connection executes
+`SET LOCAL app.locale = 'fr-FR'`, so a view can read it:
 
 ```sql
-<!-- Code example in SQL -->
--- High selectivity (15% of rows match) → Suggest denormalization
-WHERE JSON_VALUE(dimensions, '$.region') = 'US'  -- Returns 15,000 / 100,000 rows
-
--- Low selectivity (90% match) → Don't suggest (most rows match anyway)
-WHERE JSON_VALUE(dimensions, '$.active') = 'true'  -- Returns 90,000 / 100,000 rows
-```text
-<!-- Code example in TEXT -->
-
-**Guidelines**:
-
-| Threshold | Meaning | Use Case |
-|-----------|---------|----------|
-| 0.01 (1%) | Very selective | Rare filters (e.g., VIP users) |
-| 0.1 (10%) | Moderately selective | Default, balanced |
-| 0.5 (50%) | Low selectivity | Broad filters |
+WHERE code = COALESCE(current_setting('app.locale', true), 'fr-FR')
+```
 
 ---
 
-### `observability.analysis.window`
+## Metrics and Observability
 
-**Type**: `string` (duration)
-**Default**: `"7d"`
-**CLI Flag**: `--window`
+FraiseQL ships an optional Prometheus-based metrics integration in
+`fraiseql.monitoring`. It is **separate** from `FraiseQLConfig`: you configure it
+with a `MetricsConfig` dataclass and wire it into your FastAPI app with
+`setup_metrics(app, config)`.
 
-Time window for analysis.
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.monitoring import MetricsConfig, setup_metrics
 
-```toml
-<!-- Code example in TOML -->
-[observability.analysis]
-window = "7d"  # Last 7 days
+app = create_fraiseql_app(
+    database_url="postgresql://app:pass@localhost/myapp",
+    types=[User],
+    queries=[users],
+)
+
+metrics = setup_metrics(app, MetricsConfig(enabled=True))
+```
+
+`setup_metrics` installs request-timing middleware and mounts a Prometheus
+scrape endpoint (default `GET /metrics`).
+
+### `MetricsConfig` fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | bool | `true` | Enable metrics collection |
+| `namespace` | str | `"fraiseql"` | Prefix for all metric names |
+| `metrics_path` | str | `"/metrics"` | URL path for the metrics endpoint |
+| `buckets` | list[float] | latency buckets `[0.005 … 10]` | Histogram bucket boundaries (seconds) |
+| `exclude_paths` | set[str] | `{"/metrics", "/health", "/ready", "/startup"}` | Paths excluded from HTTP metrics |
+| `labels` | dict[str, str] | `{}` | Extra labels applied to all metrics |
+
+```python
+from fraiseql.monitoring import MetricsConfig, setup_metrics
+
+config = MetricsConfig(
+    enabled=True,
+    namespace="myapp",
+    metrics_path="/metrics",
+    labels={"service": "graphql-api", "region": "eu-west-1"},
+)
+metrics = setup_metrics(app, config)
+```
+
+Prometheus exposes the metrics in the standard text format on the configured
+path:
+
 ```text
-<!-- Code example in TEXT -->
+# HELP fraiseql_graphql_queries_total Total GraphQL queries
+# TYPE fraiseql_graphql_queries_total counter
+fraiseql_graphql_queries_total 1
+# HELP fraiseql_graphql_query_duration_seconds Query duration
+# TYPE fraiseql_graphql_query_duration_seconds histogram
+fraiseql_graphql_query_duration_seconds_sum 0.01
+fraiseql_graphql_query_duration_seconds_count 1
+```
 
-```bash
-<!-- Code example in BASH -->
-FraiseQL-cli analyze --window 30d  # Last 30 days
-```text
-<!-- Code example in TEXT -->
+### Privacy
 
-**Supported Formats**:
+The metrics integration records query structure and timing only. It does **not**
+record query arguments/variables, user identifiers, PII, or actual data values.
 
-- `1d` - 1 day
-- `7d` - 7 days (default)
-- `30d` - 30 days
-- `90d` - 90 days
+### Health checks
 
-**Guidelines**:
+`fraiseql.monitoring` also provides health-check helpers you can mount in your
+app:
 
-| Window | Use Case | Trade-off |
-|--------|----------|-----------|
-| 1d | Quick check | May miss weekly patterns |
-| 7d (default) | Weekly patterns | Good balance |
-| 30d | Monthly trends | Includes seasonal traffic |
-| 90d | Long-term patterns | May include stale data |
+```python
+from fraiseql.monitoring import HealthCheck, check_database, check_pool_stats
 
----
+health = HealthCheck()
+health.add_check("database", check_database)
+health.add_check("pool", check_pool_stats)
 
-## Privacy and Security
-
-### `observability.privacy.collect_arguments`
-
-**Type**: `boolean`
-**Default**: `false` (NEVER enabled)
-**Environment**: N/A (hardcoded to false)
-
-Whether to collect query arguments (variables).
-
-**IMPORTANT**: This is **always false** and cannot be enabled. FraiseQL **never logs**:
-
-- ❌ Query arguments/variables
-- ❌ User IDs or identifiers
-- ❌ Personally Identifiable Information (PII)
-- ❌ Actual data values
-
-**What IS collected**:
-
-- ✅ Query structure (operation name)
-- ✅ Execution timing
-- ✅ JSON paths accessed (e.g., "dimensions.region")
-- ✅ Result set sizes
-- ✅ Cache hit/miss
-
----
-
-### `observability.security.metrics_table_permissions`
-
-**Recommendation**: Restrict metrics tables to observability service only.
-
-**PostgreSQL**:
-
-```sql
-<!-- Code example in SQL -->
--- Create dedicated metrics user
-CREATE USER fraiseql_metrics WITH PASSWORD 'secure_password';
-
--- Grant schema access
-GRANT USAGE ON SCHEMA fraiseql_metrics TO fraiseql_metrics;
-
--- Grant table permissions (INSERT only for collection)
-GRANT INSERT ON fraiseql_metrics.query_executions TO fraiseql_metrics;
-GRANT INSERT ON fraiseql_metrics.jsonb_accesses TO fraiseql_metrics;
-
--- Analysis user needs SELECT
-CREATE USER fraiseql_analyst WITH PASSWORD 'analyst_password';
-GRANT SELECT ON ALL TABLES IN SCHEMA fraiseql_metrics TO fraiseql_analyst;
-```text
-<!-- Code example in TEXT -->
-
-**SQL Server**:
-
-```sql
-<!-- Code example in SQL -->
--- Create dedicated login and user
-CREATE LOGIN fraiseql_metrics WITH PASSWORD = 'secure_password';
-CREATE USER fraiseql_metrics FOR LOGIN fraiseql_metrics;
-
--- Grant schema access
-GRANT SELECT, INSERT ON SCHEMA::fraiseql_metrics TO fraiseql_metrics;
-
--- Analysis user
-CREATE LOGIN fraiseql_analyst WITH PASSWORD = 'analyst_password';
-CREATE USER fraiseql_analyst FOR LOGIN fraiseql_analyst;
-GRANT SELECT ON SCHEMA::fraiseql_metrics TO fraiseql_analyst;
-```text
-<!-- Code example in TEXT -->
+result = await health.run_checks()
+```
 
 ---
 
 ## Production Configuration Examples
 
-### Small Application (< 100 qps)
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
-sample_rate = 1.0  # 100% sampling (low traffic)
-retention_days = 30
-
-[observability.metrics]
-buffer_size = 50
-flush_interval_secs = 30
-batch_size = 50
-
-[observability.analysis]
-min_frequency = 100  # Lower threshold (less traffic)
-min_speedup = 3.0
-min_selectivity = 0.1
-```text
-<!-- Code example in TEXT -->
-
----
-
-### Medium Application (100-1000 qps)
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
-sample_rate = 0.1  # 10% sampling (default)
-retention_days = 30
-
-[observability.metrics]
-buffer_size = 100
-flush_interval_secs = 60
-batch_size = 100
-
-[observability.database]
-# Separate database recommended
-url = "postgres://metrics:pass@metrics-db:5432/fraiseql_metrics"
-pool_size = 10
-
-[observability.analysis]
-min_frequency = 1000  # Default
-min_speedup = 5.0
-min_selectivity = 0.1
-```text
-<!-- Code example in TEXT -->
-
----
-
-### Large Application (> 1000 qps)
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-enabled = true
-sample_rate = 0.01  # 1% sampling (high traffic)
-retention_days = 14  # Shorter retention (lots of data)
-
-[observability.metrics]
-buffer_size = 200
-flush_interval_secs = 60
-batch_size = 500  # Larger batches for efficiency
-
-[observability.database]
-# Separate metrics cluster
-url = "postgres://metrics:pass@metrics-cluster.internal:5432/metrics"
-pool_size = 20
-timeout_secs = 30
-
-[observability.analysis]
-min_frequency = 5000  # High threshold
-min_speedup = 10.0  # Only huge wins
-min_selectivity = 0.05
-window = "30d"  # Longer window to capture patterns at 1% sampling
-```text
-<!-- Code example in TEXT -->
-
----
-
-### Multi-Database Configuration
-
-**PostgreSQL Primary + SQL Server Secondary**:
-
-```toml
-<!-- Code example in TOML -->
-[database]
-url = "postgres://app:pass@localhost:5432/myapp"
-
-[database.secondary]
-sql_server_url = "sqlserver://app:pass@sqlserver:1433/myapp"
-
-[observability]
-enabled = true
-sample_rate = 0.1
-
-# Metrics always go to PostgreSQL (best pg_stats support)
-[observability.database]
-url = "postgres://metrics:pass@metrics-db:5432/metrics"
-
-[observability.analysis]
-# Analyzer detects database type from query patterns
-# Generates appropriate SQL for each database
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Database Schema Setup
-
-### PostgreSQL
-
-The observability system automatically creates these tables on first run:
-
-```sql
-<!-- Code example in SQL -->
--- Create schema
-CREATE SCHEMA IF NOT EXISTS fraiseql_metrics;
-
--- Query execution metrics
-CREATE TABLE fraiseql_metrics.query_executions (
-    id BIGSERIAL PRIMARY KEY,
-    query_name TEXT NOT NULL,
-    execution_time_ms FLOAT NOT NULL,
-    sql_generation_time_ms FLOAT NOT NULL,
-    db_round_trip_time_ms FLOAT NOT NULL,
-    projection_time_ms FLOAT NOT NULL,
-    rows_returned INTEGER NOT NULL,
-    cache_hit BOOLEAN NOT NULL,
-    executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Index for time-series queries
-CREATE INDEX idx_query_executions_name_time
-    ON fraiseql_metrics.query_executions (query_name, executed_at DESC);
-
--- Index for analysis queries
-CREATE INDEX idx_query_executions_time
-    ON fraiseql_metrics.query_executions (executed_at DESC);
-
--- JSONB path access patterns
-CREATE TABLE fraiseql_metrics.jsonb_accesses (
-    id BIGSERIAL PRIMARY KEY,
-    table_name TEXT NOT NULL,
-    jsonb_column TEXT NOT NULL,
-    path TEXT NOT NULL,
-    access_type TEXT NOT NULL,  -- 'Filter', 'Sort', 'Project', 'Aggregate'
-    query_name TEXT NOT NULL,
-    selectivity FLOAT,
-    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Index for pattern analysis
-CREATE INDEX idx_jsonb_accesses_lookup
-    ON fraiseql_metrics.jsonb_accesses (table_name, jsonb_column, path);
-
--- Index for frequency counting
-CREATE INDEX idx_jsonb_accesses_time
-    ON fraiseql_metrics.jsonb_accesses (recorded_at DESC);
-
--- Aggregated statistics (updated periodically)
-CREATE TABLE fraiseql_metrics.query_stats (
-    query_name TEXT PRIMARY KEY,
-    total_executions BIGINT NOT NULL,
-    total_time_ms FLOAT NOT NULL,
-    p50_ms FLOAT,
-    p95_ms FLOAT,
-    p99_ms FLOAT,
-    avg_rows FLOAT,
-    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```text
-<!-- Code example in TEXT -->
-
----
-
-### SQL Server
-
-```sql
-<!-- Code example in SQL -->
--- Create schema
-CREATE SCHEMA fraiseql_metrics;
-GO
-
--- Query execution metrics
-CREATE TABLE fraiseql_metrics.query_executions (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    query_name NVARCHAR(256) NOT NULL,
-    execution_time_ms FLOAT NOT NULL,
-    sql_generation_time_ms FLOAT NOT NULL,
-    db_round_trip_time_ms FLOAT NOT NULL,
-    projection_time_ms FLOAT NOT NULL,
-    rows_returned INT NOT NULL,
-    cache_hit BIT NOT NULL,
-    executed_at DATETIME2 NOT NULL DEFAULT GETDATE()
-);
-
--- Indexes
-CREATE NONCLUSTERED INDEX idx_query_executions_name_time
-    ON fraiseql_metrics.query_executions (query_name, executed_at DESC);
-
-CREATE NONCLUSTERED INDEX idx_query_executions_time
-    ON fraiseql_metrics.query_executions (executed_at DESC);
-
--- JSON path access patterns
-CREATE TABLE fraiseql_metrics.json_accesses (
-    id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    table_name NVARCHAR(128) NOT NULL,
-    json_column NVARCHAR(128) NOT NULL,
-    path NVARCHAR(512) NOT NULL,
-    access_type NVARCHAR(50) NOT NULL,
-    query_name NVARCHAR(256) NOT NULL,
-    selectivity FLOAT,
-    recorded_at DATETIME2 NOT NULL DEFAULT GETDATE()
-);
-
--- Indexes
-CREATE NONCLUSTERED INDEX idx_json_accesses_lookup
-    ON fraiseql_metrics.json_accesses (table_name, json_column, path);
-
-CREATE NONCLUSTERED INDEX idx_json_accesses_time
-    ON fraiseql_metrics.json_accesses (recorded_at DESC);
-
--- Aggregated statistics
-CREATE TABLE fraiseql_metrics.query_stats (
-    query_name NVARCHAR(256) PRIMARY KEY,
-    total_executions BIGINT NOT NULL,
-    total_time_ms FLOAT NOT NULL,
-    p50_ms FLOAT,
-    p95_ms FLOAT,
-    p99_ms FLOAT,
-    avg_rows FLOAT,
-    last_updated DATETIME2 NOT NULL DEFAULT GETDATE()
-);
-GO
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Manual Schema Creation
-
-If auto-creation is disabled or fails:
-
-**PostgreSQL**:
-
-```bash
-<!-- Code example in BASH -->
-psql -U fraiseql_metrics -d fraiseql_metrics -f schema/postgres_metrics.sql
-```text
-<!-- Code example in TEXT -->
-
-**SQL Server**:
-
-```bash
-<!-- Code example in BASH -->
-sqlcmd -S localhost -U fraiseql_metrics -P password -i schema/sqlserver_metrics.sql
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Performance Tuning
-
-### High-Traffic Optimization
-
-For applications with > 10,000 qps:
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-sample_rate = 0.001  # 0.1% sampling
-
-[observability.metrics]
-buffer_size = 1000
-batch_size = 1000
-flush_interval_secs = 120  # Flush every 2 minutes
-
-[observability.database]
-pool_size = 50
-timeout_secs = 10  # Fail fast
-```text
-<!-- Code example in TEXT -->
-
-### Low-Latency Requirements
-
-For applications where every millisecond counts:
-
-```toml
-<!-- Code example in TOML -->
-[observability]
-sample_rate = 0.01  # 1% sampling
-
-[observability.metrics]
-# Async writes with minimal blocking
-buffer_size = 500
-flush_interval_secs = 30
-
-[observability.database]
-# Separate metrics database is critical
-url = "postgres://metrics:pass@async-metrics-db:5432/metrics"
-pool_size = 20
-timeout_secs = 5  # Drop metrics if DB is slow
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Monitoring Observability System
-
-### Metrics to Track
-
-**Application-Level** (via logs):
-
-```rust
-<!-- Code example in RUST -->
-// Log metrics collection health
-if metrics_buffer_full {
-    warn!("Metrics buffer full, dropping oldest entries");
-}
-
-if metrics_write_timeout {
-    warn!("Metrics write timed out after {}ms", timeout_ms);
-}
-
-// Periodic stats
-info!(
-    "Metrics: collected={}, flushed={}, dropped={}, buffer_size={}",
-    collected_count, flushed_count, dropped_count, buffer_len
-);
-```text
-<!-- Code example in TEXT -->
-
-**Database-Level** (query metrics tables):
-
-```sql
-<!-- Code example in SQL -->
--- PostgreSQL: Metrics collection rate
-SELECT
-    DATE_TRUNC('hour', executed_at) AS hour,
-    COUNT(*) AS metrics_collected
-FROM fraiseql_metrics.query_executions
-WHERE executed_at > NOW() - INTERVAL '24 hours'
-GROUP BY hour
-ORDER BY hour DESC;
-
--- SQL Server: Metrics collection rate
-SELECT
-    DATEPART(hour, executed_at) AS hour,
-    COUNT(*) AS metrics_collected
-FROM fraiseql_metrics.query_executions
-WHERE executed_at > DATEADD(hour, -24, GETDATE())
-GROUP BY DATEPART(hour, executed_at)
-ORDER BY hour DESC;
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Troubleshooting Configuration
-
-### Issue: Metrics Not Being Collected
-
-**Check**:
-
-1. Is observability enabled?
-
-   ```bash
-<!-- Code example in BASH -->
-   echo $FRAISEQL_OBSERVABILITY_ENABLED
-   # Should output: true
-   ```text
-<!-- Code example in TEXT -->
-
-2. Is sample rate too low?
-
-   ```bash
-<!-- Code example in BASH -->
-   echo $FRAISEQL_OBSERVABILITY_SAMPLE_RATE
-   # Should be > 0.0
-   ```text
-<!-- Code example in TEXT -->
-
-3. Check database connection:
-
-   ```bash
-<!-- Code example in BASH -->
-   psql $FRAISEQL_METRICS_DATABASE_URL -c "SELECT 1"
-   ```text
-<!-- Code example in TEXT -->
-
-4. Check application logs:
-
-   ```text
-<!-- Code example in TEXT -->
-   grep "observability" app.log
-   ```text
-<!-- Code example in TEXT -->
-
----
-
-### Issue: High Memory Usage
-
-**Symptoms**: Application memory grows over time
-
-**Cause**: Metrics buffer too large or not flushing
-
-**Solution**:
-
-```toml
-<!-- Code example in TOML -->
-[observability.metrics]
-buffer_size = 50          # Reduce from 100
-flush_interval_secs = 30  # Flush more frequently
-```text
-<!-- Code example in TEXT -->
-
----
-
-### Issue: Database Connection Errors
-
-**Symptoms**: "Failed to write metrics to database"
-
-**Solutions**:
-
-1. **Increase timeout**:
-
-   ```toml
-<!-- Code example in TOML -->
-   [observability.database]
-   timeout_secs = 60  # From 30
-   ```text
-<!-- Code example in TEXT -->
-
-2. **Increase pool size**:
-
-   ```toml
-<!-- Code example in TOML -->
-   [observability.database]
-   pool_size = 20  # From 10
-   ```text
-<!-- Code example in TEXT -->
-
-3. **Use separate database** (recommended):
-
-   ```toml
-<!-- Code example in TOML -->
-   [observability.database]
-   url = "postgres://metrics-only-db:5432/metrics"
-   ```text
-<!-- Code example in TEXT -->
-
----
-
-### Issue: Analysis Shows No Suggestions
-
-**Causes**:
-
-1. **Insufficient data**: Run application for 24-48 hours
-2. **Thresholds too high**: Lower them
-3. **No JSON usage**: Observability focuses on JSON/JSONB optimization
-
-**Solution**:
-
-```bash
-<!-- Code example in BASH -->
-# Lower thresholds temporarily
-FraiseQL-cli analyze \
-    --min-frequency 10 \
-    --min-speedup 2.0 \
-    --window 1d
-```text
-<!-- Code example in TEXT -->
-
----
-
-## Environment Variables Reference
-
-Complete list of all environment variables:
-
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `FRAISEQL_OBSERVABILITY_ENABLED` | bool | false | Enable observability |
-| `FRAISEQL_OBSERVABILITY_SAMPLE_RATE` | float | 0.1 | Sampling rate (0.0-1.0) |
-| `FRAISEQL_METRICS_DATABASE_URL` | string | (main DB) | Metrics database URL |
-| `FRAISEQL_METRICS_RETENTION_DAYS` | int | 30 | Metrics retention |
-| `FRAISEQL_METRICS_BUFFER_SIZE` | int | 100 | In-memory buffer size |
-| `FRAISEQL_METRICS_FLUSH_INTERVAL_SECS` | int | 60 | Flush interval |
-| `FRAISEQL_METRICS_BATCH_SIZE` | int | 100 | Batch insert size |
-| `FRAISEQL_METRICS_DB_POOL_SIZE` | int | 10 | Connection pool size |
-| `FRAISEQL_METRICS_DB_TIMEOUT_SECS` | int | 30 | Query timeout |
+### Small Application (< 100 rps)
+
+```python
+from fraiseql.fastapi import FraiseQLConfig
+
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    environment="production",
+    database_pool_size=5,
+    database_max_overflow=5,
+    cache_ttl=300,
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=120,
+)
+```
+
+### Medium Application (100–1000 rps)
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@db-host:5432/myapp",
+    environment="production",
+    database_pool_size=20,
+    database_max_overflow=10,
+    cache_ttl=300,
+    complexity_enabled=True,
+    complexity_max_score=1000,
+    rate_limit_enabled=True,
+)
+```
+
+### Large Application (> 1000 rps)
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@db-cluster:5432/myapp",
+    environment="production",
+    database_pool_size=40,
+    database_max_overflow=20,
+    database_pool_timeout=10,        # fail fast under load
+    database_pool_recycle=1800,
+    cache_ttl=600,
+    execution_timeout_ms=15000,
+    complexity_enabled=True,
+    complexity_max_score=2000,
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=600,
+)
+```
 
 ---
 
 ## Configuration Validation
 
-FraiseQL validates configuration on startup:
+`FraiseQLConfig` validates on construction (pydantic). For example, an invalid
+database URL or a missing `auth0_domain` when `auth_provider="auth0"` raises a
+`ValidationError` immediately at startup:
 
-```rust
-<!-- Code example in RUST -->
-// Invalid configuration example
-[observability]
-enabled = true
-sample_rate = 1.5  # ❌ ERROR: Must be 0.0-1.0
+```python
+from pydantic import ValidationError
+from fraiseql.fastapi import FraiseQLConfig
 
-// Validation error:
-// Error: Invalid observability configuration
-//   - sample_rate must be between 0.0 and 1.0 (got 1.5)
-```text
-<!-- Code example in TEXT -->
+try:
+    config = FraiseQLConfig(database_url="mysql://nope")  # not PostgreSQL
+except ValidationError as exc:
+    print(exc)
+    # Database URL must start with postgresql:// or postgres://
+```
 
-**Validation Rules**:
+Notable validation behavior:
 
-- `sample_rate`: 0.0 ≤ x ≤ 1.0
-- `retention_days`: > 0
-- `buffer_size`: > 0
-- `flush_interval_secs`: > 0
-- `batch_size`: > 0
-- `pool_size`: 1-100
-- `timeout_secs`: > 0
+- `database_url` must start with `postgresql://` or `postgres://` (Unix sockets
+  supported).
+- In `environment="production"`, introspection and the playground are disabled
+  unless explicitly re-enabled.
+- A wildcard `*` CORS origin in production logs a security warning.
+- `auth0_domain` is required when `auth_provider="auth0"`.
+- Collation and session-variable names are validated against SQL-injection
+  characters.
+
+---
+
+## Troubleshooting Configuration
+
+### Settings not taking effect
+
+1. Confirm the env var name is `FRAISEQL_`-prefixed and uppercase:
+
+   ```bash
+   echo $FRAISEQL_DATABASE_URL
+   ```
+
+2. Remember that explicit Python values passed to `FraiseQLConfig(...)` or
+   `create_fraiseql_app(...)` override env vars.
+
+3. If you use a `.env` file, make sure it sits in the process working directory.
+
+### Database connection errors
+
+1. Verify the URL works directly:
+
+   ```bash
+   psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1"
+   ```
+
+2. Increase pool capacity if you see pool-timeout errors:
+
+   ```python
+   config = FraiseQLConfig(
+       database_url="postgresql://app:pass@localhost/myapp",
+       database_pool_size=40,
+       database_max_overflow=20,
+   )
+   ```
+
+### Inspecting generated SQL
+
+Turn on SQL echo in development to see what FraiseQL sends to PostgreSQL:
+
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://app:pass@localhost/myapp",
+    database_echo=True,
+)
+```
+
+For application logs, use standard Python logging (e.g. `LOG_LEVEL` in your own
+process configuration) and uvicorn's `--log-level` flag.
 
 ---
 
 ## Next Steps
 
-- **[Metrics Collection Guide](../observability/metrics-collection.md)** - What data is collected
-- **[Troubleshooting](../observability/troubleshooting.md)** - Common issues and solutions
-- **[Observability Guide](./observability.md)** - Complete observability setup
-
----
-
-*Last updated: 2026-01-12*
+- **[Observability Guide](./observability.md)** — metrics, health checks, and
+  error tracking
+- **[Authentication](../advanced/authentication.md)** — Auth0 and custom
+  providers
+- **[Deployment](../production/deployment.md)** — running the FastAPI app in production

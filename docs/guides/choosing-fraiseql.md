@@ -1,20 +1,13 @@
-<!-- Skip to main content -->
 ---
-
-title: Choosing FraiseQL: Is It Right for Your Project?
-description: FraiseQL is **not a general-purpose GraphQL engine**. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.
+title: "Choosing FraiseQL: Is It Right for Your Project?"
+description: FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.
 keywords: ["debugging", "implementation", "best-practices", "deployment", "tutorial"]
 tags: ["documentation", "reference"]
 ---
 
 # Choosing FraiseQL: Is It Right for Your Project?
 
-**Status:** ✅ Production Ready
-**Audience:** Architects, Technical Leads
-**Reading Time:** 10-15 minutes
-**Last Updated:** 2026-02-05
-
-FraiseQL is **not a general-purpose GraphQL engine**. It's optimized for a specific set of problems. This guide helps you decide if it's a good fit.
+FraiseQL is a **Python runtime GraphQL framework for PostgreSQL**. It builds your GraphQL schema in memory at app startup and serves it over FastAPI, reading from PostgreSQL views and writing through PostgreSQL functions (CQRS). It is **not a general-purpose, any-database GraphQL engine** — it's optimized for a specific set of problems. This guide helps you decide if it's a good fit.
 
 ---
 
@@ -52,16 +45,15 @@ FraiseQL is **not a general-purpose GraphQL engine**. It's optimized for a speci
 
 Answer these questions honestly:
 
-- [ ] Do you need **guaranteed consistency** (no stale data)?
-- [ ] Can mutations wait **100-500ms** to complete?
+- [ ] Is **PostgreSQL** your database (or can it be)?
+- [ ] Do you need **strong consistency** (no stale data)?
 - [ ] Is your database the **source of truth** (not external APIs)?
 - [ ] Do you have **relational data** (not primarily document-oriented)?
-- [ ] Do you need **ACID compliance** or regulated industry support?
+- [ ] Do you need **ACID compliance** or regulated-industry support?
 
 **Diagram:** System architecture visualization
 
 ```d2
-<!-- Code example in D2 Diagram -->
 direction: down
 
 Count: "Count your YES answers" {
@@ -102,8 +94,7 @@ Count -> Zero
 Four -> FourResult
 Two -> TwoResult
 Zero -> ZeroResult
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -114,10 +105,9 @@ Zero -> ZeroResult
 | Requirement | FraiseQL | DynamoDB | Cassandra | Firebase | GraphQL-core |
 |---|---|---|---|---|---|
 | Strong consistency | ✅ | ⚠️ eventual | ⚠️ eventual | ⚠️ eventual | ✅ |
-| ACID transactions | ✅ | ⚠️ limited | ❌ | ❌ | ✅ |
-| Distributed transactions | ✅ (SAGA) | ❌ | ❌ | ❌ | ❌ |
-| Multi-tenant isolation | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| 100% audit trail | ✅ | ⚠️ | ⚠️ | ✅ | ❌ |
+| ACID transactions | ✅ (PostgreSQL) | ⚠️ limited | ❌ | ❌ | ✅ |
+| Multi-tenant isolation | ✅ (PostgreSQL RLS) | ✅ | ✅ | ✅ | ⚠️ |
+| Audit trail | ✅ (in PostgreSQL) | ⚠️ | ⚠️ | ✅ | ❌ |
 
 ### Performance
 
@@ -125,15 +115,15 @@ Zero -> ZeroResult
 |---|---|---|---|---|---|
 | Mutation latency | 100-500ms | <10ms | <10ms | <100ms | 50-200ms |
 | Query throughput | High | Very high | Very high | Medium | Medium |
-| N+1 prevention | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Automatic caching | ✅ | ❌ | ❌ | ✅ | ⚠️ |
+| N+1 prevention | ✅ (dataloaders) | ✅ | ✅ | ✅ | ❌ |
+| Result caching | ✅ (PostgreSQL-backed) | ❌ | ❌ | ✅ | ⚠️ |
 
 ### Operational
 
 | Requirement | FraiseQL | DynamoDB | Cassandra | Firebase | GraphQL-core |
 |---|---|---|---|---|---|
 | Managed service | ❌ | ✅ | ⚠️ | ✅ | ❌ |
-| Infrastructure needed | PostgreSQL+ | AWS | Cassandra | Google Cloud | Any DB |
+| Infrastructure needed | PostgreSQL | AWS | Cassandra | Google Cloud | Any DB |
 | Scaling complexity | Low | Automatic | Medium-High | Automatic | High |
 | Cost | Database-dependent | Per request | Self-hosted | Per request | Self-hosted |
 
@@ -141,11 +131,11 @@ Zero -> ZeroResult
 
 | Requirement | FraiseQL | DynamoDB | Cassandra | Firebase | GraphQL-core |
 |---|---|---|---|---|---|
-| Language support | 16 languages | AWS SDKs | CQL | Firebase SDKs | Any |
-| Schema validation | ✅ Compile-time | ⚠️ Runtime | ⚠️ Runtime | ⚠️ Runtime | ⚠️ Runtime |
-| Authorization rules | ✅ Compiled | ⚠️ Custom | ⚠️ Custom | ⚠️ Custom | ⚠️ Custom |
+| Schema authoring | Python decorators | AWS SDKs | CQL | Firebase SDKs | Python |
+| Schema build | ✅ At app startup (in memory) | ⚠️ Runtime | ⚠️ Runtime | ⚠️ Runtime | ⚠️ Runtime |
+| Authorization rules | ✅ Built-in (authorizers/RBAC) | ⚠️ Custom | ⚠️ Custom | ⚠️ Custom | ⚠️ Custom |
 | API generation | ✅ Automatic | ⚠️ Manual | ❌ | ⚠️ Manual | ⚠️ Manual |
-| Query optimization | ✅ Compile-time | ⚠️ At query | ⚠️ At query | ⚠️ At query | ❌ |
+| Query optimization | ✅ At runtime (field selection) | ⚠️ At query | ⚠️ At query | ⚠️ At query | ❌ |
 
 ---
 
@@ -158,14 +148,13 @@ Zero -> ZeroResult
 **Why FraiseQL**:
 
 - Requires absolute consistency (no double-charging)
-- Needs audit trail (regulatory compliance)
+- Needs an audit trail (regulatory compliance)
 - Mutations are infrequent, must be correct
-- Multi-step transactions are common
+- Multi-step writes happen inside a single PostgreSQL function
 
-**Example**: "Transfer $1000 from account A to account B across services"
+**Example**: "Transfer $1000 from account A to account B"
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation Transfer($fromId: ID!, $toId: ID!, $amount: Money!) {
   transferMoney(fromId: $fromId, toId: $toId, amount: $amount) {
     fromBalance
@@ -173,10 +162,10 @@ mutation Transfer($fromId: ID!, $toId: ID!, $amount: Money!) {
     transactionId
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-FraiseQL guarantees: Either both accounts updated, or neither. No partial transfers.
+The `transferMoney` mutation calls a PostgreSQL `fn_transfer_money` function: either both
+accounts are updated within one transaction, or neither is. No partial transfers.
 
 ---
 
@@ -189,20 +178,19 @@ FraiseQL guarantees: Either both accounts updated, or neither. No partial transf
 - Audit trail required
 - Data corruption is unacceptable
 
-**Example**: "Update patient medication with cross-service lab result verification"
+**Example**: "Update patient medication with lab-result verification"
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation PrescribeMedication($patientId: ID!, $medication: String!) {
   prescribeMedication(patientId: $patientId, medication: $medication) {
     patient { id, allergies }
     prescription { id, medication }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-FraiseQL guarantees: Prescription never issued if allergy check fails.
+The mutation's PostgreSQL function runs the allergy check and the write in one transaction:
+a prescription is never issued if the allergy check fails.
 
 ---
 
@@ -218,7 +206,6 @@ FraiseQL guarantees: Prescription never issued if allergy check fails.
 **Example**: "Move inventory between warehouses"
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation MoveInventory(
   $sku: String!
   $from: ID!
@@ -230,10 +217,10 @@ mutation MoveInventory(
     toWarehouse { available }
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-FraiseQL guarantees: Inventory either moves completely or not at all.
+The PostgreSQL function backing `moveInventory` runs both updates in one transaction:
+inventory either moves completely or not at all.
 
 ---
 
@@ -249,7 +236,6 @@ FraiseQL guarantees: Inventory either moves completely or not at all.
 **Example**: "Multi-tenant user management with role hierarchy"
 
 ```graphql
-<!-- Code example in GraphQL -->
 query GetTenantUsers($tenantId: ID!) {
   users(tenantId: $tenantId) {
     id, email, role
@@ -261,10 +247,11 @@ mutation AddUser($tenantId: ID!, $email: String!, $role: String!) {
     id, email, role
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-FraiseQL guarantees: No cross-tenant data leaks, mutations atomic per tenant.
+Isolation is enforced with PostgreSQL Row-Level Security: FraiseQL sets the tenant context
+as a session GUC per request, so RLS policies prevent cross-tenant data leaks and mutations
+stay atomic per tenant.
 
 ---
 
@@ -298,7 +285,7 @@ FraiseQL guarantees: No cross-tenant data leaks, mutations atomic per tenant.
 **Pros**:
 
 - Data consistency important
-- Publishing workflows benefit from SAGA
+- Publishing workflows fit transactional mutations
 - Audit trail required
 
 **Cons**:
@@ -329,16 +316,14 @@ FraiseQL guarantees: No cross-tenant data leaks, mutations atomic per tenant.
 **Example anti-pattern**:
 
 ```graphql
-<!-- Code example in GraphQL -->
 query RealTimeMetrics {
   metrics(last: 10000) {
     timestamp, value
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-FraiseQL would be slow. Use Cassandra instead.
+FraiseQL would be slow. Use a columnar/analytics store instead.
 
 ---
 
@@ -356,14 +341,12 @@ FraiseQL would be slow. Use Cassandra instead.
 **Example anti-pattern**:
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation LikePost($postId: ID!) {
   likePost(postId: $postId) {
     likes  # Doesn't need exact count
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
 DynamoDB's eventual consistency is perfect here.
 
@@ -383,16 +366,14 @@ DynamoDB's eventual consistency is perfect here.
 **Example anti-pattern**:
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation LogSensorReading($sensorId: ID!, $value: Float!) {
   logReading(sensorId: $sensorId, value: $value) {
     sensorId, value, timestamp
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Use time-series DB directly.
+Use a time-series DB directly.
 
 ---
 
@@ -410,40 +391,37 @@ Use time-series DB directly.
 **Example anti-pattern**:
 
 ```graphql
-<!-- Code example in GraphQL -->
 mutation SendMessage($chatId: ID!, $text: String!) {
   sendMessage(chatId: $chatId, text: $text) {
     id, text, createdAt
   }
 }
-```text
-<!-- Code example in TEXT -->
+```
 
-Use message broker + cache instead.
+Use a message broker + cache instead.
 
 ---
 
 ## Decision Flowchart
 
 ```text
-<!-- Code example in TEXT -->
 START
   │
-  ├─ Do you need STRONG CONSISTENCY?
-  │  ├─ NO → Don't use FraiseQL, use DynamoDB/Cassandra
+  ├─ Is PostgreSQL your database (or can it be)?
+  │  ├─ NO → Don't use FraiseQL (PostgreSQL only)
   │  └─ YES
   │     │
-  │     ├─ Can mutations wait 100-500ms?
-  │     │  ├─ NO → Don't use FraiseQL, use eventual consistency system
+  │     ├─ Do you need STRONG CONSISTENCY?
+  │     │  ├─ NO → Consider DynamoDB/Cassandra for AP workloads
   │     │  └─ YES
   │     │     │
-  │     │     ├─ Is your data RELATIONAL (tables, joins)?
-  │     │     │  ├─ NO → Don't use FraiseQL, use document DB
+  │     │     ├─ Can mutations wait 100-500ms?
+  │     │     │  ├─ NO → Use a low-latency eventual-consistency system
   │     │     │  └─ YES
   │     │     │     │
-  │     │     │     ├─ Do you need distributed transactions?
-  │     │     │     │  ├─ YES → FraiseQL SAGA is perfect
-  │     │     │     │  └─ NO
+  │     │     │     ├─ Is your data RELATIONAL (tables, joins)?
+  │     │     │     │  ├─ NO → Use a document DB
+  │     │     │     │  └─ YES
   │     │     │     │     │
   │     │     │     │     ├─ Do you need enterprise features?
   │     │     │     │     │  ├─ YES (audit, RBAC, multi-tenant)
@@ -452,8 +430,7 @@ START
   │     │     │     │     │     └─ FraiseQL works, but simpler systems might too
   │
   └─ END
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -463,23 +440,23 @@ START
 
 **From Apollo Server**:
 
-- Apollo is interpretation-based, FraiseQL is compiled
-- No direct migration, but patterns similar
-- FraiseQL eliminates resolvers entirely
-- Time: 2-4 weeks for small API
+- Apollo wires up hand-written resolvers; FraiseQL generates resolvers from your PostgreSQL views
+- No direct migration, but the schema-first patterns are similar
+- Most boilerplate resolvers disappear (reads come from `v_`/`tv_` views)
+- Time: 2-4 weeks for a small API
 
 **From Hasura**:
 
-- Hasura auto-generates API from schema, FraiseQL compiles schema
-- Hasura supports more databases (Oracle, etc.)
-- FraiseQL has better transaction support
+- Hasura auto-generates an API from your schema; FraiseQL maps a Python-decorated schema to PostgreSQL views and functions at startup
+- Hasura supports more databases; FraiseQL is PostgreSQL only
+- FraiseQL puts write logic in PostgreSQL functions, giving you full transactional control
 - Time: 2-3 weeks for migration
 
 **From Prisma**:
 
-- Prisma is ORM-based, FraiseQL is query-generation-based
-- Both eliminate N+1 problems
-- FraiseQL has federation support, Prisma doesn't
+- Prisma is ORM-based; FraiseQL is SQL/view-based (CQRS)
+- Both eliminate N+1 problems (FraiseQL via dataloaders)
+- FraiseQL leans on PostgreSQL features (JSONB, RLS, functions) rather than an ORM layer
 - Time: 1-2 weeks (small API)
 
 ### To Other Systems
@@ -510,7 +487,7 @@ START
 
 🚫 **You need mutation latency < 50ms**
 
-- FraiseQL's synchronous SAGA adds 100-500ms overhead
+- FraiseQL's mutations run through PostgreSQL functions and typically take 100-500ms
 
 🚫 **You need Availability in distributed scenarios**
 
@@ -526,7 +503,11 @@ START
 
 🚫 **You want a managed service (hands-off)**
 
-- FraiseQL requires managing PostgreSQL/MySQL
+- FraiseQL requires you to run PostgreSQL and the FastAPI app
+
+🚫 **Your database isn't (and can't be) PostgreSQL**
+
+- FraiseQL targets PostgreSQL only — its CQRS model relies on PostgreSQL views, functions, JSONB, and RLS
 
 🚫 **You're building real-time analytics**
 
@@ -540,33 +521,33 @@ START
 
 ## Green Flags: Do Use FraiseQL If
 
-✅ **You need guaranteed consistency**
+✅ **You need strong consistency**
 
-- FraiseQL makes it a first-class guarantee
+- Backed by PostgreSQL ACID transactions
 
-✅ **You have complex multi-service transactions**
+✅ **You have complex multi-step writes**
 
-- SAGA pattern with automatic compensation
+- Encapsulate them in a single PostgreSQL function (`fn_`), called atomically by a mutation
 
-✅ **You're in regulated industry** (finance, healthcare)
+✅ **You're in a regulated industry** (finance, healthcare)
 
-- Audit logging and compliance built-in
+- Audit logging and compliance enforced in PostgreSQL
 
 ✅ **You need multi-tenant data isolation**
 
-- Field-level RBAC compiled into schema
+- Field-level authorization plus PostgreSQL Row-Level Security
 
-✅ **You want compile-time schema validation**
+✅ **You want PostgreSQL as the single source of truth**
 
-- Errors caught at build time, never runtime
+- Reads from views, writes through functions — one well-understood database
 
 ✅ **You're tired of N+1 query problems**
 
-- Joins determined at compile time
+- Dataloaders and view-based reads keep queries flat
 
 ✅ **You want schema as code** (not API comments)
 
-- 16 languages supported for schema authoring
+- Define types, queries, and mutations with Python decorators
 
 ---
 
@@ -574,11 +555,11 @@ START
 
 Before choosing FraiseQL, answer these questions:
 
-1. **Consistency**: Is "guaranteed consistency" worth 100-500ms latency?
-2. **Availability**: Can your system tolerate failures instead of approximate responses?
-3. **Scope**: Do you have relational data and multi-service coordination?
-4. **Compliance**: Do you need regulated industry features (audit, RBAC)?
-5. **Scale**: Does your database scale to your throughput needs?
+1. **Database**: Is PostgreSQL your database, or can it be?
+2. **Consistency**: Is strong consistency worth 100-500ms mutation latency?
+3. **Scope**: Do you have relational data and transactional writes?
+4. **Compliance**: Do you need regulated-industry features (audit, RBAC)?
+5. **Scale**: Does PostgreSQL scale to your throughput needs?
 
 If the answers are yes, FraiseQL is the right choice.
 
@@ -630,7 +611,7 @@ If the answers are mixed, discuss trade-offs with your team. Every architecture 
 |---------|---------------|----------|
 | "100-500ms latency is too slow" | Most business logic already has this latency | Compare: API Gateway (20ms) + DB (50ms) + Network (30ms) = 100ms baseline |
 | "We need real-time updates" | FraiseQL supports WebSocket subscriptions | See [Real-time subscriptions](../architecture/realtime/subscriptions.md) |
-| "We'll need eventual consistency anyway" | Implement at application layer if truly needed | See [Federation Guide](../integrations/federation/guide.md) for patterns |
+| "We'll need eventual consistency anyway" | Implement it at the application layer if truly needed | Add caching/queues outside FraiseQL where appropriate |
 | "Consistency not important for us" | Then FraiseQL isn't the right choice | Consider alternatives |
 
 ### "We're between FraiseQL and [Alternative]"
@@ -640,7 +621,7 @@ If the answers are mixed, discuss trade-offs with your team. Every architecture 
 | Need | FraiseQL | Firebase | DynamoDB | GraphQL-Core |
 |------|----------|----------|----------|--------------|
 | Strong consistency | ✅ | ❌ | ❌ | ✅ |
-| Multi-database | ✅ | ❌ | ❌ | ✅ |
+| PostgreSQL-native (views, functions, JSONB, RLS) | ✅ | ❌ | ❌ | ⚠️ |
 | Schema as code | ✅ | ❌ | ❌ | ❌ |
 | Built-in RBAC | ✅ | ❌ | ❌ | ❌ |
 | Low-latency real-time | ❌ | ✅ | ✅ | ❌ |
@@ -659,9 +640,9 @@ If the answers are mixed, discuss trade-offs with your team. Every architecture 
 
 #### Phase 1 (Week 1): POC on single feature
 
-- Pick one GraphQL query with 2-3 tables
-- Define schema in Python/TypeScript
-- Compile and run local test
+- Pick one GraphQL query reading from a view over 2-3 tables
+- Define the type and query with Python decorators
+- Run the FastAPI app locally and hit the playground
 - Time: 2-4 hours
 - Success metric: Query executes and returns data
 
@@ -694,5 +675,5 @@ If the answers are mixed, discuss trade-offs with your team. Every architecture 
 
 - [Consistency Model Deep Dive](./consistency-model.md)
 - [Production Deployment](./production-deployment.md)
-- [Foundation Concepts](../foundation/01-what-is-fraiseql.md)
-- [Core Architecture](../foundation/02-core-concepts.md)
+- [Comparisons with Other Engines](../foundation/05-comparisons.md)
+- [Core Concepts](../foundation/02-core-concepts.md)

@@ -1,16 +1,14 @@
-<!-- Skip to main content -->
 ---
 
 title: FraiseQL Security Model: Authorization, Row-Level Security, Field Masking, and Audit
-description: FraiseQL security operates on five pillars:
+description: FraiseQL security operates on five pillars.
 keywords: ["design", "scalability", "performance", "patterns", "security"]
 tags: ["documentation", "reference"]
 ---
 
 # FraiseQL Security Model: Authorization, Row-Level Security, Field Masking, and Audit
 
-**Date:** January 2026
-**Status:** Complete System Specification
+**Status:** System overview for v1 (PostgreSQL, Python/FastAPI runtime)
 **Audience:** Security architects, compliance engineers, application developers, operations teams
 
 ---
@@ -19,28 +17,27 @@ tags: ["documentation", "reference"]
 
 FraiseQL security operates on five pillars:
 
-1. **Authentication** — Verify user identity (external responsibility)
-2. **Authorization** — Control what users can do (compile-time + runtime)
-3. **Row-Level Security (RLS)** — Filter data per user (database-enforced)
-4. **Field-Level Masking** — Hide sensitive fields per user (runtime-enforced)
-5. **Audit Logging** — Track who did what and when (durable event log)
+1. **Authentication** — Verify user identity (an `AuthProvider`, e.g. Auth0 or a custom JWT issuer)
+2. **Operation & role authorization** — Control which operations a user may run (an app-supplied `Authorizer` plus the `requires_*` resolver decorators)
+3. **Row-Level Security (RLS)** — Filter data per user/tenant (PostgreSQL-enforced policies)
+4. **Field-level authorization & redaction** — Hide sensitive fields per user (`authorize_field`, and view-layer redaction)
+5. **Audit Logging** — Track who did what and when (durable rows in PostgreSQL)
 
-**Core principle**: Security is declarative. Developers declare rules; FraiseQL enforces them at compile-time and runtime.
+**Core principle**: Enforcement is layered. The Python runtime gates operations and fields; PostgreSQL enforces row scoping. FraiseQL never returns data the authorization layer denies, and the fail-closed enforcement applies even on the Rust/turbo/APQ resolver-bypass paths.
 
-**Security guarantees:**
+**Security properties:**
 
-- ✅ **Compile-time validation** — Authorization rules checked at schema compilation
-- ✅ **Runtime enforcement** — Authorization rules re-evaluated on every request
-- ✅ **No resolver bypasses** — No way to fetch data that authorization denies
-- ✅ **Deterministic** — Same inputs always produce same authorization result
-- ✅ **Auditable** — All access attempts logged
+- ✅ **Runtime enforcement** — Authorization is evaluated on every request, at app startup the schema is wired with the enforcement layer.
+- ✅ **No resolver bypasses** — Operation and field gates are re-applied on the Rust passthrough, turbo, and APQ chokepoints, so they fail closed.
+- ✅ **Deterministic** — The same context + operation + arguments produce the same decision (and may be cached by a `DecisionCache`).
+- ✅ **Database-enforced row scoping** — RLS policies live in PostgreSQL, so even a direct database session honors them.
+- ✅ **Auditable** — Access attempts can be recorded as durable rows.
 
 ### Security Pipeline
 
-**Diagram: Security Architecture** - Multi-layer security pipeline from request to response
+**Diagram: Security Architecture** — Multi-layer pipeline from request to response.
 
 ```d2
-<!-- Code example in D2 Diagram -->
 direction: right
 
 Request: "GraphQL Request\n(with JWT token)" {
@@ -53,17 +50,17 @@ Authn: "1. Authentication\n(Verify identity)" {
   style.fill: "#f3e5f5"
 }
 
-QueryAuth: "2. Query Authorization\n(Check operation allowed)" {
+QueryAuth: "2. Operation Authorization\n(Authorizer / requires_*)" {
   shape: box
   style.fill: "#fff3e0"
 }
 
-RLS: "3. Row-Level Security\n(Filter database results)" {
+RLS: "3. Row-Level Security\n(PostgreSQL filters rows)" {
   shape: box
   style.fill: "#f1f8e9"
 }
 
-FieldAuth: "4. Field Masking\n(Hide sensitive fields)" {
+FieldAuth: "4. Field Authorization\n(authorize_field / view redaction)" {
   shape: box
   style.fill: "#ffe0b2"
 }
@@ -78,21 +75,20 @@ Response: "Response\n(Authorized data)" {
   style.fill: "#c8e6c9"
 }
 
-Denied: "❌ Access Denied" {
+Denied: "Access Denied" {
   shape: box
   style.fill: "#ffebee"
 }
 
 Request -> Authn
-Authn -> QueryAuth: "User context"
+Authn -> QueryAuth: "UserContext"
 Authn -> Denied: "Token invalid"
 QueryAuth -> RLS: "Operation allowed"
 QueryAuth -> Denied: "Operation denied"
 RLS -> FieldAuth: "Row-filtered data"
-FieldAuth -> Audit: "Masked fields"
+FieldAuth -> Audit: "Authorized fields"
 Audit -> Response: "Log recorded"
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
@@ -100,1257 +96,814 @@ Audit -> Response: "Log recorded"
 
 ### 1.1 User Context
 
-Every request carries user context:
+Authenticated requests carry a `UserContext` at `info.context["user"]`. It is a plain
+dataclass (`fraiseql.auth.UserContext`):
 
 ```python
-<!-- Code example in Python -->
-class UserContext:
-    user_id: str                    # "user-456"
-    username: str                   # "alice@company.com"
-    roles: list[str]                # ["user", "member", "team-lead"]
-    groups: list[str]               # ["engineering", "frontend-team"]
-    permissions: set[str]           # {"read:posts", "write:own:posts"}
-    organization_id: str            # "org-123"
-    environment: str                # "production"
-    authenticated_at: datetime       # When user was authenticated
-    token_expires_at: datetime       # When token expires
-    metadata: dict                   # Custom metadata {"department": "engineering"}
-```text
-<!-- Code example in TEXT -->
+from fraiseql.auth import UserContext
+
+# Built by your AuthProvider after the JWT is validated.
+user = UserContext(
+    user_id="user-456",                       # subject claim
+    email="alice@company.com",
+    name="Alice",
+    roles=["user", "member", "team-lead"],
+    permissions=["read:posts", "write:own:posts"],
+    metadata={"organization_id": "org-123", "department": "engineering"},
+)
+
+user.has_role("team-lead")                     # True
+user.has_permission("read:posts")              # True
+user.has_any_role(["admin", "team-lead"])      # True
+user.has_any_permission(["write:posts", "write:own:posts"])  # True
+```
+
+`UserContext` exposes `has_role`, `has_permission`, `has_any_role`, `has_any_permission`,
+`has_all_roles`, and `has_all_permissions`. Anything not modeled as a role or permission
+(organization, department, tenant) lives in `metadata`.
 
 ### 1.2 Context Binding
 
-User context is bound at request time:
+A provider validates the token and builds the `UserContext`; FastAPI's request lifecycle
+places it on `info.context["user"]`. v1 ships **Auth0** (`Auth0Provider`/`Auth0Config`)
+and a generic/native path, plus a Rust-accelerated JWT validator
+(`RustCustomJWTProvider`) — all Python-facing:
 
-```rust
-<!-- Code example in RUST -->
-// Request arrives with JWT token
-let token = extract_bearer_token(&request)?;
+```python
+from fraiseql.auth import AuthProvider, UserContext
 
-// Verify token (external auth provider)
-let claims = verify_jwt(token)?;
 
-// Build user context
-let user_context = UserContext {
-    user_id: claims.sub,
-    username: claims.email,
-    roles: claims.roles,
-    groups: claims.groups,
-    organization_id: claims.org_id,
-    authenticated_at: claims.iat,
-    token_expires_at: claims.exp,
-    metadata: claims.metadata,
-};
+class MyProvider(AuthProvider):
+    async def validate_token(self, token: str) -> dict:
+        # Verify signature/issuer/audience against your JWKS, return the claims.
+        ...
 
-// Bind to request
-request.user_context = user_context;
+    async def get_user_from_token(self, token: str) -> UserContext:
+        claims = await self.validate_token(token)
+        return UserContext(
+            user_id=claims["sub"],
+            email=claims.get("email"),
+            roles=claims.get("roles", []),
+            permissions=claims.get("permissions", []),
+            metadata={"organization_id": claims.get("org_id")},
+        )
+```
 
-// Pass to query/mutation execution
-execute_query(&query, &user_context).await?
-```text
-<!-- Code example in TEXT -->
+Wire it in when building the app:
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User, Post],
+    queries=[users, user],
+    mutations=[create_post],
+    auth=MyProvider(),
+    production=True,
+)
+```
+
+For any OIDC issuer (Google, Keycloak, Okta, ...) there are two honest paths: front it
+with **Auth0** as a broker (`auth_provider="auth0"`), or set `auth_provider="custom"`
+and subclass `AuthProvider` to validate that issuer's JWTs. v1 does not ship per-vendor
+provider classes.
 
 ### 1.3 Context Immutability
 
-User context is **read-only** and **immutable** during request:
-
-```rust
-<!-- Code example in RUST -->
-// User context set once per request
-request.user_context = authenticate(&token)?;
-
-// Cannot be changed during query execution
-// Cannot be escalated to admin role
-// Cannot be swapped for another user
-
-// Attempting to modify context raises error
-// E_AUTH_CONTEXT_TAMPER_501
-```text
-<!-- Code example in TEXT -->
+Treat the `UserContext` as **read-only** for the lifetime of a request. It is built once
+during authentication; resolvers read it but must never mutate it to escalate roles or
+impersonate another user. Tenant/row-scoping decisions derived from it are pushed into
+PostgreSQL session variables (Section 3) inside the request transaction, so privilege
+cannot be changed mid-request.
 
 ---
 
-## 2. Authorization: Compile-Time Rules
+## 2. Operation Authorization
 
-### 2.1 Type-Level Authorization
+v1 gives you two complementary mechanisms for operation-level (query/mutation/subscription)
+authorization. Both are Python and both surface a denial as a GraphQL error with
+`extensions.code` (no HTTP 4xx from a separate router).
 
-Authorize access to entire type:
+### 2.1 `requires_*` resolver decorators
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-@FraiseQL.authorize(rule="authenticated")  # Only logged-in users
-class Post:
-    id: ID
-    title: str
-    content: str
-
-@FraiseQL.type
-@FraiseQL.authorize(rule="admin_only")  # Only admins
-class AdminPanel:
-    id: ID
-    system_logs: [str]
-    user_list: [User]
-
-@FraiseQL.type
-@FraiseQL.authorize(rule="public")  # Anyone (default)
-class Product:
-    id: ID
-    name: str
-    price: float
-```text
-<!-- Code example in TEXT -->
-
-**Compile-time validation:**
+The quickest gate: decorate a resolver with one of the decorators from
+`fraiseql.auth`. They read `info.context["user"]` (a `UserContext`) and raise a
+`GraphQLError` when the check fails.
 
 ```python
-<!-- Code example in Python -->
-# During compilation:
-# 1. Check type-level authorization exists
-# 2. Validate authorization rule is defined
-# 3. Validate rule has SQL WHERE clause equivalent
-# 4. Validate all fields inherit type authorization
-```text
-<!-- Code example in TEXT -->
+import fraiseql
+from fraiseql.auth import (
+    requires_auth,
+    requires_role,
+    requires_permission,
+)
+from fraiseql.auth.decorators import requires_any_role, requires_any_permission
+from fraiseql.types import ID
 
-**Runtime effect:**
 
-```graphql
-<!-- Code example in GraphQL -->
-# Query: Get admin panel data
-query {
-  adminPanel {
-    systemLogs
-  }
-}
+@fraiseql.query
+@requires_auth
+async def me(info) -> "User":
+    """Any authenticated user."""
+    db = info.context["db"]
+    user = info.context["user"]
+    return await db.find_one("v_user", id=user.user_id)
 
-# If user not admin:
-{
-  "errors": [{
-    "message": "Access denied: You don't have permission to access AdminPanel",
-    "code": "E_AUTH_PERMISSION_401",
-    "reason": "admin_only rule requires role 'admin'"
-  }],
-  "data": null
-}
-```text
-<!-- Code example in TEXT -->
 
-### 2.2 Field-Level Authorization
+@fraiseql.query
+@requires_role("admin")
+async def all_users(info) -> list["User"]:
+    """Only users with the 'admin' role."""
+    db = info.context["db"]
+    return await db.find("v_user")
 
-Authorize access to individual fields:
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class User:
-    id: ID                          # Public
-    username: str                   # Public
+@fraiseql.mutation
+@requires_permission("posts:write")
+async def create_post(info, input: "CreatePostInput") -> "CreatePostSuccess":
+    """Requires the 'posts:write' permission."""
+    db = info.context["db"]
+    result = await db.execute_function("fn_create_post", {...})
+    ...
 
-    @FraiseQL.authorize(rule="owner_or_admin")
-    email: str                      # Only owner or admin can read
 
-    @FraiseQL.authorize(rule="admin_only")
-    ssn: str                        # Only admin can read
+@fraiseql.mutation
+@requires_any_role("admin", "moderator")
+async def delete_post(info, id: ID) -> "DeletePostSuccess":
+    """Either 'admin' or 'moderator'."""
+    ...
+```
 
-    @FraiseQL.authorize(rule="own_profile")
-    encrypted_password_hash: str    # Only owner can read
+| Decorator | Denies with `extensions.code` | Passes when |
+|-----------|-------------------------------|-------------|
+| `requires_auth` | `UNAUTHENTICATED` (no `UserContext`) | a `UserContext` is present |
+| `requires_role("admin")` | `UNAUTHENTICATED` or `FORBIDDEN` | `user.has_role("admin")` |
+| `requires_permission("posts:write")` | `UNAUTHENTICATED` or `FORBIDDEN` | `user.has_permission(...)` |
+| `requires_any_role("admin", "mod")` | `UNAUTHENTICATED` or `FORBIDDEN` | `user.has_any_role([...])` |
+| `requires_any_permission(...)` | `UNAUTHENTICATED` or `FORBIDDEN` | `user.has_any_permission([...])` |
 
-@FraiseQL.type
-class Post:
-    id: ID                          # Public
-    title: str                      # Public
+### 2.2 The `Authorizer` policy contract
 
-    @FraiseQL.authorize(rule="published_or_author")
-    content: str                    # Published posts or author
-```text
-<!-- Code example in TEXT -->
-
-**Compile-time validation:**
+For richer, centralized policy (RBAC/ABAC, per-operation decisions, row-scoping filters,
+decision caching), supply an **`Authorizer`**. It is a structural protocol
+(`fraiseql.security.Authorizer`) with a single method; the framework enforces, the
+authorizer decides:
 
 ```python
-<!-- Code example in Python -->
-# During compilation:
-# 1. Check field authorization rule is defined
-# 2. Validate rule references valid user context
-# 3. Validate rule SQL clause is safe
-# 4. Check for conflicting rules on same field
-```text
-<!-- Code example in TEXT -->
+from typing import Any
 
-**Runtime effect:**
+from fraiseql.security import Authorizer, AuthorizationDecision
 
-When field is unauthorized:
 
-```graphql
-<!-- Code example in GraphQL -->
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id              # ✅ Allowed
-    username        # ✅ Allowed
-    email           # ⚠️ Check authorization
-    ssn             # ⚠️ Check authorization
-  }
-}
+class PolicyAuthorizer:
+    async def authorize_operation(
+        self,
+        *,
+        context: dict[str, Any],
+        operation_type: str,        # "query" | "mutation" | "subscription"
+        operation_name: str,
+        arguments: dict[str, Any],
+    ) -> AuthorizationDecision | bool:
+        user = context.get("user")
+        if user is None:
+            return AuthorizationDecision.deny(
+                code="UNAUTHENTICATED", message="Login required"
+            )
 
-# If user is owner of user-123:
-{
-  "data": {
-    "user": {
-      "id": "user-123",
-      "username": "alice",
-      "email": "alice@company.com",   # ✅ Owner can read
-      "ssn": null                      # ⚠️ Only admin can read (user not admin)
-    }
-  }
-}
+        if operation_name == "all_users" and not user.has_role("admin"):
+            return AuthorizationDecision.deny(message="Admins only")
 
-# If user is NOT owner and NOT admin of user-123:
-{
-  "data": {
-    "user": {
-      "id": "user-123",
-      "username": "alice",
-      "email": null,    # ⚠️ Not owner and not admin
-      "ssn": null       # ⚠️ Not admin
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
+        # Allow, and AND a row-scoping filter into the read path:
+        return AuthorizationDecision.allow(
+            filters={"organization_id": user.metadata["organization_id"]}
+        )
+```
 
-### 2.3 Mutation-Level Authorization
+`AuthorizationDecision` is an immutable value with two constructors:
 
-Authorize mutations (write operations):
+- `AuthorizationDecision.allow(filters=None)` — allow; optional `filters` are AND-ed into
+  the repository's `mandatory_filters` on the **read** path (ignored on mutations and
+  bypass paths).
+- `AuthorizationDecision.deny(code="FORBIDDEN", message=None)` — deny; `code` is surfaced
+  as the GraphQL error's `extensions.code`.
+
+A plain `bool` is sugar: `True` → `allow()`, `False` → `deny()`. Implementations may be
+sync or async.
+
+Attach an authorizer per operation or globally:
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.mutation
-@FraiseQL.authorize(rule="authenticated")  # Anyone authenticated can create
-def create_post(input: CreatePostInput) -> Post:
-    """Create a new post"""
-    pass
+# Per operation — overrides the global default for this resolver:
+@fraiseql.query(authorizer=PolicyAuthorizer())
+async def all_users(info) -> list["User"]: ...
 
-@FraiseQL.mutation
-@FraiseQL.authorize(rule="own_post")  # Can only update own posts
-def update_post(id: ID!, input: UpdatePostInput) -> Post:
-    """Update a post"""
-    pass
+@fraiseql.subscription(authorizer=PolicyAuthorizer())
+async def order_events(info): ...
 
-@FraiseQL.mutation
-@FraiseQL.authorize(rule="admin_only")  # Only admin can delete
-def delete_post(id: ID!) -> Boolean:
-    """Delete a post"""
-    pass
-```text
-<!-- Code example in TEXT -->
+# Globally — applied to every top-level operation:
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[all_users],
+    authorizer=PolicyAuthorizer(),
+    authorization_cache=...,   # optional DecisionCache
+)
+```
 
-**Authorization evaluation:**
+**Fail-closed semantics (verified).** Enforcement lives in one place so every site
+inherits it: if no authorizer is configured the operation is allowed (no-op fast path);
+an authorizer that *raises* anything other than a `GraphQLError` is treated as **deny**
+(never falls through to allow) and the raw exception is logged but never surfaced. The
+same enforcement is re-applied at the Rust passthrough, turbo-router, and APQ chokepoints
+so those bypass paths cannot fail open.
 
-**Diagram: Security Architecture** - Multi-layer security pipeline from request to response
-
-```d2
-<!-- Code example in D2 Diagram -->
-direction: down
-
-CreateReq: "Create Post Request" {
-  shape: box
-  style.fill: "#e3f2fd"
-}
-
-CreateCheck: "Is user\nauthenticated?" {
-  shape: diamond
-  style.fill: "#fff9c4"
-}
-
-CreateAllow: "✅ Allow\n(Create new post)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-CreateDeny: "❌ Deny\n(E_AUTH_PERMISSION_401)" {
-  shape: box
-  style.fill: "#ffebee"
-}
-
-UpdateReq: "Update Post Request" {
-  shape: box
-  style.fill: "#e3f2fd"
-}
-
-UpdateCheck: "Does user\nown post?" {
-  shape: diamond
-  style.fill: "#fff9c4"
-}
-
-UpdateAllow: "✅ Allow\n(Update own post)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-UpdateDeny: "❌ Deny\n(E_AUTH_PERMISSION_401)" {
-  shape: box
-  style.fill: "#ffebee"
-}
-
-DeleteReq: "Delete Post Request" {
-  shape: box
-  style.fill: "#e3f2fd"
-}
-
-DeleteCheck: "Is user\nadmin?" {
-  shape: diamond
-  style.fill: "#fff9c4"
-}
-
-DeleteAllow: "✅ Allow\n(Delete post)" {
-  shape: box
-  style.fill: "#c8e6c9"
-}
-
-DeleteDeny: "❌ Deny\n(E_AUTH_PERMISSION_401)" {
-  shape: box
-  style.fill: "#ffebee"
-}
-
-CreateReq -> CreateCheck
-CreateCheck -> CreateAllow: "Yes"
-CreateCheck -> CreateDeny: "No"
-
-UpdateReq -> UpdateCheck
-UpdateCheck -> UpdateAllow: "Yes"
-UpdateCheck -> UpdateDeny: "No"
-
-DeleteReq -> DeleteCheck
-DeleteCheck -> DeleteAllow: "Yes"
-DeleteCheck -> DeleteDeny: "No"
-```text
-<!-- Code example in TEXT -->
+**Decision caching.** When an `authorization_cache` (a `DecisionCache`) is supplied, a
+fresh cache hit replays the prior allow/deny **without** re-invoking the authorizer; an
+authorizer that raises hits the fail-closed branch and is **never** cached, so a transient
+error can neither pin a deny nor leak an allow.
 
 ---
 
 ## 3. Row-Level Security (RLS)
 
-### 3.1 RLS Rules
+Row scoping in v1 is **PostgreSQL Row-Level Security** — raw SQL policies on the
+underlying tables, not a FraiseQL decorator. The framework's job is to push request
+context into PostgreSQL session variables so your policies can read it.
 
-Row-level security filters database results based on user context:
+### 3.1 How tenant/user context reaches the database
 
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-@FraiseQL.rls(
-    rule="same_organization"
-    # Only return posts from user's organization
-)
-class Post:
-    id: ID
-    title: str
-    organization_id: str  # Part of RLS rule
-
-@FraiseQL.type
-@FraiseQL.rls(
-    rule="owner_or_admin"
-    # Return own records or if user is admin
-)
-class User:
-    id: ID
-    username: str
-    email: str
-
-@FraiseQL.type
-@FraiseQL.rls(
-    rule="none"  # No RLS, return all records (if authorized)
-)
-class PublicProduct:
-    id: ID
-    name: str
-```text
-<!-- Code example in TEXT -->
-
-### 3.2 RLS Rule Definition
-
-RLS rules are expressed as SQL WHERE clauses:
-
-```python
-<!-- Code example in Python -->
-# Built-in RLS rule: same_organization
-RLS_RULE_SAME_ORGANIZATION = """
-  organization_id = $current_user_organization_id
-"""
-
-# Built-in RLS rule: owner_or_admin
-RLS_RULE_OWNER_OR_ADMIN = """
-  user_id = $current_user_id OR $current_user_role = 'admin'
-"""
-
-# Custom RLS rule: department_lead can see department employees
-RLS_RULE_DEPARTMENT = """
-  department = $current_user_department OR $current_user_role = 'admin'
-"""
-
-# Custom RLS rule: complex multi-tenant with team access
-RLS_RULE_TEAM_ACCESS = """
-  (
-    organization_id = $current_user_organization_id
-    AND (
-      user_id = $current_user_id
-      OR team_id = ANY($current_user_team_ids)
-      OR $current_user_role = 'admin'
-    )
-  )
-"""
-```text
-<!-- Code example in TEXT -->
-
-### 3.3 RLS at Query Time
-
-When user queries data:
-
-```graphql
-<!-- Code example in GraphQL -->
-query GetPosts {
-  posts {
-    id
-    title
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Compiled to SQL with RLS:**
+The CQRS repository (`FraiseQLRepository`) issues `SET LOCAL` for known keys in
+`info.context` at the start of each transaction (verified in `src/fraiseql/db.py`,
+`_set_session_variables`). When the context carries `tenant_id`, `user_id`,
+`is_super_admin`, etc., it sets matching GUCs:
 
 ```sql
-<!-- Code example in SQL -->
-SELECT id, title
-FROM v_post
-WHERE
-  -- RLS rule automatically added
-  organization_id = $current_user_organization_id
-ORDER BY created_at DESC
-```text
-<!-- Code example in TEXT -->
+-- Emitted automatically per transaction when present in info.context:
+SET LOCAL app.tenant_id = '...' ;
+SET LOCAL app.user_id   = '...' ;
+SET LOCAL app.is_super_admin = ... ;
+```
 
-**Result:**
+So tenant context flows: request → `info.context["tenant_id"]` → `SET LOCAL app.tenant_id`
+→ your RLS policy via `current_setting('app.tenant_id')`. Populate `info.context` from the
+`UserContext` in your `context_getter`.
 
-```json
-<!-- Code example in JSON -->
-{
-  "data": {
-    "posts": [
-      {"id": "post-1", "title": "Post from my org"},
-      {"id": "post-2", "title": "Another from my org"}
-      // Posts from other organizations not included
-    ]
-  }
-}
-```text
-<!-- Code example in TEXT -->
+### 3.2 Writing the policies (PostgreSQL)
 
-### 3.4 RLS Enforcement Points
+RLS lives on the write tables (`tb_`) and is inherited by the read views (`v_`/`tv_`) that
+select from them. Enable RLS and write policies that read the session GUCs:
 
-RLS is enforced at multiple points:
+```sql
+-- Multi-tenant isolation: a row is visible only to its tenant.
+ALTER TABLE tb_post ENABLE ROW LEVEL SECURITY;
 
-```text
-<!-- Code example in TEXT -->
-Query Compilation
-  ↓
-Add RLS WHERE clause
-  ↓
-Query Execution
-  ↓
-Database executes filtered query
-  ↓
-Results returned to user
-  ↓
-Response transformation (field masking applied)
-```text
-<!-- Code example in TEXT -->
+CREATE POLICY post_tenant_isolation ON tb_post
+    USING (tenant_id = current_setting('app.tenant_id')::uuid);
 
-**If query attempts to bypass RLS:**
+-- Owner-or-admin: see your own rows, or all rows if super admin.
+ALTER TABLE tb_user ENABLE ROW LEVEL SECURITY;
 
-```graphql
-<!-- Code example in GraphQL -->
-# Malicious query: Try to get all posts
-query {
-  posts(where: { organization_id: "other-org" }) {
-    id
-  }
-}
+CREATE POLICY user_owner_or_admin ON tb_user
+    USING (
+        id = current_setting('app.user_id')::uuid
+        OR current_setting('app.is_super_admin', true)::boolean
+    );
 
-# Fails: RLS clause prevents it
-SELECT id FROM v_post
-WHERE
-  organization_id = $current_user_organization_id  # RLS enforced
-  AND organization_id = 'other-org'                 # User's filter
-  # Cannot satisfy both conditions if user in different org
-```text
-<!-- Code example in TEXT -->
+-- Team access: same tenant AND (owner OR team member OR admin).
+CREATE POLICY task_team_access ON tb_task
+    USING (
+        tenant_id = current_setting('app.tenant_id')::uuid
+        AND (
+            owner_id = current_setting('app.user_id')::uuid
+            OR team_id = ANY(
+                string_to_array(current_setting('app.team_ids', true), ',')::uuid[]
+            )
+            OR current_setting('app.is_super_admin', true)::boolean
+        )
+    );
+```
+
+Use the two-argument form `current_setting('app.x', true)` (the `true` = "missing OK")
+for variables that may be absent, so an unauthenticated/system query degrades to a safe
+default rather than erroring.
+
+### 3.3 RLS at query time
+
+A `@query` resolver reads a `v_`/`tv_` view via `db.find` / `db.find_one`. The repository
+opens a transaction, sets the session GUCs, then runs the SELECT — and PostgreSQL applies
+the policies transparently:
+
+```python
+@fraiseql.query
+async def posts(info) -> list[Post]:
+    db = info.context["db"]
+    return await db.find("v_post")   # RLS filters rows by app.tenant_id
+```
+
+```sql
+-- What PostgreSQL effectively executes (policy AND-ed in by the engine):
+SELECT id, data FROM v_post
+WHERE tenant_id = current_setting('app.tenant_id')::uuid
+ORDER BY ...;
+```
+
+A caller who supplies `where: { tenant_id: "other-org" }` still cannot widen the result:
+the RLS policy is AND-ed in by PostgreSQL itself, so the predicate is `tenant_id = <mine>
+AND tenant_id = 'other-org'` — empty for a different tenant.
+
+### 3.4 Belt-and-braces: `mandatory_filters`
+
+In addition to (not instead of) database RLS, reads can pass explicit
+`mandatory_filters` to `db.find`/`db.count`, and an `Authorizer` can return
+row-scoping `filters` that the repository AND-merges into `mandatory_filters`:
+
+```python
+return await db.find("v_post", mandatory_filters={"tenant_id": tenant_id})
+```
+
+RLS is the authoritative, database-enforced control; `mandatory_filters` and authorizer
+`filters` are application-level reinforcement.
 
 ---
 
-## 4. Field-Level Masking
+## 4. Field-Level Authorization and Redaction
 
-### 4.1 Masking Rules
+"Field masking" in v1 is achieved two ways — pick per field:
 
-Field masking hides sensitive data from unauthorized users:
+1. **`authorize_field`** — a field-level authorization gate. When the check fails, the
+   field raises a `FieldAuthorizationError` (GraphQL error with
+   `extensions.code = "FIELD_AUTHORIZATION_ERROR"`); it does **not** silently return a
+   substitute value.
+2. **View-layer redaction** — design the `v_`/`tv_` view's `data` JSONB to exclude or
+   replace sensitive keys per role/tenant in SQL, so unauthorized callers never receive
+   the value at all.
+
+### 4.1 `authorize_field`
+
+`authorize_field` (from `fraiseql.security`) wraps a computed `@fraiseql.field` resolver
+with a permission check. The check receives `info` (and optionally the parent `root`) and
+returns a `bool` or an `AuthorizationDecision`:
 
 ```python
-<!-- Code example in Python -->
-@FraiseQL.type
+import fraiseql
+from fraiseql.security import authorize_field, any_permission, combine_permissions
+
+
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
     id: ID
     username: str
 
-    @FraiseQL.mask(
-        show_to=["owner", "admin"],           # Roles that see real value
-        hide_from=["public", "guest"],        # Roles that see masked value
-        masked_value=None                     # What to show if masked
+    @fraiseql.field
+    @authorize_field(
+        any_permission(
+            lambda info, root: info.context["user"].user_id == root.id,  # owner
+            lambda info: info.context["user"].has_role("admin"),          # or admin
+        ),
+        error_message="You can only view your own email",
     )
-    email: str
+    def email(self) -> str:
+        return self._email
 
-    @FraiseQL.mask(
-        show_to=["owner"],                    # Only owner sees SSN
-        masked_value="***-**-****"            # Show masked format
-    )
+    @fraiseql.field
+    @authorize_field(lambda info: info.context["user"].has_role("admin"))
+    def ssn(self) -> str:
+        return self._ssn
+```
+
+Two combinators ship with it:
+
+- `combine_permissions(*checks)` — **AND**, every check must pass.
+- `any_permission(*checks)` — **OR**, at least one check must pass.
+
+Checks may be sync or async, plain lambdas or named functions; they can read roles and
+permissions off `info.context["user"]`.
+
+### 4.2 Declaring authorized fields on a type
+
+`@fraiseql.type(..., authorize_fields=[...])` marks fields that require the per-field gate.
+This list is the per-field authorization gate that the runtime re-applies even on the
+Rust/turbo/APQ bypass paths (so JSONB served directly still honors it):
+
+```python
+@fraiseql.type(
+    sql_source="v_user",
+    jsonb_column="data",
+    authorize_fields=["email", "ssn"],
+)
+class User:
+    id: ID
+    username: str
+    email: str
     ssn: str
+```
 
-    @FraiseQL.mask(
-        show_to=["admin"],                    # Only admin sees password
-        masked_value="[REDACTED]"             # Show redacted marker
-    )
-    password_hash: str
-```text
-<!-- Code example in TEXT -->
+### 4.3 Redaction at the view layer
 
-### 4.2 Masking at Response Time
-
-Masking is applied **after** authorization check:
-
-```text
-<!-- Code example in TEXT -->
-
-1. Authorization check: Can user access field?
-   ├─ If no → Return null error
-   └─ If yes → Continue
-
-2. Fetch field value from database
-
-3. Check masking rule: Should field be masked?
-   ├─ If no → Return real value
-   └─ If yes → Return masked_value
-
-4. Return to client
-```text
-<!-- Code example in TEXT -->
-
-**Example:**
-
-```graphql
-<!-- Code example in GraphQL -->
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    username
-    email          # @mask(show_to=["owner", "admin"])
-    ssn            # @mask(show_to=["owner"])
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Response for user who is NOT owner and NOT admin:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "data": {
-    "user": {
-      "id": "user-123",
-      "username": "alice",
-      "email": null,           // Masked
-      "ssn": null              // Masked
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Response for user who IS owner:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "data": {
-    "user": {
-      "id": "user-123",
-      "username": "alice",
-      "email": "alice@company.com",    // Not masked
-      "ssn": "***-**-****"              // Masked (only owner, not admin)
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Response for user who IS admin:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "data": {
-    "user": {
-      "id": "user-123",
-      "username": "alice",
-      "email": "alice@company.com",    // Not masked
-      "ssn": "123-45-6789"              // Not masked (admin can see)
-    }
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 4.3 Masking Strategies
-
-Different masking strategies for different field types:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.type
-class Customer:
-    # Strategy 1: Return null (most common)
-    @FraiseQL.mask(show_to=["admin"], masked_value=None)
-    credit_card: str
-
-    # Strategy 2: Return placeholder
-    @FraiseQL.mask(show_to=["owner"], masked_value="**** **** **** 1234")
-    full_credit_card: str
-
-    # Strategy 3: Return empty list
-    @FraiseQL.mask(show_to=["admin"], masked_value=[])
-    transaction_history: [Transaction]
-
-    # Strategy 4: Return default value
-    @FraiseQL.mask(show_to=["owner"], masked_value=0)
-    balance: float
-
-    # Strategy 5: Return random value
-    @FraiseQL.mask(
-        show_to=["admin"],
-        masked_value_generator=lambda: random.random() * 100
-    )
-    approximate_balance: float
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 5. Query-Level Authorization
-
-### 5.1 Query Authorization
-
-Control who can execute specific queries:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.query
-@FraiseQL.authorize(rule="authenticated")
-def get_user(id: ID!) -> User:
-    """Any authenticated user can read users"""
-    pass
-
-@FraiseQL.query
-@FraiseQL.authorize(rule="admin_only")
-def get_all_users() -> [User!]!:
-    """Only admins can list all users"""
-    pass
-
-@FraiseQL.query
-@FraiseQL.authorize(rule="organization_member")
-def get_organization_users(org_id: ID!) -> [User!]!:
-    """Members of organization can list users in organization"""
-    pass
-```text
-<!-- Code example in TEXT -->
-
-### 5.2 Authorization Rules Evaluation
-
-```python
-<!-- Code example in Python -->
-# Rule: "authenticated"
-if not user_context.authenticated:
-    raise AuthorizationError("E_AUTH_PERMISSION_401")
-
-# Rule: "admin_only"
-if "admin" not in user_context.roles:
-    raise AuthorizationError("E_AUTH_PERMISSION_401")
-
-# Rule: "organization_member"
-if args.org_id not in user_context.organizations:
-    raise AuthorizationError("E_AUTH_PERMISSION_401")
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 6. Built-In Authorization Rules
-
-### 6.1 Pre-Defined Rules
-
-FraiseQL includes built-in authorization rules:
-
-```python
-<!-- Code example in Python -->
-# Authentication rules
-"authenticated"          # User must be logged in
-"not_authenticated"      # User must NOT be logged in
-
-# Role-based rules
-"admin_only"            # User must have 'admin' role
-"user_only"             # User must have 'user' role
-"moderator_only"        # User must have 'moderator' role
-
-# Ownership rules
-"owner_only"            # Current user must own resource (user_id == resource.owner_id)
-"owner_or_admin"        # Current user owns resource OR is admin
-"team_member"           # Current user is in resource's team
-
-# Organization rules
-"same_organization"     # Resource in same organization as user
-"organization_member"   # User is member of resource's organization
-"organization_admin"    # User is admin of resource's organization
-
-# Public rules
-"public"                # Anyone can access
-"none"                  # No authorization (deny all)
-```text
-<!-- Code example in TEXT -->
-
-### 6.2 Custom Rules
-
-Define custom authorization rules:
-
-```python
-<!-- Code example in Python -->
-@FraiseQL.authorization_rule(name="published_or_author")
-def rule_published_or_author(
-    resource: Any,
-    user_context: UserContext
-) -> bool:
-    """Published posts or posts by current user"""
-    return (
-        resource.published
-        or resource.author_id == user_context.user_id
-    )
-
-@FraiseQL.authorization_rule(name="my_department")
-def rule_my_department(
-    resource: Any,
-    user_context: UserContext
-) -> bool:
-    """Resources in user's department"""
-    return resource.department == user_context.metadata["department"]
-
-# Use in schema:
-@FraiseQL.type
-class Post:
-    @FraiseQL.authorize(rule="published_or_author")
-    content: str
-
-@FraiseQL.type
-class Project:
-    @FraiseQL.authorize(rule="my_department")
-    budget: float
-```text
-<!-- Code example in TEXT -->
-
----
-
-## 7. Audit Logging
-
-### 7.1 Audit Events
-
-Every access attempt is logged to audit trail:
-
-```python
-<!-- Code example in Python -->
-class AuditEvent:
-    timestamp: datetime             # When access occurred
-    user_id: str                    # Who accessed
-    action: str                     # "query", "mutation", "subscription"
-    resource_type: str              # "Post", "User", "AdminPanel"
-    resource_id: str | None         # Specific resource accessed
-    operation_name: str             # "GetUserPosts", "CreatePost"
-    authorization_result: bool      # Allowed or denied
-    authorization_rule: str         # Which rule was evaluated
-    fields_accessed: list[str]      # ["id", "title", "content"]
-    fields_masked: list[str]        # ["email"] (if masked)
-    rows_affected: int              # For mutations
-    error_code: str | None          # If failed
-    ip_address: str                 # Client IP
-    user_agent: str                 # Client user agent
-    trace_id: str                   # Link to request trace
-```text
-<!-- Code example in TEXT -->
-
-### 7.2 Audit Log Format
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:45.123Z",
-  "event_type": "query_executed",
-  "user_id": "user-456",
-  "action": "query",
-  "resource_type": "Post",
-  "resource_id": "post-789",
-  "operation_name": "GetUserPosts",
-  "authorization": {
-    "allowed": true,
-    "rule": "same_organization",
-    "evaluation_time_ms": 2
-  },
-  "fields_accessed": ["id", "title", "author"],
-  "fields_masked": [],
-  "error": null,
-  "request": {
-    "ip_address": "203.0.113.45",
-    "user_agent": "Mozilla/5.0...",
-    "trace_id": "trace-abc123"
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-**Audit log for denied access:**
-
-```json
-<!-- Code example in JSON -->
-{
-  "timestamp": "2026-01-15T10:30:46.456Z",
-  "event_type": "access_denied",
-  "user_id": "user-456",
-  "action": "mutation",
-  "resource_type": "Post",
-  "resource_id": "post-789",
-  "operation_name": "DeletePost",
-  "authorization": {
-    "allowed": false,
-    "rule": "admin_only",
-    "evaluation_time_ms": 1
-  },
-  "error": {
-    "code": "E_AUTH_PERMISSION_401",
-    "message": "User must be admin to delete posts"
-  },
-  "request": {
-    "ip_address": "203.0.113.45",
-    "user_agent": "Mozilla/5.0...",
-    "trace_id": "trace-def456"
-  }
-}
-```text
-<!-- Code example in TEXT -->
-
-### 7.3 Audit Log Persistence
-
-Audit logs are written to:
-
-1. **Audit log table** (`tb_audit_log`) — Queryable via SQL
-2. **Immutable log stream** — Cannot be modified (append-only)
-3. **External audit service** — For compliance (optional)
-4. **Event bus** — For real-time processing (optional)
+For data that should never reach an unauthorized client, redact in the view's `data`
+JSONB rather than fetching then hiding. The view can branch on the session GUCs RLS uses:
 
 ```sql
-<!-- Code example in SQL -->
--- Audit log schema
+CREATE VIEW v_customer AS
+SELECT
+    c.id,
+    jsonb_build_object(
+        'id', c.id,
+        'name', c.name,
+        -- Full card number only for admins; everyone else gets the last 4.
+        'cardNumber',
+            CASE
+                WHEN current_setting('app.is_super_admin', true)::boolean
+                    THEN c.card_number
+                ELSE '**** **** **** ' || right(c.card_number, 4)
+            END
+    ) AS data
+FROM tb_customer c;
+```
+
+This keeps the sensitive value inside PostgreSQL and out of the wire entirely for
+unauthorized callers — the most robust form of "masking" in v1.
+
+---
+
+## 5. Built-In Role and Permission Checks
+
+v1's authorization is **role- and permission-based**, evaluated against the
+`UserContext`. There is no registry of named string rules; you compose checks from the
+`UserContext` predicates, the `requires_*` decorators, and your `Authorizer`:
+
+```python
+# "authenticated"
+user = info.context.get("user")
+if user is None:
+    raise GraphQLError("Login required", extensions={"code": "UNAUTHENTICATED"})
+
+# "admin only"
+@requires_role("admin")
+
+# "owner or admin" (field check)
+any_permission(
+    lambda info, root: info.context["user"].user_id == root.owner_id,
+    lambda info: info.context["user"].has_role("admin"),
+)
+
+# "organization member" (in an Authorizer)
+if arguments["org_id"] != user.metadata.get("organization_id"):
+    return AuthorizationDecision.deny(message="Not a member of this organization")
+```
+
+Centralize business-specific policy in one `Authorizer` so it is testable headless and
+reused across operations.
+
+---
+
+## 6. Audit Logging
+
+Audit logging in v1 is an application pattern backed by PostgreSQL: you record access
+attempts as durable rows (and optionally export them). FraiseQL gives you the hooks —
+the `UserContext`, the operation name in resolver/authorizer context, and `fn_`
+functions — to write those rows.
+
+### 6.1 Audit log table
+
+```sql
 CREATE TABLE tb_audit_log (
-    id BIGSERIAL PRIMARY KEY,
-    timestamp TIMESTAMP NOT NULL,
-    user_id UUID NOT NULL,
-    action VARCHAR NOT NULL,
-    resource_type VARCHAR NOT NULL,
-    resource_id UUID,
-    operation_name VARCHAR NOT NULL,
-    authorization_allowed BOOLEAN NOT NULL,
-    authorization_rule VARCHAR,
-    fields_accessed JSONB,
-    error_code VARCHAR,
-    ip_address INET,
-    trace_id UUID,
-    created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    pk_audit_log     BIGSERIAL PRIMARY KEY,
+    id               UUID NOT NULL DEFAULT gen_random_uuid(),
+    occurred_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id          UUID NOT NULL,
+    tenant_id        UUID,
+    action           TEXT NOT NULL,            -- 'query' | 'mutation' | 'subscription'
+    resource_type    TEXT NOT NULL,            -- 'Post', 'User', ...
+    resource_id      UUID,
+    operation_name   TEXT NOT NULL,
+    authorized       BOOLEAN NOT NULL,
+    fields_accessed  JSONB,
+    error_code       TEXT,
+    ip_address       INET,
+    trace_id         UUID
 );
 
--- Index for common queries
-CREATE INDEX idx_audit_user_time ON tb_audit_log(user_id, timestamp DESC);
-CREATE INDEX idx_audit_resource ON tb_audit_log(resource_type, resource_id);
-```text
-<!-- Code example in TEXT -->
+CREATE INDEX idx_audit_user_time ON tb_audit_log (user_id, occurred_at DESC);
+CREATE INDEX idx_audit_resource  ON tb_audit_log (resource_type, resource_id);
+```
 
-### 7.4 Audit Queries
+### 6.2 Writing audit rows
 
-Query audit trail for compliance:
+Record allow/deny from your `Authorizer` or inside a mutation `fn_` function. Example
+JSONB payload your `fn_audit_log` might persist:
+
+```json
+{
+  "occurredAt": "2026-01-15T10:30:45.123Z",
+  "userId": "user-456",
+  "action": "query",
+  "resourceType": "Post",
+  "resourceId": "post-789",
+  "operationName": "GetUserPosts",
+  "authorized": true,
+  "fieldsAccessed": ["id", "title", "author"],
+  "errorCode": null,
+  "ipAddress": "203.0.113.45",
+  "traceId": "trace-abc123"
+}
+```
+
+A denied attempt records the failure mode:
+
+```json
+{
+  "occurredAt": "2026-01-15T10:30:46.456Z",
+  "userId": "user-456",
+  "action": "mutation",
+  "resourceType": "Post",
+  "resourceId": "post-789",
+  "operationName": "DeletePost",
+  "authorized": false,
+  "errorCode": "FORBIDDEN",
+  "ipAddress": "203.0.113.45",
+  "traceId": "trace-def456"
+}
+```
+
+### 6.3 Querying the audit trail
 
 ```sql
-<!-- Code example in SQL -->
 -- Who accessed this sensitive record?
 SELECT * FROM tb_audit_log
 WHERE resource_type = 'User' AND resource_id = 'user-123'
-ORDER BY timestamp DESC;
+ORDER BY occurred_at DESC;
 
 -- Did authorization ever fail for this user?
 SELECT * FROM tb_audit_log
-WHERE user_id = 'user-456' AND authorization_allowed = false
-ORDER BY timestamp DESC;
+WHERE user_id = 'user-456' AND authorized = false
+ORDER BY occurred_at DESC;
 
--- What did admin do in last 24 hours?
+-- What did anyone do in the last 24 hours?
 SELECT * FROM tb_audit_log
-WHERE authorization_rule = 'admin_only'
-  AND timestamp > NOW() - INTERVAL 1 DAY
-ORDER BY timestamp DESC;
+WHERE occurred_at > now() - INTERVAL '1 day'
+ORDER BY occurred_at DESC;
 
--- When was sensitive field accessed?
+-- When was a sensitive field accessed?
 SELECT * FROM tb_audit_log
 WHERE fields_accessed @> '["ssn", "credit_card"]'
-ORDER BY timestamp DESC;
-```text
-<!-- Code example in TEXT -->
+ORDER BY occurred_at DESC;
+```
+
+Make the table append-only with a `BEFORE UPDATE`/`BEFORE DELETE` trigger (or restricted
+grants) if your compliance regime requires immutability.
 
 ---
 
-## 8. Compliance & Security Standards
+## 7. Compliance & Security Standards
 
-### 8.1 GDPR Compliance
+The same primitives map onto common compliance requirements.
 
-FraiseQL supports GDPR requirements:
+### 7.1 GDPR
 
-```python
-<!-- Code example in Python -->
-# Right to be forgotten
-# User can request data deletion
-@FraiseQL.mutation
-@FraiseQL.authorize(rule="owner_only")
-def request_data_deletion(user_id: ID!) -> Boolean:
-    """Request personal data deletion"""
-    # Marks user record for deletion
-    # Audit log is preserved (immutable)
-    pass
-
-# Data access logging
-# All data access is audited
-# Users can request access log
-
-# Data portability
-# Export user data in machine-readable format
-@FraiseQL.query
-@FraiseQL.authorize(rule="owner_only")
-def export_user_data(user_id: ID!) -> JSON:
-    """Export all user data"""
-    pass
-```text
-<!-- Code example in TEXT -->
-
-### 8.2 HIPAA Compliance
-
-FraiseQL supports HIPAA requirements:
+- **Right to erasure** — a `@fraiseql.mutation` guarded by `@requires_auth` (and an
+  ownership check) calls an `fn_request_data_deletion` function that marks the record for
+  deletion while preserving the audit trail.
+- **Access logging** — every data access is recorded in `tb_audit_log` (Section 6).
+- **Data portability** — an owner-scoped `@fraiseql.query` returning a `JSON` scalar
+  exports the user's data from a `v_user_export` view.
 
 ```python
-<!-- Code example in Python -->
-# Access controls
-@FraiseQL.authorize(rule="healthcare_provider")
+import fraiseql
+from fraiseql.auth import requires_auth
+from fraiseql.types import ID, JSON
+
+
+@fraiseql.mutation
+@requires_auth
+async def request_data_deletion(info, user_id: ID) -> "DeletionSuccess":
+    """Mark personal data for deletion (audit trail preserved)."""
+    db = info.context["db"]
+    return await db.execute_function("fn_request_data_deletion", {"user_id": user_id})
+
+
+@fraiseql.query
+@requires_auth
+async def export_user_data(info, user_id: ID) -> JSON:
+    """Export all data for the authenticated owner."""
+    db = info.context["db"]
+    return await db.find_one("v_user_export", id=user_id)
+```
+
+### 7.2 HIPAA
+
+- **Access controls** — restrict PHI types to clinical roles with `@requires_role`/an
+  `Authorizer`; enforce patient/provider row scoping with RLS on the underlying tables.
+- **Field-level protection** — gate sensitive columns with `authorize_field`, or redact
+  in the `v_` view so PHI never leaves PostgreSQL for unauthorized callers.
+- **Audit trail** — log all PHI access to `tb_audit_log`; retain per policy.
+- **Transport/at-rest** — terminate TLS at the app, encrypt sensitive columns in
+  PostgreSQL (e.g. `pgcrypto`).
+
+```python
+@fraiseql.type(
+    sql_source="v_patient_record",
+    jsonb_column="data",
+    authorize_fields=["medical_history"],
+)
 class PatientRecord:
-    """Only healthcare providers can access"""
     id: ID
     patient_id: ID
-
-    @FraiseQL.mask(show_to=["treating_provider"])
     medical_history: str
+```
 
-# Encryption
-# All sensitive fields encrypted at rest
-# Transmitted over HTTPS/TLS
+### 7.3 PCI-DSS
 
-# Audit trail
-# All access to protected health information (PHI) is logged
-# Audit logs retained for 6+ years
+- **Never log cardholder data** — keep card numbers out of audit payloads.
+- **Field redaction** — show only a masked PAN to non-admins via the view's `data` JSONB
+  (Section 4.3), or gate `card_number` with `authorize_field`.
+- **Tokenization** — store a token reference (the `ApiKey`/`HashSHA256`-style scalars and
+  `pgcrypto` help), not the raw card data.
 
-# De-identification
-@FraiseQL.query
-def get_anonymized_statistics() -> Statistics:
-    """Return de-identified statistics"""
-    pass
-```text
-<!-- Code example in TEXT -->
-
-### 8.3 PCI-DSS Compliance
-
-FraiseQL supports PCI-DSS requirements:
-
-```python
-<!-- Code example in Python -->
-# Never log sensitive data
-# Cardholder data never appears in logs
-
-# Field masking for cardholder data
-@FraiseQL.type
-class Payment:
-    id: ID
-
-    @FraiseQL.mask(show_to=["admin"], masked_value="**** **** **** 4111")
-    card_number: str
-
-# Restrict access to cardholder data
-@FraiseQL.type
-class PaymentMethod:
-    @FraiseQL.authorize(rule="pci_authorized")
-    @FraiseQL.mask(show_to=["owner", "pci_analyst"])
-    card_token: str
-
-# Tokenization
-# Store tokenized references, not card data
-```text
-<!-- Code example in TEXT -->
+```sql
+CREATE VIEW v_payment AS
+SELECT
+    p.id,
+    jsonb_build_object(
+        'id', p.id,
+        'cardNumber',
+            CASE
+                WHEN current_setting('app.is_super_admin', true)::boolean
+                    THEN p.card_number
+                ELSE '**** **** **** ' || right(p.card_number, 4)
+            END
+    ) AS data
+FROM tb_payment p;
+```
 
 ---
 
-## 9. Security Best Practices
+## 8. Security Best Practices
 
-### 9.1 Authorization Rules
-
-**DO:**
-
-- ✅ Always define authorization rules on sensitive types
-- ✅ Use most restrictive rule that makes sense
-- ✅ Include role-based checks when applicable
-- ✅ Log all access attempts (audit trail)
-- ✅ Review authorization rules in code review
-- ✅ Test authorization with multiple user roles
-- ✅ Use custom rules for complex business logic
-
-**DON'T:**
-
-- ❌ Rely on client-side authorization checks
-- ❌ Store authorization rules in comments only
-- ❌ Use overly permissive rules (avoid "public" when inappropriate)
-- ❌ Hardcode user IDs (always use user context)
-- ❌ Bypass authorization checks
-- ❌ Trust user-provided role or organization claims
-
-### 9.2 Field Masking
+### 8.1 Authorization
 
 **DO:**
 
-- ✅ Mask PII (personally identifiable information)
-- ✅ Mask sensitive financial data
-- ✅ Mask authentication secrets
-- ✅ Test masking with unauthorized users
-- ✅ Document which fields are masked and why
+- ✅ Gate sensitive operations with `@requires_*` and/or a central `Authorizer`.
+- ✅ Enforce row scoping with PostgreSQL RLS — it survives even a direct DB session.
+- ✅ Derive every decision from `info.context["user"]`, never from client-supplied claims.
+- ✅ Keep policy in one testable `Authorizer` and unit-test it headless.
+- ✅ Test authorization with multiple roles, including the unauthenticated case.
 
 **DON'T:**
 
-- ❌ Rely on masking instead of authorization
-- ❌ Mask data that's already filtered by RLS
-- ❌ Return misleading masked values
-- ❌ Skip masking for "less important" data
+- ❌ Rely on client-side authorization checks.
+- ❌ Trust user-provided role/organization/tenant claims from the request body.
+- ❌ Use overly permissive defaults — fail closed.
+- ❌ Hardcode user IDs; always read from the `UserContext`.
 
-### 9.3 Audit Logging
+### 8.2 Field Protection
 
 **DO:**
 
-- ✅ Enable audit logging in production
-- ✅ Retain audit logs per compliance requirements
-- ✅ Monitor for suspicious access patterns
-- ✅ Regularly review audit logs
-- ✅ Alert on access to sensitive data
+- ✅ Redact PII/PHI/financial fields at the view layer when they should never leave the DB.
+- ✅ Gate computed-field access with `authorize_field` + `authorize_fields=[...]`.
+- ✅ Test field access with unauthorized users; confirm bypass paths fail closed.
+- ✅ Document which fields are protected and why.
 
 **DON'T:**
 
-- ❌ Disable audit logging for performance
-- ❌ Delete audit logs (immutable)
-- ❌ Modify audit log entries
-- ❌ Log sensitive data in audit trail
+- ❌ Rely on field gates instead of RLS for row-level secrets.
+- ❌ Return misleading substitute values where a clear denial is expected.
+- ❌ Skip protection for "less important" data.
+
+### 8.3 Audit Logging
+
+**DO:**
+
+- ✅ Record access (allow and deny) for sensitive resources.
+- ✅ Retain audit rows per your compliance requirements.
+- ✅ Make the audit table append-only; alert on suspicious patterns.
+
+**DON'T:**
+
+- ❌ Log secrets or cardholder data in the audit trail.
+- ❌ Allow audit rows to be silently modified or deleted.
 
 ---
 
-## 10. Security Configuration
+## 9. Security Configuration
 
-### 10.1 Configuration Options
+Security in v1 is configured through `create_fraiseql_app(...)` keyword arguments,
+`FraiseQLConfig` (pydantic, `FRAISEQL_` env vars), and PostgreSQL itself — not a TOML
+file or a separate config object.
+
+### 9.1 Application wiring
 
 ```python
-<!-- Code example in Python -->
-FraiseQL.security.configure({
-    # Authentication
-    "authentication": {
-        "enabled": True,
-        "required": True,
-        "provider": "oauth2",  # or "jwt", "saml", "custom"
-        "token_timeout_seconds": 3600,
-    },
+from fraiseql.fastapi import create_fraiseql_app
 
-    # Authorization
-    "authorization": {
-        "enabled": True,
-        "cache_decisions": True,  # Cache "allowed" decisions
-        "cache_ttl_seconds": 300,
-        "require_explicit_allow": True,  # Deny by default
-    },
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User, Post],
+    queries=[users, user],
+    mutations=[create_post],
+    auth=MyProvider(),              # authentication
+    authorizer=PolicyAuthorizer(),  # global operation authorization
+    authorization_cache=...,        # optional DecisionCache
+    production=True,                # disables the playground / introspection conveniences
+)
+```
 
-    # Field masking
-    "masking": {
-        "enabled": True,
-        "log_masked_access": True,  # Log when fields are masked
-    },
+`create_fraiseql_app` has **no** `middleware=` kwarg — add FastAPI middleware (CORS,
+security headers, rate limiting) with `app.add_middleware(...)` on the returned app, or
+pass your own app via `create_fraiseql_app(app=...)`. The `fraiseql.security` module also
+ships rate-limiting, CSRF, and security-header middleware helpers.
 
-    # Audit logging
-    "audit": {
-        "enabled": True,
-        "log_level": "all",  # "all", "denied_only", "errors_only"
-        "retention_days": 90,
-        "export_to_external": True,
-        "external_service": "splunk",
-    },
+### 9.2 Environment variables
 
-    # Row-level security
-    "rls": {
-        "enabled": True,
-        "strict_mode": True,  # Deny if no RLS rule
-    },
-})
-```text
-<!-- Code example in TEXT -->
-
-### 10.2 Environment Variables
+Authentication and related settings live in `FraiseQLConfig` and are overridable via
+`FRAISEQL_`-prefixed environment variables, for example:
 
 ```bash
-<!-- Code example in BASH -->
-# Enable/disable security features
-FRAISEQL_SECURITY_ENABLED=true
+# Provider selection: "auth0" | "custom" | "none" (default "none")
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=your-tenant.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.example.com
 
-# Authentication
-FRAISEQL_AUTH_PROVIDER=oauth2
-FRAISEQL_AUTH_ISSUER=https://auth.example.com
-FRAISEQL_AUTH_AUDIENCE=FraiseQL-api
+# Database connection (PostgreSQL); enforce TLS + scram-sha-256 in pg_hba.conf
+FRAISEQL_DATABASE_URL=postgresql://user@host/db?sslmode=require
+```
 
-# Audit logging
-FRAISEQL_AUDIT_ENABLED=true
-FRAISEQL_AUDIT_RETENTION_DAYS=90
-FRAISEQL_AUDIT_EXPORT_URL=https://splunk.example.com
-
-# Security headers
-FRAISEQL_SECURITY_HEADERS_ENABLED=true
-```text
-<!-- Code example in TEXT -->
+Database connection authentication (SCRAM-SHA-256, TLS) is configured in PostgreSQL's
+`pg_hba.conf` and the `database_url`/`sslmode`, not in FraiseQL code.
 
 ---
 
-## 11. Troubleshooting Security Issues
+## 10. Troubleshooting Security Issues
 
-### 11.1 User Getting "Access Denied"
+### 10.1 User getting "Access Denied"
 
-**Investigation steps:**
+1. **Authenticated?** Confirm `info.context["user"]` is a `UserContext` — a missing user
+   denies with `extensions.code = "UNAUTHENTICATED"`.
+2. **Right role/permission?** Inspect `user.roles` / `user.permissions`; a
+   `requires_role("admin")` gate denies with `FORBIDDEN` and an `extensions.required_role`.
+3. **Authorizer decision?** Log the `AuthorizationDecision` for the operation — an
+   `Authorizer` that *raises* fails closed (deny) by design.
+4. **Owns the resource?** For ownership rules, compare `user.user_id` against the row's
+   owner column.
+5. **Audit row?** Query `tb_audit_log WHERE user_id = ... AND authorized = false`.
 
-```text
-<!-- Code example in TEXT -->
+### 10.2 User seeing data they shouldn't see
 
-1. Check if user is authenticated
-   → Query: SELECT authenticated_at FROM tb_user WHERE id = 'user-456'
-
-2. Check if user has required role
-   → Query: SELECT roles FROM tb_user WHERE id = 'user-456'
-
-3. Check authorization rule
-   → Rule: @authorize(rule="admin_only")
-   → User roles: ["user"] (not admin)
-   → Result: Denied (correct)
-
-4. Check if user owns resource
-   → Query: SELECT owner_id FROM tb_post WHERE id = 'post-789'
-   → Rule: @authorize(rule="owner_only")
-   → User: user-456, Owner: user-123
-   → Result: Denied (correct)
-
-5. Check audit log for denial
-   → SELECT * FROM tb_audit_log
-      WHERE user_id = 'user-456'
-      AND authorization_allowed = false
-      AND resource_id = 'post-789'
-```text
-<!-- Code example in TEXT -->
-
-### 11.2 User Seeing Data They Shouldn't See
-
-**Investigation steps:**
-
-```text
-<!-- Code example in TEXT -->
-
-1. Check RLS rule on type
-   → Query: SELECT rls_rule FROM tb_schema_types WHERE name = 'Post'
-
-2. Check if RLS rule is applied
-   → Query audit log: Is organization_id filter present?
-
-3. Check field masking
-   → Query: Is field marked with @mask?
-
-4. Check if authorization passed
-   → Did field pass authorization check?
-
-5. Verify user's organization context
-   → SELECT organization_id FROM tb_user WHERE id = 'user-456'
-   → Does query filter match this org?
-```text
-<!-- Code example in TEXT -->
+1. **RLS enabled?** `SELECT relrowsecurity FROM pg_class WHERE relname = 'tb_post';` — and
+   confirm a policy exists with `SELECT * FROM pg_policies WHERE tablename = 'tb_post';`.
+2. **Session GUC set?** Verify `info.context` carries `tenant_id`/`user_id` so
+   `SET LOCAL app.tenant_id` is emitted — an unset GUC with a one-arg `current_setting`
+   would error; with the two-arg form it falls to a default.
+3. **Field gate present?** Check the field is listed in `authorize_fields` or wrapped with
+   `authorize_field`, and that the view redacts it where required.
+4. **Bypass path?** Confirm the operation/field gate is re-applied on the relevant
+   Rust/turbo/APQ chokepoint (these are the historical fail-open risk).
 
 ---
 
-## 12. Summary: Security Architecture
+## 11. Summary: Security Architecture
 
 ```text
-<!-- Code example in TEXT -->
 ┌──────────────────────────────────────────┐
 │ User Request (with JWT token)            │
 └────────────┬─────────────────────────────┘
              │
       ┌──────▼──────┐
-      │ Authenticate│ Verify JWT, build UserContext
-      │  (external) │
+      │ Authenticate│ AuthProvider validates JWT, builds UserContext
+      │  (Python)   │
       └──────┬──────┘
              │
       ┌──────▼──────────────┐
-      │ Query Authorization │ Type-level check: Can user execute query?
-      │ (compile-time)      │
+      │ Operation Authz     │ requires_* decorators / Authorizer
+      │ (runtime, Python)   │ — fail closed, re-applied on bypass paths
       └──────┬──────────────┘
              │
       ┌──────▼──────────────┐
-      │ Field Authorization │ Field-level check: Can user read field?
-      │ (compile-time)      │
+      │ Row-Level Security  │ PostgreSQL policies read SET LOCAL app.* GUCs
+      │ (PostgreSQL)        │
       └──────┬──────────────┘
              │
       ┌──────▼──────────────┐
-      │ Row-Level Security  │ Filter: Only return rows user can see
-      │ (compile-time + RLS │
+      │ Field Authorization │ authorize_field / authorize_fields / view redaction
+      │ (runtime + SQL)     │
       └──────┬──────────────┘
              │
       ┌──────▼──────────────┐
-      │ Field Masking       │ Mask: Hide sensitive fields per user
-      │ (runtime)           │
+      │ Audit Log           │ durable rows in tb_audit_log (append-only)
       └──────┬──────────────┘
              │
       ┌──────▼──────────────┐
-      │ Audit Log           │ Log: Who accessed what and when
-      │ (append-only)       │
-      └──────┬──────────────┘
-             │
-      ┌──────▼──────────────┐
-      │ Response            │ Return to client
+      │ Response            │ Authorized data to client
       └─────────────────────┘
-```text
-<!-- Code example in TEXT -->
+```
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: January 2026
-**Status**: Complete specification for framework v2.x
-
-FraiseQL's security model provides defense-in-depth through authentication, authorization, RLS, masking, and audit logging. Security is declarative; FraiseQL enforces it.
+FraiseQL v1 provides defense-in-depth: authentication (`AuthProvider`), operation
+authorization (`requires_*` / `Authorizer`, fail-closed across bypass paths), PostgreSQL
+Row-Level Security for row scoping, field-level authorization and view-layer redaction for
+sensitive columns, and PostgreSQL-backed audit logging. Enforcement is layered across the
+Python runtime and the database.

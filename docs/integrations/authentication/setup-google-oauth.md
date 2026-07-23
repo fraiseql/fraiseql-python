@@ -1,46 +1,53 @@
-<!-- Skip to main content -->
 ---
-
 title: Google OAuth 2.0 Setup Guide
-description: This guide walks you through setting up Google OAuth authentication with FraiseQL.
-keywords: ["framework", "sdk", "monitoring", "database", "authentication"]
+description: This guide walks you through using Google as the identity provider for a FraiseQL API.
+keywords: ["framework", "authentication", "oauth", "google", "auth0", "postgresql"]
 tags: ["documentation", "reference"]
 ---
 
 # Google OAuth 2.0 Setup Guide
 
-This guide walks you through setting up Google OAuth authentication with FraiseQL.
+This guide walks you through using **Google** as the identity provider for a FraiseQL
+v1 API. FraiseQL is a Python runtime GraphQL framework that runs inside your FastAPI
+app; it validates the **JWT/ID tokens** that arrive on each GraphQL request and turns
+them into a `UserContext` your resolvers can read. It does **not** run an OAuth
+authorization server itself — the browser redirect/consent dance is handled by Google
+together with either Auth0 (Path A) or your own client app (Path B).
+
+There are two honest ways to wire Google into FraiseQL:
+
+- **Path A (recommended): Auth0 as a broker.** Add Google as a *social connection* in
+  Auth0. Your users log in with Google, Auth0 mints its own JWT, and FraiseQL simply
+  uses `auth_provider="auth0"`. You write zero token-validation code.
+- **Path B: custom provider.** Set `auth_provider="custom"` and implement an
+  `AuthProvider` subclass that validates Google's ID tokens directly (Google's JWKS,
+  issuer, and your OAuth client ID as the audience).
+
+FraiseQL ships an `Auth0Provider` and a base `AuthProvider` ABC. There is **no**
+`GoogleProvider`/`OidcProvider` class — you use one of the two paths above.
 
 ## Prerequisites
 
 **Required Knowledge:**
 
-- OAuth 2.0 and OIDC fundamentals (authorization code flow, ID tokens, access tokens)
-- JWT token structure and claims
-- HTTP/REST APIs and callbacks
-- Basic networking and DNS (understanding of redirect URIs)
+- OAuth 2.0 / OIDC fundamentals (authorization code flow, ID tokens, access tokens)
+- JWT token structure and claims (`iss`, `aud`, `sub`, `exp`)
+- HTTP/REST APIs and redirect URIs
 - Google Cloud Console navigation and project management
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- curl or Postman (for testing endpoints)
-- A code editor for configuration files
-- Bash or similar shell for environment variable setup
-- Docker (optional, for testing with ngrok tunneling)
+- FraiseQL v1 (`pip install fraiseql` / `uv add fraiseql`)
+- curl or a GraphQL client (for testing the API)
+- A PostgreSQL database (FraiseQL is PostgreSQL-only)
+- For Path A: an Auth0 tenant (free tier is fine)
 
 **Required Infrastructure:**
 
 - Active Google Cloud account (free tier available)
-- Google Cloud Project (to be created in Step 1)
-- FraiseQL server instance (running locally or deployed)
-- Publicly accessible URL or ngrok tunnel for OAuth callbacks
-- PostgreSQL database for session storage (if using custom SessionStore)
-
-**Optional but Recommended:**
-
-- ngrok or similar tunneling service (for local testing without deployment)
-- HTTPS certificate for production (Let's Encrypt or your certificate authority)
+- A Google Cloud Project (created in Step 1)
+- A redirect URI that Google can call back — this points at **Auth0** (Path A) or at
+  **your client application** (Path B), never at FraiseQL itself
 
 **Time Estimate:** 15-30 minutes for complete setup and testing
 
@@ -49,345 +56,333 @@ This guide walks you through setting up Google OAuth authentication with FraiseQ
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Click the project dropdown at the top
 3. Click "NEW PROJECT"
-4. Enter project name: "FraiseQL Auth"
+4. Enter a project name, e.g. "FraiseQL Auth"
 5. Click "CREATE"
 
-## Step 2: Enable Google+ API
+## Step 2: Configure the OAuth Consent Screen
 
-1. In the Cloud Console, search for "Google+ API"
-2. Click on "Google+ API"
-3. Click "ENABLE"
+1. In the Cloud Console, open "APIs & Services" → "OAuth consent screen"
+2. User Type: **External**
+3. App name: e.g. "My FraiseQL App"
+4. User support email and developer contact: your email
+5. Add the scopes you need (typically `openid`, `email`, `profile`)
+6. Click "SAVE AND CONTINUE" through the remaining screens
 
 ## Step 3: Create OAuth Credentials
 
 1. In the Cloud Console, go to "Credentials" (left sidebar)
 2. Click "Create Credentials" → "OAuth client ID"
-3. If prompted, configure the OAuth consent screen first:
-   - User Type: **External**
-   - App name: "FraiseQL"
-   - User support email: <your-email@example.com>
-   - Developer contact: <your-email@example.com>
-   - Click "SAVE AND CONTINUE" through all screens
-4. Back to OAuth client ID creation:
-   - Application type: **Web application**
-   - Name: "FraiseQL Server"
-   - Authorized JavaScript origins:
-     - `http://localhost:3000` (for local development)
-     - `https://yourdomain.com` (for production)
-   - Authorized redirect URIs:
-     - `http://localhost:8000/auth/callback` (dev server)
-     - `https://yourdomain.com/auth/callback` (production)
-   - Click "CREATE"
+3. Application type: **Web application**
+4. Name: e.g. "My FraiseQL Web Client"
+5. **Authorized JavaScript origins** (your front-end origins):
+   - `http://localhost:3000` (local development)
+   - `https://yourdomain.com` (production)
+6. **Authorized redirect URIs** — point these at whoever completes the OAuth flow:
+   - **Path A (Auth0):** `https://YOUR_TENANT.auth0.com/login/callback`
+   - **Path B (your client app):** `http://localhost:3000/auth/callback` (dev) and
+     `https://yourdomain.com/auth/callback` (production)
+7. Click "CREATE"
 
-5. You'll see your credentials. Note:
-   - **Client ID**: `YOUR_CLIENT_ID.apps.googleusercontent.com`
-   - **Client Secret**: `YOUR_CLIENT_SECRET`
+You'll see your credentials. Note:
 
-## Step 4: Configure FraiseQL
+- **Client ID**: `YOUR_CLIENT_ID.apps.googleusercontent.com`
+- **Client Secret**: `YOUR_CLIENT_SECRET`
 
-Create a `.env` file in your FraiseQL server directory:
+> The redirect URI **never** points at the FraiseQL/GraphQL endpoint. FraiseQL only
+> receives the resulting token on the `Authorization: Bearer ...` header of GraphQL
+> requests — it does not handle the `?code=...` callback.
+
+---
+
+## Path A (recommended): Auth0 as a broker
+
+Let Auth0 handle the OAuth dance with Google and issue its own JWTs. FraiseQL then
+validates Auth0 tokens with the built-in `Auth0Provider`.
+
+### A.1 Add Google as a social connection in Auth0
+
+1. In the Auth0 dashboard, go to "Authentication" → "Social" → "Create Connection"
+2. Choose **Google / Gmail**
+3. Paste the **Client ID** and **Client Secret** from Step 3
+4. Enable the connection for your Auth0 application
+5. Confirm the Google redirect URI in Auth0 matches what you registered in Step 3
+   (`https://YOUR_TENANT.auth0.com/login/callback`)
+
+Create an **API** in Auth0 (Applications → APIs) and note its **Identifier** — this is
+the `audience` of the tokens Auth0 will issue and what FraiseQL validates against.
+
+### A.2 Configure FraiseQL to trust Auth0
+
+Auth0 tokens are standard RS256 JWTs validated against Auth0's JWKS. Configure FraiseQL
+via environment variables (`FRAISEQL_` prefix) or directly in code.
 
 ```bash
-<!-- Code example in BASH -->
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-OAUTH_REDIRECT_URI=http://localhost:8000/auth/callback
+# PostgreSQL connection
+FRAISEQL_DATABASE_URL=postgresql://user:password@localhost/mydb
 
-# JWT Configuration
-JWT_ISSUER=https://accounts.google.com
-JWT_ALGORITHM=RS256
+# Auth0 (tokens are Auth0-issued; Google is upstream)
+FRAISEQL_AUTH_PROVIDER=auth0
+FRAISEQL_AUTH0_DOMAIN=YOUR_TENANT.auth0.com
+FRAISEQL_AUTH0_API_IDENTIFIER=https://api.yourdomain.com
+```
 
-# Session Configuration
-DATABASE_URL=postgres://user:password@localhost/FraiseQL
-```text
-<!-- Code example in TEXT -->
+```python
+import fraiseql
+from fraiseql.auth import Auth0Provider
+from fraiseql.fastapi import create_fraiseql_app
 
-## Step 5: Update Server Configuration
+# Validate Auth0-issued JWTs (RS256 by default, JWKS fetched automatically)
+auth = Auth0Provider(
+    domain="YOUR_TENANT.auth0.com",
+    api_identifier="https://api.yourdomain.com",
+)
 
-In your Rust code, configure the OIDC provider:
+app = create_fraiseql_app(
+    database_url="postgresql://user:password@localhost/mydb",
+    types=[User],
+    queries=[me],
+    auth=auth,
+    production=False,  # False enables the GraphQL playground
+)
+```
 
-```rust
-<!-- Code example in RUST -->
-use fraiseql_server::auth::OidcProvider;
-use std::sync::Arc;
+Run it with uvicorn like any FastAPI app:
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let oauth_provider = Arc::new(
-        OidcProvider::new(
-            "google",
-            "https://accounts.google.com",
-            &std::env::var("GOOGLE_CLIENT_ID")?,
-            &std::env::var("GOOGLE_CLIENT_SECRET")?,
-            &std::env::var("OAUTH_REDIRECT_URI")?,
+```bash
+uvicorn app:app --reload
+```
+
+That's it — your users sign in with Google through Auth0, and every GraphQL request
+carrying a valid Auth0 `Authorization: Bearer <jwt>` header gets a populated
+`info.context["user"]` (a `UserContext`).
+
+---
+
+## Path B: custom provider validating Google ID tokens
+
+If you don't want Auth0, run the OAuth flow in **your own client application** and send
+Google's **ID token** to FraiseQL. Set `auth_provider="custom"` and implement an
+`AuthProvider` subclass that validates that ID token directly.
+
+### B.1 The `AuthProvider` interface
+
+This is the real interface from `src/fraiseql/auth/base.py`. A custom provider must
+implement two async methods; `get_user_context` is a helper you call from them.
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any
+
+
+class AuthProvider(ABC):
+    @abstractmethod
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        """Validate a token and return its decoded payload (or raise)."""
+
+    @abstractmethod
+    async def get_user_from_token(self, token: str) -> UserContext:
+        """Validate a token and return the resolved UserContext."""
+```
+
+`UserContext` (also from `base.py`) is what your resolvers read off
+`info.context["user"]`:
+
+```python
+UserContext(
+    user_id="...",          # required — use Google's `sub`
+    email=None,             # str | None
+    name=None,              # str | None
+    roles=[],               # list[str]
+    permissions=[],         # list[str]
+    metadata={},            # dict[str, Any]
+)
+# Helpers: .has_role(...), .has_permission(...), .has_any_role(...), .has_any_permission(...)
+```
+
+### B.2 Implement a Google ID-token provider
+
+Validate Google's ID tokens against Google's JWKS
+(`https://www.googleapis.com/oauth2/v3/certs`), with issuer
+`https://accounts.google.com` and your OAuth **client ID** as the audience.
+
+```python
+from typing import Any
+
+import jwt  # PyJWT
+from jwt import PyJWKClient
+
+from fraiseql.auth import AuthProvider, UserContext
+from fraiseql.auth.base import InvalidTokenError
+
+GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs"
+GOOGLE_ISSUER = "https://accounts.google.com"
+
+
+class GoogleIDTokenProvider(AuthProvider):
+    """Validate Google ID tokens directly (no Auth0 broker)."""
+
+    def __init__(self, client_id: str) -> None:
+        self.client_id = client_id  # your OAuth client ID == the token audience
+        self._jwks_client = PyJWKClient(GOOGLE_JWKS_URL, cache_keys=True)
+
+    async def validate_token(self, token: str) -> dict[str, Any]:
+        try:
+            signing_key = self._jwks_client.get_signing_key_from_jwt(token)
+            return jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=self.client_id,
+                issuer=GOOGLE_ISSUER,
+            )
+        except jwt.PyJWTError as exc:
+            msg = f"Invalid Google ID token: {exc}"
+            raise InvalidTokenError(msg) from exc
+
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return self.get_user_context(payload)
+
+    def get_user_context(self, payload: dict[str, Any]) -> UserContext:
+        return UserContext(
+            user_id=payload["sub"],            # Google's stable subject id
+            email=payload.get("email"),
+            name=payload.get("name"),
+            metadata={"email_verified": payload.get("email_verified", False)},
         )
-        .await?
-    );
+```
 
-    // Register auth endpoints with your Axum router
-    // ... rest of setup
+> `PyJWKClient.get_signing_key_from_jwt` is synchronous; for high-throughput services
+> wrap it (e.g. `asyncio.to_thread`) so it doesn't block the event loop.
 
-    Ok(())
-}
-```text
-<!-- Code example in TEXT -->
+### B.3 Wire the custom provider into the app
 
-## Step 6: Register Auth Endpoints
+```python
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
 
-Add these routes to your Axum application:
+auth = GoogleIDTokenProvider(
+    client_id="YOUR_CLIENT_ID.apps.googleusercontent.com",
+)
 
-```rust
-<!-- Code example in RUST -->
-use axum::{
-    routing::{get, post},
-    Router,
-};
-use fraiseql_server::auth::{
-    auth_start, auth_callback, auth_refresh, auth_logout,
-    AuthState, OidcProvider, PostgresSessionStore,
-};
+app = create_fraiseql_app(
+    database_url="postgresql://user:password@localhost/mydb",
+    types=[User],
+    queries=[me],
+    auth=auth,            # auth_provider="custom" semantics — pass your AuthProvider
+    production=False,
+)
+```
 
-let auth_state = AuthState {
-    oauth_provider,
-    session_store: Arc::new(PostgresSessionStore::new(db_pool)),
-    state_store: Arc::new(dashmap::DashMap::new()),
-};
+Your front-end runs the Google authorization-code flow (or Google Identity Services),
+obtains the ID token, and sends it on GraphQL requests as
+`Authorization: Bearer <google_id_token>`.
 
-let auth_routes = Router::new()
-    .route("/auth/start", post(auth_start))
-    .route("/auth/callback", get(auth_callback))
-    .route("/auth/refresh", post(auth_refresh))
-    .route("/auth/logout", post(auth_logout))
-    .with_state(auth_state);
+---
 
-let app = Router::new()
-    .merge(auth_routes)
-    // ... other routes
-```text
-<!-- Code example in TEXT -->
+## Reading the user in a resolver
 
-## Step 7: Test the Flow
+Once either path is wired, the authenticated user is available on the GraphQL context.
+You can also gate operations with FraiseQL's auth decorators.
 
-### 1. Start Login Flow
+```python
+import fraiseql
+from fraiseql.auth import requires_auth
 
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/start \
-  -H "Content-Type: application/json" \
-  -d '{"provider": "google"}'
-```text
-<!-- Code example in TEXT -->
 
-Response:
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
+class User:
+    id: fraiseql.ID
+    email: str
+    name: str | None
 
-```json
-<!-- Code example in JSON -->
-{
-  "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=..."
-}
-```text
-<!-- Code example in TEXT -->
 
-### 2. Visit the Authorization URL
+@fraiseql.query
+@requires_auth
+async def me(info) -> User | None:
+    user = info.context["user"]            # a UserContext (Google `sub` -> user_id)
+    db = info.context["db"]
+    return await db.find_one("v_user", id=user.user_id)
+```
 
-Open the URL in a browser. You'll see Google's login page.
+Denied access surfaces as a GraphQL error with `extensions.code = "FORBIDDEN"`.
 
-### 3. Complete Login
+## Testing the flow
 
-After authentication, Google will redirect to:
-
-```text
-<!-- Code example in TEXT -->
-http://localhost:8000/auth/callback?code=...&state=...
-```text
-<!-- Code example in TEXT -->
-
-This endpoint will:
-
-- Validate the state (CSRF protection)
-- Exchange the code for tokens
-- Get user info from Google
-- Create a session
-- Return tokens
-
-Response:
-
-```json
-<!-- Code example in JSON -->
-{
-  "access_token": "access_token_...",
-  "refresh_token": "refresh_token_...",
-  "token_type": "Bearer",
-  "expires_in": 3600
-}
-```text
-<!-- Code example in TEXT -->
-
-### 4. Use the Access Token
+Send a GraphQL request with the token your chosen path issued (an Auth0 JWT for Path A,
+a Google ID token for Path B):
 
 ```bash
-<!-- Code example in BASH -->
 curl -X POST http://localhost:8000/graphql \
-  -H "Authorization: Bearer access_token_..." \
+  -H "Authorization: Bearer <your_token>" \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ user { id name } }"}'
-```text
-<!-- Code example in TEXT -->
+  -d '{"query": "{ me { id email name } }"}'
+```
 
-### 5. Refresh Token
-
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "refresh_token_..."}'
-```text
-<!-- Code example in TEXT -->
-
-### 6. Logout
-
-```bash
-<!-- Code example in BASH -->
-curl -X POST http://localhost:8000/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "refresh_token_..."}'
-```text
-<!-- Code example in TEXT -->
-
-## Frontend Integration
-
-### JavaScript/TypeScript
-
-```typescript
-<!-- Code example in TypeScript -->
-// Start login flow
-const response = await fetch('http://localhost:8000/auth/start', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ provider: 'google' })
-});
-
-const { authorization_url } = await response.json();
-
-// Redirect user to Google
-window.location.href = authorization_url;
-
-// After user authenticates, Google redirects to your callback
-// Extract tokens from the response and store them
-const tokens = getTokensFromResponse(); // from redirect
-localStorage.setItem('accessToken', tokens.access_token);
-localStorage.setItem('refreshToken', tokens.refresh_token);
-
-// Use tokens for API requests
-const graphqlResponse = await fetch('http://localhost:8000/graphql', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ query: '{ user { id } }' })
-});
-```text
-<!-- Code example in TEXT -->
+A valid token returns the current user; a missing or invalid token returns a GraphQL
+error with `extensions.code = "FORBIDDEN"` (or an authentication error).
 
 ## Troubleshooting
 
 ### Error: "Invalid Redirect URI"
 
-**Cause**: The redirect URI in your request doesn't match the configured URI.
+**Cause**: The redirect URI used in the OAuth flow doesn't match what's registered in
+Google Cloud Console.
 
 **Solution**:
 
-- Check the exact URL registered in Google Cloud Console
-- Ensure `http://` vs `https://` match
-- Ensure port number matches
-- Check for trailing slashes
+- Path A: the redirect URI must be your Auth0 callback
+  (`https://YOUR_TENANT.auth0.com/login/callback`).
+- Path B: the redirect URI must be your client app's callback.
+- Match `http://` vs `https://`, the host, the port, and trailing slashes exactly.
 
-### Error: "Client ID mismatch"
+### Error: "Invalid audience" / "Invalid issuer"
 
-**Cause**: Client ID from the request doesn't match the one in Google Cloud.
-
-**Solution**:
-
-- Verify the `GOOGLE_CLIENT_ID` environment variable is set correctly
-- Copy-paste from Google Cloud Console (don't type manually)
-
-### Error: "Invalid State"
-
-**Cause**: CSRF protection failed - state parameter doesn't match.
+**Cause**: The token's `aud` or `iss` claim doesn't match what your provider expects.
 
 **Solution**:
 
-- This usually means the state cache expired (10 minutes)
-- User took too long to authenticate
-- Restart the login flow
+- Path A: `auth0_api_identifier` must equal the Auth0 API Identifier (the `aud`).
+- Path B: pass your Google OAuth **client ID** as the audience and verify
+  `iss == https://accounts.google.com`.
 
-### Error: "Invalid Code"
+### Error: "Token signature verification failed"
 
-**Cause**: Authorization code already used or expired.
+**Cause**: The token isn't signed by the expected key, or JWKS is stale.
 
 **Solution**:
 
-- Authorization codes expire in 10 minutes
-- Can only be used once
-- Start the login flow again
+- Confirm the JWKS URL: Auth0 (`https://YOUR_TENANT.auth0.com/.well-known/jwks.json`)
+  or Google (`https://www.googleapis.com/oauth2/v3/certs`).
+- Ensure you're validating RS256 tokens; both Auth0 and Google use RS256 here.
+
+### Error: "FORBIDDEN" on every request
+
+**Cause**: No `Authorization` header, an expired token, or the wrong provider configured.
+
+**Solution**:
+
+- Send `Authorization: Bearer <jwt>` on the GraphQL request.
+- Check token expiry (`exp`) and re-authenticate.
+- Verify `auth_provider` / the `auth=` provider matches the token issuer.
 
 ## Security Considerations
 
-1. **Client Secret**: Never expose in client-side code. Only use on server.
-2. **HTTPS**: Always use HTTPS in production. HTTP only for localhost.
-3. **Redirect URI**: Only register intended redirect URIs in Google Console.
-4. **Token Storage**: Store refresh tokens securely (encrypted database).
-5. **Token Expiry**: Access tokens expire in 1 hour by default. Refresh before use.
+1. **Client Secret**: Never expose it in client-side code. With Path A it lives only in
+   Auth0; with Path B it lives only in your server-side OAuth exchange.
+2. **HTTPS**: Always use HTTPS in production. HTTP is acceptable only for localhost.
+3. **Redirect URIs**: Register only the exact redirect URIs you use.
+4. **Audience & issuer**: Always validate both `aud` and `iss` — never accept a token
+   just because its signature is valid.
+5. **Token expiry**: Honor `exp`; refresh upstream (via Auth0 or Google) as needed.
 
 ## Additional Resources
 
 - [Google OAuth 2.0 Documentation](https://developers.google.com/identity/protocols/oauth2)
 - [OpenID Connect with Google](https://developers.google.com/identity/openid-connect)
+- [Auth0 Google Social Connection](https://auth0.com/docs/authenticate/identity-providers/social-identity-providers/google)
 - [FraiseQL Auth API Reference](./api-reference.md)
-
-## Production Deployment
-
-For production:
-
-1. Update redirect URIs in Google Cloud Console to use `https://yourdomain.com`
-2. Set environment variables in your deployment:
-
-   ```bash
-<!-- Code example in BASH -->
-   GOOGLE_CLIENT_ID=prod.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=<secret>
-   OAUTH_REDIRECT_URI=https://yourdomain.com/auth/callback
-   ```text
-<!-- Code example in TEXT -->
-
-3. Ensure database is backed up
-4. Enable HTTPS with valid certificate
-5. Set secure cookie flags if using cookies
-6. Monitor error logs for failed authentications
-
-## Testing with Multiple Accounts
-
-Google allows multiple accounts in development:
-
-```bash
-<!-- Code example in BASH -->
-# Test with different Google accounts by:
-# 1. Using incognito mode for each account
-# 2. Or explicitly signing out before each test
-# 3. Or using multiple browsers
-```text
-<!-- Code example in TEXT -->
-
-## Rate Limiting
-
-Google applies rate limits:
-
-- 100,000 requests per day per project
-- Most apps won't hit this limit
-- If needed, request quota increase in Google Cloud Console
 
 ---
 
-**Next Step**: See [API Reference](./api-reference.md) for complete endpoint documentation.
+**Next Step**: See [API Reference](./api-reference.md) for the full authentication API.

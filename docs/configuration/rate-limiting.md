@@ -16,73 +16,167 @@ FraiseQL implements request rate limiting to prevent denial-of-service (DoS) att
 **Required Knowledge:**
 
 - HTTP request fundamentals (status codes, headers)
-- Rate limiting algorithms (token bucket, leaky bucket)
-- TOML configuration file syntax
+- Rate limiting strategies (fixed window, sliding window, token bucket)
+- Python and FastAPI basics
 - Authentication concepts (IP-based vs user-based rate limiting)
 - DoS attack patterns and mitigation strategies
 
 **Required Software:**
 
-- FraiseQL v2.0.0-alpha.1 or later
-- A text editor for `FraiseQL.toml` configuration
+- FraiseQL v1 (PostgreSQL)
+- Python 3.13+
 - curl or Postman (for testing rate limit headers)
-- Bash or similar shell for configuration management
 
 **Required Infrastructure:**
 
-- FraiseQL server instance (configured with rate limiting enabled)
-- PostgreSQL or similar database (for storing rate limit state)
-- Network connectivity to test HTTP endpoints
+- A FraiseQL FastAPI application (built with `create_fraiseql_app`)
+- PostgreSQL (FraiseQL's database)
+- Redis (optional, for shared rate limit state across multiple app instances)
 
 **Optional but Recommended:**
 
 - Monitoring tools (Prometheus, Grafana) to track rate limit violations
 - API gateway (Kong, Tyk) for additional rate limiting at proxy level
-- Distributed rate limiting backend (Redis) for multi-instance deployments
+- Redis for distributed rate limiting in multi-instance deployments
 - Logging aggregation (ELK, Splunk) for rate limit event analysis
 
 **Time Estimate:** 15-30 minutes for basic configuration, 1-2 hours for production tuning
 
 ## Overview
 
-Rate limiting is implemented using a token bucket algorithm with support for:
+Rate limiting in FraiseQL is implemented as FastAPI middleware
+(`fraiseql.security.RateLimitMiddleware`). It supports:
 
-- **Per-IP rate limiting**: Limits requests from individual client IPs
-- **Per-user rate limiting**: Limits requests from authenticated users
-- **Configurable burst capacity**: Allows temporary traffic spikes
-- **Response headers**: Clients can check remaining quota via HTTP headers
+- **Per-IP rate limiting**: limits requests from individual client IPs
+- **Per-user rate limiting**: limits requests from authenticated users (keyed on
+  `request.state.user_id` when set by the auth layer, falling back to IP)
+- **Multiple strategies**: fixed window, sliding window, and token bucket
+- **GraphQL-aware limits**: separate limits per operation type (query / mutation /
+  subscription) and per estimated query complexity
+- **Response headers**: clients can check their quota via HTTP headers
+- **Pluggable stores**: in-memory by default, or Redis for shared state
 
 ## Configuration
 
-Rate limiting configuration is defined in your server configuration file:
+The simplest way to enable rate limiting is through `FraiseQLConfig`. Settings can be
+provided in code or via `FRAISEQL_`-prefixed environment variables, then passed to
+`create_fraiseql_app(config=...)`.
 
-```toml
-<!-- Code example in TOML -->
-[rate_limit]
-# Enable/disable rate limiting
-enabled = true
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-# Requests per second per IP address
-rps_per_ip = 100
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    # Rate limiting (defaults shown)
+    rate_limit_enabled=True,
+    rate_limit_requests_per_minute=60,
+    rate_limit_requests_per_hour=1000,
+    rate_limit_burst_size=10,
+    rate_limit_window_type="sliding",   # "sliding" or "fixed"
+    rate_limit_whitelist=[],            # IPs/keys never rate limited
+    rate_limit_blacklist=[],            # IPs/keys always rejected
+)
 
-# Requests per second per authenticated user
-rps_per_user = 1000
+app = create_fraiseql_app(config=config, types=[...], queries=[...])
+```
 
-# Maximum burst capacity (tokens accumulated)
-burst_size = 500
+The same settings as environment variables:
 
-# Cleanup interval for stale entries (seconds)
-cleanup_interval_secs = 300
-```text
-<!-- Code example in TEXT -->
+```bash
+FRAISEQL_RATE_LIMIT_ENABLED=true
+FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=60
+FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR=1000
+FRAISEQL_RATE_LIMIT_BURST_SIZE=10
+FRAISEQL_RATE_LIMIT_WINDOW_TYPE=sliding
+```
 
-### Default Values
+### Configuration Fields
 
-- `enabled`: `true`
-- `rps_per_ip`: 100 req/sec
-- `rps_per_user`: 1000 req/sec
-- `burst_size`: 500 requests
-- `cleanup_interval_secs`: 300 seconds (5 minutes)
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `rate_limit_enabled` | `bool` | `True` | Enable/disable rate limiting |
+| `rate_limit_requests_per_minute` | `int` | `60` | Allowed requests per minute |
+| `rate_limit_requests_per_hour` | `int` | `1000` | Allowed requests per hour |
+| `rate_limit_burst_size` | `int` | `10` | Burst capacity (token-bucket strategy) |
+| `rate_limit_window_type` | `str` | `"sliding"` | Window strategy: `"sliding"` or `"fixed"` |
+| `rate_limit_whitelist` | `list[str]` | `[]` | IPs/keys never rate limited |
+| `rate_limit_blacklist` | `list[str]` | `[]` | IPs/keys always rejected |
+
+## Programmatic Setup
+
+For finer control (custom per-path rules, a Redis-backed store, multi-instance
+deployments) wire the middleware yourself with `setup_rate_limiting`. It is exported from
+`fraiseql.security`, takes the FastAPI app returned by `create_fraiseql_app`, and installs
+`RateLimitMiddleware`.
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security import (
+    RateLimit,
+    RateLimitRule,
+    RateLimitStrategy,
+    setup_rate_limiting,
+)
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[...],
+    queries=[...],
+)
+
+custom_rules = [
+    # Throttle the GraphQL endpoint
+    RateLimitRule(
+        path_pattern="/graphql",
+        rate_limit=RateLimit(requests=60, window=60),
+        message="GraphQL rate limit exceeded",
+    ),
+    # Tighter limit on auth endpoints (5 requests / 5 minutes)
+    RateLimitRule(
+        path_pattern="/auth/*",
+        rate_limit=RateLimit(requests=5, window=300),
+        message="Authentication rate limit exceeded",
+    ),
+]
+
+setup_rate_limiting(
+    app,
+    custom_rules=custom_rules,
+    default_limit=RateLimit(requests=100, window=60),
+)
+```
+
+`RateLimit` accepts a `strategy` (`RateLimitStrategy.FIXED_WINDOW`,
+`RateLimitStrategy.SLIDING_WINDOW`, or `RateLimitStrategy.TOKEN_BUCKET`) and an optional
+`burst` value for the token-bucket strategy:
+
+```python
+RateLimit(
+    requests=100,
+    window=60,
+    burst=20,
+    strategy=RateLimitStrategy.TOKEN_BUCKET,
+)
+```
+
+If you do not pass `custom_rules`, FraiseQL installs a sensible set via
+`create_default_rate_limit_rules()` (GraphQL, `/auth/*`, and `/api/*` patterns).
+
+### Multi-Instance Deployments (Redis)
+
+The in-memory store keeps counters per process, so each app instance enforces limits
+independently. To share state across instances, pass a Redis client — `setup_rate_limiting`
+then uses `RedisRateLimitStore` automatically:
+
+```python
+import redis.asyncio as redis
+
+from fraiseql.security import setup_rate_limiting
+
+redis_client = redis.from_url("redis://localhost:6379/0")
+
+setup_rate_limiting(app, redis_client=redis_client)
+```
 
 ## Key Extraction Strategy
 
@@ -90,82 +184,61 @@ Rate limits are applied using the following key extraction logic:
 
 ### 1. Authenticated Requests
 
-For requests with authentication credentials:
+For requests with an authenticated user (the auth layer sets `request.state.user_id`):
 
-- **Key**: User ID
-- **Limit**: `rps_per_user` (higher limit)
-- **Use case**: Trusted authenticated users get higher quotas
+- **Key**: `user:<user_id>`
+- **Use case**: authenticated users are tracked individually
 
 ### 2. Unauthenticated Requests
 
 For requests without authentication:
 
-- **Key**: Client IP address
-- **Limit**: `rps_per_ip` (lower limit)
-- **Use case**: Protects against anonymous abuse
+- **Key**: `ip:<client_ip>`
+- **Use case**: protects against anonymous abuse
 
 ### 3. IP Address Resolution
 
-When extracting the client IP address:
+When extracting the client IP address, the middleware checks, in order:
 
-1. **Direct Connections** (no proxy):
-   - Use the source IP from the socket connection directly
+1. The first entry of the `X-Forwarded-For` header (if present)
+2. The `X-Real-IP` header (if present)
+3. The direct socket peer address (`request.client.host`)
 
-2. **Behind Untrusted Proxies**:
-   - Ignore `X-Forwarded-For` header
-   - Use the proxy server's IP as the rate limit key
-   - **Why**: Clients cannot spoof IPs through untrusted intermediaries
-
-3. **Behind Trusted Proxies** (configured):
-   - Trust the `X-Forwarded-For` header
-   - Use the client's real IP from the header
-   - **Why**: Trusted proxies (load balancers, reverse proxies) are configured to only forward legitimate client IPs
-
-## Configuration for Proxy Environments
-
-To support rate limiting through proxies, configure trusted proxy IP ranges:
-
-```toml
-<!-- Code example in TOML -->
-[rate_limit]
-enabled = true
-rps_per_ip = 100
-rps_per_user = 1000
-# Trusted proxies that can set X-Forwarded-For header
-trusted_proxies = [
-    "10.0.0.0/8",          # Internal load balancer (10.0.0.0 - 10.255.255.255)
-    "172.16.0.0/12",       # VPC CIDR (172.16.0.0 - 172.31.255.255)
-    "203.0.113.0/24",      # CDN egress IPs
-    "203.0.113.5/32",      # Specific trusted reverse proxy
-]
-```text
-<!-- Code example in TEXT -->
-
-### Best Practices
-
-1. **allowlist only known proxies**: Only add IPs/CIDRs of proxies you control
-2. **Use specific IPs when possible**: Prefer individual IPs over large CIDR blocks
-3. **Monitor proxy configurations**: Update if infrastructure changes
-4. **Test rate limiting**: Verify correct keys are used before deployment
+> **Security note:** `X-Forwarded-For` and `X-Real-IP` are client-supplied and can be
+> spoofed. Only trust them when your application sits behind a proxy you control that
+> overwrites these headers. When exposed directly, strip or ignore them at the proxy so the
+> socket peer address is used.
 
 ## Response Headers
 
-When a request is accepted, FraiseQL includes rate limit information in HTTP response headers:
+When a request is rejected, the middleware returns HTTP `429` with the following headers:
 
 ```text
-<!-- Code example in TEXT -->
-X-RateLimit-Limit: 100          # Maximum requests per second
-X-RateLimit-Remaining: 45       # Remaining requests in current window
-Retry-After: 60                 # Seconds to wait before retrying (when limited)
-```text
-<!-- Code example in TEXT -->
+Retry-After: 60           # Seconds to wait before retrying
+X-RateLimit-Limit: 100    # Maximum requests in the window
+X-RateLimit-Window: 60    # Window length in seconds
+```
+
+The JSON body of a rejected non-GraphQL request looks like:
+
+```json
+{
+  "error": "Rate Limit Exceeded",
+  "message": "Rate limit exceeded",
+  "retry_after": 60
+}
+```
+
+GraphQL operations that exceed a limit return a GraphQL error with
+`extensions.code = "RATE_LIMITED"`.
 
 Example client handling:
 
 ```python
-<!-- Code example in Python -->
 import time
+
 import requests
+
 
 def graphql_request(url, query):
     while True:
@@ -178,96 +251,99 @@ def graphql_request(url, query):
             continue
 
         return response.json()
-```text
-<!-- Code example in TEXT -->
+```
 
-## Token Bucket Algorithm
+## GraphQL-Aware Limits
 
-The implementation uses a token bucket algorithm:
+For `POST /graphql`, the middleware applies additional limits via `GraphQLRateLimiter`:
 
-1. Each IP/user gets a "bucket" of tokens
-2. Bucket capacity = `burst_size`
-3. Tokens refill at `rps_per_ip` or `rps_per_user` tokens per second
-4. Each request costs 1 token
-5. If bucket has tokens, request is allowed and 1 token is consumed
-6. If bucket is empty, request is rejected with 429 status
+- **Per operation type**: separate buckets for `query`, `mutation`, and `subscription`.
+- **Per estimated complexity**: queries are bucketed into `low` / `medium` / `high` tiers
+  (based on nesting depth and field count), each with its own limit.
 
-### Example
+A request must pass both the operation-type limit and the complexity limit. These limits
+are keyed on the authenticated user when available, otherwise on the client IP.
 
-With `rps_per_ip=100` and `burst_size=500`:
+## Strategies
 
-```text
-<!-- Code example in TEXT -->
-Initial: [████████████████████] 500 tokens
-After 1 request: [███████████████████] 499 tokens
-After 100 requests: [████] 400 tokens
-1 second later: [██████] 500 tokens (refilled)
-```text
-<!-- Code example in TEXT -->
+`RateLimitStrategy` controls how requests are counted:
+
+1. **Fixed window** (`FIXED_WINDOW`): a counter resets at the start of each window.
+2. **Sliding window** (`SLIDING_WINDOW`): smooths counting across the window boundary.
+3. **Token bucket** (`TOKEN_BUCKET`): each key gets a bucket of up to `burst` tokens that
+   refills over the window; each request consumes one token. This allows short bursts while
+   bounding the long-run rate.
+
+Set the application-wide strategy with `rate_limit_window_type`, or per rule via the
+`strategy` argument to `RateLimit`.
 
 ## Disabling Rate Limiting
 
-To disable rate limiting (not recommended for production):
+To disable rate limiting (not recommended for production), set the flag in config:
 
-```toml
-<!-- Code example in TOML -->
-[rate_limit]
-enabled = false
-```text
-<!-- Code example in TEXT -->
+```python
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    rate_limit_enabled=False,
+)
+```
 
-Rate limiting can also be disabled at runtime by setting `enabled=false` in the configuration before server startup.
+Or via environment variable:
+
+```bash
+FRAISEQL_RATE_LIMIT_ENABLED=false
+```
 
 ## Monitoring
 
-Monitor rate limiting activity through logging:
+Rate limit violations are recorded through FraiseQL's security logger (see
+`fraiseql.audit.get_security_logger`). Each violation logs the client IP, endpoint, the
+limit and window, and — when known — the user ID and operation metadata.
 
-```rust
-<!-- Code example in RUST -->
-// Debug level logs IP limit violations
-debug!(ip = "192.168.1.100", "Rate limit exceeded for IP");
+Configure visibility through Python's standard `logging`:
 
-// Warn level logs user limit violations
-warn!(user_id = "user123", "Rate limit exceeded for user");
-```text
-<!-- Code example in TEXT -->
+```python
+import logging
 
-Enable debug logging to see rate limit activity:
+logging.getLogger("fraiseql.security").setLevel(logging.DEBUG)
+```
 
-```bash
-<!-- Code example in BASH -->
-RUST_LOG=fraiseql_server::middleware::rate_limit=debug
-```text
-<!-- Code example in TEXT -->
+Pipe these logs into your aggregation stack (ELK, Splunk, etc.) and alert on spikes in
+`429` responses to catch abuse or misconfigured clients.
 
 ## Security Considerations
 
-1. **DoS Protection**: Rate limiting helps prevent DoS attacks but should be combined with other protections (firewall rules, WAF)
+1. **DoS Protection**: Rate limiting helps prevent DoS attacks but should be combined with
+   other protections (firewall rules, WAF).
 
-2. **Proxy Spoofing**: Always allowlist specific trusted proxies. Never trust `X-Forwarded-For` from untrusted sources
+2. **Proxy Spoofing**: `X-Forwarded-For` / `X-Real-IP` are client-controlled. Only trust
+   them behind a proxy you control that overwrites them; otherwise strip them at the proxy.
 
-3. **Distributed Attacks**: Rate limiting is per-server instance. Use shared backend (Redis) for distributed rate limiting in multi-server deployments
+3. **Distributed Attacks**: the in-memory store is per app instance. Use a Redis-backed
+   store (`RedisRateLimitStore`) for shared limits across multiple instances.
 
-4. **User ID Extraction**: Ensure user authentication is correct and user IDs cannot be forged
+4. **User ID Extraction**: ensure authentication is correct and `request.state.user_id`
+   cannot be forged before relying on per-user limits.
 
-5. **Clock Skew**: Uses system time for token refill. Significant clock skew can affect accuracy
+5. **Clock Skew**: counting uses system time. Significant clock skew between instances can
+   affect accuracy when sharing state.
 
 ## Testing Rate Limiting
 
-Test the implementation:
+Test the implementation against the default per-minute limit:
 
 ```bash
-<!-- Code example in BASH -->
-# Test IP-based limiting
-for i in {1..110}; do
-    curl -s http://localhost:4000/graphql -d '{"query":"{ users { id } }"}' \
-         -H "Content-Type: application/json"
+# Send more requests than the per-minute limit allows
+for i in $(seq 1 110); do
+    curl -s http://localhost:8000/graphql \
+         -H "Content-Type: application/json" \
+         -d '{"query":"{ users { id } }"}'
     echo "Request $i"
 done
-```text
-<!-- Code example in TEXT -->
+```
 
-The 101st+ requests should return HTTP 429 (Too Many Requests).
+Once the configured limit is exceeded, further requests return HTTP `429` (Too Many
+Requests).
 
 ## References
 

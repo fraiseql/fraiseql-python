@@ -1,31 +1,30 @@
-<!-- Skip to main content -->
 ---
-
 title: Fact-Dimension Pattern
-description: FraiseQL enforces the **fact table pattern** for analytical workloads:
-keywords: ["design", "scalability", "performance", "patterns", "security"]
+description: A PostgreSQL data-modeling pattern for analytical workloads in FraiseQL v1.
+keywords: ["design", "scalability", "performance", "patterns", "analytics"]
 tags: ["documentation", "reference"]
 ---
 
 # Fact-Dimension Pattern
 
-**Version:** 1.0
-**Status:** Complete
-**Audience:** Database architects, data engineers, SDK users
-**Date:** January 12, 2026
+**Audience:** Database architects, data engineers, FraiseQL users
 
 ---
 
 ## Overview
 
-FraiseQL enforces the **fact table pattern** for analytical workloads:
+The **fact table pattern** is a data-modeling approach for analytical workloads. You
+design the tables and the ETL/refresh process yourself; FraiseQL queries them at runtime
+through PostgreSQL views, deriving `GROUP BY` and aggregate SQL automatically from the
+GraphQL selection (see [Aggregation Model](./aggregation-model.md)).
 
 - One record = one immutable fact (transaction, measurement, event)
-- Measures stored as SQL columns (10-100x faster aggregation)
-- Dimensions stored in JSONB `data` column (flexible grouping)
+- Measures stored as SQL columns (much faster aggregation)
+- Dimensions stored in a JSONB `data` column (flexible grouping)
 - Denormalized filters as indexed SQL columns
 
-**Critical Principle**: No joins. All dimensional data must be denormalized at ETL time.
+**Critical principle:** No joins at query time. All dimensional data must be denormalized
+at ETL time so the read view is a single standalone table.
 
 ---
 
@@ -34,24 +33,24 @@ FraiseQL enforces the **fact table pattern** for analytical workloads:
 ### Required Columns
 
 1. **Primary Key**: `id` (UUID or BIGSERIAL)
-2. **Measure Columns**: Numeric types for aggregation
-   - INT, BIGINT, DECIMAL, FLOAT, NUMERIC
+2. **Measure Columns**: numeric types for aggregation
+   - `INT`, `BIGINT`, `DECIMAL`, `FLOAT`, `NUMERIC`
    - Examples: `revenue`, `quantity`, `duration_ms`
-3. **Dimensions Column**: `data` JSONB (default name, configurable)
+3. **Dimensions Column**: `data` JSONB (the default column name FraiseQL reads, configurable
+   via `jsonb_column`)
    - Contains all grouping dimensions
    - Examples: category, region, customer_segment
 
 ### Optional Columns
 
-1. **Denormalized Filter Columns**: Indexed SQL columns for fast WHERE filtering
-   - UUIDs, VARCHAR, DATE, ENUM
+1. **Denormalized Filter Columns**: indexed SQL columns for fast `WHERE` filtering
+   - UUIDs, `VARCHAR`, `DATE`, enum
    - Examples: `customer_id`, `product_id`, `occurred_at`, `status`
 2. **Timestamps**: `created_at`, `occurred_at`, etc.
 
 ### Example: Sales Fact Table
 
 ```sql
-<!-- Code example in SQL -->
 CREATE TABLE tf_sales (
     -- Primary key
     id BIGSERIAL PRIMARY KEY,
@@ -62,7 +61,7 @@ CREATE TABLE tf_sales (
     cost DECIMAL(10,2) NOT NULL,
 
     -- Dimensions (JSONB for flexible grouping)
-    dimensions JSONB NOT NULL,
+    data JSONB NOT NULL,
     -- Example data content:
     -- {
     --   "category": "Electronics",
@@ -87,14 +86,36 @@ CREATE INDEX idx_sales_product ON tf_sales(product_id);
 CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
 CREATE INDEX idx_sales_status ON tf_sales(status);
 
--- GIN index for JSONB dimensions (PostgreSQL)
+-- GIN index for JSONB dimensions
 CREATE INDEX idx_sales_data_gin ON tf_sales USING GIN(data);
 
 -- Composite index for common query pattern
 CREATE INDEX idx_sales_customer_occurred
     ON tf_sales(customer_id, occurred_at DESC);
-```text
-<!-- Code example in TEXT -->
+```
+
+### Exposing the Fact Table to GraphQL
+
+FraiseQL reads the table through a view (or directly through a table that already carries an
+`id` plus a `data` JSONB column). Define a plain type over the read source — there is no
+special "fact table" decorator parameter:
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.type(sql_source="v_sales", jsonb_column="data")
+class Sale:
+    id: ID
+    revenue: float
+    quantity: int
+    category: str
+    region: str
+```
+
+When a query selects measure and dimension fields, FraiseQL derives the `GROUP BY` and the
+aggregate SQL at runtime against this view. The aggregate functions available are the
+standard PostgreSQL ones: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `STDDEV`, `VARIANCE`.
 
 ---
 
@@ -102,118 +123,111 @@ CREATE INDEX idx_sales_customer_occurred
 
 ### Measures (SQL Columns)
 
-**Purpose**: Aggregation targets (SUM, AVG, COUNT, etc.)
+**Purpose**: aggregation targets (`SUM`, `AVG`, `COUNT`, etc.)
 
-**Storage**: Dedicated SQL columns with numeric types
+**Storage**: dedicated SQL columns with numeric types.
 
-**Performance**: 10-100x faster than JSONB
+**Performance**: much faster than aggregating over JSONB.
 
 **Examples**:
 
-- `revenue DECIMAL(10,2)` - Total sale amount
-- `quantity INT` - Number of items
-- `duration_ms BIGINT` - Event duration in milliseconds
-- `error_count INT` - Number of errors
+- `revenue DECIMAL(10,2)` — total sale amount
+- `quantity INT` — number of items
+- `duration_ms BIGINT` — event duration in milliseconds
+- `error_count INT` — number of errors
 
-**Why SQL Columns?**:
+**Why SQL columns?**:
 
 ```sql
-<!-- Code example in SQL -->
--- ✅ FAST: Direct aggregation on SQL column
+-- FAST: direct aggregation on a SQL column
 SELECT SUM(revenue) FROM tf_sales WHERE customer_id = $1;
--- Execution: 0.3ms (1M rows with index)
 
--- ❌ SLOW: Aggregation on JSONB field (don't do this!)
-SELECT SUM((dimensions->>'revenue')::numeric) FROM tf_sales WHERE customer_id = $1;
--- Execution: 52ms (1M rows)
--- 173x slower!
-```text
-<!-- Code example in TEXT -->
+-- SLOW: aggregation on a JSONB field (avoid this)
+SELECT SUM((data->>'revenue')::numeric) FROM tf_sales WHERE customer_id = $1;
+```
+
+The JSONB form must cast text to numeric per row and cannot use a plain numeric index, so it
+is dramatically slower on large tables.
 
 ### Dimensions (JSONB Paths)
 
-**Purpose**: GROUP BY grouping keys
+**Purpose**: `GROUP BY` grouping keys.
 
-**Storage**: JSONB `data` column with flexible schema
+**Storage**: the `data` JSONB column, with a flexible schema.
 
-**Performance**: Slower than SQL columns, but flexible (no ALTER TABLE needed)
+**Performance**: slower than SQL columns, but flexible (no `ALTER TABLE` needed to add a
+dimension).
 
 **Examples**:
 
-- `dimensions->>'category'` - Product category
-- `dimensions->>'region'` - Geographic region
-- `dimensions->>'product_type'` - Product classification
-- `data#>>'{customer,segment}'` - Nested path for customer segment
+- `data->>'category'` — product category
+- `data->>'region'` — geographic region
+- `data->>'product_type'` — product classification
+- `data#>>'{customer,segment}'` — nested path for customer segment
 
 **Why JSONB?**:
 
-- Schema flexibility (add dimensions without ALTER TABLE)
+- Schema flexibility (add dimensions without `ALTER TABLE`)
 - Sparse dimensions (not all facts have all dimensions)
 - Nested structures (hierarchical dimensions)
 - No need to create columns for rarely-used dimensions
 
-**Query Pattern**:
+**Query pattern**:
 
 ```sql
-<!-- Code example in SQL -->
 SELECT
-    dimensions->>'category' AS category,
-    dimensions->>'region' AS region,
+    data->>'category' AS category,
+    data->>'region' AS region,
     SUM(revenue) AS total_revenue
 FROM tf_sales
-GROUP BY dimensions->>'category', dimensions->>'region';
-```text
-<!-- Code example in TEXT -->
+GROUP BY data->>'category', data->>'region';
+```
 
 ### Denormalized Filters (Indexed SQL Columns)
 
-**Purpose**: Fast WHERE filtering (avoid JSONB for high-selectivity filters)
+**Purpose**: fast `WHERE` filtering (avoid JSONB for high-selectivity filters).
 
-**Storage**: Dedicated indexed SQL columns
+**Storage**: dedicated indexed SQL columns.
 
-**Performance**: B-tree index access (microseconds)
+**Performance**: B-tree index access.
 
 **Examples**:
 
-- `customer_id UUID` - Filter by customer (high cardinality)
-- `product_id UUID` - Filter by product
-- `occurred_at TIMESTAMPTZ` - Filter by time range
-- `status VARCHAR(50)` - Filter by status (low cardinality but frequently filtered)
+- `customer_id UUID` — filter by customer (high cardinality)
+- `product_id UUID` — filter by product
+- `occurred_at TIMESTAMPTZ` — filter by time range
+- `status VARCHAR(50)` — filter by status (low cardinality but frequently filtered)
 
-**Why Denormalized?**:
+**Why denormalized?**:
 
 ```sql
-<!-- Code example in SQL -->
--- ✅ FAST: Indexed SQL column filter
+-- FAST: indexed SQL column filter, uses the composite index
 SELECT * FROM tf_sales
 WHERE customer_id = 'uuid-123' AND occurred_at >= '2024-01-01';
--- Uses composite index, execution: 0.05ms
 
--- ❌ SLOW: JSONB filter (don't do this for high-selectivity filters!)
+-- SLOWER: JSONB filter for a high-selectivity exact match (avoid this)
 SELECT * FROM tf_sales
-WHERE dimensions->>'customer_id' = 'uuid-123';
--- GIN index is slower for exact matches, execution: 2-5ms
-```text
-<!-- Code example in TEXT -->
+WHERE data->>'customer_id' = 'uuid-123';
+```
 
 ---
 
 ## No Joins Principle
 
-**Critical Architecture Decision**: FraiseQL does not support joins between tables.
+**Architecture decision**: the read view is a single standalone table — FraiseQL queries it
+directly without joining other tables at query time.
 
 ### Implications
 
-1. All dimensional data must be denormalized into `data` JSONB at ETL time
+1. All dimensional data must be denormalized into the `data` JSONB at ETL time
 2. Dimension tables (`td_*`) are used at ETL time only, never at query time
-3. Each table is completely standalone
-4. Aggregate tables follow the same pattern (not joined to anything)
+3. Each fact table is completely standalone
+4. Pre-aggregated tables follow the same pattern (not joined to anything)
 
 ### Example
 
 ```sql
-<!-- Code example in SQL -->
--- ❌ NOT SUPPORTED: Joining dimension tables at query time
+-- NOT the pattern: joining dimension tables at query time
 SELECT
     s.revenue,
     p.category,
@@ -221,23 +235,19 @@ SELECT
 FROM tf_sales s
 JOIN td_products p ON s.product_id = p.id
 JOIN td_customers c ON s.customer_id = c.id;
--- FraiseQL does not support this!
 
--- ✅ CORRECT: Denormalized dimensions in JSONB (done at ETL time)
+-- CORRECT: dimensions denormalized into JSONB at ETL time
 SELECT
     revenue,
-    dimensions->>'product_category' AS category,
-    dimensions->>'customer_segment' AS segment
+    data->>'product_category' AS category,
+    data->>'customer_segment' AS segment
 FROM tf_sales;
--- Category and segment already denormalized by ETL process
-```text
-<!-- Code example in TEXT -->
+```
 
-### ETL Process (Managed by DBA/Data Team)
+### ETL Process (Managed by the DBA / Data Team)
 
 ```sql
-<!-- Code example in SQL -->
--- Step 1: ETL loads raw transaction
+-- Step 1: ETL loads the raw transaction
 INSERT INTO staging_sales (transaction_id, product_id, customer_id, revenue)
 VALUES ('txn-001', 'prod-123', 'cust-456', 99.99);
 
@@ -247,7 +257,7 @@ INSERT INTO tf_sales (
     revenue,
     quantity,
     cost,
-    data,  -- ← Dimensions denormalized from td_products, td_customers
+    data,  -- dimensions denormalized from td_products, td_customers
     customer_id,
     product_id,
     occurred_at
@@ -262,7 +272,7 @@ SELECT
         'product_name', p.name,
         'customer_segment', c.segment,
         'customer_region', c.region
-    ) AS data,  -- ← Denormalization happens here
+    ) AS data,  -- denormalization happens here
     s.customer_id,
     s.product_id,
     s.occurred_at
@@ -270,213 +280,92 @@ FROM staging_sales s
 JOIN td_products p ON s.product_id = p.id
 JOIN td_customers c ON s.customer_id = c.id;
 
--- Step 3: Staging table is truncated
+-- Step 3: truncate the staging table
 TRUNCATE staging_sales;
-```text
-<!-- Code example in TEXT -->
+```
 
-**Important**: This ETL process is managed by the DBA/data team, NOT by FraiseQL.
-
----
-
-## Compilation Strategy
-
-### Phase 4 (Compiler)
-
-When the compiler encounters a schema with `fact_table=True`:
-
-1. **Introspect Fact Table Structure**:
-
-   ```rust
-<!-- Code example in RUST -->
-   let columns = introspect_table("tf_sales");
-   let measures = columns.filter(|col| col.is_numeric());
-   let data_column = columns.find(|col| col.name == "dimensions" && col.type == "jsonb");
-   let filters = columns.filter(|col| col.has_index());
-   ```text
-<!-- Code example in TEXT -->
-
-2. **Identify Components**:
-   - Measure columns: `revenue`, `quantity`, `cost` (numeric types)
-   - JSONB dimensions column: `dimensions`
-   - Denormalized filter columns: `customer_id`, `product_id`, `occurred_at`
-
-3. **Generate GraphQL Types**:
-   - `Sales` type with measure fields + dimension fields (from JSONB paths)
-   - `SalesWhereInput` with filter columns + JSONB path filters
-   - `SalesAggregateInput` with measure columns for aggregation
-   - `SalesGroupByInput` with dimension paths + temporal buckets
-
-### Phase 5 (Runtime)
-
-When executing an aggregation query:
-
-1. **Parse GROUP BY Request**:
-
-   ```graphql
-<!-- Code example in GraphQL -->
-   query {
-     sales_aggregate(
-       groupBy: { category: true, region: true }
-     ) {
-       category
-       region
-       revenue_sum
-       count
-     }
-   }
-   ```text
-<!-- Code example in TEXT -->
-
-2. **Generate SELECT Statement**:
-
-   ```sql
-<!-- Code example in SQL -->
-   SELECT
-       dimensions->>'category' AS category,
-       dimensions->>'region' AS region,
-       SUM(revenue) AS revenue_sum,
-       COUNT(*) AS count
-   FROM tf_sales
-   GROUP BY dimensions->>'category', dimensions->>'region';
-   ```text
-<!-- Code example in TEXT -->
-
-3. **Execute and Return Results**
+This ETL process is owned by the DBA / data team. FraiseQL does not generate or run it; it
+only queries the resulting view at runtime.
 
 ---
 
-## Database-Specific Considerations
+## How FraiseQL Queries the Fact Table
 
-### PostgreSQL
+You design the fact table and its read view; FraiseQL handles the query side at runtime.
 
-**Strengths**:
+1. **Define a read view** that exposes an `id` and a `data` JSONB column (a `v_` logical view
+   over the fact table, or a `tv_` projection table for heavy reads — see
+   [View Selection Guide](../database/view-selection-guide.md) and
+   [tv_ Table Pattern](../database/tv-table-pattern.md)).
+2. **Declare a plain `@fraiseql.type`** over that view with `sql_source` and `jsonb_column`.
+3. **Let auto-aggregation derive the SQL.** When a GraphQL query selects aggregate fields,
+   FraiseQL builds the `SELECT`, the aggregate functions, and the `GROUP BY` from the
+   requested dimensions automatically.
+
+For example, a GraphQL selection grouping by `category` and `region` and summing `revenue`
+produces, at runtime, SQL equivalent to:
+
+```sql
+SELECT
+    data->>'category' AS category,
+    data->>'region' AS region,
+    SUM(revenue) AS revenue_sum,
+    COUNT(*) AS count
+FROM tf_sales
+GROUP BY data->>'category', data->>'region';
+```
+
+See [Aggregation Model](./aggregation-model.md) for the full `GROUP BY` / `HAVING` /
+`FILTER` semantics.
+
+---
+
+## PostgreSQL JSONB Features
+
+FraiseQL v1 targets PostgreSQL, which gives the fact-dimension pattern a rich toolset:
 
 - Full JSONB support: `->`, `->>`, `#>`, `#>>`, `@>`, `?`, `?&`
-- Native DATE_TRUNC for temporal bucketing
-- FILTER (WHERE ...) for conditional aggregates
+- Native `DATE_TRUNC` for temporal bucketing
+- `FILTER (WHERE ...)` for conditional aggregates
 - GIN indexes for efficient JSONB queries
-- Statistical functions (STDDEV, VARIANCE)
+- Statistical functions (`STDDEV`, `VARIANCE`)
 
 **Example**:
 
 ```sql
-<!-- Code example in SQL -->
--- Advanced JSONB queries
+-- Conditional aggregates over JSONB dimensions
 SELECT
-    dimensions->>'category' AS category,
+    data->>'category' AS category,
     SUM(revenue) FILTER (WHERE data @> '{"region": "North America"}') AS na_revenue,
     SUM(revenue) FILTER (WHERE data @> '{"region": "Europe"}') AS eu_revenue
 FROM tf_sales
-WHERE data ? 'category'  -- Has 'category' key
-GROUP BY dimensions->>'category';
-```text
-<!-- Code example in TEXT -->
-
-### MySQL
-
-**Strengths**:
-
-- JSON_EXTRACT, JSON_CONTAINS for JSON handling
-- DATE_FORMAT for temporal bucketing
-- GROUP_CONCAT for string aggregation
-
-**Limitations**:
-
-- No ILIKE (case-insensitive like)
-- No native regex operators
-- CASE WHEN emulation for conditional aggregates
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
--- MySQL JSON extraction
-SELECT
-    JSON_EXTRACT(data, '$.category') AS category,
-    SUM(revenue) AS total_revenue
-FROM tf_sales
-GROUP BY JSON_EXTRACT(data, '$.category');
-```text
-<!-- Code example in TEXT -->
-
-### SQLite
-
-**Strengths**:
-
-- Lightweight, embedded
-- json_extract for basic JSON handling
-- strftime for temporal bucketing
-
-**Limitations**:
-
-- Limited JSON support (no JSON operators beyond extraction)
-- No GIN indexes
-- No statistical functions
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
--- SQLite JSON extraction
-SELECT
-    json_extract(data, '$.category') AS category,
-    SUM(revenue) AS total_revenue
-FROM tf_sales
-GROUP BY json_extract(data, '$.category');
-```text
-<!-- Code example in TEXT -->
-
-### SQL Server
-
-**Strengths**:
-
-- JSON_VALUE, JSON_QUERY for JSON handling
-- DATEPART for temporal bucketing
-- Statistical functions (STDEV, VAR with population variants)
-- FOR JSON clause for output formatting
-
-**Limitations**:
-
-- OPENJSON required for complex JSON queries
-- CASE WHEN emulation for conditional aggregates
-
-**Example**:
-
-```sql
-<!-- Code example in SQL -->
--- SQL Server JSON extraction
-SELECT
-    JSON_VALUE(data, '$.category') AS category,
-    SUM(revenue) AS total_revenue
-FROM tf_sales
-GROUP BY JSON_VALUE(data, '$.category');
-```text
-<!-- Code example in TEXT -->
+WHERE data ? 'category'  -- has the 'category' key
+GROUP BY data->>'category';
+```
 
 ---
 
-## Pre-Aggregated Fact Tables = Same Structure, Different Granularity
+## Pre-Aggregated Fact Tables = Same Structure, Coarser Granularity
 
-**Key Insight**: Pre-aggregated tables follow the SAME pattern as fact tables, just with coarser granularity. Use `tf_` prefix with descriptive suffix.
+**Key insight**: pre-aggregated tables follow the same pattern as fact tables, just at a
+coarser granularity. Use the `tf_` prefix with a descriptive suffix.
 
 ### Example: Daily Aggregates
 
 ```sql
-<!-- Code example in SQL -->
 -- Pre-aggregated fact table: same structure as tf_sales, daily granularity
 CREATE TABLE tf_sales_daily (
     id BIGSERIAL PRIMARY KEY,
-    day DATE NOT NULL,  -- Granularity dimension
+    day DATE NOT NULL,  -- granularity dimension
 
     -- Pre-aggregated measures
     revenue DECIMAL(10,2) NOT NULL,      -- SUM(revenue) from tf_sales
     quantity INT NOT NULL,               -- SUM(quantity) from tf_sales
     transaction_count INT NOT NULL,      -- COUNT(*) from tf_sales
 
-    -- Dimensions (same JSONB pattern!)
-    dimensions JSONB NOT NULL,
-    -- Can still group by category, region, etc. from data column
+    -- Dimensions (same JSONB pattern)
+    data JSONB NOT NULL,
+    -- Can still group by category, region, etc. from the data column
 
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -484,93 +373,79 @@ CREATE TABLE tf_sales_daily (
 
 CREATE UNIQUE INDEX idx_sales_daily_day ON tf_sales_daily(day);
 CREATE INDEX idx_sales_daily_data_gin ON tf_sales_daily USING GIN(data);
-```text
-<!-- Code example in TEXT -->
+```
 
-**Populated via ETL** (managed by DBA/data team):
+**Populated via ETL** (managed by the DBA / data team):
 
 ```sql
-<!-- Code example in SQL -->
-INSERT INTO tf_sales_daily (day, revenue, quantity, transaction_count, data)
+INSERT INTO tf_sales_daily (id, day, revenue, quantity, transaction_count, data)
 SELECT
+    gen_random_uuid(),
     DATE_TRUNC('day', occurred_at)::DATE AS day,
     SUM(revenue) AS revenue,
     SUM(quantity) AS quantity,
     COUNT(*) AS transaction_count,
-    jsonb_build_object() AS data  -- Can preserve dimensions if needed
+    jsonb_build_object() AS data  -- can preserve dimensions if needed
 FROM tf_sales
 GROUP BY DATE_TRUNC('day', occurred_at)::DATE
 ON CONFLICT (day) DO UPDATE SET
     revenue = EXCLUDED.revenue,
     quantity = EXCLUDED.quantity,
     transaction_count = EXCLUDED.transaction_count;
-```text
-<!-- Code example in TEXT -->
+```
 
-**Query Pattern** (FraiseQL treats it like any fact table):
-
-```graphql
-<!-- Code example in GraphQL -->
-query {
-  sales_daily_aggregate(
-    where: { day: { _gte: "2024-01-01" } }
-  ) {
-    day
-    revenue_sum
-    transaction_count_sum
-  }
-}
-```text
-<!-- Code example in TEXT -->
+A daily-rollup view is queried exactly like any other fact-table view — FraiseQL does not
+treat it specially. See [Calendar Dimensions](./calendar-dimensions.md) for modeling time
+buckets, and [Window Functions](./window-functions.md) for running totals and ranking inside
+your view SQL.
 
 ---
 
 ## Best Practices
 
-### When to Use Fact Tables (tf_*)
+### When to Use Fact Tables (`tf_*`)
 
-✅ **Use for**:
+Use for:
 
 - High-volume transactional data (sales, events, logs)
 - Any granularity (raw transactions or pre-aggregated rollups)
 - Real-time or near-real-time data ingestion
 - Data requiring full history retention
 
-❌ **Don't use for**:
+Avoid for:
 
 - Low-volume reference data (use regular tables)
 - Frequently updated records (facts are immutable)
-- Data requiring joins (FraiseQL doesn't support joins)
+- Data requiring query-time joins (denormalize at ETL time instead)
 
-### When to Use Pre-Aggregated Fact Tables (tf_**daily, tf**_monthly, etc.)
+### When to Use Pre-Aggregated Fact Tables (`tf_sales_daily`, `tf_sales_monthly`, etc.)
 
-✅ **Use for**:
+Use for:
 
 - Pre-computed aggregates for common queries
 - Coarser granularity (daily, monthly, per-category, etc.)
 - Query performance optimization
 - Materialized rollups refreshed periodically
-- Same structure as fact tables (measures + `data` JSONB)
+- The same structure as fact tables (measures + `data` JSONB)
 
-### When to Use Dimension Tables (td_*)
+### When to Use Dimension Tables (`td_*`)
 
-✅ **Use for**:
+Use for:
 
 - Reference data for ETL denormalization (products, customers, locations)
 - Lookup data used to enrich fact tables during data loading
 - Master data management
 
-❌ **Don't use for**:
+Avoid for:
 
-- Query-time joins (FraiseQL doesn't support joins)
-- Direct GraphQL exposure (use denormalized data in fact tables instead)
+- Query-time joins (denormalize into the fact table's `data` instead)
+- Direct GraphQL exposure (expose the denormalized fact view instead)
 
 ### Index Strategy
 
-**Denormalized Filter Columns**:
+**Denormalized filter columns**:
 
 ```sql
-<!-- Code example in SQL -->
 -- High-cardinality filters
 CREATE INDEX idx_sales_customer ON tf_sales(customer_id);
 CREATE INDEX idx_sales_product ON tf_sales(product_id);
@@ -581,35 +456,31 @@ CREATE INDEX idx_sales_occurred ON tf_sales(occurred_at);
 -- Composite indexes for common patterns
 CREATE INDEX idx_sales_customer_occurred
     ON tf_sales(customer_id, occurred_at DESC);
-```text
-<!-- Code example in TEXT -->
+```
 
-**JSONB Dimensions** (PostgreSQL):
+**JSONB dimensions**:
 
 ```sql
-<!-- Code example in SQL -->
 -- GIN index for JSONB queries
 CREATE INDEX idx_sales_data_gin ON tf_sales USING GIN(data);
 
--- Specific path index for frequently-queried dimension
+-- Expression index for a frequently-queried dimension
 CREATE INDEX idx_sales_category
-    ON tf_sales ((dimensions->>'category'));
-```text
-<!-- Code example in TEXT -->
+    ON tf_sales ((data->>'category'));
+```
 
-**Don't Over-Index**:
+**Don't over-index**:
 
-- Every index slows INSERT/UPDATE operations
+- Every index slows `INSERT`/`UPDATE` operations
 - Index only frequently-filtered columns
 - Monitor query patterns before adding indexes
 
 ---
 
-## Related Specifications
+## Related Pages
 
-- **Aggregation Model** (`aggregation-model.md`) - GROUP BY, aggregates, HAVING
-- **Analytical Schema Conventions** (`../specs/analytical-schema-conventions.md`) - Naming patterns
-- **Schema Conventions** (`../specs/schema-conventions.md`) - General schema patterns
-- **Database Targeting** (`../database/database-targeting.md`) - Multi-database support
-
----
+- [Aggregation Model](./aggregation-model.md) — `GROUP BY`, aggregates, `HAVING`
+- [Calendar Dimensions](./calendar-dimensions.md) — modeling time buckets in JSONB
+- [Window Functions](./window-functions.md) — running totals and ranking in view SQL
+- [View Selection Guide](../database/view-selection-guide.md) — choosing `v_` vs `tv_`
+- [tv_ Table Pattern](../database/tv-table-pattern.md) — projection tables for heavy reads
