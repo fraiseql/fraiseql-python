@@ -109,8 +109,11 @@ impl From<tokio_postgres::Error> for RbacError {
     }
 }
 
-impl From<deadpool::managed::PoolError<tokio_postgres::Error>> for RbacError {
-    fn from(error: deadpool::managed::PoolError<tokio_postgres::Error>) -> Self {
+// Reference the PoolError alias re-exported by deadpool-postgres rather than the
+// `deadpool` crate directly, so the error type always tracks the deadpool version
+// that deadpool-postgres resolves to (avoids a two-version split, e.g. #406).
+impl From<deadpool_postgres::PoolError> for RbacError {
+    fn from(error: deadpool_postgres::PoolError) -> Self {
         RbacError::Database(error.to_string())
     }
 }
