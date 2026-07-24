@@ -114,22 +114,38 @@ jobs:
 
           cat /tmp/alert-summary.md
 
-      - name: Create GitHub Issue for HIGH/CRITICAL vulnerabilities
+      - name: Upsert rolling base-image vulnerability alert
         if: steps.check-vulns.outputs.should_alert == 'true'
         uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
-            const summary = fs.readFileSync('/tmp/alert-summary.md', 'utf8');
+            // Stable hidden marker used to find the single rolling issue instead
+            // of opening a fresh duplicate every weekly run.
+            const MARKER = '<!-- security-alerts:base-image-rolling -->';
+            const title = '🚨 Base-image vulnerability alert (HIGH/CRITICAL)';
             const alertLevel = '${{ steps.check-vulns.outputs.alert_level }}';
+            const summary = fs.readFileSync('/tmp/alert-summary.md', 'utf8');
+            const body = `${MARKER}\n\n${summary}`;
+            const labels = ['security', 'vulnerability', alertLevel.toLowerCase()];
+            const { owner, repo } = context.repo;
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `🚨 ${alertLevel} Vulnerability Alert - Base Images`,
-              body: summary,
-              labels: ['security', 'vulnerability', alertLevel.toLowerCase()],
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
             });
+            const existing = open.find(i => !i.pull_request && (i.body || '').includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body, labels });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number,
+                body: `🔄 Refreshed by the weekly base-image scan — current level: **${alertLevel}**. Details updated above.`,
+              });
+              core.info(`Updated rolling alert #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({ owner, repo, title, body, labels });
+              core.info(`Created rolling alert #${created.data.number}`);
+            }
 
       - name: Upload scan results
         uses: actions/upload-artifact@v7
@@ -201,21 +217,37 @@ jobs:
 
           cat /tmp/cve-monitoring-report.md
 
-      - name: Create GitHub Issue if patches available
+      - name: Upsert rolling CVE-patches issue
         if: env.fixed_count > 0
         uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
+            // Stable hidden marker used to find the single rolling issue instead
+            // of opening a fresh duplicate every weekly run.
+            const MARKER = '<!-- security-alerts:cve-patches-rolling -->';
+            const title = 'CVE Patches Available — base-image CVE monitor';
             const report = fs.readFileSync('/tmp/cve-monitoring-report.md', 'utf8');
+            const body = `${MARKER}\n\n${report}`;
+            const labels = ['security', 'patching', 'cve-monitor'];
+            const { owner, repo } = context.repo;
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `CVE Patches Available - ${{ env.fixed_count }} CVE(s) Fixed`,
-              body: report,
-              labels: ['security', 'patching', 'good-news'],
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
             });
+            const existing = open.find(i => !i.pull_request && (i.body || '').includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body, labels });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number,
+                body: `🔄 Refreshed by the weekly scan — ${process.env.fixed_count} monitored CVE(s) now show fixes. Report updated above.`,
+              });
+              core.info(`Updated rolling issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({ owner, repo, title, body, labels });
+              core.info(`Created rolling issue #${created.data.number}`);
+            }
 
       - name: Upload CVE monitoring report
         uses: actions/upload-artifact@v7
