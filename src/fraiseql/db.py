@@ -1691,18 +1691,26 @@ class FraiseQLRepository:
                 include_graphql_wrapper=include_wrapper,  # Field-only mode for multi-field
             )
 
-            # NEW: Check if result is null (empty array from Rust)
-            # Rust returns {"data":{"field":[]}} for null, we convert to Python None
-            if _is_rust_response_null(result):
-                return None
+            # In field-only mode (multi-field queries, include_wrapper=False),
+            # execute_via_rust_pipeline returns a plain dict/list instead of
+            # RustResponseBytes. _is_rust_response_null() only understands
+            # RustResponseBytes (it reads .bytes), so branch on the result type to
+            # avoid "'dict' object has no attribute 'bytes'" (#448).
+            if isinstance(result, RustResponseBytes):
+                # Rust returns {"data":{"field":[]}} for null, we convert to Python None
+                if _is_rust_response_null(result):
+                    return None
 
-            # Store RustResponseBytes in context for direct path
-            if info and hasattr(info, "context"):
-                if "_rust_response" not in info.context:
-                    info.context["_rust_response"] = {}
-                info.context["_rust_response"][field_name or view_name] = result
+                # Store RustResponseBytes in context for direct path
+                if info and hasattr(info, "context"):
+                    if "_rust_response" not in info.context:
+                        info.context["_rust_response"] = {}
+                    info.context["_rust_response"][field_name or view_name] = result
 
-            return result
+                return result
+
+            # Field-only mode: dict = found record; [] = not found (Rust's null sentinel).
+            return None if result == [] else result
 
     async def count(
         self,
@@ -2731,7 +2739,7 @@ class FraiseQLRepository:
         # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
         table_ref = jsonb_column if jsonb_column is not None else "t"
         # Pass native_dimensions to ORDER BY so native columns use t."col" (#337)
-        order_native = native_dimensions if native_dimensions else None
+        order_native = native_dimensions or None
 
         # Add ORDER BY
         if order_by:

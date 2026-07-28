@@ -778,6 +778,25 @@ def _build_field_selections_recursive(
     return result
 
 
+# JSON-native values are the only things that can cross the Rust FFI, which requires
+# Vec<String>. Anything else (fraiseql typed objects, RustResponseBytes, ...) cannot be
+# merged in Rust and is passed through unchanged so build_multi_field_response's FFI type
+# check rejects it, triggering the graphql-core fallback (the pre-#448 behaviour).
+_JSON_NATIVE_ROW_TYPES = (dict, list, str, int, float, bool)
+
+
+def _encode_field_row(value: Any) -> Any:
+    """Encode one resolver result row for the Rust multi-field merger.
+
+    JSON-native values (incl. scalars — the #448 fix) are JSON-encoded to satisfy the
+    Vec<String> FFI contract; non-JSON-native values are returned unchanged so the merge
+    fails at the FFI boundary and the caller falls back to graphql-core execution.
+    """
+    if value is None or isinstance(value, _JSON_NATIVE_ROW_TYPES):
+        return json.dumps(value)
+    return value
+
+
 async def execute_multi_field_query(
     schema: GraphQLSchema,
     query_string: str,
@@ -960,7 +979,12 @@ async def execute_multi_field_query(
                 if "data" in result_json and field_name in result_json["data"]:
                     result = result_json["data"][field_name]
 
-            # Convert result to list of JSON strings
+            # Convert result rows to JSON-encoded strings for the Rust FFI. Scalars
+            # (int/float/bool/str/None) and dicts are JSON-encoded — encoding scalars is
+            # the #448 fix; a raw non-str scalar previously aborted the whole merge with
+            # "'int' object is not an instance of 'str'". Non-JSON-native rows (typed
+            # objects, RustResponseBytes) are passed through unchanged so the merge falls
+            # back to graphql-core instead of nulling the field (see _encode_field_row).
             if is_list:
                 if not isinstance(result, list):
                     msg = (
@@ -968,13 +992,10 @@ async def execute_multi_field_query(
                         f"did not return a list: {type(result)}"
                     )
                     raise ValueError(msg)
-                # Each item should be a dict - convert to JSON string
-                json_rows = [
-                    json.dumps(item) if isinstance(item, dict) else item for item in result
-                ]
+                json_rows = [_encode_field_row(item) for item in result]
             else:
-                # Single object
-                json_rows = [json.dumps(result) if isinstance(result, dict) else result]
+                # Single object or scalar
+                json_rows = [_encode_field_row(result)]
 
             # Build COMPLETE recursive field selections with full materialized paths.
             # This fixes issue #288: the previous code only captured top-level field
