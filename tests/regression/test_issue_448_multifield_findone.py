@@ -141,6 +141,43 @@ async def test_multi_field_object_plus_scalar_sibling_merge() -> None:
     assert data["things"][0]["id"] == 1
 
 
+@pytest.mark.asyncio
+async def test_typed_object_row_triggers_fallback_not_null() -> None:
+    """Non-JSON-native rows (fraiseql typed objects) must reach the Rust FFI raw.
+
+    The Bug B fix JSON-encodes scalars/dicts, but a typed object cannot be merged in
+    Rust: it must be passed through unchanged so the FFI rejects it and the query falls
+    back to graphql-core (which handles typed objects) — NOT json.dumps'd, which would
+    raise inside the per-field handler and null the field. Regression guard for the
+    multi-field routing path that returns type instances.
+    """
+
+    class Thing:
+        def __init__(self, n: int) -> None:
+            self.n = n
+
+    async def things_resolver(info):
+        return [Thing(1)]
+
+    async def count_resolver(info):
+        return 5
+
+    thing_type = GraphQLObjectType("Thing", {"n": GraphQLField(GraphQLInt)})
+    query_type = GraphQLObjectType(
+        "Query",
+        {
+            "things": GraphQLField(GraphQLList(thing_type), resolve=things_resolver),
+            "count": GraphQLField(GraphQLInt, resolve=count_resolver),
+        },
+    )
+    schema = GraphQLSchema(query=query_type)
+
+    # Raw typed object -> FFI rejects the non-string row -> raises out of
+    # execute_multi_field_query, which is exactly what makes the endpoint fall back.
+    with pytest.raises(TypeError):
+        await execute_multi_field_query(schema, "{ things { n } count }", None, {})
+
+
 # ---------------------------------------------------------------------------
 # Bug A — find_one() in field-only mode (multi-field query)
 # ---------------------------------------------------------------------------
