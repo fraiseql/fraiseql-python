@@ -2739,7 +2739,7 @@ class FraiseQLRepository:
         # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
         table_ref = jsonb_column if jsonb_column is not None else "t"
         # Pass native_dimensions to ORDER BY so native columns use t."col" (#337)
-        order_native = native_dimensions if native_dimensions else None
+        order_native = native_dimensions or None
 
         # Add ORDER BY
         if order_by:
