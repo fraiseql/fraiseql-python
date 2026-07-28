@@ -960,7 +960,12 @@ async def execute_multi_field_query(
                 if "data" in result_json and field_name in result_json["data"]:
                     result = result_json["data"][field_name]
 
-            # Convert result to list of JSON strings
+            # Convert result to a list of JSON-encoded strings for the Rust FFI, which
+            # requires Vec<String>. EVERY element must be JSON-encoded — including
+            # scalars (int/float/bool/str/None): passing a raw non-str scalar aborts the
+            # whole merge with "'int' object is not an instance of 'str'" (#448). Results
+            # on this path are always parsed Python values (dicts/lists/scalars), never
+            # pre-serialized JSON strings, so a single json.dumps per element is correct.
             if is_list:
                 if not isinstance(result, list):
                     msg = (
@@ -968,13 +973,10 @@ async def execute_multi_field_query(
                         f"did not return a list: {type(result)}"
                     )
                     raise ValueError(msg)
-                # Each item should be a dict - convert to JSON string
-                json_rows = [
-                    json.dumps(item) if isinstance(item, dict) else item for item in result
-                ]
+                json_rows = [json.dumps(item) for item in result]
             else:
-                # Single object
-                json_rows = [json.dumps(result) if isinstance(result, dict) else result]
+                # Single object or scalar
+                json_rows = [json.dumps(result)]
 
             # Build COMPLETE recursive field selections with full materialized paths.
             # This fixes issue #288: the previous code only captured top-level field
