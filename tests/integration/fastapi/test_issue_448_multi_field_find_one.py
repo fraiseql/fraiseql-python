@@ -56,22 +56,26 @@ def _repo(info) -> FraiseQLRepository:
     return FraiseQLRepository(info.context.get("pool"), context={"mode": "development"})
 
 
+# ``info`` is passed explicitly so find_one()/find() see the multi-field context
+# (``__has_multiple_root_fields__``) and the GraphQL field name. In a real app the
+# graphql_info_injector middleware stashes this on the repository; here each resolver
+# builds its own repository, so we thread ``info`` through directly.
 @fraiseql.query
 async def widget(info) -> Widget | None:
     """Single-row lookup — the find_one()-backed field (Bug A path)."""
-    return await _repo(info).find_one(_VIEW)
+    return await _repo(info).find_one(_VIEW, info=info)
 
 
 @fraiseql.query
 async def empty_widget(info) -> Widget | None:
     """find_one() over an empty view — must resolve to null, not crash."""
-    return await _repo(info).find_one(_EMPTY_VIEW)
+    return await _repo(info).find_one(_EMPTY_VIEW, info=info)
 
 
 @fraiseql.query
 async def widgets(info, limit: int = 10) -> list[Widget]:
     """List lookup — a second find-backed sibling."""
-    return await _repo(info).find(_VIEW, limit=limit)
+    return await _repo(info).find(_VIEW, info=info, limit=limit)
 
 
 @fraiseql.query
