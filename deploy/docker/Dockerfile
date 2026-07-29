@@ -28,18 +28,16 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY fraiseql_rs ./fraiseql_rs
 
-# Build fraiseql-confiture wheel first (no cp313-manylinux on PyPI yet)
+# Fetch the fraiseql-confiture wheel. It now publishes cp313 manylinux wheels on
+# PyPI, so `pip wheel` downloads the prebuilt wheel directly (and would still fall
+# back to building one from an sdist if no compatible wheel were available).
+# `build`/`maturin` remain installed for the FraiseQL wheel build in the next step.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     pip install build maturin && \
     mkdir -p /build/dist && \
-    pip download --no-deps --dest /tmp fraiseql-confiture>=0.1.0 && \
-    cd /tmp && \
-    tar -xzf fraiseql_confiture-*.tar.gz && \
-    cd fraiseql_confiture-*/ && \
-    python -m build --wheel && \
-    mv dist/*.whl /build/dist/
+    pip wheel --no-deps --wheel-dir /build/dist fraiseql-confiture>=0.1.0
 
 # Build FraiseQL wheel
 RUN --mount=type=cache,target=/root/.cache/pip \
