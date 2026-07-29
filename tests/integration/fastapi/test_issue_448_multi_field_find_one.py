@@ -188,9 +188,9 @@ class TestIssue448MultiFieldFindOne:
         """Reporter's exact shape: object field + scalar count (Bug A + Bug B).
 
         Selects typed columns (id/name). The response also carries ``__typename`` (normal
-        FraiseQL behaviour), so assert on values rather than an exact key set. (Whether
-        JSONB-derived sub-fields project through the multi-field path is a separate
-        concern from the #448 crash and is not asserted here.)
+        FraiseQL behaviour), so assert on values rather than an exact key set. Projection
+        of the JSONB-derived ``color`` sub-field through the multi-field path is guarded
+        separately by ``test_multi_field_preserves_jsonb_subfield`` (issue #460).
         """
         body = self._post(app, "{ widget { id name } widgetsCount }")
 
@@ -200,6 +200,45 @@ class TestIssue448MultiFieldFindOne:
         assert data["widget"]["id"] in {_W1, _W2}
         assert data["widget"]["name"] in {"Alpha", "Beta"}
         assert data["widgetsCount"] == 2
+
+    @pytest.mark.asyncio
+    async def test_multi_field_preserves_jsonb_subfield(
+        self, class_db_pool, setup_data, app
+    ) -> None:
+        """Regression guard for issue #460: a JSONB-derived scalar sub-field must survive.
+
+        ``color`` is sourced from ``data->>'color'`` (JSONB-derived), unlike the typed
+        ``id``/``name`` columns. #460 suspected the multi-field path — where find_one's
+        field-only projection is *re-projected* by ``build_multi_field_response`` — dropped
+        JSONB-derived sub-fields while keeping typed columns, so the same object would come
+        back complete in a single-field query but partial next to a sibling field.
+
+        Verified against real PostgreSQL: it does not drop them. ``color`` projects through
+        both the single-field and the multi-field double-projection identically. This test
+        locks that in so the double-projection can't silently regress.
+
+        Row order from ``find_one`` (LIMIT 1, no ORDER BY) is unspecified, so the returned
+        ``color`` is validated against the row's own ``id`` rather than cross-comparing the
+        two responses.
+        """
+        color_by_id = {_W1: "red", _W2: "blue"}
+
+        single = self._post(app, "{ widget { id name color } }")
+        multi = self._post(app, "{ widget { id name color } widgetsCount }")
+
+        assert "errors" not in single, single
+        assert "errors" not in multi, multi
+
+        single_widget = single["data"]["widget"]
+        multi_widget = multi["data"]["widget"]
+
+        # Baseline: single-field mode has always projected the JSONB-derived sub-field.
+        assert single_widget["color"] == color_by_id[single_widget["id"]]
+
+        # The #460 concern: the sub-field must NOT be dropped alongside a sibling field.
+        assert "color" in multi_widget, f"color dropped in multi-field response: {multi_widget}"
+        assert multi_widget["color"] == color_by_id[multi_widget["id"]]
+        assert multi["data"]["widgetsCount"] == 2
 
     @pytest.mark.asyncio
     async def test_find_one_plus_list_sibling(self, class_db_pool, setup_data, app) -> None:

@@ -5,6 +5,42 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.12] - 2026-07-28
+
+### Fixed
+
+- **Multi-field GraphQL queries no longer crash when a `find_one()`-backed
+  field is combined with a scalar sibling** (e.g. `{ me { … } machinesCount }`).
+  The query previously aborted with `'dict' object has no attribute 'bytes'`
+  (`find_one()` ran the `RustResponseBytes` null-check on the plain dict that
+  field-only mode returns) and/or `'int' object is not an instance of 'str'`
+  (a scalar sibling produced a non-string FFI row that aborted the entire
+  Rust-side merge). Both paths are fixed; multi-field queries mixing
+  `find_one`, `find`, and scalar fields now merge cleanly. (#448)
+
+### Security
+
+- Remediated 21 Dependabot alerts across `pillow`, `pyasn1`, `soupsieve`,
+  `langsmith`, `setuptools`, `pypdf`, and `pydantic-settings`. (#445)
+- Bumped `cryptography` and `starlette` to resolve security advisories. (#412)
+- Bumped `aiohttp` to `>=3.14.1` to resolve security advisories. (#411)
+
+### Documentation
+
+- Overhauled the documentation for v1: removed the v2-only content that had
+  been copied into `docs/` and rewrote the remaining guides, tutorials,
+  reference, configuration, and operations pages for the FraiseQL v1
+  PostgreSQL/FastAPI runtime. Removed the fictional `@FraiseQL.*` API surface
+  and the v2 Arrow Flight section, and fixed the landing page and navigation.
+  (#417–#436)
+
+### Changed
+
+- Routine dependency and CI maintenance: Rust crate updates (`reqwest`,
+  `mockall`, `criterion`, `itertools`), Python dev-dependency updates
+  (`black`, `faker`, `pytest-cov`, `pre-commit`, `graphql-core`), and
+  GitHub Actions bumps.
+
 ## [1.23.11] - 2026-06-14
 
 ### Fixed
