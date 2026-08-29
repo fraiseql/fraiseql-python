@@ -57,7 +57,6 @@ LABEL org.opencontainers.image.description="Production-ready GraphQL-to-PostgreS
 # CVE Fixes: CVE-2025-14104, CVE-2025-6141, CVE-2024-56433
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libpq5 \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -70,6 +69,11 @@ WORKDIR /app
 COPY --from=builder /build/dist/*.whl /tmp/
 
 # Install FraiseQL and production dependencies
+# pip and setuptools are build tooling: the wheel is installed here and the
+# entrypoint is gunicorn, so nothing at runtime needs either. They are removed in
+# the *same* layer — a separate RUN would leave the old copies in the image
+# history, where Trivy still finds them. pip's vendored msgpack goes with it,
+# which is the only msgpack in the image.
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install \
     /tmp/*.whl \
@@ -81,7 +85,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     opentelemetry-exporter-otlp \
     opentelemetry-instrumentation-fastapi \
     opentelemetry-instrumentation-psycopg \
-    && rm -rf /tmp/*.whl
+    && rm -rf /tmp/*.whl \
+    && pip uninstall -y pip setuptools 2>/dev/null || true
 
 # Copy entrypoint script
 COPY deploy/docker/entrypoint.sh /usr/local/bin/
@@ -97,8 +102,11 @@ USER fraiseql
 EXPOSE 8000
 
 # Health check
+# Probed with the interpreter that is already in the image. `curl` was the only
+# reason the runtime stage installed it, and curl + libcurl + libssh2 account for
+# ~40 of the container-security alerts on their own.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=2).status == 200 else 1)"]
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

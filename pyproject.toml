@@ -218,7 +218,11 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "--disable-warnings",
-  "-ra"
+  "-ra",
+  # Container tests build the runtime image; opt in with `pytest -m container`,
+  # which overrides this default.
+  "-m",
+  "not container"
 ]
 asyncio_mode = "auto"
 # Console output
@@ -270,7 +274,8 @@ markers = [
   "chaos_resources: Chaos tests for resource exhaustion (memory, CPU, disk)",
   "chaos_concurrency: Chaos tests for concurrent execution (deadlocks, race conditions)",
   "chaos_validation: Chaos test validation and success criteria checks",
-  "chaos_verification: Chaos infrastructure verification tests"
+  "chaos_verification: Chaos infrastructure verification tests",
+  "container: Tests that build and run the runtime Docker image (slow, needs Docker)"
 ]
 # Minimum version
 minversion = "9.0"
