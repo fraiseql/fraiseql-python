@@ -752,6 +752,137 @@ def _build_partial_period_union_query(
     return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
 
 
+def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
+    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
+
+    Mapping keys are matched against dotted field paths built with
+    ``transform_path=to_snake_case``, so a key in GraphQL spelling
+    (``dimensions.dateInfo.date``) could never match one and the entry would
+    silently never fire. Normalizing each segment at registration accepts both
+    spellings and leaves every consumer looking at the same dict.
+
+    The caller's dict is never mutated: a new dict is returned when anything
+    changed, and the original is returned untouched otherwise.
+    """
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    if not mapping:
+        return aggregation
+
+    normalized = {
+        ".".join(to_snake_case(segment) for segment in path.split(".")): column
+        for path, column in mapping.items()
+    }
+    if normalized == mapping:
+        return aggregation
+    return {**aggregation, "native_dimension_mapping": normalized}
+
+
+def _aggregation_mapping_error(
+    view_name: str,
+    meta_key: str,
+    declared: str,
+    column: str,
+    table_columns: set[str],
+) -> str:
+    """Build the message for an aggregation entry naming a non-existent column.
+
+    Mirrors the wording of the ``fk_relationships`` guard so the two read as one
+    voice: what was declared, what is missing, and the two ways to fix it.
+    """
+    subject = (
+        f"Entry '{column}'"
+        if declared == column
+        else f"Path '{declared}' mapped to column '{column}'"
+    )
+    return (
+        f"Invalid {meta_key} for {view_name}: "
+        f"{subject}, but '{column}' not in table_columns: {sorted(table_columns)}. "
+        f"Either add '{column}' to table_columns or fix {meta_key}. "
+        f"To allow this (not recommended), set validate_fk_strict=False."
+    )
+
+
+def _validate_aggregation_mapping(
+    view_name: str,
+    aggregation: dict[str, Any],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Validate that aggregation metadata only names columns that exist.
+
+    ``native_dimension_mapping`` and ``native_measures`` map JSONB paths to flat
+    columns; ``native_dimensions`` names columns directly. A value that is not a
+    real column makes the entry silently dead — the query falls back to JSONB
+    extraction and nothing says why. Same class of declaration as
+    ``fk_relationships``, so the same treatment.
+
+    With no columns registered there is nothing to validate against: warn once
+    naming the view, never raise.
+
+    Args:
+        view_name: The database view the metadata was registered against
+        aggregation: The ``aggregation`` dict from ``register_type_for_view``
+        table_columns: Actual database columns for the view, if known
+        strict: Raise ``ValueError`` when True, log a warning when False
+    """
+    declarations: list[tuple[str, str, str]] = []
+
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    declarations += [("native_dimension_mapping", path, col) for path, col in mapping.items()]
+
+    measures: dict[str, str] = aggregation.get("native_measures") or {}
+    declarations += [("native_measures", path, col) for path, col in measures.items()]
+
+    dimensions: list[str] = list(aggregation.get("native_dimensions") or [])
+    declarations += [("native_dimensions", col, col) for col in dimensions]
+
+    if not declarations:
+        return
+
+    if not table_columns:
+        logger.warning(
+            f"No table_columns registered for {view_name} - "
+            f"aggregation mapping validation disabled. Call register_type_for_view()."
+        )
+        return
+
+    for meta_key, declared, column in declarations:
+        if column in table_columns:
+            continue
+        error_msg = _aggregation_mapping_error(view_name, meta_key, declared, column, table_columns)
+        if strict:
+            raise ValueError(error_msg)
+        logger.warning("%s", error_msg)
+
+    _warn_unreachable_mapping_keys(view_name, aggregation)
+
+
+def _warn_unreachable_mapping_keys(view_name: str, aggregation: dict[str, Any]) -> None:
+    """Warn about ``native_dimension_mapping`` keys no dimension path can produce.
+
+    GROUP BY entries are dotted field paths rooted at the configured dimensions
+    prefix, so a key rooted anywhere else can never match one. This is a warning
+    rather than an error: a mapping may legitimately anticipate a field that is
+    not selected by any query yet.
+    """
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    if not mapping:
+        return
+
+    prefix: str = aggregation.get("dimensions", "dimensions")
+    accepted_roots = {prefix, to_snake_case(prefix)}
+    for path in mapping:
+        if path.split(".", 1)[0] in accepted_roots:
+            continue
+        logger.warning(
+            f"Unreachable native_dimension_mapping key for {view_name}: "
+            f"'{path}' is not rooted at the configured dimensions prefix '{prefix}', "
+            f"so it can never match a dimension path and will never fire. "
+            f"Either re-root the key at '{prefix}' or fix the 'dimensions' prefix."
+        )
+
+
 def register_type_for_view(
     view_name: str,
     type_class: type,
@@ -794,7 +925,15 @@ def register_type_for_view(
             JSONB-extracted values, avoiding ::numeric casts and improving performance.
             The ``native_dimension_mapping`` key maps deep JSONB dimension paths
             to flat SQL column names, enabling GROUP BY on native columns for
-            complex nested dimension paths.
+            complex nested dimension paths. Its keys accept either spelling —
+            GraphQL (``dimensions.dateInfo.date``) or database
+            (``dimensions.date_info.date``) — and are normalized segment-wise to
+            snake_case at registration, which is the spelling field paths use.
+
+    Raises:
+        ValueError: If ``fk_relationships`` or the aggregation metadata names a
+            column absent from ``table_columns``, unless ``validate_fk_strict``
+            is False (which downgrades both to warnings).
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -819,6 +958,13 @@ def register_type_for_view(
                     f"Either add '{fk_column}' to table_columns or fix fk_relationships. "
                     f"To allow this (not recommended), set validate_fk_strict=False."
                 )
+
+    # Validate aggregation metadata against real columns (same class as FK)
+    if aggregation:
+        aggregation = _normalize_aggregation_mapping_keys(aggregation)
+        _validate_aggregation_mapping(
+            view_name, aggregation, table_columns, strict=validate_fk_strict
+        )
 
     # Store metadata if provided
     if (
