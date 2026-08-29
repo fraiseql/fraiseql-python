@@ -18,7 +18,11 @@ from fraiseql.core.rust_pipeline import (
 )
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
-from fraiseql.where_normalization import normalize_dict_where, normalize_whereinput
+from fraiseql.where_normalization import (
+    _apply_column_mapping,
+    normalize_dict_where,
+    normalize_whereinput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -752,14 +756,23 @@ def _build_partial_period_union_query(
     return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
 
 
-def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
-    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
+def _normalize_mapping_keys(mapping: dict[str, str]) -> dict[str, str]:
+    """Return *mapping* with every key's segments in database (snake_case) spelling.
 
     Mapping keys are matched against dotted field paths built with
     ``transform_path=to_snake_case``, so a key in GraphQL spelling
     (``dimensions.dateInfo.date``) could never match one and the entry would
     silently never fire. Normalizing each segment at registration accepts both
     spellings and leaves every consumer looking at the same dict.
+    """
+    return {
+        ".".join(to_snake_case(segment) for segment in path.split(".")): column
+        for path, column in mapping.items()
+    }
+
+
+def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
+    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
 
     The caller's dict is never mutated: a new dict is returned when anything
     changed, and the original is returned untouched otherwise.
@@ -768,10 +781,7 @@ def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str
     if not mapping:
         return aggregation
 
-    normalized = {
-        ".".join(to_snake_case(segment) for segment in path.split(".")): column
-        for path, column in mapping.items()
-    }
+    normalized = _normalize_mapping_keys(mapping)
     if normalized == mapping:
         return aggregation
     return {**aggregation, "native_dimension_mapping": normalized}
@@ -837,6 +847,22 @@ def _validate_aggregation_mapping(
     dimensions: list[str] = list(aggregation.get("native_dimensions") or [])
     declarations += [("native_dimensions", col, col) for col in dimensions]
 
+    _validate_mapping_declarations(view_name, declarations, table_columns, strict=strict)
+    _warn_unreachable_mapping_keys(view_name, aggregation)
+
+
+def _validate_mapping_declarations(
+    view_name: str,
+    declarations: list[tuple[str, str, str]],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Check that every ``(meta_key, declared, column)`` triple names a real column.
+
+    With no columns registered there is nothing to validate against: warn once
+    naming the view, never raise.
+    """
     if not declarations:
         return
 
@@ -855,7 +881,23 @@ def _validate_aggregation_mapping(
             raise ValueError(error_msg)
         logger.warning("%s", error_msg)
 
-    _warn_unreachable_mapping_keys(view_name, aggregation)
+
+def _validate_column_mapping(
+    view_name: str,
+    column_mapping: dict[str, str],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Validate a top-level ``column_mapping`` against the view's real columns.
+
+    Same class of declaration as ``fk_relationships``, so the same treatment. The
+    unreachable-key warning is deliberately *not* applied: it is specific to
+    aggregation dimension paths, and a peer of ``fk_relationships`` may
+    legitimately name any path in the type.
+    """
+    declarations = [("column_mapping", path, col) for path, col in column_mapping.items()]
+    _validate_mapping_declarations(view_name, declarations, table_columns, strict=strict)
 
 
 def _warn_unreachable_mapping_keys(view_name: str, aggregation: dict[str, Any]) -> None:
@@ -883,6 +925,59 @@ def _warn_unreachable_mapping_keys(view_name: str, aggregation: dict[str, Any]) 
         )
 
 
+def _view_column_mapping(view_name: str) -> dict[str, str]:
+    """Return the declared field path → column mapping for *view_name*.
+
+    Two declarations feed one resolver: the top-level ``column_mapping``, which
+    is the peer of ``fk_relationships``, and the older
+    ``aggregation["native_dimension_mapping"]``, which it supersedes. Both are
+    normalized to snake_case keys at registration, so they merge directly; the
+    explicit peer wins where they name the same path.
+    """
+    metadata = _table_metadata.get(view_name)
+    if not metadata:
+        return {}
+    aggregation = metadata.get("aggregation") or {}
+    return {
+        **(aggregation.get("native_dimension_mapping") or {}),
+        **(metadata.get("column_mapping") or {}),
+    }
+
+
+def _apply_view_column_mapping(
+    clause: WhereClause,
+    view_name: str,
+    table_columns: set[str] | None,
+) -> WhereClause:
+    """Re-resolve a view's declared field paths onto flat columns (issue #467).
+
+    The single site where the mapping is applied. Both query paths funnel
+    through :meth:`FraiseQLRepository._normalize_where` — the standard builder
+    via ``_build_where_clause``, and the partial-period UNION dispatch via its
+    own bound probe — so one call here covers both.
+
+    It runs on the finished clause rather than inside the recursive walk: that
+    walk is prefix-unaware and only the completed ``field_path`` carries the
+    dotted path a mapping key is written against.
+    """
+    mapping = _view_column_mapping(view_name)
+    if not mapping:
+        return clause
+
+    metadata = _table_metadata.get(view_name) or {}
+    if table_columns is None:
+        # Mirror normalize_dict_where: fall back to the registered columns so the
+        # resolution-time guard checks against what the walk itself used.
+        table_columns = metadata.get("columns")
+
+    return _apply_column_mapping(
+        clause,
+        mapping,
+        table_columns,
+        strict=metadata.get("validate_fk_strict", True),
+    )
+
+
 def register_type_for_view(
     view_name: str,
     type_class: type,
@@ -892,6 +987,7 @@ def register_type_for_view(
     fk_relationships: dict[str, str] | None = None,
     validate_fk_strict: bool = True,
     aggregation: dict[str, Any] | None = None,
+    column_mapping: dict[str, str] | None = None,
 ) -> None:
     """Register a type class for a specific view name with optional metadata.
 
@@ -909,6 +1005,19 @@ def register_type_for_view(
             If not specified, uses convention: field + "_id"
         validate_fk_strict: If True, raise error on FK validation failures.
             If False, only warn (useful for legacy code migration).
+        column_mapping: Map a dotted field path → flat SQL column name.
+            Example: {"dimensions.item.model.category": "model_category"}
+            A peer of ``fk_relationships``: it declares that a field the JSONB
+            snapshot also carries lives in a real column, so WHERE and GROUP BY
+            read the column instead of extracting from JSONB. Unlike
+            ``fk_relationships`` and the ``<parent>_id`` convention — which reach
+            only a leaf literally named ``id`` — it reaches any depth and any
+            leaf name. Applied unconditionally, aggregated query or not. Keys
+            accept either spelling (GraphQL or database) and are normalized
+            segment-wise to snake_case at registration, and may name any path in
+            the type. Supersedes ``aggregation["native_dimension_mapping"]``,
+            which keeps working and feeds the same resolver; where both declare
+            the same path, ``column_mapping`` wins.
         aggregation: Optional aggregation metadata for auto-aggregation.
             Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
                       "dimensions": "dimensions",
@@ -931,9 +1040,10 @@ def register_type_for_view(
             snake_case at registration, which is the spelling field paths use.
 
     Raises:
-        ValueError: If ``fk_relationships`` or the aggregation metadata names a
-            column absent from ``table_columns``, unless ``validate_fk_strict``
-            is False (which downgrades both to warnings).
+        ValueError: If ``fk_relationships``, ``column_mapping`` or the
+            aggregation metadata names a column absent from ``table_columns``,
+            unless ``validate_fk_strict`` is False (which downgrades all of them
+            to warnings).
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -966,6 +1076,13 @@ def register_type_for_view(
             view_name, aggregation, table_columns, strict=validate_fk_strict
         )
 
+    # Same for the top-level column mapping, the peer of fk_relationships (#467)
+    if column_mapping:
+        column_mapping = _normalize_mapping_keys(column_mapping)
+        _validate_column_mapping(
+            view_name, column_mapping, table_columns, strict=validate_fk_strict
+        )
+
     # Store metadata if provided
     if (
         table_columns is not None
@@ -973,6 +1090,7 @@ def register_type_for_view(
         or jsonb_column is not None
         or fk_relationships
         or aggregation
+        or column_mapping
     ):
         metadata = {
             "columns": table_columns or set(),
@@ -981,6 +1099,7 @@ def register_type_for_view(
             "fk_relationships": fk_relationships,
             "validate_fk_strict": validate_fk_strict,
             "aggregation": aggregation,
+            "column_mapping": column_mapping or {},
         }
         _table_metadata[view_name] = metadata
         logger.debug(
@@ -1561,10 +1680,15 @@ class FraiseQLRepository:
                         kwargs["group_by"],
                         kwargs["aggregations"],
                         native_dims,
-                        native_dim_mapping,
+                        _agg_mapping,
                     ) = result
                     if native_dims:
                         kwargs["native_dimensions"] = native_dims
+                    # Both declarations feed one resolver (#467), so GROUP BY
+                    # reads the same merged mapping the WHERE rewrite does —
+                    # otherwise column_mapping= would work in WHERE and silently
+                    # no-op in the one place the mechanism already worked.
+                    native_dim_mapping = _view_column_mapping(view_name)
                     if native_dim_mapping:
                         kwargs["native_dimension_mapping"] = native_dim_mapping
                     native_meas = agg_meta.get("native_measures")
@@ -2569,61 +2693,54 @@ class FraiseQLRepository:
         if isinstance(where, WhereClause):
             return where
 
+        jsonb_column = "data"
+        if view_name in _table_metadata:
+            metadata = _table_metadata[view_name]
+            if metadata.get("has_jsonb_data", False):
+                jsonb_column = metadata.get("jsonb_column") or "data"
+
+        result: WhereClause | None = None
+
         # Dict-based WHERE
         if isinstance(where, dict):
-            jsonb_column = "data"
-            if view_name in _table_metadata:
-                metadata = _table_metadata[view_name]
-                if metadata.get("has_jsonb_data", False):
-                    jsonb_column = metadata.get("jsonb_column") or "data"
-
             result = normalize_dict_where(where, view_name, table_columns, jsonb_column)
             if result is None:
                 raise ValueError(f"normalize_dict_where returned None for {where!r}")
-            return result
 
         # WhereInput-based WHERE
-        if hasattr(where, "_to_whereinput_dict"):
-            jsonb_column = "data"
-            if view_name in _table_metadata:
-                metadata = _table_metadata[view_name]
-                if metadata.get("has_jsonb_data", False):
-                    jsonb_column = metadata.get("jsonb_column") or "data"
-
+        elif hasattr(where, "_to_whereinput_dict"):
             result = normalize_whereinput(where, view_name, table_columns, jsonb_column)
             if result is None:
                 raise ValueError(f"normalize_whereinput returned None for {where!r}")
-            return result
 
-        # Try to convert dataclass WhereInput objects to dict
-        # (for dynamically created WhereInput types without _to_whereinput_dict method)
-        from dataclasses import asdict, is_dataclass
+        else:
+            # Try to convert dataclass WhereInput objects to dict
+            # (for dynamically created WhereInput types without _to_whereinput_dict method)
+            from dataclasses import asdict, is_dataclass
 
-        if is_dataclass(where):
-            # Convert dataclass to dict, filtering out None values
-            where_dict = {
-                field_name: field_value
-                for field_name, field_value in asdict(where).items()
-                if field_value is not None and field_value != {}
-            }
+            if is_dataclass(where):
+                # Convert dataclass to dict, filtering out None values
+                where_dict = {
+                    field_name: field_value
+                    for field_name, field_value in asdict(where).items()
+                    if field_value is not None and field_value != {}
+                }
 
-            if where_dict:  # Only process if there are non-empty values
-                jsonb_column = "data"
-                if view_name in _table_metadata:
-                    metadata = _table_metadata[view_name]
-                    if metadata.get("has_jsonb_data", False):
-                        jsonb_column = metadata.get("jsonb_column") or "data"
+                if where_dict:  # Only process if there are non-empty values
+                    result = normalize_dict_where(
+                        where_dict, view_name, table_columns, jsonb_column
+                    )
+                    if result is None:
+                        raise ValueError(f"normalize_dict_where returned None for {where_dict!r}")
 
-                result = normalize_dict_where(where_dict, view_name, table_columns, jsonb_column)
-                if result is None:
-                    raise ValueError(f"normalize_dict_where returned None for {where_dict!r}")
-                return result
+        if result is None:
+            # FIX: Always raise error for unsupported types, never return None
+            raise TypeError(
+                f"WHERE clause must be dict, WhereClause, or WhereInput object. "
+                f"Got: {type(where).__name__}"
+            )
 
-        # FIX: Always raise error for unsupported types, never return None
-        raise TypeError(
-            f"WHERE clause must be dict, WhereClause, or WhereInput object. "
-            f"Got: {type(where).__name__}"
-        )
+        return _apply_view_column_mapping(result, view_name, table_columns)
 
     def _build_where_clause(self, view_name: str, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         """Build WHERE clause parts from kwargs.

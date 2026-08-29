@@ -189,10 +189,6 @@ class TestResolutionTimeGuard:
         )
         _table_metadata[view_name]["validate_fk_strict"] = strict
 
-    @pytest.mark.xfail(
-        reason="Resolution-time guard lands with Phase 02 Cycle 2 (the column-mapping pass)",
-        strict=True,
-    )
     def test_strict_view_raises_at_resolution(self) -> None:
         from unittest.mock import MagicMock
 
@@ -210,10 +206,6 @@ class TestResolutionTimeGuard:
 
         assert "should have been caught during registration" in str(exc_info.value)
 
-    @pytest.mark.xfail(
-        reason="Resolution-time guard lands with Phase 02 Cycle 2 (the column-mapping pass)",
-        strict=True,
-    )
     def test_lenient_view_warns_and_falls_back_to_jsonb(self, caplog) -> None:
         from unittest.mock import MagicMock
 
@@ -229,7 +221,11 @@ class TestResolutionTimeGuard:
                 {"id", "data"},
             )
 
-        warnings = [r for r in caplog.records if "nope" in r.message]
+        warnings = [
+            r
+            for r in caplog.records
+            if r.name == "fraiseql.where_normalization" and "nope" in r.message
+        ]
         assert len(warnings) == 1
         assert "JSONB fallback" in warnings[0].message
 
