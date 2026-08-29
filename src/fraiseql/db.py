@@ -2850,6 +2850,60 @@ class FraiseQLRepository:
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
         )
 
+    def _build_order_by_sql(
+        self,
+        order_by: Any,
+        table_ref: str,
+        native_columns: set[str] | None = None,
+        column_mapping: dict[str, str] | None = None,
+    ) -> tuple[Any | None, bool]:
+        """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
+
+        Three call sites used to render this — an ``OrderBySet``, a GraphQL
+        ``OrderByInput``, and dict/list input — and each had to be kept in step
+        by hand. One helper means a new resolution rule cannot reach two of the
+        three (#467).
+
+        Returns:
+            ``(order_sql, needs_t_alias)``. A flat column renders ``t."col"``, so
+            the caller must ensure the FROM clause carries that alias; raw string
+            ``order_by`` is passed through untouched and reports ``(None, False)``.
+        """
+        if not order_by:
+            return None, False
+
+        order_set = order_by
+        if not hasattr(order_set, "to_sql"):
+            if hasattr(order_set, "_to_sql_order_by"):
+                order_set = order_set._to_sql_order_by(config=self.context.get("config"))
+            elif isinstance(order_set, (dict, list)):
+                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
+                # Dict format: {"age": "ASC"} - single field, nested paths allowed
+                from fraiseql.sql.graphql_order_by_generator import (
+                    _convert_order_by_input_to_sql,
+                )
+
+                order_set = _convert_order_by_input_to_sql(
+                    order_set, config=self.context.get("config")
+                )
+            else:
+                # Raw SQL string, or something unrecognised — the caller handles it
+                return None, False
+
+        if not order_set or not hasattr(order_set, "to_sql"):
+            return None, False
+
+        order_sql = order_set.to_sql(
+            table_ref, native_columns=native_columns, column_mapping=column_mapping
+        )
+        if not order_sql:
+            return None, False
+
+        needs_alias = hasattr(order_set, "uses_flat_columns") and order_set.uses_flat_columns(
+            native_columns=native_columns, column_mapping=column_mapping
+        )
+        return order_sql, needs_alias
+
     def _build_find_query(
         self,
         view_name: str,
@@ -2890,6 +2944,14 @@ class FraiseQLRepository:
         native_dimension_mapping: dict[str, str] | None = kwargs.pop(
             "native_dimension_mapping", None
         )
+        # Resolve the declaration once (#467). SELECT/GROUP BY and ORDER BY must
+        # render a mapped path identically — PostgreSQL rejects a sort key that is
+        # neither grouped nor functionally determined by the grouping, and two
+        # expressions for one logical field is exactly how that happens. Falling
+        # back to the registration also makes column_mapping= apply to a plain
+        # find(), like fk_relationships does.
+        if native_dimension_mapping is None:
+            native_dimension_mapping = _view_column_mapping(view_name) or None
 
         if aggregations and not group_by:
             msg = "aggregations requires group_by"
@@ -2898,6 +2960,18 @@ class FraiseQLRepository:
         # Use unified WHERE clause building (includes Issue #124 fix for hybrid tables)
         # This ensures WhereInput nested filters work correctly in all code paths
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
+
+        # Determine table reference for ORDER BY
+        # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
+        table_ref = jsonb_column if jsonb_column is not None else "t"
+        # Pass native_dimensions to ORDER BY so native columns use t."col" (#337),
+        # and the declared mapping so mapped paths do too (#467).
+        order_sql, order_needs_alias = self._build_order_by_sql(
+            order_by,
+            table_ref,
+            native_columns=native_dimensions or None,
+            column_mapping=native_dimension_mapping,
+        )
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -2982,6 +3056,10 @@ class FraiseQLRepository:
                 SQL("::text FROM "),
                 table_identifier,
             ]
+            # A flat sort key renders t."col", which needs the alias to exist.
+            # Only a declared mapping can reach here — this branch has no GROUP BY.
+            if order_needs_alias:
+                query_parts.append(SQL(" AS t"))
 
         # Add WHERE clause
         if where_parts:
@@ -2998,46 +3076,13 @@ class FraiseQLRepository:
         if group_by:
             query_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
-        # Determine table reference for ORDER BY
-        # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
-        table_ref = jsonb_column if jsonb_column is not None else "t"
-        # Pass native_dimensions to ORDER BY so native columns use t."col" (#337)
-        order_native = native_dimensions or None
-
-        # Add ORDER BY
-        if order_by:
-            if hasattr(order_by, "to_sql"):
-                order_sql = order_by.to_sql(table_ref, native_columns=order_native)
-                if order_sql:
-                    # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                    query_parts.append(SQL(" "))
-                    query_parts.append(order_sql)
-            elif hasattr(order_by, "_to_sql_order_by"):
-                # Convert GraphQL OrderByInput to SQL OrderBySet, then get SQL
-                config = self.context.get("config")
-                sql_order_by_obj = order_by._to_sql_order_by(config=config)
-                if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
-                    if order_sql:
-                        # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                        query_parts.append(SQL(" "))
-                        query_parts.append(order_sql)
-            elif isinstance(order_by, (dict, list)):
-                # Convert dict or list-style order by input to SQL OrderBySet
-                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
-                # Dict format: {"age": "ASC"} - single field
-                from fraiseql.sql.graphql_order_by_generator import _convert_order_by_input_to_sql
-
-                config = self.context.get("config")
-                sql_order_by_obj = _convert_order_by_input_to_sql(order_by, config=config)
-                if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
-                    if order_sql:
-                        # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                        query_parts.append(SQL(" "))
-                        query_parts.append(order_sql)
-            elif isinstance(order_by, str):
-                query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
+        # Add ORDER BY (resolved above, before the FROM clause needed its alias)
+        if order_sql is not None:
+            # OrderBySet.to_sql() already includes the "ORDER BY " prefix
+            query_parts.append(SQL(" "))
+            query_parts.append(order_sql)
+        elif isinstance(order_by, str):
+            query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
 
         # Add LIMIT
         if limit is not None:
