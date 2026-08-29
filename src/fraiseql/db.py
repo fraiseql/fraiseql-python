@@ -16,6 +16,7 @@ from fraiseql.core.rust_pipeline import (
     RustResponseBytes,
     execute_via_rust_pipeline,
 )
+from fraiseql.sql.native_columns import resolve_native_column
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
 from fraiseql.where_normalization import (
@@ -451,12 +452,14 @@ def _build_fine_grain_branch(
     def build_field(fp: str) -> SQL | Composed:
         if fp == time_grain_column:
             return _build_trunc_expr(time_grain_trunc, col_id)
-        if fp in native_dimensions:
-            return _build_non_jsonb_field_expr(fp, "t")
-        if native_dimension_mapping and fp in native_dimension_mapping:
-            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-        if native_measures and fp in native_measures:
-            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        column = resolve_native_column(
+            fp,
+            native_columns=native_dimensions,
+            column_mapping=native_dimension_mapping,
+            native_measures=native_measures,
+        )
+        if column is not None:
+            return _build_non_jsonb_field_expr(column, "t")
         return _build_jsonb_field_expr(fp, jsonb_col)
 
     # Build entries for json_build_object
@@ -473,9 +476,13 @@ def _build_fine_grain_branch(
             func, field = _parse_aggregation_expr(agg_expr_str)
             field_expr = build_field(field) if field != "*" else SQL("*")
             is_native = (
-                field in native_dimensions
-                or (native_measures and field in native_measures)
-                or (native_dimension_mapping and field in native_dimension_mapping)
+                resolve_native_column(
+                    field,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                is not None
             )
             if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
                 agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
@@ -537,12 +544,14 @@ def _build_coarse_branch(
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
-        if fp in native_dimensions:
-            return _build_non_jsonb_field_expr(fp, "t")
-        if native_dimension_mapping and fp in native_dimension_mapping:
-            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-        if native_measures and fp in native_measures:
-            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        column = resolve_native_column(
+            fp,
+            native_columns=native_dimensions,
+            column_mapping=native_dimension_mapping,
+            native_measures=native_measures,
+        )
+        if column is not None:
+            return _build_non_jsonb_field_expr(column, "t")
         return _build_jsonb_field_expr(fp, jsonb_col)
 
     entries: list[tuple[str, SQL | Composed]] = []
@@ -557,9 +566,13 @@ def _build_coarse_branch(
             func, field = _parse_aggregation_expr(agg_expr_str)
             field_expr = build_field(field) if field != "*" else SQL("*")
             is_native = (
-                field in native_dimensions
-                or (native_measures and field in native_measures)
-                or (native_dimension_mapping and field in native_dimension_mapping)
+                resolve_native_column(
+                    field,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                is not None
             )
             if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
                 agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
@@ -1115,8 +1128,12 @@ def register_type_for_view(
         column_mapping: Map a dotted field path → flat SQL column name.
             Example: {"dimensions.item.model.category": "model_category"}
             A peer of ``fk_relationships``: it declares that a field the JSONB
-            snapshot also carries lives in a real column, so WHERE and GROUP BY
-            read the column instead of extracting from JSONB. Unlike
+            snapshot also carries lives in a real column, so GROUP BY, WHERE and
+            ORDER BY all read the column instead of extracting from JSONB. All
+            three go through one resolver
+            (``fraiseql.sql.native_columns.resolve_native_column``) so they cannot
+            disagree — two expressions for one logical field is a query that
+            fails to plan. Unlike
             ``fk_relationships`` and the ``<parent>_id`` convention — which reach
             only a leaf literally named ``id`` — it reaches any depth and any
             leaf name. Applied unconditionally, aggregated query or not. Keys
@@ -3112,12 +3129,14 @@ class FraiseQLRepository:
 
             def build_field(fp: str) -> SQL | Composed:
                 """Build field expression, dispatching native vs JSONB."""
-                if fp in native_dimensions:
-                    return _build_non_jsonb_field_expr(fp, "t")
-                if native_dimension_mapping and fp in native_dimension_mapping:
-                    return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-                if native_measures and fp in native_measures:
-                    return _build_non_jsonb_field_expr(native_measures[fp], "t")
+                column = resolve_native_column(
+                    fp,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                if column is not None:
+                    return _build_non_jsonb_field_expr(column, "t")
                 if is_jsonb:
                     return _build_jsonb_field_expr(fp, jsonb_col)
                 return _build_non_jsonb_field_expr(fp, "t")
@@ -3138,9 +3157,13 @@ class FraiseQLRepository:
                     else:
                         field_expr = build_field(field)
                         is_native_field = (
-                            field in native_dimensions
-                            or (native_measures and field in native_measures)
-                            or (native_dimension_mapping and field in native_dimension_mapping)
+                            resolve_native_column(
+                                field,
+                                native_columns=native_dimensions,
+                                column_mapping=native_dimension_mapping,
+                                native_measures=native_measures,
+                            )
+                            is not None
                         )
                         if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS and not is_native_field:
                             agg_expr = SQL("{}(({})::{})").format(

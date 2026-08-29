@@ -5,7 +5,7 @@ which reads `pyproject.toml` — so every advisory we close has to move the decl
 floor too, or the next person to `pip install fraiseql` under their own constraints
 can resolve straight back onto the vulnerable version.
 
-The floors below are the Dependabot alerts open on `dev` at 1.23.12 (#465 track).
+The floors below are the Dependabot alerts open on `dev` at 1.23.12, cleared in 1.24.0.
 Each entry names why the package is in the tree, because the exposure differs: a
 core dependency of every install is not the same finding as an optional extra.
 """

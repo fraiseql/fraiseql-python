@@ -92,22 +92,20 @@ class OrderBy:
     ) -> str | None:
         """Return the flat column this instruction sorts on, or None for JSONB.
 
-        Two declarations reach here. ``native_columns`` is a set, so it can only
-        say "this field *is* a column" (#337). ``column_mapping`` is a
-        path → column dict, so it also reaches a deep path whose column is named
-        something else entirely (#467).
+        Shares :func:`resolve_native_column` with the GROUP BY builders, because
+        the two must agree: PostgreSQL requires a sort key to be grouped or
+        functionally determined by the grouping, and two different expressions
+        for one logical field is how that constraint gets violated.
 
-        Precedence matches the GROUP BY builder (``build_field`` in ``db.py``):
-        a field that is itself a native column wins over a mapped path. The two
-        must agree — PostgreSQL requires a sort key to be grouped or functionally
-        determined by the grouping, and two different expressions for one logical
-        field is how that constraint gets violated.
+        ``native_measures`` is deliberately not passed. A measure is aggregated
+        in the SELECT list, so resolving a sort key to its raw column would
+        produce an ungrouped reference.
         """
-        if native_columns and self.field in native_columns:
-            return self.field
-        if column_mapping and self.field in column_mapping:
-            return column_mapping[self.field]
-        return None
+        from fraiseql.sql.native_columns import resolve_native_column
+
+        return resolve_native_column(
+            self.field, native_columns=native_columns, column_mapping=column_mapping
+        )
 
     def to_sql(
         self,
