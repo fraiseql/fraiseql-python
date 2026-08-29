@@ -6,7 +6,10 @@ orders on the wrapper. Every branch projects one column — the
 in ``ORDER BY 1``, a positional reference to it. There is no per-branch JSONB
 path in a sort position to fix.
 
-These tests pin that, and pin the gap next to it.
+These tests pin that, and pin what used to be the gap next to it: ``order_by`` was
+never passed to ``_build_partial_period_union_query`` at all, so a caller's sort was
+accepted and silently discarded. Fixed with #468 — ``TestCallerOrderBy`` below is the
+rewrite of the ``TestKnownGap`` that recorded it.
 """
 
 from typing import Any
@@ -120,23 +123,101 @@ class TestUnionOrdering:
         assert rendered.count('"t"."model_category"') >= branches
 
 
-class TestKnownGap:
-    """Not a desired property — a gap pinned so a future fix trips this loudly."""
+class TestCallerOrderBy:
+    """``order_by`` now reaches the UNION query (#468).
+
+    Every branch projects exactly one column, so a sort key has to be projected
+    alongside it and referenced from an outer SELECT — that keeps the statement's
+    output at the single ``json_build_object(...)::text`` column the Rust pipeline
+    reads, while sorting on a typed expression rather than on the JSON text.
+    """
 
     @pytest.mark.asyncio
-    async def test_caller_order_by_does_not_reach_the_union_query(self) -> None:
-        """``order_by`` is never passed to ``_build_partial_period_union_query``.
-
-        Same family as #467 — a declaration accepted and silently discarded — but
-        a different mechanism, so it is recorded here rather than fixed in this
-        phase. When it is fixed, this test should be rewritten, not deleted.
-        """
-        _register("v_467_union_order_dropped")
+    async def test_mapped_dimension_path_orders_on_the_flat_column(self) -> None:
+        _register("v_467_union_order_mapped")
 
         rendered = await _rendered_sql(
-            "v_467_union_order_dropped",
+            "v_467_union_order_mapped",
             order_by={"dimensions": {"item": {"model": {"category": "desc"}}}},
         )
 
+        branches = rendered.count("UNION ALL") + 1
+        assert rendered.endswith(' ORDER BY "u"."s0" DESC')
+        # The sort key is projected once per branch, as the mapped flat column.
+        assert rendered.count('"t"."model_category"') >= 2 * branches
+        assert "ORDER BY 1" not in rendered
+
+    @pytest.mark.asyncio
+    async def test_native_dimension_orders_on_the_branch_expression(self) -> None:
+        """``date`` is truncated per branch — the sort must use the same expression."""
+        _register("v_467_union_order_native")
+
+        rendered = await _rendered_sql("v_467_union_order_native", order_by={"date": "asc"})
+
+        assert rendered.endswith(' ORDER BY "u"."s0" ASC')
+        assert "ORDER BY 1" not in rendered
+
+    @pytest.mark.asyncio
+    async def test_measure_alias_orders_on_the_aggregate(self) -> None:
+        _register("v_467_union_order_measure")
+
+        rendered = await _rendered_sql(
+            "v_467_union_order_measure", order_by={"measures": {"cost": "desc"}}
+        )
+
+        assert rendered.endswith(' ORDER BY "u"."s0" DESC')
+
+    @pytest.mark.asyncio
+    async def test_outer_select_projects_exactly_one_column(self) -> None:
+        """The Rust pipeline reads ``row[0]``; the sort keys must not reach it."""
+        _register("v_467_union_order_shape")
+
+        rendered = await _rendered_sql(
+            "v_467_union_order_shape",
+            order_by={"dimensions": {"item": {"model": {"category": "desc"}}}},
+        )
+
+        assert rendered.startswith('SELECT "u"."d" FROM (')
+        assert ') AS "u"("d", "s0") ORDER BY ' in rendered
+
+    @pytest.mark.asyncio
+    async def test_two_sort_keys_are_projected_separately(self) -> None:
+        """The bare-dict form, which is the one that recurses into nested paths.
+
+        The list-of-dicts form collapses ``{"measures": {"cost": "desc"}}`` to
+        ``measures`` ASC before it ever reaches column resolution — input parsing,
+        pre-existing, and recorded in phase 03's notes rather than fixed here.
+        """
+        _register("v_467_union_order_two")
+
+        rendered = await _rendered_sql(
+            "v_467_union_order_two",
+            order_by={"date": "asc", "measures": {"cost": "desc"}},
+        )
+
+        assert ') AS "u"("d", "s0", "s1") ORDER BY ' in rendered
+        assert rendered.endswith(' ORDER BY "u"."s0" ASC, "u"."s1" DESC')
+
+    @pytest.mark.asyncio
+    async def test_unsortable_field_falls_back_to_the_wrapper_column(self) -> None:
+        """An aggregated query can only sort on a grouped key or a measure.
+
+        A field that is neither is skipped rather than emitted as invalid SQL.
+        """
+        _register("v_467_union_order_unknown")
+
+        rendered = await _rendered_sql("v_467_union_order_unknown", order_by={"nope": "desc"})
+
         assert rendered.endswith(" ORDER BY 1")
         assert "DESC" not in rendered
+
+    @pytest.mark.asyncio
+    async def test_no_order_by_is_byte_identical_to_before(self) -> None:
+        """No sort requested → today's exact statement, unwrapped."""
+        _register("v_467_union_order_none")
+
+        rendered = await _rendered_sql("v_467_union_order_none")
+
+        assert rendered.startswith("SELECT json_build_object(")
+        assert rendered.endswith(" ORDER BY 1")
+        assert ' AS "u"(' not in rendered

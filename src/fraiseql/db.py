@@ -395,6 +395,31 @@ def _build_trunc_expr(trunc: str, col_id: Any) -> Any:
     raise ValueError(msg)
 
 
+def _branch_sort_exprs(
+    entries: list[tuple[str, Any]],
+    order_keys: list[str] | None,
+) -> list[Any]:
+    """Return the branch expressions the outer ORDER BY sorts on, in order.
+
+    A UNION branch projects exactly one column — the ``json_build_object(...)::text``
+    the Rust pipeline reads — so ``ORDER BY`` on a dimension has nothing to
+    reference. Each requested key is therefore projected alongside it, using the
+    branch's *own* expression for that entry: the fine-grain branch truncates its
+    date where the coarse branch reads the column, and sorting has to follow the
+    same expression the branch grouped by.
+
+    *order_keys* is always a subset of the entry names — ``_union_order_terms``
+    resolves it against the same ``group_by`` and ``aggregations`` the entries are
+    built from, and drops anything an aggregated query cannot sort on. A missing
+    key would silently misalign the wrapper's column list, so it raises here
+    instead.
+    """
+    if not order_keys:
+        return []
+    by_key = dict(entries)
+    return [by_key[key] for key in order_keys]
+
+
 def _build_fine_grain_branch(
     *,
     fine_grain_view: str,
@@ -409,12 +434,14 @@ def _build_fine_grain_branch(
     native_dimension_mapping: dict[str, str] | None,
     jsonb_col: str,
     extra_where_sql: Any | None,
+    order_keys: list[str] | None = None,
 ) -> tuple[Any, list[Any]]:
     """Build one fine-grain branch of the UNION ALL query.
 
     Returns (branch_sql, branch_params).  Date bounds are embedded as Literals.
     ``extra_where_sql`` is a Composed fragment produced by WhereClause.to_sql()
-    (may be None when no extra conditions).
+    (may be None when no extra conditions).  ``order_keys`` names the projected
+    entries the caller wants to sort on — see ``_branch_sort_exprs`` (#468).
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
@@ -466,14 +493,17 @@ def _build_fine_grain_branch(
     if extra_where_sql is not None:
         where_parts.append(extra_where_sql)
 
-    branch_parts: list[SQL | Composed] = [
-        SQL("SELECT "),
-        nested_obj,
-        SQL("::text FROM "),
-        table_id,
-        SQL(" AS t WHERE "),
-        SQL(" AND ").join(where_parts),
-    ]
+    branch_parts: list[SQL | Composed] = [SQL("SELECT "), nested_obj, SQL("::text")]
+    for sort_expr in _branch_sort_exprs(entries, order_keys):
+        branch_parts.extend([SQL(", "), sort_expr])
+    branch_parts.extend(
+        [
+            SQL(" FROM "),
+            table_id,
+            SQL(" AS t WHERE "),
+            SQL(" AND ").join(where_parts),
+        ]
+    )
 
     if group_by_exprs:
         branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
@@ -494,10 +524,12 @@ def _build_coarse_branch(
     native_dimension_mapping: dict[str, str] | None,
     jsonb_col: str,
     extra_where_sql: Any | None,
+    order_keys: list[str] | None = None,
 ) -> tuple[Any, list[Any]]:
     """Build the coarse-grain branch of the UNION ALL query.
 
-    Returns (branch_sql, branch_params).
+    Returns (branch_sql, branch_params).  ``order_keys`` names the projected
+    entries the caller wants to sort on — see ``_branch_sort_exprs`` (#468).
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
@@ -544,19 +576,61 @@ def _build_coarse_branch(
     if extra_where_sql is not None:
         where_parts.append(extra_where_sql)
 
-    branch_parts: list[SQL | Composed] = [
-        SQL("SELECT "),
-        nested_obj,
-        SQL("::text FROM "),
-        table_id,
-        SQL(" AS t WHERE "),
-        SQL(" AND ").join(where_parts),
-    ]
+    branch_parts: list[SQL | Composed] = [SQL("SELECT "), nested_obj, SQL("::text")]
+    for sort_expr in _branch_sort_exprs(entries, order_keys):
+        branch_parts.extend([SQL(", "), sort_expr])
+    branch_parts.extend(
+        [
+            SQL(" FROM "),
+            table_id,
+            SQL(" AS t WHERE "),
+            SQL(" AND ").join(where_parts),
+        ]
+    )
 
     if group_by_exprs:
         branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
     return Composed(branch_parts), []
+
+
+def _union_order_terms(
+    order_by: Any | None,
+    group_by: list[str],
+    aggregations: dict[str, str],
+) -> tuple[list[str], list[Any]]:
+    """Resolve an ``OrderBySet`` into projected sort keys and outer ORDER BY terms.
+
+    Returns ``(order_keys, order_terms)``.  ``order_keys`` are the entry names every
+    branch has to project, in projection order; ``order_terms`` are the matching
+    ``"u"."sN" [COLLATE …] ASC|DESC`` fragments for the wrapper's ORDER BY.
+
+    An aggregated query can only sort on a grouped key or a measure, so an
+    instruction naming anything else is dropped and the statement falls back to its
+    positional sort. Both lists are empty when nothing is sortable, which is what
+    keeps a query with no usable ``order_by`` byte-identical to the unwrapped form.
+    """
+    from psycopg.sql import SQL, Identifier
+
+    instructions = getattr(order_by, "instructions", None) or ()
+    if not instructions:
+        return [], []
+
+    projectable = set(group_by) | set(aggregations or {})
+    order_keys: list[str] = []
+    order_terms: list[Any] = []
+
+    for instr in instructions:
+        if instr.field not in projectable:
+            continue
+        if instr.field not in order_keys:
+            order_keys.append(instr.field)
+        term = Identifier("u", f"s{order_keys.index(instr.field)}")
+        if instr.collation is not None:
+            term = term + SQL(" COLLATE ") + Identifier(instr.collation)
+        order_terms.append(term + SQL(" ") + instr._direction_sql())
+
+    return order_keys, order_terms
 
 
 def _build_partial_period_union_query(
@@ -575,6 +649,7 @@ def _build_partial_period_union_query(
     extra_where: Any | None,  # WhereClause | None
     upper_bound_exclusive: Any | None = None,  # date | None (exclusive)
     today: Any | None = None,  # date | None
+    order_by: Any | None = None,  # OrderBySet | None
 ) -> "DatabaseQuery":
     """Build a UNION ALL query for partial-period awareness.
 
@@ -620,13 +695,15 @@ def _build_partial_period_union_query(
                                  run through today.
         today:                   Override today's date (for deterministic testing).
                                  Defaults to ``date.today()``.
+        order_by:                Resolved ``OrderBySet``, or None to keep the
+                                 default positional sort on the projected column.
 
     Returns:
         DatabaseQuery with a UNION ALL Composed statement and params list.
     """
     from datetime import datetime, timedelta
 
-    from psycopg.sql import SQL, Composed
+    from psycopg.sql import SQL, Composed, Identifier
 
     from fraiseql.partial_period import (
         _is_period_aligned,
@@ -689,8 +766,13 @@ def _build_partial_period_union_query(
             extra_where_sql = ew_sql
             extra_where_params = list(ew_params)
 
+    # Sort keys have to be projected per branch before the branches are built:
+    # ORDER BY over a UNION can only reference an output column (#468).
+    order_keys, order_terms = _union_order_terms(order_by, group_by, aggregations)
+
     common = {
         "time_grain_column": time_grain_column,
+        "order_keys": order_keys,
         "group_by": group_by,
         "aggregations": aggregations,
         "native_dimensions": native_dimensions,
@@ -741,17 +823,42 @@ def _build_partial_period_union_query(
     if not branches:
         _add_fine(lo, lo)
 
-    # Join branches with UNION ALL and add ORDER BY 1
+    # Join branches with UNION ALL
     if len(branches) == 1:
-        statement = Composed([branches[0], SQL(" ORDER BY 1")])
+        union_sql: Any = branches[0]
     else:
         union_parts: list[Any] = []
         for i, branch in enumerate(branches):
             if i > 0:
                 union_parts.append(SQL(" UNION ALL "))
             union_parts.append(branch)
-        union_parts.append(SQL(" ORDER BY 1"))
-        statement = Composed(union_parts)
+        union_sql = Composed(union_parts)
+
+    if not order_terms:
+        # No sort requested: order on the single projected column, positionally.
+        statement = Composed([union_sql, SQL(" ORDER BY 1")])
+    else:
+        # Wrap so the statement still yields exactly one column: the sort keys are
+        # projected by every branch but must not reach the Rust pipeline, which
+        # reads ``row[0]``. Naming the subquery's columns means the branches
+        # themselves need no aliases.
+        column_aliases = SQL(", ").join(
+            [Identifier("d"), *(Identifier(f"s{i}") for i in range(len(order_keys)))]
+        )
+        statement = Composed(
+            [
+                SQL("SELECT "),
+                Identifier("u", "d"),
+                SQL(" FROM ("),
+                union_sql,
+                SQL(") AS "),
+                Identifier("u"),
+                SQL("("),
+                column_aliases,
+                SQL(") ORDER BY "),
+                SQL(", ").join(order_terms),
+            ]
+        )
 
     return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
 
@@ -1730,8 +1837,17 @@ class FraiseQLRepository:
                             _extract_upper_date_bound,
                         )
 
-                        lower_bound = _extract_lower_date_bound(
-                            where_clause_for_pp, time_grain_column
+                        # The builder re-encodes the bounds as per-branch AND
+                        # literals, so it may only rewrite a bound that is itself a
+                        # top-level conjunct. `_extract_lower_date_bound` already
+                        # ignores nested clauses; OR-joined top-level conditions
+                        # have to be excluded here, or `date >= X OR status = 'a'`
+                        # would become `date in [branch] AND status = 'a'` and drop
+                        # every row that matched on the date alone (#468).
+                        lower_bound = (
+                            _extract_lower_date_bound(where_clause_for_pp, time_grain_column)
+                            if where_clause_for_pp.logical_op == "AND"
+                            else None
                         )
                         if lower_bound is not None:
                             use_union_all = True
@@ -1744,38 +1860,24 @@ class FraiseQLRepository:
                         pass
 
         if use_union_all:
-            # Strip the date condition from the where clause for extra_where
-            # (date bounds are encoded per-branch in the UNION builder)
+            # Everything but the time-grain bounds (those are encoded per-branch in
+            # the UNION builder), plus mandatory_filters as FieldConditions (#344).
+            # One construction site: rebuilding the clause from its conditions alone
+            # is what dropped every OR/NOT group (#468).
+            from fraiseql.partial_period import _build_extra_where
+            from fraiseql.where_clause import FieldCondition
 
-            remaining_conditions = [
-                c for c in where_clause_for_pp.conditions if c.target_column != time_grain_column
+            mandatory_fc = [
+                FieldCondition(
+                    field_path=[col],
+                    operator="eq",
+                    value=val,
+                    lookup_strategy="sql_column",
+                    target_column=col,
+                )
+                for col, val in (mandatory_filters or {}).items()
             ]
-            extra_where = (
-                WhereClause(conditions=remaining_conditions) if remaining_conditions else None
-            )
-
-            # Inject mandatory_filters into extra_where as FieldConditions (#344)
-            if mandatory_filters:
-                from fraiseql.where_clause import FieldCondition
-
-                mandatory_fc = [
-                    FieldCondition(
-                        field_path=[col],
-                        operator="eq",
-                        value=val,
-                        lookup_strategy="sql_column",
-                        target_column=col,
-                    )
-                    for col, val in mandatory_filters.items()
-                ]
-                if extra_where:
-                    extra_where = WhereClause(
-                        conditions=[*mandatory_fc, *extra_where.conditions],
-                        nested_clauses=extra_where.nested_clauses,
-                        not_clause=extra_where.not_clause,
-                    )
-                else:
-                    extra_where = WhereClause(conditions=mandatory_fc)
+            extra_where = _build_extra_where(where_clause_for_pp, time_grain_column, mandatory_fc)
 
             # Collect kwargs that affect the query structure
             union_group_by = kwargs.get("group_by") or []
@@ -1784,6 +1886,7 @@ class FraiseQLRepository:
             union_native_measures = kwargs.get("native_measures")
             union_native_dim_mapping = kwargs.get("native_dimension_mapping")
             union_jsonb_col = jsonb_column or "data"
+            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"))
 
             query = _build_partial_period_union_query(
                 coarse_view=view_name,
@@ -1799,6 +1902,7 @@ class FraiseQLRepository:
                 jsonb_col=union_jsonb_col,
                 extra_where=extra_where,
                 upper_bound_exclusive=upper_bound_exclusive,
+                order_by=union_order_by,
             )
         else:
             # Inject mandatory conditions for _build_where_clause consumption (#344)
@@ -2850,6 +2954,43 @@ class FraiseQLRepository:
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
         )
 
+    def _resolve_order_by_set(self, order_by: Any) -> Any | None:
+        """Normalise any accepted ``order_by`` shape to an ``OrderBySet``.
+
+        Three shapes reach the repository — an ``OrderBySet``, a GraphQL
+        ``OrderByInput`` and dict/list input — and both the single-statement
+        ORDER BY and the partial-period UNION need the resolved instructions.
+
+        Returns:
+            The ``OrderBySet``, or None for a falsy value or a shape with no
+            instructions to read (a raw SQL string, which callers pass through
+            untouched).
+        """
+        if not order_by:
+            return None
+
+        order_set = order_by
+        if not hasattr(order_set, "to_sql"):
+            if hasattr(order_set, "_to_sql_order_by"):
+                order_set = order_set._to_sql_order_by(config=self.context.get("config"))
+            elif isinstance(order_set, (dict, list)):
+                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
+                # Dict format: {"age": "ASC"} - single field, nested paths allowed
+                from fraiseql.sql.graphql_order_by_generator import (
+                    _convert_order_by_input_to_sql,
+                )
+
+                order_set = _convert_order_by_input_to_sql(
+                    order_set, config=self.context.get("config")
+                )
+            else:
+                # Raw SQL string, or something unrecognised — the caller handles it
+                return None
+
+        if not order_set or not hasattr(order_set, "to_sql"):
+            return None
+        return order_set
+
     def _build_order_by_sql(
         self,
         order_by: Any,
@@ -2869,28 +3010,8 @@ class FraiseQLRepository:
             the caller must ensure the FROM clause carries that alias; raw string
             ``order_by`` is passed through untouched and reports ``(None, False)``.
         """
-        if not order_by:
-            return None, False
-
-        order_set = order_by
-        if not hasattr(order_set, "to_sql"):
-            if hasattr(order_set, "_to_sql_order_by"):
-                order_set = order_set._to_sql_order_by(config=self.context.get("config"))
-            elif isinstance(order_set, (dict, list)):
-                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
-                # Dict format: {"age": "ASC"} - single field, nested paths allowed
-                from fraiseql.sql.graphql_order_by_generator import (
-                    _convert_order_by_input_to_sql,
-                )
-
-                order_set = _convert_order_by_input_to_sql(
-                    order_set, config=self.context.get("config")
-                )
-            else:
-                # Raw SQL string, or something unrecognised — the caller handles it
-                return None, False
-
-        if not order_set or not hasattr(order_set, "to_sql"):
+        order_set = self._resolve_order_by_set(order_by)
+        if order_set is None:
             return None, False
 
         order_sql = order_set.to_sql(
