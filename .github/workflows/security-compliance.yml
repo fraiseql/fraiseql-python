@@ -153,6 +153,16 @@ jobs:
        if: always()
        with:
          sarif_file: 'trivy-${{ matrix.dockerfile.label }}-results.sarif'
+         # DO NOT CHANGE THIS CATEGORY, and do not change matrix.dockerfile.label,
+         # which composes it. GitHub closes an alert only when a later analysis
+         # for the same (analysis_key, category, ref) omits it, so every alert
+         # filed under a previous category is stranded open forever: nothing
+         # uploads to that category again, so nothing can ever mark it fixed.
+         # That already happened once. Introducing this input moved uploads from
+         # the derived category to 'container-Standard' and left 66 alerts pinned
+         # to the old one -- including the single HIGH the Security tab still
+         # shows, which today's scan already reports as fixed under the current
+         # category. See #479.
          category: 'container-${{ matrix.dockerfile.label }}'
 
      - name: Scan container with Trivy (JSON for detailed analysis)
